@@ -1,0 +1,31 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "name": "신규모집",
+      "on": true
+    },
+    {
+      "name": "회원연장",
+      "on": true
+    },
+    {
+      "name": "행사",
+      "on": true
+    },
+    {
+      "name": "스터디",
+      "on": true
+    },
+    {
+      "name": "2026",
+      "on": true
+    },
+    {
+      "name": "1학기",
+      "on": true
+    }
+  ]
+}

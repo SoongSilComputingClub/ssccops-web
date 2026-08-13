@@ -1,0 +1,62 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "name": "예산지출",
+      "approval": true,
+      "role": "회장",
+      "quorum": true,
+      "quorumN": 3,
+      "amount": "300,000원 이상",
+      "spend": true,
+      "check": "영수증 첨부 · 예산안 대비 확인",
+      "on": true
+    },
+    {
+      "name": "대외공지",
+      "approval": true,
+      "role": "부회장",
+      "quorum": false,
+      "quorumN": 0,
+      "amount": "-",
+      "spend": false,
+      "check": "문구 검토 · 게시 채널 확인",
+      "on": true
+    },
+    {
+      "name": "내부행사",
+      "approval": true,
+      "role": "국장",
+      "quorum": false,
+      "quorumN": 0,
+      "amount": "-",
+      "spend": false,
+      "check": "참석 인원 확인 · 장소 예약 확인",
+      "on": true
+    },
+    {
+      "name": "스터디운영",
+      "approval": false,
+      "role": "-",
+      "quorum": false,
+      "quorumN": 0,
+      "amount": "-",
+      "spend": false,
+      "check": "커리큘럼 확정",
+      "on": true
+    },
+    {
+      "name": "문서제출",
+      "approval": true,
+      "role": "회장",
+      "quorum": false,
+      "quorumN": 0,
+      "amount": "-",
+      "spend": false,
+      "check": "제출처 확인 · 사본 보관",
+      "on": false
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "id": "a1",
+      "task": "t2",
+      "title": "봄MT 대관료 집행 (1,300,000원)",
+      "type": "예산지출",
+      "owner": "원영진",
+      "requested": "2026-08-06",
+      "stage": "2단계 / 회장",
+      "urgent": false,
+      "post": false,
+      "quorum": {
+        "need": 3,
+        "yes": 2,
+        "no": 0
+      },
+      "state": "대기",
+      "reason": ""
+    },
+    {
+      "id": "a2",
+      "task": "t3",
+      "title": "9월 신입 모집 포스터",
+      "type": "대외공지",
+      "owner": "백승우",
+      "requested": "2026-08-07",
+      "stage": "1단계 / 부회장",
+      "urgent": false,
+      "post": false,
+      "quorum": null,
+      "state": "대기",
+      "reason": ""
+    },
+    {
+      "id": "a3",
+      "task": "t4",
+      "title": "인공지능 입문 스터디 교재 구매",
+      "type": "예산지출",
+      "owner": "이종인",
+      "requested": "2026-08-07",
+      "stage": "1단계 / 국장",
+      "urgent": true,
+      "post": false,
+      "quorum": null,
+      "state": "대기",
+      "reason": ""
+    },
+    {
+      "id": "a4",
+      "task": "t1",
+      "title": "봄MT 장소 선정",
+      "type": "내부행사",
+      "owner": "이종인",
+      "requested": "2026-08-08",
+      "stage": "1단계 / 국장",
+      "urgent": false,
+      "post": true,
+      "quorum": null,
+      "state": "대기",
+      "reason": ""
+    },
+    {
+      "id": "a5",
+      "task": "t5",
+      "title": "짝선짝후 명단 정리",
+      "type": "내부행사",
+      "owner": "이민우",
+      "requested": "2026-08-01",
+      "stage": "1단계 / 국장",
+      "urgent": false,
+      "post": false,
+      "quorum": null,
+      "state": "승인",
+      "reason": ""
+    },
+    {
+      "id": "a6",
+      "task": "t7",
+      "title": "7월 월간 활동보고서",
+      "type": "문서제출",
+      "owner": "이민우",
+      "requested": "2026-07-14",
+      "stage": "1단계 / 회장",
+      "urgent": false,
+      "post": false,
+      "quorum": null,
+      "state": "반려",
+      "reason": "부서별 활동 누락"
+    }
+  ]
+}

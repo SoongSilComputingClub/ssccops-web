@@ -1,0 +1,55 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": {
+    "grades": [
+      {
+        "name": "임시회원",
+        "on": true
+      },
+      {
+        "name": "준회원",
+        "on": true
+      },
+      {
+        "name": "활동회원",
+        "on": true
+      },
+      {
+        "name": "정회원",
+        "on": true
+      }
+    ],
+    "statuses": [
+      {
+        "name": "검토",
+        "on": false
+      },
+      {
+        "name": "재학",
+        "on": true
+      },
+      {
+        "name": "일반휴학",
+        "on": true
+      },
+      {
+        "name": "군휴학",
+        "on": true
+      },
+      {
+        "name": "졸업",
+        "on": true
+      },
+      {
+        "name": "탈퇴",
+        "on": true
+      },
+      {
+        "name": "제명",
+        "on": false
+      }
+    ]
+  }
+}
