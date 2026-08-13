@@ -45,7 +45,7 @@ src/
 
 ## 화면
 
-- **인증**: `/login`(소셜 가짜 로그인) · `/signup` · `/signup/complete`
+- **인증**: `/login`(Google OAuth) · `/signup` · `/signup/complete`
 - **운영**: `/dashboard` · `/operations`(운영 통합) · `/operations/works[/:id]` ·
   `/operations/sub-works[/:id]` · `/operations/meetings[/:id]` · `/operations/new` ·
   `/operations/types` · `/approvals`
@@ -59,6 +59,10 @@ src/
 ## PoC 관례
 
 - 기준일은 `TODAY = 2026-08-09`로 고정 (D-day·캘린더 시맨틱이 더미데이터와 결합)
-- 로그인은 세션 스토어의 가짜 인증 (기본 김도현/회장 로그인 상태, 라우트 가드 없음)
+- 로그인은 Supabase Auth(Google OAuth) 기반 실제 인증이며 `src/proxy.ts`가 미인증 사용자의
+  관리자 라우트 접근을 막는다. 회원 도메인(`entities/member`)은 여전히 mock JSON + zustand라
+  Supabase 사용자 ↔ 내부 Member 연결(`Member.authUserId`)은 브라우저에서 처리한다
+  (`features/auth`) — 기존 시드 회원은 실제 로그인 대상이 아니고, 새로 Google로 가입한
+  사용자만 연결된다
 - CSV 이관 위저드는 시뮬레이션 (파싱 없이 고정 통계/결과)
 - 데스크톱 전용 (`body { min-width: 1024px }`)
