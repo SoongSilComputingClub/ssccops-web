@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMemberStore } from "@/entities/member";
 import { useSessionStore } from "@/entities/session";
@@ -8,18 +8,18 @@ import { TODAY } from "@/shared/config/constants";
 import { ROUTES } from "@/shared/config/routes";
 import { Button, Card, Chip, Field, TextField, flash } from "@/shared/ui";
 
-const PROVIDER = "NAVER";
-const EMAIL = "yujin_2026@naver.com";
+const PROVIDER = "GOOGLE";
 
 export function SignupPage() {
   const router = useRouter();
   const addMember = useMemberStore((s) => s.addMember);
   const addHistory = useMemberStore((s) => s.addHistory);
+  const pendingAuthUser = useSessionStore((s) => s.pendingAuthUser);
   const setPending = useSessionStore((s) => s.setPending);
 
   const [kind, setKind] = useState<"재학생" | "졸업생">("재학생");
   const [f, setF] = useState({
-    name: "",
+    name: pendingAuthUser?.name ?? "",
     sid: "",
     dept: "",
     year: "",
@@ -28,6 +28,12 @@ export function SignupPage() {
     gradYear: "",
   });
   const set = (patch: Partial<typeof f>) => setF((v) => ({ ...v, ...patch }));
+
+  useEffect(() => {
+    if (!pendingAuthUser) router.replace(ROUTES.login);
+  }, [pendingAuthUser, router]);
+
+  if (!pendingAuthUser) return null;
 
   const submit = () => {
     const missing: string[] = [];
@@ -52,13 +58,14 @@ export function SignupPage() {
       dept: f.dept.trim(),
       year: f.year.trim(),
       phone: f.phone.trim(),
-      email: EMAIL,
+      email: pendingAuthUser.email,
       grade: "임시회원",
       status: kind === "졸업생" ? "졸업" : "재학",
       joined: TODAY,
       roles: [],
       kind,
       provider: PROVIDER,
+      authUserId: pendingAuthUser.id,
       ...(kind === "졸업생" ? { gradYear: f.gradYear.trim() } : {}),
     });
     addHistory({
@@ -96,7 +103,7 @@ export function SignupPage() {
           <div className="col-span-2">
             <div className="mb-[6px] text-[13.5px] text-n400">이메일주소</div>
             <div className="rounded-[12px] bg-bg px-[11px] py-[9px] text-[15.5px] text-n300">
-              {EMAIL}
+              {pendingAuthUser.email}
             </div>
             <div className="mt-1 text-[12.5px] text-n500">
               {PROVIDER} 계정에서 자동으로 가져왔습니다

@@ -10,6 +10,8 @@ export function SignupCompletePage() {
   const router = useRouter();
   const pendingKey = useSessionStore((s) => s.pendingKey);
   const login = useSessionStore((s) => s.login);
+  const logout = useSessionStore((s) => s.logout);
+  const setPendingAuthUser = useSessionStore((s) => s.setPendingAuthUser);
   const member = useMemberStore((s) =>
     s.members.find((m) => m.key === (pendingKey ?? "m7")),
   );
@@ -55,13 +57,19 @@ export function SignupCompletePage() {
         </div>
       </Card>
       <div className="mt-4 flex gap-2">
-        <Button variant="ghost" onClick={() => router.push(ROUTES.login)}>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            void logout().then(() => router.push(ROUTES.login));
+          }}
+        >
           로그아웃
         </Button>
         <Button
           className="flex-1"
           onClick={() => {
             login(member.key);
+            setPendingAuthUser(null);
             router.push(ROUTES.members);
           }}
         >
