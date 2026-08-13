@@ -71,7 +71,10 @@ export function Sidebar() {
   const me = useMemberStore((s) => s.members.find((m) => m.key === memberKey));
 
   const navigate = (href: string) => {
-    if (href === "/login") logout();
+    if (href === "/login") {
+      void logout().then(() => router.push(href));
+      return;
+    }
     router.push(href);
   };
 
