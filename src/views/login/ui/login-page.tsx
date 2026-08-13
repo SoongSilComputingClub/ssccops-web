@@ -1,34 +1,29 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useSessionStore } from "@/entities/session";
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { ROUTES } from "@/shared/config/routes";
-import { cn } from "@/shared/lib/cn";
-
-const PROVIDERS = [
-  {
-    p: "GOOGLE",
-    hint: "연결된 회원 · 김도현 (회장)",
-    memberKey: "m1",
-    filled: true,
-  },
-  {
-    p: "GITHUB",
-    hint: "연결된 회원 · 이서연 (국장)",
-    memberKey: "m2",
-    filled: false,
-  },
-  {
-    p: "NAVER",
-    hint: "연결된 회원 없음 · 회원 가입으로 이동",
-    memberKey: null,
-    filled: false,
-  },
-] as const;
+import { createClient } from "@/shared/lib/supabase/client";
+import { flash } from "@/shared/ui";
 
 export function LoginPage() {
-  const router = useRouter();
-  const login = useSessionStore((s) => s.login);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("error") === "oauth_failed") {
+      flash("Google 로그인에 실패했습니다. 다시 시도해주세요");
+    }
+  }, [searchParams]);
+
+  const signInWithGoogle = async () => {
+    const next = searchParams.get("next") ?? ROUTES.dashboard;
+    await createClient().auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      },
+    });
+  };
 
   return (
     <div className="w-[392px] px-4">
@@ -41,42 +36,20 @@ export function LoginPage() {
         운영관리시스템
       </h1>
       <p className="mt-3 text-[14.5px] leading-[1.6] text-n400">
-        소셜 계정으로 로그인합니다. 내부 회원 식별은 로그인 이후 회원 도메인에서
+        Google 계정으로 로그인합니다. 내부 회원 식별은 로그인 이후 회원 도메인에서
         처리됩니다.
       </p>
       <div className="mt-7 mb-6 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
-      <div className="flex flex-col gap-[10px]">
-        {PROVIDERS.map((item) => (
-          <button
-            key={item.p}
-            type="button"
-            onClick={() => {
-              if (item.memberKey) {
-                login(item.memberKey);
-                router.push(ROUTES.members);
-              } else {
-                router.push(ROUTES.signup);
-              }
-            }}
-            className={cn(
-              "cursor-pointer rounded-[14px] border px-[18px] py-[15px] text-left transition-colors",
-              item.filled
-                ? "border-accent bg-accent text-white hover:bg-accent-strong"
-                : "border-line bg-surface hover:border-accent",
-            )}
-          >
-            <div className="text-[15px] font-semibold">{item.p}로 계속하기</div>
-            <div
-              className={cn(
-                "mt-[2px] text-[13.5px]",
-                item.filled ? "text-white/72" : "text-n500",
-              )}
-            >
-              {item.hint}
-            </div>
-          </button>
-        ))}
-      </div>
+      <button
+        type="button"
+        onClick={signInWithGoogle}
+        className="w-full cursor-pointer rounded-[14px] border border-accent bg-accent px-[18px] py-[15px] text-left transition-colors hover:bg-accent-strong"
+      >
+        <div className="text-[15px] font-semibold text-white">Google로 계속하기</div>
+        <div className="mt-[2px] text-[13.5px] text-white/72">
+          Google 계정으로 로그인 또는 회원가입
+        </div>
+      </button>
       <p className="mt-5 text-[13px] leading-[1.6] text-n500">
         처음 가입하면 임시회원 등급으로 바로 시작할 수 있습니다. 졸업생도 동일하게
         가입할 수 있습니다.
