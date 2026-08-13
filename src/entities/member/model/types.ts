@@ -22,6 +22,7 @@ export interface Member {
   gradYear?: string;
   kind?: string; // 재학생 | 졸업생
   provider?: string; // 소셜 가입 제공자
+  authUserId?: string; // 연결된 Supabase Auth 사용자 UUID
 }
 
 export interface RefItem {
