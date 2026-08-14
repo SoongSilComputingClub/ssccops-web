@@ -87,6 +87,12 @@ export interface FormEditor {
   setDraft: (updater: (draft: FormDraft) => FormDraft) => void;
   setLabelIds: (updater: (labelIds: number[]) => number[]) => void;
   issues: FormDraftIssues;
+  /**
+   * 이미 응답이 달려 삭제하면 서버가 409로 막는 문항 ID들 (응답 없는 폼이면 빈 배열).
+   * 화면이 삭제를 **누르는 순간** 경고할 수 있게 노출한다 — 지운 뒤 저장이 보류된 것을
+   * 보고 되돌리는 것보다, 지우기 전에 아는 편이 낫다.
+   */
+  inUseQitemIds: string[];
   save: FormSaveStatus;
   /** 디바운스를 건너뛰고 지금 저장한다 — 저장된 formId, 보류·실패면 null */
   saveNow: () => Promise<number | null>;
@@ -158,6 +164,7 @@ function payloadKeyOf(input: FormSaveInput): string {
 /** 로드 전·실패 시 화면이 쓰는 자리표시 초안. 매 렌더 새로 만들면 검증이 계속 다시 돈다 */
 const EMPTY_DRAFT: FormDraft = emptyFormDraft();
 const EMPTY_LABEL_IDS: number[] = [];
+const EMPTY_QITEM_IDS: string[] = [];
 
 /** epoch ms → "HH:mm" (사용자 시계 기준) */
 function formatClock(at: number): string {
@@ -332,6 +339,11 @@ export function useFormEditor(formId?: number): FormEditor {
     [draft, current?.savedQitemIds, current?.hasResponses],
   );
 
+  const inUseQitemIds = useMemo(
+    () => (current?.hasResponses ? (current?.savedQitemIds ?? []) : EMPTY_QITEM_IDS),
+    [current?.hasResponses, current?.savedQitemIds],
+  );
+
   const saveInput = useMemo(() => toFormSaveInput(draft, labelIds), [draft, labelIds]);
   const payloadKey = useMemo(() => payloadKeyOf(saveInput), [saveInput]);
   const dirty = status === "ready" && payloadKey !== saved?.key;
@@ -488,6 +500,7 @@ export function useFormEditor(formId?: number): FormEditor {
     setDraft,
     setLabelIds,
     issues,
+    inUseQitemIds,
     save,
     saveNow,
     retry,
