@@ -43,3 +43,17 @@ export type { FormDraft, MaxSlctCntInput } from "./model/form-draft";
 export { isTextQitemType, validateFormDraft } from "./model/form-validation";
 export type { FormDraftIssues } from "./model/form-validation";
 export { FormSaveStatusBar } from "./ui/form-save-status";
+export { usePublicForm } from "./model/use-public-form";
+export type {
+  PublicFormController,
+  PublicFormStatus,
+  PublicFormSubmitOutcome,
+} from "./model/use-public-form";
+export {
+  nextPageSeq,
+  pageSeqOf,
+  selectedOptions,
+  toggleOption,
+  validatePageAnswers,
+} from "./model/public-form-answers";
+export { FORM_NOT_ACCEPTING_MESSAGE } from "./model/public-form-error";
