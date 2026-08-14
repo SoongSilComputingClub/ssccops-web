@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { FORM_RECEIPT_BADGE, useFormStore, type FormSummary } from "@/entities/form";
-import { useFormLabelOptions, useFormList } from "@/features/form";
+import { FORM_RECEIPT_BADGE, type FormSummary } from "@/entities/form";
+import { useDuplicateForm, useFormLabelOptions, useFormList } from "@/features/form";
 import { FORM_STTS_CDS, FORM_STTS_NM, type FormSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
@@ -55,9 +55,12 @@ function FormCardSkeleton() {
 
 function FormCard({
   form,
+  duplicating,
   onDuplicate,
 }: {
   form: FormSummary;
+  /** 이 카드의 복제가 진행 중인가 — 연타로 사본이 여러 장 생기는 것을 막는다 */
+  duplicating: boolean;
   onDuplicate: () => void;
 }) {
   const router = useRouter();
@@ -96,8 +99,13 @@ function FormCard({
         </div>
       )}
       <div className="mt-3 flex items-center gap-3 border-t border-black/5 pt-3 text-[14px]">
-        <button type="button" onClick={onDuplicate} className="cursor-pointer text-accent">
-          복제
+        <button
+          type="button"
+          disabled={duplicating}
+          onClick={onDuplicate}
+          className="cursor-pointer text-accent disabled:cursor-default disabled:opacity-50"
+        >
+          {duplicating ? "복제하는 중…" : "복제"}
         </button>
         <button
           type="button"
@@ -116,17 +124,28 @@ function FormCard({
 export function FormListPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  /*
-   * 복제는 아직 목 스토어다 — 서버 복제 API 연동은 #9의 몫이라 여기서 건드리지 않는다.
-   * (목록은 서버에서 오므로 복제한 사본이 즉시 보이지는 않는다.)
-   */
-  const duplicateForm = useFormStore((s) => s.duplicateForm);
+  const duplication = useDuplicateForm();
 
   const formSttsCd = parseFormSttsCd(searchParams.get(QUERY_STATUS));
   const formLblId = parseFormLblId(searchParams.get(QUERY_LABEL));
 
   const { forms, status, errorMessage, reload } = useFormList({ formSttsCd, formLblId });
   const { labels } = useFormLabelOptions();
+
+  /*
+   * 복제 후에는 목록을 다시 부르지 않고 **사본의 편집 화면으로 이동**한다.
+   *
+   * 사본은 DRAFT이고 라벨도 접수 기간도 승계하지 않으므로(서버 #32) 복제 직후 손볼 것이 반드시
+   * 남는다. 목록에 남아 사본을 눈으로 찾게 하는 것보다, 바로 고칠 수 있는 자리로 보내는 편이
+   * 복제를 누른 의도에 가깝다. 편집 화면은 진입 시 상세를 다시 조회하므로 갱신도 함께 끝난다.
+   */
+  const runDuplicate = async (formId: number) => {
+    const { formId: copyFormId, message } = await duplication.duplicate(formId);
+    if (!message) return;
+
+    flash(message);
+    if (copyFormId) router.push(ROUTES.formEdit(copyFormId));
+  };
 
   /** 누른 축만 바꾸고 나머지 필터는 URL에 남겨 둔다 (상태·라벨은 AND로 함께 걸린다) */
   const applyFilter = (key: string, value: string | null) => {
@@ -217,10 +236,8 @@ export function FormListPage() {
                 <FormCard
                   key={f.formId}
                   form={f}
-                  onDuplicate={() => {
-                    duplicateForm(f.formId);
-                    flash("DRAFT 폼으로 복제했습니다");
-                  }}
+                  duplicating={duplication.pendingFormId === f.formId}
+                  onDuplicate={() => void runDuplicate(f.formId)}
                 />
               ))}
             </div>

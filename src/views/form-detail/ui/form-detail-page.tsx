@@ -4,12 +4,17 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FORM_RECEIPT_BADGE,
-  useFormStore,
   type FormDetail,
   type FormPage,
   type Qitem,
 } from "@/entities/form";
-import { useFormDetail } from "@/features/form";
+import {
+  FormCloseSheet,
+  useDuplicateForm,
+  useFormDetail,
+  useFormStatus,
+  type FormStatusChange,
+} from "@/features/form";
 import { isChoiceQitemType, QITEM_TYPE_NM } from "@/shared/config/codes";
 import { publicFormUrl, ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
@@ -111,14 +116,11 @@ function QitemPreview({
  * 의미가 있기** 때문이다. 한 컴포넌트에 두면 로딩 중에도 페이지 인덱스를 들고 있게 되고,
  * 폼이 바뀌었을 때 초기화를 따로 챙겨야 한다.
  */
-function FormDetailContent({ form }: { form: FormDetail }) {
+function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => void }) {
   const router = useRouter();
-  /*
-   * 접수 상태 변경·복제는 아직 목 스토어를 호출한다 — 서버 연동은 #9(접수 상태 전환·복제)의
-   * 몫이라 이 이슈에서는 조회 경로만 서버로 옮긴다. 목록·상세가 서버에서 오므로 여기서 바꾼
-   * 상태는 화면에 반영되지 않는다는 점을 #9에서 함께 정리한다.
-   */
-  const { updateForm, duplicateForm } = useFormStore();
+  const status = useFormStatus();
+  const duplication = useDuplicateForm();
+  const [closeSheetOpen, setCloseSheetOpen] = useState(false);
   const [page, setPage] = useState(0);
   const [sel, setSel] = useState<Record<string, string[]>>({});
 
@@ -153,14 +155,49 @@ function FormDetailContent({ form }: { form: FormDetail }) {
     return Math.min(pages.length - 1, page + 1);
   };
 
-  const toggleFormStts = () => {
-    if (form.formSttsCd === "OPEN") {
-      updateForm(form.formId, { formSttsCd: "CLOSED" });
-      flash("마감했습니다");
-    } else {
-      updateForm(form.formId, { formSttsCd: "OPEN" });
-      flash("접수를 시작했습니다");
-    }
+  /*
+   * 전이 결과 처리는 한 곳에 모은다 — 마감·접수 시작·마감 철회가 전부 같은 API라 성공 후
+   * 갱신 방법이 갈리면 어떤 화면은 최신, 어떤 화면은 옛 상태를 그리게 된다.
+   *
+   * 갱신은 낙관적 업데이트가 아니라 **재조회**다. 응답이 formSttsCd만이 아니라 receiptStatus·
+   * 접수 기간·수정 일시까지 바꾸고, 그 값들은 서버의 Clock 기준이라 화면이 미리 만들어 낼 수
+   * 없다. 목록 화면도 같은 이유로 재조회를 쓴다(#7에서 정한 방식).
+   *
+   * 전이표 밖(stale)도 성공과 똑같이 다시 불러온다 — 그 오류의 뜻이 "화면이 낡았다"이므로
+   * 여기서 할 일은 사과가 아니라 최신 상태를 가져오는 것이다.
+   */
+  const applyStatusChange = async (run: () => Promise<FormStatusChange>) => {
+    const { outcome, message } = await run();
+    if (outcome === "busy") return;
+
+    flash(message);
+    if (outcome === "changed" || outcome === "stale") reload();
+    else if (outcome === "missing") router.push(ROUTES.forms);
+  };
+
+  const startReceipt = () => void applyStatusChange(() => status.open(form.formId));
+
+  const confirmClose = () =>
+    void applyStatusChange(async () => {
+      const change = await status.close(form.formId);
+      // 요청이 끝난 뒤에 닫는다 — 먼저 닫으면 실패했을 때 무엇을 하다 실패했는지가 사라진다
+      if (change.outcome !== "busy") setCloseSheetOpen(false);
+      return change;
+    });
+
+  /*
+   * 복제 후에는 사본의 **편집 화면**으로 보낸다.
+   *
+   * 사본은 DRAFT이고 라벨도 접수 기간도 승계하지 않으므로(서버 #32) 복제 직후에 반드시 손봐야
+   * 할 것이 남는다. 예전처럼 토스트만 띄우면 사용자는 방금 만든 사본을 목록에서 스스로 찾아야
+   * 했고, 목록은 서버에서 오므로 재조회 전까지는 거기 있지도 않았다.
+   */
+  const runDuplicate = async () => {
+    const { formId: copyFormId, message } = await duplication.duplicate(form.formId);
+    if (!message) return;
+
+    flash(message);
+    if (copyFormId) router.push(ROUTES.formEdit(copyFormId));
   };
 
   const publicUrl = publicFormUrl(form.formId);
@@ -223,21 +260,29 @@ function FormDetailContent({ form }: { form: FormDetail }) {
                 <Button
                   variant="ghost"
                   className="flex-1"
-                  onClick={() => {
-                    duplicateForm(form.formId);
-                    flash("DRAFT 폼으로 복제했습니다");
-                  }}
+                  disabled={duplication.pending}
+                  onClick={() => void runDuplicate()}
                 >
-                  복제
+                  {duplication.pending ? "복제하는 중…" : "복제"}
                 </Button>
               </div>
               <div className="mt-3 flex items-center rounded-[12px] border border-line p-3">
                 <div className="text-[14.5px]">접수 상태 변경</div>
                 <div className="flex-1" />
+                {/*
+                  버튼 문구·활성은 파생값이 아니라 formSttsCd로 고른다 — 전이표가 그 값으로
+                  정의돼 있어서, receiptStatus로 고르면 기간이 끝난(EXPIRED) 폼은 상태가 아직
+                  OPEN인데 '접수 시작'이 떠 400을 받는다.
+                */}
                 <button
                   type="button"
-                  onClick={toggleFormStts}
-                  className="cursor-pointer rounded-[10px] border border-line-strong bg-bg px-3 py-[6px] text-[14px] hover:border-accent hover:text-accent"
+                  disabled={status.pending}
+                  onClick={
+                    form.formSttsCd === "OPEN"
+                      ? () => setCloseSheetOpen(true)
+                      : startReceipt
+                  }
+                  className="cursor-pointer rounded-[10px] border border-line-strong bg-bg px-3 py-[6px] text-[14px] hover:border-accent hover:text-accent disabled:cursor-default disabled:opacity-50"
                 >
                   {form.formSttsCd === "OPEN" ? "마감" : "접수 시작"}
                 </button>
@@ -340,6 +385,16 @@ function FormDetailContent({ form }: { form: FormDetail }) {
           </Card>
         </div>
       </PageBody>
+
+      <FormCloseSheet
+        open={closeSheetOpen}
+        formTtlNm={form.formTtlNm}
+        rcptEndDt={form.rcptEndDt}
+        responseCount={form.responseCount}
+        pending={status.pending}
+        onClose={() => setCloseSheetOpen(false)}
+        onConfirm={confirmClose}
+      />
     </>
   );
 }
@@ -354,7 +409,8 @@ function FormDetailContent({ form }: { form: FormDetail }) {
 export function FormDetailPage({ formId }: { formId: number }) {
   const { form, status, errorMessage, reload } = useFormDetail(formId);
 
-  if (status === "ready" && form) return <FormDetailContent form={form} />;
+  // 상태 전이·복제 후 최신 값을 다시 받아 오는 통로 — 낙관적 업데이트를 쓰지 않는 이유는 위 주석
+  if (status === "ready" && form) return <FormDetailContent form={form} reload={reload} />;
 
   return (
     <>

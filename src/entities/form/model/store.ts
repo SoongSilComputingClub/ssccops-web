@@ -1,16 +1,11 @@
 "use client";
 
 import { create } from "zustand";
-import { TODAY } from "@/shared/config/constants";
-import { nextId } from "@/shared/lib/id";
 import formSeed from "../api/get-form.json";
 import type { Form, FormReceiptStatus } from "./types";
 
 interface FormState {
   forms: Form[];
-
-  updateForm: (formId: number, patch: Partial<Form>) => void;
-  duplicateForm: (formId: number) => Form | null;
 }
 
 /*
@@ -23,45 +18,17 @@ interface FormState {
  * 지웠다(#10). 목록·추가·사용_여부는 이제 `/v1/form-labels`가, 폼별 지정은 폼 저장 본문이
  * 담당한다. 특히 "사용 중인 폼 N건"을 세던 `formLblRels`는 이 브라우저가 들고 있던 목 배열일
  * 뿐이라 실제 지정 수와 무관했다 — 서버 집계(`usageCount`)로 대체됐다.
- * 남은 목(duplicateForm)은 #9에서 서버로 옮긴다.
+ *
+ * `updateForm`·`duplicateForm`도 같은 이유로 지웠다(#9). 접수 상태 전이와 복제는 각각
+ * `POST /v1/forms/{formId}/status`·`/duplicate`가 담당한다. 특히 `updateForm`은 목록·상세가
+ * 서버에서 오는 지금 **아무 화면에도 반영되지 않는 상태 변경**이었다 — 눌러도 아무 일도
+ * 일어나지 않는데 토스트만 "마감했습니다"라고 말했다.
+ *
+ * 남은 `forms` 시드는 공개 폼(#11)·응답 화면(#13)이 아직 쓰고 있어 그 이슈들에서 걷어낸다.
  */
 
-const NOW = `${TODAY}T10:00:00`;
-
-export const useFormStore = create<FormState>((set) => ({
+export const useFormStore = create<FormState>(() => ({
   forms: formSeed.data as unknown as Form[],
-
-  updateForm: (formId, patch) =>
-    set((s) => ({
-      forms: s.forms.map((f) =>
-        f.formId === formId ? { ...f, ...patch, mdfcnDt: NOW } : f,
-      ),
-    })),
-
-  duplicateForm: (formId) => {
-    let copy: Form | null = null;
-    set((s) => {
-      const src = s.forms.find((f) => f.formId === formId);
-      if (!src) return {};
-      copy = {
-        ...src,
-        formId: nextId(s.forms, "formId"),
-        formTtlNm: `${src.formTtlNm} (복사본)`,
-        formSttsCd: "DRAFT",
-        rcptBgngDt: null,
-        rcptEndDt: null,
-        qitemCpstCn: {
-          pages: src.qitemCpstCn.pages.map((p) => ({ ...p })),
-          qitems: src.qitemCpstCn.qitems.map((q) => ({ ...q })),
-        },
-        crtDt: NOW,
-        mdfcnDt: NOW,
-      };
-      return { forms: [copy, ...s.forms] };
-    });
-    return copy;
-  },
-
 }));
 
 /* ── 파생 ──────────────────────────────────────────────────── */
