@@ -6,34 +6,14 @@ import type { MbrGrdCd, MbrSttsCd, RspnsSttsCd } from "@/shared/config/codes";
  */
 export type RspnsCn = Record<string, string | string[]>;
 
-/** table: form_rspns_hstry — 폼_응답_이력 */
-export interface FormRspnsHstry {
-  /** 식별자N19 · PK */
-  formRspnsId: number;
-  /** FK form.form_id */
-  formId: number;
-  /**
-   * 응답을 제출한 회원.
-   *
-   * @deprecated 목 데이터 전용. 서버 조회는 아래 `FormResponseItem`·`FormResponseDetail`을 쓴다.
-   * 비회원 응답이 폐기되면서(ssccops #61 — 공개 폼도 가입을 요구한다) 실제 응답자는 전원
-   * 회원이고 `form_rspns_hstry.mbr_id`는 NOT NULL이다. null 허용은 공개 폼 제출 목 경로(#12)가
-   * 아직 이 타입을 쓰기 때문에 남겨 둔 것뿐이다.
-   */
-  mbrId: number | null;
-  /** 기본 SUBMITTED. 필요 시 ACCEPTED / REJECTED */
-  rspnsSttsCd: RspnsSttsCd;
-  /** 내용J */
-  rspnsCn: RspnsCn;
-  /** 일시TS — 사용자가 최종 제출한 일시 */
-  sbmsnDt: string;
-  crtDt: string;
-  mdfcnDt: string;
-}
-
-/* ── 서버 조회 모델 (ssccops-server #37) ────────────────────────
+/* ── 서버 조회 모델 (ssccops-server #35 · #36 · #37) ─────────────
  *
- * 위 `FormRspnsHstry`는 form_rspns_hstry 한 행을 그대로 옮긴 목 데이터용 타입이다.
+ * form_rspns_hstry 한 행을 그대로 옮긴 목 데이터용 `FormRspnsHstry` 타입은 지웠다(#12).
+ * 그 타입의 `mbrId: number | null`은 비회원 응답을 전제한 것이었는데, 비회원 응답이
+ * 폐기되면서(ssccops #61 — 공개 폼도 가입을 요구한다) 응답자는 전원 회원이고
+ * `form_rspns_hstry.mbr_id`는 NOT NULL이다. 마지막까지 그 타입으로 목 스토어에 응답을 쌓던
+ * 공개 폼 제출 경로가 `POST /v1/forms/{id}/responses`로 옮겨 가면서 함께 사라졌다.
+ *
  * 서버 조회는 테이블이 아니라 화면이 필요로 하는 모양으로 내려온다 — 특히 **응답자 정보는
  * 응답에 복사돼 있지 않고 서버가 mbr을 조인해 `member` 블록으로 내려준다**. 그래서 화면은
  * 회원 목록을 따로 들고 있을 필요가 없고, 응답 내용(rspnsCn)에서 이름·학번을 역추적하던
