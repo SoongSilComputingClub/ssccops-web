@@ -4,19 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FORM_STTS_BADGE,
-  formLblsOf,
   useFormStore,
+  type FormDetail,
   type FormPage,
   type Qitem,
 } from "@/entities/form";
-import { useMbrStore } from "@/entities/member";
-import { useRspnsStore } from "@/entities/response";
-import {
-  isChoiceQitemType,
-  QITEM_TYPE_NM,
-  type RspnsSttsCd,
-} from "@/shared/config/codes";
-import { ROUTES } from "@/shared/config/routes";
+import { useFormDetail } from "@/features/form";
+import { isChoiceQitemType, QITEM_TYPE_NM } from "@/shared/config/codes";
+import { publicFormUrl, ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
 import { formatDt, formatYmd } from "@/shared/lib/date";
 import {
@@ -109,34 +104,28 @@ function QitemPreview({
   );
 }
 
-export function FormDetailPage({ formId }: { formId: number }) {
+/**
+ * 서버에서 받아 온 폼 한 건을 그린다.
+ *
+ * 조회 상태 분기와 분리한 것은 미리보기 상태(현재 페이지·선택지)가 **폼이 도착한 뒤에야
+ * 의미가 있기** 때문이다. 한 컴포넌트에 두면 로딩 중에도 페이지 인덱스를 들고 있게 되고,
+ * 폼이 바뀌었을 때 초기화를 따로 챙겨야 한다.
+ */
+function FormDetailContent({ form }: { form: FormDetail }) {
   const router = useRouter();
-  const { forms, formLbls, formLblRels, updateForm, duplicateForm } = useFormStore();
-  const formRspnsHstrys = useRspnsStore((s) => s.formRspnsHstrys);
-  const mbrs = useMbrStore((s) => s.mbrs);
+  /*
+   * 접수 상태 변경·복제는 아직 목 스토어를 호출한다 — 서버 연동은 #9(접수 상태 전환·복제)의
+   * 몫이라 이 이슈에서는 조회 경로만 서버로 옮긴다. 목록·상세가 서버에서 오므로 여기서 바꾼
+   * 상태는 화면에 반영되지 않는다는 점을 #9에서 함께 정리한다.
+   */
+  const { updateForm, duplicateForm } = useFormStore();
   const [page, setPage] = useState(0);
   const [sel, setSel] = useState<Record<string, string[]>>({});
-
-  const form = forms.find((f) => f.formId === formId);
-
-  if (!form) {
-    return (
-      <>
-        <PageHeader title="폼 상세" showBack />
-        <PageBody>
-          <EmptyState message="폼을 찾을 수 없습니다." />
-        </PageBody>
-      </>
-    );
-  }
 
   const badge = FORM_STTS_BADGE[form.formSttsCd];
   const { pages, qitems } = form.qitemCpstCn;
   const pageQitems = qitems.filter((q) => (q.pageSeq ?? 0) === page);
-  const rspns = formRspnsHstrys.filter((r) => r.formId === form.formId);
-  const lbls = formLblsOf(formLblRels, formLbls, form.formId);
-  const creatrNm =
-    mbrs.find((m) => m.mbrId === form.creatrMbrId)?.mbrNm ?? String(form.creatrMbrId);
+  const summary = form.responseSummary;
 
   const pick = (qitem: Qitem, option: string) => {
     setSel((s) => {
@@ -150,6 +139,7 @@ export function FormDetailPage({ formId }: { formId: number }) {
     });
   };
 
+  /* 분기 이동은 이미 받아 온 문항 구성만 보면 되므로 서버 왕복 없이 화면에서 계산한다 */
   const nextPage = () => {
     for (const q of pageQitems) {
       if (q.qitemTypeCd === "SINGLE_CHOICE" && q.branchMap) {
@@ -172,13 +162,11 @@ export function FormDetailPage({ formId }: { formId: number }) {
     }
   };
 
-  const publicUrl = `https://form.sscc.kr${ROUTES.publicForm(form.formId)}`;
+  const publicUrl = publicFormUrl(form.formId);
   const copyLink = () => {
     navigator.clipboard?.writeText(publicUrl);
     flash("링크를 복사했습니다");
   };
-
-  const stat = (cd: RspnsSttsCd) => rspns.filter((r) => r.rspnsSttsCd === cd).length;
 
   return (
     <>
@@ -208,14 +196,15 @@ export function FormDetailPage({ formId }: { formId: number }) {
                 items={[
                   { k: "접수_시작_일시", v: formatDt(form.rcptBgngDt) || "미설정" },
                   { k: "접수_종료_일시", v: formatDt(form.rcptEndDt) || "미설정" },
-                  { k: "생성자_회원", v: creatrNm },
+                  // 서버가 mbr을 조인해 준 이름 — 회원 목록을 따로 뒤지지 않는다
+                  { k: "생성자_회원", v: form.creatr.mbrNm },
                   { k: "생성_일시", v: formatYmd(form.crtDt) },
                   { k: "수정_일시", v: formatYmd(form.mdfcnDt) },
                 ]}
               />
-              {lbls.length > 0 && (
+              {form.labels.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-[6px]">
-                  {lbls.map((l) => (
+                  {form.labels.map((l) => (
                     <Pill key={l.formLblId} tone="blue">
                       {l.lblNm}
                     </Pill>
@@ -274,11 +263,12 @@ export function FormDetailPage({ formId }: { formId: number }) {
 
             <Card>
               <SectionLabel className="mb-3">응답 요약</SectionLabel>
+              {/* 서버 집계값 — 작성 중(DRAFT) 응답은 어느 칸에도 들어가지 않는다 */}
               <div className="grid grid-cols-4 gap-2">
-                <StatBox label="전체" value={rspns.length} />
-                <StatBox label="제출" value={stat("SUBMITTED")} />
-                <StatBox label="승인" value={stat("ACCEPTED")} tone="accent" />
-                <StatBox label="반려" value={stat("REJECTED")} tone="danger" />
+                <StatBox label="전체" value={summary.total} />
+                <StatBox label="제출" value={summary.submitted} />
+                <StatBox label="승인" value={summary.accepted} tone="accent" />
+                <StatBox label="반려" value={summary.rejected} tone="danger" />
               </div>
               <Button
                 className="mt-3"
@@ -348,6 +338,35 @@ export function FormDetailPage({ formId }: { formId: number }) {
             </div>
           </Card>
         </div>
+      </PageBody>
+    </>
+  );
+}
+
+/**
+ * 폼 상세 — 목록을 거치지 않고 단건 API로 받는다.
+ *
+ * 예전에는 목 스토어의 전체 목록에서 find()로 골랐다. 목록 응답에는 문항 구성(qitemCpstCn)이
+ * 실리지 않으므로 그 방식은 서버 연동에서 성립하지 않고, URL로 바로 들어온 경우 목록 자체가
+ * 없어 "폼을 찾을 수 없습니다"가 떴다.
+ */
+export function FormDetailPage({ formId }: { formId: number }) {
+  const { form, status, errorMessage, reload } = useFormDetail(formId);
+
+  if (status === "ready" && form) return <FormDetailContent form={form} />;
+
+  return (
+    <>
+      <PageHeader title="폼 상세" showBack />
+      <PageBody>
+        {status === "loading" && <EmptyState message="불러오는 중…" />}
+        {status === "not-found" && <EmptyState message="폼을 찾을 수 없습니다." />}
+        {status === "error" && (
+          <EmptyState
+            message={errorMessage || "폼을 불러오지 못했습니다."}
+            action={{ label: "다시 시도", onClick: reload }}
+          />
+        )}
       </PageBody>
     </>
   );
