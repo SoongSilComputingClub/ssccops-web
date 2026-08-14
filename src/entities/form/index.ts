@@ -4,7 +4,6 @@ export type {
   FormLabelRef,
   FormLabelSummary,
   FormLbl,
-  FormLblRel,
   FormPage,
   FormReceiptStatus,
   FormResponseSummary,

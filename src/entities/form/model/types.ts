@@ -139,10 +139,13 @@ export interface FormLabelSummary extends FormLbl {
   usageCount: number;
 }
 
-/** table: form_lbl_rel — 폼_라벨_관계 */
-export interface FormLblRel {
-  formLblRelId: number;
-  formId: number;
-  formLblId: number;
-  crtDt: string;
-}
+/*
+ * `form_lbl_rel` 한 행을 그대로 옮긴 `FormLblRel` 타입은 지웠다(#14).
+ *
+ * 폼의 라벨 지정은 웹에서 **폼 저장 본문의 `labelIds`로만** 나가고(#8 · #10 합의),
+ * 지정 관계를 개별로 다루는 `PUT /v1/forms/{formId}/labels`는 부르지 않는다. 목록·상세가
+ * 받는 라벨은 관계 행이 아니라 `FormLabelRef`(형_라벨_ID + 라벨_명)라서, 관계 테이블 모양은
+ * 목 스토어를 걷어낸 뒤로 아무도 읽지 않는 채 남아 있었다. 남겨 두면 "웹이 관계를 직접
+ * 만든다"는 오해를 부른다 — 그 경로가 필요해지면 그때 서버 응답
+ * (`FormLabelAssignmentResponse`) 모양으로 새로 잡는다.
+ */
