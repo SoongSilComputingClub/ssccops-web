@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { mbrGrdNm, rprsRoleRel, useMbrStore } from "@/entities/member";
-import { roleNmOf, useRoleStore } from "@/entities/role";
-import { useSessionStore } from "@/entities/session";
+import { representativeRole, useSessionStore } from "@/entities/session";
+import { ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
+import { flash } from "@/shared/ui";
 import { NAV_FOOT, NAV_GROUPS, groupHasActive, type NavItem } from "./nav";
 
 function NavRow({
@@ -67,23 +67,31 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [closed, setClosed] = useState<Record<string, boolean>>({});
 
-  const sessionMbrId = useSessionStore((s) => s.mbrId);
+  // 프로필은 서버 세션이 정본이다 — 목 회원 스토어를 거치지 않는다
+  const member = useSessionStore((s) => s.member);
+  const authUser = useSessionStore((s) => s.authUser);
   const logout = useSessionStore((s) => s.logout);
-  const me = useMbrStore((s) => s.mbrs.find((m) => m.mbrId === sessionMbrId));
-  const mbrRoleRels = useMbrStore((s) => s.mbrRoleRels);
-  const roles = useRoleStore((s) => s.roles);
+
+  const meName = member?.name ?? authUser?.name ?? "-";
 
   /** 프로필 부제 — 대표 역할이 있으면 역할명, 없으면 등급명 · 등급명 */
   const meLabel = (() => {
-    if (!me) return "";
-    const rel = rprsRoleRel(mbrRoleRels, me.mbrId);
-    const grd = mbrGrdNm(me.mbrGrdCd);
-    return `${rel ? roleNmOf(roles, rel.roleId) : grd} · ${grd}`;
+    if (!member) return "";
+    const role = representativeRole(member);
+    return `${role?.roleName ?? member.membershipGradeName} · ${member.membershipGradeName}`;
   })();
 
   const navigate = (href: string) => {
-    if (href === "/login") {
-      void logout().then(() => router.push(href));
+    if (href === ROUTES.login) {
+      void logout().then((ok) => {
+        if (!ok) {
+          // 쿠키가 남아 있어 실제로는 여전히 로그인 상태다 — 화면만 로그아웃된 척하지 않는다
+          flash("로그아웃에 실패했습니다. 잠시 후 다시 시도해주세요");
+          return;
+        }
+        // 서버 컴포넌트·미들웨어가 들고 있던 세션까지 확실히 버리려면 전체 이동이 필요하다
+        window.location.replace(ROUTES.login);
+      });
       return;
     }
     router.push(href);
@@ -185,12 +193,10 @@ export function Sidebar() {
       <div className="mt-2 border-t border-bg pt-2">
         <div className="flex items-center gap-[9px] px-[18px] pb-2">
           <div className="flex size-[30px] flex-none items-center justify-center rounded-full bg-accent-soft text-[13.5px] font-semibold text-accent">
-            {me?.mbrNm.charAt(0) ?? "S"}
+            {meName.charAt(0) || "S"}
           </div>
           <div className="min-w-0">
-            <div className="truncate text-[14.5px] font-semibold">
-              {me?.mbrNm ?? "-"}
-            </div>
+            <div className="truncate text-[14.5px] font-semibold">{meName}</div>
             <div className="truncate text-[12.5px] text-n500">{meLabel}</div>
           </div>
         </div>
