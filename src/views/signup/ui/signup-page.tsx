@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSessionStore } from "@/entities/session";
 import {
   EMPTY_SIGNUP_VALUES,
@@ -16,10 +16,18 @@ import {
   type SignupStatusCode,
 } from "@/features/auth";
 import { ROUTES } from "@/shared/config/routes";
+import { safeNextPath, withNextParam } from "@/shared/lib/next-path";
 import { Button, Card, Chip, Field, TextField, flash } from "@/shared/ui";
 
 export function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  /*
+   * 가입을 마친 뒤 돌아갈 곳. 공개 폼 링크로 들어온 사람은 가입이 목적이 아니라 그 폼에
+   * 응답하러 온 것이므로, 이 값을 완료 화면까지 그대로 이어 넘긴다. 쿼리스트링으로 나르면
+   * 가입 도중 새로고침해도 살아남는다 — 스토어에 담으면 그 순간 사라진다.
+   */
+  const next = safeNextPath(searchParams.get("next"), ROUTES.dashboard);
   /*
    * 인증 정보의 출처는 서버 세션이다 — 새로고침하면 사라지는 zustand 값(pendingAuthUser)에
    * 기대던 탓에 가입 도중 새로고침하면 로그인으로 튕겼다. 이 화면은 SignupGate가
@@ -86,7 +94,7 @@ export function SignupPage() {
 
     if (outcome.ok) {
       setSignupResult(outcome.member);
-      router.replace(ROUTES.signupComplete);
+      router.replace(withNextParam(ROUTES.signupComplete, next, ROUTES.dashboard));
       return;
     }
 
@@ -101,7 +109,8 @@ export function SignupPage() {
         fetchAuthSession()
           .then((session) => setSession(session))
           .catch(() => undefined)
-          .finally(() => router.replace(ROUTES.dashboard));
+          // 이 갈래에는 완료 화면이 없으니 바로 원래 가려던 곳(없으면 대시보드)으로 보낸다
+          .finally(() => router.replace(next));
         return;
       case "field":
         setServerErrors({ [failure.field]: failure.message });

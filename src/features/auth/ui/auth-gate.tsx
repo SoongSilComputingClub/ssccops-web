@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/shared/config/routes";
+import { currentPath, withNextParam } from "@/shared/lib/next-path";
 import { useAuthBootstrap } from "../model/use-auth-bootstrap";
 import { BootstrapError, BootstrapPending } from "./bootstrap-fallback";
 
@@ -18,7 +19,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const { status, errorMessage, retry } = useAuthBootstrap();
 
   useEffect(() => {
-    if (status === "signup-required") router.replace(ROUTES.signup);
+    /*
+     * 가입 화면으로 비켜 세울 때 지금 열려 있던 경로를 함께 넘긴다. 공개 폼 링크
+     * (/f/{formId})를 받고 들어온 사람은 가입 자체가 목적이 아니라 그 폼에 응답하러 온
+     * 것이라, 가입을 마치고 대시보드에 떨어뜨리면 어디로 돌아가야 하는지 알 수 없다.
+     */
+    if (status === "signup-required") {
+      router.replace(withNextParam(ROUTES.signup, currentPath(), ROUTES.dashboard));
+    }
   }, [status, router]);
 
   if (status === "error") return <BootstrapError message={errorMessage} onRetry={retry} />;
