@@ -1,4 +1,4 @@
-import { FORM_LABEL_ERROR } from "@/entities/form";
+import { FORM_ERROR, FORM_LABEL_ERROR } from "@/entities/form";
 import { API_ERROR, ApiError } from "@/shared/lib/api/client";
 
 /**
@@ -23,6 +23,50 @@ export function toFormErrorMessage(error: unknown): string {
     default:
       return error.message;
   }
+}
+
+/**
+ * 접수 상태 전이 실패 → 화면에 띄울 한 줄 (ssccops-server #33).
+ *
+ * 서버 메시지를 그대로 쓰지 않고 여기서 다시 쓰는 코드가 셋 있다. 서버 문장은 "왜 거절했는가"를
+ * 말하지만, 이 셋은 **사용자가 다음에 무엇을 해야 하는지**가 문장에 있어야 하기 때문이다.
+ * - 전이표 밖: 원인이 사용자가 아니라 화면이 낡은 것이다 → 다시 불러온다고 알린다
+ * - 문항 0개: 접수를 시작하려면 편집 화면에서 문항을 추가해야 한다
+ * - 접수 기간 모순: 고칠 곳이 접수 시작·종료 일시라는 것을 짚어 준다
+ */
+export function toFormStatusErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "접수 상태를 바꾸지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case FORM_ERROR.INVALID_FORM_STATUS_TRANSITION:
+      return "이미 상태가 바뀐 폼입니다. 최신 상태를 다시 불러옵니다";
+    case FORM_ERROR.FORM_HAS_NO_QUESTION:
+      return "문항을 1개 이상 추가해야 접수를 시작할 수 있습니다";
+    case FORM_ERROR.INVALID_RECEIPT_PERIOD:
+      return "접수 시작·종료 일시를 확인해주세요";
+    case FORM_ERROR.FORM_NOT_FOUND:
+      return "폼을 찾을 수 없습니다. 이미 삭제된 폼일 수 있습니다";
+    default:
+      return toFormErrorMessage(error);
+  }
+}
+
+/**
+ * 복제 실패 → 화면에 띄울 한 줄 (ssccops-server #32).
+ *
+ * 복제는 본문 없이 원본 ID만 보내므로 사용자가 고칠 수 있는 실패가 사실상 "원본이 없다"뿐이다.
+ * 나머지는 공통 처리로 넘긴다.
+ */
+export function toFormDuplicateErrorMessage(error: unknown): string {
+  if (error instanceof ApiError && error.code === FORM_ERROR.FORM_NOT_FOUND) {
+    return "원본 폼을 찾을 수 없습니다. 이미 삭제된 폼일 수 있습니다";
+  }
+  if (!(error instanceof ApiError)) {
+    return "폼을 복제하지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+  return toFormErrorMessage(error);
 }
 
 /**
