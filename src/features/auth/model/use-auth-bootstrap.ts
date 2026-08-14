@@ -71,10 +71,13 @@ export function useAuthBootstrap(): AuthBootstrap {
       .catch((error: unknown) => {
         if (cancelled) return;
         /*
-         * 401은 apiFetch가 로그아웃과 /login 이동까지 마친 상태다. 여기서 오류 화면을 띄우면
-         * 리다이렉트 직전에 실패 UI가 한 번 번쩍이므로 로딩 상태를 유지한다.
+         * 401은 apiFetch가 로그아웃과 /login 이동까지 마친 상태다.
+         * status를 idle로 되돌려 무한 로딩 상태에 빠지지 않도록 한다.
          */
-        if (error instanceof ApiError && error.code === API_ERROR.UNAUTHORIZED) return;
+        if (error instanceof ApiError && error.code === API_ERROR.UNAUTHORIZED) {
+          setStatus("idle");
+          return;
+        }
         fail(messageOf(error));
       });
 
