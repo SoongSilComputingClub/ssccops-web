@@ -1,5 +1,6 @@
 import { isChoiceQitemType, type FormSttsCd } from "@/shared/config/codes";
 import { ApiError, apiFetch } from "@/shared/lib/api/client";
+import { withServiceOffset } from "@/shared/lib/date";
 import type {
   FormDetail,
   FormLabelRef,
@@ -257,9 +258,15 @@ function toFormSaveBody(input: FormSaveInput) {
   return {
     formTtlNm: input.formTtlNm.trim(),
     formSttsCd: input.formSttsCd,
-    // 빈 문자열이 아니라 null로 보낸다 — 서버의 일시 파싱이 ""를 형식 오류로 볼 수 있다
-    rcptBgngDt: input.rcptBgngDt || null,
-    rcptEndDt: input.rcptEndDt || null,
+    /*
+     * 빈 문자열이 아니라 null로 보낸다 — 서버의 일시 파싱이 ""를 형식 오류로 본다.
+     * 값이 있으면 **오프셋을 반드시 붙인다**: 서버의 `rcptBgngDt`·`rcptEndDt`는
+     * `OffsetDateTime`이라 오프셋 없는 `"2026-03-01T00:00:00"`은 본문 파싱 단계에서
+     * 400으로 튕긴다(근거는 withServiceOffset 주석). 화면이 이미 붙여 보내더라도
+     * 서버로 나가는 마지막 자리에서 한 번 더 보장한다 — 저장 경로는 여기 하나뿐이다.
+     */
+    rcptBgngDt: withServiceOffset(input.rcptBgngDt),
+    rcptEndDt: withServiceOffset(input.rcptEndDt),
     qitemCpstCn: {
       pages: input.qitemCpstCn.pages.map((p) => ({
         pageTtl: p.pageTtl,

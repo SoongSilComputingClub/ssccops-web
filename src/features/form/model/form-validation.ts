@@ -63,7 +63,11 @@ export function validateFormDraft(
 
   const formTtlNm = draft.formTtlNm.trim() ? "" : "폼_제목_명을 입력해야 저장됩니다";
 
-  // 문자열 비교로 충분하다 — 둘 다 같은 형식(ISO-8601)으로만 들어온다
+  /*
+   * 문자열 비교로 충분하다 — 둘 다 같은 형식(오프셋이 붙은 ISO-8601)으로만 들어온다.
+   * 그 전제를 지키는 곳은 `withServiceOffset`이다(입력 시점 · 저장 본문 두 곳). 한쪽만
+   * 오프셋이 없으면 같은 시각인데도 긴 쪽이 커서 "종료가 시작보다 빠르다"가 잘못 뜬다.
+   */
   const rcptDt =
     draft.rcptBgngDt && draft.rcptEndDt && draft.rcptBgngDt > draft.rcptEndDt
       ? "접수_종료_일시가 시작보다 빠릅니다"
