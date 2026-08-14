@@ -1,45 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import {
-  genNoText,
-  mbrGrdNm,
-  mbrGrdTone,
-  mbrSttsNm,
-  mbrSttsTone,
-  useMbrStore,
-  type Mbr,
-} from "@/entities/member";
-import { useSessionStore } from "@/entities/session";
-import { TODAY } from "@/shared/config/constants";
+import { mbrGrdTone, mbrSttsTone } from "@/entities/member";
+import { representativeRole, useSessionStore } from "@/entities/session";
 import {
   Badge,
-  Button,
   Card,
-  Field,
   KeyValueGrid,
   PageBody,
   PageHeader,
   SectionLabel,
-  TextField,
-  flash,
 } from "@/shared/ui";
 
-/** 본인이 수정할 수 있는 mbr 컬럼 */
-const EDITABLE = [
-  { key: "mbrNm", label: "회원_명", ph: "필수" },
-  { key: "stdntNo", label: "학생_번호", ph: "선택" },
-  { key: "scsbjtNm", label: "학과_명", ph: "" },
-  { key: "telno", label: "전화번호", ph: "" },
-] as const;
-
-type EditableKey = (typeof EDITABLE)[number]["key"];
-
+/**
+ * 내 계정 — 서버 세션(GET /v1/auth/session)의 회원 정보를 그대로 보여준다.
+ *
+ * 예전에는 목 회원 스토어에서 세션 mbrId로 찾아 화면에서 바로 수정까지 했는데, 그 수정은
+ * 새로고침하면 사라지는 목 조작이었다. 프로필 수정 API가 생기기 전까지는 조회만 연다 —
+ * 저장되지 않는 입력창을 열어 두는 편이 더 오해를 부른다.
+ */
 export function MyAccountPage() {
-  const mbrId = useSessionStore((s) => s.mbrId);
-  const mbr = useMbrStore((s) => s.mbrs.find((m) => m.mbrId === mbrId));
+  const member = useSessionStore((s) => s.member);
 
-  if (!mbr) return null;
+  // AuthGate가 ready일 때만 이 화면이 열리므로 member는 사실상 항상 있다
+  if (!member) return null;
+
+  const genText = member.generationNumber ? `${member.generationNumber}기` : "미배정";
+  const role = representativeRole(member);
 
   return (
     <>
@@ -47,110 +33,73 @@ export function MyAccountPage() {
       <PageBody>
         <Card className="mb-4">
           <div className="flex items-center gap-[10px]">
-            <div className="text-[25px] font-medium">{mbr.mbrNm}</div>
-            <Badge tone={mbrGrdTone(mbr.mbrGrdCd)}>{mbrGrdNm(mbr.mbrGrdCd)}</Badge>
-            <Badge tone={mbrSttsTone(mbr.mbrSttsCd)}>{mbrSttsNm(mbr.mbrSttsCd)}</Badge>
+            <div className="text-[25px] font-medium">{member.name}</div>
+            <Badge tone={mbrGrdTone(member.membershipGradeCode)}>
+              {member.membershipGradeName}
+            </Badge>
+            <Badge tone={mbrSttsTone(member.membershipStatusCode)}>
+              {member.membershipStatusName}
+            </Badge>
             <div className="flex-1" />
             <div className="text-[14px] text-n500">
-              회원 #{mbr.mbrId} · {genNoText(mbr)} · {mbr.scsbjtNm || "학과 미입력"}
+              회원 #{member.memberId} · {genText} ·{" "}
+              {member.departmentName || "학과 미입력"}
             </div>
           </div>
         </Card>
 
-        <ProfileTab mbr={mbr} />
+        <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4">
+          <Card>
+            <SectionLabel className="mb-3">회원 정보</SectionLabel>
+            <KeyValueGrid
+              items={[
+                { k: "회원_명", v: member.name },
+                { k: "학생_번호", v: member.studentNumber || "미입력" },
+                {
+                  k: "학년_번호",
+                  v: member.academicYear ? `${member.academicYear}학년` : "미입력",
+                },
+                { k: "학과_명", v: member.departmentName || "미입력" },
+                { k: "전화번호", v: member.phoneNumber || "미입력" },
+                { k: "이메일", v: member.email || "미입력" },
+              ]}
+            />
+            <div className="mt-4 text-[13px] text-n500">
+              프로필 수정은 회원 API 연동 이후에 열립니다.
+            </div>
+          </Card>
+
+          <Card>
+            <SectionLabel className="mb-3">운영진만 변경할 수 있는 항목</SectionLabel>
+            <KeyValueGrid
+              items={[
+                {
+                  k: "기수_번호",
+                  v: genText === "미배정" ? "미배정 · 운영진이 배정합니다" : genText,
+                },
+                {
+                  k: "회원_등급",
+                  v: (
+                    <Badge tone={mbrGrdTone(member.membershipGradeCode)}>
+                      {member.membershipGradeName}
+                    </Badge>
+                  ),
+                },
+                {
+                  k: "회원_상태",
+                  v: (
+                    <Badge tone={mbrSttsTone(member.membershipStatusCode)}>
+                      {member.membershipStatusName}
+                    </Badge>
+                  ),
+                },
+                { k: "현재_역할", v: role ? role.roleName : "없음" },
+                { k: "가입_일자", v: member.joinDate },
+              ]}
+            />
+          </Card>
+        </div>
       </PageBody>
     </>
-  );
-}
-
-function ProfileTab({ mbr }: { mbr: Mbr }) {
-  const updateMbr = useMbrStore((s) => s.updateMbr);
-  const [draft, setDraft] = useState<Partial<Record<EditableKey | "scyrNo", string>>>({});
-
-  const current = (key: EditableKey | "scyrNo"): string => {
-    const v = mbr[key];
-    return v === null || v === undefined ? "" : String(v);
-  };
-  const value = (key: EditableKey | "scyrNo") => draft[key] ?? current(key);
-  const changedEntries = Object.entries(draft).filter(
-    ([k, v]) => v !== undefined && v !== current(k as EditableKey | "scyrNo"),
-  );
-
-  const save = () => {
-    if (!value("mbrNm").trim()) {
-      flash("회원_명은 비울 수 없습니다");
-      return;
-    }
-    const patch: Partial<Mbr> = { mdfcnDt: `${TODAY}T10:00:00` };
-    for (const [k, v] of changedEntries) {
-      if (k === "scyrNo") patch.scyrNo = Number(v) || null;
-      else Object.assign(patch, { [k]: v });
-    }
-    updateMbr(mbr.mbrId, patch);
-    setDraft({});
-    flash(`${changedEntries.length}건을 저장했습니다`);
-  };
-
-  return (
-    <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4">
-      <Card>
-        <SectionLabel className="mb-3">내가 수정할 수 있는 항목</SectionLabel>
-        <div className="grid grid-cols-2 gap-[14px]">
-          {EDITABLE.map((f) => (
-            <Field key={f.key} label={f.label}>
-              <TextField
-                value={value(f.key)}
-                onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                placeholder={f.ph}
-              />
-            </Field>
-          ))}
-          <Field label="학년_번호">
-            <TextField
-              value={value("scyrNo")}
-              onChange={(e) => setDraft((d) => ({ ...d, scyrNo: e.target.value }))}
-              placeholder="1~4"
-            />
-          </Field>
-        </div>
-        {changedEntries.length > 0 && (
-          <div className="mt-4 flex gap-2">
-            <Button variant="ghost" onClick={() => setDraft({})}>
-              되돌리기
-            </Button>
-            <Button onClick={save}>저장</Button>
-          </div>
-        )}
-      </Card>
-
-      <Card>
-        <SectionLabel className="mb-3">운영진만 변경할 수 있는 항목</SectionLabel>
-        <KeyValueGrid
-          items={[
-            {
-              k: "기수_번호",
-              v:
-                genNoText(mbr) === "미배정"
-                  ? "미배정 · 운영진이 배정합니다"
-                  : genNoText(mbr),
-            },
-            { k: "이메일", v: mbr.eml || "미입력" },
-            {
-              k: "회원_등급",
-              v: <Badge tone={mbrGrdTone(mbr.mbrGrdCd)}>{mbrGrdNm(mbr.mbrGrdCd)}</Badge>,
-            },
-            {
-              k: "회원_상태",
-              v: (
-                <Badge tone={mbrSttsTone(mbr.mbrSttsCd)}>
-                  {mbrSttsNm(mbr.mbrSttsCd)}
-                </Badge>
-              ),
-            },
-            { k: "가입_일자", v: mbr.joinYmd },
-          ]}
-        />
-      </Card>
-    </div>
   );
 }

@@ -1,75 +1,89 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useMbrStore } from "@/entities/member";
-import { useSessionStore } from "@/entities/session";
-import { ROUTES } from "@/shared/config/routes";
-import { apiFetch } from "@/shared/lib/api/client";
-import { createClient } from "@/shared/lib/supabase/client";
+import { useCallback, useEffect, useState } from "react";
+import { useSessionStore, type AuthSession, type SessionStatus } from "@/entities/session";
+import { API_ERROR, ApiError, apiFetch } from "@/shared/lib/api/client";
 
 /*
- * ssccops-server는 아직 회원 프로필 API가 없지만, 인증된 요청이면 어떤 엔드포인트든
- * Supabase JWT의 sub(UUID)로 회원을 찾고 없으면 즉시 임시회원으로 프로비저닝한다
- * (SupabaseJwtAuthenticationConverter). /actuator/health는 부작용 없는 안전한 엔드포인트라
- * 백엔드 연결 확인 겸 그 프로비저닝을 트리거하는 용도로 임시로 쓴다 — 회원 프로필 API가
- * 생기면 그쪽 호출로 교체한다. 백엔드가 꺼져 있어도 로그인 자체(mock store 기준)는
- * 막지 않도록 실패를 무시한다.
+ * 세션 조회는 AuthGate와 SignupGate 양쪽에서 시작된다. 가입 화면으로 넘어가는 순간
+ * 두 게이트가 잠깐 겹치므로, 진행 중인 요청이 있으면 그 promise를 공유해 같은 조회가
+ * 두 번 나가지 않게 한다.
+ *
+ * 새로고침하면 모듈이 다시 로드되므로 여기 캐시를 두는 의미는 없다. 대신 훅이
+ * 스토어에 이미 세션이 있으면 재조회를 건너뛰어, 한 번의 페이지 로드에서는 한 번만 부른다.
  */
-function provisionBackendMember() {
-  apiFetch("/actuator/health").catch(() => {});
+let inflight: Promise<AuthSession> | null = null;
+
+/** GET /v1/auth/session — 이 사용자가 우리 서비스의 누구인지 판정하는 유일한 출처 */
+export function fetchAuthSession(): Promise<AuthSession> {
+  inflight ??= apiFetch<AuthSession>("/v1/auth/session").finally(() => {
+    inflight = null;
+  });
+  return inflight;
 }
 
-type BootstrapStatus = "pending" | "ready";
+export interface AuthBootstrap {
+  status: SessionStatus;
+  errorMessage: string | null;
+  /** 실패 화면의 다시 시도 버튼 */
+  retry: () => void;
+}
+
+function messageOf(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.code === API_ERROR.CONFIG_MISSING) {
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    }
+    if (error.code === API_ERROR.NETWORK_ERROR) {
+      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
+    }
+    return error.message;
+  }
+  return "세션을 불러오지 못했습니다";
+}
 
 /**
- * 관리자 페이지 진입 시 Supabase Auth 사용자를 내부 mbr 와 연결한다.
- * 연결된 회원이 있으면 세션에 로그인 처리하고, 없으면(최초 로그인) 회원가입으로 보낸다.
+ * 로그인한 Supabase 사용자를 서버 세션(회원 정보)과 연결한다.
+ *
+ * 판정은 전적으로 서버 응답의 signedUp에 맡긴다. 예전에는 목 회원 배열에서 authUserId를
+ * 클라이언트가 직접 매칭했는데, 실제 서버에서는 회원 명부를 통째로 받아 뒤지는 방식이
+ * 성립하지 않는다.
  */
-export function useAuthBootstrap(): BootstrapStatus {
-  const router = useRouter();
-  const [status, setStatus] = useState<BootstrapStatus>("pending");
-  const login = useSessionStore((s) => s.login);
-  const setPendingAuthUser = useSessionStore((s) => s.setPendingAuthUser);
-  const mbrs = useMbrStore((s) => s.mbrs);
+export function useAuthBootstrap(): AuthBootstrap {
+  const status = useSessionStore((s) => s.status);
+  const errorMessage = useSessionStore((s) => s.errorMessage);
+  const setSession = useSessionStore((s) => s.setSession);
+  const setStatus = useSessionStore((s) => s.setStatus);
+  const fail = useSessionStore((s) => s.fail);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    // 게이트 간 이동으로 다시 마운트된 경우 — 이미 받아 둔 세션을 그대로 쓴다
+    if (attempt === 0 && useSessionStore.getState().authUser) return;
+
     let cancelled = false;
+    setStatus("pending");
 
-    createClient()
-      .auth.getUser()
-      .then(({ data: { user } }) => {
+    fetchAuthSession()
+      .then((session) => {
+        if (!cancelled) setSession(session);
+      })
+      .catch((error: unknown) => {
         if (cancelled) return;
-
-        if (!user) {
-          router.replace(ROUTES.login);
-          return;
-        }
-
-        provisionBackendMember();
-
-        const mbr = mbrs.find((m) => m.authUserId === user.id);
-        if (mbr) {
-          login(mbr.mbrId);
-          setStatus("ready");
-          return;
-        }
-
-        setPendingAuthUser({
-          id: user.id,
-          email: user.email ?? "",
-          name:
-            (user.user_metadata?.full_name as string | undefined) ??
-            (user.user_metadata?.name as string | undefined),
-          provider: user.app_metadata?.provider,
-        });
-        router.replace(ROUTES.signup);
+        /*
+         * 401은 apiFetch가 로그아웃과 /login 이동까지 마친 상태다. 여기서 오류 화면을 띄우면
+         * 리다이렉트 직전에 실패 UI가 한 번 번쩍이므로 로딩 상태를 유지한다.
+         */
+        if (error instanceof ApiError && error.code === API_ERROR.UNAUTHORIZED) return;
+        fail(messageOf(error));
       });
 
     return () => {
       cancelled = true;
     };
-  }, [router, login, setPendingAuthUser, mbrs]);
+  }, [attempt, setSession, setStatus, fail]);
 
-  return status;
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+
+  return { status, errorMessage, retry };
 }

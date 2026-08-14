@@ -4,14 +4,12 @@ import { useRouter } from "next/navigation";
 import { genNoText, mbrGrdNm, mbrSttsNm, useMbrStore } from "@/entities/member";
 import { useSessionStore } from "@/entities/session";
 import { ROUTES } from "@/shared/config/routes";
-import { Badge, Button, Card } from "@/shared/ui";
+import { Badge, Button, Card, flash } from "@/shared/ui";
 
 export function SignupCompletePage() {
   const router = useRouter();
   const pendingMbrId = useSessionStore((s) => s.pendingMbrId);
-  const login = useSessionStore((s) => s.login);
   const logout = useSessionStore((s) => s.logout);
-  const setPendingAuthUser = useSessionStore((s) => s.setPendingAuthUser);
   const mbr = useMbrStore((s) =>
     s.mbrs.find((m) => m.mbrId === pendingMbrId) ?? s.mbrs.at(-1),
   );
@@ -55,16 +53,21 @@ export function SignupCompletePage() {
         <Button
           variant="ghost"
           onClick={() => {
-            void logout().then(() => router.push(ROUTES.login));
+            void logout().then((ok) => {
+              if (!ok) {
+                flash("로그아웃에 실패했습니다. 잠시 후 다시 시도해주세요");
+                return;
+              }
+              window.location.replace(ROUTES.login);
+            });
           }}
         >
           로그아웃
         </Button>
+        {/* 세션은 서버가 정본이라 화면에서 로그인 상태를 만들지 않는다 — 가입 반영은 #3에서 서버 연동으로 해결한다 */}
         <Button
           className="flex-1"
           onClick={() => {
-            login(mbr.mbrId);
-            setPendingAuthUser(null);
             router.push(ROUTES.members);
           }}
         >
