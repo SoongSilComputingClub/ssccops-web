@@ -15,15 +15,18 @@ interface FormState {
   formLblRels: FormLblRel[];
 
   updateForm: (formId: number, patch: Partial<Form>) => void;
-  /** 신규/수정 저장 — 저장된 폼 반환 */
-  saveForm: (draft: Form, formSttsCd: FormSttsCd) => Form;
   duplicateForm: (formId: number) => Form | null;
 
   addFormLbl: (lblNm: string) => void;
   toggleFormLbl: (formLblId: number) => void;
-  /** 폼에 지정된 라벨 교체 */
-  setFormLbls: (formId: number, formLblIds: number[]) => void;
 }
+
+/*
+ * `saveForm`·`setFormLbls`는 지웠다. 폼 편집기가 서버(POST·PUT /v1/forms)로 저장하게 됐고,
+ * 라벨 지정도 그 본문의 labelIds로 함께 나간다(#8 · #10 합의). 목 구현을 남겨 두면 서버로
+ * 저장한 뒤에도 화면이 메모리 배열을 고치는 경로가 되살아나, 새로고침하면 사라지는 저장이
+ * 다시 생긴다. 남은 목(duplicateForm·라벨 관리)은 #9·#10에서 각각 서버로 옮긴다.
+ */
 
 const NOW = `${TODAY}T10:00:00`;
 
@@ -38,25 +41,6 @@ export const useFormStore = create<FormState>((set) => ({
         f.formId === formId ? { ...f, ...patch, mdfcnDt: NOW } : f,
       ),
     })),
-
-  saveForm: (draft, formSttsCd) => {
-    let saved: Form = draft;
-    set((s) => {
-      if (draft.formId) {
-        saved = { ...draft, formSttsCd, mdfcnDt: NOW };
-        return { forms: s.forms.map((f) => (f.formId === draft.formId ? saved : f)) };
-      }
-      saved = {
-        ...draft,
-        formId: nextId(s.forms, "formId"),
-        formSttsCd,
-        crtDt: NOW,
-        mdfcnDt: NOW,
-      };
-      return { forms: [saved, ...s.forms] };
-    });
-    return saved;
-  },
 
   duplicateForm: (formId) => {
     let copy: Form | null = null;
@@ -103,18 +87,6 @@ export const useFormStore = create<FormState>((set) => ({
       ),
     })),
 
-  setFormLbls: (formId, formLblIds) =>
-    set((s) => {
-      const kept = s.formLblRels.filter((r) => r.formId !== formId);
-      let seq = kept.reduce((m, r) => Math.max(m, r.formLblRelId), 0);
-      const added = formLblIds.map((formLblId) => ({
-        formLblRelId: ++seq,
-        formId,
-        formLblId,
-        crtDt: NOW,
-      }));
-      return { formLblRels: [...kept, ...added] };
-    }),
 }));
 
 /* ── 파생 ──────────────────────────────────────────────────── */
