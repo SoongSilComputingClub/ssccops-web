@@ -1,4 +1,5 @@
 import { ROUTES } from "@/shared/config/routes";
+import { currentPath, withNextParam } from "@/shared/lib/next-path";
 import { createClient } from "@/shared/lib/supabase/client";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -44,15 +45,23 @@ export class ApiError extends Error {
 
 /** 세션이 끊겼을 때 원래 가려던 경로를 살려 로그인으로 보낸다 */
 function redirectToLogin() {
-  if (typeof window === "undefined") return;
-  const next = `${window.location.pathname}${window.location.search}`;
-  window.location.replace(`${ROUTES.login}?next=${encodeURIComponent(next)}`);
+  const next = currentPath();
+  if (next === null) return;
+  window.location.replace(withNextParam(ROUTES.login, next, ROUTES.dashboard));
 }
 
+/**
+ * 가입이 필요한 응답(403 SIGNUP_REQUIRED)을 가입 화면으로 보낸다.
+ *
+ * 여기서도 원래 경로를 `?next=` 로 실어 보낸다. 공개 폼(/f/{formId})을 열었다가 이 분기를
+ * 타는 경우가 있는데, next 없이 보내면 가입을 마친 사람이 대시보드에 떨어져 자기가 어떤
+ * 폼에 참여하려 했는지 스스로 다시 찾아가야 한다.
+ */
 function redirectToSignup() {
-  if (typeof window === "undefined") return;
+  const next = currentPath();
+  if (next === null) return;
   if (window.location.pathname === ROUTES.signup) return;
-  window.location.replace(ROUTES.signup);
+  window.location.replace(withNextParam(ROUTES.signup, next, ROUTES.dashboard));
 }
 
 /** 오류 응답도 본문이 비어 있을 수 있다 (프록시가 끊은 502 등) — 파싱 실패를 오류로 키우지 않는다 */

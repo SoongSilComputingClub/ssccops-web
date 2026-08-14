@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { mbrGrdTone } from "@/entities/member";
 import { useSessionStore } from "@/entities/session";
 import { ROUTES } from "@/shared/config/routes";
+import { safeNextPath } from "@/shared/lib/next-path";
 import { Badge, Button, Card, flash } from "@/shared/ui";
 
 /**
@@ -17,13 +18,21 @@ import { Badge, Button, Card, flash } from "@/shared/ui";
  */
 export function SignupCompletePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const signupResult = useSessionStore((s) => s.signupResult);
   const applySignupResult = useSessionStore((s) => s.applySignupResult);
   const logout = useSessionStore((s) => s.logout);
 
+  /*
+   * 이 화면을 떠날 곳. 공개 폼 링크(/f/{formId})로 들어와 가입까지 온 사람은 여기가
+   * 종착지가 아니라 경유지다 — 원래 열려던 폼으로 돌려보내야 흐름이 닫힌다.
+   * next가 없으면(직접 /signup으로 온 일반 가입) 예전대로 대시보드다.
+   */
+  const destination = safeNextPath(searchParams.get("next"), ROUTES.dashboard);
+
   useEffect(() => {
-    if (!signupResult) router.replace(ROUTES.dashboard);
-  }, [signupResult, router]);
+    if (!signupResult) router.replace(destination);
+  }, [signupResult, router, destination]);
 
   if (!signupResult) return null;
 
@@ -78,18 +87,25 @@ export function SignupCompletePage() {
           로그아웃
         </Button>
         {/*
-         * 목적지는 회원 목록이 아니라 대시보드다. 임시회원에게 첫 화면으로 회원 명부를
+         * 기본 목적지는 회원 목록이 아니라 대시보드다. 임시회원에게 첫 화면으로 회원 명부를
          * 여는 것은 로그인 기본 진입(ROUTES.dashboard)과도 어긋나고, 방금 가입한 사람이
          * 가장 먼저 볼 것은 남의 명부가 아니라 자기 할 일이다.
+         *
+         * 다만 ?next= 로 들어왔다면 그쪽이 우선이다 — 폼에 응답하러 온 사람에게 대시보드는
+         * 자기 할 일이 아니라 중간에 끼어든 화면이다.
          */}
         <Button
           className="flex-1"
           onClick={() => {
             applySignupResult();
-            router.replace(ROUTES.dashboard);
+            router.replace(destination);
           }}
         >
-          시작하기
+          {destination.startsWith("/f/")
+            ? "폼으로 돌아가기"
+            : destination === ROUTES.dashboard
+              ? "시작하기"
+              : "돌아가서 이어하기"}
         </Button>
       </div>
     </div>

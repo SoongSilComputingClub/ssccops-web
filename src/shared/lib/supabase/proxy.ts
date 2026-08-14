@@ -12,12 +12,15 @@ import { safeNextPath } from "@/shared/lib/next-path";
  *
  * /signup·/signup/complete는 더 이상 공개 경로가 아니다 — 인증은 필요하되 가입 완료 여부는
  * SignupGate가 가른다. 예전에는 PUBLIC_PATHS에 있어 미인증 사용자도 가입 화면을 통과했다.
+ *
+ * /f/{formId} 공개 폼도 마찬가지로 공개 경로가 아니다. 링크 자체는 여전히 누구에게나
+ * 열려 있지만(주소를 아는 사람은 누구나 연다) 응답하려면 회원이어야 한다 — 미인증이면
+ * /login?next=/f/{formId} 로 보내고, 가입까지 마친 뒤 원래 폼으로 되돌아온다.
+ * 제출 완료 화면(/f/{formId}/done)도 같은 정책이라 /f/ 접두사째로 보호 대상이다.
  */
 const PUBLIC_PATHS: string[] = [ROUTES.login];
 
 function isPublicPath(pathname: string): boolean {
-  // 공개 폼은 매처에서도 제외했지만, 매처를 손댈 때 함께 깨지지 않도록 여기서도 막아 둔다
-  if (pathname.startsWith("/f/")) return true;
   if (pathname.startsWith("/auth/")) return true;
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
