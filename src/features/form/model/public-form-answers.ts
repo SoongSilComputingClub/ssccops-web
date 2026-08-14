@@ -32,10 +32,31 @@ export function selectedOptions(value: string | string[] | undefined): string[] 
   return Array.isArray(value) ? value : value ? [value] : [];
 }
 
-/** 검증·필수 판정이 보는 "답이 있는가"의 기준 문자열 */
-export function answerText(value: string | string[] | undefined): string {
-  if (value === undefined) return "";
-  return Array.isArray(value) ? value.join(", ") : value;
+/**
+ * 서버에 실제로 저장되는 형태의 답 — 저장할 것이 없으면 null.
+ *
+ * **본문 만들기(`toRspnsCn`)와 필수 판정(`validateAnswers`)이 같은 기준을 봐야 한다.**
+ * 서버는 `normalize()`가 빈 값(`""`·`" "`·`[]`)을 떨궈 낸 **뒤** 남은 key로 필수를 판정하고
+ * (`requireAnswersOnReachedPages`의 `answers.containsKey`), 웹도 빈 값은 본문에 싣지 않는다.
+ * 그런데 필수 판정만 "화면에 글자가 있는가"로 보면 공백만 친 필수 문항이 화면에서는 통과하고
+ * 서버에서 400 `REQUIRED_ANSWER_MISSING`으로 튕긴다 — 보낸 본문에 그 key가 없으니 서버에게는
+ * 답이 아예 없는 것이다. 어느 칸이 문제인지 짚어 주지 못한 채 배너 한 줄만 뜨는 종류의 어긋남이라
+ * 두 곳이 이 함수 하나를 보게 한다.
+ *
+ * 공백은 **비었는지 판단할 때만** 잘라 낸다. 서버도 `isBlank()`로 버릴지만 정하고 값은 원문
+ * 그대로 저장하므로(`normalizeText`), 정규식 검사도 양쪽이 같은 문자열을 본다.
+ */
+function keptAnswerOf(
+  qitem: Qitem,
+  value: string | string[] | undefined,
+): string | string[] | null {
+  if (qitem.qitemTypeCd === "MULTI_CHOICE") {
+    const picked = selectedOptions(value).filter((o) => o.trim() !== "");
+    return picked.length > 0 ? picked : null;
+  }
+  // 단일선택·텍스트·날짜는 전부 문자열이다. 배열이 남아 있으면 첫 칸만 굳힌다
+  const text = Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
+  return text.trim() !== "" ? text : null;
 }
 
 /**
@@ -142,15 +163,8 @@ export function toRspnsCn(
   for (const qitem of composition.qitems) {
     if (reached && !reached.has(pageSeqOf(qitem))) continue;
 
-    const value = answers[qitem.qitemId];
-    if (qitem.qitemTypeCd === "MULTI_CHOICE") {
-      const picked = selectedOptions(value).filter((o) => o.trim() !== "");
-      if (picked.length > 0) body[qitem.qitemId] = picked;
-      continue;
-    }
-    // 단일선택·텍스트·날짜는 전부 문자열이다. 배열이 남아 있으면 첫 칸만 굳힌다
-    const text = Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
-    if (text.trim() !== "") body[qitem.qitemId] = text;
+    const kept = keptAnswerOf(qitem, answers[qitem.qitemId]);
+    if (kept !== null) body[qitem.qitemId] = kept;
   }
 
   return body;
@@ -176,20 +190,18 @@ export function validateAnswers(
   for (const qitem of composition.qitems) {
     if (!pageSeqs.has(pageSeqOf(qitem))) continue;
 
-    const value = answers[qitem.qitemId];
-    const text = answerText(value);
+    // 서버가 저장 대상으로 남기는 답만 본다 — 공백만 친 필수 문항은 서버에게 '답 없음'이다
+    const kept = keptAnswerOf(qitem, answers[qitem.qitemId]);
 
-    if (!text) {
+    if (kept === null) {
       if (qitem.reqYn) errors[qitem.qitemId] = "필수 항목입니다";
       continue;
     }
 
-    if (
-      qitem.qitemTypeCd === "MULTI_CHOICE" &&
-      qitem.maxSlctCnt &&
-      selectedOptions(value).length > qitem.maxSlctCnt
-    ) {
-      errors[qitem.qitemId] = `최대 ${qitem.maxSlctCnt}개까지 선택할 수 있습니다`;
+    if (Array.isArray(kept)) {
+      if (qitem.maxSlctCnt && kept.length > qitem.maxSlctCnt) {
+        errors[qitem.qitemId] = `최대 ${qitem.maxSlctCnt}개까지 선택할 수 있습니다`;
+      }
       continue;
     }
 
@@ -201,7 +213,8 @@ export function validateAnswers(
      */
     if (isTextQitemType(qitem.qitemTypeCd) && qitem.ptrnCn) {
       try {
-        if (!new RegExp(qitem.ptrnCn).test(text)) {
+        // `.test()`는 서버의 `matcher().find()`와 같은 뜻이다 — 부분 일치를 허용한다
+        if (!new RegExp(qitem.ptrnCn).test(kept)) {
           errors[qitem.qitemId] =
             qitem.ptrnMsgCn || `${qitem.ptrnNm || "형식"} 형식이 맞지 않습니다`;
         }
