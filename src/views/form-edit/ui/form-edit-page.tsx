@@ -75,8 +75,38 @@ export function FormEditPage({ formId }: { formId?: number }) {
 
 function FormEditContent({ editor }: { editor: FormEditor }) {
   const router = useRouter();
-  const { draft, labelIds, setDraft, setLabelIds, issues } = editor;
+  const { draft, labelIds, assignedLabels, setDraft, setLabelIds, issues } = editor;
   const labelOptions = useFormLabelOptions();
+
+  /*
+   * 지정돼 있지만 후보에는 없는 라벨 = **비활성화된 뒤에도 이 폼에 남아 있는 라벨**이다.
+   *
+   * 후보는 활성 라벨만 받아 오므로(라벨은 삭제가 아니라 비활성화다) 이 라벨들은 그냥 두면
+   * 화면에서 사라진다. 그런데 저장은 지정을 통째로 교체하는 방식이라, 안 보인다는 이유로
+   * 요청에 안 실리면 **아무도 누르지 않았는데 지정이 조용히 풀린다.** 그래서 여기서 따로
+   * 뽑아 칩으로 노출한다 — 해제는 되지만 다시 고를 수는 없다(서버가 400으로 막는다).
+   *
+   * 후보 조회가 아직 끝나지 않았거나 실패한 동안에는 계산하지 않는다. 그때는 후보가 빈
+   * 배열이라 지정된 라벨이 전부 비활성으로 보이게 된다.
+   */
+  const labelsLoaded = !labelOptions.loading && !labelOptions.errorMessage;
+  const activeLabelIds = new Set(labelOptions.labels.map((l) => l.formLblId));
+  const inactiveAssigned = labelsLoaded
+    ? assignedLabels.filter(
+        (l) => labelIds.includes(l.formLblId) && !activeLabelIds.has(l.formLblId),
+      )
+    : [];
+
+  const toggleLabel = (formLblId: number) =>
+    setLabelIds((ids) =>
+      ids.includes(formLblId) ? ids.filter((x) => x !== formLblId) : [...ids, formLblId],
+    );
+
+  /** 해제하면 되돌릴 수 없으므로(재선택 불가) 사라지기 전에 그 사실을 알린다 */
+  const unassignInactive = (formLblId: number, lblNm: string) => {
+    toggleLabel(formLblId);
+    flash(`${lblNm} 지정 해제됨 — 비활성 라벨이라 다시 지정할 수 없습니다`);
+  };
 
   /* 아래 셋은 저장 대상이 아니다 — 화면에서 어디를 보고 있는지일 뿐이라 초안에 넣지 않는다 */
   const [page, setPage] = useState(0);
@@ -316,26 +346,38 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                 <div className="text-[13.5px] text-n500">라벨을 불러오는 중…</div>
               ) : labelOptions.errorMessage ? (
                 <div className="text-[13.5px] text-danger">{labelOptions.errorMessage}</div>
-              ) : labelOptions.labels.length === 0 ? (
+              ) : labelOptions.labels.length === 0 && inactiveAssigned.length === 0 ? (
                 <div className="text-[13.5px] text-n500">사용할 수 있는 라벨이 없습니다.</div>
               ) : (
-                <div className="flex flex-wrap gap-[7px]">
-                  {labelOptions.labels.map((l) => (
-                    <Chip
-                      key={l.formLblId}
-                      active={labelIds.includes(l.formLblId)}
-                      onClick={() =>
-                        setLabelIds((ids) =>
-                          ids.includes(l.formLblId)
-                            ? ids.filter((x) => x !== l.formLblId)
-                            : [...ids, l.formLblId],
-                        )
-                      }
-                    >
-                      {l.lblNm}
-                    </Chip>
-                  ))}
-                </div>
+                <>
+                  <div className="flex flex-wrap gap-[7px]">
+                    {labelOptions.labels.map((l) => (
+                      <Chip
+                        key={l.formLblId}
+                        active={labelIds.includes(l.formLblId)}
+                        onClick={() => toggleLabel(l.formLblId)}
+                      >
+                        {l.lblNm}
+                      </Chip>
+                    ))}
+                    {/* 비활성 라벨은 항상 지정된 상태로만 나타난다 — 후보가 아니라 잔여 지정이다 */}
+                    {inactiveAssigned.map((l) => (
+                      <Chip
+                        key={l.formLblId}
+                        active
+                        onClick={() => unassignInactive(l.formLblId, l.lblNm)}
+                      >
+                        <span className="line-through">{l.lblNm}</span>
+                        <span className="ml-[5px] text-[12px]">비활성</span>
+                      </Chip>
+                    ))}
+                  </div>
+                  {inactiveAssigned.length > 0 && (
+                    <div className="mt-[9px] text-[13px] text-n500">
+                      비활성 라벨은 이미 지정된 것만 유지됩니다. 해제하면 다시 지정할 수 없습니다.
+                    </div>
+                  )}
+                </>
               )}
             </Card>
 

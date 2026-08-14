@@ -5,35 +5,32 @@ import type { FormSttsCd } from "@/shared/config/codes";
 import { TODAY } from "@/shared/config/constants";
 import { nextId } from "@/shared/lib/id";
 import formSeed from "../api/get-form.json";
-import formLblSeed from "../api/get-form-lbl.json";
-import formLblRelSeed from "../api/get-form-lbl-rel.json";
-import type { Form, FormLbl, FormLblRel } from "./types";
+import type { Form } from "./types";
 
 interface FormState {
   forms: Form[];
-  formLbls: FormLbl[];
-  formLblRels: FormLblRel[];
 
   updateForm: (formId: number, patch: Partial<Form>) => void;
   duplicateForm: (formId: number) => Form | null;
-
-  addFormLbl: (lblNm: string) => void;
-  toggleFormLbl: (formLblId: number) => void;
 }
 
 /*
  * `saveForm`·`setFormLbls`는 지웠다. 폼 편집기가 서버(POST·PUT /v1/forms)로 저장하게 됐고,
  * 라벨 지정도 그 본문의 labelIds로 함께 나간다(#8 · #10 합의). 목 구현을 남겨 두면 서버로
  * 저장한 뒤에도 화면이 메모리 배열을 고치는 경로가 되살아나, 새로고침하면 사라지는 저장이
- * 다시 생긴다. 남은 목(duplicateForm·라벨 관리)은 #9·#10에서 각각 서버로 옮긴다.
+ * 다시 생긴다.
+ *
+ * 라벨(`formLbls`·`formLblRels`·`addFormLbl`·`toggleFormLbl`·`formLblsOf`)도 같은 이유로
+ * 지웠다(#10). 목록·추가·사용_여부는 이제 `/v1/form-labels`가, 폼별 지정은 폼 저장 본문이
+ * 담당한다. 특히 "사용 중인 폼 N건"을 세던 `formLblRels`는 이 브라우저가 들고 있던 목 배열일
+ * 뿐이라 실제 지정 수와 무관했다 — 서버 집계(`usageCount`)로 대체됐다.
+ * 남은 목(duplicateForm)은 #9에서 서버로 옮긴다.
  */
 
 const NOW = `${TODAY}T10:00:00`;
 
 export const useFormStore = create<FormState>((set) => ({
   forms: formSeed.data as unknown as Form[],
-  formLbls: formLblSeed.data as FormLbl[],
-  formLblRels: formLblRelSeed.data as FormLblRel[],
 
   updateForm: (formId, patch) =>
     set((s) => ({
@@ -66,40 +63,9 @@ export const useFormStore = create<FormState>((set) => ({
     return copy;
   },
 
-  addFormLbl: (lblNm) =>
-    set((s) => ({
-      formLbls: [
-        ...s.formLbls,
-        {
-          formLblId: nextId(s.formLbls, "formLblId"),
-          lblNm,
-          useYn: true,
-          crtDt: NOW,
-          mdfcnDt: NOW,
-        },
-      ],
-    })),
-
-  toggleFormLbl: (formLblId) =>
-    set((s) => ({
-      formLbls: s.formLbls.map((l) =>
-        l.formLblId === formLblId ? { ...l, useYn: !l.useYn, mdfcnDt: NOW } : l,
-      ),
-    })),
-
 }));
 
 /* ── 파생 ──────────────────────────────────────────────────── */
-
-/** 해당 폼에 지정된 라벨 */
-export function formLblsOf(
-  rels: FormLblRel[],
-  lbls: FormLbl[],
-  formId: number,
-): FormLbl[] {
-  const ids = new Set(rels.filter((r) => r.formId === formId).map((r) => r.formLblId));
-  return lbls.filter((l) => ids.has(l.formLblId));
-}
 
 /** 폼 상태 배지 표기 */
 export const FORM_STTS_BADGE: Record<

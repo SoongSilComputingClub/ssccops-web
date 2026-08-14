@@ -12,7 +12,13 @@ export type {
   Qitem,
   QitemCpstCn,
 } from "./model/types";
-export { useFormStore, formLblsOf, FORM_STTS_BADGE } from "./model/store";
+export { useFormStore, FORM_STTS_BADGE } from "./model/store";
 export { FORM_ERROR, createForm, fetchForm, fetchForms, updateForm } from "./api/forms";
 export type { FormListFilter, FormSaveInput, FormSaveResult } from "./api/forms";
-export { fetchFormLabels } from "./api/form-labels";
+export {
+  FORM_LABEL_ERROR,
+  LBL_NM_MAX_LENGTH,
+  createFormLabel,
+  fetchFormLabels,
+  setFormLabelUse,
+} from "./api/form-labels";
