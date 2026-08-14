@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMbrStore } from "@/entities/member";
 import { useSessionStore } from "@/entities/session";
@@ -11,13 +11,19 @@ import { Button, Card, Chip, Field, TextField, flash } from "@/shared/ui";
 export function SignupPage() {
   const router = useRouter();
   const addMbr = useMbrStore((s) => s.addMbr);
-  const pendingAuthUser = useSessionStore((s) => s.pendingAuthUser);
+  /*
+   * 인증 정보의 출처를 zustand의 pendingAuthUser에서 서버 세션으로 옮겼다 —
+   * 새로고침하면 사라지는 값에 기대던 탓에 가입 도중 새로고침하면 로그인으로 튕겼다.
+   * 이 화면은 SignupGate가 "인증됨 + 미가입"일 때만 열어 주므로 authUser는 항상 채워져 있다.
+   */
+  const authUser = useSessionStore((s) => s.authUser);
   const setPending = useSessionStore((s) => s.setPending);
+  const logout = useSessionStore((s) => s.logout);
 
   /** 재학/졸업은 회원_상태_코드로 그대로 표현한다 (별도 구분 컬럼 없음) */
   const [mbrSttsCd, setMbrSttsCd] = useState<"ENROLLED" | "GRADUATED">("ENROLLED");
   const [f, setF] = useState({
-    mbrNm: pendingAuthUser?.name ?? "",
+    mbrNm: authUser?.name ?? "",
     stdntNo: "",
     scsbjtNm: "",
     scyrNo: "",
@@ -26,13 +32,9 @@ export function SignupPage() {
   });
   const set = (patch: Partial<typeof f>) => setF((v) => ({ ...v, ...patch }));
 
-  useEffect(() => {
-    if (!pendingAuthUser) router.replace(ROUTES.login);
-  }, [pendingAuthUser, router]);
+  if (!authUser) return null;
 
-  if (!pendingAuthUser) return null;
-
-  const provider = pendingAuthUser.provider?.toUpperCase() ?? "GOOGLE";
+  const provider = authUser.provider?.toUpperCase() ?? "GOOGLE";
   const isEnrolled = mbrSttsCd === "ENROLLED";
 
   const submit = () => {
@@ -55,11 +57,11 @@ export function SignupPage() {
       scsbjtNm: f.scsbjtNm.trim() || null,
       scyrNo: Number(f.scyrNo.trim()) || null,
       telno: f.telno.trim(),
-      eml: pendingAuthUser.email,
+      eml: authUser.email ?? "",
       mbrGrdCd: "TEMP",
       mbrSttsCd,
       joinYmd: TODAY,
-      authUserId: pendingAuthUser.id,
+      authUserId: authUser.id,
     });
     setPending(mbrId);
     flash("회원 가입이 완료되었습니다");
@@ -92,7 +94,7 @@ export function SignupPage() {
           <div className="col-span-2">
             <div className="mb-[6px] text-[13.5px] text-n400">이메일</div>
             <div className="rounded-[12px] bg-bg px-[11px] py-[9px] text-[15.5px] text-n300">
-              {pendingAuthUser.email}
+              {authUser.email}
             </div>
             <div className="mt-1 text-[12.5px] text-n500">
               {provider} 계정에서 자동으로 가져왔습니다
@@ -152,8 +154,20 @@ export function SignupPage() {
       </Card>
 
       <div className="mt-4 flex gap-2">
-        <Button variant="ghost" onClick={() => router.push(ROUTES.login)}>
-          로그인으로 돌아가기
+        {/* 인증은 이미 끝난 상태라 그냥 /login으로 보내면 가드가 다시 이 화면으로 되돌린다 — 로그아웃해야 한다 */}
+        <Button
+          variant="ghost"
+          onClick={() => {
+            void logout().then((ok) => {
+              if (!ok) {
+                flash("로그아웃에 실패했습니다. 잠시 후 다시 시도해주세요");
+                return;
+              }
+              window.location.replace(ROUTES.login);
+            });
+          }}
+        >
+          로그아웃
         </Button>
         <Button className="flex-1 py-3" onClick={submit}>
           회원 가입
