@@ -2,14 +2,22 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useFormStore, type Form, type Qitem } from "@/entities/form";
-import { useSessionStore } from "@/entities/session";
-import { PATTERN_PRESETS, TODAY } from "@/shared/config/constants";
+import type { Qitem } from "@/entities/form";
+import {
+  FormSaveStatusBar,
+  isTextQitemType,
+  nextQitemId,
+  parseMaxSlctCnt,
+  useFormEditor,
+  useFormLabelOptions,
+  type FormDraft,
+  type FormEditor,
+} from "@/features/form";
+import { PATTERN_PRESETS } from "@/shared/config/constants";
 import {
   isChoiceQitemType,
   QITEM_TYPE_CDS,
   QITEM_TYPE_NM,
-  type FormSttsCd,
   type QitemTypeCd,
 } from "@/shared/config/codes";
 import { fromInput, toInput } from "@/shared/lib/date";
@@ -28,79 +36,58 @@ import {
   flash,
 } from "@/shared/ui";
 
-const NOW = `${TODAY}T10:00:00`;
-
-function emptyForm(creatrMbrId: number): Form {
-  return {
-    formId: 0,
-    creatrMbrId,
-    formTtlNm: "",
-    formSttsCd: "DRAFT",
-    rcptBgngDt: null,
-    rcptEndDt: null,
-    qitemCpstCn: {
-      pages: [{ pageTtl: "페이지 1", pageDescCn: "" }],
-      qitems: [
-        {
-          qitemId: "q1",
-          qitemLblNm: "",
-          qitemTypeCd: "SHORT_TEXT",
-          reqYn: false,
-          pageSeq: 0,
-          optionList: [],
-        },
-      ],
-    },
-    crtDt: NOW,
-    mdfcnDt: NOW,
-  };
-}
-
-const isTextType = (cd: QitemTypeCd) => cd === "SHORT_TEXT" || cd === "LONG_TEXT";
+/*
+ * 폼 편집기.
+ *
+ * 편집 상태와 자동 저장은 features/form(useFormEditor)이 전담한다. 이 파일은 초안을 그리고
+ * 조작을 초안 변경으로 옮기는 일만 한다 — 어떤 값이 언제 서버로 나가는지는 여기서 알 필요가
+ * 없고, 알게 두면 JSX 사이에 저장 규칙이 흩어진다.
+ *
+ * 저장 버튼은 남겼지만 의미가 달라졌다. 이제는 "이걸 눌러야 저장된다"가 아니라 **"지금
+ * 저장됐다는 것을 확인하고 싶다 · 실패했을 때 직접 다시 시도한다"** 를 위한 수단이다.
+ *
+ * '바로 접수 시작'은 여기서 뺐다. 접수 시작·마감은 별도 API(ssccops-server #33 · 웹 #9)이고
+ * 폼 상세 화면이 담당한다 — 편집 화면이 상태까지 바꾸면 자동 저장이 formSttsCd를 실어 나르는
+ * 순간 "편집했더니 접수가 시작됐다"가 가능해진다.
+ */
 
 export function FormEditPage({ formId }: { formId?: number }) {
-  const router = useRouter();
-  const { forms, formLbls, formLblRels, saveForm, setFormLbls } = useFormStore();
-  const sessionMbrId = useSessionStore((s) => s.mbrId);
-  const existing = formId ? forms.find((f) => f.formId === formId) : undefined;
+  const editor = useFormEditor(formId);
 
-  const [draft, setDraft] = useState<Form>(() =>
-    existing
-      ? {
-          ...existing,
-          qitemCpstCn: {
-            pages: existing.qitemCpstCn.pages.map((p) => ({ ...p })),
-            qitems: existing.qitemCpstCn.qitems.map((q) => ({ ...q })),
-          },
-        }
-      : emptyForm(sessionMbrId || 1),
+  if (editor.status === "ready") return <FormEditContent editor={editor} />;
+
+  return (
+    <>
+      <PageHeader title="폼 편집" showBack />
+      <PageBody>
+        {editor.status === "loading" && <EmptyState message="불러오는 중…" />}
+        {editor.status === "not-found" && <EmptyState message="폼을 찾을 수 없습니다." />}
+        {editor.status === "error" && (
+          <EmptyState
+            message={editor.loadErrorMessage || "폼을 불러오지 못했습니다."}
+            action={{ label: "다시 시도", onClick: editor.reload }}
+          />
+        )}
+      </PageBody>
+    </>
   );
-  const [pickedLblIds, setPickedLblIds] = useState<number[]>(() =>
-    formId
-      ? formLblRels.filter((r) => r.formId === formId).map((r) => r.formLblId)
-      : [],
-  );
+}
+
+function FormEditContent({ editor }: { editor: FormEditor }) {
+  const router = useRouter();
+  const { draft, labelIds, setDraft, setLabelIds, issues } = editor;
+  const labelOptions = useFormLabelOptions();
+
+  /* 아래 셋은 저장 대상이 아니다 — 화면에서 어디를 보고 있는지일 뿐이라 초안에 넣지 않는다 */
   const [page, setPage] = useState(0);
   const [openQ, setOpenQ] = useState<string | null>(null);
   const [advQ, setAdvQ] = useState<string | null>(null);
 
-  if (formId && !existing) {
-    return (
-      <>
-        <PageHeader title="폼 편집" showBack />
-        <PageBody>
-          <EmptyState message="폼을 찾을 수 없습니다." />
-        </PageBody>
-      </>
-    );
-  }
-
   const { pages, qitems } = draft.qitemCpstCn;
   const pageQitems = qitems.filter((q) => (q.pageSeq ?? 0) === page);
 
-  const setCpst = (
-    fn: (cpst: Form["qitemCpstCn"]) => Form["qitemCpstCn"],
-  ) => setDraft((d) => ({ ...d, qitemCpstCn: fn(d.qitemCpstCn) }));
+  const setCpst = (fn: (cpst: FormDraft["qitemCpstCn"]) => FormDraft["qitemCpstCn"]) =>
+    setDraft((d) => ({ ...d, qitemCpstCn: fn(d.qitemCpstCn) }));
 
   const patchQ = (qitemId: string, patch: Partial<Qitem>) =>
     setCpst((c) => ({
@@ -119,6 +106,19 @@ export function FormEditPage({ formId }: { formId?: number }) {
       flash("페이지는 최소 1개 필요합니다");
       return;
     }
+    /*
+     * 페이지를 지우면 그 페이지의 문항도 함께 사라진다. 응답이 달린 문항이 섞여 있으면
+     * 서버가 409로 막을 요청이므로 여기서 먼저 알린다.
+     */
+    const removed = qitems
+      .filter((q) => (q.pageSeq ?? 0) === index)
+      .map((q) => q.qitemId)
+      .filter((qitemId) => editor.inUseQitemIds.includes(qitemId));
+    if (removed.length > 0) {
+      flash(`이미 응답이 있는 문항이 포함돼 있습니다 (${removed.join(", ")})`);
+      return;
+    }
+
     setCpst((c) => ({
       pages: c.pages.filter((_, i) => i !== index),
       qitems: c.qitems
@@ -151,13 +151,14 @@ export function FormEditPage({ formId }: { formId?: number }) {
     setPage(to);
   };
 
+  /* 새 문항 ID는 개수가 아니라 최대값+1이다 — 근거는 features/form/model/form-draft.ts */
   const addQitem = () =>
     setCpst((c) => ({
       ...c,
       qitems: [
         ...c.qitems,
         {
-          qitemId: `q${c.qitems.length + 1}`,
+          qitemId: nextQitemId(c.qitems),
           qitemLblNm: "",
           qitemTypeCd: "SHORT_TEXT",
           reqYn: false,
@@ -180,8 +181,18 @@ export function FormEditPage({ formId }: { formId?: number }) {
       return { ...c, qitems: next };
     });
 
-  const removeQitem = (qitemId: string) =>
+  const removeQitem = (qitemId: string) => {
+    /*
+     * qitemId는 응답 내용(rspns_cn)의 key다. 응답이 하나라도 있는 폼에서 문항을 지우면 그
+     * 응답을 다시 읽을 수 없으므로 서버가 409로 막는다 — 지운 뒤 저장이 보류되는 것을 보고
+     * 되돌리게 하지 말고, 누르는 순간 막는다.
+     */
+    if (editor.inUseQitemIds.includes(qitemId)) {
+      flash("이미 응답이 있어 이 문항은 삭제할 수 없습니다");
+      return;
+    }
     setCpst((c) => ({ ...c, qitems: c.qitems.filter((q) => q.qitemId !== qitemId) }));
+  };
 
   const changeType = (q: Qitem, cd: QitemTypeCd) => {
     patchQ(q.qitemId, {
@@ -193,7 +204,7 @@ export function FormEditPage({ formId }: { formId?: number }) {
       ...(isChoiceQitemType(cd)
         ? {}
         : { branchMap: undefined, maxSlctCnt: undefined }),
-      ...(isTextType(cd)
+      ...(isTextQitemType(cd)
         ? {}
         : { ptrnCn: undefined, ptrnNm: undefined, ptrnMsgCn: undefined }),
     });
@@ -208,18 +219,21 @@ export function FormEditPage({ formId }: { formId?: number }) {
     });
   };
 
-  const save = (formSttsCd: FormSttsCd) => {
-    if (!draft.formTtlNm.trim()) {
-      flash("폼_제목_명을 입력하세요");
-      return;
+  /** 지금 저장 — 보류 중이면 사유를 알린다. 조용히 아무 일도 일어나지 않으면 안 된다 */
+  const saveNow = async (): Promise<number | null> => {
+    if (issues.blockingMessage) {
+      flash(issues.blockingMessage);
+      return null;
     }
-    const saved = saveForm(
-      { ...draft, formTtlNm: draft.formTtlNm.trim() },
-      formSttsCd,
-    );
-    setFormLbls(saved.formId, pickedLblIds);
-    flash(formSttsCd === "OPEN" ? "접수를 시작했습니다" : "임시저장했습니다");
-    router.replace(ROUTES.formDetail(saved.formId));
+    const savedFormId = await editor.saveNow();
+    flash(savedFormId ? "저장했습니다" : "저장하지 못했습니다. 저장 상태를 확인해주세요");
+    return savedFormId;
+  };
+
+  /* 상세로 넘어가기 전에 저장을 끝낸다 — 화면 내 이동은 beforeunload가 잡아 주지 않는다 */
+  const goDetail = async () => {
+    const savedFormId = await saveNow();
+    if (savedFormId) router.push(ROUTES.formDetail(savedFormId));
   };
 
   const qSummary = (q: Qitem) =>
@@ -237,16 +251,24 @@ export function FormEditPage({ formId }: { formId?: number }) {
 
   return (
     <>
-      <PageHeader title="폼 편집" subtitle={existing ? "수정" : "새 폼"} showBack />
+      <PageHeader
+        title="폼 편집"
+        // 첫 자동 저장으로 폼_ID가 생기는 순간 "새 폼"에서 폼 번호로 바뀐다
+        subtitle={editor.formId ? `폼 #${editor.formId}` : "새 폼"}
+        showBack
+      />
       <PageBody>
-        <div className="grid grid-cols-[1fr_1.15fr] items-start gap-4">
+        <FormSaveStatusBar save={editor.save} onRetry={editor.retry} />
+
+        <div className="mt-4 grid grid-cols-[1fr_1.15fr] items-start gap-4">
           <div className="flex flex-col gap-4">
             <Card>
               <SectionLabel className="mb-3">기본정보</SectionLabel>
               <div className="flex flex-col gap-[14px]">
-                <Field label="폼_제목_명" required>
+                <Field label="폼_제목_명" required error={issues.formTtlNm || null}>
                   <TextField
                     value={draft.formTtlNm}
+                    invalid={Boolean(issues.formTtlNm)}
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, formTtlNm: e.target.value }))
                     }
@@ -258,6 +280,7 @@ export function FormEditPage({ formId }: { formId?: number }) {
                     <TextField
                       type="datetime-local"
                       value={toInput(draft.rcptBgngDt, true)}
+                      invalid={Boolean(issues.rcptDt)}
                       onChange={(e) =>
                         setDraft((d) => ({
                           ...d,
@@ -266,10 +289,11 @@ export function FormEditPage({ formId }: { formId?: number }) {
                       }
                     />
                   </Field>
-                  <Field label="접수_종료_일시">
+                  <Field label="접수_종료_일시" error={issues.rcptDt || null}>
                     <TextField
                       type="datetime-local"
                       value={toInput(draft.rcptEndDt, true)}
+                      invalid={Boolean(issues.rcptDt)}
                       onChange={(e) =>
                         setDraft((d) => ({
                           ...d,
@@ -284,15 +308,24 @@ export function FormEditPage({ formId }: { formId?: number }) {
 
             <Card>
               <SectionLabel className="mb-3">폼_라벨</SectionLabel>
-              <div className="flex flex-wrap gap-[7px]">
-                {formLbls
-                  .filter((l) => l.useYn)
-                  .map((l) => (
+              {/*
+                라벨 지정은 폼 저장 본문(labelIds)에 함께 실린다 — 별도 라벨 API를 같이 부르면
+                자동 저장 화면에서 두 요청의 도착 순서에 따라 지정이 되살아난다 (#10 합의)
+              */}
+              {labelOptions.loading ? (
+                <div className="text-[13.5px] text-n500">라벨을 불러오는 중…</div>
+              ) : labelOptions.errorMessage ? (
+                <div className="text-[13.5px] text-danger">{labelOptions.errorMessage}</div>
+              ) : labelOptions.labels.length === 0 ? (
+                <div className="text-[13.5px] text-n500">사용할 수 있는 라벨이 없습니다.</div>
+              ) : (
+                <div className="flex flex-wrap gap-[7px]">
+                  {labelOptions.labels.map((l) => (
                     <Chip
                       key={l.formLblId}
-                      active={pickedLblIds.includes(l.formLblId)}
+                      active={labelIds.includes(l.formLblId)}
                       onClick={() =>
-                        setPickedLblIds((ids) =>
+                        setLabelIds((ids) =>
                           ids.includes(l.formLblId)
                             ? ids.filter((x) => x !== l.formLblId)
                             : [...ids, l.formLblId],
@@ -302,19 +335,20 @@ export function FormEditPage({ formId }: { formId?: number }) {
                       {l.lblNm}
                     </Chip>
                   ))}
-              </div>
+                </div>
+              )}
             </Card>
 
             <div className="flex gap-2">
               <Button
                 variant="ghost"
                 className="flex-1 py-[13px]"
-                onClick={() => save("DRAFT")}
+                onClick={() => void saveNow()}
               >
-                임시저장
+                지금 저장
               </Button>
-              <Button className="flex-1 py-[13px]" onClick={() => save("OPEN")}>
-                바로 접수 시작
+              <Button className="flex-1 py-[13px]" onClick={() => void goDetail()}>
+                저장하고 상세로
               </Button>
             </div>
           </div>
@@ -416,8 +450,16 @@ export function FormEditPage({ formId }: { formId?: number }) {
               <div className="flex flex-col gap-2">
                 {pageQitems.map((q, qi) => {
                   const open = openQ === q.qitemId;
+                  /*
+                   * 서버(#32)와 같은 규칙으로 미리 잡은 오류. 400을 받고 나서 알려 주면
+                   * 어느 문항이 문제인지 서버 응답만으로는 알 수 없다.
+                   */
+                  const qIssues = issues.qitems[q.qitemId] ?? [];
                   return (
-                    <div key={q.qitemId} className="rounded-[12px] border border-line">
+                    <div
+                      key={q.qitemId}
+                      className={cardBorder(qIssues.length > 0)}
+                    >
                       <div
                         onClick={() => setOpenQ(open ? null : q.qitemId)}
                         className="flex cursor-pointer items-center gap-2 p-3"
@@ -428,8 +470,23 @@ export function FormEditPage({ formId }: { formId?: number }) {
                         <div className="min-w-0 flex-1 truncate text-[12.5px] text-n500">
                           {qSummary(q)}
                         </div>
+                        {qIssues.length > 0 && (
+                          <div className="flex-none text-[12px] text-danger">
+                            확인 필요 {qIssues.length}
+                          </div>
+                        )}
                         <div className="text-[11px] text-n500">{open ? "▲" : "▼"}</div>
                       </div>
+
+                      {qIssues.length > 0 && (
+                        <div className="border-t border-danger/25 bg-danger/8 px-3 py-2">
+                          {qIssues.map((message) => (
+                            <div key={message} className="text-[12.5px] text-danger">
+                              {message}
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
                       {open && (
                         <div className="border-t border-line p-3">
@@ -561,20 +618,33 @@ export function FormEditPage({ formId }: { formId?: number }) {
                                   <div className="mb-[6px] text-[13.5px] text-n400">
                                     최대 선택 개수
                                   </div>
+                                  {/*
+                                    빈 값만 '제한 없음'이다. 숫자가 아니면 초안을 바꾸지 않고
+                                    알린다 — 예전의 `Number(v) || undefined`는 "0"도 "abc"도
+                                    조용히 제한 없음으로 바꿔 입력이 사라진 줄도 몰랐다.
+                                    범위(선택지 수 초과)는 검증이 문항 카드에서 잡는다.
+                                  */}
                                   <TextField
                                     value={q.maxSlctCnt ?? ""}
-                                    onChange={(e) =>
+                                    inputMode="numeric"
+                                    onChange={(e) => {
+                                      const parsed = parseMaxSlctCnt(e.target.value);
+                                      if (parsed.kind === "invalid") {
+                                        flash("최대 선택 개수는 정수로 입력하세요");
+                                        return;
+                                      }
                                       patchQ(q.qitemId, {
-                                        maxSlctCnt: Number(e.target.value) || undefined,
-                                      })
-                                    }
+                                        maxSlctCnt:
+                                          parsed.kind === "empty" ? undefined : parsed.value,
+                                      });
+                                    }}
                                     placeholder="제한 없음"
                                     className="w-[120px]"
                                   />
                                 </div>
                               )}
 
-                              {isTextType(q.qitemTypeCd) && (
+                              {isTextQitemType(q.qitemTypeCd) && (
                                 <div>
                                   <div className="mb-[6px] text-[13.5px] text-n400">
                                     입력 형식 검증
@@ -611,12 +681,19 @@ export function FormEditPage({ formId }: { formId?: number }) {
                                   </div>
                                   <TextField
                                     value={q.ptrnCn ?? ""}
+                                    invalid={!isCompilableRegExp(q.ptrnCn)}
                                     onChange={(e) =>
                                       patchQ(q.qitemId, { ptrnCn: e.target.value })
                                     }
                                     placeholder="정규식 (예: ^[0-9]{9}$)"
                                     className="mt-2 font-mono text-[13.5px]"
                                   />
+                                  {/* 깨진 정규식은 공개 폼의 응답 검증을 통째로 무너뜨린다 */}
+                                  {!isCompilableRegExp(q.ptrnCn) && (
+                                    <div className="mt-[5px] text-[12.5px] text-danger">
+                                      정규식으로 해석되지 않습니다
+                                    </div>
+                                  )}
                                   <TextField
                                     value={q.ptrnMsgCn ?? ""}
                                     onChange={(e) =>
@@ -691,4 +768,22 @@ export function FormEditPage({ formId }: { formId?: number }) {
       </PageBody>
     </>
   );
+}
+
+/** 오류가 있는 문항 카드는 접혀 있어도 눈에 띄어야 한다 */
+function cardBorder(hasIssue: boolean): string {
+  return hasIssue
+    ? "rounded-[12px] border border-danger/45"
+    : "rounded-[12px] border border-line";
+}
+
+/** 정규식 입력란은 그 자리에서 컴파일해 본다 (빈 값은 검증 없음이므로 정상) */
+function isCompilableRegExp(pattern: string | undefined): boolean {
+  if (!pattern) return true;
+  try {
+    new RegExp(pattern);
+    return true;
+  } catch {
+    return false;
+  }
 }
