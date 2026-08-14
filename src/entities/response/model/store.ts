@@ -5,7 +5,12 @@ import type { RspnsSttsCd } from "@/shared/config/codes";
 import { TODAY } from "@/shared/config/constants";
 import { nextId } from "@/shared/lib/id";
 import seed from "../api/get-form-rspns-hstry.json";
-import type { FormRspnsHstry, RspnsCn } from "./types";
+import type { FormRspnsHstry } from "./types";
+
+/*
+ * 공개 폼 제출(#12) 목 경로만 남은 스토어다. 응답 목록·상세·상태 변경은 서버 API
+ * (api/responses.ts)로 옮겼으므로 더 이상 이 스토어를 읽지 않는다.
+ */
 
 interface RspnsState {
   formRspnsHstrys: FormRspnsHstry[];
@@ -41,20 +46,3 @@ export const useRspnsStore = create<RspnsState>((set) => ({
     return row;
   },
 }));
-
-/** 응답 상태 배지 표기 */
-export const RSPNS_STTS_BADGE: Record<
-  RspnsSttsCd,
-  { label: string; tone: "blue" | "grey" | "red" }
-> = {
-  SUBMITTED: { label: "제출", tone: "blue" },
-  ACCEPTED: { label: "승인", tone: "blue" },
-  REJECTED: { label: "반려", tone: "red" },
-};
-
-/** 응답값 표시 문자열 — 다중선택은 ", "로 잇는다 */
-export function rspnsValueText(rspnsCn: RspnsCn, qitemId: string): string {
-  const v = rspnsCn[qitemId];
-  if (v === undefined) return "";
-  return Array.isArray(v) ? v.join(", ") : v;
-}

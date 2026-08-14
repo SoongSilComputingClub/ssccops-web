@@ -1,4 +1,7 @@
-export { ResponseStatusSheet } from "./ui/response-status-sheet";
+/*
+ * 응답 상태 변경 시트는 여기서 빠졌다 — 응답 화면 일체가 features/response 로 옮겨 갔다(#13).
+ * 폼(정의)과 응답(제출물)은 다루는 자원도 화면도 다른데 한 features 아래 섞여 있었다.
+ */
 export { FormCloseSheet } from "./ui/form-close-sheet";
 export {
   toFormDuplicateErrorMessage,
