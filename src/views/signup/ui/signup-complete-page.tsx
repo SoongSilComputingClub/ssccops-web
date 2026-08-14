@@ -1,44 +1,39 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { cohortText, isGraduate, useMemberStore } from "@/entities/member";
+import { genNoText, mbrGrdNm, mbrSttsNm, useMbrStore } from "@/entities/member";
 import { useSessionStore } from "@/entities/session";
 import { ROUTES } from "@/shared/config/routes";
 import { Badge, Button, Card } from "@/shared/ui";
 
 export function SignupCompletePage() {
   const router = useRouter();
-  const pendingKey = useSessionStore((s) => s.pendingKey);
+  const pendingMbrId = useSessionStore((s) => s.pendingMbrId);
   const login = useSessionStore((s) => s.login);
   const logout = useSessionStore((s) => s.logout);
   const setPendingAuthUser = useSessionStore((s) => s.setPendingAuthUser);
-  const member = useMemberStore((s) =>
-    s.members.find((m) => m.key === (pendingKey ?? "m7")),
+  const mbr = useMbrStore((s) =>
+    s.mbrs.find((m) => m.mbrId === pendingMbrId) ?? s.mbrs.at(-1),
   );
 
-  if (!member) return null;
+  if (!mbr) return null;
 
+  const genText = genNoText(mbr);
   const rows: [string, string][] = [
-    ["회원명", member.name],
-    ["구분", member.kind ?? "재학생"],
-    ["학생번호", member.sid || "미입력"],
-    isGraduate(member)
-      ? ["졸업연도", member.gradYear || "미입력"]
-      : ["학년", member.year ? `${member.year}학년` : "미입력"],
-    ["학과", member.dept || "미입력"],
-    [
-      "기수",
-      cohortText(member) === "미배정" ? "미배정 (운영진 배정)" : cohortText(member),
-    ],
-    ["연락처", member.phone || "미입력"],
-    ["이메일", member.email],
-    ["회원등급", member.grade],
-    ["회원상태", member.status],
+    ["회원_명", mbr.mbrNm],
+    ["학생_번호", mbr.stdntNo || "미입력"],
+    ["학년_번호", mbr.scyrNo ? `${mbr.scyrNo}학년` : "미입력"],
+    ["학과_명", mbr.scsbjtNm || "미입력"],
+    ["기수_번호", genText === "미배정" ? "미배정 (운영진 배정)" : genText],
+    ["전화번호", mbr.telno || "미입력"],
+    ["이메일", mbr.eml ?? "미입력"],
+    ["회원_등급", mbrGrdNm(mbr.mbrGrdCd)],
+    ["회원_상태", mbrSttsNm(mbr.mbrSttsCd)],
   ];
 
   return (
     <div className="w-[480px] px-4">
-      <Badge tone="grey">임시회원</Badge>
+      <Badge tone="grey">{mbrGrdNm(mbr.mbrGrdCd)}</Badge>
       <h1 className="mt-3 text-[27px] font-medium tracking-[-.4px]">
         회원 가입이 완료되었습니다
       </h1>
@@ -68,7 +63,7 @@ export function SignupCompletePage() {
         <Button
           className="flex-1"
           onClick={() => {
-            login(member.key);
+            login(mbr.mbrId);
             setPendingAuthUser(null);
             router.push(ROUTES.members);
           }}

@@ -4,5 +4,5 @@ export default async function Page({
   params,
 }: PageProps<"/forms/[formId]/edit">) {
   const { formId } = await params;
-  return <FormEditPage formKey={formId} />;
+  return <FormEditPage formId={Number(formId)} />;
 }

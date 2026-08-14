@@ -1,0 +1,363 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "formId": 1,
+      "creatrMbrId": 1,
+      "formTtlNm": "2026-1 신규 부원 모집 지원서",
+      "formSttsCd": "OPEN",
+      "rcptBgngDt": "2026-08-01T09:00:00",
+      "rcptEndDt": "2026-08-20T23:59:00",
+      "qitemCpstCn": {
+        "pages": [
+          {
+            "pageTtl": "모집 안내",
+            "pageDescCn": "숭실대학교 컴퓨터 학술동아리 SSCC 신입 부원을 모집합니다."
+          },
+          {
+            "pageTtl": "개인정보 수집·이용 동의",
+            "pageDescCn": "성명 · 학과 · 학번 · 학년 · 연락처를 수집하며, 위촉 절차 종료 시 파기합니다."
+          },
+          {
+            "pageTtl": "기본 인적 사항",
+            "pageDescCn": ""
+          },
+          {
+            "pageTtl": "코딩 역량",
+            "pageDescCn": "스터디 난이도 참고용이며 합격과 무관합니다."
+          },
+          {
+            "pageTtl": "자기 소개서",
+            "pageDescCn": "양식과 글자 수 제한은 없습니다. 면접에 활용됩니다."
+          },
+          {
+            "pageTtl": "면접 일자 선택",
+            "pageDescCn": "가능한 시간을 모두 선택해주세요. 한 항목도 선택하지 않으면 지원이 취소됩니다."
+          },
+          {
+            "pageTtl": "회비 안내",
+            "pageDescCn": "2026-1 신입회원 회비는 35,000원입니다."
+          },
+          {
+            "pageTtl": "지원 불가 안내",
+            "pageDescCn": "개인정보 수집·이용에 동의하지 않으시면 지원이 불가능합니다."
+          }
+        ],
+        "qitems": [
+          {
+            "qitemId": "q1",
+            "qitemLblNm": "개인정보 수집 및 이용 동의",
+            "qitemTypeCd": "SINGLE_CHOICE",
+            "reqYn": true,
+            "optionList": [
+              "동의함",
+              "동의하지 않음"
+            ],
+            "pageSeq": 1,
+            "branchMap": {
+              "동의함": 2,
+              "동의하지 않음": 7
+            }
+          },
+          {
+            "qitemId": "q2",
+            "qitemLblNm": "성명",
+            "qitemTypeCd": "SHORT_TEXT",
+            "reqYn": true,
+            "optionList": [],
+            "pageSeq": 2
+          },
+          {
+            "qitemId": "q3",
+            "qitemLblNm": "학과",
+            "qitemTypeCd": "SHORT_TEXT",
+            "reqYn": true,
+            "optionList": [],
+            "pageSeq": 2
+          },
+          {
+            "qitemId": "q4",
+            "qitemLblNm": "학번",
+            "qitemTypeCd": "SHORT_TEXT",
+            "reqYn": true,
+            "optionList": [],
+            "pageSeq": 2,
+            "ptrnCn": "^[0-9]{9}$",
+            "ptrnNm": "학번(9자리)",
+            "ptrnMsgCn": "학번 9자리를 숫자로 입력해주세요"
+          },
+          {
+            "qitemId": "q5",
+            "qitemLblNm": "학년 (2026년 1학기 기준)",
+            "qitemTypeCd": "SINGLE_CHOICE",
+            "reqYn": true,
+            "optionList": [
+              "1학년",
+              "2학년",
+              "3학년",
+              "4학년",
+              "기타"
+            ],
+            "pageSeq": 2
+          },
+          {
+            "qitemId": "q6",
+            "qitemLblNm": "휴대전화번호 (ex. 010-0000-0000)",
+            "qitemTypeCd": "SHORT_TEXT",
+            "reqYn": true,
+            "optionList": [],
+            "pageSeq": 2,
+            "ptrnCn": "^01[016-9]-[0-9]{3,4}-[0-9]{4}$",
+            "ptrnNm": "휴대전화",
+            "ptrnMsgCn": "010-0000-0000 형식으로 입력해주세요"
+          },
+          {
+            "qitemId": "q7",
+            "qitemLblNm": "생년월일",
+            "qitemTypeCd": "DATE",
+            "reqYn": true,
+            "optionList": [],
+            "pageSeq": 2
+          },
+          {
+            "qitemId": "q8",
+            "qitemLblNm": "코딩 경험",
+            "qitemTypeCd": "SINGLE_CHOICE",
+            "reqYn": true,
+            "optionList": [
+              "완전 처음이다",
+              "학교 교과 과정만 따라갔다",
+              "교과목·동아리에서 배운 내용을 활용해봤다",
+              "프로젝트를 진행해봤다",
+              "공모전·대회에 참여해봤다"
+            ],
+            "pageSeq": 3
+          },
+          {
+            "qitemId": "q9",
+            "qitemLblNm": "활용 가능 언어",
+            "qitemTypeCd": "MULTI_CHOICE",
+            "reqYn": true,
+            "optionList": [
+              "Python",
+              "JAVA",
+              "JS",
+              "C/C++",
+              "없음",
+              "기타"
+            ],
+            "pageSeq": 3
+          },
+          {
+            "qitemId": "q10",
+            "qitemLblNm": "배우고 싶은 기술 스택",
+            "qitemTypeCd": "MULTI_CHOICE",
+            "reqYn": true,
+            "optionList": [
+              "Web",
+              "App",
+              "Server",
+              "IoT",
+              "ML/DL",
+              "취·창업 스터디",
+              "기타"
+            ],
+            "pageSeq": 3
+          },
+          {
+            "qitemId": "q11",
+            "qitemLblNm": "1. 자기소개",
+            "qitemTypeCd": "LONG_TEXT",
+            "reqYn": true,
+            "optionList": [],
+            "pageSeq": 4
+          },
+          {
+            "qitemId": "q12",
+            "qitemLblNm": "2. 동아리 활동에서 얻고 싶은 것",
+            "qitemTypeCd": "LONG_TEXT",
+            "reqYn": true,
+            "optionList": [],
+            "pageSeq": 4
+          },
+          {
+            "qitemId": "q13",
+            "qitemLblNm": "3. 포부",
+            "qitemTypeCd": "LONG_TEXT",
+            "reqYn": true,
+            "optionList": [],
+            "pageSeq": 4
+          },
+          {
+            "qitemId": "q14",
+            "qitemLblNm": "8월 22일 (금)",
+            "qitemTypeCd": "MULTI_CHOICE",
+            "reqYn": false,
+            "optionList": [
+              "10:00-11:00",
+              "11:00-12:00",
+              "14:00-15:00",
+              "15:00-16:00"
+            ],
+            "pageSeq": 5
+          },
+          {
+            "qitemId": "q15",
+            "qitemLblNm": "8월 23일 (토)",
+            "qitemTypeCd": "MULTI_CHOICE",
+            "reqYn": false,
+            "optionList": [
+              "10:00-11:00",
+              "13:00-14:00",
+              "16:00-17:00"
+            ],
+            "pageSeq": 5
+          },
+          {
+            "qitemId": "q16",
+            "qitemLblNm": "8월 25일 (월)",
+            "qitemTypeCd": "MULTI_CHOICE",
+            "reqYn": false,
+            "optionList": [
+              "18:00-19:00",
+              "19:00-20:00"
+            ],
+            "pageSeq": 5
+          },
+          {
+            "qitemId": "q17",
+            "qitemLblNm": "회비 납부 방식 확인",
+            "qitemTypeCd": "MULTI_CHOICE",
+            "reqYn": true,
+            "optionList": [
+              "확인했습니다"
+            ],
+            "pageSeq": 6
+          }
+        ]
+      },
+      "crtDt": "2026-07-25T09:00:00",
+      "mdfcnDt": "2026-08-05T09:00:00"
+    },
+    {
+      "formId": 2,
+      "creatrMbrId": 2,
+      "formTtlNm": "2026-1 회원 연장 신청",
+      "formSttsCd": "CLOSED",
+      "rcptBgngDt": "2026-02-20T09:00:00",
+      "rcptEndDt": "2026-03-05T23:59:00",
+      "qitemCpstCn": {
+        "pages": [
+          {
+            "pageTtl": "연장 신청",
+            "pageDescCn": ""
+          }
+        ],
+        "qitems": [
+          {
+            "qitemId": "q1",
+            "qitemLblNm": "활동을 연장하시겠습니까?",
+            "qitemTypeCd": "SINGLE_CHOICE",
+            "reqYn": true,
+            "optionList": [
+              "예",
+              "아니오"
+            ]
+          },
+          {
+            "qitemId": "q2",
+            "qitemLblNm": "희망 국",
+            "qitemTypeCd": "SINGLE_CHOICE",
+            "reqYn": false,
+            "optionList": [
+              "학술국",
+              "기획국",
+              "홍보국"
+            ]
+          }
+        ]
+      },
+      "crtDt": "2026-02-14T09:00:00",
+      "mdfcnDt": "2026-03-06T09:00:00"
+    },
+    {
+      "formId": 3,
+      "creatrMbrId": 4,
+      "formTtlNm": "여름 MT 참석 조사",
+      "formSttsCd": "DRAFT",
+      "rcptBgngDt": null,
+      "rcptEndDt": null,
+      "qitemCpstCn": {
+        "pages": [
+          {
+            "pageTtl": "참석 조사",
+            "pageDescCn": ""
+          }
+        ],
+        "qitems": [
+          {
+            "qitemId": "q1",
+            "qitemLblNm": "MT에 참석하시나요?",
+            "qitemTypeCd": "SINGLE_CHOICE",
+            "reqYn": true,
+            "optionList": [
+              "참석",
+              "불참"
+            ]
+          },
+          {
+            "qitemId": "q2",
+            "qitemLblNm": "차량 지원이 필요한가요?",
+            "qitemTypeCd": "MULTI_CHOICE",
+            "reqYn": false,
+            "optionList": [
+              "필요"
+            ]
+          }
+        ]
+      },
+      "crtDt": "2026-08-07T09:00:00",
+      "mdfcnDt": "2026-08-08T09:00:00"
+    },
+    {
+      "formId": 4,
+      "creatrMbrId": 5,
+      "formTtlNm": "알고리즘 스터디 모집",
+      "formSttsCd": "CLOSED",
+      "rcptBgngDt": "2026-03-10T09:00:00",
+      "rcptEndDt": "2026-03-17T23:59:00",
+      "qitemCpstCn": {
+        "pages": [
+          {
+            "pageTtl": "스터디 모집",
+            "pageDescCn": ""
+          }
+        ],
+        "qitems": [
+          {
+            "qitemId": "q1",
+            "qitemLblNm": "백준 티어",
+            "qitemTypeCd": "SHORT_TEXT",
+            "reqYn": true,
+            "optionList": []
+          },
+          {
+            "qitemId": "q2",
+            "qitemLblNm": "참여 가능 요일",
+            "qitemTypeCd": "MULTI_CHOICE",
+            "reqYn": true,
+            "optionList": [
+              "월",
+              "수",
+              "금"
+            ]
+          }
+        ]
+      },
+      "crtDt": "2026-03-05T09:00:00",
+      "mdfcnDt": "2026-03-18T09:00:00"
+    }
+  ]
+}

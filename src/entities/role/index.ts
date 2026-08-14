@@ -1,2 +1,2 @@
-export type { Role } from "./model/types";
-export { useRoleStore } from "./model/store";
+export type { Role, RoleClsf } from "./model/types";
+export { useRoleStore, roleClsfNm, roleNmOf } from "./model/store";

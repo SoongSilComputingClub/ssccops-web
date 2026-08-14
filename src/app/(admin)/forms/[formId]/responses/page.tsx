@@ -4,5 +4,5 @@ export default async function Page({
   params,
 }: PageProps<"/forms/[formId]/responses">) {
   const { formId } = await params;
-  return <ResponseListPage formKey={formId} />;
+  return <ResponseListPage formId={Number(formId)} />;
 }

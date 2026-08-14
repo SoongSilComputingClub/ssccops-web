@@ -1,0 +1,67 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "mbrRoleId": 1,
+      "mbrId": 1,
+      "roleId": 1,
+      "roleBgngYmd": "2026-01-01",
+      "roleEndYmd": null,
+      "rprsRoleYn": true,
+      "crtDt": "2026-01-01T09:00:00",
+      "mdfcnDt": "2026-01-01T09:00:00"
+    },
+    {
+      "mbrRoleId": 2,
+      "mbrId": 1,
+      "roleId": 6,
+      "roleBgngYmd": "2025-09-01",
+      "roleEndYmd": null,
+      "rprsRoleYn": false,
+      "crtDt": "2025-09-01T09:00:00",
+      "mdfcnDt": "2025-09-01T09:00:00"
+    },
+    {
+      "mbrRoleId": 3,
+      "mbrId": 2,
+      "roleId": 4,
+      "roleBgngYmd": "2026-01-01",
+      "roleEndYmd": null,
+      "rprsRoleYn": true,
+      "crtDt": "2026-01-01T09:00:00",
+      "mdfcnDt": "2026-01-01T09:00:00"
+    },
+    {
+      "mbrRoleId": 4,
+      "mbrId": 3,
+      "roleId": 3,
+      "roleBgngYmd": "2025-01-01",
+      "roleEndYmd": "2025-12-31",
+      "rprsRoleYn": true,
+      "crtDt": "2025-01-01T09:00:00",
+      "mdfcnDt": "2025-12-31T09:00:00"
+    },
+    {
+      "mbrRoleId": 5,
+      "mbrId": 4,
+      "roleId": 5,
+      "roleBgngYmd": "2026-03-02",
+      "roleEndYmd": null,
+      "rprsRoleYn": true,
+      "crtDt": "2026-03-02T09:00:00",
+      "mdfcnDt": "2026-03-02T09:00:00"
+    },
+    {
+      "mbrRoleId": 6,
+      "mbrId": 5,
+      "roleId": 7,
+      "roleBgngYmd": "2024-03-01",
+      "roleEndYmd": "2025-02-28",
+      "rprsRoleYn": false,
+      "crtDt": "2024-03-01T09:00:00",
+      "mdfcnDt": "2025-02-28T09:00:00"
+    }
+  ]
+}

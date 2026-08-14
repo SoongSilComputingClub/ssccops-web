@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMemberStore, type Member } from "@/entities/member";
+import { useMbrStore, type Mbr } from "@/entities/member";
+import type { MbrGrdCd, MbrSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { TODAY } from "@/shared/config/constants";
 import {
@@ -18,31 +19,36 @@ import {
   flash,
 } from "@/shared/ui";
 
-type Draft = Omit<Member, "id" | "key">;
+type Draft = Omit<Mbr, "mbrId" | "crtDt" | "mdfcnDt">;
 
 const EMPTY_DRAFT: Draft = {
-  name: "",
-  sid: "",
-  cohort: "",
-  dept: "",
-  year: "",
-  phone: "",
-  email: "",
-  grade: "준회원",
-  status: "재학",
-  joined: TODAY,
-  roles: [],
+  stdntNo: "",
+  genNo: 0,
+  mbrNm: "",
+  scsbjtNm: "",
+  scyrNo: null,
+  telno: "",
+  eml: "",
+  mbrGrdCd: "ASSOC",
+  mbrSttsCd: "ENROLLED",
+  joinYmd: TODAY,
+  authUserId: null,
 };
 
-export function MemberEditPage({ memberKey }: { memberKey?: string }) {
+/** 숫자 입력값 → 번호N5 (빈 값은 null) */
+function toNo(v: string): number | null {
+  const n = Number(v.replace(/[^0-9]/g, ""));
+  return v.trim() === "" || Number.isNaN(n) ? null : n;
+}
+
+export function MemberEditPage({ mbrId }: { mbrId?: number }) {
   const router = useRouter();
-  const { members, grades, statuses, updateMember, addMember, addHistory } =
-    useMemberStore();
-  const existing = memberKey ? members.find((m) => m.key === memberKey) : undefined;
+  const { mbrs, mbrGrds, mbrSttss, updateMbr, addMbr } = useMbrStore();
+  const existing = mbrId ? mbrs.find((m) => m.mbrId === mbrId) : undefined;
   const [draft, setDraft] = useState<Draft>(existing ?? EMPTY_DRAFT);
   const [error, setError] = useState(false);
 
-  if (memberKey && !existing) {
+  if (mbrId && !existing) {
     return (
       <>
         <PageHeader title="회원 수정" showBack />
@@ -53,33 +59,23 @@ export function MemberEditPage({ memberKey }: { memberKey?: string }) {
     );
   }
 
-  const isGrad = draft.kind === "졸업생" || draft.status === "졸업";
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
 
   const save = () => {
-    if (!draft.name || !draft.sid) {
+    if (!draft.mbrNm || !draft.stdntNo) {
       setError(true);
       flash("필수값을 확인하세요");
       return;
     }
     if (existing) {
-      updateMember(existing.key, draft);
+      updateMbr(existing.mbrId, { ...draft, mdfcnDt: `${TODAY}T10:00:00` });
       flash("저장되었습니다");
-      router.replace(ROUTES.memberDetail(existing.key));
+      router.replace(ROUTES.memberDetail(existing.mbrId));
       return;
     }
-    const key = addMember(draft);
-    addHistory({
-      type: "기본정보",
-      member: draft.name,
-      from: "-",
-      to: "신규 등록",
-      reason: "직접 등록",
-      by: "김도현",
-      at: `${TODAY} 09:00`,
-    });
+    const newMbrId = addMbr(draft);
     flash("저장되었습니다");
-    router.replace(ROUTES.memberDetail(key));
+    router.replace(ROUTES.memberDetail(newMbrId));
   };
 
   return (
@@ -94,77 +90,67 @@ export function MemberEditPage({ memberKey }: { memberKey?: string }) {
           <Card>
             <SectionLabel className="mb-3">기본정보</SectionLabel>
             <div className="mb-3 text-[13.5px] text-n500">
-              회원번호 {existing ? existing.id : "(자동 채번)"}
+              회원 ID {existing ? existing.mbrId : "(자동 채번)"}
             </div>
             <div className="grid grid-cols-2 gap-[14px]">
-              <Field label="회원명" required>
+              <Field label="회원_명" required>
                 <TextField
-                  value={draft.name}
-                  onChange={(e) => set({ name: e.target.value })}
+                  value={draft.mbrNm}
+                  onChange={(e) => set({ mbrNm: e.target.value })}
                   placeholder="필수"
                 />
               </Field>
-              <Field label="학생번호" required>
+              <Field label="학생_번호" required>
                 <TextField
-                  value={draft.sid}
-                  onChange={(e) => set({ sid: e.target.value })}
+                  value={draft.stdntNo}
+                  onChange={(e) => set({ stdntNo: e.target.value })}
                   placeholder="예: 202011234"
                 />
               </Field>
-              <Field label="기수번호">
+              <Field label="기수_번호">
                 <TextField
-                  value={draft.cohort}
-                  onChange={(e) => set({ cohort: e.target.value })}
+                  value={draft.genNo ? String(draft.genNo) : ""}
+                  onChange={(e) => set({ genNo: toNo(e.target.value) ?? 0 })}
                   placeholder="선택 · 미입력 시 미배정"
                 />
               </Field>
-              <Field label="학과명">
+              <Field label="학과_명">
                 <TextField
-                  value={draft.dept}
-                  onChange={(e) => set({ dept: e.target.value })}
+                  value={draft.scsbjtNm ?? ""}
+                  onChange={(e) => set({ scsbjtNm: e.target.value })}
                 />
               </Field>
-              {isGrad ? (
-                <Field label="졸업연도">
-                  <TextField
-                    value={draft.gradYear ?? ""}
-                    onChange={(e) => set({ gradYear: e.target.value })}
-                    placeholder="예: 2021"
-                  />
-                </Field>
-              ) : (
-                <Field label="학년번호">
-                  <TextField
-                    value={draft.year}
-                    onChange={(e) => set({ year: e.target.value })}
-                    placeholder="1~4"
-                  />
-                </Field>
-              )}
-              <Field label="연락처번호">
+              <Field label="학년_번호">
                 <TextField
-                  value={draft.phone}
-                  onChange={(e) => set({ phone: e.target.value })}
+                  value={draft.scyrNo === null ? "" : String(draft.scyrNo)}
+                  onChange={(e) => set({ scyrNo: toNo(e.target.value) })}
+                  placeholder="1~4"
+                />
+              </Field>
+              <Field label="전화번호">
+                <TextField
+                  value={draft.telno ?? ""}
+                  onChange={(e) => set({ telno: e.target.value })}
                   placeholder="010-0000-0000"
                 />
               </Field>
-              <Field label="이메일주소">
+              <Field label="이메일">
                 <TextField
-                  value={draft.email}
-                  onChange={(e) => set({ email: e.target.value })}
+                  value={draft.eml ?? ""}
+                  onChange={(e) => set({ eml: e.target.value })}
                 />
               </Field>
-              <Field label="가입일자">
+              <Field label="가입_일자">
                 <TextField
-                  value={draft.joined}
-                  onChange={(e) => set({ joined: e.target.value })}
+                  value={draft.joinYmd}
+                  onChange={(e) => set({ joinYmd: e.target.value })}
                   placeholder="YYYY-MM-DD"
                 />
               </Field>
             </div>
             {error && (
               <div className="mt-4 rounded-[10px] border border-danger/28 bg-danger/8 px-3 py-[10px] text-[14px] text-danger">
-                회원명 · 학생번호는 필수입니다.
+                회원_명 · 학생_번호는 필수입니다.
               </div>
             )}
           </Card>
@@ -174,31 +160,27 @@ export function MemberEditPage({ memberKey }: { memberKey?: string }) {
               <SectionLabel className="mb-3">등급 · 상태</SectionLabel>
               <div className="mb-2 text-[13.5px] text-n400">회원등급</div>
               <div className="mb-4 flex flex-wrap gap-[7px]">
-                {grades
-                  .filter((g) => g.on)
-                  .map((g) => (
-                    <Chip
-                      key={g.name}
-                      active={draft.grade === g.name}
-                      onClick={() => set({ grade: g.name })}
-                    >
-                      {g.name}
-                    </Chip>
-                  ))}
+                {mbrGrds.map((g) => (
+                  <Chip
+                    key={g.mbrGrdCd}
+                    active={draft.mbrGrdCd === g.mbrGrdCd}
+                    onClick={() => set({ mbrGrdCd: g.mbrGrdCd as MbrGrdCd })}
+                  >
+                    {g.mbrGrdNm}
+                  </Chip>
+                ))}
               </div>
               <div className="mb-2 text-[13.5px] text-n400">회원상태</div>
               <div className="flex flex-wrap gap-[7px]">
-                {statuses
-                  .filter((s) => s.on)
-                  .map((s) => (
-                    <Chip
-                      key={s.name}
-                      active={draft.status === s.name}
-                      onClick={() => set({ status: s.name })}
-                    >
-                      {s.name}
-                    </Chip>
-                  ))}
+                {mbrSttss.map((s) => (
+                  <Chip
+                    key={s.mbrSttsCd}
+                    active={draft.mbrSttsCd === s.mbrSttsCd}
+                    onClick={() => set({ mbrSttsCd: s.mbrSttsCd as MbrSttsCd })}
+                  >
+                    {s.mbrSttsNm}
+                  </Chip>
+                ))}
               </div>
             </Card>
             <Button block className="py-[13px]" onClick={save}>

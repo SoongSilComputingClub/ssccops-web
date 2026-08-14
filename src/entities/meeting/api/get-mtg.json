@@ -1,0 +1,40 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "mtgId": 1,
+      "operId": 14,
+      "mtgSeCd": "REGULAR",
+      "atndTrgtCd": "ALL",
+      "mtgSttsCd": "IN_PROGRESS",
+      "mtgRbprsnId": 1,
+      "mtgPlcNm": "동아리방",
+      "insdMtgDtlCn": null,
+      "otsdMtgDtlCn": null
+    },
+    {
+      "mtgId": 2,
+      "operId": 15,
+      "mtgSeCd": "TOPIC",
+      "atndTrgtCd": "DIRECTORS",
+      "mtgSttsCd": "SCHEDULED",
+      "mtgRbprsnId": 6,
+      "mtgPlcNm": "제2세미나실",
+      "insdMtgDtlCn": null,
+      "otsdMtgDtlCn": null
+    },
+    {
+      "mtgId": 3,
+      "operId": 16,
+      "mtgSeCd": "REGULAR",
+      "atndTrgtCd": "ALL",
+      "mtgSttsCd": "CLOSED",
+      "mtgRbprsnId": 1,
+      "mtgPlcNm": "동아리방",
+      "insdMtgDtlCn": "7월 집행률 78% 보고. 잔여 예산은 박람회 홍보물에 우선 배정하기로 정리.",
+      "otsdMtgDtlCn": "7월 결산을 보고하고 짝선짝후 매칭 방식을 확정했습니다."
+    }
+  ]
+}

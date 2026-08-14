@@ -4,5 +4,5 @@ export default async function Page({
   params,
 }: PageProps<"/members/roles/[roleId]/edit">) {
   const { roleId } = await params;
-  return <RoleEditPage roleId={roleId} />;
+  return <RoleEditPage roleId={Number(roleId)} />;
 }

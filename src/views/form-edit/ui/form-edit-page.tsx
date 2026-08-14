@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useFormStore, type Form, type Question } from "@/entities/form";
+import { useFormStore, type Form, type Qitem } from "@/entities/form";
+import { useSessionStore } from "@/entities/session";
+import { PATTERN_PRESETS, TODAY } from "@/shared/config/constants";
 import {
-  PATTERN_PRESETS,
-  QTYPES,
-  TODAY,
-  isChoiceType,
-} from "@/shared/config/constants";
+  isChoiceQitemType,
+  QITEM_TYPE_CDS,
+  QITEM_TYPE_NM,
+  type FormSttsCd,
+  type QitemTypeCd,
+} from "@/shared/config/codes";
 import { fromInput, toInput } from "@/shared/lib/date";
 import { ROUTES } from "@/shared/config/routes";
 import {
@@ -25,44 +28,63 @@ import {
   flash,
 } from "@/shared/ui";
 
-const EMPTY_FORM: Form = {
-  id: "(자동 채번)",
-  key: "",
-  title: "",
-  slug: "",
-  status: "DRAFT",
-  labels: [],
-  start: "",
-  end: "",
-  dup: false,
-  by: "김도현",
-  created: TODAY,
-  updated: TODAY,
-  pages: [{ title: "페이지 1", desc: "" }],
-  questions: [
-    { qid: "문항_1", label: "", type: "단답형", required: false, page: 0, options: [] },
-  ],
-};
+const NOW = `${TODAY}T10:00:00`;
 
-export function FormEditPage({ formKey }: { formKey?: string }) {
+function emptyForm(creatrMbrId: number): Form {
+  return {
+    formId: 0,
+    creatrMbrId,
+    formTtlNm: "",
+    formSttsCd: "DRAFT",
+    rcptBgngDt: null,
+    rcptEndDt: null,
+    qitemCpstCn: {
+      pages: [{ pageTtl: "페이지 1", pageDescCn: "" }],
+      qitems: [
+        {
+          qitemId: "q1",
+          qitemLblNm: "",
+          qitemTypeCd: "SHORT_TEXT",
+          reqYn: false,
+          pageSeq: 0,
+          optionList: [],
+        },
+      ],
+    },
+    crtDt: NOW,
+    mdfcnDt: NOW,
+  };
+}
+
+const isTextType = (cd: QitemTypeCd) => cd === "SHORT_TEXT" || cd === "LONG_TEXT";
+
+export function FormEditPage({ formId }: { formId?: number }) {
   const router = useRouter();
-  const { forms, labels, saveForm } = useFormStore();
-  const existing = formKey ? forms.find((f) => f.key === formKey) : undefined;
+  const { forms, formLbls, formLblRels, saveForm, setFormLbls } = useFormStore();
+  const sessionMbrId = useSessionStore((s) => s.mbrId);
+  const existing = formId ? forms.find((f) => f.formId === formId) : undefined;
 
   const [draft, setDraft] = useState<Form>(() =>
     existing
       ? {
           ...existing,
-          pages: existing.pages.map((p) => ({ ...p })),
-          questions: existing.questions.map((q) => ({ ...q })),
+          qitemCpstCn: {
+            pages: existing.qitemCpstCn.pages.map((p) => ({ ...p })),
+            qitems: existing.qitemCpstCn.qitems.map((q) => ({ ...q })),
+          },
         }
-      : EMPTY_FORM,
+      : emptyForm(sessionMbrId || 1),
+  );
+  const [pickedLblIds, setPickedLblIds] = useState<number[]>(() =>
+    formId
+      ? formLblRels.filter((r) => r.formId === formId).map((r) => r.formLblId)
+      : [],
   );
   const [page, setPage] = useState(0);
   const [openQ, setOpenQ] = useState<string | null>(null);
   const [advQ, setAdvQ] = useState<string | null>(null);
 
-  if (formKey && !existing) {
+  if (formId && !existing) {
     return (
       <>
         <PageHeader title="폼 편집" showBack />
@@ -73,33 +95,37 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
     );
   }
 
-  const pageQuestions = draft.questions.filter((q) => (q.page ?? 0) === page);
+  const { pages, qitems } = draft.qitemCpstCn;
+  const pageQitems = qitems.filter((q) => (q.pageSeq ?? 0) === page);
 
-  const patchQ = (qid: string, patch: Partial<Question>) =>
-    setDraft((d) => ({
-      ...d,
-      questions: d.questions.map((q) => (q.qid === qid ? { ...q, ...patch } : q)),
+  const setCpst = (
+    fn: (cpst: Form["qitemCpstCn"]) => Form["qitemCpstCn"],
+  ) => setDraft((d) => ({ ...d, qitemCpstCn: fn(d.qitemCpstCn) }));
+
+  const patchQ = (qitemId: string, patch: Partial<Qitem>) =>
+    setCpst((c) => ({
+      ...c,
+      qitems: c.qitems.map((q) => (q.qitemId === qitemId ? { ...q, ...patch } : q)),
     }));
 
   const addPage = () =>
-    setDraft((d) => ({
-      ...d,
-      pages: [...d.pages, { title: `페이지 ${d.pages.length + 1}`, desc: "" }],
+    setCpst((c) => ({
+      ...c,
+      pages: [...c.pages, { pageTtl: `페이지 ${c.pages.length + 1}`, pageDescCn: "" }],
     }));
 
   const removePage = (index: number) => {
-    if (draft.pages.length <= 1) {
+    if (pages.length <= 1) {
       flash("페이지는 최소 1개 필요합니다");
       return;
     }
-    setDraft((d) => ({
-      ...d,
-      pages: d.pages.filter((_, i) => i !== index),
-      questions: d.questions
-        .filter((q) => (q.page ?? 0) !== index)
+    setCpst((c) => ({
+      pages: c.pages.filter((_, i) => i !== index),
+      qitems: c.qitems
+        .filter((q) => (q.pageSeq ?? 0) !== index)
         .map((q) => ({
           ...q,
-          page: (q.page ?? 0) > index ? (q.page ?? 0) - 1 : (q.page ?? 0),
+          pageSeq: (q.pageSeq ?? 0) > index ? (q.pageSeq ?? 0) - 1 : (q.pageSeq ?? 0),
         })),
     }));
     setPage((p) => Math.max(0, p - (index <= p ? 1 : 0)));
@@ -108,17 +134,16 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
 
   const movePage = (index: number, dir: -1 | 1) => {
     const to = index + dir;
-    if (to < 0 || to >= draft.pages.length) return;
-    setDraft((d) => {
-      const pages = [...d.pages];
-      [pages[index], pages[to]] = [pages[to], pages[index]];
+    if (to < 0 || to >= pages.length) return;
+    setCpst((c) => {
+      const next = [...c.pages];
+      [next[index], next[to]] = [next[to], next[index]];
       return {
-        ...d,
-        pages,
-        questions: d.questions.map((q) => {
-          const p = q.page ?? 0;
-          if (p === index) return { ...q, page: to };
-          if (p === to) return { ...q, page: index };
+        pages: next,
+        qitems: c.qitems.map((q) => {
+          const p = q.pageSeq ?? 0;
+          if (p === index) return { ...q, pageSeq: to };
+          if (p === to) return { ...q, pageSeq: index };
           return q;
         }),
       };
@@ -126,77 +151,85 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
     setPage(to);
   };
 
-  const addQuestion = () =>
-    setDraft((d) => ({
-      ...d,
-      questions: [
-        ...d.questions,
+  const addQitem = () =>
+    setCpst((c) => ({
+      ...c,
+      qitems: [
+        ...c.qitems,
         {
-          qid: `문항_${d.questions.length + 1}`,
-          label: "",
-          type: "단답형",
-          required: false,
-          page,
-          options: [],
+          qitemId: `q${c.qitems.length + 1}`,
+          qitemLblNm: "",
+          qitemTypeCd: "SHORT_TEXT",
+          reqYn: false,
+          pageSeq: page,
+          optionList: [],
         },
       ],
     }));
 
-  const moveQuestion = (qid: string, dir: -1 | 1) => {
-    setDraft((d) => {
-      const inPage = d.questions.filter((q) => (q.page ?? 0) === page);
-      const idx = inPage.findIndex((q) => q.qid === qid);
+  const moveQitem = (qitemId: string, dir: -1 | 1) =>
+    setCpst((c) => {
+      const inPage = c.qitems.filter((q) => (q.pageSeq ?? 0) === page);
+      const idx = inPage.findIndex((q) => q.qitemId === qitemId);
       const to = idx + dir;
-      if (to < 0 || to >= inPage.length) return d;
-      const a = d.questions.indexOf(inPage[idx]);
-      const b = d.questions.indexOf(inPage[to]);
-      const questions = [...d.questions];
-      [questions[a], questions[b]] = [questions[b], questions[a]];
-      return { ...d, questions };
+      if (to < 0 || to >= inPage.length) return c;
+      const a = c.qitems.indexOf(inPage[idx]);
+      const b = c.qitems.indexOf(inPage[to]);
+      const next = [...c.qitems];
+      [next[a], next[b]] = [next[b], next[a]];
+      return { ...c, qitems: next };
     });
-  };
 
-  const removeQuestion = (qid: string) =>
-    setDraft((d) => ({ ...d, questions: d.questions.filter((q) => q.qid !== qid) }));
+  const removeQitem = (qitemId: string) =>
+    setCpst((c) => ({ ...c, qitems: c.qitems.filter((q) => q.qitemId !== qitemId) }));
 
-  const changeType = (q: Question, type: string) => {
-    patchQ(q.qid, {
-      type,
-      options:
-        isChoiceType(type) && q.options.length === 0
+  const changeType = (q: Qitem, cd: QitemTypeCd) => {
+    patchQ(q.qitemId, {
+      qitemTypeCd: cd,
+      optionList:
+        isChoiceQitemType(cd) && q.optionList.length === 0
           ? ["선택지 1", "선택지 2"]
-          : q.options,
-      ...(isChoiceType(type) ? {} : { branch: undefined, maxSelect: undefined }),
-      ...(type === "단답형" || type === "장문형"
+          : q.optionList,
+      ...(isChoiceQitemType(cd)
         ? {}
-        : { pattern: undefined, patternName: undefined, patternMsg: undefined }),
+        : { branchMap: undefined, maxSlctCnt: undefined }),
+      ...(isTextType(cd)
+        ? {}
+        : { ptrnCn: undefined, ptrnNm: undefined, ptrnMsgCn: undefined }),
     });
   };
 
-  const removeOption = (q: Question, option: string) => {
-    const branch = q.branch ? { ...q.branch } : undefined;
-    if (branch) delete branch[option];
-    patchQ(q.qid, { options: q.options.filter((o) => o !== option), branch });
+  const removeOption = (q: Qitem, option: string) => {
+    const branchMap = q.branchMap ? { ...q.branchMap } : undefined;
+    if (branchMap) delete branchMap[option];
+    patchQ(q.qitemId, {
+      optionList: q.optionList.filter((o) => o !== option),
+      branchMap,
+    });
   };
 
-  const save = (status: "DRAFT" | "OPEN") => {
-    if (!draft.title.trim()) {
-      flash("폼 제목을 입력하세요");
+  const save = (formSttsCd: FormSttsCd) => {
+    if (!draft.formTtlNm.trim()) {
+      flash("폼_제목_명을 입력하세요");
       return;
     }
-    const saved = saveForm({ ...draft, title: draft.title.trim() }, status);
-    flash(status === "OPEN" ? "접수를 시작했습니다" : "임시저장했습니다");
-    router.replace(ROUTES.formDetail(saved.key));
+    const saved = saveForm(
+      { ...draft, formTtlNm: draft.formTtlNm.trim() },
+      formSttsCd,
+    );
+    setFormLbls(saved.formId, pickedLblIds);
+    flash(formSttsCd === "OPEN" ? "접수를 시작했습니다" : "임시저장했습니다");
+    router.replace(ROUTES.formDetail(saved.formId));
   };
 
-  const qSummary = (q: Question) =>
+  const qSummary = (q: Qitem) =>
     [
-      q.type,
-      q.required ? "필수" : null,
-      isChoiceType(q.type) ? `선택지 ${q.options.length}개` : null,
-      q.pattern ? "형식 검증" : null,
-      q.branch && Object.keys(q.branch).length > 0
-        ? `분기 ${Object.keys(q.branch).length}`
+      QITEM_TYPE_NM[q.qitemTypeCd],
+      q.reqYn ? "필수" : null,
+      isChoiceQitemType(q.qitemTypeCd) ? `선택지 ${q.optionList.length}개` : null,
+      q.ptrnCn ? "형식 검증" : null,
+      q.branchMap && Object.keys(q.branchMap).length > 0
+        ? `분기 ${Object.keys(q.branchMap).length}`
         : null,
     ]
       .filter(Boolean)
@@ -204,40 +237,44 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
 
   return (
     <>
-      <PageHeader
-        title="폼 편집"
-        subtitle={existing ? "수정" : "새 폼"}
-        showBack
-      />
+      <PageHeader title="폼 편집" subtitle={existing ? "수정" : "새 폼"} showBack />
       <PageBody>
         <div className="grid grid-cols-[1fr_1.15fr] items-start gap-4">
           <div className="flex flex-col gap-4">
             <Card>
               <SectionLabel className="mb-3">기본정보</SectionLabel>
               <div className="flex flex-col gap-[14px]">
-                <Field label="폼 제목" required>
+                <Field label="폼_제목_명" required>
                   <TextField
-                    value={draft.title}
-                    onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+                    value={draft.formTtlNm}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, formTtlNm: e.target.value }))
+                    }
                     placeholder="예: 2026-1 신규 부원 모집"
                   />
                 </Field>
                 <div className="grid grid-cols-2 gap-[14px]">
-                  <Field label="접수 시작">
+                  <Field label="접수_시작_일시">
                     <TextField
                       type="datetime-local"
-                      value={toInput(draft.start, true)}
+                      value={toInput(draft.rcptBgngDt, true)}
                       onChange={(e) =>
-                        setDraft((d) => ({ ...d, start: fromInput(e.target.value) }))
+                        setDraft((d) => ({
+                          ...d,
+                          rcptBgngDt: fromInput(e.target.value, true) || null,
+                        }))
                       }
                     />
                   </Field>
-                  <Field label="접수 종료">
+                  <Field label="접수_종료_일시">
                     <TextField
                       type="datetime-local"
-                      value={toInput(draft.end, true)}
+                      value={toInput(draft.rcptEndDt, true)}
                       onChange={(e) =>
-                        setDraft((d) => ({ ...d, end: fromInput(e.target.value) }))
+                        setDraft((d) => ({
+                          ...d,
+                          rcptEndDt: fromInput(e.target.value, true) || null,
+                        }))
                       }
                     />
                   </Field>
@@ -246,22 +283,23 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
             </Card>
 
             <Card>
-              <SectionLabel className="mb-3">라벨</SectionLabel>
+              <SectionLabel className="mb-3">폼_라벨</SectionLabel>
               <div className="flex flex-wrap gap-[7px]">
-                {labels
-                  .filter((l) => l.on)
+                {formLbls
+                  .filter((l) => l.useYn)
                   .map((l) => (
                     <Chip
-                      key={l.name}
-                      active={draft.labels.includes(l.name)}
+                      key={l.formLblId}
+                      active={pickedLblIds.includes(l.formLblId)}
                       onClick={() =>
-                        setDraft((d) => ({
-                          ...d,
-                          labels: d.labels.includes(l.name) ? [] : [l.name],
-                        }))
+                        setPickedLblIds((ids) =>
+                          ids.includes(l.formLblId)
+                            ? ids.filter((x) => x !== l.formLblId)
+                            : [...ids, l.formLblId],
+                        )
                       }
                     >
-                      {l.name}
+                      {l.lblNm}
                     </Chip>
                   ))}
               </div>
@@ -294,20 +332,32 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
               </button>
             </div>
             <div className="mb-3 flex flex-wrap gap-[6px]">
-              {draft.pages.map((p, i) => (
+              {pages.map((p, i) => (
                 <Chip key={i} active={page === i} onClick={() => setPage(i)}>
-                  {i + 1}. {p.title || "(제목 없음)"} (
-                  {draft.questions.filter((q) => (q.page ?? 0) === i).length})
+                  {i + 1}. {p.pageTtl || "(제목 없음)"} (
+                  {qitems.filter((q) => (q.pageSeq ?? 0) === i).length})
                 </Chip>
               ))}
             </div>
 
             <div className="rounded-[12px] border border-line p-3">
               <div className="flex items-center gap-2 text-[13.5px] text-n500">
-                페이지 {page + 1} / {draft.pages.length}
+                페이지 {page + 1} / {pages.length}
                 <div className="flex-1" />
-                <button type="button" onClick={() => movePage(page, -1)} className="cursor-pointer hover:text-accent">↑</button>
-                <button type="button" onClick={() => movePage(page, 1)} className="cursor-pointer hover:text-accent">↓</button>
+                <button
+                  type="button"
+                  onClick={() => movePage(page, -1)}
+                  className="cursor-pointer hover:text-accent"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  onClick={() => movePage(page, 1)}
+                  className="cursor-pointer hover:text-accent"
+                >
+                  ↓
+                </button>
                 <button
                   type="button"
                   onClick={() => removePage(page)}
@@ -318,24 +368,24 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
               </div>
               <div className="mt-2 flex flex-col gap-2">
                 <TextField
-                  value={draft.pages[page]?.title ?? ""}
+                  value={pages[page]?.pageTtl ?? ""}
                   onChange={(e) =>
-                    setDraft((d) => ({
-                      ...d,
-                      pages: d.pages.map((p, i) =>
-                        i === page ? { ...p, title: e.target.value } : p,
+                    setCpst((c) => ({
+                      ...c,
+                      pages: c.pages.map((p, i) =>
+                        i === page ? { ...p, pageTtl: e.target.value } : p,
                       ),
                     }))
                   }
                   placeholder="페이지 제목"
                 />
                 <TextField
-                  value={draft.pages[page]?.desc ?? ""}
+                  value={pages[page]?.pageDescCn ?? ""}
                   onChange={(e) =>
-                    setDraft((d) => ({
-                      ...d,
-                      pages: d.pages.map((p, i) =>
-                        i === page ? { ...p, desc: e.target.value } : p,
+                    setCpst((c) => ({
+                      ...c,
+                      pages: c.pages.map((p, i) =>
+                        i === page ? { ...p, pageDescCn: e.target.value } : p,
                       ),
                     }))
                   }
@@ -346,35 +396,34 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
 
             <div className="mt-4 mb-2 flex items-center">
               <div className="text-[14.5px] font-medium">
-                이 페이지의 문항 {pageQuestions.length}개
+                이 페이지의 문항 {pageQitems.length}개
               </div>
               <div className="flex-1" />
               <button
                 type="button"
-                onClick={addQuestion}
+                onClick={addQitem}
                 className="cursor-pointer text-[14px] text-accent"
               >
                 + 문항 추가
               </button>
             </div>
 
-            {pageQuestions.length === 0 ? (
+            {pageQitems.length === 0 ? (
               <div className="py-4 text-center text-[14px] text-n500">
                 문항이 없습니다. 위에서 문항을 추가하세요.
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                {pageQuestions.map((q, qi) => {
-                  const open = openQ === q.qid;
-                  const isText = q.type === "단답형" || q.type === "장문형";
+                {pageQitems.map((q, qi) => {
+                  const open = openQ === q.qitemId;
                   return (
-                    <div key={q.qid} className="rounded-[12px] border border-line">
+                    <div key={q.qitemId} className="rounded-[12px] border border-line">
                       <div
-                        onClick={() => setOpenQ(open ? null : q.qid)}
+                        onClick={() => setOpenQ(open ? null : q.qitemId)}
                         className="flex cursor-pointer items-center gap-2 p-3"
                       >
                         <div className="text-[14.5px] font-semibold">
-                          {qi + 1}. {q.label || "(제목 없음)"}
+                          {qi + 1}. {q.qitemLblNm || "(제목 없음)"}
                         </div>
                         <div className="min-w-0 flex-1 truncate text-[12.5px] text-n500">
                           {qSummary(q)}
@@ -385,51 +434,67 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
                       {open && (
                         <div className="border-t border-line p-3">
                           <TextField
-                            value={q.label}
-                            onChange={(e) => patchQ(q.qid, { label: e.target.value })}
+                            value={q.qitemLblNm}
+                            onChange={(e) =>
+                              patchQ(q.qitemId, { qitemLblNm: e.target.value })
+                            }
                             placeholder="질문 문구"
                           />
                           <div className="mt-2 flex flex-wrap gap-[6px]">
-                            {QTYPES.map((t) => (
+                            {QITEM_TYPE_CDS.map((cd) => (
                               <Chip
-                                key={t}
-                                active={q.type === t}
-                                onClick={() => changeType(q, t)}
+                                key={cd}
+                                active={q.qitemTypeCd === cd}
+                                onClick={() => changeType(q, cd)}
                               >
-                                {t}
+                                {QITEM_TYPE_NM[cd]}
                               </Chip>
                             ))}
                           </div>
                           <div className="mt-3 flex items-center gap-2">
                             <Toggle
                               size="sm"
-                              on={q.required}
-                              onChange={(on) => patchQ(q.qid, { required: on })}
+                              on={q.reqYn}
+                              onChange={(on) => patchQ(q.qitemId, { reqYn: on })}
                             />
                             <span className="text-[14px]">필수 응답</span>
                             <div className="flex-1" />
-                            <button type="button" onClick={() => moveQuestion(q.qid, -1)} className="cursor-pointer text-[14px] text-n400 hover:text-accent">↑</button>
-                            <button type="button" onClick={() => moveQuestion(q.qid, 1)} className="cursor-pointer text-[14px] text-n400 hover:text-accent">↓</button>
                             <button
                               type="button"
-                              onClick={() => removeQuestion(q.qid)}
+                              onClick={() => moveQitem(q.qitemId, -1)}
+                              className="cursor-pointer text-[14px] text-n400 hover:text-accent"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveQitem(q.qitemId, 1)}
+                              className="cursor-pointer text-[14px] text-n400 hover:text-accent"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeQitem(q.qitemId)}
                               className="cursor-pointer text-[14px] text-n400 hover:text-danger"
                             >
                               삭제
                             </button>
                           </div>
 
-                          {isChoiceType(q.type) && (
+                          {isChoiceQitemType(q.qitemTypeCd) && (
                             <div className="mt-3">
-                              <div className="mb-[6px] text-[13.5px] text-n400">선택지</div>
+                              <div className="mb-[6px] text-[13.5px] text-n400">
+                                선택지
+                              </div>
                               <div className="flex flex-col gap-[6px]">
-                                {q.options.map((o, oi) => (
+                                {q.optionList.map((o, oi) => (
                                   <div key={oi} className="flex items-center gap-2">
                                     <TextField
                                       value={o}
                                       onChange={(e) =>
-                                        patchQ(q.qid, {
-                                          options: q.options.map((x, xi) =>
+                                        patchQ(q.qitemId, {
+                                          optionList: q.optionList.map((x, xi) =>
                                             xi === oi ? e.target.value : x,
                                           ),
                                         })
@@ -447,10 +512,10 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    patchQ(q.qid, {
-                                      options: [
-                                        ...q.options,
-                                        `선택지 ${q.options.length + 1}`,
+                                    patchQ(q.qitemId, {
+                                      optionList: [
+                                        ...q.optionList,
+                                        `선택지 ${q.optionList.length + 1}`,
                                       ],
                                     })
                                   }
@@ -464,41 +529,43 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
 
                           <button
                             type="button"
-                            onClick={() => setAdvQ(advQ === q.qid ? null : q.qid)}
+                            onClick={() => setAdvQ(advQ === q.qitemId ? null : q.qitemId)}
                             className="mt-3 cursor-pointer text-[13.5px] text-accent"
                           >
-                            {advQ === q.qid
+                            {advQ === q.qitemId
                               ? "고급 설정 접기"
                               : "고급 설정 (형식 검증 · 페이지 이동)"}
                           </button>
 
-                          {advQ === q.qid && (
+                          {advQ === q.qitemId && (
                             <div className="mt-3 flex flex-col gap-4 rounded-[10px] bg-bg p-3">
                               <div>
-                                <div className="mb-[6px] text-[13.5px] text-n400">문항 이동</div>
+                                <div className="mb-[6px] text-[13.5px] text-n400">
+                                  문항 이동
+                                </div>
                                 <div className="flex flex-wrap gap-[6px]">
-                                  {draft.pages.map((p, i) => (
+                                  {pages.map((p, i) => (
                                     <Chip
                                       key={i}
-                                      active={(q.page ?? 0) === i}
-                                      onClick={() => patchQ(q.qid, { page: i })}
+                                      active={(q.pageSeq ?? 0) === i}
+                                      onClick={() => patchQ(q.qitemId, { pageSeq: i })}
                                     >
-                                      {i + 1}. {p.title}
+                                      {i + 1}. {p.pageTtl}
                                     </Chip>
                                   ))}
                                 </div>
                               </div>
 
-                              {q.type === "다중선택" && (
+                              {q.qitemTypeCd === "MULTI_CHOICE" && (
                                 <div>
                                   <div className="mb-[6px] text-[13.5px] text-n400">
                                     최대 선택 개수
                                   </div>
                                   <TextField
-                                    value={q.maxSelect ?? ""}
+                                    value={q.maxSlctCnt ?? ""}
                                     onChange={(e) =>
-                                      patchQ(q.qid, {
-                                        maxSelect: Number(e.target.value) || undefined,
+                                      patchQ(q.qitemId, {
+                                        maxSlctCnt: Number(e.target.value) || undefined,
                                       })
                                     }
                                     placeholder="제한 없음"
@@ -507,7 +574,7 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
                                 </div>
                               )}
 
-                              {isText && (
+                              {isTextType(q.qitemTypeCd) && (
                                 <div>
                                   <div className="mb-[6px] text-[13.5px] text-n400">
                                     입력 형식 검증
@@ -518,22 +585,22 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
                                         key={p.name}
                                         active={
                                           p.name === "자유 입력"
-                                            ? !q.pattern
-                                            : q.patternName === p.name
+                                            ? !q.ptrnCn
+                                            : q.ptrnNm === p.name
                                         }
                                         onClick={() =>
                                           patchQ(
-                                            q.qid,
+                                            q.qitemId,
                                             p.pattern
                                               ? {
-                                                  pattern: p.pattern,
-                                                  patternName: p.name,
-                                                  patternMsg: `${p.name} 형식으로 입력해주세요`,
+                                                  ptrnCn: p.pattern,
+                                                  ptrnNm: p.name,
+                                                  ptrnMsgCn: `${p.name} 형식으로 입력해주세요`,
                                                 }
                                               : {
-                                                  pattern: undefined,
-                                                  patternName: undefined,
-                                                  patternMsg: undefined,
+                                                  ptrnCn: undefined,
+                                                  ptrnNm: undefined,
+                                                  ptrnMsgCn: undefined,
                                                 },
                                           )
                                         }
@@ -543,17 +610,17 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
                                     ))}
                                   </div>
                                   <TextField
-                                    value={q.pattern ?? ""}
+                                    value={q.ptrnCn ?? ""}
                                     onChange={(e) =>
-                                      patchQ(q.qid, { pattern: e.target.value })
+                                      patchQ(q.qitemId, { ptrnCn: e.target.value })
                                     }
                                     placeholder="정규식 (예: ^[0-9]{9}$)"
                                     className="mt-2 font-mono text-[13.5px]"
                                   />
                                   <TextField
-                                    value={q.patternMsg ?? ""}
+                                    value={q.ptrnMsgCn ?? ""}
                                     onChange={(e) =>
-                                      patchQ(q.qid, { patternMsg: e.target.value })
+                                      patchQ(q.qitemId, { ptrnMsgCn: e.target.value })
                                     }
                                     placeholder="형식 오류 안내 문구"
                                     className="mt-2"
@@ -561,44 +628,47 @@ export function FormEditPage({ formKey }: { formKey?: string }) {
                                 </div>
                               )}
 
-                              {q.type === "단일선택" && (
+                              {q.qitemTypeCd === "SINGLE_CHOICE" && (
                                 <div>
                                   <div className="mb-[6px] text-[13.5px] text-n400">
                                     선택지별 페이지 이동
                                   </div>
                                   <div className="flex flex-col gap-2">
-                                    {q.options.map((o) => (
+                                    {q.optionList.map((o) => (
                                       <div key={o}>
                                         <div className="mb-1 text-[13px]">{o}</div>
                                         <div className="flex flex-wrap gap-[6px]">
                                           <Chip
-                                            active={q.branch?.[o] === undefined}
+                                            active={q.branchMap?.[o] === undefined}
                                             onClick={() => {
-                                              const branch = q.branch
-                                                ? { ...q.branch }
+                                              const branchMap = q.branchMap
+                                                ? { ...q.branchMap }
                                                 : {};
-                                              delete branch[o];
-                                              patchQ(q.qid, {
-                                                branch:
-                                                  Object.keys(branch).length > 0
-                                                    ? branch
+                                              delete branchMap[o];
+                                              patchQ(q.qitemId, {
+                                                branchMap:
+                                                  Object.keys(branchMap).length > 0
+                                                    ? branchMap
                                                     : undefined,
                                               });
                                             }}
                                           >
                                             다음 페이지
                                           </Chip>
-                                          {draft.pages.map((p, i) => (
+                                          {pages.map((p, i) => (
                                             <Chip
                                               key={i}
-                                              active={q.branch?.[o] === i}
+                                              active={q.branchMap?.[o] === i}
                                               onClick={() =>
-                                                patchQ(q.qid, {
-                                                  branch: { ...(q.branch ?? {}), [o]: i },
+                                                patchQ(q.qitemId, {
+                                                  branchMap: {
+                                                    ...(q.branchMap ?? {}),
+                                                    [o]: i,
+                                                  },
                                                 })
                                               }
                                             >
-                                              {i + 1}. {p.title}
+                                              {i + 1}. {p.pageTtl}
                                             </Chip>
                                           ))}
                                         </div>

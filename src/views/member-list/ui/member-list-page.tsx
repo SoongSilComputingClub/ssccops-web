@@ -3,14 +3,17 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  activeRoles,
-  cohortText,
-  gradeTone,
+  currentRoleRels,
+  genNoText,
   isGraduate,
-  statusTone,
-  useMemberStore,
-  type Member,
+  mbrGrdNm,
+  mbrGrdTone,
+  mbrSttsNm,
+  mbrSttsTone,
+  useMbrStore,
+  type Mbr,
 } from "@/entities/member";
+import { roleNmOf, useRoleStore } from "@/entities/role";
 import { ROUTES } from "@/shared/config/routes";
 import {
   Badge,
@@ -25,73 +28,80 @@ import {
 } from "@/shared/ui";
 
 const SORTS = ["이름순", "기수순", "가입일순", "최근 수정순"] as const;
+const ALL = "전체";
 
 export function MemberListPage() {
   const router = useRouter();
-  const { members, grades, statuses } = useMemberStore();
+  const { mbrs, mbrGrds, mbrSttss, mbrRoleRels } = useMbrStore();
+  const roles = useRoleStore((s) => s.roles);
   const [q, setQ] = useState("");
-  const [fGrade, setFGrade] = useState("전체");
-  const [fStatus, setFStatus] = useState("전체");
+  const [fMbrGrdCd, setFMbrGrdCd] = useState<string>(ALL);
+  const [fMbrSttsCd, setFMbrSttsCd] = useState<string>(ALL);
   const [sortIdx, setSortIdx] = useState(0);
 
   const filtered = useMemo(() => {
-    const list = members.filter(
+    const list = mbrs.filter(
       (m) =>
-        (m.name.includes(q) || m.sid.includes(q)) &&
-        (fGrade === "전체" || m.grade === fGrade) &&
-        (fStatus === "전체" || m.status === fStatus),
+        (m.mbrNm.includes(q) || m.stdntNo.includes(q)) &&
+        (fMbrGrdCd === ALL || m.mbrGrdCd === fMbrGrdCd) &&
+        (fMbrSttsCd === ALL || m.mbrSttsCd === fMbrSttsCd),
     );
     const sort = SORTS[sortIdx];
     return [...list].sort((a, b) => {
-      if (sort === "이름순") return a.name.localeCompare(b.name, "ko");
-      if (sort === "기수순") return Number(b.cohort || 0) - Number(a.cohort || 0);
-      if (sort === "가입일순") return b.joined.localeCompare(a.joined);
-      return a.key.localeCompare(b.key); // 최근 수정순 (원본: key 오름차순)
+      if (sort === "이름순") return a.mbrNm.localeCompare(b.mbrNm, "ko");
+      if (sort === "기수순") return b.genNo - a.genNo;
+      if (sort === "가입일순") return b.joinYmd.localeCompare(a.joinYmd);
+      return b.mdfcnDt.localeCompare(a.mdfcnDt);
     });
-  }, [members, q, fGrade, fStatus, sortIdx]);
+  }, [mbrs, q, fMbrGrdCd, fMbrSttsCd, sortIdx]);
 
-  const columns: GridColumn<Member>[] = [
+  const columns: GridColumn<Mbr>[] = [
     {
-      key: "name",
+      key: "mbrNm",
       header: "회원명",
       width: "1.1fr",
       render: (m) => (
-        <span className="font-semibold hover:text-accent">{m.name}</span>
+        <span className="font-semibold hover:text-accent">{m.mbrNm}</span>
       ),
     },
     {
-      key: "sid",
+      key: "stdntNo",
       header: "학생번호",
       width: ".9fr",
-      render: (m) => m.sid || <span className="text-n500">학번 미확인</span>,
+      render: (m) => m.stdntNo || <span className="text-n500">학번 미확인</span>,
     },
-    { key: "cohort", header: "기수", width: ".5fr", render: (m) => cohortText(m) },
+    { key: "genNo", header: "기수", width: ".5fr", render: (m) => genNoText(m) },
     {
-      key: "dept",
+      key: "scsbjtNm",
       header: "학과 · 학년",
       width: "1.2fr",
       render: (m) =>
         isGraduate(m)
-          ? `${m.dept || "학과 미입력"} · ${m.gradYear ? `${m.gradYear}년 졸업` : "졸업"}`
-          : `${m.dept || "학과 미입력"} · ${m.year}학년`,
+          ? `${m.scsbjtNm || "학과 미입력"} · 졸업`
+          : `${m.scsbjtNm || "학과 미입력"} · ${m.scyrNo ?? "-"}학년`,
     },
     {
-      key: "grade",
+      key: "mbrGrdCd",
       header: "등급",
       width: ".8fr",
-      render: (m) => <Badge tone={gradeTone(m.grade)}>{m.grade}</Badge>,
+      render: (m) => <Badge tone={mbrGrdTone(m.mbrGrdCd)}>{mbrGrdNm(m.mbrGrdCd)}</Badge>,
     },
     {
-      key: "status",
+      key: "mbrSttsCd",
       header: "상태",
       width: ".8fr",
-      render: (m) => <Badge tone={statusTone(m.status)}>{m.status}</Badge>,
+      render: (m) => (
+        <Badge tone={mbrSttsTone(m.mbrSttsCd)}>{mbrSttsNm(m.mbrSttsCd)}</Badge>
+      ),
     },
     {
       key: "roles",
       header: "현재 역할",
       width: "1.3fr",
-      render: (m) => activeRoles(m).join(", ") || "—",
+      render: (m) =>
+        currentRoleRels(mbrRoleRels, m.mbrId)
+          .map((r) => roleNmOf(roles, r.roleId))
+          .join(", ") || "—",
     },
   ];
 
@@ -112,7 +122,7 @@ export function MemberListPage() {
           />
           <div className="flex-1" />
           <div className="text-[14px] text-n500">
-            {filtered.length}명 · 전체 {members.length}명
+            {filtered.length}명 · 전체 {mbrs.length}명
           </div>
           <button
             type="button"
@@ -126,17 +136,31 @@ export function MemberListPage() {
         <div className="mb-4 flex flex-wrap items-start gap-4">
           <div className="flex items-center gap-[7px]">
             <div className="text-[13px] text-n500">등급</div>
-            {["전체", ...grades.filter((g) => g.on).map((g) => g.name)].map((g) => (
-              <Chip key={g} active={fGrade === g} onClick={() => setFGrade(g)}>
-                {g}
+            <Chip active={fMbrGrdCd === ALL} onClick={() => setFMbrGrdCd(ALL)}>
+              {ALL}
+            </Chip>
+            {mbrGrds.map((g) => (
+              <Chip
+                key={g.mbrGrdCd}
+                active={fMbrGrdCd === g.mbrGrdCd}
+                onClick={() => setFMbrGrdCd(g.mbrGrdCd)}
+              >
+                {g.mbrGrdNm}
               </Chip>
             ))}
           </div>
           <div className="flex items-center gap-[7px]">
             <div className="text-[13px] text-n500">상태</div>
-            {["전체", ...statuses.filter((s) => s.on).map((s) => s.name)].map((s) => (
-              <Chip key={s} active={fStatus === s} onClick={() => setFStatus(s)}>
-                {s}
+            <Chip active={fMbrSttsCd === ALL} onClick={() => setFMbrSttsCd(ALL)}>
+              {ALL}
+            </Chip>
+            {mbrSttss.map((s) => (
+              <Chip
+                key={s.mbrSttsCd}
+                active={fMbrSttsCd === s.mbrSttsCd}
+                onClick={() => setFMbrSttsCd(s.mbrSttsCd)}
+              >
+                {s.mbrSttsNm}
               </Chip>
             ))}
           </div>
@@ -146,8 +170,8 @@ export function MemberListPage() {
           <GridTable
             columns={columns}
             rows={filtered}
-            rowKey={(m) => m.key}
-            onRowClick={(m) => router.push(ROUTES.memberDetail(m.key))}
+            rowKey={(m) => String(m.mbrId)}
+            onRowClick={(m) => router.push(ROUTES.memberDetail(m.mbrId))}
             empty={
               <EmptyState
                 message="조건에 맞는 회원이 없습니다."
@@ -155,8 +179,8 @@ export function MemberListPage() {
                   label: "필터 초기화",
                   onClick: () => {
                     setQ("");
-                    setFGrade("전체");
-                    setFStatus("전체");
+                    setFMbrGrdCd(ALL);
+                    setFMbrSttsCd(ALL);
                   },
                 }}
               />

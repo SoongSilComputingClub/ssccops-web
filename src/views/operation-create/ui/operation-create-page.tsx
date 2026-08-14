@@ -2,11 +2,33 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMeetingStore, type AgendaItem } from "@/entities/meeting";
-import { useOpTypeStore } from "@/entities/op-type";
+import { useMbrStore } from "@/entities/member";
+import { useMtgStore, type MtgDtl } from "@/entities/meeting";
+import { findOper, useOperStore } from "@/entities/oper";
+import { useSessionStore } from "@/entities/session";
 import { useSubWorkStore } from "@/entities/sub-work";
+import { crtrAmtText, useSubWorkTypeStore } from "@/entities/sub-work-type";
 import { useWorkStore } from "@/entities/work";
-import { AG_KINDS } from "@/shared/config/constants";
+import {
+  ATND_TRGT_CDS,
+  ATND_TRGT_NM,
+  AUTZR_ROLE_NM,
+  MTG_SE_CDS,
+  MTG_SE_NM,
+  OPER_TYPE_NM,
+  PRCS_SE_CDS,
+  PRCS_SE_NM,
+  PRRTY_RNK_CDS,
+  PRRTY_RNK_NM,
+  WORK_TYPE_CDS,
+  WORK_TYPE_NM,
+  type AtndTrgtCd,
+  type MtgSeCd,
+  type OperTypeCd,
+  type PrcsSeCd,
+  type PrrtyRnkCd,
+  type WorkTypeCd,
+} from "@/shared/config/codes";
 import { fromInput } from "@/shared/lib/date";
 import { ROUTES } from "@/shared/config/routes";
 import {
@@ -23,163 +45,199 @@ import {
   flash,
 } from "@/shared/ui";
 
-type Kind = "WORK" | "SUB_WORK" | "MEETING";
-
-const KIND_META: Record<Kind, { label: string; table: string; note: string }> = {
+const KIND_META: Record<OperTypeCd, { table: string; note: string }> = {
   WORK: {
-    label: "업무",
     table: "work",
     note: "행사·상시·정례 운영처럼 여러 하위 업무를 묶는 단위",
   },
   SUB_WORK: {
-    label: "하위 업무",
     table: "sub_work",
-    note: "실제 실행 단위. 승인·체크리스트가 붙습니다",
+    note: "실제 실행 단위. 승인·점검 목록이 붙습니다",
   },
   MEETING: {
-    label: "회의",
-    table: "meeting",
-    note: "정례·주제 회의. 안건과 처리 결과를 기록합니다",
+    table: "mtg",
+    note: "정례·주제 회의. 안건과 결과를 기록합니다",
   },
 };
 
-const DEFAULT_CHECKLIST = ["세부 계획 수립", "진행", "결과 정리", "보고"].map(
-  (label) => ({ label, done: false }),
-);
+const DEFAULT_CHCK_ARTCLS = ["세부 계획 수립", "진행", "결과 정리", "보고"] as const;
 
-type AgendaDraft = Omit<AgendaItem, "no" | "result">;
+type AgendaDraft = Pick<MtgDtl, "agndNm" | "prcsSeCd" | "operId" | "agndCn">;
 
-export function OperationCreatePage({ parent }: { parent?: string }) {
+export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }) {
   const router = useRouter();
-  const works = useWorkStore((s) => s.works);
-  const addWork = useWorkStore((s) => s.addWork);
-  const attachSub = useWorkStore((s) => s.attachSub);
-  const addTask = useSubWorkStore((s) => s.addTask);
-  const tasks = useSubWorkStore((s) => s.tasks);
-  const addMeeting = useMeetingStore((s) => s.addMeeting);
-  const opTypes = useOpTypeStore((s) => s.opTypes.filter((t) => t.on));
+  const { works, addWork } = useWorkStore();
+  const { subWorks, addSubWork, addSubWorkPicAltmnt, addChckArtcls } =
+    useSubWorkStore();
+  const { opers, addOper } = useOperStore();
+  const addMtg = useMtgStore((s) => s.addMtg);
+  const addMtgDtl = useMtgStore((s) => s.addMtgDtl);
+  const subWorkTypes = useSubWorkTypeStore((s) => s.subWorkTypes);
+  const mbrs = useMbrStore((s) => s.mbrs);
+  const sessionMbrId = useSessionStore((s) => s.mbrId);
 
-  const kinds: Kind[] = parent ? ["SUB_WORK"] : ["WORK", "MEETING"];
-  const [kind, setKind] = useState<Kind>(kinds[0]);
+  const kinds: OperTypeCd[] = fixedWorkId ? ["SUB_WORK"] : ["WORK", "MEETING"];
+  const [operTypeCd, setOperTypeCd] = useState<OperTypeCd>(kinds[0]);
 
-  // 공통 속성
-  const [title, setTitle] = useState("");
-  const [owner, setOwner] = useState("이민우 · 회장");
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
+  // oper 공통 속성
+  const [operTtl, setOperTtl] = useState("");
+  const [picId, setPicId] = useState<number>(sessionMbrId || mbrs[0]?.mbrId || 1);
+  const [prrtyRnkCd, setPrrtyRnkCd] = useState<PrrtyRnkCd>("NORMAL");
+  const [bgngDt, setBgngDt] = useState("");
+  const [endDt, setEndDt] = useState("");
 
-  // WORK 확장
-  const [wtype, setWtype] = useState("행사");
-  const [note, setNote] = useState("");
+  // work 확장
+  const [workTypeCd, setWorkTypeCd] = useState<WorkTypeCd>("EVENT");
+  const [grvwCn, setGrvwCn] = useState("");
 
-  // SUB_WORK 확장
-  const [stype, setStype] = useState<string | null>(null);
-  const [parentId, setParentId] = useState<string | null>(parent ?? null);
-  const [content, setContent] = useState("");
-  const [link, setLink] = useState("");
+  // sub_work 확장
+  const [subWorkTypeId, setSubWorkTypeId] = useState<number | null>(null);
+  const [parentWorkId, setParentWorkId] = useState<number | null>(fixedWorkId ?? null);
+  const [workCn, setWorkCn] = useState("");
+  const [otsdUrlAddr, setOtsdUrlAddr] = useState("");
 
-  // MEETING 확장
-  const [mkind, setMkind] = useState("정례");
-  const [target, setTarget] = useState("전체");
-  const [place, setPlace] = useState("");
-  const [chair, setChair] = useState("이민우");
+  // mtg 확장
+  const [mtgSeCd, setMtgSeCd] = useState<MtgSeCd>("REGULAR");
+  const [atndTrgtCd, setAtndTrgtCd] = useState<AtndTrgtCd>("ALL");
+  const [mtgPlcNm, setMtgPlcNm] = useState("");
+  const [mtgRbprsnId, setMtgRbprsnId] = useState<number>(
+    sessionMbrId || mbrs[0]?.mbrId || 1,
+  );
   const [agenda, setAgenda] = useState<AgendaDraft[]>([]);
 
-  const rule = stype ? opTypes.find((t) => t.name === stype) : null;
-  const opRefs = [
-    ...works.map((w) => ({ id: w.id, label: `업무 · ${w.name}` })),
-    ...tasks.map((t) => ({ id: t.id, label: `하위 업무 · ${t.title}` })),
+  const rule = subWorkTypes.find((t) => t.subWorkTypeId === subWorkTypeId) ?? null;
+  const operTtlOf = (operId: number) => findOper(opers, operId)?.operTtl ?? "-";
+  const operRefs = [
+    ...works.map((w) => ({
+      operId: w.operId,
+      label: `업무 · ${operTtlOf(w.operId)}`,
+    })),
+    ...subWorks.map((sw) => ({
+      operId: sw.operId,
+      label: `하위 업무 · ${sw.subWorkTtl}`,
+    })),
   ];
 
   const submit = () => {
-    if (!title.trim() || !start) {
-      flash("제목 · 시작 일시는 필수입니다");
+    if (!operTtl.trim() || !bgngDt) {
+      flash("운영_제목 · 시작_일시는 필수입니다");
       return;
     }
-    if (kind === "WORK") {
-      const work = addWork({
-        name: title.trim(),
-        type: wtype,
-        status: "기획",
-        term: "제38대",
-        dept: "회장단",
-        owner: owner.split(" · ")[0],
-        start: fromInput(start).slice(0, 10),
-        end: end ? fromInput(end).slice(0, 10) : "",
-        note: note.trim(),
-        subs: [],
+    const operDraft = {
+      operTypeCd,
+      operTtl: operTtl.trim(),
+      operRgtrId: sessionMbrId || null,
+      prrtyRnkCd,
+      bgngDt: fromInput(bgngDt, true),
+      endDt: endDt ? fromInput(endDt, true) : null,
+      picId,
+      delDt: null,
+    };
+
+    if (operTypeCd === "WORK") {
+      const operId = addOper(operDraft);
+      const newWorkId = addWork({
+        operId,
+        workTypeCd,
+        workSttsCd: "PLANNING",
+        grvwCn: grvwCn.trim() || null,
+        workPrgrsRt: 0,
       });
-      flash("업무을(를) 등록했습니다");
-      router.replace(ROUTES.workDetail(work.id));
+      flash("업무를 등록했습니다");
+      router.replace(ROUTES.workDetail(newWorkId));
       return;
     }
-    if (kind === "SUB_WORK") {
-      if (!parentId) {
+
+    if (operTypeCd === "SUB_WORK") {
+      if (!parentWorkId) {
         flash("상위 업무를 선택하세요");
         return;
       }
-      const task = addTask({
-        title: title.trim(),
-        owner,
-        collab: "-",
-        due: end ? fromInput(end).slice(5, 10).replace("-", "월 ") + "일" : "-",
-        dday: "-",
-        type: stype ?? "행사",
-        stage: 1,
-        progress: 0,
-        flag: "",
-        content: content.trim(),
-        link: link.trim(),
-        approval: "",
-        checklist: DEFAULT_CHECKLIST.map((c) => ({ ...c })),
+      if (!subWorkTypeId) {
+        flash("하위_업무_유형을 선택하세요");
+        return;
+      }
+      const operId = addOper(operDraft);
+      const newSubWorkId = addSubWork({
+        workId: parentWorkId,
+        operId,
+        subWorkTtl: operTtl.trim(),
+        subWorkTypeId,
+        workSttsCd: "PLANNING",
+        aprvSttsCd: rule?.aprvNeedYn ? "PENDING" : "NOT_REQUIRED",
+        workCn: workCn.trim() || null,
+        cmptnCrtrCn: rule?.cmptnChckArtclCn ?? null,
+        dlyYn: false,
+        otsdUrlAddr: otsdUrlAddr.trim() || null,
+        ddlnDt: endDt ? fromInput(endDt, true) : null,
+        cmptnDt: null,
       });
-      attachSub(parentId, task.id);
-      flash("하위 업무을(를) 등록했습니다");
-      router.replace(ROUTES.taskDetail(task.id));
+      addSubWorkPicAltmnt(newSubWorkId, picId, "OWNER");
+      addChckArtcls(newSubWorkId, DEFAULT_CHCK_ARTCLS);
+      flash("하위 업무를 등록했습니다");
+      router.replace(ROUTES.subWorkDetail(newSubWorkId));
       return;
     }
-    const meeting = addMeeting({
-      kind: mkind,
-      title: title.trim(),
-      date: fromInput(start),
-      place: place.trim() || "동아리방",
-      chair: chair.trim() || "이민우",
-      status: "예정",
-      target,
-      agenda: agenda.map((a, i) => ({ ...a, no: i + 1, result: "-" })),
+
+    const operId = addOper(operDraft);
+    const newMtgId = addMtg({
+      operId,
+      mtgSeCd,
+      atndTrgtCd,
+      mtgSttsCd: "SCHEDULED",
+      mtgRbprsnId,
+      mtgPlcNm: mtgPlcNm.trim() || null,
+      insdMtgDtlCn: null,
+      otsdMtgDtlCn: null,
     });
-    flash("회의을(를) 등록했습니다");
-    router.replace(ROUTES.meetingDetail(meeting.id));
+    agenda.forEach((a, i) =>
+      addMtgDtl({
+        mtgId: newMtgId,
+        agndNm: a.agndNm,
+        prcsSeCd: a.prcsSeCd,
+        agndSeq: i + 1,
+        operId: a.operId,
+        agndCn: a.agndCn,
+        rsltCn: null,
+        prsnrId: mtgRbprsnId,
+      }),
+    );
+    flash("회의를 등록했습니다");
+    router.replace(ROUTES.meetingDetail(newMtgId));
   };
 
   return (
     <>
-      <PageHeader title="운영 등록" subtitle="유형별 등록 폼" showBack={!!parent} />
+      <PageHeader
+        title="운영 등록"
+        subtitle="운영_유형별 등록 폼"
+        showBack={!!fixedWorkId}
+      />
       <PageBody>
         <Card className="mb-4">
-          <SectionLabel className="mb-3">등록할 운영 유형</SectionLabel>
+          <SectionLabel className="mb-3">등록할 운영_유형</SectionLabel>
           <div
             className="grid gap-3"
             style={{ gridTemplateColumns: `repeat(${kinds.length},1fr)` }}
           >
-            {kinds.map((k) => (
+            {kinds.map((cd) => (
               <div
-                key={k}
-                onClick={() => setKind(k)}
+                key={cd}
+                onClick={() => setOperTypeCd(cd)}
                 className={
-                  kind === k
+                  operTypeCd === cd
                     ? "cursor-pointer rounded-[12px] bg-accent/8 p-[14px] shadow-[inset_0_0_0_1px_#3182f6]"
                     : "cursor-pointer rounded-[12px] border border-line p-[14px] hover:border-accent"
                 }
               >
                 <div className="flex items-center gap-2">
-                  <div className="text-[16px] font-semibold">{KIND_META[k].label}</div>
+                  <div className="text-[16px] font-semibold">{OPER_TYPE_NM[cd]}</div>
                   <span className="font-mono text-[12.5px] text-n500">
-                    {KIND_META[k].table}
+                    {KIND_META[cd].table}
                   </span>
                 </div>
                 <div className="mt-1 text-[13px] leading-[1.5] text-n500">
-                  {KIND_META[k].note}
+                  {KIND_META[cd].note}
                 </div>
               </div>
             ))}
@@ -188,35 +246,58 @@ export function OperationCreatePage({ parent }: { parent?: string }) {
 
         <div className="grid grid-cols-[1.1fr_1fr] items-start gap-4">
           <Card>
-            <SectionLabel className="mb-3">공통 속성 · operation</SectionLabel>
+            <SectionLabel className="mb-3">상위 속성 · oper</SectionLabel>
             <div className="grid grid-cols-2 gap-[14px]">
-              <Field label="제목" required className="col-span-2">
+              <Field label="운영_제목" required className="col-span-2">
                 <TextField
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  value={operTtl}
+                  onChange={(e) => setOperTtl(e.target.value)}
                   placeholder={
-                    kind === "MEETING"
+                    operTypeCd === "MEETING"
                       ? "예: 9월 1차 정기회의"
                       : "예: 동아리 박람회 부스 운영"
                   }
                 />
               </Field>
-              <Field label="담당자">
-                <TextField value={owner} onChange={(e) => setOwner(e.target.value)} />
+              <Field label="담당자_ID">
+                <SelectField
+                  value={String(picId)}
+                  onChange={(e) => setPicId(Number(e.target.value))}
+                >
+                  {mbrs.map((m) => (
+                    <option key={m.mbrId} value={m.mbrId}>
+                      {m.mbrNm}
+                    </option>
+                  ))}
+                </SelectField>
               </Field>
-              <div />
-              <Field label="시작 일시" required>
+              <Field label="우선_순위_코드">
+                <div className="flex gap-[7px] pt-[6px]">
+                  {PRRTY_RNK_CDS.map((cd) => (
+                    <Chip
+                      key={cd}
+                      active={prrtyRnkCd === cd}
+                      onClick={() => setPrrtyRnkCd(cd)}
+                    >
+                      {PRRTY_RNK_NM[cd]}
+                    </Chip>
+                  ))}
+                </div>
+              </Field>
+              <Field label="시작_일시" required>
                 <TextField
                   type="datetime-local"
-                  value={start}
-                  onChange={(e) => setStart(e.target.value)}
+                  value={bgngDt}
+                  onChange={(e) => setBgngDt(e.target.value)}
                 />
               </Field>
-              <Field label="종료 일시">
+              <Field
+                label={operTypeCd === "SUB_WORK" ? "마감_일시" : "종료_일시"}
+              >
                 <TextField
                   type="datetime-local"
-                  value={end}
-                  onChange={(e) => setEnd(e.target.value)}
+                  value={endDt}
+                  onChange={(e) => setEndDt(e.target.value)}
                 />
               </Field>
             </div>
@@ -224,76 +305,89 @@ export function OperationCreatePage({ parent }: { parent?: string }) {
 
           <Card>
             <SectionLabel className="mb-3">
-              확장 속성 · {KIND_META[kind].table}
+              확장 속성 · {KIND_META[operTypeCd].table}
             </SectionLabel>
 
-            {kind === "WORK" && (
+            {operTypeCd === "WORK" && (
               <>
-                <div className="mb-2 text-[13.5px] text-n400">업무 유형</div>
+                <div className="mb-2 text-[13.5px] text-n400">업무_유형_코드</div>
                 <div className="mb-4 flex gap-[7px]">
-                  {["행사", "상시", "정례운영"].map((t) => (
-                    <Chip key={t} active={wtype === t} onClick={() => setWtype(t)}>
-                      {t}
+                  {WORK_TYPE_CDS.map((cd) => (
+                    <Chip
+                      key={cd}
+                      active={workTypeCd === cd}
+                      onClick={() => setWorkTypeCd(cd)}
+                    >
+                      {WORK_TYPE_NM[cd]}
                     </Chip>
                   ))}
                 </div>
-                <Field label="회고 내용">
+                <Field label="총평_내용">
                   <TextArea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
+                    value={grvwCn}
+                    onChange={(e) => setGrvwCn(e.target.value)}
                     placeholder="운영 종료 후 회고 · 지금은 비워도 됩니다"
                   />
                 </Field>
                 <div className="mt-3 text-[13px] text-n500">
-                  등록 후 하위 업무를 이 운영에 연결하면 진행률이 자동으로 집계됩니다.
+                  등록 후 하위 업무를 이 업무에 연결하면 업무_진행_률이 집계됩니다.
                 </div>
               </>
             )}
 
-            {kind === "SUB_WORK" && (
+            {operTypeCd === "SUB_WORK" && (
               <>
-                <div className="mb-2 text-[13.5px] text-n400">업무 유형</div>
+                <div className="mb-2 text-[13.5px] text-n400">하위_업무_유형</div>
                 <div className="mb-3 flex flex-wrap gap-[7px]">
-                  {opTypes.map((t) => (
+                  {subWorkTypes.map((t) => (
                     <Chip
-                      key={t.name}
-                      active={stype === t.name}
-                      onClick={() => setStype(t.name)}
+                      key={t.subWorkTypeId}
+                      active={subWorkTypeId === t.subWorkTypeId}
+                      onClick={() => setSubWorkTypeId(t.subWorkTypeId)}
                     >
-                      {t.name}
+                      {t.typeNm}
                     </Chip>
                   ))}
                 </div>
                 {rule ? (
                   <div className="mb-4 rounded-[12px] bg-bg p-3">
                     <div className="text-[13.5px] font-semibold">
-                      {rule.name}유형 규칙
+                      {rule.typeNm} 유형 규칙
                     </div>
-                    <div className="mt-2 grid grid-cols-[76px_1fr] gap-y-[6px] text-[13.5px]">
-                      <div className="text-n500">승인</div>
-                      <div className={rule.approval ? "text-danger" : undefined}>
-                        {rule.approval ? `${rule.role} 승인 필요` : "승인 없이 진행"}
+                    <div className="mt-2 grid grid-cols-[92px_1fr] gap-y-[6px] text-[13.5px]">
+                      <div className="text-n500">승인_필요</div>
+                      <div className={rule.aprvNeedYn ? "text-danger" : undefined}>
+                        {rule.aprvNeedYn
+                          ? `${rule.autzrRoleCd ? AUTZR_ROLE_NM[rule.autzrRoleCd] : "책임자"} 승인 필요`
+                          : "승인 없이 진행"}
                       </div>
-                      <div className="text-n500">정족수</div>
+                      <div className="text-n500">최소_동의_수</div>
                       <div>
-                        {rule.quorum ? `의결 정족수 ${rule.quorumN}명 동의` : "해당 없음"}
+                        {rule.minNeedAgreCntYn
+                          ? `${rule.minNeedAgreCnt}명 동의`
+                          : "해당 없음"}
                       </div>
-                      <div className="text-n500">금액 기준</div>
-                      <div>{rule.amount}</div>
-                      <div className="text-n500">확인 사항</div>
-                      <div>{rule.check}</div>
+                      <div className="text-n500">기준_금액</div>
+                      <div>{crtrAmtText(rule)}</div>
+                      <div className="text-n500">완료_점검</div>
+                      <div>{rule.cmptnChckArtclCn ?? "-"}</div>
                     </div>
                   </div>
                 ) : (
                   <div className="mb-4 text-[13.5px] text-n500">
-                    업무 유형을 선택하면 승인 규칙이 표시됩니다
+                    하위_업무_유형을 선택하면 승인 규칙이 표시됩니다
                   </div>
                 )}
                 <div className="mb-2 text-[13.5px] text-n400">상위 업무 연결</div>
-                {parent ? (
+                {fixedWorkId ? (
                   <>
                     <Chip active>
-                      {works.find((w) => w.id === parent)?.name ?? parent} 고정
+                      {works.find((w) => w.workId === fixedWorkId)
+                        ? operTtlOf(
+                            works.find((w) => w.workId === fixedWorkId)!.operId,
+                          )
+                        : fixedWorkId}{" "}
+                      고정
                     </Chip>
                     <div className="mt-2 mb-4 text-[13px] text-n500">
                       하위 업무는 상위 업무 안에서만 생성됩니다
@@ -304,11 +398,11 @@ export function OperationCreatePage({ parent }: { parent?: string }) {
                     <div className="mb-2 flex flex-wrap gap-[7px]">
                       {works.map((w) => (
                         <Chip
-                          key={w.id}
-                          active={parentId === w.id}
-                          onClick={() => setParentId(w.id)}
+                          key={w.workId}
+                          active={parentWorkId === w.workId}
+                          onClick={() => setParentWorkId(w.workId)}
                         >
-                          {w.name}
+                          {operTtlOf(w.operId)}
                         </Chip>
                       ))}
                     </div>
@@ -318,55 +412,68 @@ export function OperationCreatePage({ parent }: { parent?: string }) {
                   </>
                 )}
                 <div className="flex flex-col gap-[14px]">
-                  <Field label="업무 내용">
+                  <Field label="업무_내용">
                     <TextField
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
+                      value={workCn}
+                      onChange={(e) => setWorkCn(e.target.value)}
                       placeholder="무엇을 하는 하위 업무인지"
                     />
                   </Field>
-                  <Field label="외부 링크">
+                  <Field label="외부_URL_주소">
                     <TextField
-                      value={link}
-                      onChange={(e) => setLink(e.target.value)}
+                      value={otsdUrlAddr}
+                      onChange={(e) => setOtsdUrlAddr(e.target.value)}
                       placeholder="문서 · 시트 URL"
                     />
                   </Field>
                 </div>
                 <div className="mt-3 text-[13px] text-n500">
-                  완료 체크리스트 4항목이 기본 생성되며, 등록 직후 단계는 기획입니다.
+                  등록 직후 업무_상태는 기획(PLANNING)입니다.
                 </div>
               </>
             )}
 
-            {kind === "MEETING" && (
+            {operTypeCd === "MEETING" && (
               <>
-                <div className="mb-2 text-[13.5px] text-n400">회의 구분</div>
+                <div className="mb-2 text-[13.5px] text-n400">회의_구분_코드</div>
                 <div className="mb-4 flex gap-[7px]">
-                  {["정례", "주제"].map((k) => (
-                    <Chip key={k} active={mkind === k} onClick={() => setMkind(k)}>
-                      {k}
+                  {MTG_SE_CDS.map((cd) => (
+                    <Chip key={cd} active={mtgSeCd === cd} onClick={() => setMtgSeCd(cd)}>
+                      {MTG_SE_NM[cd]}
                     </Chip>
                   ))}
                 </div>
-                <div className="mb-2 text-[13.5px] text-n400">참석 대상</div>
+                <div className="mb-2 text-[13.5px] text-n400">참석_대상_코드</div>
                 <div className="mb-4 flex gap-[7px]">
-                  {["전체", "국장단", "임시소집"].map((t) => (
-                    <Chip key={t} active={target === t} onClick={() => setTarget(t)}>
-                      {t}
+                  {ATND_TRGT_CDS.map((cd) => (
+                    <Chip
+                      key={cd}
+                      active={atndTrgtCd === cd}
+                      onClick={() => setAtndTrgtCd(cd)}
+                    >
+                      {ATND_TRGT_NM[cd]}
                     </Chip>
                   ))}
                 </div>
                 <div className="grid grid-cols-2 gap-[14px]">
-                  <Field label="장소">
+                  <Field label="회의_장소_명">
                     <TextField
-                      value={place}
-                      onChange={(e) => setPlace(e.target.value)}
+                      value={mtgPlcNm}
+                      onChange={(e) => setMtgPlcNm(e.target.value)}
                       placeholder="예: 동아리방"
                     />
                   </Field>
-                  <Field label="의장">
-                    <TextField value={chair} onChange={(e) => setChair(e.target.value)} />
+                  <Field label="회의_책임자_ID">
+                    <SelectField
+                      value={String(mtgRbprsnId)}
+                      onChange={(e) => setMtgRbprsnId(Number(e.target.value))}
+                    >
+                      {mbrs.map((m) => (
+                        <option key={m.mbrId} value={m.mbrId}>
+                          {m.mbrNm}
+                        </option>
+                      ))}
+                    </SelectField>
                   </Field>
                 </div>
 
@@ -378,7 +485,9 @@ export function OperationCreatePage({ parent }: { parent?: string }) {
                         <div className="flex-1" />
                         <button
                           type="button"
-                          onClick={() => setAgenda((list) => list.filter((_, j) => j !== i))}
+                          onClick={() =>
+                            setAgenda((list) => list.filter((_, j) => j !== i))
+                          }
                           className="cursor-pointer text-[13.5px] text-n400 hover:text-danger"
                         >
                           삭제
@@ -389,51 +498,55 @@ export function OperationCreatePage({ parent }: { parent?: string }) {
                           연결 운영 <span className="text-accent">*</span>
                         </div>
                         <SelectField
-                          value={a.op}
+                          value={a.operId === null ? "" : String(a.operId)}
                           onChange={(e) => {
-                            const op = e.target.value;
-                            const label =
-                              opRefs.find((o) => o.id === op)?.label.split(" · ")[1] ?? "";
+                            const operId = e.target.value ? Number(e.target.value) : null;
+                            const agndNm =
+                              operRefs
+                                .find((o) => o.operId === operId)
+                                ?.label.split(" · ")[1] ?? null;
                             setAgenda((list) =>
                               list.map((x, j) =>
-                                j === i ? { ...x, op, name: label } : x,
+                                j === i ? { ...x, operId, agndNm } : x,
                               ),
                             );
                           }}
                         >
                           <option value="">선택하세요</option>
-                          {opRefs.map((o) => (
-                            <option key={o.id} value={o.id}>
+                          {operRefs.map((o) => (
+                            <option key={o.operId} value={o.operId}>
                               {o.label}
                             </option>
                           ))}
                         </SelectField>
                       </div>
                       <div className="mt-2 flex gap-[7px]">
-                        {AG_KINDS.map((k) => (
+                        {PRCS_SE_CDS.map((cd) => (
                           <Chip
-                            key={k}
-                            active={a.kind === k}
+                            key={cd}
+                            active={a.prcsSeCd === cd}
                             onClick={() =>
                               setAgenda((list) =>
-                                list.map((x, j) => (j === i ? { ...x, kind: k } : x)),
+                                list.map((x, j) =>
+                                  j === i ? { ...x, prcsSeCd: cd as PrcsSeCd } : x,
+                                ),
                               )
                             }
                           >
-                            {k}
+                            {PRCS_SE_NM[cd]}
                           </Chip>
                         ))}
                       </div>
                       <TextArea
-                        value={a.note === "-" ? "" : a.note}
+                        value={a.agndCn ?? ""}
                         onChange={(e) =>
                           setAgenda((list) =>
                             list.map((x, j) =>
-                              j === i ? { ...x, note: e.target.value || "-" } : x,
+                              j === i ? { ...x, agndCn: e.target.value || null } : x,
                             ),
                           )
                         }
-                        placeholder="안건 내용 (선택)"
+                        placeholder="안건_내용 (선택)"
                         className="mt-2"
                       />
                     </div>
@@ -443,7 +556,12 @@ export function OperationCreatePage({ parent }: { parent?: string }) {
                     onClick={() =>
                       setAgenda((list) => [
                         ...list,
-                        { name: "", kind: "논의", op: "", note: "-" },
+                        {
+                          agndNm: null,
+                          prcsSeCd: "PENDING",
+                          operId: null,
+                          agndCn: null,
+                        },
                       ])
                     }
                     className="cursor-pointer rounded-[12px] border border-dashed border-line-strong py-3 text-[14.5px] text-n400 hover:border-accent hover:text-accent"
@@ -458,7 +576,7 @@ export function OperationCreatePage({ parent }: { parent?: string }) {
 
         <div className="mt-5">
           <Button className="px-[26px] py-[11px]" onClick={submit}>
-            {KIND_META[kind].label} 등록
+            {OPER_TYPE_NM[operTypeCd]} 등록
           </Button>
         </div>
       </PageBody>

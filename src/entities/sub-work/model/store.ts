@@ -1,61 +1,153 @@
 "use client";
 
 import { create } from "zustand";
-import { nextKey } from "@/shared/lib/id";
-import seed from "../api/get-operations-sub-works.json";
-import type { SubWork } from "./types";
+import { TODAY } from "@/shared/config/constants";
+import { nextId } from "@/shared/lib/id";
+import subWorkSeed from "../api/get-sub-work.json";
+import chckListSeed from "../api/get-sub-work-chck-list.json";
+import picAltmntSeed from "../api/get-sub-work-pic-altmnt.json";
+import sttsHstrySeed from "../api/get-sub-work-stts-hstry.json";
+import type {
+  SubWork,
+  SubWorkChckList,
+  SubWorkPicAltmnt,
+  SubWorkSttsHstry,
+} from "./types";
 
 interface SubWorkState {
-  tasks: SubWork[];
-  addTask: (draft: Omit<SubWork, "id">) => SubWork;
-  updateTask: (id: string, patch: Partial<SubWork>) => void;
-  toggleCheck: (id: string, index: number) => void;
+  subWorks: SubWork[];
+  subWorkChckLists: SubWorkChckList[];
+  subWorkPicAltmnts: SubWorkPicAltmnt[];
+  subWorkSttsHstrys: SubWorkSttsHstry[];
+
+  addSubWork: (draft: Omit<SubWork, "subWorkId">) => number;
+  updateSubWork: (subWorkId: number, patch: Partial<SubWork>) => void;
+  toggleChckArtcl: (subWorkChckListId: number) => void;
+  /** 점검 목록 일괄 추가 (신규 하위 업무의 기본 항목) */
+  addChckArtcls: (subWorkId: number, chckArtclCns: readonly string[]) => void;
+  addSubWorkPicAltmnt: (subWorkId: number, mbrId: number, tkcgSeCd: "OWNER" | "COLLABORATOR") => void;
+  addSubWorkSttsHstry: (entry: Omit<SubWorkSttsHstry, "subWorkSttsHstryId">) => void;
 }
 
 export const useSubWorkStore = create<SubWorkState>((set) => ({
-  tasks: seed.data as SubWork[],
+  subWorks: subWorkSeed.data as SubWork[],
+  subWorkChckLists: chckListSeed.data as SubWorkChckList[],
+  subWorkPicAltmnts: picAltmntSeed.data as SubWorkPicAltmnt[],
+  subWorkSttsHstrys: sttsHstrySeed.data as SubWorkSttsHstry[],
 
-  addTask: (draft) => {
-    let task: SubWork = { ...draft, id: "" };
+  addSubWork: (draft) => {
+    let subWorkId = 0;
     set((s) => {
-      task = { ...task, id: nextKey("t", s.tasks.length) };
-      return { tasks: [...s.tasks, task] };
+      subWorkId = nextId(s.subWorks, "subWorkId");
+      return { subWorks: [...s.subWorks, { ...draft, subWorkId }] };
     });
-    return task;
+    return subWorkId;
   },
 
-  updateTask: (id, patch) =>
-    set((s) => ({ tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
-
-  toggleCheck: (id, index) =>
+  updateSubWork: (subWorkId, patch) =>
     set((s) => ({
-      tasks: s.tasks.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              checklist: t.checklist.map((c, i) =>
-                i === index ? { ...c, done: !c.done } : c,
-              ),
-            }
-          : t,
+      subWorks: s.subWorks.map((w) =>
+        w.subWorkId === subWorkId ? { ...w, ...patch } : w,
       ),
+    })),
+
+  toggleChckArtcl: (subWorkChckListId) =>
+    set((s) => ({
+      subWorkChckLists: s.subWorkChckLists.map((c) =>
+        c.subWorkChckListId === subWorkChckListId ? { ...c, cmptnYn: !c.cmptnYn } : c,
+      ),
+    })),
+
+  addChckArtcls: (subWorkId, chckArtclCns) =>
+    set((s) => {
+      let seq = s.subWorkChckLists.reduce(
+        (m, c) => Math.max(m, c.subWorkChckListId),
+        0,
+      );
+      return {
+        subWorkChckLists: [
+          ...s.subWorkChckLists,
+          ...chckArtclCns.map((chckArtclCn, i) => ({
+            subWorkChckListId: ++seq,
+            subWorkId,
+            chckArtclCn,
+            cmptnYn: false,
+            sortSeq: i + 1,
+          })),
+        ],
+      };
+    }),
+
+  addSubWorkPicAltmnt: (subWorkId, mbrId, tkcgSeCd) =>
+    set((s) => ({
+      subWorkPicAltmnts: [
+        ...s.subWorkPicAltmnts,
+        {
+          subWorkPicAltmntId: nextId(s.subWorkPicAltmnts, "subWorkPicAltmntId"),
+          subWorkId,
+          mbrId,
+          tkcgSeCd,
+        },
+      ],
+    })),
+
+  addSubWorkSttsHstry: (entry) =>
+    set((s) => ({
+      subWorkSttsHstrys: [
+        { ...entry, subWorkSttsHstryId: nextId(s.subWorkSttsHstrys, "subWorkSttsHstryId") },
+        ...s.subWorkSttsHstrys,
+      ],
     })),
 }));
 
-/** 하위 업무 유형 배지 톤 (회계정산·행사=blue, 마감=red, 그 외=grey) */
-export function subWorkTypeTone(type: string): "blue" | "grey" | "red" {
-  if (type === "회계정산" || type === "행사") return "blue";
-  if (type === "마감") return "red";
-  return "grey";
+/* ── 파생 ──────────────────────────────────────────────────── */
+
+/** 해당 하위 업무의 점검 목록 (정렬_순서) */
+export function chckListOf(
+  rows: SubWorkChckList[],
+  subWorkId: number,
+): SubWorkChckList[] {
+  return rows
+    .filter((c) => c.subWorkId === subWorkId)
+    .sort((a, b) => a.sortSeq - b.sortSeq);
 }
 
-/** 목록 상태: 승인 대기(amber) · 완료(grey) · 진행(blue) */
-export function subWorkStatus(t: SubWork): { label: string; tone: "amber" | "grey" | "blue" } {
-  if (t.approval === "대기") return { label: "승인 대기", tone: "amber" };
-  if (t.stage >= 4 || t.progress === 100) return { label: "완료", tone: "grey" };
+/** 점검 목록 완료율 0-100 — 화면 진행률은 이 값에서 파생한다 */
+export function chckPrgrsRt(rows: SubWorkChckList[], subWorkId: number): number {
+  const items = chckListOf(rows, subWorkId);
+  if (!items.length) return 0;
+  return Math.round((items.filter((c) => c.cmptnYn).length / items.length) * 100);
+}
+
+/** 담당자(OWNER) 회원_ID */
+export function ownerMbrId(
+  rows: SubWorkPicAltmnt[],
+  subWorkId: number,
+): number | undefined {
+  return rows.find((p) => p.subWorkId === subWorkId && p.tkcgSeCd === "OWNER")?.mbrId;
+}
+
+/** 협업자 회원_ID 목록 */
+export function collabMbrIds(rows: SubWorkPicAltmnt[], subWorkId: number): number[] {
+  return rows
+    .filter((p) => p.subWorkId === subWorkId && p.tkcgSeCd === "COLLABORATOR")
+    .map((p) => p.mbrId);
+}
+
+/** 목록 상태 배지: 승인 대기(amber) · 완료(grey) · 진행(blue) */
+export function subWorkSttsBadge(
+  subWork: SubWork,
+): { label: string; tone: "amber" | "grey" | "blue" } {
+  if (subWork.aprvSttsCd === "PENDING") return { label: "승인 대기", tone: "amber" };
+  if (isSubWorkDone(subWork)) return { label: "완료", tone: "grey" };
   return { label: "진행", tone: "blue" };
 }
 
-export function isSubWorkDone(t: SubWork): boolean {
-  return t.stage >= 4 || t.progress === 100;
+export function isSubWorkDone(subWork: SubWork): boolean {
+  return subWork.workSttsCd === "DONE";
+}
+
+/** 완료 처리 — 상태·완료_일시를 함께 기록한다 */
+export function completedPatch(): Partial<SubWork> {
+  return { workSttsCd: "DONE", cmptnDt: `${TODAY}T10:00:00`, dlyYn: false };
 }

@@ -1,74 +1,70 @@
 "use client";
 
 import { create } from "zustand";
-import { nextKey } from "@/shared/lib/id";
-import seed from "../api/get-operations-meetings.json";
-import type { AgendaItem, Meeting } from "./types";
+import type { MtgSttsCd, PrcsSeCd } from "@/shared/config/codes";
+import { nextId } from "@/shared/lib/id";
+import mtgSeed from "../api/get-mtg.json";
+import mtgDtlSeed from "../api/get-mtg-dtl.json";
+import type { Mtg, MtgDtl } from "./types";
 
-interface MeetingState {
-  meetings: Meeting[];
-  addMeeting: (draft: Omit<Meeting, "id">) => Meeting;
-  updateAgenda: (meetingId: string, no: number, patch: Partial<AgendaItem>) => void;
-  addAgenda: (meetingId: string, item: Omit<AgendaItem, "no">) => void;
-  removeAgenda: (meetingId: string, no: number) => void;
+interface MtgState {
+  mtgs: Mtg[];
+  mtgDtls: MtgDtl[];
+
+  addMtg: (draft: Omit<Mtg, "mtgId">) => number;
+  updateMtg: (mtgId: number, patch: Partial<Mtg>) => void;
+  addMtgDtl: (draft: Omit<MtgDtl, "mtgDtlId">) => void;
+  updateMtgDtl: (mtgDtlId: number, patch: Partial<MtgDtl>) => void;
+  removeMtgDtl: (mtgDtlId: number) => void;
 }
 
-export const useMeetingStore = create<MeetingState>((set) => ({
-  meetings: seed.data as Meeting[],
+export const useMtgStore = create<MtgState>((set) => ({
+  mtgs: mtgSeed.data as Mtg[],
+  mtgDtls: mtgDtlSeed.data as MtgDtl[],
 
-  addMeeting: (draft) => {
-    let meeting: Meeting = { ...draft, id: "" };
+  addMtg: (draft) => {
+    let mtgId = 0;
     set((s) => {
-      meeting = { ...meeting, id: nextKey("mt", s.meetings.length) };
-      return { meetings: [...s.meetings, meeting] };
+      mtgId = nextId(s.mtgs, "mtgId");
+      return { mtgs: [...s.mtgs, { ...draft, mtgId }] };
     });
-    return meeting;
+    return mtgId;
   },
 
-  updateAgenda: (meetingId, no, patch) =>
+  updateMtg: (mtgId, patch) =>
+    set((s) => ({ mtgs: s.mtgs.map((m) => (m.mtgId === mtgId ? { ...m, ...patch } : m)) })),
+
+  addMtgDtl: (draft) =>
     set((s) => ({
-      meetings: s.meetings.map((m) =>
-        m.id === meetingId
-          ? {
-              ...m,
-              agenda: m.agenda.map((a) => (a.no === no ? { ...a, ...patch } : a)),
-            }
-          : m,
-      ),
+      mtgDtls: [...s.mtgDtls, { ...draft, mtgDtlId: nextId(s.mtgDtls, "mtgDtlId") }],
     })),
 
-  addAgenda: (meetingId, item) =>
+  updateMtgDtl: (mtgDtlId, patch) =>
     set((s) => ({
-      meetings: s.meetings.map((m) =>
-        m.id === meetingId
-          ? { ...m, agenda: [...m.agenda, { ...item, no: m.agenda.length + 1 }] }
-          : m,
-      ),
+      mtgDtls: s.mtgDtls.map((d) => (d.mtgDtlId === mtgDtlId ? { ...d, ...patch } : d)),
     })),
 
-  removeAgenda: (meetingId, no) =>
-    set((s) => ({
-      meetings: s.meetings.map((m) =>
-        m.id === meetingId
-          ? {
-              ...m,
-              agenda: m.agenda
-                .filter((a) => a.no !== no)
-                .map((a, i) => ({ ...a, no: i + 1 })),
-            }
-          : m,
-      ),
-    })),
+  removeMtgDtl: (mtgDtlId) =>
+    set((s) => ({ mtgDtls: s.mtgDtls.filter((d) => d.mtgDtlId !== mtgDtlId) })),
 }));
 
+/** 해당 회의의 안건 목록 (안건_순서) */
+export function mtgDtlsOf(rows: MtgDtl[], mtgId: number): MtgDtl[] {
+  return rows
+    .filter((d) => d.mtgId === mtgId)
+    .sort((a, b) => (a.agndSeq ?? 0) - (b.agndSeq ?? 0));
+}
+
 /** 회의 상태 배지 톤 */
-export function meetingStatusTone(status: string): "grey" | "blue" | "red" {
-  if (status === "진행") return "blue";
-  if (status === "취소") return "red";
+export function mtgSttsTone(cd: MtgSttsCd | null): "blue" | "grey" | "red" {
+  if (cd === "IN_PROGRESS") return "blue";
+  if (cd === "CANCELED") return "red";
   return "grey";
 }
 
-/** 안건 구분 톤: 결정=blue, 논의/보고=grey */
-export function agendaKindTone(kind: string): "blue" | "grey" {
-  return kind === "결정" ? "blue" : "grey";
+/** 안건 처리 구분 배지 톤 */
+export function prcsSeTone(cd: PrcsSeCd | null): "amber" | "grey" | "blue" {
+  if (cd === "HOLD") return "amber";
+  if (cd === "CLOSED") return "blue";
+  return "grey";
 }

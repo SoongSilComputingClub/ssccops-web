@@ -1,107 +1,140 @@
 "use client";
 
 import { create } from "zustand";
+import type { FormSttsCd } from "@/shared/config/codes";
 import { TODAY } from "@/shared/config/constants";
-import { nextFormId, nextKey } from "@/shared/lib/id";
-import formsSeed from "../api/get-forms.json";
-import labelsSeed from "../api/get-forms-labels.json";
-import type { Form, FormLabel, FormStatus } from "./types";
+import { nextId } from "@/shared/lib/id";
+import formSeed from "../api/get-form.json";
+import formLblSeed from "../api/get-form-lbl.json";
+import formLblRelSeed from "../api/get-form-lbl-rel.json";
+import type { Form, FormLbl, FormLblRel } from "./types";
 
 interface FormState {
   forms: Form[];
-  labels: FormLabel[];
+  formLbls: FormLbl[];
+  formLblRels: FormLblRel[];
 
-  updateForm: (key: string, patch: Partial<Form>) => void;
+  updateForm: (formId: number, patch: Partial<Form>) => void;
   /** 신규/수정 저장 — 저장된 폼 반환 */
-  saveForm: (draft: Form, status: FormStatus) => Form;
-  duplicateForm: (key: string) => Form | null;
+  saveForm: (draft: Form, formSttsCd: FormSttsCd) => Form;
+  duplicateForm: (formId: number) => Form | null;
 
-  addLabel: (name: string) => void;
-  toggleLabel: (name: string) => void;
+  addFormLbl: (lblNm: string) => void;
+  toggleFormLbl: (formLblId: number) => void;
+  /** 폼에 지정된 라벨 교체 */
+  setFormLbls: (formId: number, formLblIds: number[]) => void;
 }
 
-export const useFormStore = create<FormState>((set) => ({
-  forms: formsSeed.data as Form[],
-  labels: labelsSeed.data as FormLabel[],
+const NOW = `${TODAY}T10:00:00`;
 
-  updateForm: (key, patch) =>
+export const useFormStore = create<FormState>((set) => ({
+  forms: formSeed.data as unknown as Form[],
+  formLbls: formLblSeed.data as FormLbl[],
+  formLblRels: formLblRelSeed.data as FormLblRel[],
+
+  updateForm: (formId, patch) =>
     set((s) => ({
-      forms: s.forms.map((f) => (f.key === key ? { ...f, ...patch } : f)),
+      forms: s.forms.map((f) =>
+        f.formId === formId ? { ...f, ...patch, mdfcnDt: NOW } : f,
+      ),
     })),
 
-  saveForm: (draft, status) => {
+  saveForm: (draft, formSttsCd) => {
     let saved: Form = draft;
     set((s) => {
-      if (draft.key) {
-        saved = { ...draft, status, updated: TODAY };
-        return { forms: s.forms.map((f) => (f.key === draft.key ? saved : f)) };
+      if (draft.formId) {
+        saved = { ...draft, formSttsCd, mdfcnDt: NOW };
+        return { forms: s.forms.map((f) => (f.formId === draft.formId ? saved : f)) };
       }
       saved = {
         ...draft,
-        key: nextKey("f", s.forms.length),
-        id: nextFormId(s.forms.length),
-        status,
-        updated: TODAY,
+        formId: nextId(s.forms, "formId"),
+        formSttsCd,
+        crtDt: NOW,
+        mdfcnDt: NOW,
       };
       return { forms: [saved, ...s.forms] };
     });
     return saved;
   },
 
-  duplicateForm: (key) => {
+  duplicateForm: (formId) => {
     let copy: Form | null = null;
     set((s) => {
-      const src = s.forms.find((f) => f.key === key);
+      const src = s.forms.find((f) => f.formId === formId);
       if (!src) return {};
       copy = {
         ...src,
-        key: nextKey("f", s.forms.length),
-        id: nextFormId(s.forms.length),
-        title: `${src.title} (복사본)`,
-        status: "DRAFT",
-        slug: "",
-        start: "",
-        end: "",
-        by: "김도현",
-        created: TODAY,
-        updated: TODAY,
-        pages: src.pages.map((p) => ({ ...p })),
-        questions: src.questions.map((q) => ({ ...q })),
+        formId: nextId(s.forms, "formId"),
+        formTtlNm: `${src.formTtlNm} (복사본)`,
+        formSttsCd: "DRAFT",
+        rcptBgngDt: null,
+        rcptEndDt: null,
+        qitemCpstCn: {
+          pages: src.qitemCpstCn.pages.map((p) => ({ ...p })),
+          qitems: src.qitemCpstCn.qitems.map((q) => ({ ...q })),
+        },
+        crtDt: NOW,
+        mdfcnDt: NOW,
       };
       return { forms: [copy, ...s.forms] };
     });
     return copy;
   },
 
-  addLabel: (name) => set((s) => ({ labels: [...s.labels, { name, on: true }] })),
-
-  toggleLabel: (name) =>
+  addFormLbl: (lblNm) =>
     set((s) => ({
-      labels: s.labels.map((l) => (l.name === name ? { ...l, on: !l.on } : l)),
+      formLbls: [
+        ...s.formLbls,
+        {
+          formLblId: nextId(s.formLbls, "formLblId"),
+          lblNm,
+          useYn: true,
+          crtDt: NOW,
+          mdfcnDt: NOW,
+        },
+      ],
     })),
+
+  toggleFormLbl: (formLblId) =>
+    set((s) => ({
+      formLbls: s.formLbls.map((l) =>
+        l.formLblId === formLblId ? { ...l, useYn: !l.useYn, mdfcnDt: NOW } : l,
+      ),
+    })),
+
+  setFormLbls: (formId, formLblIds) =>
+    set((s) => {
+      const kept = s.formLblRels.filter((r) => r.formId !== formId);
+      let seq = kept.reduce((m, r) => Math.max(m, r.formLblRelId), 0);
+      const added = formLblIds.map((formLblId) => ({
+        formLblRelId: ++seq,
+        formId,
+        formLblId,
+        crtDt: NOW,
+      }));
+      return { formLblRels: [...kept, ...added] };
+    }),
 }));
 
-/** 폼 상태 표기 (FSTAT) */
-export const FORM_STATUS: Record<
-  FormStatus,
+/* ── 파생 ──────────────────────────────────────────────────── */
+
+/** 해당 폼에 지정된 라벨 */
+export function formLblsOf(
+  rels: FormLblRel[],
+  lbls: FormLbl[],
+  formId: number,
+): FormLbl[] {
+  const ids = new Set(rels.filter((r) => r.formId === formId).map((r) => r.formLblId));
+  return lbls.filter((l) => ids.has(l.formLblId));
+}
+
+/** 폼 상태 배지 표기 */
+export const FORM_STTS_BADGE: Record<
+  FormSttsCd,
   { label: string; tone: "outline" | "blue" | "grey" }
 > = {
   DRAFT: { label: "작성중", tone: "outline" },
   OPEN: { label: "접수중", tone: "blue" },
   CLOSED: { label: "마감", tone: "grey" },
 };
-
-/** 공개 링크 슬러그 생성 (원본 규칙: 특수문자·한글 → "-", 24자, 소문자 + 랜덤 4자) */
-export function makeSlug(title: string, seed: string): string {
-  const base = title
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 24)
-    .toLowerCase();
-  const suffix = seed
-    .split("")
-    .reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) % 1679616, 7)
-    .toString(36)
-    .padStart(4, "0");
-  return `${base || "form"}-${suffix}`;
-}

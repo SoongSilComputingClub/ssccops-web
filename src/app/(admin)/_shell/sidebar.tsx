@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemberStore, memberRoleLabel } from "@/entities/member";
+import { mbrGrdNm, rprsRoleRel, useMbrStore } from "@/entities/member";
+import { roleNmOf, useRoleStore } from "@/entities/role";
 import { useSessionStore } from "@/entities/session";
 import { cn } from "@/shared/lib/cn";
 import { NAV_FOOT, NAV_GROUPS, groupHasActive, type NavItem } from "./nav";
@@ -66,9 +67,19 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [closed, setClosed] = useState<Record<string, boolean>>({});
 
-  const memberKey = useSessionStore((s) => s.memberKey);
+  const sessionMbrId = useSessionStore((s) => s.mbrId);
   const logout = useSessionStore((s) => s.logout);
-  const me = useMemberStore((s) => s.members.find((m) => m.key === memberKey));
+  const me = useMbrStore((s) => s.mbrs.find((m) => m.mbrId === sessionMbrId));
+  const mbrRoleRels = useMbrStore((s) => s.mbrRoleRels);
+  const roles = useRoleStore((s) => s.roles);
+
+  /** 프로필 부제 — 대표 역할이 있으면 역할명, 없으면 등급명 · 등급명 */
+  const meLabel = (() => {
+    if (!me) return "";
+    const rel = rprsRoleRel(mbrRoleRels, me.mbrId);
+    const grd = mbrGrdNm(me.mbrGrdCd);
+    return `${rel ? roleNmOf(roles, rel.roleId) : grd} · ${grd}`;
+  })();
 
   const navigate = (href: string) => {
     if (href === "/login") {
@@ -174,13 +185,13 @@ export function Sidebar() {
       <div className="mt-2 border-t border-bg pt-2">
         <div className="flex items-center gap-[9px] px-[18px] pb-2">
           <div className="flex size-[30px] flex-none items-center justify-center rounded-full bg-accent-soft text-[13.5px] font-semibold text-accent">
-            {me?.name.charAt(0) ?? "S"}
+            {me?.mbrNm.charAt(0) ?? "S"}
           </div>
           <div className="min-w-0">
-            <div className="truncate text-[14.5px] font-semibold">{me?.name ?? "-"}</div>
-            <div className="truncate text-[12.5px] text-n500">
-              {me ? memberRoleLabel(me) : ""}
+            <div className="truncate text-[14.5px] font-semibold">
+              {me?.mbrNm ?? "-"}
             </div>
+            <div className="truncate text-[12.5px] text-n500">{meLabel}</div>
           </div>
         </div>
         {NAV_FOOT.items.map((item) => (

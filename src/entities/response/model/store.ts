@@ -1,44 +1,60 @@
 "use client";
 
 import { create } from "zustand";
-import { nextKey } from "@/shared/lib/id";
-import seed from "../api/get-forms-responses.json";
-import type { FormResponse, ResponseStatus } from "./types";
+import type { RspnsSttsCd } from "@/shared/config/codes";
+import { TODAY } from "@/shared/config/constants";
+import { nextId } from "@/shared/lib/id";
+import seed from "../api/get-form-rspns-hstry.json";
+import type { FormRspnsHstry, RspnsCn } from "./types";
 
-interface ResponseState {
-  responses: FormResponse[];
-  setStatus: (id: string, status: ResponseStatus) => void;
-  addResponse: (draft: Omit<FormResponse, "id">) => FormResponse;
+interface RspnsState {
+  formRspnsHstrys: FormRspnsHstry[];
+  setRspnsStts: (formRspnsId: number, rspnsSttsCd: RspnsSttsCd) => void;
+  addFormRspns: (
+    draft: Omit<FormRspnsHstry, "formRspnsId" | "crtDt" | "mdfcnDt">,
+  ) => FormRspnsHstry;
 }
 
-export const useResponseStore = create<ResponseState>((set) => ({
-  responses: seed.data as unknown as FormResponse[],
+export const useRspnsStore = create<RspnsState>((set) => ({
+  formRspnsHstrys: seed.data as unknown as FormRspnsHstry[],
 
-  setStatus: (id, status) =>
+  setRspnsStts: (formRspnsId, rspnsSttsCd) =>
     set((s) => ({
-      responses: s.responses.map((r) => (r.id === id ? { ...r, status } : r)),
+      formRspnsHstrys: s.formRspnsHstrys.map((r) =>
+        r.formRspnsId === formRspnsId
+          ? { ...r, rspnsSttsCd, mdfcnDt: `${TODAY}T10:00:00` }
+          : r,
+      ),
     })),
 
-  addResponse: (draft) => {
-    let response: FormResponse = { ...draft, id: "" };
+  addFormRspns: (draft) => {
+    let row: FormRspnsHstry = {
+      ...draft,
+      formRspnsId: 0,
+      crtDt: draft.sbmsnDt,
+      mdfcnDt: draft.sbmsnDt,
+    };
     set((s) => {
-      response = { ...response, id: nextKey("resp", s.responses.length) };
-      return { responses: [...s.responses, response] };
+      row = { ...row, formRspnsId: nextId(s.formRspnsHstrys, "formRspnsId") };
+      return { formRspnsHstrys: [...s.formRspnsHstrys, row] };
     });
-    return response;
+    return row;
   },
 }));
 
-/**
- * 응답 상태 표기 — 원본 RSTAT에 ACCEPTED/REJECTED가 누락된 잠재 버그를 보완
- * (응답 탭·응답 요약이 승인/반려를 참조)
- */
-export const RESPONSE_STATUS: Record<
-  ResponseStatus,
+/** 응답 상태 배지 표기 */
+export const RSPNS_STTS_BADGE: Record<
+  RspnsSttsCd,
   { label: string; tone: "blue" | "grey" | "red" }
 > = {
   SUBMITTED: { label: "제출", tone: "blue" },
-  DRAFT: { label: "임시저장", tone: "grey" },
   ACCEPTED: { label: "승인", tone: "blue" },
   REJECTED: { label: "반려", tone: "red" },
 };
+
+/** 응답값 표시 문자열 — 다중선택은 ", "로 잇는다 */
+export function rspnsValueText(rspnsCn: RspnsCn, qitemId: string): string {
+  const v = rspnsCn[qitemId];
+  if (v === undefined) return "";
+  return Array.isArray(v) ? v.join(", ") : v;
+}

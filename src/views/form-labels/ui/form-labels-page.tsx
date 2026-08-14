@@ -13,35 +13,36 @@ import {
 } from "@/shared/ui";
 
 export function FormLabelsPage() {
-  const { forms, labels, addLabel, toggleLabel } = useFormStore();
-  const [newName, setNewName] = useState("");
+  const { formLbls, formLblRels, addFormLbl, toggleFormLbl } = useFormStore();
+  const [newLblNm, setNewLblNm] = useState("");
 
-  const usage = (name: string) => forms.filter((f) => f.labels.includes(name)).length;
+  const usage = (formLblId: number) =>
+    formLblRels.filter((r) => r.formLblId === formLblId).length;
 
   const add = () => {
-    const name = newName.trim();
-    if (!name) {
-      flash("분류명을 입력하세요");
+    const lblNm = newLblNm.trim();
+    if (!lblNm) {
+      flash("라벨_명을 입력하세요");
       return;
     }
-    if (labels.some((l) => l.name === name)) {
-      flash("이미 있는 분류입니다");
+    if (formLbls.some((l) => l.lblNm === lblNm)) {
+      flash("이미 있는 라벨입니다");
       return;
     }
-    addLabel(name);
-    setNewName("");
-    flash(`${name} 분류 추가됨`);
+    addFormLbl(lblNm);
+    setNewLblNm("");
+    flash(`${lblNm} 라벨 추가됨`);
   };
 
   return (
     <>
-      <PageHeader title="라벨 관리" subtitle="비활성화 우선" />
+      <PageHeader title="라벨 관리" subtitle="사용_여부 토글" />
       <PageBody>
         <div className="mb-4 flex items-center gap-2">
           <TextField
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="새 분류명"
+            value={newLblNm}
+            onChange={(e) => setNewLblNm(e.target.value)}
+            placeholder="새 라벨_명"
             className="w-[260px]"
           />
           <Button onClick={add}>추가</Button>
@@ -49,27 +50,27 @@ export function FormLabelsPage() {
 
         <Card className="max-w-[640px] px-5 pt-4 pb-[6px]">
           <div className="grid grid-cols-[1fr_120px_80px]">
-            {["분류명", "사용 중인 폼", "사용여부"].map((h) => (
+            {["라벨_명", "사용 중인 폼", "사용_여부"].map((h) => (
               <div key={h} className="pb-[10px] text-[13px] tracking-[.3px] text-n500">
                 {h}
               </div>
             ))}
-            {labels.map((l) => (
-              <div key={l.name} className="contents">
+            {formLbls.map((l) => (
+              <div key={l.formLblId} className="contents">
                 <div
                   className={
-                    l.on
+                    l.useYn
                       ? "border-t border-black/5 py-3 text-[15px] font-medium"
                       : "border-t border-black/5 py-3 text-[15px] text-n500 line-through"
                   }
                 >
-                  {l.name}
+                  {l.lblNm}
                 </div>
                 <div className="border-t border-black/5 py-3 text-[14.5px] text-n400">
-                  {usage(l.name)}건
+                  {usage(l.formLblId)}건
                 </div>
                 <div className="border-t border-black/5 py-3">
-                  <Toggle on={l.on} onChange={() => toggleLabel(l.name)} />
+                  <Toggle on={l.useYn} onChange={() => toggleFormLbl(l.formLblId)} />
                 </div>
               </div>
             ))}

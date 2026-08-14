@@ -1,0 +1,63 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "roleId": 1,
+      "indctSeqno": 1,
+      "roleNm": "회장",
+      "roleClsfCd": "POSITION",
+      "crtDt": "2026-01-01T09:00:00",
+      "mdfcnDt": "2026-01-01T09:00:00"
+    },
+    {
+      "roleId": 2,
+      "indctSeqno": 2,
+      "roleNm": "부회장",
+      "roleClsfCd": "POSITION",
+      "crtDt": "2026-01-01T09:00:00",
+      "mdfcnDt": "2026-01-01T09:00:00"
+    },
+    {
+      "roleId": 3,
+      "indctSeqno": 3,
+      "roleNm": "총무",
+      "roleClsfCd": "POSITION",
+      "crtDt": "2026-01-01T09:00:00",
+      "mdfcnDt": "2026-01-01T09:00:00"
+    },
+    {
+      "roleId": 4,
+      "indctSeqno": 4,
+      "roleNm": "국장",
+      "roleClsfCd": "POSITION",
+      "crtDt": "2026-01-01T09:00:00",
+      "mdfcnDt": "2026-01-01T09:00:00"
+    },
+    {
+      "roleId": 5,
+      "indctSeqno": 5,
+      "roleNm": "국원",
+      "roleClsfCd": "POSITION",
+      "crtDt": "2026-01-01T09:00:00",
+      "mdfcnDt": "2026-01-01T09:00:00"
+    },
+    {
+      "roleId": 6,
+      "indctSeqno": 6,
+      "roleNm": "프로젝트장",
+      "roleClsfCd": "POSITION",
+      "crtDt": "2026-01-01T09:00:00",
+      "mdfcnDt": "2026-01-01T09:00:00"
+    },
+    {
+      "roleId": 7,
+      "indctSeqno": 7,
+      "roleNm": "스터디장",
+      "roleClsfCd": "POSITION",
+      "crtDt": "2026-01-01T09:00:00",
+      "mdfcnDt": "2026-01-01T09:00:00"
+    }
+  ]
+}

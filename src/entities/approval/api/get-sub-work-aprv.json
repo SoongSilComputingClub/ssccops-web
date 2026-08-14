@@ -1,0 +1,73 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "subWorkAprvId": 1,
+      "subWorkId": 2,
+      "mbrId": 1,
+      "subWorkAprvDt": null,
+      "rgtrAprvYn": false,
+      "emrgSeCd": "NORMAL",
+      "emrgRsn": null,
+      "epfcAprvTermYmd": null,
+      "aprvStp": "2"
+    },
+    {
+      "subWorkAprvId": 2,
+      "subWorkId": 3,
+      "mbrId": 2,
+      "subWorkAprvDt": null,
+      "rgtrAprvYn": false,
+      "emrgSeCd": "NORMAL",
+      "emrgRsn": null,
+      "epfcAprvTermYmd": null,
+      "aprvStp": "1"
+    },
+    {
+      "subWorkAprvId": 3,
+      "subWorkId": 4,
+      "mbrId": 1,
+      "subWorkAprvDt": null,
+      "rgtrAprvYn": false,
+      "emrgSeCd": "URGENT",
+      "emrgRsn": "스터디 개강 전 교재 확보 필요",
+      "epfcAprvTermYmd": null,
+      "aprvStp": "1"
+    },
+    {
+      "subWorkAprvId": 4,
+      "subWorkId": 1,
+      "mbrId": 2,
+      "subWorkAprvDt": null,
+      "rgtrAprvYn": false,
+      "emrgSeCd": "NORMAL",
+      "emrgRsn": null,
+      "epfcAprvTermYmd": "2026-08-15",
+      "aprvStp": "1"
+    },
+    {
+      "subWorkAprvId": 5,
+      "subWorkId": 5,
+      "mbrId": 2,
+      "subWorkAprvDt": "2026-08-08T11:20:00",
+      "rgtrAprvYn": false,
+      "emrgSeCd": "NORMAL",
+      "emrgRsn": null,
+      "epfcAprvTermYmd": null,
+      "aprvStp": "1"
+    },
+    {
+      "subWorkAprvId": 6,
+      "subWorkId": 7,
+      "mbrId": 1,
+      "subWorkAprvDt": null,
+      "rgtrAprvYn": false,
+      "emrgSeCd": "NORMAL",
+      "emrgRsn": null,
+      "epfcAprvTermYmd": null,
+      "aprvStp": "1"
+    }
+  ]
+}

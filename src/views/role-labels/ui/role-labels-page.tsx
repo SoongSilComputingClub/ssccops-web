@@ -16,51 +16,53 @@ import {
 
 export function RoleLabelsPage() {
   const router = useRouter();
-  const { roles, roleLabels, addLabel, renameLabel, removeLabel } = useRoleStore();
-  const [newName, setNewName] = useState("");
+  const { roles, roleClsfs, addRoleClsf, renameRoleClsf, removeRoleClsf } =
+    useRoleStore();
+  const [newNm, setNewNm] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
+  const [editNm, setEditNm] = useState("");
 
-  const rolesOf = (label: string) => roles.filter((r) => r.label === label);
+  const rolesOf = (roleClsfCd: string) =>
+    roles.filter((r) => r.roleClsfCd === roleClsfCd);
 
   const add = () => {
-    const name = newName.trim();
-    if (!name) {
+    const nm = newNm.trim();
+    if (!nm) {
       flash("분류명을 입력하세요");
       return;
     }
-    if (roleLabels.includes(name)) {
+    if (roleClsfs.some((c) => c.roleClsfNm === nm)) {
       flash("이미 있는 분류입니다");
       return;
     }
-    addLabel(name);
-    setNewName("");
-    flash(`${name} 분류 추가됨`);
+    addRoleClsf(nm);
+    setNewNm("");
+    flash(`${nm} 분류 추가됨`);
   };
 
-  const saveEdit = (oldName: string) => {
-    const name = editName.trim();
-    if (!name) {
+  const saveEdit = (roleClsfCd: string, oldNm: string) => {
+    const nm = editNm.trim();
+    if (!nm) {
       flash("분류명을 입력하세요");
       return;
     }
-    if (name !== oldName && roleLabels.includes(name)) {
+    if (nm !== oldNm && roleClsfs.some((c) => c.roleClsfNm === nm)) {
       flash("이미 있는 분류입니다");
       return;
     }
-    renameLabel(oldName, name);
+    renameRoleClsf(roleClsfCd, nm);
     setEditing(null);
-    flash(`${oldName} → ${name}`);
+    flash(`${oldNm} → ${nm}`);
   };
 
-  const remove = (name: string) => {
-    const used = rolesOf(name).length;
+  const remove = (roleClsfCd: string, roleClsfNm: string) => {
+    const used = rolesOf(roleClsfCd).length;
     if (used > 0) {
       flash(`${used}개 역할이 사용 중입니다`);
       return;
     }
-    removeLabel(name);
-    flash(`${name} 삭제됨`);
+    removeRoleClsf(roleClsfCd);
+    flash(`${roleClsfNm} 삭제됨`);
   };
 
   return (
@@ -80,8 +82,8 @@ export function RoleLabelsPage() {
 
         <div className="mb-4 flex items-center gap-2">
           <TextField
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            value={newNm}
+            onChange={(e) => setNewNm(e.target.value)}
             placeholder="새 분류명"
             className="w-[240px]"
           />
@@ -90,27 +92,29 @@ export function RoleLabelsPage() {
 
         <Card className="max-w-[820px] px-5 pt-4 pb-[6px]">
           <div className="grid grid-cols-[60px_200px_1fr_130px]">
-            {["순번", "분류명", "지정된 역할", "관리"].map((h) => (
+            {["표시_순번", "역할_분류_명", "지정된 역할", "관리"].map((h) => (
               <div key={h} className="pb-[10px] text-[13px] tracking-[.3px] text-n500">
                 {h}
               </div>
             ))}
-            {roleLabels.map((label, i) => {
-              const assigned = rolesOf(label);
-              const isEditing = editing === label;
+            {roleClsfs.map((c) => {
+              const assigned = rolesOf(c.roleClsfCd);
+              const isEditing = editing === c.roleClsfCd;
               return (
-                <div key={label} className="contents">
-                  <div className="border-t border-black/5 py-3 text-[15px]">{i + 1}</div>
+                <div key={c.roleClsfCd} className="contents">
+                  <div className="border-t border-black/5 py-3 text-[15px]">
+                    {c.indctSeqno}
+                  </div>
                   <div className="border-t border-black/5 py-3 text-[15px]">
                     {isEditing ? (
                       <input
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
+                        value={editNm}
+                        onChange={(e) => setEditNm(e.target.value)}
                         className="w-[160px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[14.5px] outline-none"
                       />
                     ) : (
                       <>
-                        <span className="font-semibold">{label}</span>
+                        <span className="font-semibold">{c.roleClsfNm}</span>
                         <span className="ml-2 text-[13px] text-n500">
                           {assigned.length}개 역할
                         </span>
@@ -118,14 +122,14 @@ export function RoleLabelsPage() {
                     )}
                   </div>
                   <div className="min-w-0 truncate border-t border-black/5 py-3 text-[15px] text-n400">
-                    {assigned.map((r) => r.name).join(" · ") || "지정된 역할 없음"}
+                    {assigned.map((r) => r.roleNm).join(" · ") || "지정된 역할 없음"}
                   </div>
                   <div className="flex gap-3 border-t border-black/5 py-3 text-[14px]">
                     {isEditing ? (
                       <>
                         <button
                           type="button"
-                          onClick={() => saveEdit(label)}
+                          onClick={() => saveEdit(c.roleClsfCd, c.roleClsfNm)}
                           className="cursor-pointer text-accent"
                         >
                           저장
@@ -143,8 +147,8 @@ export function RoleLabelsPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            setEditing(label);
-                            setEditName(label);
+                            setEditing(c.roleClsfCd);
+                            setEditNm(c.roleClsfNm);
                           }}
                           className="cursor-pointer text-accent"
                         >
@@ -152,7 +156,7 @@ export function RoleLabelsPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => remove(label)}
+                          onClick={() => remove(c.roleClsfCd, c.roleClsfNm)}
                           className="cursor-pointer text-n400 hover:text-danger"
                         >
                           삭제
@@ -166,8 +170,8 @@ export function RoleLabelsPage() {
           </div>
         </Card>
         <div className="mt-3 text-[13.5px] text-n500">
-          사용 중인 분류는 삭제할 수 없습니다. 분류명을 바꾸면 지정된 역할에 함께
-          반영됩니다.
+          사용 중인 분류는 삭제할 수 없습니다. 분류명을 바꿔도 역할_분류_코드는
+          그대로 유지됩니다.
         </div>
       </PageBody>
     </>

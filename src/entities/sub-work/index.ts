@@ -1,7 +1,16 @@
-export type { SubWork, ChecklistItem } from "./model/types";
+export type {
+  SubWork,
+  SubWorkChckList,
+  SubWorkPicAltmnt,
+  SubWorkSttsHstry,
+} from "./model/types";
 export {
   useSubWorkStore,
-  subWorkTypeTone,
-  subWorkStatus,
+  chckListOf,
+  chckPrgrsRt,
+  ownerMbrId,
+  collabMbrIds,
+  subWorkSttsBadge,
   isSubWorkDone,
+  completedPatch,
 } from "./model/store";

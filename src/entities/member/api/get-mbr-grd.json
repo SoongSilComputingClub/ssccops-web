@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    { "mbrGrdCd": "TEMP", "mbrGrdNm": "임시회원", "indctSeqno": 1 },
+    { "mbrGrdCd": "ASSOC", "mbrGrdNm": "준회원", "indctSeqno": 2 },
+    { "mbrGrdCd": "ACTIVE", "mbrGrdNm": "활동회원", "indctSeqno": 3 },
+    { "mbrGrdCd": "FULL", "mbrGrdNm": "정회원", "indctSeqno": 4 }
+  ]
+}

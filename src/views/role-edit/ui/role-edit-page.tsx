@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { activeRoles, cohortText, useMemberStore } from "@/entities/member";
+import { currentRoleRels, genNoText, mbrGrdNm, useMbrStore } from "@/entities/member";
 import { useRoleStore } from "@/entities/role";
 import { ROUTES } from "@/shared/config/routes";
 import {
@@ -17,43 +17,47 @@ import {
   flash,
 } from "@/shared/ui";
 
-export function RoleEditPage({ roleId }: { roleId?: string }) {
+export function RoleEditPage({ roleId }: { roleId?: number }) {
   const router = useRouter();
-  const { roles, roleLabels, addRole, renameRole, setRoleLabel } = useRoleStore();
-  const members = useMemberStore((s) => s.members);
-  const existing = roleId ? roles.find((r) => r.id === roleId) : undefined;
+  const { roles, roleClsfs, addRole, renameRole, setRoleClsf } = useRoleStore();
+  const { mbrs, mbrRoleRels } = useMbrStore();
+  const existing = roleId ? roles.find((r) => r.roleId === roleId) : undefined;
 
-  const [name, setName] = useState(existing?.name ?? "");
-  const [label, setLabel] = useState(existing?.label ?? roleLabels[0] ?? "직책");
+  const [roleNm, setRoleNm] = useState(existing?.roleNm ?? "");
+  const [roleClsfCd, setRoleClsfCd] = useState(
+    existing?.roleClsfCd ?? roleClsfs[0]?.roleClsfCd ?? "POSITION",
+  );
 
   const holders = existing
-    ? members.filter((m) => activeRoles(m).includes(existing.name))
+    ? mbrs.filter((m) =>
+        currentRoleRels(mbrRoleRels, m.mbrId).some((r) => r.roleId === existing.roleId),
+      )
     : [];
 
   const save = () => {
-    const next = name.trim();
+    const next = roleNm.trim();
     if (!next) {
-      flash("명칭을 입력하세요");
+      flash("역할_명을 입력하세요");
       return;
     }
-    if (roles.some((r) => r.name === next && r.id !== existing?.id)) {
+    if (roles.some((r) => r.roleNm === next && r.roleId !== existing?.roleId)) {
       flash("이미 있는 역할입니다");
       return;
     }
     if (existing) {
-      if (next === existing.name && label === existing.label) {
+      if (next === existing.roleNm && roleClsfCd === existing.roleClsfCd) {
         flash("변경된 내용이 없습니다");
         return;
       }
-      if (next !== existing.name) {
-        renameRole(existing.id, next);
-        flash(`${existing.name} → ${next}`);
+      if (next !== existing.roleNm) {
+        renameRole(existing.roleId, next);
+        flash(`${existing.roleNm} → ${next}`);
       }
-      if (label !== existing.label) setRoleLabel(existing.id, label);
+      if (roleClsfCd !== existing.roleClsfCd) setRoleClsf(existing.roleId, roleClsfCd);
       router.replace(ROUTES.roles);
       return;
     }
-    addRole(next, label);
+    addRole(next, roleClsfCd);
     flash(`${next} 추가됨`);
     router.replace(ROUTES.roles);
   };
@@ -62,7 +66,7 @@ export function RoleEditPage({ roleId }: { roleId?: string }) {
     <>
       <PageHeader
         title={existing ? "역할 수정" : "역할 추가"}
-        subtitle="명칭 · 분류"
+        subtitle="역할_명 · 역할_분류"
         showBack
       />
       <PageBody maxWidth={1040}>
@@ -72,10 +76,10 @@ export function RoleEditPage({ roleId }: { roleId?: string }) {
               <SectionLabel className="mb-3">
                 {existing ? "역할 수정" : "새 역할 추가"}
               </SectionLabel>
-              <div className="mb-[6px] text-[13.5px] text-n400">명칭</div>
+              <div className="mb-[6px] text-[13.5px] text-n400">역할_명</div>
               <TextField
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={roleNm}
+                onChange={(e) => setRoleNm(e.target.value)}
                 placeholder="역할명"
               />
               <div className="mt-2 text-[13.5px] text-n500">
@@ -88,7 +92,7 @@ export function RoleEditPage({ roleId }: { roleId?: string }) {
 
             <Card>
               <div className="mb-3 flex items-center">
-                <SectionLabel>역할 분류</SectionLabel>
+                <SectionLabel>역할_분류</SectionLabel>
                 <div className="flex-1" />
                 <button
                   type="button"
@@ -99,9 +103,13 @@ export function RoleEditPage({ roleId }: { roleId?: string }) {
                 </button>
               </div>
               <div className="flex flex-wrap gap-[7px]">
-                {roleLabels.map((l) => (
-                  <Chip key={l} active={label === l} onClick={() => setLabel(l)}>
-                    {l}
+                {roleClsfs.map((c) => (
+                  <Chip
+                    key={c.roleClsfCd}
+                    active={roleClsfCd === c.roleClsfCd}
+                    onClick={() => setRoleClsfCd(c.roleClsfCd)}
+                  >
+                    {c.roleClsfNm}
                   </Chip>
                 ))}
               </div>
@@ -119,15 +127,15 @@ export function RoleEditPage({ roleId }: { roleId?: string }) {
               <div className="flex flex-col">
                 {holders.map((m) => (
                   <div
-                    key={m.key}
-                    onClick={() => router.push(ROUTES.memberDetail(m.key))}
+                    key={m.mbrId}
+                    onClick={() => router.push(ROUTES.memberDetail(m.mbrId))}
                     className="cursor-pointer border-t border-black/5 py-3 first:border-t-0"
                   >
                     <div className="text-[15.5px] font-semibold hover:text-accent">
-                      {m.name}
+                      {m.mbrNm}
                     </div>
                     <div className="mt-[2px] text-[13.5px] text-n500">
-                      {cohortText(m)} · {m.grade}
+                      {genNoText(m)} · {mbrGrdNm(m.mbrGrdCd)}
                     </div>
                   </div>
                 ))}

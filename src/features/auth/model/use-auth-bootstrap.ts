@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMemberStore } from "@/entities/member";
+import { useMbrStore } from "@/entities/member";
 import { useSessionStore } from "@/entities/session";
 import { ROUTES } from "@/shared/config/routes";
 import { apiFetch } from "@/shared/lib/api/client";
@@ -23,15 +23,15 @@ function provisionBackendMember() {
 type BootstrapStatus = "pending" | "ready";
 
 /**
- * 관리자 페이지 진입 시 Supabase Auth 사용자를 내부 Member와 연결한다.
- * 연결된 Member가 있으면 세션에 로그인 처리하고, 없으면(최초 로그인) 회원가입으로 보낸다.
+ * 관리자 페이지 진입 시 Supabase Auth 사용자를 내부 mbr 와 연결한다.
+ * 연결된 회원이 있으면 세션에 로그인 처리하고, 없으면(최초 로그인) 회원가입으로 보낸다.
  */
 export function useAuthBootstrap(): BootstrapStatus {
   const router = useRouter();
   const [status, setStatus] = useState<BootstrapStatus>("pending");
   const login = useSessionStore((s) => s.login);
   const setPendingAuthUser = useSessionStore((s) => s.setPendingAuthUser);
-  const members = useMemberStore((s) => s.members);
+  const mbrs = useMbrStore((s) => s.mbrs);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,9 +48,9 @@ export function useAuthBootstrap(): BootstrapStatus {
 
         provisionBackendMember();
 
-        const member = members.find((m) => m.authUserId === user.id);
-        if (member) {
-          login(member.key);
+        const mbr = mbrs.find((m) => m.authUserId === user.id);
+        if (mbr) {
+          login(mbr.mbrId);
           setStatus("ready");
           return;
         }
@@ -61,6 +61,7 @@ export function useAuthBootstrap(): BootstrapStatus {
           name:
             (user.user_metadata?.full_name as string | undefined) ??
             (user.user_metadata?.name as string | undefined),
+          provider: user.app_metadata?.provider,
         });
         router.replace(ROUTES.signup);
       });
@@ -68,7 +69,7 @@ export function useAuthBootstrap(): BootstrapStatus {
     return () => {
       cancelled = true;
     };
-  }, [router, login, setPendingAuthUser, members]);
+  }, [router, login, setPendingAuthUser, mbrs]);
 
   return status;
 }

@@ -1,55 +1,94 @@
 "use client";
 
 import { create } from "zustand";
-import { nextKey } from "@/shared/lib/id";
-import seed from "../api/get-members-roles.json";
-import type { Role } from "./types";
+import { TODAY } from "@/shared/config/constants";
+import { nextId } from "@/shared/lib/id";
+import roleSeed from "../api/get-role.json";
+import roleClsfSeed from "../api/get-role-clsf.json";
+import type { Role, RoleClsf } from "./types";
 
 interface RoleState {
   roles: Role[];
-  roleLabels: string[];
+  roleClsfs: RoleClsf[];
 
-  addRole: (name: string, label: string) => Role;
-  renameRole: (id: string, name: string) => void;
-  setRoleLabel: (id: string, label: string) => void;
-  toggleRole: (id: string) => void;
+  addRole: (roleNm: string, roleClsfCd: string) => Role;
+  renameRole: (roleId: number, roleNm: string) => void;
+  setRoleClsf: (roleId: number, roleClsfCd: string) => void;
 
-  addLabel: (name: string) => void;
-  /** 분류명 변경 — 지정된 역할에도 전파 */
-  renameLabel: (oldName: string, newName: string) => void;
-  removeLabel: (name: string) => void;
+  addRoleClsf: (roleClsfNm: string) => void;
+  /** 분류명 변경 — 코드는 유지하고 표시명만 바꾼다 */
+  renameRoleClsf: (roleClsfCd: string, roleClsfNm: string) => void;
+  removeRoleClsf: (roleClsfCd: string) => void;
+}
+
+/** 분류명 → 코드값 채번 (사용자 추가분은 CLSF_n) */
+function nextRoleClsfCd(rows: RoleClsf[]): string {
+  return `CLSF_${rows.length + 1}`;
 }
 
 export const useRoleStore = create<RoleState>((set) => ({
-  roles: seed.data.roles as Role[],
-  roleLabels: seed.data.roleLabels,
+  roles: roleSeed.data as Role[],
+  roleClsfs: roleClsfSeed.data as RoleClsf[],
 
-  addRole: (name, label) => {
-    let role: Role = { id: "", name, on: true, label };
+  addRole: (roleNm, roleClsfCd) => {
+    let role: Role = {
+      roleId: 0,
+      indctSeqno: 0,
+      roleNm,
+      roleClsfCd,
+      crtDt: `${TODAY}T10:00:00`,
+      mdfcnDt: `${TODAY}T10:00:00`,
+    };
     set((s) => {
-      role = { ...role, id: nextKey("r", s.roles.length) };
+      role = { ...role, roleId: nextId(s.roles, "roleId"), indctSeqno: s.roles.length + 1 };
       return { roles: [...s.roles, role] };
     });
     return role;
   },
 
-  renameRole: (id, name) =>
-    set((s) => ({ roles: s.roles.map((r) => (r.id === id ? { ...r, name } : r)) })),
-
-  setRoleLabel: (id, label) =>
-    set((s) => ({ roles: s.roles.map((r) => (r.id === id ? { ...r, label } : r)) })),
-
-  toggleRole: (id) =>
-    set((s) => ({ roles: s.roles.map((r) => (r.id === id ? { ...r, on: !r.on } : r)) })),
-
-  addLabel: (name) => set((s) => ({ roleLabels: [...s.roleLabels, name] })),
-
-  renameLabel: (oldName, newName) =>
+  renameRole: (roleId, roleNm) =>
     set((s) => ({
-      roleLabels: s.roleLabels.map((l) => (l === oldName ? newName : l)),
-      roles: s.roles.map((r) => (r.label === oldName ? { ...r, label: newName } : r)),
+      roles: s.roles.map((r) =>
+        r.roleId === roleId ? { ...r, roleNm, mdfcnDt: `${TODAY}T10:00:00` } : r,
+      ),
     })),
 
-  removeLabel: (name) =>
-    set((s) => ({ roleLabels: s.roleLabels.filter((l) => l !== name) })),
+  setRoleClsf: (roleId, roleClsfCd) =>
+    set((s) => ({
+      roles: s.roles.map((r) =>
+        r.roleId === roleId ? { ...r, roleClsfCd, mdfcnDt: `${TODAY}T10:00:00` } : r,
+      ),
+    })),
+
+  addRoleClsf: (roleClsfNm) =>
+    set((s) => ({
+      roleClsfs: [
+        ...s.roleClsfs,
+        {
+          roleClsfCd: nextRoleClsfCd(s.roleClsfs),
+          roleClsfNm,
+          indctSeqno: s.roleClsfs.length + 1,
+        },
+      ],
+    })),
+
+  renameRoleClsf: (roleClsfCd, roleClsfNm) =>
+    set((s) => ({
+      roleClsfs: s.roleClsfs.map((c) =>
+        c.roleClsfCd === roleClsfCd ? { ...c, roleClsfNm } : c,
+      ),
+    })),
+
+  removeRoleClsf: (roleClsfCd) =>
+    set((s) => ({ roleClsfs: s.roleClsfs.filter((c) => c.roleClsfCd !== roleClsfCd) })),
 }));
+
+/** 역할_분류_코드 → 분류명 */
+export function roleClsfNm(clsfs: RoleClsf[], cd: string): string {
+  return clsfs.find((c) => c.roleClsfCd === cd)?.roleClsfNm ?? cd;
+}
+
+/** 역할_ID → 역할명 */
+export function roleNmOf(roles: Role[], roleId: number): string {
+  return roles.find((r) => r.roleId === roleId)?.roleNm ?? "-";
+}

@@ -1,0 +1,63 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "subWorkSttsHstryId": 1,
+      "subWorkId": 1,
+      "prfmrId": 2,
+      "chgRsn": "후보 3곳 비교 완료 후 검토 단계 전환",
+      "chgDt": "2026-08-06T14:10:00"
+    },
+    {
+      "subWorkSttsHstryId": 2,
+      "subWorkId": 2,
+      "prfmrId": 3,
+      "chgRsn": "예산안 대비 확인 완료",
+      "chgDt": "2026-08-06T09:40:00"
+    },
+    {
+      "subWorkSttsHstryId": 3,
+      "subWorkId": 3,
+      "prfmrId": 4,
+      "chgRsn": "문구 검토 완료 후 검토 단계 전환",
+      "chgDt": "2026-08-07T11:25:00"
+    },
+    {
+      "subWorkSttsHstryId": 4,
+      "subWorkId": 4,
+      "prfmrId": 2,
+      "chgRsn": "구매처 비교 완료",
+      "chgDt": "2026-08-05T16:00:00"
+    },
+    {
+      "subWorkSttsHstryId": 5,
+      "subWorkId": 5,
+      "prfmrId": 1,
+      "chgRsn": "신청서 취합 완료, 명단 정리 진행",
+      "chgDt": "2026-08-03T20:30:00"
+    },
+    {
+      "subWorkSttsHstryId": 6,
+      "subWorkId": 6,
+      "prfmrId": 1,
+      "chgRsn": "안건 수합 완료",
+      "chgDt": "2026-08-07T18:00:00"
+    },
+    {
+      "subWorkSttsHstryId": 7,
+      "subWorkId": 7,
+      "prfmrId": 1,
+      "chgRsn": "반려 사유 반영 위해 재작성 착수",
+      "chgDt": "2026-07-15T10:05:00"
+    },
+    {
+      "subWorkSttsHstryId": 8,
+      "subWorkId": 8,
+      "prfmrId": 6,
+      "chgRsn": "부스 운영 계획 수립 시작",
+      "chgDt": "2026-08-05T09:30:00"
+    }
+  ]
+}

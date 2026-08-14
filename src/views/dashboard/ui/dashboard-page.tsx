@@ -2,12 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useApprovalStore, type Approval } from "@/entities/approval";
-import { CAL_EVENTS } from "@/entities/event";
-import { useSubWorkStore, type SubWork } from "@/entities/sub-work";
+import { aprvOf, useAprvStore } from "@/entities/approval";
+import { useMbrStore } from "@/entities/member";
+import {
+  chckPrgrsRt,
+  ownerMbrId,
+  useSubWorkStore,
+  type SubWork,
+} from "@/entities/sub-work";
+import { subWorkTypeNm, useSubWorkTypeStore } from "@/entities/sub-work-type";
 import { RejectSheet, useApprovalActions } from "@/features/approval";
-import { CAL_YEAR, STAGES } from "@/shared/config/constants";
+import { WORK_STTS_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
+import { daysUntil, ddayText, deadlineFlag, formatMd } from "@/shared/lib/date";
 import {
   Badge,
   Button,
@@ -15,11 +22,9 @@ import {
   CardTitle,
   Chip,
   GridTable,
-  MonthCalendar,
   PageBody,
   PageHeader,
   ProgressBar,
-  flash,
   type GridColumn,
 } from "@/shared/ui";
 
@@ -27,59 +32,84 @@ const MY_FILTERS = ["전체", "마감임박", "지연"] as const;
 
 export function DashboardPage() {
   const router = useRouter();
-  const approvals = useApprovalStore((s) => s.approvals);
-  const tasks = useSubWorkStore((s) => s.tasks);
+  const { subWorks, subWorkChckLists, subWorkPicAltmnts } = useSubWorkStore();
+  const subWorkAprvs = useAprvStore((s) => s.subWorkAprvs);
+  const subWorkTypes = useSubWorkTypeStore((s) => s.subWorkTypes);
+  const mbrs = useMbrStore((s) => s.mbrs);
   const { decide } = useApprovalActions();
 
   const [myFilter, setMyFilter] = useState<(typeof MY_FILTERS)[number]>("전체");
-  const [month, setMonth] = useState(7); // 0-based → 8월
-  const [selDay, setSelDay] = useState<number | null>(null);
-  const [rejectTarget, setRejectTarget] = useState<Approval | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<SubWork | null>(null);
 
-  const pending = approvals.filter((a) => a.state === "대기");
-  const weekEvents = CAL_EVENTS.filter((e) => e.m === 8 && e.d >= 9 && e.d <= 23).slice(0, 6);
-  const myTasks = tasks.filter((t) => myFilter === "전체" || t.flag === myFilter);
-  const monthEvents = CAL_EVENTS.filter((e) => e.m === month + 1);
-  const selDayEvents = selDay ? monthEvents.filter((e) => e.d === selDay) : [];
+  const mbrNmOf = (mbrId: number | undefined) =>
+    mbrs.find((m) => m.mbrId === mbrId)?.mbrNm ?? "-";
 
-  const openEvent = (task: string) => {
-    if (task) router.push(ROUTES.taskDetail(task));
-    else flash("연결된 하위 업무가 없습니다");
-  };
+  const pending = subWorks.filter((sw) => sw.aprvSttsCd === "PENDING");
+  const myTasks = subWorks.filter(
+    (sw) => myFilter === "전체" || deadlineFlag(sw.ddlnDt, sw.dlyYn) === myFilter,
+  );
 
-  const approvalColumns: GridColumn<Approval>[] = [
+  /** 다가오는 마감 — 캘린더 테이블이 없어 하위 업무의 마감_일시에서 파생 */
+  const upcoming = [...subWorks]
+    .filter((sw) => sw.ddlnDt && sw.workSttsCd !== "DONE")
+    .sort((a, b) => (a.ddlnDt ?? "").localeCompare(b.ddlnDt ?? ""))
+    .slice(0, 6);
+
+  const approvalColumns: GridColumn<SubWork>[] = [
     {
-      key: "title",
+      key: "subWorkTtl",
       header: "하위 업무명",
       width: "2fr",
-      render: (a) => (
+      render: (sw) => (
         <span
-          onClick={() => router.push(ROUTES.taskDetail(a.task))}
+          onClick={() => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
           className="cursor-pointer font-semibold hover:text-accent"
         >
-          {a.title}
+          {sw.subWorkTtl}
         </span>
       ),
     },
-    { key: "owner", header: "담당자", width: ".8fr", render: (a) => <span className="text-n400">{a.owner}</span> },
-    { key: "date", header: "마감", width: ".8fr", render: (a) => <span className="text-n400">{a.requested}</span> },
     {
-      key: "type",
-      header: "유형",
+      key: "pic",
+      header: "담당자",
+      width: ".8fr",
+      render: (sw) => (
+        <span className="text-n400">
+          {mbrNmOf(ownerMbrId(subWorkPicAltmnts, sw.subWorkId))}
+        </span>
+      ),
+    },
+    {
+      key: "ddlnDt",
+      header: "마감_일시",
+      width: ".8fr",
+      render: (sw) => <span className="text-n400">{formatMd(sw.ddlnDt) || "-"}</span>,
+    },
+    {
+      key: "subWorkTypeId",
+      header: "하위_업무_유형",
       width: ".9fr",
-      render: (a) => <Badge tone="grey">{a.type}</Badge>,
+      render: (sw) => (
+        <Badge tone="grey">{subWorkTypeNm(subWorkTypes, sw.subWorkTypeId)}</Badge>
+      ),
     },
     {
       key: "actions",
       header: "조치",
       width: "150px",
       align: "right",
-      render: (a) => (
+      render: (sw) => (
         <span className="flex justify-end gap-[7px]">
-          <Button variant="ghost-danger" size="sm" onClick={() => setRejectTarget(a)}>
+          <Button variant="ghost-danger" size="sm" onClick={() => setRejectTarget(sw)}>
             반려
           </Button>
-          <Button size="sm" onClick={() => decide(a.id, a.task, true)}>
+          <Button
+            size="sm"
+            onClick={() => {
+              const aprv = aprvOf(subWorkAprvs, sw.subWorkId);
+              if (aprv) decide(aprv.subWorkAprvId, sw.subWorkId, true);
+            }}
+          >
             승인
           </Button>
         </span>
@@ -89,53 +119,59 @@ export function DashboardPage() {
 
   const taskColumns: GridColumn<SubWork>[] = [
     {
-      key: "title",
+      key: "subWorkTtl",
       header: "하위 업무명",
       width: "2fr",
-      render: (t) => (
+      render: (sw) => (
         <span
-          onClick={() => router.push(ROUTES.taskDetail(t.id))}
+          onClick={() => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
           className="cursor-pointer font-semibold hover:text-accent"
         >
-          {t.title}
+          {sw.subWorkTtl}
         </span>
       ),
     },
     {
-      key: "stage",
-      header: "단계",
+      key: "workSttsCd",
+      header: "업무_상태",
       width: ".7fr",
-      render: (t) => (
-        <Badge tone={t.stage >= 4 ? "outline-accent" : "outline"}>
-          {STAGES[t.stage - 1]}
+      render: (sw) => (
+        <Badge tone={sw.workSttsCd === "DONE" ? "outline-accent" : "outline"}>
+          {WORK_STTS_NM[sw.workSttsCd]}
         </Badge>
       ),
     },
     {
-      key: "due",
-      header: "마감일",
+      key: "ddlnDt",
+      header: "마감_일시",
       width: ".9fr",
-      render: (t) => (
-        <span className="flex items-center gap-2">
-          <span className={t.flag === "지연" ? "text-danger" : undefined}>{t.due}</span>
-          {t.flag && (
-            <Badge tone={t.flag === "지연" ? "red" : "outline-accent"}>{t.flag}</Badge>
-          )}
-        </span>
-      ),
+      render: (sw) => {
+        const flag = deadlineFlag(sw.ddlnDt, sw.dlyYn);
+        return (
+          <span className="flex items-center gap-2">
+            <span className={flag === "지연" ? "text-danger" : undefined}>
+              {formatMd(sw.ddlnDt) || "-"}
+            </span>
+            {flag && (
+              <Badge tone={flag === "지연" ? "red" : "outline-accent"}>{flag}</Badge>
+            )}
+          </span>
+        );
+      },
     },
     {
-      key: "progress",
+      key: "prgrs",
       header: "진행률",
       width: "1.2fr",
-      render: (t) => (
-        <span className="flex items-center gap-[10px]">
-          <ProgressBar value={t.progress} danger={t.flag === "지연"} />
-          <span className="w-[38px] text-right text-[14px] text-n500">
-            {t.progress}%
+      render: (sw) => {
+        const rt = chckPrgrsRt(subWorkChckLists, sw.subWorkId);
+        return (
+          <span className="flex items-center gap-[10px]">
+            <ProgressBar value={rt} danger={sw.dlyYn} />
+            <span className="w-[38px] text-right text-[14px] text-n500">{rt}%</span>
           </span>
-        </span>
-      ),
+        );
+      },
     },
   ];
 
@@ -143,7 +179,7 @@ export function DashboardPage() {
     <>
       <PageHeader
         title="운영 대시보드"
-        subtitle="승인 대기 · 캘린더 · 내 업무"
+        subtitle="승인 대기 · 다가오는 마감 · 내 업무"
         action={{ label: "+ 등록", onClick: () => router.push(ROUTES.operationNew) }}
       />
       <PageBody>
@@ -157,7 +193,7 @@ export function DashboardPage() {
             <GridTable
               columns={approvalColumns}
               rows={pending}
-              rowKey={(a) => a.id}
+              rowKey={(sw) => String(sw.subWorkId)}
               dense
               empty={
                 <div className="py-6 text-center text-[15px] text-n500">
@@ -168,25 +204,41 @@ export function DashboardPage() {
           </Card>
 
           <Card>
-            <CardTitle>이번 주 운영 캘린더</CardTitle>
+            <CardTitle>다가오는 마감</CardTitle>
             <div className="flex flex-col gap-[13px]">
-              {weekEvents.map((e) => (
-                <div
-                  key={e.id}
-                  onClick={() => openEvent(e.task)}
-                  className="flex cursor-pointer items-start gap-3 hover:opacity-80"
-                >
-                  <div className="w-[52px] flex-none pt-[2px] text-[14px] text-n500">
-                    {e.m}/{e.d} {e.dow}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <Badge tone={e.type === "마감" ? "outline-red" : "outline-accent"}>
-                      {e.type}
-                    </Badge>
-                    <div className="mt-[6px] text-[15.5px]">{e.title}</div>
-                  </div>
-                </div>
-              ))}
+              {upcoming.length === 0 ? (
+                <div className="text-[14.5px] text-n500">예정된 마감이 없습니다.</div>
+              ) : (
+                upcoming.map((sw) => {
+                  const flag = deadlineFlag(sw.ddlnDt, sw.dlyYn);
+                  const d = daysUntil(sw.ddlnDt);
+                  return (
+                    <div
+                      key={sw.subWorkId}
+                      onClick={() => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
+                      className="flex cursor-pointer items-start gap-3 hover:opacity-80"
+                    >
+                      <div className="w-[64px] flex-none pt-[2px] text-[14px] text-n500">
+                        {formatMd(sw.ddlnDt)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <Badge
+                          tone={
+                            flag === "지연"
+                              ? "outline-red"
+                              : d !== null && d <= 3
+                                ? "outline-accent"
+                                : "outline"
+                          }
+                        >
+                          {ddayText(sw.ddlnDt)}
+                        </Badge>
+                        <div className="mt-[6px] text-[15.5px]">{sw.subWorkTtl}</div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </Card>
         </div>
@@ -204,78 +256,21 @@ export function DashboardPage() {
             <div className="flex-1" />
             <div className="text-[14px] text-n500">{myTasks.length}건</div>
           </div>
-          <GridTable columns={taskColumns} rows={myTasks} rowKey={(t) => t.id} dense />
-        </Card>
-
-        <Card className="mt-4">
-          <div className="mb-[14px] flex items-center gap-3">
-            <div className="text-[18px] font-medium">
-              {CAL_YEAR}년 {month + 1}월
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setMonth((m) => Math.max(0, m - 1));
-                setSelDay(null);
-              }}
-            >
-              이전 달
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setMonth((m) => Math.min(11, m + 1));
-                setSelDay(null);
-              }}
-            >
-              다음 달
-            </Button>
-          </div>
-          <MonthCalendar
-            year={CAL_YEAR}
-            month={month}
-            events={monthEvents.map((e) => ({ day: e.d, title: e.title }))}
-            selectedDay={selDay}
-            onSelectDay={setSelDay}
+          <GridTable
+            columns={taskColumns}
+            rows={myTasks}
+            rowKey={(sw) => String(sw.subWorkId)}
+            dense
           />
-          {selDay !== null && (
-            <div className="mt-4">
-              <div className="mb-[10px] text-[14px] tracking-[.4px] text-n400">
-                {month + 1}/{selDay} 일정
-              </div>
-              <div className="flex flex-col gap-[9px]">
-                {selDayEvents.length === 0 ? (
-                  <div className="text-[14.5px] text-n500">
-                    해당 날짜에 일정이 없습니다.
-                  </div>
-                ) : (
-                  selDayEvents.map((e) => (
-                    <div
-                      key={e.id}
-                      onClick={() => openEvent(e.task)}
-                      className="flex cursor-pointer items-center gap-[11px] rounded-[12px] border border-line px-[13px] py-[11px] transition-colors hover:border-accent"
-                    >
-                      <Badge tone={e.type === "마감" ? "outline-red" : "outline-accent"}>
-                        {e.type}
-                      </Badge>
-                      <div className="text-[15.5px]">{e.title}</div>
-                      <div className="flex-1" />
-                      <div className="text-[14px] text-accent">하위 업무 상세 ›</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
         </Card>
 
         <RejectSheet
           open={rejectTarget !== null}
           onClose={() => setRejectTarget(null)}
           onReject={(reason) => {
-            if (rejectTarget) decide(rejectTarget.id, rejectTarget.task, false, reason);
+            if (!rejectTarget) return;
+            const aprv = aprvOf(subWorkAprvs, rejectTarget.subWorkId);
+            if (aprv) decide(aprv.subWorkAprvId, rejectTarget.subWorkId, false, reason);
           }}
         />
       </PageBody>

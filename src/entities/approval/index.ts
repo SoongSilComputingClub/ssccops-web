@@ -1,2 +1,13 @@
-export type { Approval, Quorum } from "./model/types";
-export { useApprovalStore, approvalTone } from "./model/store";
+export type {
+  SubWorkAprv,
+  SubWorkAprvVote,
+  SubWorkRjct,
+  AgreTally,
+} from "./model/types";
+export {
+  useAprvStore,
+  aprvOf,
+  rjctRsnOf,
+  agreTally,
+  aprvSttsTone,
+} from "./model/store";

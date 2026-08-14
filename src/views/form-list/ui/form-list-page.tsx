@@ -2,38 +2,31 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FORM_STATUS, useFormStore, type FormStatus } from "@/entities/form";
-import { useResponseStore } from "@/entities/response";
+import { FORM_STTS_BADGE, formLblsOf, useFormStore } from "@/entities/form";
+import { useRspnsStore } from "@/entities/response";
+import { FORM_STTS_CDS, type FormSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
-import {
-  Badge,
-  Card,
-  Chip,
-  PageBody,
-  PageHeader,
-  Pill,
-  flash,
-} from "@/shared/ui";
+import { formatDt, formatYmd } from "@/shared/lib/date";
+import { Badge, Card, Chip, PageBody, PageHeader, Pill, flash } from "@/shared/ui";
 
-const STATUS_TABS = [
-  { label: "전체", value: "전체" },
-  { label: "작성중", value: "DRAFT" },
-  { label: "접수중", value: "OPEN" },
-  { label: "마감", value: "CLOSED" },
-] as const;
+const ALL = "전체";
 
 export function FormListPage() {
   const router = useRouter();
-  const { forms, labels, duplicateForm } = useFormStore();
-  const responses = useResponseStore((s) => s.responses);
-  const [status, setStatus] = useState<string>("전체");
-  const [label, setLabel] = useState("전체");
+  const { forms, formLbls, formLblRels, duplicateForm } = useFormStore();
+  const formRspnsHstrys = useRspnsStore((s) => s.formRspnsHstrys);
+  const [formSttsCd, setFormSttsCd] = useState<string>(ALL);
+  const [formLblId, setFormLblId] = useState<number | null>(null);
 
-  const filtered = forms.filter(
-    (f) =>
-      (status === "전체" || f.status === status) &&
-      (label === "전체" || f.labels.includes(label)),
-  );
+  const filtered = forms.filter((f) => {
+    if (formSttsCd !== ALL && f.formSttsCd !== formSttsCd) return false;
+    if (formLblId !== null) {
+      return formLblRels.some(
+        (r) => r.formId === f.formId && r.formLblId === formLblId,
+      );
+    }
+    return true;
+  });
 
   return (
     <>
@@ -44,48 +37,65 @@ export function FormListPage() {
       />
       <PageBody>
         <div className="mb-4 flex flex-wrap items-center gap-[7px]">
-          {STATUS_TABS.map((t) => (
+          <Chip active={formSttsCd === ALL} onClick={() => setFormSttsCd(ALL)}>
+            {ALL}
+          </Chip>
+          {FORM_STTS_CDS.map((cd) => (
             <Chip
-              key={t.value}
-              active={status === t.value}
-              onClick={() => setStatus(t.value)}
+              key={cd}
+              active={formSttsCd === cd}
+              onClick={() => setFormSttsCd(cd)}
             >
-              {t.label}
+              {FORM_STTS_BADGE[cd as FormSttsCd].label}
             </Chip>
           ))}
           <div className="mx-2 h-5 w-px bg-line" />
-          {["전체", ...labels.filter((l) => l.on).map((l) => l.name)].map((l) => (
-            <Chip key={l} active={label === l} onClick={() => setLabel(l)}>
-              {l}
-            </Chip>
-          ))}
+          <Chip active={formLblId === null} onClick={() => setFormLblId(null)}>
+            {ALL}
+          </Chip>
+          {formLbls
+            .filter((l) => l.useYn)
+            .map((l) => (
+              <Chip
+                key={l.formLblId}
+                active={formLblId === l.formLblId}
+                onClick={() => setFormLblId(l.formLblId)}
+              >
+                {l.lblNm}
+              </Chip>
+            ))}
         </div>
 
         <div className="grid grid-cols-2 gap-[14px]">
           {filtered.map((f) => {
-            const count = responses.filter((r) => r.form === f.key).length;
-            const fs = FORM_STATUS[f.status as FormStatus];
+            const rspnsCnt = formRspnsHstrys.filter(
+              (r) => r.formId === f.formId,
+            ).length;
+            const badge = FORM_STTS_BADGE[f.formSttsCd];
+            const lbls = formLblsOf(formLblRels, formLbls, f.formId);
             return (
-              <Card key={f.key}>
+              <Card key={f.formId}>
                 <div className="flex items-center gap-2">
-                  <Badge tone={fs.tone}>{fs.label}</Badge>
+                  <Badge tone={badge.tone}>{badge.label}</Badge>
                   <div className="flex-1" />
-                  <div className="text-[13.5px] text-n500">응답 {count}</div>
+                  <div className="text-[13.5px] text-n500">응답 {rspnsCnt}</div>
                 </div>
                 <div
-                  onClick={() => router.push(ROUTES.formDetail(f.key))}
+                  onClick={() => router.push(ROUTES.formDetail(f.formId))}
                   className="mt-2 cursor-pointer text-[18px] leading-[1.35] font-semibold hover:text-accent"
                 >
-                  {f.title}
+                  {f.formTtlNm}
                 </div>
                 <div className="mt-1 text-[13.5px] text-n500">
-                  {f.start ? `${f.start} ~ ${f.end}` : "접수 기간 미설정"}
+                  {f.rcptBgngDt
+                    ? `${formatDt(f.rcptBgngDt)} ~ ${formatDt(f.rcptEndDt)}`
+                    : "접수 기간 미설정"}
                 </div>
-                {f.labels.length > 0 && (
+                {lbls.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-[6px]">
-                    {f.labels.map((l) => (
-                      <Pill key={l} tone="blue">
-                        {l}
+                    {lbls.map((l) => (
+                      <Pill key={l.formLblId} tone="blue">
+                        {l.lblNm}
                       </Pill>
                     ))}
                   </div>
@@ -94,7 +104,7 @@ export function FormListPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      duplicateForm(f.key);
+                      duplicateForm(f.formId);
                       flash("DRAFT 폼으로 복제했습니다");
                     }}
                     className="cursor-pointer text-accent"
@@ -103,13 +113,15 @@ export function FormListPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => router.push(ROUTES.formEdit(f.key))}
+                    onClick={() => router.push(ROUTES.formEdit(f.formId))}
                     className="cursor-pointer text-accent"
                   >
                     수정
                   </button>
                   <div className="flex-1" />
-                  <div className="text-[13px] text-n500">수정 {f.updated}</div>
+                  <div className="text-[13px] text-n500">
+                    수정 {formatYmd(f.mdfcnDt)}
+                  </div>
                 </div>
               </Card>
             );

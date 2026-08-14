@@ -139,8 +139,8 @@ export function CsvImportPage() {
                     className="max-w-[240px]"
                   >
                     {CSV_FIELDS.map((f) => (
-                      <option key={f} value={f}>
-                        {f}
+                      <option key={f.value || "none"} value={f.value}>
+                        {f.label}
                       </option>
                     ))}
                   </SelectField>

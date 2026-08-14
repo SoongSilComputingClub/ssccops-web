@@ -33,7 +33,11 @@ export const NAV_GROUPS: NavGroup[] = [
         ],
       },
       { label: "승인함", href: ROUTES.approvals, isActive: starts("/approvals") },
-      { label: "하위 업무 유형 관리", href: ROUTES.opTypes, isActive: starts("/operations/types") },
+      {
+        label: "하위 업무 유형 관리",
+        href: ROUTES.subWorkTypes,
+        isActive: starts("/operations/types"),
+      },
       { label: "운영 등록", href: ROUTES.operationNew, isActive: starts("/operations/new") },
     ],
   },

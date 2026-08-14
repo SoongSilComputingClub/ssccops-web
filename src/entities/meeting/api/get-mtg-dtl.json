@@ -1,0 +1,84 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "mtgDtlId": 1,
+      "mtgId": 1,
+      "agndNm": "봄MT 예산안 검토",
+      "prcsSeCd": "HOLD",
+      "agndSeq": 1,
+      "operId": 7,
+      "agndCn": "대관료 130만원 · 예산 잔액 대비 확인",
+      "rsltCn": "국장단 재검토 후 재상정",
+      "prsnrId": 3
+    },
+    {
+      "mtgDtlId": 2,
+      "mtgId": 1,
+      "agndNm": "동아리 박람회 부스 배치",
+      "prcsSeCd": "CLOSED",
+      "agndSeq": 2,
+      "operId": 13,
+      "agndCn": "A동 정문 부스 확정",
+      "rsltCn": "부스 위치 A-12 확정",
+      "prsnrId": 6
+    },
+    {
+      "mtgDtlId": 3,
+      "mtgId": 1,
+      "agndNm": "신입 모집 일정",
+      "prcsSeCd": "CLOSED",
+      "agndSeq": 3,
+      "operId": 8,
+      "agndCn": "9월 1주차 공고",
+      "rsltCn": "원안 보고",
+      "prsnrId": 4
+    },
+    {
+      "mtgDtlId": 4,
+      "mtgId": 2,
+      "agndNm": "운영 인력 배치",
+      "prcsSeCd": "PENDING",
+      "agndSeq": 1,
+      "operId": 13,
+      "agndCn": "시간대별 2인 배치",
+      "rsltCn": null,
+      "prsnrId": 6
+    },
+    {
+      "mtgDtlId": 5,
+      "mtgId": 2,
+      "agndNm": "홍보물 제작 범위",
+      "prcsSeCd": "PENDING",
+      "agndSeq": 2,
+      "operId": 8,
+      "agndCn": "현수막·리플렛",
+      "rsltCn": null,
+      "prsnrId": 4
+    },
+    {
+      "mtgDtlId": 6,
+      "mtgId": 3,
+      "agndNm": "7월 결산 보고",
+      "prcsSeCd": "CLOSED",
+      "agndSeq": 1,
+      "operId": 3,
+      "agndCn": "집행률 78%",
+      "rsltCn": "승인",
+      "prsnrId": 3
+    },
+    {
+      "mtgDtlId": 7,
+      "mtgId": 3,
+      "agndNm": "짝선짝후 운영 방식",
+      "prcsSeCd": "CLOSED",
+      "agndSeq": 2,
+      "operId": 10,
+      "agndCn": "신청 기반 매칭",
+      "rsltCn": "매칭 방식 확정",
+      "prsnrId": 1
+    }
+  ]
+}

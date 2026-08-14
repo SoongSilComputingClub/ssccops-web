@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { activeRoles, useMemberStore } from "@/entities/member";
-import { useRoleStore } from "@/entities/role";
+import { currentRoleRels, useMbrStore } from "@/entities/member";
+import { roleClsfNm, useRoleStore } from "@/entities/role";
 import { ROUTES } from "@/shared/config/routes";
 import {
   Card,
@@ -16,40 +16,42 @@ import {
 } from "@/shared/ui";
 import type { Role } from "@/entities/role";
 
+const ALL = "전체";
+
 export function RoleListPage() {
   const router = useRouter();
   const roles = useRoleStore((s) => s.roles);
-  const roleLabels = useRoleStore((s) => s.roleLabels);
-  const members = useMemberStore((s) => s.members);
-  const [filter, setFilter] = useState("전체");
+  const roleClsfs = useRoleStore((s) => s.roleClsfs);
+  const { mbrs, mbrRoleRels } = useMbrStore();
+  const [filter, setFilter] = useState<string>(ALL);
 
-  const usage = (roleName: string) =>
-    members.filter((m) => activeRoles(m).includes(roleName)).length;
+  /** 해당 역할을 현재 보유한 회원 수 */
+  const usage = (roleId: number) =>
+    mbrs.filter((m) =>
+      currentRoleRels(mbrRoleRels, m.mbrId).some((r) => r.roleId === roleId),
+    ).length;
 
-  const filtered = roles.filter((r) => filter === "전체" || r.label === filter);
+  const filtered = roles.filter((r) => filter === ALL || r.roleClsfCd === filter);
 
   const columns: GridColumn<Role>[] = [
-    { key: "no", header: "순번", width: "60px", render: (_r, i) => i + 1 },
+    { key: "indctSeqno", header: "표시_순번", width: "80px", render: (r) => r.indctSeqno },
     {
-      key: "name",
-      header: "명칭",
+      key: "roleNm",
+      header: "역할_명",
       width: "1fr",
-      render: (r) => (
-        <span
-          className={
-            r.on ? "font-semibold hover:text-accent" : "text-n500 line-through"
-          }
-        >
-          {r.name}
-        </span>
-      ),
+      render: (r) => <span className="font-semibold hover:text-accent">{r.roleNm}</span>,
     },
-    { key: "label", header: "역할 분류", width: "140px", render: (r) => r.label },
+    {
+      key: "roleClsfCd",
+      header: "역할_분류",
+      width: "140px",
+      render: (r) => roleClsfNm(roleClsfs, r.roleClsfCd),
+    },
     {
       key: "usage",
       header: "사용 현황",
       width: "160px",
-      render: (r) => `${usage(r.name)}명 사용`,
+      render: (r) => `${usage(r.roleId)}명 사용`,
     },
     {
       key: "chevron",
@@ -84,9 +86,16 @@ export function RoleListPage() {
         </div>
 
         <div className="mb-[14px] flex items-center gap-[7px]">
-          {["전체", ...roleLabels].map((l) => (
-            <Chip key={l} active={filter === l} onClick={() => setFilter(l)}>
-              {l}
+          <Chip active={filter === ALL} onClick={() => setFilter(ALL)}>
+            {ALL}
+          </Chip>
+          {roleClsfs.map((c) => (
+            <Chip
+              key={c.roleClsfCd}
+              active={filter === c.roleClsfCd}
+              onClick={() => setFilter(c.roleClsfCd)}
+            >
+              {c.roleClsfNm}
             </Chip>
           ))}
           <div className="flex-1" />
@@ -99,13 +108,12 @@ export function RoleListPage() {
           <GridTable
             columns={columns}
             rows={filtered}
-            rowKey={(r) => r.id}
-            onRowClick={(r) => router.push(ROUTES.roleEdit(r.id))}
+            rowKey={(r) => String(r.roleId)}
+            onRowClick={(r) => router.push(ROUTES.roleEdit(r.roleId))}
           />
         </Card>
         <div className="mt-3 text-[13.5px] text-n500">
-          항목을 눌러 상세에서 수정합니다. 사용 중인 값은 물리 삭제하지 않고
-          비활성화합니다.
+          항목을 눌러 상세에서 수정합니다.
         </div>
       </PageBody>
     </>

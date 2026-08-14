@@ -1,115 +1,147 @@
 "use client";
 
 import { create } from "zustand";
-import { TODAY } from "@/shared/config/constants";
-import { nextKey, nextMemberId } from "@/shared/lib/id";
-import membersSeed from "../api/get-members.json";
-import referenceSeed from "../api/get-members-reference.json";
-import historySeed from "../api/get-members-history.json";
-import linksSeed from "../api/get-members-social-links.json";
-import type { Member, MemberHistory, RefItem, SocialLink } from "./types";
+import { MBR_GRD_NM, MBR_STTS_NM, type MbrGrdCd, type MbrSttsCd } from "@/shared/config/codes";
+import { nextId } from "@/shared/lib/id";
+import mbrSeed from "../api/get-mbr.json";
+import mbrGrdSeed from "../api/get-mbr-grd.json";
+import mbrSttsSeed from "../api/get-mbr-stts.json";
+import mbrRoleRelSeed from "../api/get-mbr-role-rel.json";
+import mbrGrdHstrySeed from "../api/get-mbr-grd-hstry.json";
+import mbrSttsHstrySeed from "../api/get-mbr-stts-hstry.json";
+import type {
+  Mbr,
+  MbrGrd,
+  MbrGrdHstry,
+  MbrRoleRel,
+  MbrStts,
+  MbrSttsHstry,
+} from "./types";
 
-interface MemberState {
-  members: Member[];
-  grades: RefItem[];
-  statuses: RefItem[];
-  history: MemberHistory[];
-  links: Record<string, SocialLink[]>;
+interface MbrState {
+  mbrs: Mbr[];
+  mbrGrds: MbrGrd[];
+  mbrSttss: MbrStts[];
+  mbrRoleRels: MbrRoleRel[];
+  mbrGrdHstrys: MbrGrdHstry[];
+  mbrSttsHstrys: MbrSttsHstry[];
 
-  updateMember: (key: string, patch: Partial<Member>) => void;
-  /** 신규 등록 — 생성된 key 반환 */
-  addMember: (draft: Omit<Member, "id" | "key">) => string;
-  addHistory: (entry: MemberHistory) => void;
-  addRole: (key: string, roleName: string) => void;
-  endRole: (key: string, roleName: string) => void;
-  setLinks: (key: string, links: SocialLink[]) => void;
+  updateMbr: (mbrId: number, patch: Partial<Mbr>) => void;
+  /** 신규 등록 — 채번된 mbrId 반환 */
+  addMbr: (draft: Omit<Mbr, "mbrId" | "crtDt" | "mdfcnDt">) => number;
+
+  addMbrGrdHstry: (entry: Omit<MbrGrdHstry, "mbrGrdHstryId">) => void;
+  addMbrSttsHstry: (entry: Omit<MbrSttsHstry, "mbrSttsHstryId">) => void;
+
+  addMbrRoleRel: (mbrId: number, roleId: number, roleBgngYmd: string) => void;
+  endMbrRoleRel: (mbrId: number, roleId: number, roleEndYmd: string) => void;
 }
 
-export const useMemberStore = create<MemberState>((set) => ({
-  members: membersSeed.data as Member[],
-  grades: referenceSeed.data.grades,
-  statuses: referenceSeed.data.statuses,
-  history: historySeed.data as MemberHistory[],
-  links: linksSeed.data as Record<string, SocialLink[]>,
+export const useMbrStore = create<MbrState>((set) => ({
+  mbrs: mbrSeed.data as Mbr[],
+  mbrGrds: mbrGrdSeed.data as MbrGrd[],
+  mbrSttss: mbrSttsSeed.data as MbrStts[],
+  mbrRoleRels: mbrRoleRelSeed.data as MbrRoleRel[],
+  mbrGrdHstrys: mbrGrdHstrySeed.data as MbrGrdHstry[],
+  mbrSttsHstrys: mbrSttsHstrySeed.data as MbrSttsHstry[],
 
-  updateMember: (key, patch) =>
+  updateMbr: (mbrId, patch) =>
     set((s) => ({
-      members: s.members.map((m) => (m.key === key ? { ...m, ...patch } : m)),
+      mbrs: s.mbrs.map((m) => (m.mbrId === mbrId ? { ...m, ...patch } : m)),
     })),
 
-  addMember: (draft) => {
-    let key = "";
+  addMbr: (draft) => {
+    let mbrId = 0;
     set((s) => {
-      key = nextKey("m", s.members.length);
-      const member: Member = {
-        ...draft,
-        key,
-        id: nextMemberId(s.members.length),
-      };
-      return { members: [...s.members, member] };
+      mbrId = nextId(s.mbrs, "mbrId");
+      const now = `${draft.joinYmd}T09:00:00`;
+      return { mbrs: [...s.mbrs, { ...draft, mbrId, crtDt: now, mdfcnDt: now }] };
     });
-    return key;
+    return mbrId;
   },
 
-  addHistory: (entry) => set((s) => ({ history: [entry, ...s.history] })),
-
-  addRole: (key, roleName) =>
+  addMbrGrdHstry: (entry) =>
     set((s) => ({
-      members: s.members.map((m) =>
-        m.key === key
-          ? {
-              ...m,
-              roles: [...m.roles, { name: roleName, from: TODAY, to: "", primary: false }],
-            }
-          : m,
-      ),
+      mbrGrdHstrys: [
+        { ...entry, mbrGrdHstryId: nextId(s.mbrGrdHstrys, "mbrGrdHstryId") },
+        ...s.mbrGrdHstrys,
+      ],
     })),
 
-  endRole: (key, roleName) =>
+  addMbrSttsHstry: (entry) =>
     set((s) => ({
-      members: s.members.map((m) =>
-        m.key === key
-          ? {
-              ...m,
-              roles: m.roles.map((r) =>
-                r.name === roleName && !r.to ? { ...r, to: TODAY } : r,
-              ),
-            }
-          : m,
-      ),
+      mbrSttsHstrys: [
+        { ...entry, mbrSttsHstryId: nextId(s.mbrSttsHstrys, "mbrSttsHstryId") },
+        ...s.mbrSttsHstrys,
+      ],
     })),
 
-  setLinks: (key, links) => set((s) => ({ links: { ...s.links, [key]: links } })),
+  addMbrRoleRel: (mbrId, roleId, roleBgngYmd) =>
+    set((s) => ({
+      mbrRoleRels: [
+        ...s.mbrRoleRels,
+        {
+          mbrRoleId: nextId(s.mbrRoleRels, "mbrRoleId"),
+          mbrId,
+          roleId,
+          roleBgngYmd,
+          roleEndYmd: null,
+          rprsRoleYn: false,
+          crtDt: `${roleBgngYmd}T09:00:00`,
+          mdfcnDt: `${roleBgngYmd}T09:00:00`,
+        },
+      ],
+    })),
+
+  endMbrRoleRel: (mbrId, roleId, roleEndYmd) =>
+    set((s) => ({
+      mbrRoleRels: s.mbrRoleRels.map((r) =>
+        r.mbrId === mbrId && r.roleId === roleId && !r.roleEndYmd
+          ? { ...r, roleEndYmd, mdfcnDt: `${roleEndYmd}T09:00:00` }
+          : r,
+      ),
+    })),
 }));
 
+/* ── 코드 → 표시명 ─────────────────────────────────────────── */
+
+export function mbrGrdNm(cd: MbrGrdCd): string {
+  return MBR_GRD_NM[cd];
+}
+
+export function mbrSttsNm(cd: MbrSttsCd): string {
+  return MBR_STTS_NM[cd];
+}
+
 /** 등급 배지 톤: 임시회원=grey, 그 외=blue */
-export function gradeTone(grade: string): "grey" | "blue" {
-  return grade === "임시회원" ? "grey" : "blue";
+export function mbrGrdTone(cd: MbrGrdCd): "grey" | "blue" {
+  return cd === "TEMP" ? "grey" : "blue";
 }
 
-/** 상태 배지 톤: 검토=amber, 탈퇴·제명=red, 그 외=grey */
-export function statusTone(status: string): "amber" | "red" | "grey" {
-  if (status === "검토") return "amber";
-  if (status === "탈퇴" || status === "제명") return "red";
-  return "grey";
+/** 상태 배지 톤: 탈퇴·제명=red, 그 외=grey */
+export function mbrSttsTone(cd: MbrSttsCd): "red" | "grey" {
+  return cd === "WITHDRAWN" || cd === "EXPELLED" ? "red" : "grey";
 }
 
-export function cohortText(m: Member): string {
-  return !m.cohort || m.cohort === "미배정" ? "미배정" : `${m.cohort}기`;
+/* ── 파생 ──────────────────────────────────────────────────── */
+
+/** 기수_번호 표기 — "12기" */
+export function genNoText(mbr: Mbr): string {
+  return mbr.genNo ? `${mbr.genNo}기` : "미배정";
 }
 
-export function isGraduate(m: Member): boolean {
-  return m.kind === "졸업생" || m.status === "졸업";
+/** 졸업생 여부 — 회원_상태_코드에서 파생 */
+export function isGraduate(mbr: Mbr): boolean {
+  return mbr.mbrSttsCd === "GRADUATED";
 }
 
-/** 재임 중(종료일 없는) 역할 이름 목록 */
-export function activeRoles(m: Member): string[] {
-  return m.roles.filter((r) => !r.to).map((r) => r.name);
+/** 해당 회원의 현재(종료일 없는) 역할 관계 */
+export function currentRoleRels(rels: MbrRoleRel[], mbrId: number): MbrRoleRel[] {
+  return rels.filter((r) => r.mbrId === mbrId && !r.roleEndYmd);
 }
 
-/** 사이드바 프로필용 대표 역할 표기 */
-export function memberRoleLabel(m: Member): string {
-  const primary =
-    m.roles.find((r) => r.primary && !r.to) ?? m.roles.find((r) => !r.to);
-  return `${primary ? primary.name : m.grade} · ${m.grade}`;
+/** 사이드바 프로필용 대표 역할 관계 — 대표_역할_여부 우선, 없으면 첫 현재 역할 */
+export function rprsRoleRel(rels: MbrRoleRel[], mbrId: number): MbrRoleRel | undefined {
+  const current = currentRoleRels(rels, mbrId);
+  return current.find((r) => r.rprsRoleYn) ?? current[0];
 }

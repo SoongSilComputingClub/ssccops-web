@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "subWorkRjctId": 1,
+      "subWorkId": 7,
+      "mbrId": 1,
+      "rjctRsn": "부서별 활동 누락"
+    }
+  ]
+}

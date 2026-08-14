@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "mbrGrdHstryId": 1,
+      "mbrId": 4,
+      "bfrMbrGrdCd": "TEMP",
+      "aftrMbrGrdCd": "ASSOC",
+      "grdAplcnYmd": "2026-08-02",
+      "grdChgRsnCn": "신규 가입 승인",
+      "chnrgMbrId": 1,
+      "crtDt": "2026-08-02T14:20:00"
+    },
+    {
+      "mbrGrdHstryId": 2,
+      "mbrId": 2,
+      "bfrMbrGrdCd": "ASSOC",
+      "aftrMbrGrdCd": "ACTIVE",
+      "grdAplcnYmd": "2026-01-05",
+      "grdChgRsnCn": "정기 승급",
+      "chnrgMbrId": 1,
+      "crtDt": "2026-01-05T20:15:00"
+    }
+  ]
+}

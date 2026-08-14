@@ -1,2 +1,2 @@
-export type { Meeting, AgendaItem } from "./model/types";
-export { useMeetingStore, meetingStatusTone, agendaKindTone } from "./model/store";
+export type { Mtg, MtgDtl } from "./model/types";
+export { useMtgStore, mtgDtlsOf, mtgSttsTone, prcsSeTone } from "./model/store";

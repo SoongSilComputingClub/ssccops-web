@@ -1,0 +1,47 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "workId": 1,
+      "operId": 1,
+      "workTypeCd": "EVENT",
+      "workSttsCd": "IN_PROGRESS",
+      "grvwCn": "부스 운영·홍보물·체험 프로그램 일체",
+      "workPrgrsRt": 25.0
+    },
+    {
+      "workId": 2,
+      "operId": 2,
+      "workTypeCd": "EVENT",
+      "workSttsCd": "REVIEW",
+      "grvwCn": "장소 선정 → 대관 → 정산",
+      "workPrgrsRt": 50.0
+    },
+    {
+      "workId": 3,
+      "operId": 3,
+      "workTypeCd": "ROUTINE",
+      "workSttsCd": "IN_PROGRESS",
+      "grvwCn": "정기회의·월간 보고 상시 운영",
+      "workPrgrsRt": 25.0
+    },
+    {
+      "workId": 4,
+      "operId": 4,
+      "workTypeCd": "REGULAR",
+      "workSttsCd": "PLANNING",
+      "grvwCn": "스터디 개설·교재·발표 관리",
+      "workPrgrsRt": 50.0
+    },
+    {
+      "workId": 5,
+      "operId": 5,
+      "workTypeCd": "EVENT",
+      "workSttsCd": "IN_PROGRESS",
+      "grvwCn": "신청 기반 매칭으로 운영",
+      "workPrgrsRt": 25.0
+    }
+  ]
+}
