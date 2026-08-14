@@ -1,5 +1,4 @@
 export type {
-  Form,
   FormCreator,
   FormDetail,
   FormLabelRef,
@@ -13,7 +12,7 @@ export type {
   Qitem,
   QitemCpstCn,
 } from "./model/types";
-export { useFormStore, FORM_RECEIPT_BADGE } from "./model/store";
+export { FORM_RECEIPT_BADGE } from "./model/display";
 export {
   FORM_ERROR,
   changeFormStatus,
@@ -31,6 +30,8 @@ export type {
   FormStatusAction,
   FormStatusChangeResult,
 } from "./api/forms";
+export { PUBLIC_FORM_ERROR, fetchPublicForm } from "./api/public-forms";
+export type { PublicForm } from "./api/public-forms";
 export {
   FORM_LABEL_ERROR,
   LBL_NM_MAX_LENGTH,

@@ -33,30 +33,11 @@ export interface QitemCpstCn {
   qitems: Qitem[];
 }
 
-/** table: form — 폼 */
-export interface Form {
-  /** 식별자N19 · PK */
-  formId: number;
-  /** 폼을 생성한 회원 */
-  creatrMbrId: number;
-  /** 명V200 — 폼 화면 및 목록 표시 제목 */
-  formTtlNm: string;
-  /** DRAFT / OPEN / CLOSED */
-  formSttsCd: FormSttsCd;
-  /** 일시TS — 응답 접수 시작일시 */
-  rcptBgngDt: string | null;
-  /** 일시TS — 응답 접수 종료일시 */
-  rcptEndDt: string | null;
-  /** 내용J */
-  qitemCpstCn: QitemCpstCn;
-  crtDt: string;
-  mdfcnDt: string;
-}
-
 /* ── 서버 조회 모델 (ssccops-server #32) ────────────────────────
  *
- * 위 `Form`은 form 테이블 한 행을 그대로 옮긴 목 데이터용 타입이다. 서버 조회는 테이블이
- * 아니라 화면이 필요로 하는 모양으로 내려오므로(라벨 조인 · 응답 집계 포함) 별도 타입으로 둔다.
+ * form 테이블 한 행을 그대로 옮긴 목 데이터용 `Form` 타입은 지웠다(#12) — 마지막까지 그것을
+ * 읽던 공개 폼 화면이 `/v1/forms/{id}/public`으로 옮겨 갔다. 서버 조회는 테이블이 아니라
+ * 화면이 필요로 하는 모양으로 내려오므로(라벨 조인 · 응답 집계 포함) 아래 타입들을 쓴다.
  *
  * **목록과 상세를 한 타입으로 합치지 않는다.** 목록은 `qitemCpstCn`을 싣지 않기로 계약돼
  * 있고(폼 하나에 문항 수십 개면 목록 응답이 비대해진다), 하나로 합쳐 옵셔널로 두면 목록에서

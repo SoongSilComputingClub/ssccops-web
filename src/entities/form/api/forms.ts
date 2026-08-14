@@ -134,7 +134,15 @@ export interface FormListFilter {
 
 /** 폼 조회·저장이 돌려주는 오류 코드 (ssccops-server FormErrorCode) */
 export const FORM_ERROR = {
-  FORM_NOT_FOUND: "FORM_NOT_FOUND",
+  /**
+   * 없는 폼 (404).
+   *
+   * **서버 enum 이름은 `FORM_NOT_FOUND`지만 본문에 실리는 코드 문자열은 `"NOT_FOUND"`다**
+   * (`FormErrorCode.FORM_NOT_FOUND`의 두 번째 인자 · 컨트롤러 테스트가 `$.code == "NOT_FOUND"`로
+   * 고정하고 있다). enum 이름을 그대로 적어 두면 어느 화면도 '없는 폼'을 알아보지 못하고
+   * 전부 일반 오류로 떨어진다 — 실제로 그렇게 적혀 있었다.
+   */
+  FORM_NOT_FOUND: "NOT_FOUND",
   /** 필수값 누락·형식 오류 */
   VALIDATION_FAILED: "VALIDATION_FAILED",
   /** 문항 구성(qitemCpstCn)이 규칙 위반 */
