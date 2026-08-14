@@ -76,6 +76,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # PageProps/LayoutProps 같은 전역 타입은 Next.js가 .next/types 아래에 생성하고
+      # next-env.d.ts가 그것을 참조한다. 새로 체크아웃한 CI에는 .next가 없어 tsc가
+      # 'Cannot find name PageProps'로 죽으므로, 전체 빌드 없이 타입만 먼저 만든다.
+      - name: Generate Next.js route types
+        run: pnpm exec next typegen
+
       - name: Run TypeScript Check
         run: pnpm exec tsc --noEmit
 
