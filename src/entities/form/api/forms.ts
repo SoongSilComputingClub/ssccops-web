@@ -44,10 +44,16 @@ interface FormSummaryResponse {
  * `responseSummary`·`crtDt`는 서버 이슈(#32)에 "응답 요약(전체/제출/승인/반려)"이라고만 적혀
  * 있고 필드 이름까지는 확정돼 있지 않다. 여기서 가장 자연스러운 모양으로 잡아 두고, 없으면
  * 0/빈 값으로 떨어지게 해서 계약이 조금 달라져도 화면이 통째로 죽지 않게 한다.
+ *
+ * 생성자는 **중첩 객체가 아니라 평탄한 두 필드**다 (서버 FormDetailResponse의
+ * `creatrMbrId`·`creatrMbrNm`). 계약서만 보고 `creatr` 중첩 객체로 잡아 뒀던 것이 머지된
+ * 실제 응답과 어긋나 상세 화면의 생성자가 언제나 폴백('-')으로 보였다 — 터지지 않고 조용히
+ * 틀린 값을 보여주는 종류라 폴백을 두지 않는다. 값이 없으면 없는 대로 드러나야 한다.
  */
 interface FormDetailResponse extends FormSummaryResponse {
   qitemCpstCn: QitemCpstCn | null;
-  creatr: { mbrId: number; mbrNm: string } | null;
+  creatrMbrId: number;
+  creatrMbrNm: string;
   responseSummary: Partial<FormResponseSummary> | null;
   crtDt: string | null;
 }
@@ -93,7 +99,7 @@ function toFormDetail(res: FormDetailResponse): FormDetail {
     ...summary,
     // 문항 구성이 비어 있어도 미리보기가 죽지 않도록 최소 형태를 보장한다
     qitemCpstCn: res.qitemCpstCn ?? { pages: [], qitems: [] },
-    creatr: res.creatr ?? { mbrId: 0, mbrNm: "-" },
+    creatr: { mbrId: res.creatrMbrId, mbrNm: res.creatrMbrNm },
     responseSummary: toResponseSummary(res.responseSummary, summary.responseCount),
     crtDt: res.crtDt ?? res.mdfcnDt,
   };
