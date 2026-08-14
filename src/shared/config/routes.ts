@@ -40,3 +40,23 @@ export const ROUTES = {
   publicForm: (formId: number) => `/f/${formId}`,
   publicFormDone: (formId: number) => `/f/${formId}/done`,
 } as const;
+
+/**
+ * 공개 폼의 절대 URL — 운영진이 복사해 외부에 뿌리는 값이라 상대 경로로는 쓸 수 없다.
+ *
+ * 예전에는 화면에 `https://form.sscc.kr`이 박혀 있었다. 배포 도메인이 그와 다르면 복사한
+ * 링크가 그대로 죽는데, 화면에는 멀쩡한 주소로 보이므로 알아채기까지 오래 걸린다.
+ * 그래서 오리진은 배포별 환경변수(NEXT_PUBLIC_PUBLIC_FORM_ORIGIN)로 뺐다.
+ *
+ * 값이 없으면 지금 접속한 오리진으로 떨어진다 — 공개 폼(/f/{formId})은 이 앱이 직접 서빙하므로
+ * 로컬·프리뷰에서는 그 편이 맞고, 무엇보다 죽은 도메인을 복사해 주는 것보다 낫다.
+ */
+export function publicFormUrl(formId: number): string {
+  const configured = process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN;
+  const origin = configured
+    ? configured.replace(/\/+$/, "")
+    : typeof window === "undefined"
+      ? ""
+      : window.location.origin;
+  return `${origin}${ROUTES.publicForm(formId)}`;
+}
