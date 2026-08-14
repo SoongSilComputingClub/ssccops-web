@@ -10,6 +10,7 @@ import {
   parseMaxSlctCnt,
   useFormEditor,
   useFormLabelOptions,
+  useFormStatus,
   type FormDraft,
   type FormEditor,
 } from "@/features/form";
@@ -46,9 +47,14 @@ import {
  * 저장 버튼은 남겼지만 의미가 달라졌다. 이제는 "이걸 눌러야 저장된다"가 아니라 **"지금
  * 저장됐다는 것을 확인하고 싶다 · 실패했을 때 직접 다시 시도한다"** 를 위한 수단이다.
  *
- * '바로 접수 시작'은 여기서 뺐다. 접수 시작·마감은 별도 API(ssccops-server #33 · 웹 #9)이고
- * 폼 상세 화면이 담당한다 — 편집 화면이 상태까지 바꾸면 자동 저장이 formSttsCd를 실어 나르는
- * 순간 "편집했더니 접수가 시작됐다"가 가능해진다.
+ * '저장하고 접수 시작'은 **명시적으로 누를 때만** 접수 상태를 건드린다. #8에서 이 버튼을 뺐던
+ * 이유는 저장 본문에 formSttsCd를 실어 보내던 구조 때문이었다 — 자동 저장이 상태를 실어 나르면
+ * "편집했더니 접수가 시작됐다"가 가능해진다. 지금은 상태 전이가 별도 API(ssccops-server #33)라
+ * 자동 저장은 상태를 그대로 되돌려 보낼 뿐이고, 접수 시작은 이 버튼 한 번에만 일어난다.
+ *
+ * 그 대신 **서버에서는 두 번의 호출**이다(저장 → 상태 전이). 저장은 됐는데 전이가 실패하는
+ * 경우가 실재하므로 화면은 그 둘을 구분해 말한다 — 뭉뚱그리면 사용자가 편집 내용까지 날아간
+ * 줄 알고 처음부터 다시 만든다.
  */
 
 export function FormEditPage({ formId }: { formId?: number }) {
@@ -77,6 +83,7 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
   const router = useRouter();
   const { draft, labelIds, assignedLabels, setDraft, setLabelIds, issues } = editor;
   const labelOptions = useFormLabelOptions();
+  const formStatus = useFormStatus();
 
   /*
    * 지정돼 있지만 후보에는 없는 라벨 = **비활성화된 뒤에도 이 폼에 남아 있는 라벨**이다.
@@ -266,6 +273,43 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
     if (savedFormId) router.push(ROUTES.formDetail(savedFormId));
   };
 
+  /*
+   * '저장하고 접수 시작' — 저장(POST/PUT) 다음에 상태 전이(POST /status), **두 번의 호출**이다.
+   *
+   * 세 갈래를 각각 다르게 말한다. 하나로 뭉뚱그리면 "저장도 안 됐다"로 읽혀 사용자가 편집을
+   * 처음부터 다시 한다.
+   * 1. 저장 자체가 안 됨 → 상태 전이는 시도조차 하지 않는다 (없는 폼을 열 수는 없다)
+   * 2. 저장은 됐는데 전이 실패 → **저장됐다는 사실을 먼저 말한다.** 문항 0개·접수 기간 모순이
+   *    여기 걸리는데, 둘 다 편집 화면에서 고치고 다시 누르면 되는 것들이다
+   * 3. 둘 다 성공 → 상세로 보낸다. 이후 마감·재개는 상세 화면의 몫이다
+   *
+   * 저장은 자동 저장과 같은 프라미스 체인을 타므로(useFormEditor) 여기서 두 번 눌러도 저장이
+   * 두 번 나가지 않고, 전이 쪽 연타는 useFormStatus의 잠금이 막는다.
+   */
+  const saveAndOpenReceipt = async () => {
+    if (issues.blockingMessage) {
+      flash(issues.blockingMessage);
+      return;
+    }
+
+    const savedFormId = await editor.saveNow();
+    if (!savedFormId) {
+      flash("저장하지 못해 접수를 시작하지 않았습니다. 저장 상태를 확인해주세요");
+      return;
+    }
+
+    const { outcome, message } = await formStatus.open(savedFormId);
+    if (outcome === "busy") return;
+
+    if (outcome === "changed") {
+      flash(message);
+      router.push(ROUTES.formDetail(savedFormId));
+      return;
+    }
+
+    flash(`저장은 됐지만 접수를 시작하지 못했습니다 — ${message}`);
+  };
+
   const qSummary = (q: Qitem) =>
     [
       QITEM_TYPE_NM[q.qitemTypeCd],
@@ -381,17 +425,32 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
               )}
             </Card>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  className="flex-1 py-[13px]"
+                  onClick={() => void saveNow()}
+                >
+                  지금 저장
+                </Button>
+                <Button className="flex-1 py-[13px]" onClick={() => void goDetail()}>
+                  저장하고 상세로
+                </Button>
+              </div>
+              {/* 접수 상태를 바꾸는 유일한 버튼 — 자동 저장은 상태를 건드리지 않는다 */}
               <Button
                 variant="ghost"
-                className="flex-1 py-[13px]"
-                onClick={() => void saveNow()}
+                className="py-[13px]"
+                disabled={formStatus.pending}
+                onClick={() => void saveAndOpenReceipt()}
               >
-                지금 저장
+                {formStatus.pending ? "접수를 시작하는 중…" : "저장하고 바로 접수 시작"}
               </Button>
-              <Button className="flex-1 py-[13px]" onClick={() => void goDetail()}>
-                저장하고 상세로
-              </Button>
+              <div className="text-[13px] text-n500">
+                접수를 시작하면 공개 링크로 응답을 받습니다. 문항이 없거나 접수 일시가
+                올바르지 않으면 시작되지 않습니다.
+              </div>
             </div>
           </div>
 

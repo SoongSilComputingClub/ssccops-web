@@ -3,6 +3,7 @@ import { ApiError, apiFetch } from "@/shared/lib/api/client";
 import type {
   FormDetail,
   FormLabelRef,
+  FormReceiptStatus,
   FormResponseSummary,
   FormSummary,
   Qitem,
@@ -31,6 +32,8 @@ interface FormSummaryResponse {
   formId: number;
   formTtlNm: string;
   formSttsCd: FormSttsCd;
+  /** 서버가 요청마다 다시 계산해 주는 파생값 (ssccops-server #33) — 배지의 기준이다 */
+  receiptStatus: FormReceiptStatus | null;
   rcptBgngDt: string | null;
   rcptEndDt: string | null;
   labels: FormLabelRefResponse[] | null;
@@ -44,10 +47,16 @@ interface FormSummaryResponse {
  * `responseSummary`·`crtDt`는 서버 이슈(#32)에 "응답 요약(전체/제출/승인/반려)"이라고만 적혀
  * 있고 필드 이름까지는 확정돼 있지 않다. 여기서 가장 자연스러운 모양으로 잡아 두고, 없으면
  * 0/빈 값으로 떨어지게 해서 계약이 조금 달라져도 화면이 통째로 죽지 않게 한다.
+ *
+ * 생성자는 **중첩 객체가 아니라 평탄한 두 필드**다 (서버 FormDetailResponse의
+ * `creatrMbrId`·`creatrMbrNm`). 계약서만 보고 `creatr` 중첩 객체로 잡아 뒀던 것이 머지된
+ * 실제 응답과 어긋나 상세 화면의 생성자가 언제나 폴백('-')으로 보였다 — 터지지 않고 조용히
+ * 틀린 값을 보여주는 종류라 폴백을 두지 않는다. 값이 없으면 없는 대로 드러나야 한다.
  */
 interface FormDetailResponse extends FormSummaryResponse {
   qitemCpstCn: QitemCpstCn | null;
-  creatr: { mbrId: number; mbrNm: string } | null;
+  creatrMbrId: number;
+  creatrMbrNm: string;
   responseSummary: Partial<FormResponseSummary> | null;
   crtDt: string | null;
 }
@@ -58,11 +67,27 @@ function toLabelRefs(labels: FormLabelRefResponse[] | null): FormLabelRef[] {
   return (labels ?? []).map((l) => ({ formLblId: l.formLblId, lblNm: l.lblNm }));
 }
 
+/**
+ * 접수 기간을 모르는 채로도 배지를 그릴 수 있게 하는 최소 폴백.
+ *
+ * `receiptStatus`는 항상 내려오지만(#33), 이 값이 비면 배지 조회가 `undefined`가 되어 목록이
+ * 통째로 죽는다 — 파생값 하나 때문에 화면 전체를 잃지는 않는다. 다만 기간을 보고 판정할 수
+ * 있는 것은 서버뿐이므로(주입된 Clock 기준) **여기서 기간을 다시 계산하지는 않는다.**
+ * 즉 폴백은 상태 코드가 말하는 만큼만 말한다 — 기간이 끝난 OPEN 폼은 그때만 '접수중'으로
+ * 보이는데, 그것이 서버 없이 웹이 알 수 있는 전부다.
+ */
+function fallbackReceiptStatus(formSttsCd: FormSttsCd): FormReceiptStatus {
+  if (formSttsCd === "DRAFT") return "DRAFT";
+  if (formSttsCd === "CLOSED") return "CLOSED";
+  return "ACCEPTING";
+}
+
 function toFormSummary(res: FormSummaryResponse): FormSummary {
   return {
     formId: res.formId,
     formTtlNm: res.formTtlNm,
     formSttsCd: res.formSttsCd,
+    receiptStatus: res.receiptStatus ?? fallbackReceiptStatus(res.formSttsCd),
     rcptBgngDt: res.rcptBgngDt,
     rcptEndDt: res.rcptEndDt,
     labels: toLabelRefs(res.labels),
@@ -93,7 +118,7 @@ function toFormDetail(res: FormDetailResponse): FormDetail {
     ...summary,
     // 문항 구성이 비어 있어도 미리보기가 죽지 않도록 최소 형태를 보장한다
     qitemCpstCn: res.qitemCpstCn ?? { pages: [], qitems: [] },
-    creatr: res.creatr ?? { mbrId: 0, mbrNm: "-" },
+    creatr: { mbrId: res.creatrMbrId, mbrNm: res.creatrMbrNm },
     responseSummary: toResponseSummary(res.responseSummary, summary.responseCount),
     crtDt: res.crtDt ?? res.mdfcnDt,
   };
@@ -118,6 +143,10 @@ export const FORM_ERROR = {
   INVALID_RECEIPT_PERIOD: "INVALID_RECEIPT_PERIOD",
   /** 응답이 있는 폼에서 기존 문항을 지우거나 바꿈 */
   QUESTION_ITEM_IN_USE: "QUESTION_ITEM_IN_USE",
+  /** 전이표에 없는 상태 전이 — 화면이 들고 있는 상태가 서버와 어긋났다는 뜻이다 */
+  INVALID_FORM_STATUS_TRANSITION: "INVALID_FORM_STATUS_TRANSITION",
+  /** 문항이 0개인 폼을 접수 시작하려 함 */
+  FORM_HAS_NO_QUESTION: "FORM_HAS_NO_QUESTION",
 } as const;
 
 /**
@@ -266,4 +295,121 @@ export async function updateForm(
     body: JSON.stringify(toFormSaveBody(input)),
   });
   return { formId: res?.formId ?? formId, mdfcnDt: res?.mdfcnDt ?? null };
+}
+
+/* ── 접수 상태 전이 ─────────────────────────────────────────── */
+
+/**
+ * 상태 전이 액션 (ssccops-server #33).
+ *
+ * 다음 상태(`formSttsCd`)가 아니라 **액션**을 보낸다. 다음 상태를 보내는 방식은 웹이 전이표
+ * (DRAFT→OPEN · OPEN→CLOSED · CLOSED→OPEN)를 들고 있어야 하고, 표가 바뀌면 서버와 따로
+ * 바뀌어 어긋난다. 어느 상태로 가는지는 서버가 정한다.
+ */
+export type FormStatusAction = "OPEN" | "CLOSE";
+
+/**
+ * 전이 결과. 상태만이 아니라 접수 기간·파생 상태까지 함께 온다 — 버튼을 누른 직후 화면이
+ * 상세를 한 번 더 조회하지 않고도 배지를 고쳐 그릴 수 있게 하기 위한 계약이다.
+ */
+export interface FormStatusChangeResult {
+  formId: number;
+  formSttsCd: FormSttsCd;
+  receiptStatus: FormReceiptStatus;
+  rcptBgngDt: string | null;
+  rcptEndDt: string | null;
+  /** 서버가 안 주면 null */
+  mdfcnDt: string | null;
+}
+
+interface FormStatusChangeResponse {
+  formId: number | null;
+  formSttsCd: FormSttsCd | null;
+  receiptStatus: FormReceiptStatus | null;
+  rcptBgngDt: string | null;
+  rcptEndDt: string | null;
+  mdfcnDt: string | null;
+}
+
+/**
+ * POST /v1/forms/{formId}/status — 접수 시작 · 마감.
+ *
+ * **폼 저장(PUT)에 상태를 실어 보내지 않는다.** 편집기의 자동 저장이 타이핑마다 PUT을 보내는데
+ * 거기에 상태가 실려 있으면 저장 한 번이 접수 상태를 덮어쓴다(서버도 PUT 본문의 formSttsCd를
+ * 무시한다 · #33). 접수를 여는 것은 문항을 고치는 것과 권한·검증 대상이 다른 별개의 행위다.
+ *
+ * 오류는 코드로 구분된다 — 전이표 밖(`INVALID_FORM_STATUS_TRANSITION`) · 문항 0개
+ * (`FORM_HAS_NO_QUESTION`) · 접수 기간 모순(`INVALID_RECEIPT_PERIOD`) · 없는 폼
+ * (`FORM_NOT_FOUND`). 화면 문구는 features/form의 toFormStatusErrorMessage가 맡는다.
+ */
+export async function changeFormStatus(
+  formId: number,
+  action: FormStatusAction,
+): Promise<FormStatusChangeResult> {
+  const res = await apiFetch<FormStatusChangeResponse | null>(
+    `/v1/forms/${formId}/status`,
+    { method: "POST", body: JSON.stringify({ action }) },
+  );
+
+  const formSttsCd = res?.formSttsCd ?? (action === "OPEN" ? "OPEN" : "CLOSED");
+  return {
+    formId: res?.formId ?? formId,
+    formSttsCd,
+    receiptStatus: res?.receiptStatus ?? fallbackReceiptStatus(formSttsCd),
+    rcptBgngDt: res?.rcptBgngDt ?? null,
+    rcptEndDt: res?.rcptEndDt ?? null,
+    mdfcnDt: res?.mdfcnDt ?? null,
+  };
+}
+
+/* ── 복제 ──────────────────────────────────────────────────── */
+
+/**
+ * 복제 결과 (ssccops-server #32).
+ *
+ * 사본은 항상 DRAFT이고 **라벨을 승계하지 않으며** 응답도 없다. 그래서 응답에 라벨·응답 수가
+ * 실리지 않는다 — 늘 빈 값을 내리면 "승계되는 경우도 있나" 하는 의문만 남기 때문이다.
+ */
+export interface FormDuplicateResult {
+  formId: number;
+  sourceFormId: number;
+  formTtlNm: string;
+  formSttsCd: FormSttsCd;
+  crtDt: string | null;
+}
+
+interface FormDuplicateResponse {
+  formId: number | null;
+  sourceFormId: number | null;
+  formTtlNm: string | null;
+  formSttsCd: FormSttsCd | null;
+  crtDt: string | null;
+}
+
+/**
+ * POST /v1/forms/{formId}/duplicate — 폼 복제.
+ *
+ * 새 `formId` 없이 성공으로 처리하지 않는다(createForm과 같은 판단). 사본으로 이동하는 것이
+ * 복제의 목적이라, ID를 모른 채 "복제했습니다"만 띄우면 사용자는 방금 만든 사본을 목록에서
+ * 스스로 찾아야 한다.
+ */
+export async function duplicateForm(formId: number): Promise<FormDuplicateResult> {
+  const res = await apiFetch<FormDuplicateResponse | null>(
+    `/v1/forms/${formId}/duplicate`,
+    { method: "POST" },
+  );
+
+  if (!res?.formId) {
+    throw new ApiError(
+      FORM_ERROR.VALIDATION_FAILED,
+      "복제는 됐지만 서버가 사본의 폼_ID를 돌려주지 않았습니다. 목록에서 확인해주세요",
+    );
+  }
+  return {
+    formId: res.formId,
+    sourceFormId: res.sourceFormId ?? formId,
+    formTtlNm: res.formTtlNm ?? "",
+    formSttsCd: res.formSttsCd ?? "DRAFT",
+    crtDt: res.crtDt ?? null,
+  };
 }

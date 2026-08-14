@@ -63,6 +63,32 @@ export interface Form {
  * 온 값을 상세처럼 그리다가 문항이 통째로 비는 사고가 난다 — 타입으로 막는다.
  */
 
+/**
+ * 화면이 보여주는 접수 상태 (ssccops-server #33 · FormReceiptStatus).
+ *
+ * `formSttsCd`와 접수 기간을 함께 본 **파생 값**이다. DB 컬럼도 기준 코드도 아니라서
+ * shared/config/codes.ts(데이터사전 기준 코드 사전)가 아니라 여기에 둔다.
+ *
+ * 이 값이 따로 있는 이유는 접수 기간이 끝나도 서버가 `form_stts_cd`를 자동으로 CLOSED로
+ * 바꾸지 않기 때문이다(#33 결정 — 배치 대신 표시 계층에서 구분). 그래서 `formSttsCd`만 보고
+ * 배지를 그리면 이미 응답을 받지 않는 폼이 목록에서 계속 '접수 중'으로 보인다.
+ *
+ * - **배지는 이 값으로 그린다.**
+ * - **'접수 시작 / 마감' 버튼의 활성·문구는 `formSttsCd`로 판단한다** — 전이표가 그 값으로
+ *   정의돼 있어서, 파생값으로 버튼을 고르면 EXPIRED 폼을 마감할 길이 사라진다.
+ */
+export type FormReceiptStatus =
+  /** 작성 중 (formSttsCd = DRAFT) */
+  | "DRAFT"
+  /** 접수 예정 — 열려 있지만 아직 시작 일시 전 */
+  | "SCHEDULED"
+  /** 접수 중 — 지금 응답을 받을 수 있는 유일한 상태 */
+  | "ACCEPTING"
+  /** 기간 종료 — formSttsCd는 아직 OPEN이지만 종료 일시가 지나 응답을 받지 않는다 */
+  | "EXPIRED"
+  /** 마감 — 운영자가 직접 닫았다 (formSttsCd = CLOSED) */
+  | "CLOSED";
+
 /** 목록·상세가 함께 싣는 라벨 최소 정보 (관리 화면이 쓰는 useYn·집계는 없다) */
 export interface FormLabelRef {
   formLblId: number;
@@ -74,6 +100,8 @@ export interface FormSummary {
   formId: number;
   formTtlNm: string;
   formSttsCd: FormSttsCd;
+  /** 배지 표기의 기준 — formSttsCd + 접수 기간을 서버가 요청마다 다시 계산한 값 */
+  receiptStatus: FormReceiptStatus;
   rcptBgngDt: string | null;
   rcptEndDt: string | null;
   labels: FormLabelRef[];
