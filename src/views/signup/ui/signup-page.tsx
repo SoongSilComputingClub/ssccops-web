@@ -130,6 +130,16 @@ export function SignupPage() {
         소셜 계정 <span className="font-semibold text-ink">{provider}</span> 로
         인증되었습니다. 등급 임시회원으로 등록되며 바로 이용할 수 있습니다.
       </p>
+      {/*
+       * 폼 링크를 열었다가 여기까지 온 경우에는 가입이 목적이 아니므로, 이 화면이 종착지가
+       * 아니라 한 단계라는 것을 알려 준다. 폼 제목은 특정하지 않는다 — 로그인 화면 쪽 주석
+       * 참고(공개 폼 메타 조회를 따로 뚫어야 해서 값에 비해 비싸다).
+       */}
+      {next.startsWith("/f/") && (
+        <div className="mt-3 rounded-[12px] border border-accent/28 bg-accent/8 px-[14px] py-3 text-[13.5px] leading-[1.6] text-n400">
+          가입을 마치면 열려던 폼으로 돌아가 이어서 응답할 수 있습니다.
+        </div>
+      )}
 
       <div className="mt-5 flex gap-[7px]">
         {(
