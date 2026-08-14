@@ -2,23 +2,38 @@
 # Frontend Integration Workflow
 # ============================================================================
 # 역할:
-#   - 의존성 설치 및 캐싱
-#   - Prettier 포맷팅 체크
+#   - 의존성 설치 및 캐싱 (pnpm)
 #   - TypeScript 타입 체크 + ESLint 정적 분석
-#   - 테스트 수행 및 커버리지 생성
-#   - SonarQube 코드 품질/커버리지/보안 분석
+#   - 테스트 수행 및 커버리지 생성 (테스트 파일이 있을 때만)
+#   - SonarQube 코드 품질/커버리지/보안 분석 (토큰이 설정된 경우에만)
 #   - 프로덕션 빌드 검증
 #
 # Job 구조:
-#   lint ──┬──> analyze ──> build
+#   lint ──┬──> build
+#          ├──> analyze
 #   test ──┘
 #
-# GitHub Secrets:
+#   analyze(SonarQube)는 build를 막지 않는다. 코드 품질 리포트가 없다고 해서
+#   "이 브랜치가 빌드되는가"라는 판정까지 함께 막을 이유가 없다.
+#
+# GitHub Secrets (없으면 analyze는 건너뛴다):
 #   - SONAR_TOKEN        : SonarQube Token
 #   - SONAR_HOST_URL     : SonarQube Server URL (e.g., https://sonar.example.com)
 #
 # GitHub Variables:
-#   - SONAR_PROJECT      : SonarQube Project Key
+#   - SONAR_PROJECT              : SonarQube Project Key
+#   - NEXT_PUBLIC_API_BASE_URL   : ssccops-server 주소 (빌드 검증용, 없어도 빌드는 통과)
+#   - NEXT_PUBLIC_SUPABASE_URL   : Supabase 프로젝트 URL
+#   - NEXT_PUBLIC_SUPABASE_ANON_KEY : Supabase anon key
+#
+# 주의:
+#   - 이 저장소는 pnpm을 쓴다(pnpm-lock.yaml). npm ci / cache:'npm' 을 쓰면
+#     package-lock.json이 없어 setup-node 단계에서 곧바로 실패한다.
+#   - pnpm/action-setup은 반드시 setup-node보다 먼저 와야 cache:'pnpm'이 동작한다.
+#   - Prettier 검사 단계는 두지 않는다 — 이 저장소에 prettier 의존성도 설정 파일도 없다.
+#     도입한다면 devDependencies와 설정을 먼저 추가하고 여기에 단계를 되살린다.
+#   - Next.js는 dist/ 를 만들지 않고(.next), 배포는 Cloudflare Workers Builds가
+#     별도로 수행한다. 그래서 빌드 산출물 artifact는 올리지 않고 빌드 성공 여부만 본다.
 # ============================================================================
 
 name: Integrate Frontend
@@ -38,7 +53,7 @@ env:
 
 jobs:
   # ==========================================================================
-  # Lint Job - 코드 스타일 및 정적 분석
+  # Lint Job - 타입 체크 및 정적 분석
   # ==========================================================================
   lint:
     name: Lint
@@ -48,23 +63,24 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      # package.json의 packageManager 필드(pnpm@x.y.z)를 그대로 따른다
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Run Prettier Check
-        run: npx prettier --check "src/**/*.{ts,tsx,css}"
+        run: pnpm install --frozen-lockfile
 
       - name: Run TypeScript Check
-        run: npx tsc -b --noEmit
+        run: pnpm exec tsc --noEmit
 
       - name: Run ESLint
-        run: npm run lint
+        run: pnpm lint
 
   # ==========================================================================
   # Test Job - 테스트 및 커버리지
@@ -82,15 +98,20 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
+      # 테스트 러너를 아직 도입하지 않았다. 테스트 파일이 생기기 전까지는 이 job이
+      # 통과만 하고 지나가며, 파일이 생겼는데 스크립트가 없으면 그때 드러나게 둔다.
       - name: Check for test files
         id: check-tests
         run: |
@@ -103,7 +124,7 @@ jobs:
 
       - name: Run Test with Coverage (lcov)
         if: steps.check-tests.outputs.has_tests == 'true'
-        run: npm run test:coverage
+        run: pnpm test:coverage
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -114,7 +135,7 @@ jobs:
           if-no-files-found: ignore
 
   # ==========================================================================
-  # Analyze Job - SonarQube 분석
+  # Analyze Job - SonarQube 분석 (토큰이 없으면 건너뛴다)
   # ==========================================================================
   analyze:
     name: Analyze
@@ -125,13 +146,24 @@ jobs:
       contents: read
       pull-requests: write
 
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
     steps:
+      - name: Skip notice
+        if: env.SONAR_TOKEN == ''
+        run: |
+          echo "SONAR_TOKEN이 설정되지 않아 SonarQube 분석을 건너뜁니다." >> $GITHUB_STEP_SUMMARY
+
       - name: Checkout source
+        if: env.SONAR_TOKEN != ''
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # SonarQube 분석을 위해 전체 히스토리 필요
 
       - name: Cache SonarQube packages
+        if: env.SONAR_TOKEN != ''
         uses: actions/cache@v4
         with:
           path: ~/.sonar/cache
@@ -139,6 +171,7 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: Download test results
+        if: env.SONAR_TOKEN != ''
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
@@ -146,23 +179,19 @@ jobs:
           path: coverage/
 
       - name: SonarQube Scan
+        if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@v5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT }}
             -Dsonar.sources=src
-            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/*.test.ts,**/*.test.tsx
+            -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/*.test.ts,**/*.test.tsx
             -Dsonar.typescript.tsconfigPath=tsconfig.json
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
       - name: SonarQube Quality Gate + PR Comment (Community)
-        if: github.event_name == 'pull_request'
+        if: env.SONAR_TOKEN != '' && github.event_name == 'pull_request'
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
@@ -282,41 +311,37 @@ jobs:
           fi
 
   # ==========================================================================
-  # Build Job - 프로덕션 빌드 및 Artifact 업로드
+  # Build Job - 프로덕션 빌드 검증
   # ==========================================================================
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [analyze]
-
-    permissions:
-      actions: write
-      contents: write
+    needs: [lint, test]
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
+      # NEXT_PUBLIC_* 는 빌드 시점에 번들로 인라인된다. 값이 없어도 컴파일은 통과하므로
+      # 여기서는 빌드가 깨지지 않는지만 본다 — 실제 배포용 값은 Cloudflare Workers Builds가 넣는다.
       - name: Build
         env:
-          VITE_BACKEND_API_BASE_URL: ${{ vars.VITE_BACKEND_API_BASE_URL }}
-        run: npm run build
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist/
-          retention-days: 7
+          NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: pnpm build
 
       - name: Integration Summary
         run: |
