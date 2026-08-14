@@ -221,15 +221,33 @@ export const FORM_STTS_CDS = codesOf(FORM_STTS_NM);
 
 /* ── 응답_상태 (form_rspns_hstry.rspns_stts_cd) · DB 명시 ───── */
 
-export type RspnsSttsCd = "SUBMITTED" | "ACCEPTED" | "REJECTED";
+export type RspnsSttsCd = "DRAFT" | "SUBMITTED" | "ACCEPTED" | "REJECTED";
 
+/**
+ * 작성 중(DRAFT)의 표시명에 "미제출"을 붙여 둔다.
+ *
+ * 폼_상태의 DRAFT("작성 중")와 글자가 같은데 의미가 전혀 다르다 — 폼의 작성 중은 운영자가
+ * 편집 중인 폼이고, 응답의 작성 중은 **지원자가 아직 제출하지 않은 답안**이다. 목록에서 이
+ * 둘을 같은 문구로 보여 주면 운영자가 "제출된 응답"으로 오해하고 심사하게 된다.
+ */
 export const RSPNS_STTS_NM: Record<RspnsSttsCd, string> = {
+  DRAFT: "작성 중(미제출)",
   SUBMITTED: "제출",
   ACCEPTED: "승인",
   REJECTED: "반려",
 };
 
 export const RSPNS_STTS_CDS = codesOf(RSPNS_STTS_NM);
+
+/**
+ * 심사 대상 상태 — DRAFT를 뺀 나머지.
+ *
+ * 상태 변경 시트가 도는 목록이다. `RSPNS_STTS_CDS`를 그대로 돌리면 DRAFT 칩이 생겨
+ * "제출 전 답안을 운영자가 승인해 확정시키는" 조작이 화면에 열린다 — 서버도 그 전이를
+ * 400 `INVALID_RESPONSE_STATUS_TRANSITION`으로 거절하므로(ssccops-server #37) 애초에
+ * 고를 수 없어야 한다.
+ */
+export const RSPNS_RVW_STTS_CDS = RSPNS_STTS_CDS.filter((cd) => cd !== "DRAFT");
 
 /* ── 허용_행위 (dlgt.prm_act_cd) ────────────────────────────── */
 
