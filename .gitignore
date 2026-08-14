@@ -31,7 +31,11 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env
+# .env 만 적으면 그 파일 하나만 무시된다 — Next.js 가 실제로 읽는 .env.local·.env.development
+# 같은 파일이 그대로 추적돼, .env.example 안내(cp .env.example .env.local)를 따라가는 순간
+# 로컬 설정이 저장소에 올라간다. 예시 파일만 예외로 남긴다.
+.env*
+!.env.example
 
 # vercel
 .vercel
