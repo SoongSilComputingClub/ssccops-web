@@ -50,6 +50,9 @@ export function LoginPage() {
     setPending(true);
     setError(null);
 
+    // 사용자가 리다이렉트되지 않거나 취소한 경우 버튼이 무한 잠금되는 현상 방지
+    const timer = setTimeout(() => setPending(false), 8000);
+
     const next = safeNextPath(searchParams.get("next"), ROUTES.dashboard);
     const { error: signInError } = await createClient().auth.signInWithOAuth({
       provider: "google",
@@ -58,11 +61,8 @@ export function LoginPage() {
       },
     });
 
-    /*
-     * 성공하면 브라우저가 Google로 넘어가므로 pending을 되돌리지 않는다 — 되돌리면
-     * 리다이렉트 직전에 버튼이 다시 살아나 연타할 수 있다. 실패했을 때만 푼다.
-     */
     if (signInError) {
+      clearTimeout(timer);
       setError("Google 로그인을 시작하지 못했습니다. 잠시 후 다시 시도해주세요");
       setPending(false);
     }
