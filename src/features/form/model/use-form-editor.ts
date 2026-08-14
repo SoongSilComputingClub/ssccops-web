@@ -5,7 +5,9 @@ import {
   createForm,
   fetchForm,
   FORM_ERROR,
+  FORM_LABEL_ERROR,
   updateForm,
+  type FormLabelRef,
   type FormSaveInput,
 } from "@/entities/form";
 import { ROUTES } from "@/shared/config/routes";
@@ -84,6 +86,15 @@ export interface FormEditor {
   formId: number | null;
   draft: FormDraft;
   labelIds: number[];
+  /**
+   * 폼을 불러온 시점에 이미 지정돼 있던 라벨(이름 포함).
+   *
+   * 화면이 라벨 후보를 활성 라벨만 받아 오기 때문에, **비활성화된 뒤에도 이 폼에는 지정돼
+   * 있는 라벨**은 후보 목록 어디에도 없어 이름을 알 길이 없다. 그 이름의 유일한 출처가 폼
+   * 상세 응답이므로 여기에 그대로 실어 둔다 — 화면은 이 목록으로 "지정된 비활성 라벨" 칩을
+   * 그린다. 편집 중 갱신하지 않는 **로드 시점 스냅샷**이다.
+   */
+  assignedLabels: FormLabelRef[];
   setDraft: (updater: (draft: FormDraft) => FormDraft) => void;
   setLabelIds: (updater: (labelIds: number[]) => number[]) => void;
   issues: FormDraftIssues;
@@ -109,6 +120,8 @@ interface LoadedEditor {
   errorMessage: string;
   draft: FormDraft;
   labelIds: number[];
+  /** 로드 시점에 지정돼 있던 라벨 — 비활성 라벨의 이름을 아는 유일한 출처다 */
+  assignedLabels: FormLabelRef[];
   /** 서버에 이미 저장돼 있는 문항 ID — 삭제 경고(409 QUESTION_ITEM_IN_USE)의 기준 */
   savedQitemIds: string[];
   hasResponses: boolean;
@@ -140,6 +153,7 @@ function placeholderEditor(
     errorMessage,
     draft: emptyFormDraft(),
     labelIds: [],
+    assignedLabels: [],
     savedQitemIds: [],
     hasResponses: false,
   };
@@ -152,6 +166,7 @@ function newFormEditor(key: string): LoadedEditor {
     errorMessage: "",
     draft: emptyFormDraft(),
     labelIds: [],
+    assignedLabels: [],
     savedQitemIds: [],
     hasResponses: false,
   };
@@ -164,6 +179,7 @@ function payloadKeyOf(input: FormSaveInput): string {
 /** 로드 전·실패 시 화면이 쓰는 자리표시 초안. 매 렌더 새로 만들면 검증이 계속 다시 돈다 */
 const EMPTY_DRAFT: FormDraft = emptyFormDraft();
 const EMPTY_LABEL_IDS: number[] = [];
+const EMPTY_ASSIGNED_LABELS: FormLabelRef[] = [];
 const EMPTY_QITEM_IDS: string[] = [];
 
 /** epoch ms → "HH:mm" (사용자 시계 기준) */
@@ -198,6 +214,13 @@ function toSaveErrorMessage(error: unknown): string {
         return `문항 구성이 올바르지 않습니다 — ${error.message}`;
       case FORM_ERROR.INVALID_RECEIPT_PERIOD:
         return "접수 시작·종료 일시가 올바르지 않습니다";
+      /*
+       * 라벨 지정은 폼 저장 본문(labelIds)으로 나가므로 라벨 오류도 여기로 온다.
+       * **새로** 추가한 라벨이 그 사이 비활성화된 경우다 — 이미 지정돼 있던 비활성 라벨을
+       * 그대로 다시 보내는 저장은 서버가 통과시킨다(ssccops-server #34).
+       */
+      case FORM_LABEL_ERROR.FORM_LABEL_NOT_USABLE:
+        return "비활성화된 라벨은 새로 지정할 수 없습니다. 라벨 선택을 다시 확인해주세요";
       default:
         return toFormErrorMessage(error);
     }
@@ -283,6 +306,7 @@ export function useFormEditor(formId?: number): FormEditor {
           errorMessage: "",
           draft,
           labelIds,
+          assignedLabels: form.labels,
           savedQitemIds: form.qitemCpstCn.qitems.map((q) => q.qitemId),
           hasResponses: form.responseCount > 0,
         });
@@ -311,6 +335,7 @@ export function useFormEditor(formId?: number): FormEditor {
 
   const draft = current?.draft ?? EMPTY_DRAFT;
   const labelIds = current?.labelIds ?? EMPTY_LABEL_IDS;
+  const assignedLabels = current?.assignedLabels ?? EMPTY_ASSIGNED_LABELS;
 
   /* ── 편집 ─────────────────────────────────────────────────── */
 
@@ -497,6 +522,7 @@ export function useFormEditor(formId?: number): FormEditor {
     formId: createdFormId ?? loadableFormId,
     draft,
     labelIds,
+    assignedLabels,
     setDraft,
     setLabelIds,
     issues,
