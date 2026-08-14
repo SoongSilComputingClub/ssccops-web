@@ -21,7 +21,7 @@ import {
   QITEM_TYPE_NM,
   type QitemTypeCd,
 } from "@/shared/config/codes";
-import { fromInput, toInput } from "@/shared/lib/date";
+import { fromInput, toInput, withServiceOffset } from "@/shared/lib/date";
 import { ROUTES } from "@/shared/config/routes";
 import {
   Button,
@@ -358,7 +358,9 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                       onChange={(e) =>
                         setDraft((d) => ({
                           ...d,
-                          rcptBgngDt: fromInput(e.target.value, true) || null,
+                          // 오프셋을 여기서 붙인다 — 서버에서 받아 온 값(+09:00)과 방금 친 값이
+                          // 같은 모양이어야 아래 접수 기간 비교(문자열 대소)가 어긋나지 않는다
+                          rcptBgngDt: withServiceOffset(fromInput(e.target.value, true)),
                         }))
                       }
                     />
@@ -371,7 +373,7 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                       onChange={(e) =>
                         setDraft((d) => ({
                           ...d,
-                          rcptEndDt: fromInput(e.target.value, true) || null,
+                          rcptEndDt: withServiceOffset(fromInput(e.target.value, true)),
                         }))
                       }
                     />
