@@ -7,12 +7,34 @@ export type {
   FormLbl,
   FormLblRel,
   FormPage,
+  FormReceiptStatus,
   FormResponseSummary,
   FormSummary,
   Qitem,
   QitemCpstCn,
 } from "./model/types";
-export { useFormStore, formLblsOf, FORM_STTS_BADGE } from "./model/store";
-export { FORM_ERROR, createForm, fetchForm, fetchForms, updateForm } from "./api/forms";
-export type { FormListFilter, FormSaveInput, FormSaveResult } from "./api/forms";
-export { fetchFormLabels } from "./api/form-labels";
+export { useFormStore, FORM_RECEIPT_BADGE } from "./model/store";
+export {
+  FORM_ERROR,
+  changeFormStatus,
+  createForm,
+  duplicateForm,
+  fetchForm,
+  fetchForms,
+  updateForm,
+} from "./api/forms";
+export type {
+  FormDuplicateResult,
+  FormListFilter,
+  FormSaveInput,
+  FormSaveResult,
+  FormStatusAction,
+  FormStatusChangeResult,
+} from "./api/forms";
+export {
+  FORM_LABEL_ERROR,
+  LBL_NM_MAX_LENGTH,
+  createFormLabel,
+  fetchFormLabels,
+  setFormLabelUse,
+} from "./api/form-labels";
