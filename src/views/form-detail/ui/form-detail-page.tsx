@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  FORM_STTS_BADGE,
+  FORM_RECEIPT_BADGE,
   useFormStore,
   type FormDetail,
   type FormPage,
@@ -122,7 +122,8 @@ function FormDetailContent({ form }: { form: FormDetail }) {
   const [page, setPage] = useState(0);
   const [sel, setSel] = useState<Record<string, string[]>>({});
 
-  const badge = FORM_STTS_BADGE[form.formSttsCd];
+  /* 배지는 서버 파생값으로 그린다 — 근거는 entities/form의 FORM_RECEIPT_BADGE 주석 */
+  const badge = FORM_RECEIPT_BADGE[form.receiptStatus];
   const { pages, qitems } = form.qitemCpstCn;
   const pageQitems = qitems.filter((q) => (q.pageSeq ?? 0) === page);
   const summary = form.responseSummary;

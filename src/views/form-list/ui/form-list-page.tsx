@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { FORM_STTS_BADGE, useFormStore, type FormSummary } from "@/entities/form";
+import { FORM_RECEIPT_BADGE, useFormStore, type FormSummary } from "@/entities/form";
 import { useFormLabelOptions, useFormList } from "@/features/form";
-import { FORM_STTS_CDS, type FormSttsCd } from "@/shared/config/codes";
+import { FORM_STTS_CDS, FORM_STTS_NM, type FormSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
 import {
@@ -61,7 +61,11 @@ function FormCard({
   onDuplicate: () => void;
 }) {
   const router = useRouter();
-  const badge = FORM_STTS_BADGE[form.formSttsCd];
+  /*
+   * 배지는 formSttsCd가 아니라 서버 파생값(receiptStatus)으로 그린다 — 접수 기간이 끝나도
+   * 상태 코드는 OPEN으로 남기 때문에(#33) 그대로 그리면 응답을 받지 않는 폼이 '접수중'이 된다.
+   */
+  const badge = FORM_RECEIPT_BADGE[form.receiptStatus];
 
   return (
     <Card>
@@ -150,13 +154,17 @@ export function FormListPage() {
           >
             {ALL}
           </Chip>
+          {/*
+            필터는 배지와 달리 **폼 상태 코드 자체**를 고르는 자리다 — 서버 쿼리(statusCode)가
+            form_stts_cd로 거르므로 파생값(receiptStatus)이 아니라 기준 코드명을 그대로 쓴다.
+          */}
           {FORM_STTS_CDS.map((cd) => (
             <Chip
               key={cd}
               active={formSttsCd === cd}
               onClick={() => applyFilter(QUERY_STATUS, cd)}
             >
-              {FORM_STTS_BADGE[cd].label}
+              {FORM_STTS_NM[cd]}
             </Chip>
           ))}
           <div className="mx-2 h-5 w-px bg-line" />

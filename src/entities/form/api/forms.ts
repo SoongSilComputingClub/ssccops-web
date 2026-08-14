@@ -3,6 +3,7 @@ import { ApiError, apiFetch } from "@/shared/lib/api/client";
 import type {
   FormDetail,
   FormLabelRef,
+  FormReceiptStatus,
   FormResponseSummary,
   FormSummary,
   Qitem,
@@ -31,6 +32,8 @@ interface FormSummaryResponse {
   formId: number;
   formTtlNm: string;
   formSttsCd: FormSttsCd;
+  /** 서버가 요청마다 다시 계산해 주는 파생값 (ssccops-server #33) — 배지의 기준이다 */
+  receiptStatus: FormReceiptStatus | null;
   rcptBgngDt: string | null;
   rcptEndDt: string | null;
   labels: FormLabelRefResponse[] | null;
@@ -64,11 +67,27 @@ function toLabelRefs(labels: FormLabelRefResponse[] | null): FormLabelRef[] {
   return (labels ?? []).map((l) => ({ formLblId: l.formLblId, lblNm: l.lblNm }));
 }
 
+/**
+ * 접수 기간을 모르는 채로도 배지를 그릴 수 있게 하는 최소 폴백.
+ *
+ * `receiptStatus`는 항상 내려오지만(#33), 이 값이 비면 배지 조회가 `undefined`가 되어 목록이
+ * 통째로 죽는다 — 파생값 하나 때문에 화면 전체를 잃지는 않는다. 다만 기간을 보고 판정할 수
+ * 있는 것은 서버뿐이므로(주입된 Clock 기준) **여기서 기간을 다시 계산하지는 않는다.**
+ * 즉 폴백은 상태 코드가 말하는 만큼만 말한다 — 기간이 끝난 OPEN 폼은 그때만 '접수중'으로
+ * 보이는데, 그것이 서버 없이 웹이 알 수 있는 전부다.
+ */
+function fallbackReceiptStatus(formSttsCd: FormSttsCd): FormReceiptStatus {
+  if (formSttsCd === "DRAFT") return "DRAFT";
+  if (formSttsCd === "CLOSED") return "CLOSED";
+  return "ACCEPTING";
+}
+
 function toFormSummary(res: FormSummaryResponse): FormSummary {
   return {
     formId: res.formId,
     formTtlNm: res.formTtlNm,
     formSttsCd: res.formSttsCd,
+    receiptStatus: res.receiptStatus ?? fallbackReceiptStatus(res.formSttsCd),
     rcptBgngDt: res.rcptBgngDt,
     rcptEndDt: res.rcptEndDt,
     labels: toLabelRefs(res.labels),

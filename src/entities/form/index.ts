@@ -7,12 +7,13 @@ export type {
   FormLbl,
   FormLblRel,
   FormPage,
+  FormReceiptStatus,
   FormResponseSummary,
   FormSummary,
   Qitem,
   QitemCpstCn,
 } from "./model/types";
-export { useFormStore, FORM_STTS_BADGE } from "./model/store";
+export { useFormStore, FORM_RECEIPT_BADGE } from "./model/store";
 export { FORM_ERROR, createForm, fetchForm, fetchForms, updateForm } from "./api/forms";
 export type { FormListFilter, FormSaveInput, FormSaveResult } from "./api/forms";
 export {
