@@ -1,37 +1,50 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { genNoText, mbrGrdNm, mbrSttsNm, useMbrStore } from "@/entities/member";
+import { mbrGrdTone } from "@/entities/member";
 import { useSessionStore } from "@/entities/session";
 import { ROUTES } from "@/shared/config/routes";
 import { Badge, Button, Card, flash } from "@/shared/ui";
 
+/**
+ * 가입 완료 — 서버가 가입 응답으로 내려준 회원 정보를 그대로 보여준다.
+ *
+ * 예전에는 목 회원 목록에서 `find(...) ?? mbrs.at(-1)`로 찾아, 식별자가 유실되면 남의 정보
+ * (목록의 마지막 회원)를 가입 완료 화면에 렌더링했다. 이제 방금 가입한 회원이 없으면
+ * 아무것도 짐작하지 않고 대시보드로 비켜 준다 — 새로고침 뒤라면 서버 세션이 정본이므로
+ * AuthGate가 가입 여부에 맞는 화면(대시보드 또는 /signup)으로 다시 보내 준다.
+ */
 export function SignupCompletePage() {
   const router = useRouter();
-  const pendingMbrId = useSessionStore((s) => s.pendingMbrId);
+  const signupResult = useSessionStore((s) => s.signupResult);
+  const applySignupResult = useSessionStore((s) => s.applySignupResult);
   const logout = useSessionStore((s) => s.logout);
-  const mbr = useMbrStore((s) =>
-    s.mbrs.find((m) => m.mbrId === pendingMbrId) ?? s.mbrs.at(-1),
-  );
 
-  if (!mbr) return null;
+  useEffect(() => {
+    if (!signupResult) router.replace(ROUTES.dashboard);
+  }, [signupResult, router]);
 
-  const genText = genNoText(mbr);
+  if (!signupResult) return null;
+
+  const member = signupResult;
+  const genText = member.generationNumber ? `${member.generationNumber}기` : "미배정";
   const rows: [string, string][] = [
-    ["회원_명", mbr.mbrNm],
-    ["학생_번호", mbr.stdntNo || "미입력"],
-    ["학년_번호", mbr.scyrNo ? `${mbr.scyrNo}학년` : "미입력"],
-    ["학과_명", mbr.scsbjtNm || "미입력"],
+    ["회원_명", member.name],
+    ["학생_번호", member.studentNumber || "미입력"],
+    ["학년_번호", member.academicYear ? `${member.academicYear}학년` : "미입력"],
+    ["학과_명", member.departmentName || "미입력"],
     ["기수_번호", genText === "미배정" ? "미배정 (운영진 배정)" : genText],
-    ["전화번호", mbr.telno || "미입력"],
-    ["이메일", mbr.eml ?? "미입력"],
-    ["회원_등급", mbrGrdNm(mbr.mbrGrdCd)],
-    ["회원_상태", mbrSttsNm(mbr.mbrSttsCd)],
+    ["전화번호", member.phoneNumber || "미입력"],
+    ["이메일", member.email || "미입력"],
+    // 등급·상태 명칭은 서버가 준 것을 쓴다 — 기준정보에서 이름을 바꿔도 화면이 따라간다
+    ["회원_등급", member.membershipGradeName],
+    ["회원_상태", member.membershipStatusName],
   ];
 
   return (
     <div className="w-[480px] px-4">
-      <Badge tone="grey">{mbrGrdNm(mbr.mbrGrdCd)}</Badge>
+      <Badge tone={mbrGrdTone(member.membershipGradeCode)}>{member.membershipGradeName}</Badge>
       <h1 className="mt-3 text-[27px] font-medium tracking-[-.4px]">
         회원 가입이 완료되었습니다
       </h1>
@@ -64,11 +77,16 @@ export function SignupCompletePage() {
         >
           로그아웃
         </Button>
-        {/* 세션은 서버가 정본이라 화면에서 로그인 상태를 만들지 않는다 — 가입 반영은 #3에서 서버 연동으로 해결한다 */}
+        {/*
+         * 목적지는 회원 목록이 아니라 대시보드다. 임시회원에게 첫 화면으로 회원 명부를
+         * 여는 것은 로그인 기본 진입(ROUTES.dashboard)과도 어긋나고, 방금 가입한 사람이
+         * 가장 먼저 볼 것은 남의 명부가 아니라 자기 할 일이다.
+         */}
         <Button
           className="flex-1"
           onClick={() => {
-            router.push(ROUTES.members);
+            applySignupResult();
+            router.replace(ROUTES.dashboard);
           }}
         >
           시작하기
