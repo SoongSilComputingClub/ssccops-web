@@ -1,4 +1,4 @@
-export { useMemberActions } from "./model/use-member-actions";
+export { useMemberActions, type MemberActions } from "./model/use-member-actions";
 export { GradeStatusSheet } from "./ui/grade-status-sheet";
 export { RoleSheet } from "./ui/role-sheet";
 /* 서버 조회 (#46 · 서버 #76) */
@@ -10,6 +10,7 @@ export {
   toAssignableMemberErrorMessage,
   toMemberSaveErrorMessage,
   toMyProfileSaveErrorMessage,
+  toMemberChangeErrorMessage,
 } from "./model/member-error";
 /* 회원 정보 수정 · 내 프로필 수정 (#47 · 서버 #77) */
 export {

@@ -32,6 +32,14 @@ export interface MemberDetailQuery {
   status: MemberDetailStatus;
   errorMessage: string;
   reload: () => void;
+  /**
+   * 서버가 방금 돌려준 회원으로 갈아 끼운다 (#48 — 등급·상태 변경 응답).
+   *
+   * 변경 API가 조회와 **같은 `MemberDetailResponse`**를 돌려주므로 다시 조회할 이유가 없다.
+   * `reload()`를 부르면 왕복 한 번 동안 옛 뱃지가 남고, 그 사이 다른 사람이 바꾼 값이 섞여
+   * 방금 내가 한 변경이 화면에 반영된 것인지 구분되지 않는다.
+   */
+  apply: (member: MemberDetail) => void;
 }
 
 export function useMemberDetail(memberId: number): MemberDetailQuery {
@@ -81,6 +89,17 @@ export function useMemberDetail(memberId: number): MemberDetailQuery {
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
+  /*
+   * 갈아 끼운 결과에 **지금 요청의 키**를 달아 둔다. 다른 키로 넣으면 아래 `current` 비교에서
+   * 곧바로 버려져 화면이 loading 으로 되돌아간다.
+   */
+  const apply = useCallback(
+    (next: MemberDetail) => {
+      setLoaded({ key: requestKey, member: next, outcome: "ready", errorMessage: "" });
+    },
+    [requestKey],
+  );
+
   const current = loaded?.key === requestKey ? loaded : null;
   const status: MemberDetailStatus = !isFetchable
     ? "not-found"
@@ -91,5 +110,6 @@ export function useMemberDetail(memberId: number): MemberDetailQuery {
     status,
     errorMessage: current?.errorMessage ?? "",
     reload,
+    apply,
   };
 }
