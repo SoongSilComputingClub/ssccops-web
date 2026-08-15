@@ -22,7 +22,6 @@ interface SubWorkState {
 
   addSubWork: (draft: Omit<SubWork, "subWorkId">) => number;
   updateSubWork: (subWorkId: number, patch: Partial<SubWork>) => void;
-  toggleChckArtcl: (subWorkChckListId: number) => void;
   /** 점검 목록 일괄 추가 (신규 하위 업무의 기본 항목) */
   addChckArtcls: (subWorkId: number, chckArtclCns: readonly string[]) => void;
   addSubWorkPicAltmnt: (subWorkId: number, mbrId: number, tkcgSeCd: "OWNER" | "COLLABORATOR") => void;
@@ -48,13 +47,6 @@ export const useSubWorkStore = create<SubWorkState>((set) => ({
     set((s) => ({
       subWorks: s.subWorks.map((w) =>
         w.subWorkId === subWorkId ? { ...w, ...patch } : w,
-      ),
-    })),
-
-  toggleChckArtcl: (subWorkChckListId) =>
-    set((s) => ({
-      subWorkChckLists: s.subWorkChckLists.map((c) =>
-        c.subWorkChckListId === subWorkChckListId ? { ...c, cmptnYn: !c.cmptnYn } : c,
       ),
     })),
 
@@ -102,8 +94,13 @@ export const useSubWorkStore = create<SubWorkState>((set) => ({
 
 /* ── 파생 ──────────────────────────────────────────────────── */
 
-/** 해당 하위 업무의 점검 목록 (정렬_순서) */
-export function chckListOf(
+/**
+ * 해당 하위 업무의 점검 목록 (정렬_순서).
+ *
+ * 밖으로 내보내지 않는다 — 상세 화면이 서버 연동으로 옮겨 가면서(#39) 목 점검 목록을 직접
+ * 읽는 화면이 사라졌고, 남은 사용처는 아래 진행률 하나뿐이다.
+ */
+function chckListOf(
   rows: SubWorkChckList[],
   subWorkId: number,
 ): SubWorkChckList[] {
@@ -127,12 +124,8 @@ export function ownerMbrId(
   return rows.find((p) => p.subWorkId === subWorkId && p.tkcgSeCd === "OWNER")?.mbrId;
 }
 
-/** 협업자 회원_ID 목록 */
-export function collabMbrIds(rows: SubWorkPicAltmnt[], subWorkId: number): number[] {
-  return rows
-    .filter((p) => p.subWorkId === subWorkId && p.tkcgSeCd === "COLLABORATOR")
-    .map((p) => p.mbrId);
-}
+/* 협업자 목록(collabMbrIds)은 지웠다 — 유일한 사용처였던 상세 화면이 서버 응답의
+ * collaborators를 쓴다 (#39). 배정 테이블은 서버도 아직 매핑하지 않아 늘 비어 있다. */
 
 /** 목록 상태 배지: 승인 대기(amber) · 완료(grey) · 진행(blue) */
 export function subWorkSttsBadge(
