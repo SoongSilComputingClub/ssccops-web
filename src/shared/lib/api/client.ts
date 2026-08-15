@@ -10,6 +10,32 @@ export interface ApiResponse<T> {
   code: string;
   message: string;
   data: T | null;
+  /** 커서 목록 응답에만 실린다 (AP-11). 단건·오류 응답에서는 아예 빠져 있다 */
+  page?: PageEnvelope | null;
+}
+
+/**
+ * 커서 페이징 봉투 (global.apipayload.PageResponse).
+ *
+ * 페이지 번호가 없는 것은 서버가 offset이 아니라 커서로 자르기 때문이다 — 다음 페이지는
+ * `nextCursor`를 그대로 되돌려 주는 방식이고, 마지막 페이지면 `hasNext`가 false다.
+ * `totalCount`는 필터를 적용한 건수, `overallCount`는 필터 이전 전체 건수다.
+ */
+export interface PageEnvelope {
+  size: number;
+  /** 서버가 실제로 적용한 정렬 — 다음 페이지 요청에 그대로 되돌려주면 정렬이 흔들리지 않는다 */
+  sort: string;
+  nextCursor: string | null;
+  hasNext: boolean;
+  totalCount: number;
+  overallCount: number;
+}
+
+/** 목록 조회 결과 — 배열과 페이지 봉투를 함께 돌려준다 */
+export interface ApiListResult<T> {
+  data: T[];
+  /** 서버가 page를 싣지 않았으면 null (목록이 아닌 응답을 목록으로 읽은 경우) */
+  page: PageEnvelope | null;
 }
 
 /*
@@ -76,13 +102,16 @@ async function readEnvelope<T>(response: Response): Promise<ApiResponse<T> | nul
 }
 
 /**
- * ssccops-server 호출. Supabase access token을 실어 보내고 ApiResponse 봉투를 벗겨 data만 돌려준다.
+ * ssccops-server 호출. Supabase access token을 실어 보내고 성공한 ApiResponse 봉투를 돌려준다.
  *
  * 실패는 모두 {@link ApiError}로 통일한다 — 호출부가 HTTP 상태와 응답 스키마를 다시 해석하지
  * 않게 하려는 것이다. 401(갱신 후 재로그인)과 403 SIGNUP_REQUIRED(가입 화면)처럼 화면 전환이
  * 정해져 있는 두 경우는 여기서 리다이렉트까지 끝내고, 호출부에는 오류만 던진다.
+ *
+ * 봉투째 돌려주는 것은 목록 응답의 `page`가 `data` 옆에 오기 때문이다 — 호출부는 대개
+ * {@link apiFetch}(data만)나 {@link apiFetchList}(data + page)를 쓴다.
  */
-export async function apiFetch<T = unknown>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
   if (!API_BASE_URL) {
     /*
      * 예전에는 값이 없으면 `undefined/v1/...`로 요청이 나가 404·CORS 오류로 둔갑했다.
@@ -149,5 +178,29 @@ export async function apiFetch<T = unknown>(path: string, init?: RequestInit): P
     );
   }
 
+  return envelope;
+}
+
+/** 단건 호출 — 봉투를 벗겨 data만 돌려준다 */
+export async function apiFetch<T = unknown>(path: string, init?: RequestInit): Promise<T> {
+  const envelope = await request<T>(path, init);
   return envelope.data as T;
+}
+
+/**
+ * 커서 목록 호출 — data 배열과 page 봉투를 함께 돌려준다.
+ *
+ * `apiFetch`로 목록을 받으면 `page`가 버려져 다음 페이지가 있는지조차 알 수 없다. 커서
+ * 페이징 목록(운영 도메인의 업무·하위 업무·승인함)은 첫 페이지만 보여 주고 조용히 끊기는
+ * 대신 이 함수를 써서 `hasNext`·`nextCursor`를 화면까지 올린다.
+ *
+ * `data`가 null이면 빈 배열로 떨어뜨린다 — 목록이 비었다는 것과 응답이 없다는 것을 화면이
+ * 다르게 다룰 이유가 없다.
+ */
+export async function apiFetchList<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<ApiListResult<T>> {
+  const envelope = await request<T[]>(path, init);
+  return { data: envelope.data ?? [], page: envelope.page ?? null };
 }
