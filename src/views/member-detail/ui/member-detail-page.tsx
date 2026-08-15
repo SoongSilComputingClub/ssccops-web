@@ -37,15 +37,15 @@ const NO_MEMBER_MANAGE =
   "회원 관리(MEMBER_MANAGE) 권한이 없어 회원 정보를 볼 수 없습니다 — 운영진에게 요청해주세요";
 
 /**
- * 이 화면이 조회만 여는 이유.
+ * 아직 이 화면에서 열리지 않는 조작.
  *
- * 정보 수정(#47) · 등급/상태 변경(#48) · 역할 부여(#50)는 각각 별도 이슈이고 서버 호출도 아직
- * 붙지 않았다. 그때까지 변경 버튼을 열어 두면 목 스토어를 고치는 조작이 되는데, 그 목 회원은
- * 이제 이 화면이 보여 주는 서버 회원과 다른 사람이다 — 저장되지 않는 입력창을 열어 두지
- * 않는다는 판단은 views/my-account 가 먼저 했다.
+ * 정보 수정은 #47에서 열렸다(헤더의 '정보 수정' 버튼 · PATCH /v1/members/{memberId}). 남은
+ * 등급/상태 변경(#48)·역할 부여(#50)는 각각 별도 이슈이고 서버 호출이 아직 붙지 않았다 —
+ * 그때까지 버튼을 열어 두면 목 스토어를 고치는 조작이 되는데, 그 목 회원은 이 화면이 보여 주는
+ * 서버 회원과 다른 사람이다. 저장되지 않는 입력창을 열어 두지 않는다는 판단은 views/my-account
+ * 가 먼저 했다.
  */
-const READ_ONLY_NOTE =
-  "정보 수정 · 등급/상태 변경 · 역할 부여는 회원 변경 API 연동 이후에 열립니다.";
+const READ_ONLY_NOTE = "등급/상태 변경 · 역할 부여는 회원 변경 API 연동 이후에 열립니다.";
 
 export function MemberDetailPage({ mbrId }: { mbrId: number }) {
   const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
@@ -100,7 +100,20 @@ function MemberDetailView({ mbrId }: { mbrId: number }) {
 
   return (
     <>
-      <PageHeader title="회원 상세" subtitle={`회원 #${member.memberId}`} showBack />
+      {/*
+        수정 화면으로 가는 유일한 길이다 — 이 버튼이 없으면 /members/{mbrId}/edit 는 주소를
+        직접 쳐야만 닿는다. 두 화면 모두 MEMBER_MANAGE 로 잠겨 있고(여기까지 온 사람은 이미
+        가졌다) 저장 시점의 판정은 서버가 다시 한다.
+      */}
+      <PageHeader
+        title="회원 상세"
+        subtitle={`회원 #${member.memberId}`}
+        showBack
+        action={{
+          label: "정보 수정",
+          onClick: () => router.push(ROUTES.memberEdit(member.memberId)),
+        }}
+      />
       <PageBody>
         <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4">
           <div className="flex flex-col gap-4">
