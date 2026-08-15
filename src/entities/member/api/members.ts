@@ -230,6 +230,51 @@ export async function fetchMember(memberId: number): Promise<MemberDetail> {
   return apiFetch<MemberDetail>(`/v1/members/${memberId}`);
 }
 
+/* ── 담당자 후보 ───────────────────────────────────────────── */
+
+/**
+ * 담당자로 지정할 수 있는 회원 한 명 (MemberAssignableResponse · 서버 #76).
+ *
+ * ── 왜 `MemberSummary`를 재사용하지 않는가 ─────────────────────
+ * **응답이 다르기 때문이다.** 이 목록은 `MEMBER_MANAGE` 없이 인증만으로 열리므로 서버가
+ * 연락처·이메일·학번·부서·가입일을 아예 내리지 않는다. `MemberSummary`로 받으면 타입상
+ * 있어야 할 값이 런타임에 `undefined`로 비고, 화면이 그것을 "값이 없는 회원"으로 그린다 —
+ * 명부에는 있는 값이 담당자 선택 화면에서만 사라진 것처럼 보인다.
+ *
+ * 그래서 **화면도 여기 있는 값만 그린다.** 담당자를 고를 때 필요한 것은 동명이인을 가르는
+ * 정도(기수·등급·대표 역할)이고, 그 이상은 권한 있는 명부 화면(#46)이 보여 준다.
+ */
+export interface AssignableMember {
+  memberId: number;
+  name: string;
+  /** 아직 기수를 배정받지 않은 회원은 null이다 — 표기는 `generationText` */
+  generationNumber: number | null;
+  membershipGradeCode: MbrGrdCd;
+  membershipGradeName: string;
+  /** 현재 맡은 대표 역할 하나. 역할이 없으면 null이다 */
+  representativeRoleName: string | null;
+}
+
+/**
+ * GET /v1/members/assignable — 담당자·책임자로 지정할 수 있는 회원 전량.
+ *
+ * **인증만 요구한다**(`MEMBER_MANAGE`가 아니다). 담당자를 고르는 일은 운영진이면 누구나
+ * 하는데 명부 열람 권한은 그보다 좁아, 같은 권한으로 묶으면 업무를 등록할 수 있는 사람이
+ * 담당자 목록을 못 받는 자리가 생긴다.
+ *
+ * **페이징이 없다.** 서버가 탈퇴·제명 회원을 이미 걸러 활동 회원만 배열로 내린다 — 선택
+ * 목록이 페이지로 잘리면 다음 페이지의 회원은 담당자로 지정할 길 자체가 없어진다.
+ *
+ * 목 회원 스토어에서 후보를 고르지 않는 이유는 `oper.pic_id`·`mtg.mtg_rbprsn_id`가 모두
+ * `mbr.mbr_id`를 가리키는 FK이기 때문이다 — 목 데이터의 1~12번은 서버의 같은 번호와 아무
+ * 관계가 없어, 화면에 뜬 이름과 실제로 배정되는 사람이 갈린다(#53 · 상위 업무 조회가 #36에서
+ * 같은 이유로 서버 재조회가 됐다).
+ */
+export async function fetchAssignableMembers(): Promise<AssignableMember[]> {
+  const members = await apiFetch<AssignableMember[] | null>("/v1/members/assignable");
+  return members ?? [];
+}
+
 /* ── 기준 코드 ─────────────────────────────────────────────── */
 
 /**

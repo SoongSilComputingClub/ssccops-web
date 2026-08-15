@@ -25,11 +25,13 @@ export {
 export {
   fetchMembers,
   fetchMember,
+  fetchAssignableMembers,
   fetchMemberGrades,
   fetchMemberStatuses,
   MEMBER_ERROR,
 } from "./api/members";
 export type {
+  AssignableMember,
   MemberSummary,
   MemberDetail,
   MemberChange,

@@ -35,3 +35,30 @@ export function toMemberErrorMessage(error: unknown): string {
       return error.message;
   }
 }
+
+/**
+ * 담당자 후보 조회 실패 → 등록 폼에 띄울 한 줄 (GET /v1/members/assignable · #53).
+ *
+ * `toMemberErrorMessage`를 그대로 쓰지 않는 것은 **403 문장이 이 목록에서는 거짓이기
+ * 때문이다.** 담당자 후보는 인증만 요구하므로(서버 #76) "회원 관리 권한이 필요합니다"를
+ * 보여 주면, 실제로는 네트워크·서버 문제인데 사용자가 자기 권한을 의심하게 된다. 여기서
+ * 403이 뜰 수 있는 경우는 사실상 미가입(SIGNUP_REQUIRED)뿐인데 그쪽은 apiFetch가 이미
+ * 가입 화면으로 보낸 뒤다.
+ *
+ * 첫 문장이 "담당자"인 것은 이 조회가 실패하면 등록 자체가 막히기 때문이다 — 무엇을 못
+ * 골라서 버튼이 잠겼는지가 문장에 있어야 한다.
+ */
+export function toAssignableMemberErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "담당자 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없어 담당자 목록을 받지 못했습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}

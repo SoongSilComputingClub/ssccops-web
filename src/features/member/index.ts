@@ -5,4 +5,11 @@ export { RoleSheet } from "./ui/role-sheet";
 export { useMembers, type MemberList, type MemberListQuery } from "./model/use-members";
 export { useMemberDetail, type MemberDetailQuery } from "./model/use-member-detail";
 export { useMemberCodes, type MemberCodes } from "./model/use-member-codes";
-export { toMemberErrorMessage } from "./model/member-error";
+export { toMemberErrorMessage, toAssignableMemberErrorMessage } from "./model/member-error";
+/* 담당자·책임자 선택 (#53 · GET /v1/members/assignable) */
+export {
+  useAssignableMembers,
+  assignableMemberLabel,
+  type AssignableMembers,
+  type AssignableMembersStatus,
+} from "./model/use-assignable-members";
