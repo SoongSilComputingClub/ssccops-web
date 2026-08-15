@@ -14,3 +14,19 @@ export type {
   RoleClassification,
   RoleClassificationCreateInput,
 } from "./api/role-classifications";
+export {
+  ROLE_ERROR,
+  ROLE_NM_MAX_LENGTH,
+  createRole,
+  deleteRole,
+  fetchRole,
+  fetchRoles,
+  updateRole,
+} from "./api/roles";
+export type {
+  RoleCreateInput,
+  RoleDetail,
+  RoleMember,
+  RoleSummary,
+  RoleUpdateInput,
+} from "./api/roles";
