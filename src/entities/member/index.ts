@@ -53,6 +53,24 @@ export type {
   MemberGradeChangeInput,
   MemberStatusChangeInput,
 } from "./api/members";
+/*
+ * 회원 역할 부여·종료 (#50 · 서버 #81).
+ *
+ * 요구 권한이 `ROLE_MANAGE`라 회원 API(`MEMBER_MANAGE`)와 파일이 갈린다 — 근거는
+ * api/member-roles.ts 첫 주석.
+ */
+export {
+  fetchMemberRoles,
+  assignMemberRole,
+  updateMemberRole,
+  overlapsAssignment,
+  MEMBER_ROLE_ERROR,
+} from "./api/member-roles";
+export type {
+  MemberRoleAssignment,
+  MemberRoleAssignInput,
+  MemberRoleUpdateInput,
+} from "./api/member-roles";
 export type {
   AssignableMember,
   MemberSummary,
