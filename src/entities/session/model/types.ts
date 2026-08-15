@@ -38,6 +38,12 @@ export interface AuthUser {
  *  - FORM_STATUS_CHANGE   POST /v1/forms/{id}/status
  *  - FORM_LABEL_MANAGE    POST·PATCH /v1/form-labels…
  *  - RESPONSE_REVIEW      FormResponseController 전체
+ *  - ROLE_MANAGE         AuthorityController · RoleAuthorityController 전체 (#32 · 서버 #65)
+ *
+ * ROLE_MANAGE 는 이 목록에서 유일하게 묶음처럼 생겼지만 **잎 코드로 다뤄도 되는 자리**다.
+ * 서버가 두 컨트롤러 클래스 전체에 `@RequireAuthority(ROLE_MANAGE)`를 걸어 두어 이 코드 자체가
+ * 엔드포인트가 요구하는 값이기 때문이다. 조회까지 막혀 있으므로 화면은 이 코드가 없으면 아예
+ * 열지 않는다 — 열어 봐야 첫 조회부터 403이다.
  *
  * 묶음 코드로 판정하면 어긋난다. 예를 들어 어떤 역할에 FORM_WRITE만 직접 부여하면 그 회원의
  * 배열에 FORM_MANAGE는 없는데, 화면이 FORM_MANAGE를 찾으면 서버는 허용하는 버튼을 감춘다.
@@ -53,6 +59,7 @@ export const CAPABILITY = {
   FORM_STATUS_CHANGE: "FORM_STATUS_CHANGE",
   FORM_LABEL_MANAGE: "FORM_LABEL_MANAGE",
   RESPONSE_REVIEW: "RESPONSE_REVIEW",
+  ROLE_MANAGE: "ROLE_MANAGE",
 } as const;
 
 export type Capability = (typeof CAPABILITY)[keyof typeof CAPABILITY];
