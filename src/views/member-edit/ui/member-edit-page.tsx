@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMbrStore, type Mbr } from "@/entities/member";
+import { CAPABILITY } from "@/entities/session";
+import { useCan } from "@/features/auth";
 import type { MbrGrdCd, MbrSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { TODAY } from "@/shared/config/constants";
@@ -41,7 +43,35 @@ function toNo(v: string): number | null {
   return v.trim() === "" || Number.isNaN(n) ? null : n;
 }
 
+/*
+ * 회원 등록·수정 (#52 · 서버 #76).
+ *
+ * 등록·수정은 조회보다 더 강한 동작이라 화면 자체를 열지 않는다 — 여기서 "동작만 잠근다" 를
+ * 따르면 남의 개인정보가 채워진 폼을 보여 준 채 저장만 막는 꼴이 된다. 근거는 views/member-list
+ * 의 NO_MEMBER_MANAGE 주석.
+ */
+const NO_MEMBER_MANAGE =
+  "회원 관리(MEMBER_MANAGE) 권한이 없어 회원 정보를 수정할 수 없습니다 — 운영진에게 요청해주세요";
+
 export function MemberEditPage({ mbrId }: { mbrId?: number }) {
+  const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
+
+  /* 훅을 조건부로 부를 수 없으므로 본문을 별도 컴포넌트로 뺀다 (views/role-authorities 와 같다) */
+  if (!canManage) {
+    return (
+      <>
+        <PageHeader title={mbrId ? "회원 수정" : "회원 등록"} showBack />
+        <PageBody>
+          <EmptyState message={NO_MEMBER_MANAGE} />
+        </PageBody>
+      </>
+    );
+  }
+
+  return <MemberEditForm mbrId={mbrId} />;
+}
+
+function MemberEditForm({ mbrId }: { mbrId?: number }) {
   const router = useRouter();
   const { mbrs, mbrGrds, mbrSttss, updateMbr, addMbr } = useMbrStore();
   const existing = mbrId ? mbrs.find((m) => m.mbrId === mbrId) : undefined;

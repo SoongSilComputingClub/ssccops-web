@@ -11,6 +11,8 @@ import {
   useMbrStore,
 } from "@/entities/member";
 import { roleNmOf, useRoleStore } from "@/entities/role";
+import { CAPABILITY } from "@/entities/session";
+import { useCan } from "@/features/auth";
 import { GradeStatusSheet, RoleSheet, useMemberActions } from "@/features/member";
 import { MBR_GRD_NM, MBR_STTS_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
@@ -26,7 +28,35 @@ import {
   SectionLabel,
 } from "@/shared/ui";
 
+/*
+ * 회원 상세 (#52 · 서버 #76).
+ *
+ * 목록보다 더 좁혀진 개인정보(연락처·이메일·등급/상태 이력)를 한 사람 단위로 보여 주므로
+ * 목록과 같은 권한으로 잠근다. 목록에서 감춰도 주소를 직접 치면 여기로 바로 올 수 있어
+ * 화면마다 판정을 둔다 — 근거는 views/member-list 의 NO_MEMBER_MANAGE 주석.
+ */
+const NO_MEMBER_MANAGE =
+  "회원 관리(MEMBER_MANAGE) 권한이 없어 회원 정보를 볼 수 없습니다 — 운영진에게 요청해주세요";
+
 export function MemberDetailPage({ mbrId }: { mbrId: number }) {
+  const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
+
+  /* 훅을 조건부로 부를 수 없으므로 본문을 별도 컴포넌트로 뺀다 (views/role-authorities 와 같다) */
+  if (!canManage) {
+    return (
+      <>
+        <PageHeader title="회원 상세" showBack />
+        <PageBody>
+          <EmptyState message={NO_MEMBER_MANAGE} />
+        </PageBody>
+      </>
+    );
+  }
+
+  return <MemberDetailView mbrId={mbrId} />;
+}
+
+function MemberDetailView({ mbrId }: { mbrId: number }) {
   const router = useRouter();
   const mbrs = useMbrStore((s) => s.mbrs);
   const mbr = mbrs.find((m) => m.mbrId === mbrId);
