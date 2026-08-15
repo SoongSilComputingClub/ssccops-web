@@ -1,5 +1,5 @@
-import { MemberEditPage } from "@/views/member-edit";
+import { MemberNewPage } from "@/views/member-new";
 
 export default function Page() {
-  return <MemberEditPage />;
+  return <MemberNewPage />;
 }
