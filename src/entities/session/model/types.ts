@@ -31,6 +31,7 @@ export interface AuthUser {
  * `@RequireAuthority`와 1:1로 맞춘 목록이 아래다.
  *
  *  - WORK_MANAGE          WorkController · SubWorkController 전체
+ *  - MEETING_MANAGE       MeetingController 전체 (서버 #83)
  *  - SUB_WORK_TYPE_READ   GET  /v1/sub-work-types
  *  - SUB_WORK_TYPE_MANAGE POST·PATCH /v1/sub-work-types…
  *  - FORM_READ            GET  /v1/forms · /v1/forms/{id}
@@ -52,6 +53,7 @@ export interface AuthUser {
  */
 export const CAPABILITY = {
   WORK_MANAGE: "WORK_MANAGE",
+  MEETING_MANAGE: "MEETING_MANAGE",
   SUB_WORK_TYPE_READ: "SUB_WORK_TYPE_READ",
   SUB_WORK_TYPE_MANAGE: "SUB_WORK_TYPE_MANAGE",
   FORM_READ: "FORM_READ",
