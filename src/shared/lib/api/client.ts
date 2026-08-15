@@ -50,6 +50,22 @@ export const API_ERROR = {
   UNAUTHORIZED: "COMMON401",
   /** 인증은 됐지만 아직 가입하지 않았다 — 재로그인이 아니라 가입 화면으로 보내야 한다 */
   SIGNUP_REQUIRED: "SIGNUP_REQUIRED",
+  /**
+   * 가입은 했지만 이 동작을 할 권한이 없다 (403 · ssccops-server #9).
+   *
+   * 서버가 같은 문자열을 두 자리에서 쓴다 — 권한 코드 부족(MemberErrorCode.AUTHORITY_REQUIRED)과
+   * 승인자 아님(OperationErrorCode.FORBIDDEN)이다. 화면이 보기에는 둘 다 "권한이 없어 거절됐다"라
+   * 같은 코드로 온다.
+   */
+  FORBIDDEN: "FORBIDDEN",
+  /**
+   * 시큐리티 필터체인이 핸들러 이전에 끊은 403 (CommonErrorCode.FORBIDDEN).
+   *
+   * 위 FORBIDDEN과 뜻은 같지만 코드 문자열이 다르다 — 애스펙트까지 오지 못한 요청이라 서버가
+   * 공통 코드를 쓴다. 둘을 따로 두는 것은 어느 관문에서 걸렸는지가 로그에서 갈리기 때문이고,
+   * 화면 처리는 같다.
+   */
+  ACCESS_DENIED: "COMMON403",
   /** NEXT_PUBLIC_API_BASE_URL 미설정 */
   CONFIG_MISSING: "CLIENT_CONFIG_MISSING",
   /** 백엔드가 꺼져 있거나 CORS·네트워크 문제로 응답 자체를 받지 못함 */
