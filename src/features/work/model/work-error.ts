@@ -1,0 +1,55 @@
+import { WORK_ERROR } from "@/entities/work";
+import { API_ERROR, ApiError } from "@/shared/lib/api/client";
+
+/**
+ * 업무 조회 실패 → 화면에 띄울 한 줄.
+ *
+ * 401(재로그인)·403 SIGNUP_REQUIRED(가입 화면)는 apiFetch가 이미 리다이렉트까지 끝내므로
+ * 여기서 다루지 않는다. 남은 403은 **권한 부족**이다 — 업무 API는 조회까지 WORK_MANAGE로
+ * 막혀 있어(서버 #9) 가입한 회원도 권한이 없으면 목록을 못 본다. 서버 문장("권한이
+ * 없습니다")만으로는 무엇을 해야 할지 알 수 없으므로 여기서 다시 쓴다.
+ *
+ * 알 수 없는 코드는 서버 메시지를 그대로 보여 준다 — 임의로 뭉개면 원인을 알려주려고
+ * 서버가 내려보낸 문장이 사라진다.
+ */
+export function toWorkErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "업무 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  if (error.status === 403) {
+    return "업무를 볼 권한이 없습니다 — 운영진 권한이 필요합니다";
+  }
+
+  switch (error.code) {
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}
+
+/**
+ * 업무 등록 실패 → 화면에 띄울 한 줄 (OPS-002).
+ *
+ * `VALIDATION_FAILED`는 서버 문장을 그대로 쓴다 — 담당자 부적격("담당자로 지정할 수 없는
+ * 회원입니다")과 기간 역전("종료 일시는 시작 일시보다 빠를 수 없습니다")이 같은 코드로
+ * 오기 때문에, 여기서 한 문장으로 뭉개면 어느 칸을 고쳐야 하는지가 사라진다.
+ */
+export function toWorkCreateErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "업무를 등록하지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  if (error.status === 403) {
+    return "업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다";
+  }
+
+  if (error.code === WORK_ERROR.INVALID_CODE_VALUE) {
+    return "업무_유형·우선_순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+  }
+
+  return toWorkErrorMessage(error);
+}

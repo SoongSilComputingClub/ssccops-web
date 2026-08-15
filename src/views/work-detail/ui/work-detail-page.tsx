@@ -1,16 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMbrStore } from "@/entities/member";
-import { findOper, useOperStore } from "@/entities/oper";
-import {
-  chckPrgrsRt,
-  ownerMbrId,
-  subWorkSttsBadge,
-  useSubWorkStore,
-  type SubWork,
-} from "@/entities/sub-work";
-import { useWorkStore, workSttsTone } from "@/entities/work";
+import { workSttsTone, type WorkSubWorkSummary } from "@/entities/work";
+import { useWorkDetail } from "@/features/work";
 import {
   OPER_TYPE_NM,
   PRRTY_RNK_NM,
@@ -32,71 +24,114 @@ import {
   type GridColumn,
 } from "@/shared/ui";
 
+/*
+ * 업무 상세 (ssccops-server OPS-003 · GET /v1/works/{workId}).
+ *
+ * 좌측 상세 카드와 우측 하위 업무 목록을 **이 한 번의 호출로** 채운다(#30). 하위 업무의
+ * 담당자·진행률도 서버가 함께 내려주므로 목 스토어를 조합하던 계산이 전부 사라졌다.
+ *
+ * 하위 업무 행을 클릭하면 하위 업무 상세로 가는데, 그 화면은 아직 목 데이터라 서버에서 온
+ * subWorkId를 찾지 못한다. 그래도 링크를 끊지 않는 것은 그 화면이 연동되는 순간 그대로
+ * 이어져야 할 이동이기 때문이다.
+ */
+
+/**
+ * 하위 업무 상태 배지.
+ *
+ * 승인 대기를 업무 상태보다 앞세우는 것은 하위 업무 목록(entities/sub-work의
+ * subWorkSttsBadge)과 같은 규칙이다 — 승인이 걸려 있으면 단계가 무엇이든 다음 행동이
+ * '승인'이기 때문이다.
+ */
+function subWorkBadge(subWork: WorkSubWorkSummary) {
+  if (subWork.approvalStatus === "PENDING") {
+    return { label: "승인 대기", tone: "amber" as const };
+  }
+  return { label: WORK_STTS_NM[subWork.workStatus], tone: "outline" as const };
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="grid grid-cols-[1fr_1.3fr] items-start gap-4">
+      <Card className="animate-pulse">
+        <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
+        <div className="mt-3 h-[28px] w-3/5 rounded bg-black/5" />
+        <div className="mt-4 h-[8px] w-full rounded bg-black/5" />
+        <div className="mt-6 h-[180px] w-full rounded bg-black/5" />
+      </Card>
+      <Card className="animate-pulse">
+        <div className="h-[18px] w-[80px] rounded bg-black/5" />
+        <div className="mt-4 h-[220px] w-full rounded bg-black/5" />
+      </Card>
+    </div>
+  );
+}
+
 export function WorkDetailPage({ workId }: { workId: number }) {
   const router = useRouter();
-  const work = useWorkStore((s) => s.works.find((w) => w.workId === workId));
-  const opers = useOperStore((s) => s.opers);
-  const { subWorks, subWorkChckLists, subWorkPicAltmnts } = useSubWorkStore();
-  const mbrs = useMbrStore((s) => s.mbrs);
+  const { work, status, errorMessage, reload } = useWorkDetail(workId);
 
-  if (!work) {
+  if (status !== "ready" || !work) {
     return (
       <>
         <PageHeader title="업무 상세" showBack />
         <PageBody>
-          <EmptyState message="업무를 찾을 수 없습니다." />
+          {status === "loading" && <DetailSkeleton />}
+          {status === "not-found" && (
+            <EmptyState
+              message="업무를 찾을 수 없습니다. 이미 삭제된 업무일 수 있습니다."
+              action={{ label: "업무 목록", onClick: () => router.replace(ROUTES.works) }}
+            />
+          )}
+          {status !== "loading" && status !== "not-found" && (
+            <EmptyState
+              message={errorMessage || "업무를 불러오지 못했습니다."}
+              action={{ label: "다시 시도", onClick: reload }}
+            />
+          )}
         </PageBody>
       </>
     );
   }
 
-  const oper = findOper(opers, work.operId);
-  const subs = subWorks.filter((sw) => sw.workId === work.workId);
-  const prgrs = Math.round(work.workPrgrsRt);
-  const mbrNmOf = (mbrId: number | undefined) =>
-    mbrs.find((m) => m.mbrId === mbrId)?.mbrNm ?? "-";
+  const prgrs = Math.round(work.progressRate);
 
-  const columns: GridColumn<SubWork>[] = [
+  const columns: GridColumn<WorkSubWorkSummary>[] = [
     {
-      key: "subWorkTtl",
+      key: "title",
       header: "하위 업무명",
       width: "2fr",
       render: (sw) => (
-        <span className="font-semibold hover:text-accent">{sw.subWorkTtl}</span>
+        <span className="font-semibold hover:text-accent">{sw.title}</span>
       ),
     },
     {
-      key: "pic",
+      key: "owner",
       header: "담당자",
       width: ".8fr",
-      render: (sw) => (
-        <span className="text-n400">
-          {mbrNmOf(ownerMbrId(subWorkPicAltmnts, sw.subWorkId))}
-        </span>
-      ),
+      render: (sw) => <span className="text-n400">{sw.owner?.name || "-"}</span>,
     },
     {
-      key: "workSttsCd",
+      key: "workStatus",
       header: "업무_상태",
       width: ".8fr",
       render: (sw) => {
-        const badge = subWorkSttsBadge(sw);
-        return sw.aprvSttsCd === "PENDING" ? (
-          <Badge tone={badge.tone}>{badge.label}</Badge>
-        ) : (
-          <Badge tone="outline">{WORK_STTS_NM[sw.workSttsCd]}</Badge>
-        );
+        const badge = subWorkBadge(sw);
+        return <Badge tone={badge.tone}>{badge.label}</Badge>;
       },
     },
     {
-      key: "prgrs",
+      key: "progressRate",
       header: "진행률",
       width: "1.1fr",
+      /*
+       * 지연 표시(danger)는 넣지 않는다 — 서버 요약에 지연_여부가 없고, 마감_일시로
+       * 되짚으면 목 데이터용 고정 기준일(TODAY)로 서버 데이터를 판정하게 된다.
+       */
       render: (sw) => {
-        const rt = chckPrgrsRt(subWorkChckLists, sw.subWorkId);
+        const rt = Math.round(sw.progressRate);
         return (
           <span className="flex items-center gap-[10px]">
-            <ProgressBar value={rt} danger={sw.dlyYn} />
+            <ProgressBar value={rt} />
             <span className="w-[38px] text-right text-[14px] text-n500">{rt}%</span>
           </span>
         );
@@ -119,14 +154,12 @@ export function WorkDetailPage({ workId }: { workId: number }) {
         <div className="grid grid-cols-[1fr_1.3fr] items-start gap-4">
           <Card>
             <div className="flex items-center gap-2">
-              <Badge tone={workSttsTone(work.workSttsCd)}>
-                {WORK_STTS_NM[work.workSttsCd]}
+              <Badge tone={workSttsTone(work.workStatus)}>
+                {WORK_STTS_NM[work.workStatus]}
               </Badge>
-              <div className="text-[14px] text-n400">
-                {WORK_TYPE_NM[work.workTypeCd]}
-              </div>
+              <div className="text-[14px] text-n400">{WORK_TYPE_NM[work.workType]}</div>
             </div>
-            <div className="mt-2 text-[23px] font-medium">{oper?.operTtl ?? "-"}</div>
+            <div className="mt-2 text-[23px] font-medium">{work.title}</div>
             <div className="mt-3 flex items-center gap-[10px]">
               <ProgressBar value={prgrs} height={6} />
               <div className="text-[14px] text-accent">{prgrs}%</div>
@@ -139,21 +172,17 @@ export function WorkDetailPage({ workId }: { workId: number }) {
               items={[
                 {
                   k: "운영_ID",
-                  v: <span className="font-mono text-[13.5px]">{work.operId}</span>,
+                  v: <span className="font-mono text-[13.5px]">{work.operationId}</span>,
                 },
-                {
-                  k: "운영_유형",
-                  v: oper ? OPER_TYPE_NM[oper.operTypeCd] : "-",
-                },
-                { k: "운영_제목", v: oper?.operTtl ?? "-" },
-                {
-                  k: "우선_순위",
-                  v: oper ? PRRTY_RNK_NM[oper.prrtyRnkCd] : "-",
-                },
-                { k: "담당자_ID", v: mbrNmOf(oper?.picId) },
+                { k: "운영_유형", v: OPER_TYPE_NM[work.operationType] },
+                { k: "운영_제목", v: work.title },
+                { k: "우선_순위", v: PRRTY_RNK_NM[work.priority] },
+                { k: "담당자", v: work.owner?.name || "-" },
+                // 이관 데이터는 등록자가 없다 — 서버가 null로 내린다
+                { k: "등록자", v: work.registrant?.name || "-" },
                 {
                   k: "기간",
-                  v: `${formatDt(oper?.bgngDt ?? null)} ~ ${formatDt(oper?.endDt ?? null)}`,
+                  v: `${formatDt(work.startAt) || "-"} ~ ${formatDt(work.endAt) || "-"}`,
                 },
               ]}
             />
@@ -166,19 +195,19 @@ export function WorkDetailPage({ workId }: { workId: number }) {
                   k: "업무_ID",
                   v: <span className="font-mono text-[13.5px]">{work.workId}</span>,
                 },
-                { k: "업무_유형", v: WORK_TYPE_NM[work.workTypeCd] },
-                { k: "업무_상태", v: WORK_STTS_NM[work.workSttsCd] },
+                { k: "업무_유형", v: WORK_TYPE_NM[work.workType] },
+                { k: "업무_상태", v: WORK_STTS_NM[work.workStatus] },
                 { k: "업무_진행_률", v: `${prgrs}%` },
-                { k: "총평_내용", v: work.grvwCn || "-" },
+                { k: "총평_내용", v: work.generalReview || "-" },
               ]}
             />
           </Card>
 
           <Card>
-            <SectionLabel className="mb-3">하위 업무</SectionLabel>
+            <SectionLabel className="mb-3">하위 업무 {work.subWorkCount}건</SectionLabel>
             <GridTable
               columns={columns}
-              rows={subs}
+              rows={work.subWorks}
               rowKey={(sw) => String(sw.subWorkId)}
               onRowClick={(sw) => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
               dense

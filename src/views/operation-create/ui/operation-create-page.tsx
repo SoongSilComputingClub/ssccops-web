@@ -9,6 +9,7 @@ import { useSessionStore } from "@/entities/session";
 import { useSubWorkStore } from "@/entities/sub-work";
 import { crtrAmtText, useSubWorkTypeStore } from "@/entities/sub-work-type";
 import { useWorkStore } from "@/entities/work";
+import { useCreateWork } from "@/features/work";
 import {
   ATND_TRGT_CDS,
   ATND_TRGT_NM,
@@ -66,7 +67,7 @@ type AgendaDraft = Pick<MtgDtl, "agndNm" | "prcsSeCd" | "operId" | "agndCn">;
 
 export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }) {
   const router = useRouter();
-  const { works, addWork } = useWorkStore();
+  const works = useWorkStore((s) => s.works);
   const { subWorks, addSubWork, addSubWorkPicAltmnt, addChckArtcls } =
     useSubWorkStore();
   const { opers, addOper } = useOperStore();
@@ -75,6 +76,9 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
   const subWorkTypes = useSubWorkTypeStore((s) => s.subWorkTypes);
   const mbrs = useMbrStore((s) => s.mbrs);
   const sessionMbrId = useSessionStore((s) => s.mbrId);
+  /* 업무(WORK)만 서버로 나간다 (#30). 하위 업무·회의는 아직 목 스토어에 쌓인다 */
+  const sessionMember = useSessionStore((s) => s.member);
+  const workCreation = useCreateWork();
 
   const kinds: OperTypeCd[] = fixedWorkId ? ["SUB_WORK"] : ["WORK", "MEETING"];
   const [operTypeCd, setOperTypeCd] = useState<OperTypeCd>(kinds[0]);
@@ -118,11 +122,49 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
     })),
   ];
 
+  /*
+   * 업무 등록 (OPS-002 · POST /v1/works).
+   *
+   * 담당자는 **로그인한 회원 본인**이다. 서버에 회원 목록 API가 없어 다른 회원을 고를 수
+   * 없고, 목 회원 목록의 mbrId를 그대로 보내면 서버가 실재하지 않는 회원으로 보고 400
+   * (담당자로 지정할 수 없는 회원입니다)으로 끊는다. 담당자 위임은 회원 목록 API가 생긴 뒤에
+   * 붙인다 — 그때까지 화면에도 고른 척하는 셀렉트를 두지 않는다.
+   *
+   * 업무_상태·진행률·등록자는 보내지 않는다. 서버가 각각 기획(PLANNING)·집계값·인증 주체로
+   * 정하며, 화면이 값을 만들어 보내면 서버가 무시하는 필드가 늘 뿐이다.
+   */
+  const submitWork = async () => {
+    if (!sessionMember) {
+      flash("회원 정보를 확인할 수 없습니다. 다시 로그인해주세요");
+      return;
+    }
+
+    const { workId, message } = await workCreation.create({
+      title: operTtl.trim(),
+      itemType: workTypeCd,
+      ownerId: sessionMember.memberId,
+      startAt: fromInput(bgngDt, true),
+      endAt: endDt ? fromInput(endDt, true) : null,
+      priority: prrtyRnkCd,
+      review: grvwCn.trim() || null,
+    });
+
+    if (!message) return; // 진행 중 중복 클릭 — 아무것도 보내지 않았다
+    flash(message);
+    if (workId) router.replace(ROUTES.workDetail(workId));
+  };
+
   const submit = () => {
     if (!operTtl.trim() || !bgngDt) {
       flash("운영_제목 · 시작_일시는 필수입니다");
       return;
     }
+
+    if (operTypeCd === "WORK") {
+      void submitWork();
+      return;
+    }
+
     const operDraft = {
       operTypeCd,
       operTtl: operTtl.trim(),
@@ -133,20 +175,6 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
       picId,
       delDt: null,
     };
-
-    if (operTypeCd === "WORK") {
-      const operId = addOper(operDraft);
-      const newWorkId = addWork({
-        operId,
-        workTypeCd,
-        workSttsCd: "PLANNING",
-        grvwCn: grvwCn.trim() || null,
-        workPrgrsRt: 0,
-      });
-      flash("업무를 등록했습니다");
-      router.replace(ROUTES.workDetail(newWorkId));
-      return;
-    }
 
     if (operTypeCd === "SUB_WORK") {
       if (!parentWorkId) {
@@ -259,17 +287,31 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
                   }
                 />
               </Field>
-              <Field label="담당자_ID">
-                <SelectField
-                  value={String(picId)}
-                  onChange={(e) => setPicId(Number(e.target.value))}
-                >
-                  {mbrs.map((m) => (
-                    <option key={m.mbrId} value={m.mbrId}>
-                      {m.mbrNm}
-                    </option>
-                  ))}
-                </SelectField>
+              {/*
+                업무는 담당자를 고르지 않고 본인으로 고정한다 — 서버에 회원 목록 API가 없어
+                고를 후보를 받아올 데가 없고, 목 회원의 mbrId를 보내면 400으로 끊긴다.
+                회의·하위 업무는 아직 목 데이터라 종전대로 셀렉트를 둔다.
+              */}
+              <Field label="담당자">
+                {operTypeCd === "WORK" ? (
+                  <div className="pt-[6px]">
+                    <div className="text-[15px]">{sessionMember?.name ?? "-"}</div>
+                    <div className="mt-1 text-[13px] text-n500">
+                      본인으로 등록됩니다 · 담당자 위임은 추후 지원
+                    </div>
+                  </div>
+                ) : (
+                  <SelectField
+                    value={String(picId)}
+                    onChange={(e) => setPicId(Number(e.target.value))}
+                  >
+                    {mbrs.map((m) => (
+                      <option key={m.mbrId} value={m.mbrId}>
+                        {m.mbrNm}
+                      </option>
+                    ))}
+                  </SelectField>
+                )}
               </Field>
               <Field label="우선_순위_코드">
                 <div className="flex gap-[7px] pt-[6px]">
@@ -575,8 +617,13 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
         </div>
 
         <div className="mt-5">
-          <Button className="px-[26px] py-[11px]" onClick={submit}>
-            {OPER_TYPE_NM[operTypeCd]} 등록
+          {/* 등록은 되돌릴 API가 없다 — 진행 중에는 눌리지 않게 막는다 (연타 = 업무 중복 생성) */}
+          <Button
+            className="px-[26px] py-[11px]"
+            onClick={submit}
+            disabled={workCreation.pending}
+          >
+            {workCreation.pending ? "등록하는 중…" : `${OPER_TYPE_NM[operTypeCd]} 등록`}
           </Button>
         </div>
       </PageBody>
