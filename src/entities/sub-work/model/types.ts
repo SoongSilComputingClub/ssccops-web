@@ -227,6 +227,28 @@ export interface SubWorkChecklistUpdate {
   checklistSummary: SubWorkChecklistSummary;
 }
 
+/**
+ * 정족수 승인 투표 선택지 (OPS-015). 기권은 없다 — 승인함 화면에 기권 버튼이 없다
+ * (서버 VoteChoice 주석).
+ */
+export type VoteChoice = "AGREE" | "DISAGREE";
+
+/**
+ * 투표 결과 (OPS-015).
+ *
+ * `met`이 true여도 업무_상태·승인_상태는 그대로다 — 정족수는 승인자를 대체하지 않는다.
+ * `approvalSequence`는 회차다. 반려 후 재상정되면 집계가 초기화되는데, 화면이 이전 회차의
+ * 표를 이번 회차의 선택 상태로 잘못 그리지 않으려면 이 값이 필요하다.
+ */
+export interface SubWorkVoteResult {
+  subWorkId: number;
+  myVote: VoteChoice;
+  met: boolean;
+  currentCount: number;
+  requiredCount: number;
+  approvalSequence: number;
+}
+
 /* ── 목록 (ssccops-server OPS-008 · #28·#74·ssccops-web#41) ──── */
 
 /** 하위 업무 목록의 '상위 업무' 칸 — 배지 문구와 상세(OPS-003)로 갈 식별자만 담는다 */

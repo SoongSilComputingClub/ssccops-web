@@ -13,7 +13,9 @@ export type {
   SubWorkSttsHstry,
   SubWorkTransition,
   SubWorkTransitionResult,
+  SubWorkVoteResult,
   SubWorkWorkRef,
+  VoteChoice,
 } from "./model/types";
 export {
   useSubWorkStore,
@@ -33,6 +35,7 @@ export {
   transitionSubWork,
   updateSubWork,
   updateSubWorkChecklistItem,
+  voteOnSubWork,
 } from "./api/sub-works";
 export type {
   SubWorkCreateInput,

@@ -17,6 +17,8 @@ import type {
   SubWorkRejection,
   SubWorkTransition,
   SubWorkTransitionResult,
+  SubWorkVoteResult,
+  VoteChoice,
 } from "../model/types";
 
 /*
@@ -34,8 +36,9 @@ import type {
  * 사람인가'가 아니라 '이 건의 승인자 본인인가'라 건마다 답이 달라진다. 그 판정은 웹이 역할
  * 이름으로 다시 계산하지 않고 상세 응답의 canApprove·canReject를 그대로 쓴다.
  *
- * 투표(OPS-015)는 아직 여기 없다. 승인함은 목 스토어를 쓰며 그 API가 붙는 순간 같은 파일에
- * 이어 쓴다.
+ * 투표(OPS-015)도 여기 있다 — 승인함(ssccops-web#45)이 이 파일의 voteOnSubWork를 쓴다.
+ * 투표 자격(운영진이면 누구나)은 승인·반려 자격과 또 다르다(서버 ApprovalAuthorityPolicy.
+ * requireStaff) — 화면은 그 구분도 판정하지 않고 서버가 던지는 403을 그대로 문구로 옮긴다.
  */
 
 /** 외부_URL_주소 최대 길이 (sub_work.otsd_url_addr 주소V200) — 서버 400을 기다리지 않고 먼저 걸러 준다 */
@@ -571,6 +574,51 @@ export async function transitionSubWork(
     isSelfApproval: res.isSelfApproval === true,
     completedAt: res.completedAt,
     changedAt: res.changedAt,
+  };
+}
+
+interface SubWorkVoteResponse {
+  subWorkId: number | null;
+  myVote: VoteChoice | null;
+  met: boolean | null;
+  currentCount: number | null;
+  requiredCount: number | null;
+  approvalSequence: number | null;
+}
+
+/**
+ * POST /v1/sub-works/{subWorkId}/approvals/votes — 정족수 승인 투표 (OPS-015).
+ *
+ * 승인함 화면 카드의 `동의`·`부동의` 버튼이 부른다. 표를 새로 만들든 기존 표를 바꾸든 결과가
+ * 같은 멱등한 호출이라 실패해도 안전하게 재시도할 수 있다(서버 SubWorkController 주석).
+ *
+ * 정족수를 쓰지 않는 유형·검토 단계가 아닌 건·이미 처리된 건은 서버가 409
+ * `TRANSITION_NOT_ALLOWED`로 막는다 — 화면은 대기 탭에서 정족수가 필요한 카드에만 버튼을
+ * 그려 이 경로를 피한다.
+ */
+export async function voteOnSubWork(
+  subWorkId: number,
+  vote: VoteChoice,
+): Promise<SubWorkVoteResult> {
+  const res = await apiFetch<SubWorkVoteResponse | null>(
+    `/v1/sub-works/${subWorkId}/approvals/votes`,
+    { method: "POST", body: JSON.stringify({ vote }) },
+  );
+
+  if (!res?.myVote) {
+    throw new ApiError(
+      SUB_WORK_ERROR.VALIDATION_FAILED,
+      "투표는 반영됐지만 서버가 결과를 돌려주지 않았습니다. 화면을 새로고침해주세요",
+    );
+  }
+
+  return {
+    subWorkId: res.subWorkId ?? subWorkId,
+    myVote: res.myVote,
+    met: res.met === true,
+    currentCount: res.currentCount ?? 0,
+    requiredCount: res.requiredCount ?? 0,
+    approvalSequence: res.approvalSequence ?? 0,
   };
 }
 
