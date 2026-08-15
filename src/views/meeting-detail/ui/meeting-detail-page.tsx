@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMbrStore } from "@/entities/member";
-import { mtgDtlsOf, mtgSttsTone, prcsSeTone, useMtgStore } from "@/entities/meeting";
-import { findOper, useOperStore } from "@/entities/oper";
-import { chckPrgrsRt, subWorkSttsBadge, useSubWorkStore } from "@/entities/sub-work";
-import { useWorkStore } from "@/entities/work";
+import { fetchSubWork } from "@/entities/sub-work";
+import { fetchWork } from "@/entities/work";
+import { mtgSttsTone, prcsSeTone, type MeetingAgenda, type MeetingTransition } from "@/entities/meeting";
+import { CAPABILITY } from "@/entities/session";
+import { useSessionStore } from "@/entities/session";
+import { useCan } from "@/features/auth";
+import { useMeetingActions, useMeetingDetail } from "@/features/meeting";
+import { useSubWorkList } from "@/features/sub-work";
+import { useWorkList } from "@/features/work";
 import {
   ATND_TRGT_NM,
   MTG_SE_NM,
@@ -31,90 +35,369 @@ import {
   PageBody,
   PageHeader,
   SectionLabel,
+  Sheet,
   TextArea,
   TextField,
   flash,
 } from "@/shared/ui";
 
-/** 안건으로 연결할 수 있는 운영 건 */
-interface OperRef {
-  operId: number;
-  code: "업무" | "하위 업무";
+/*
+ * 회의 상세 (ssccops-server OPS-025 조회 · OPS-026 전이 · OPS-027~029 안건, #83 ·
+ * ssccops-web#56).
+ *
+ * 좌측 상세 카드와 우측 안건 목록을 **이 한 번의 호출로** 채운다(work-detail-page.tsx와
+ * 같은 이행). 목 스토어에서 oper·mbr 테이블을 조합하던 계산은 전부 사라졌다.
+ *
+ * ── 버튼은 '지금 할 수 있는 전이' 하나만 그린다 ────────────────────
+ * 전이표(TR-M1~M4)는 예정 →(개회) 진행 →(회의록작성) 회의록작성 →(종료) 종료이고, 취소는
+ * 예정에서만 할 수 있다. 개회·회의록작성·종료는 **회의 책임자 본인만** 할 수 있어(서버
+ * MeetingEntity.applyTransition) 그 버튼은 책임자가 아닌 회원에게는 아예 그리지 않는다 —
+ * 눌러도 403이 날 버튼을 보여주는 대신, 책임자가 누구인지는 상세 카드에 이미 나와 있다.
+ */
+
+/** 안건으로 연결할 수 있는 운영 건 후보 — 업무·하위 업무 목록 카드에서 뽑은 표시용 값 */
+interface AgendaTargetOption {
+  kind: "WORK" | "SUB_WORK";
+  /** work_id 또는 sub_work_id — oper_id가 아니다. 제출 시점에 상세 조회로 oper_id를 구한다 */
+  refId: number;
   ttl: string;
   meta: string;
-  open: () => void;
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="grid grid-cols-[1fr_1.6fr] items-start gap-4">
+      <Card className="animate-pulse">
+        <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
+        <div className="mt-3 h-[28px] w-3/5 rounded bg-black/5" />
+        <div className="mt-6 h-[220px] w-full rounded bg-black/5" />
+      </Card>
+      <Card className="animate-pulse">
+        <div className="h-[18px] w-[80px] rounded bg-black/5" />
+        <div className="mt-4 h-[220px] w-full rounded bg-black/5" />
+      </Card>
+    </div>
+  );
+}
+
+/** 취소 사유 입력 시트 — 사유는 필수다(서버 422 REASON_REQUIRED) */
+function CancelSheet({
+  open,
+  onClose,
+  onCancel,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCancel: (reason: string) => void;
+}) {
+  const [reason, setReason] = useState("");
+
+  if (!open) return null;
+
+  const close = () => {
+    setReason("");
+    onClose();
+  };
+
+  return (
+    <Sheet
+      open
+      title="회의 취소"
+      hint="취소 사유를 입력하세요 (필수)"
+      onClose={close}
+      onOk={() => {
+        if (!reason.trim()) {
+          flash("취소 사유를 입력해야 합니다");
+          return;
+        }
+        onCancel(reason.trim());
+        close();
+      }}
+      okLabel="취소"
+    >
+      <TextField
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="예: 우천으로 일정 취소"
+        maxLength={500}
+        autoFocus
+      />
+    </Sheet>
+  );
+}
+
+function AgendaCard({
+  agenda,
+  editable,
+  pending,
+  onUpdate,
+  onWithdraw,
+  withdrawable,
+}: {
+  agenda: MeetingAgenda;
+  editable: boolean;
+  pending: boolean;
+  onUpdate: (content: string, resultContent: string, processStatus: PrcsSeCd) => void;
+  onWithdraw: () => void;
+  withdrawable: boolean;
+}) {
+  const router = useRouter();
+  const [content, setContent] = useState(agenda.content ?? "");
+  const [resultContent, setResultContent] = useState(agenda.resultContent ?? "");
+  const dirty = content !== (agenda.content ?? "") || resultContent !== (agenda.resultContent ?? "");
+
+  return (
+    <div className="rounded-[12px] border border-line p-[14px]">
+      <div className="flex items-center gap-2">
+        <div className="text-[15px] font-semibold">안건 {agenda.agendaOrder ?? "-"}</div>
+        <span className="font-mono text-[12px] text-n500">회의_상세 #{agenda.agendaId}</span>
+        <div className="flex-1" />
+        <span className="text-[12.5px] text-n500">제출 {agenda.submitter?.name || "-"}</span>
+        {editable && withdrawable && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={onWithdraw}
+            className="cursor-pointer text-[13.5px] text-n400 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            삭제
+          </button>
+        )}
+      </div>
+      {agenda.targetOperation ? (
+        <div
+          onClick={() =>
+            router.push(
+              agenda.targetOperation!.operationType === "WORK"
+                ? ROUTES.workDetail(agenda.targetOperation!.operationId)
+                : ROUTES.subWorkDetail(agenda.targetOperation!.operationId),
+            )
+          }
+          className="mt-3 cursor-pointer rounded-[10px] bg-bg p-3 transition-opacity hover:opacity-80"
+        >
+          <div className="flex items-center gap-2">
+            <Badge tone={agenda.targetOperation.operationType === "WORK" ? "blue" : "grey"}>
+              {OPER_TYPE_NM[agenda.targetOperation.operationType]}
+            </Badge>
+            <span className="font-mono text-[12.5px] text-n500">
+              운영 #{agenda.targetOperation.operationId}
+            </span>
+          </div>
+          <div className="mt-1 text-[15.5px] font-semibold">{agenda.targetOperation.title}</div>
+        </div>
+      ) : (
+        <div className="mt-3 rounded-[10px] bg-bg p-3 text-[14px] text-n500">
+          {agenda.agendaName ?? "제목 없음"} · 연결된 운영 없음
+        </div>
+      )}
+      <div className="mt-3 flex gap-[7px]">
+        {PRCS_SE_CDS.map((cd) => (
+          <Chip
+            key={cd}
+            active={agenda.processStatus === cd}
+            onClick={() => editable && onUpdate(content, resultContent, cd)}
+          >
+            {PRCS_SE_NM[cd]}
+          </Chip>
+        ))}
+        <div className="flex-1" />
+        <Badge tone={prcsSeTone(agenda.processStatus)}>
+          {agenda.processStatus ? PRCS_SE_NM[agenda.processStatus] : "-"}
+        </Badge>
+      </div>
+      <div className="mt-3">
+        <div className="mb-[6px] text-[13.5px] text-n400">안건_내용</div>
+        <TextArea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="논의할 내용을 작성하세요"
+          disabled={!editable}
+        />
+      </div>
+      <div className="mt-3">
+        <div className="mb-[6px] text-[13.5px] text-n400">결과_내용</div>
+        <TextField
+          value={resultContent}
+          onChange={(e) => setResultContent(e.target.value)}
+          placeholder="예: 원안 가결"
+          disabled={!editable}
+        />
+      </div>
+      {editable && dirty && (
+        <Button
+          className="mt-3"
+          size="sm"
+          disabled={pending}
+          onClick={() => onUpdate(content, resultContent, agenda.processStatus ?? "PENDING")}
+        >
+          안건 내용 저장
+        </Button>
+      )}
+    </div>
+  );
 }
 
 export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
   const router = useRouter();
-  const { mtgs, mtgDtls, updateMtgDtl, addMtgDtl, removeMtgDtl } = useMtgStore();
-  const opers = useOperStore((s) => s.opers);
-  const works = useWorkStore((s) => s.works);
-  const { subWorks, subWorkChckLists } = useSubWorkStore();
-  const mbrs = useMbrStore((s) => s.mbrs);
+  const { meeting, status, errorMessage, reload, applyAgendaUpsert, applyAgendaRemoval } =
+    useMeetingDetail(mtgId);
+  const { pending, transition, addAgenda, updateAgenda, withdrawAgenda } =
+    useMeetingActions(mtgId);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const sessionMember = useSessionStore((s) => s.member);
+  const canManage = useCan(CAPABILITY.MEETING_MANAGE);
 
-  const [newOperId, setNewOperId] = useState<number | null>(null);
-  const [newPrcsSeCd, setNewPrcsSeCd] = useState<PrcsSeCd>("PENDING");
-  const [newAgndCn, setNewAgndCn] = useState("");
+  /*
+   * 안건으로 연결할 업무·하위 업무 후보. 목록 API(OPS-008·OPS-020)는 카드에 필요한 값만
+   * 내리고 oper_id를 담지 않으므로, 고른 뒤(제출 시점에) 상세 조회로 operationId를 다시
+   * 구한다 — resolveTargetOperationId 참고.
+   */
+  const workList = useWorkList();
+  const subWorkList = useSubWorkList("전체");
+  const [selectedTarget, setSelectedTarget] = useState<AgendaTargetOption | null>(null);
+  const [resolvingTarget, setResolvingTarget] = useState(false);
+  const [newProcessStatus, setNewProcessStatus] = useState<PrcsSeCd>("PENDING");
+  const [newContent, setNewContent] = useState("");
 
-  const mtg = mtgs.find((m) => m.mtgId === mtgId);
-
-  if (!mtg) {
+  if (status !== "ready" || !meeting) {
     return (
       <>
         <PageHeader title="회의 상세" showBack />
         <PageBody>
-          <EmptyState message="회의를 찾을 수 없습니다." />
+          {status === "loading" && <DetailSkeleton />}
+          {status === "not-found" && (
+            <EmptyState
+              message="회의를 찾을 수 없습니다. 이미 삭제된 회의일 수 있습니다."
+              action={{ label: "회의 목록", onClick: () => router.replace(ROUTES.meetings) }}
+            />
+          )}
+          {status !== "loading" && status !== "not-found" && (
+            <EmptyState
+              message={errorMessage || "회의를 불러오지 못했습니다."}
+              action={{ label: "다시 시도", onClick: reload }}
+            />
+          )}
         </PageBody>
       </>
     );
   }
 
-  const oper = findOper(opers, mtg.operId);
-  const agenda = mtgDtlsOf(mtgDtls, mtg.mtgId);
-  const mbrNmOf = (mbrId: number | undefined) =>
-    mbrs.find((m) => m.mbrId === mbrId)?.mbrNm ?? "-";
+  const isChair =
+    sessionMember != null &&
+    meeting.personInCharge != null &&
+    sessionMember.memberId === meeting.personInCharge.memberId;
+  const isEditable = meeting.meetingStatus !== "CLOSED" && meeting.meetingStatus !== "CANCELED";
+  const isWithdrawable = meeting.meetingStatus === "SCHEDULED";
 
-  const operRefs: OperRef[] = [
-    ...works.map((w) => ({
-      operId: w.operId,
-      code: "업무" as const,
-      ttl: findOper(opers, w.operId)?.operTtl ?? "-",
-      meta: `업무_유형 ${WORK_TYPE_NM[w.workTypeCd]} · 업무_상태 ${WORK_STTS_NM[w.workSttsCd]}`,
-      open: () => router.push(ROUTES.workDetail(w.workId)),
-    })),
-    ...subWorks.map((sw) => ({
-      operId: sw.operId,
-      code: "하위 업무" as const,
-      ttl: sw.subWorkTtl,
-      meta: `${subWorkSttsBadge(sw).label} · 진행 ${chckPrgrsRt(subWorkChckLists, sw.subWorkId)}%`,
-      open: () => router.push(ROUTES.subWorkDetail(sw.subWorkId)),
-    })),
-  ];
-  const operRefOf = (operId: number | null) =>
-    operId === null ? undefined : operRefs.find((o) => o.operId === operId);
+  /*
+   * 전이 뒤에는 상세를 통째로 다시 부른다 — 응답에는 회의_상태밖에 없는데 화면은 미처리
+   * 안건 유무처럼 다른 값과 맞물려 그려야 하기 때문이다(use-sub-work-detail의 같은 판단).
+   */
+  const runTransition = async (action: MeetingTransition, reason?: string) => {
+    const { result, message } = await transition(action, reason ?? null);
+    if (message) flash(message);
+    if (result) reload();
+  };
 
-  const submitAgenda = () => {
-    if (newOperId === null) {
-      flash("연결할 운영을 선택하세요");
+  /*
+   * 고른 업무·하위 업무의 oper_id를 구한다. 목록 응답(OPS-008·OPS-020)에는 이 값이 없어
+   * 상세 조회 한 번이 더 필요하다 — work_id·sub_work_id와 oper_id는 다른 식별자다.
+   */
+  const resolveTargetOperationId = async (target: AgendaTargetOption): Promise<number | null> => {
+    try {
+      return target.kind === "WORK"
+        ? (await fetchWork(target.refId)).operationId
+        : (await fetchSubWork(target.refId)).operationId;
+    } catch {
+      return null;
+    }
+  };
+
+  const submitNewAgenda = async () => {
+    if (!selectedTarget) {
+      flash("안건으로 연결할 업무 또는 하위 업무를 선택하세요");
       return;
     }
-    const ref = operRefOf(newOperId);
-    addMtgDtl({
-      mtgId: mtg.mtgId,
-      agndNm: ref?.ttl ?? null,
-      prcsSeCd: newPrcsSeCd,
-      agndSeq: agenda.length + 1,
-      operId: newOperId,
-      agndCn: newAgndCn.trim() || null,
-      rsltCn: null,
-      prsnrId: mtg.mtgRbprsnId,
+
+    setResolvingTarget(true);
+    const targetOperationId = await resolveTargetOperationId(selectedTarget);
+    setResolvingTarget(false);
+    if (targetOperationId === null) {
+      flash("선택한 항목을 다시 불러오지 못했습니다. 목록을 새로고침한 뒤 다시 시도해주세요");
+      return;
+    }
+
+    const { result, message } = await addAgenda({
+      targetOperationId,
+      agendaName: null,
+      processStatus: newProcessStatus,
+      content: newContent.trim() || null,
     });
-    flash(`안건을 추가했습니다 · ${ref?.ttl ?? ""}`);
-    setNewOperId(null);
-    setNewPrcsSeCd("PENDING");
-    setNewAgndCn("");
+    if (message) flash(message);
+    if (result) {
+      applyAgendaUpsert(result);
+      setSelectedTarget(null);
+      setNewProcessStatus("PENDING");
+      setNewContent("");
+    }
   };
+
+  const saveAgenda = async (
+    agendaId: number,
+    content: string,
+    resultContent: string,
+    processStatus: PrcsSeCd,
+  ) => {
+    const { result, message } = await updateAgenda(agendaId, {
+      content: content || null,
+      resultContent: resultContent || null,
+      processStatus,
+    });
+    // 처리 구분 칩은 즉시 반영되는 것 자체가 결과다 — 실패했을 때만 문구가 필요하다
+    if (message) flash(message);
+    if (result) applyAgendaUpsert(result);
+  };
+
+  const removeAgenda = async (agendaId: number) => {
+    const { result, message } = await withdrawAgenda(agendaId);
+    if (message) flash(message);
+    if (result) applyAgendaRemoval(agendaId);
+  };
+
+  const targetOptions: AgendaTargetOption[] = [
+    ...workList.works.map((w) => ({
+      kind: "WORK" as const,
+      refId: w.workId,
+      ttl: w.title,
+      meta: `${WORK_TYPE_NM[w.workType]} · ${WORK_STTS_NM[w.workStatus]}`,
+    })),
+    ...subWorkList.subWorks.map((sw) => ({
+      kind: "SUB_WORK" as const,
+      refId: sw.subWorkId,
+      ttl: sw.title,
+      meta:
+        `${sw.subWorkTypeName} · ${WORK_STTS_NM[sw.workStatus]}` +
+        (sw.approvalStatus === "PENDING" ? " · 승인 대기" : ""),
+    })),
+  ];
+  const isSameTarget = (a: AgendaTargetOption, b: AgendaTargetOption) =>
+    a.kind === b.kind && a.refId === b.refId;
+
+  const loadMoreTargets = async (list: "WORK" | "SUB_WORK") => {
+    const message =
+      list === "WORK" ? await workList.loadMore() : await subWorkList.loadMore();
+    if (message) flash(message);
+  };
+
+  /* 지금 상태에서 회의 책임자가 누를 수 있는 전이 하나. 예정 → 개회, 진행 → 회의록작성, 회의록작성 → 종료 */
+  const chairAction: { label: string; action: MeetingTransition } | null =
+    meeting.meetingStatus === "SCHEDULED"
+      ? { label: "개회", action: "OPEN" }
+      : meeting.meetingStatus === "IN_PROGRESS"
+        ? { label: "회의록작성", action: "WRITE_MINUTES" }
+        : meeting.meetingStatus === "MINUTES"
+          ? { label: "종료", action: "CLOSE" }
+          : null;
 
   return (
     <>
@@ -123,14 +406,34 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
         <div className="grid grid-cols-[1fr_1.6fr] items-start gap-4">
           <Card>
             <div className="flex items-center gap-2">
-              <Badge tone={mtgSttsTone(mtg.mtgSttsCd)}>
-                {mtg.mtgSttsCd ? MTG_STTS_NM[mtg.mtgSttsCd] : "-"}
+              <Badge tone={mtgSttsTone(meeting.meetingStatus)}>
+                {meeting.meetingStatus ? MTG_STTS_NM[meeting.meetingStatus] : "-"}
               </Badge>
               <span className="rounded-[6px] bg-bg px-[7px] py-[2px] font-mono text-[12.5px] text-n400">
-                운영_ID · {mtg.operId}
+                운영_ID · {meeting.operationId}
               </span>
+              <div className="flex-1" />
+              {isChair && chairAction && (
+                <Button
+                  size="sm"
+                  disabled={pending}
+                  onClick={() => void runTransition(chairAction.action)}
+                >
+                  {chairAction.label}
+                </Button>
+              )}
+              {canManage && meeting.meetingStatus === "SCHEDULED" && (
+                <Button
+                  variant="ghost-danger"
+                  size="sm"
+                  disabled={pending}
+                  onClick={() => setCancelOpen(true)}
+                >
+                  취소
+                </Button>
+              )}
             </div>
-            <div className="mt-2 text-[22px] font-medium">{oper?.operTtl ?? "-"}</div>
+            <div className="mt-2 text-[22px] font-medium">{meeting.title}</div>
 
             <SectionLabel className="mt-5">상위 속성 · oper</SectionLabel>
             <KeyValueGrid
@@ -139,13 +442,13 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
               items={[
                 {
                   k: "운영_ID",
-                  v: <span className="font-mono text-[13.5px]">{mtg.operId}</span>,
+                  v: <span className="font-mono text-[13.5px]">{meeting.operationId}</span>,
                 },
-                { k: "운영_유형", v: oper ? OPER_TYPE_NM[oper.operTypeCd] : "-" },
-                { k: "운영_제목", v: oper?.operTtl ?? "-" },
-                { k: "시작_일시", v: formatDt(oper?.bgngDt ?? null) || "-" },
-                { k: "우선_순위", v: oper ? PRRTY_RNK_NM[oper.prrtyRnkCd] : "-" },
-                { k: "담당자_ID", v: mbrNmOf(oper?.picId) },
+                { k: "운영_유형", v: OPER_TYPE_NM[meeting.operationType] },
+                { k: "운영_제목", v: meeting.title },
+                { k: "시작_일시", v: formatDt(meeting.startAt) || "-" },
+                { k: "우선_순위", v: PRRTY_RNK_NM[meeting.priority] },
+                { k: "담당자", v: meeting.personInCharge?.name || "-" },
               ]}
             />
 
@@ -155,183 +458,154 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
               items={[
                 {
                   k: "회의_ID",
-                  v: <span className="font-mono text-[13.5px]">{mtg.mtgId}</span>,
+                  v: <span className="font-mono text-[13.5px]">{meeting.meetingId}</span>,
                 },
-                { k: "회의_구분", v: mtg.mtgSeCd ? MTG_SE_NM[mtg.mtgSeCd] : "-" },
-                { k: "회의_장소_명", v: mtg.mtgPlcNm ?? "-" },
-                { k: "회의_책임자", v: mbrNmOf(mtg.mtgRbprsnId) },
+                {
+                  k: "회의_구분",
+                  v: meeting.meetingCategory ? MTG_SE_NM[meeting.meetingCategory] : "-",
+                },
+                { k: "회의_장소_명", v: meeting.location ?? "-" },
+                { k: "회의_책임자", v: meeting.personInCharge?.name || "-" },
                 {
                   k: "참석_대상",
-                  v: mtg.atndTrgtCd ? ATND_TRGT_NM[mtg.atndTrgtCd] : "-",
+                  v: meeting.attendeeScope ? ATND_TRGT_NM[meeting.attendeeScope] : "-",
                 },
-                { k: "내부_회의_상세", v: mtg.insdMtgDtlCn ?? "-" },
-                { k: "외부_회의_상세", v: mtg.otsdMtgDtlCn ?? "-" },
+                { k: "내부_회의_상세", v: meeting.internalDetail ?? "-" },
+                { k: "외부_회의_상세", v: meeting.externalSummary ?? "-" },
               ]}
             />
           </Card>
 
           <div className="flex flex-col gap-4">
             <Card>
-              <SectionLabel className="mb-3">안건</SectionLabel>
-              <div className="flex flex-col gap-4">
-                {agenda.map((a) => {
-                  const ref = operRefOf(a.operId);
-                  return (
-                    <div
-                      key={a.mtgDtlId}
-                      className="rounded-[12px] border border-line p-[14px]"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="text-[15px] font-semibold">
-                          안건 {a.agndSeq}
-                        </div>
-                        <span className="font-mono text-[12px] text-n500">
-                          회의_상세 #{a.mtgDtlId}
-                        </span>
-                        <div className="flex-1" />
-                        <span className="text-[12.5px] text-n500">
-                          제출 {mbrNmOf(a.prsnrId)}
-                        </span>
-                        {agenda.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              removeMtgDtl(a.mtgDtlId);
-                              flash("안건을 삭제했습니다");
-                            }}
-                            className="cursor-pointer text-[13.5px] text-n400 hover:text-danger"
-                          >
-                            삭제
-                          </button>
-                        )}
-                      </div>
-                      {ref ? (
-                        <div
-                          onClick={ref.open}
-                          className="mt-3 cursor-pointer rounded-[10px] bg-bg p-3 transition-opacity hover:opacity-80"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Badge tone={ref.code === "업무" ? "blue" : "grey"}>
-                              {ref.code}
-                            </Badge>
-                            <span className="font-mono text-[12.5px] text-n500">
-                              운영 #{ref.operId}
-                            </span>
-                          </div>
-                          <div className="mt-1 text-[15.5px] font-semibold">
-                            {ref.ttl}
-                          </div>
-                          <div className="mt-[2px] text-[13px] text-n500">
-                            {ref.meta}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mt-3 rounded-[10px] bg-bg p-3 text-[14px] text-n500">
-                          {a.agndNm ?? "제목 없음"} · 연결된 운영 없음
-                        </div>
-                      )}
-                      <div className="mt-3 flex gap-[7px]">
-                        {PRCS_SE_CDS.map((cd) => (
-                          <Chip
-                            key={cd}
-                            active={a.prcsSeCd === cd}
-                            onClick={() => updateMtgDtl(a.mtgDtlId, { prcsSeCd: cd })}
-                          >
-                            {PRCS_SE_NM[cd]}
-                          </Chip>
-                        ))}
-                        <div className="flex-1" />
-                        <Badge tone={prcsSeTone(a.prcsSeCd)}>
-                          {a.prcsSeCd ? PRCS_SE_NM[a.prcsSeCd] : "-"}
-                        </Badge>
-                      </div>
-                      <div className="mt-3">
-                        <div className="mb-[6px] text-[13.5px] text-n400">안건_내용</div>
-                        <TextArea
-                          value={a.agndCn ?? ""}
-                          onChange={(e) =>
-                            updateMtgDtl(a.mtgDtlId, {
-                              agndCn: e.target.value || null,
-                            })
-                          }
-                          placeholder="논의할 내용을 작성하세요"
-                        />
-                      </div>
-                      <div className="mt-3">
-                        <div className="mb-[6px] text-[13.5px] text-n400">결과_내용</div>
-                        <TextField
-                          value={a.rsltCn ?? ""}
-                          onChange={(e) =>
-                            updateMtgDtl(a.mtgDtlId, {
-                              rsltCn: e.target.value || null,
-                            })
-                          }
-                          placeholder="예: 원안 가결"
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-
-            <div className="rounded-2xl border border-dashed border-line-strong bg-surface p-[18px]">
-              <div className="text-[16px] font-medium">안건 추가</div>
-              <div className="mt-1 text-[13.5px] text-n500">
-                안건으로 올릴 운영을 선택하고 내용을 작성하세요.
-              </div>
-              <div className="mt-3 flex max-h-[260px] flex-col gap-2 overflow-y-auto">
-                {operRefs.map((ref) => (
-                  <div
-                    key={ref.operId}
-                    onClick={() => setNewOperId(ref.operId)}
-                    className={
-                      newOperId === ref.operId
-                        ? "cursor-pointer rounded-[10px] bg-accent/8 p-3 shadow-[inset_0_0_0_1px_#3182f6]"
-                        : "cursor-pointer rounded-[10px] border border-line p-3 hover:border-accent"
-                    }
-                  >
-                    <div className="flex items-center gap-2">
-                      <Badge tone={ref.code === "업무" ? "blue" : "grey"}>
-                        {ref.code}
-                      </Badge>
-                      <span className="font-mono text-[12.5px] text-n500">
-                        운영 #{ref.operId}
-                      </span>
-                    </div>
-                    <div className="mt-1 text-[15px] font-semibold">{ref.ttl}</div>
-                    <div className="mt-[2px] text-[13px] text-n500">{ref.meta}</div>
-                  </div>
-                ))}
-              </div>
-              {newOperId !== null && (
-                <div className="mt-3 text-[13.5px] text-accent">
-                  선택됨 {operRefOf(newOperId)?.ttl} · 운영 #{newOperId}
+              <SectionLabel className="mb-3">안건 {meeting.agendas.length}건</SectionLabel>
+              {meeting.agendas.length === 0 ? (
+                <EmptyState message="상정된 안건이 없습니다." padding="sm" />
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {meeting.agendas.map((a) => (
+                    <AgendaCard
+                      key={a.agendaId}
+                      agenda={a}
+                      editable={isEditable && canManage}
+                      pending={pending}
+                      withdrawable={isWithdrawable}
+                      onUpdate={(content, resultContent, cd) =>
+                        void saveAgenda(a.agendaId, content, resultContent, cd)
+                      }
+                      onWithdraw={() => void removeAgenda(a.agendaId)}
+                    />
+                  ))}
                 </div>
               )}
-              <div className="mt-3 flex gap-[7px]">
-                {PRCS_SE_CDS.map((cd) => (
-                  <Chip
-                    key={cd}
-                    active={newPrcsSeCd === cd}
-                    onClick={() => setNewPrcsSeCd(cd)}
-                  >
-                    {PRCS_SE_NM[cd]}
-                  </Chip>
-                ))}
+            </Card>
+
+            {isEditable && canManage && (
+              <div className="rounded-2xl border border-dashed border-line-strong bg-surface p-[18px]">
+                <div className="text-[16px] font-medium">안건 추가</div>
+                <div className="mt-1 text-[13.5px] text-n500">
+                  안건으로 올릴 업무 또는 하위 업무를 선택하고 내용을 작성하세요.
+                </div>
+
+                <div className="mt-3 flex max-h-[260px] flex-col gap-2 overflow-y-auto">
+                  {(workList.status === "loading" || subWorkList.status === "loading") && (
+                    <div className="p-3 text-[13.5px] text-n500">불러오는 중입니다</div>
+                  )}
+                  {workList.status === "error" && (
+                    <div className="p-3 text-[13.5px] text-danger">
+                      {workList.errorMessage || "업무 목록을 불러오지 못했습니다."}
+                    </div>
+                  )}
+                  {subWorkList.status === "error" && (
+                    <div className="p-3 text-[13.5px] text-danger">
+                      {subWorkList.errorMessage || "하위 업무 목록을 불러오지 못했습니다."}
+                    </div>
+                  )}
+                  {workList.status === "ready" &&
+                    subWorkList.status === "ready" &&
+                    targetOptions.length === 0 && (
+                      <div className="p-3 text-[13.5px] text-n500">
+                        연결할 수 있는 업무·하위 업무가 없습니다.
+                      </div>
+                    )}
+                  {targetOptions.map((ref) => (
+                    <div
+                      key={`${ref.kind}-${ref.refId}`}
+                      onClick={() => setSelectedTarget(ref)}
+                      className={
+                        selectedTarget && isSameTarget(selectedTarget, ref)
+                          ? "cursor-pointer rounded-[10px] bg-accent/8 p-3 shadow-[inset_0_0_0_1px_#3182f6]"
+                          : "cursor-pointer rounded-[10px] border border-line p-3 hover:border-accent"
+                      }
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge tone={ref.kind === "WORK" ? "blue" : "grey"}>
+                          {ref.kind === "WORK" ? "업무" : "하위 업무"}
+                        </Badge>
+                      </div>
+                      <div className="mt-1 text-[15px] font-semibold">{ref.ttl}</div>
+                      <div className="mt-[2px] text-[13px] text-n500">{ref.meta}</div>
+                    </div>
+                  ))}
+                  {workList.hasNext && (
+                    <button
+                      type="button"
+                      disabled={workList.loadingMore}
+                      onClick={() => void loadMoreTargets("WORK")}
+                      className="cursor-pointer py-1 text-[13.5px] text-accent hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {workList.loadingMore ? "업무 불러오는 중…" : "업무 더 보기"}
+                    </button>
+                  )}
+                  {subWorkList.hasNext && (
+                    <button
+                      type="button"
+                      disabled={subWorkList.loadingMore}
+                      onClick={() => void loadMoreTargets("SUB_WORK")}
+                      className="cursor-pointer py-1 text-[13.5px] text-accent hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {subWorkList.loadingMore ? "하위 업무 불러오는 중…" : "하위 업무 더 보기"}
+                    </button>
+                  )}
+                </div>
+                {selectedTarget && (
+                  <div className="mt-3 text-[13.5px] text-accent">선택됨 · {selectedTarget.ttl}</div>
+                )}
+
+                <div className="mt-3 flex gap-[7px]">
+                  {PRCS_SE_CDS.map((cd) => (
+                    <Chip
+                      key={cd}
+                      active={newProcessStatus === cd}
+                      onClick={() => setNewProcessStatus(cd)}
+                    >
+                      {PRCS_SE_NM[cd]}
+                    </Chip>
+                  ))}
+                </div>
+                <TextArea
+                  value={newContent}
+                  onChange={(e) => setNewContent(e.target.value)}
+                  placeholder="안건_내용 (선택)"
+                  className="mt-3"
+                />
+                <Button
+                  className="mt-3"
+                  disabled={pending || resolvingTarget || !selectedTarget}
+                  onClick={() => void submitNewAgenda()}
+                >
+                  {resolvingTarget ? "연결하는 중…" : "안건 추가"}
+                </Button>
               </div>
-              <TextArea
-                value={newAgndCn}
-                onChange={(e) => setNewAgndCn(e.target.value)}
-                placeholder="안건_내용 (선택)"
-                className="mt-3"
-              />
-              <Button className="mt-3" onClick={submitAgenda}>
-                안건 추가
-              </Button>
-            </div>
+            )}
           </div>
         </div>
+
+        <CancelSheet
+          open={cancelOpen}
+          onClose={() => setCancelOpen(false)}
+          onCancel={(reason) => void runTransition("CANCEL", reason)}
+        />
       </PageBody>
     </>
   );
