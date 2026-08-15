@@ -6,6 +6,7 @@ import { useSessionStore } from "@/entities/session";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useCreateMeeting } from "@/features/meeting";
+import { assignableMemberLabel, useAssignableMembers } from "@/features/member";
 import { useCreateSubWork } from "@/features/sub-work";
 import { useActiveSubWorkTypes } from "@/features/sub-work-type";
 import { useCreateWork, useWorkDetail } from "@/features/work";
@@ -36,6 +37,7 @@ import {
   PageBody,
   PageHeader,
   SectionLabel,
+  SelectField,
   TextArea,
   TextField,
   flash,
@@ -113,11 +115,51 @@ export function OperationCreatePage({
       : ["WORK", "MEETING"];
   const [operTypeCd, setOperTypeCd] = useState<OperTypeCd>(kinds[0]);
 
+  /*
+   * 담당자 후보는 **서버에서 받는다** (#53 · GET /v1/members/assignable). 목 회원 스토어에서
+   * 고르면 화면에 뜨는 이름과 실제로 배정되는 사람이 갈린다 — 목 데이터의 mbrId 1~12는 서버의
+   * 같은 번호와 아무 관계가 없고, `oper.pic_id`·`mtg.mtg_rbprsn_id`가 둘 다 `mbr.mbr_id`를
+   * 가리키는 FK라 엉뚱한 회원에게 배정되거나 400 OWNER_NOT_ACTIVE_MEMBER로 끊긴다. 상위 업무를
+   * 서버에서 다시 받는 것(바로 위)과 같은 이유이며, 그쪽이 이 어긋남을 먼저 겪었다(#36).
+   */
+  const assignable = useAssignableMembers();
+
   // oper 공통 속성
   const [operTtl, setOperTtl] = useState("");
   const [prrtyRnkCd, setPrrtyRnkCd] = useState<PrrtyRnkCd>("NORMAL");
   const [bgngDt, setBgngDt] = useState("");
   const [endDt, setEndDt] = useState("");
+
+  /*
+   * 담당자(oper.pic_id). **아직 고르지 않았음을 null로 둔다** — `mbrs[0]?.mbrId || 1` 같은
+   * 폴백이 곧 잘못된 값이 서버로 나가는 길이었다(#53). 기본값은 세션 본인이지만 그것도 상태에
+   * 미리 넣지 않고 아래에서 파생시킨다: 세션이 늦게 도착하는 화면에서 effect로 밀어 넣으면
+   * 사용자가 이미 고른 값을 덮어쓰는 자리가 생긴다.
+   *
+   * 회의도 이 한 값으로 끝난다 — 회의 책임자는 담당자와 항상 같은 회원이라
+   * (ssccops-web#56) 서버가 personInChargeId 하나로 oper.pic_id·mtg.mtg_rbprsn_id를 채운다.
+   */
+  const [pickedPicId, setPickedPicId] = useState<number | null>(null);
+  const picId = pickedPicId ?? sessionMember?.memberId ?? null;
+
+  /*
+   * **후보 목록에 실제로 있는 값인가.** 세션 본인이라고 해서 통과시키지 않는 것은, 목록이
+   * 아직 안 왔거나 조회에 실패한 상태에서 등록이 그대로 나가면 이 화면을 고친 이유가 사라지기
+   * 때문이다. 탈퇴·제명된 본인처럼 서버가 후보에서 뺀 회원도 여기서 걸린다.
+   */
+  const picReady = assignable.includes(picId);
+
+  /** 담당자를 확정하지 못한 이유 — 빈 문자열이면 확정됐다. 등록 버튼의 잠금 근거이기도 하다 */
+  const picBlockReason =
+    assignable.status === "loading"
+      ? "담당자 목록을 불러오는 중입니다"
+      : assignable.status === "error"
+        ? assignable.errorMessage
+        : assignable.members.length === 0
+          ? "담당자로 지정할 수 있는 활동 회원이 없습니다"
+          : picReady
+            ? ""
+            : "담당자를 선택하세요";
 
   // work 확장
   const [workTypeCd, setWorkTypeCd] = useState<WorkTypeCd>("EVENT");
@@ -168,24 +210,18 @@ export function OperationCreatePage({
   /*
    * 업무 등록 (OPS-002 · POST /v1/works).
    *
-   * 담당자는 **로그인한 회원 본인**이다. 서버에 회원 목록 API가 없어 다른 회원을 고를 수
-   * 없고, 목 회원 목록의 mbrId를 그대로 보내면 서버가 실재하지 않는 회원으로 보고 400
-   * (담당자로 지정할 수 없는 회원입니다)으로 끊는다. 담당자 위임은 회원 목록 API가 생긴 뒤에
-   * 붙인다 — 그때까지 화면에도 고른 척하는 셀렉트를 두지 않는다.
+   * 담당자는 **담당자 후보 목록에서 고른 회원**이다(#53). 기본값은 세션 본인이며, 후보에 없는
+   * 값은 submit이 아니라 위의 `picReady`에서 이미 걸러진다 — 서버도 400
+   * VALIDATION_FAILED(OWNER_NOT_ACTIVE_MEMBER)로 끊지만, 긴 폼을 다 채운 뒤에 알게 하지 않는다.
    *
    * 업무_상태·진행률·등록자는 보내지 않는다. 서버가 각각 기획(PLANNING)·집계값·인증 주체로
    * 정하며, 화면이 값을 만들어 보내면 서버가 무시하는 필드가 늘 뿐이다.
    */
-  const submitWork = async () => {
-    if (!sessionMember) {
-      flash("회원 정보를 확인할 수 없습니다. 다시 로그인해주세요");
-      return;
-    }
-
+  const submitWork = async (ownerId: number) => {
     const { workId, message } = await workCreation.create({
       title: operTtl.trim(),
       itemType: workTypeCd,
-      ownerId: sessionMember.memberId,
+      ownerId,
       startAt: fromInput(bgngDt, true),
       endAt: endDt ? fromInput(endDt, true) : null,
       priority: prrtyRnkCd,
@@ -200,7 +236,7 @@ export function OperationCreatePage({
   /*
    * 하위 업무 등록 (OPS-007 · POST /v1/sub-works · #36).
    *
-   * 담당자는 업무 등록과 같은 이유로 **로그인한 회원 본인**이다 (회원 목록 API가 없다).
+   * 담당자는 업무 등록과 같은 방식으로 후보 목록에서 고른 회원이다 (#53).
    *
    * 화면의 '마감_일시' 한 칸이 서버의 endAt(oper 종료_일시)과 dueAt(sub_work 마감_일시)을
    * 함께 채운다. 두 값을 나눠 받을 입력란이 시안에 없고, 한쪽만 채우면 다른 쪽 기능이
@@ -215,11 +251,7 @@ export function OperationCreatePage({
    * 방금 받은 서버 식별자를 찾지 못한다 — 등록은 성공했는데 "없는 하위 업무"가 뜨는 화면으로
    * 보내지 않는다. 상위 업무 상세는 서버 연동(#30)이라 목록에 새 하위 업무가 그대로 보인다.
    */
-  const submitSubWork = async (workId: number) => {
-    if (!sessionMember) {
-      flash("회원 정보를 확인할 수 없습니다. 다시 로그인해주세요");
-      return;
-    }
+  const submitSubWork = async (workId: number, ownerId: number) => {
     if (!subWorkTypeId) {
       flash("하위_업무_유형을 선택하세요");
       return;
@@ -234,7 +266,7 @@ export function OperationCreatePage({
       workId,
       title: operTtl.trim(),
       subWorkTypeId,
-      ownerId: sessionMember.memberId,
+      ownerId,
       startAt: fromInput(bgngDt, true),
       endAt: ddlnDt,
       dueAt: ddlnDt,
@@ -251,25 +283,21 @@ export function OperationCreatePage({
   /*
    * 회의 등록 (OPS-024 · POST /v1/meetings, #83).
    *
-   * 담당자는 업무·하위 업무와 같은 이유로 **로그인한 회원 본인**이다. 회의 책임자를 따로
-   * 입력받지 않는 것도 이슈 본문의 결정이다 — 담당자가 곧 책임자이므로 서버가
-   * personInChargeId 하나로 oper.pic_id·mtg.mtg_rbprsn_id 양쪽을 채운다(ssccops-web#56).
+   * 담당자는 업무·하위 업무와 같은 후보 목록에서 고른다(#53). 회의 책임자를 따로 입력받지
+   * 않는 것은 이슈 본문의 결정이다 — 담당자가 곧 책임자이므로 서버가 personInChargeId 하나로
+   * oper.pic_id·mtg.mtg_rbprsn_id 양쪽을 채운다(ssccops-web#56). 그래서 담당자 셀렉트를
+   * 고치는 것이 곧 회의 책임자를 고치는 일이다.
    *
    * 안건은 이 화면에서 함께 등록하지 않는다 — 등록 직후 상세 화면에서 안건을 상정한다
    * (OPS-027). 등록 폼에 안건 입력까지 얹으면 "무엇에 연결할지"를 고르는 목록이 필요한데,
    * 지금 업무·하위 업무 목록 API(OPS-008·OPS-020)는 카드에 필요한 값만 내리고 oper_id를
    * 담지 않아 여기서 바로 쓸 수 없다.
    */
-  const submitMeeting = async () => {
-    if (!sessionMember) {
-      flash("회원 정보를 확인할 수 없습니다. 다시 로그인해주세요");
-      return;
-    }
-
+  const submitMeeting = async (personInChargeId: number) => {
     const { meetingId, message } = await meetingCreation.create({
       title: operTtl.trim(),
       meetingCategory: mtgSeCd,
-      personInChargeId: sessionMember.memberId,
+      personInChargeId,
       startAt: fromInput(bgngDt, true),
       endAt: endDt ? fromInput(endDt, true) : null,
       priority: prrtyRnkCd,
@@ -289,8 +317,18 @@ export function OperationCreatePage({
       return;
     }
 
+    /*
+     * 담당자가 후보 목록에 있는지를 **세 경로 앞에서 한 번에** 막는다. 여기를 지난 뒤에는
+     * picId가 확실히 후보 안의 값이라 각 submit이 number 하나만 받으면 된다 — 세 곳에서
+     * 각자 null을 다루면 한 곳만 빠뜨려도 그 유형에서만 잘못된 값이 나간다.
+     */
+    if (picId === null || !picReady) {
+      flash(picBlockReason || "담당자를 선택하세요");
+      return;
+    }
+
     if (operTypeCd === "WORK") {
-      void submitWork();
+      void submitWork(picId);
       return;
     }
 
@@ -300,11 +338,11 @@ export function OperationCreatePage({
         flash("상위 업무 상세에서 '+ 하위 업무'로 들어와주세요");
         return;
       }
-      void submitSubWork(parentWorkId);
+      void submitSubWork(parentWorkId, picId);
       return;
     }
 
-    void submitMeeting();
+    void submitMeeting(picId);
   };
 
   return (
@@ -361,18 +399,55 @@ export function OperationCreatePage({
                 />
               </Field>
               {/*
-                담당자는 항상 본인으로 고정한다 — 서버에 회원 목록 API가 없어 고를 후보를
-                받아올 데가 없고, 다른 회원의 식별자를 보내면 400(담당자로 지정할 수 없는
-                회원입니다)으로 끊긴다. 회의도 #83부터 같은 제약을 받는다 — 책임자가 곧
-                담당자이므로(ssccops-web#56) 셀렉트를 별도로 두지 않는다.
+                담당자는 서버 후보 목록(GET /v1/members/assignable)에서 고른다 (#53).
+                고르지 않았을 때 목록의 첫 회원으로 떨어지지 않도록 **빈 값을 실제 선택지로
+                둔다** — 아직 목록이 없거나 세션 본인이 후보에서 빠진 경우, 셀렉트가 말없이
+                첫 항목을 보여 주면 화면에 뜬 이름과 서버로 나가는 값이 갈린다.
+
+                연락처·이메일·학번은 그리지 않는다 — 이 목록은 권한 없이 열리므로 서버가 그
+                값을 내리지 않는다. 여기 필요한 것은 동명이인을 가르는 기수·역할까지다.
               */}
-              <Field label="담당자">
-                <div className="pt-[6px]">
-                  <div className="text-[15px]">{sessionMember?.name ?? "-"}</div>
-                  <div className="mt-1 text-[13px] text-n500">
-                    본인으로 등록됩니다 · 담당자 위임은 추후 지원
-                  </div>
+              <Field label="담당자" required>
+                <SelectField
+                  value={picReady && picId !== null ? String(picId) : ""}
+                  disabled={assignable.status !== "ready"}
+                  onChange={(e) =>
+                    setPickedPicId(e.target.value ? Number(e.target.value) : null)
+                  }
+                >
+                  <option value="">
+                    {assignable.status === "loading"
+                      ? "담당자 목록을 불러오는 중…"
+                      : "담당자 선택"}
+                  </option>
+                  {assignable.members.map((m) => (
+                    <option key={m.memberId} value={m.memberId}>
+                      {assignableMemberLabel(m)}
+                    </option>
+                  ))}
+                </SelectField>
+                <div
+                  className={
+                    picBlockReason
+                      ? "mt-[5px] text-[12.5px] text-danger"
+                      : "mt-[5px] text-[12.5px] text-n500"
+                  }
+                >
+                  {picBlockReason ||
+                    (picId === sessionMember?.memberId
+                      ? "본인으로 등록됩니다 · 다른 회원을 담당자로 지정할 수 있습니다"
+                      : "선택한 회원이 담당자로 등록됩니다")}
                 </div>
+                {/* 조회 실패는 등록 자체를 막는 상태라 다시 시도할 길을 그 자리에 둔다 */}
+                {assignable.status === "error" && (
+                  <button
+                    type="button"
+                    onClick={assignable.reload}
+                    className="mt-[5px] cursor-pointer text-[12.5px] underline"
+                  >
+                    다시 시도
+                  </button>
+                )}
               </Field>
               <Field label="우선_순위_코드">
                 <div className="flex gap-[7px] pt-[6px]">
@@ -601,18 +676,30 @@ export function OperationCreatePage({
         </div>
 
         <div className="mt-5">
-          {/* 등록은 되돌릴 API가 없다 — 진행 중에는 눌리지 않게 막는다 (연타 = 업무 중복 생성) */}
+          {/*
+            등록은 되돌릴 API가 없다 — 진행 중에는 눌리지 않게 막는다 (연타 = 업무 중복 생성).
+            담당자를 확정하지 못한 동안에도 잠근다(#53): 목록 조회가 실패한 채로 눌리면 서버로
+            나가는 pic_id가 화면에 뜬 사람과 무관해진다.
+          */}
           <Button
             className="px-[26px] py-[11px]"
             onClick={submit}
-            disabled={pending || !allowed}
-            title={allowed ? undefined : NO_MANAGE_REASON[operTypeCd]}
+            disabled={pending || !allowed || picBlockReason !== ""}
+            title={
+              !allowed ? NO_MANAGE_REASON[operTypeCd] : picBlockReason || undefined
+            }
           >
             {pending ? "등록하는 중…" : `${OPER_TYPE_NM[operTypeCd]} 등록`}
           </Button>
           {/* 잠긴 버튼의 툴팁만으로는 긴 폼을 다 채운 뒤에야 이유를 알게 된다 — 밖에도 적는다 */}
-          {!allowed && (
+          {!allowed ? (
             <div className="mt-2 text-[13.5px] text-n500">{NO_MANAGE_REASON[operTypeCd]}</div>
+          ) : (
+            picBlockReason && (
+              <div className="mt-2 text-[13.5px] text-n500">
+                {picBlockReason} — 담당자가 정해져야 등록할 수 있습니다
+              </div>
+            )
           )}
         </div>
       </PageBody>
