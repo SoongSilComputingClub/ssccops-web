@@ -4,13 +4,14 @@ import type {
   PrrtyRnkCd,
   WorkSttsCd,
 } from "@/shared/config/codes";
-import { ApiError, apiFetch } from "@/shared/lib/api/client";
+import { ApiError, apiFetch, apiFetchList } from "@/shared/lib/api/client";
 import { withServiceOffset } from "@/shared/lib/date";
 import type {
   SubWorkChecklistItem,
   SubWorkChecklistSummary,
   SubWorkChecklistUpdate,
   SubWorkDetail,
+  SubWorkListItem,
   SubWorkMemberRef,
   SubWorkQuorum,
   SubWorkRejection,
@@ -33,8 +34,8 @@ import type {
  * 사람인가'가 아니라 '이 건의 승인자 본인인가'라 건마다 답이 달라진다. 그 판정은 웹이 역할
  * 이름으로 다시 계산하지 않고 상세 응답의 canApprove·canReject를 그대로 쓴다.
  *
- * 목록(OPS-008)과 투표(OPS-015)는 아직 여기 없다. 목록 화면과 승인함은 목 스토어를 쓰며
- * 그 API가 붙는 순간 같은 파일에 이어 쓴다.
+ * 투표(OPS-015)는 아직 여기 없다. 승인함은 목 스토어를 쓰며 그 API가 붙는 순간 같은 파일에
+ * 이어 쓴다.
  */
 
 /** 외부_URL_주소 최대 길이 (sub_work.otsd_url_addr 주소V200) — 서버 400을 기다리지 않고 먼저 걸러 준다 */
@@ -191,6 +192,132 @@ export async function createSubWork(
     workStatus: res.workStatus ?? "PLANNING",
     approvalStatus: res.approvalStatus ?? null,
     checklistCount: res.checklist?.length ?? 0,
+  };
+}
+
+/* ── 목록 (OPS-008 · #28·#74) ──────────────────────────────── */
+
+interface SubWorkListWorkResponse {
+  workId: number | null;
+  title: string | null;
+}
+
+interface SubWorkListMemberResponse {
+  memberId: number | null;
+  name: string | null;
+}
+
+interface SubWorkListItemResponse {
+  subWorkId: number;
+  title: string | null;
+  work: SubWorkListWorkResponse | null;
+  subWorkTypeId: number | null;
+  subWorkTypeName: string | null;
+  owner: SubWorkListMemberResponse | null;
+  workStatus: WorkSttsCd;
+  approvalStatus: AprvSttsCd;
+  progressRate: number | null;
+  dueAt: string | null;
+  isDelayed: boolean | null;
+}
+
+function toListMemberRef(member: SubWorkListMemberResponse | null): SubWorkMemberRef | null {
+  if (!member || member.memberId == null) return null;
+  return { memberId: member.memberId, name: member.name ?? "" };
+}
+
+function toWorkRef(work: SubWorkListWorkResponse | null): SubWorkListItem["work"] {
+  if (!work || work.workId == null) return null;
+  return { workId: work.workId, title: work.title ?? "" };
+}
+
+/** DECIMAL(5,2) — 서버는 60.00처럼 내려준다. 값이 없으면 0% */
+function toListProgressRate(value: number | null): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function toSubWorkListItem(res: SubWorkListItemResponse): SubWorkListItem {
+  return {
+    subWorkId: res.subWorkId,
+    title: res.title ?? "",
+    work: toWorkRef(res.work),
+    subWorkTypeId: res.subWorkTypeId ?? 0,
+    subWorkTypeName: res.subWorkTypeName ?? "",
+    owner: toListMemberRef(res.owner),
+    workStatus: res.workStatus,
+    approvalStatus: res.approvalStatus,
+    progressRate: toListProgressRate(res.progressRate),
+    dueAt: res.dueAt,
+    isDelayed: res.isDelayed === true,
+  };
+}
+
+/**
+ * 하위 업무 목록 필터 — 값을 생략하면(null·undefined) 그 축을 거르지 않는다.
+ *
+ * 화면의 필터 칩(전체·진행·승인대기·마감임박·지연·완료)은 features/sub-work/model/
+ * use-sub-work-list.ts가 이 필터로 옮긴다 — 칩 이름과 쿼리 파라미터의 대응 규칙을 API
+ * 파일이 아니라 그 훅 쪽에 둔 것은, 칩 구성이 화면 정책(#28 설계 결정 6)이라 서버 계약과
+ * 같은 층에 두면 안 되기 때문이다.
+ */
+export interface SubWorkListFilter {
+  workStatus?: WorkSttsCd | null;
+  /** 승인대기 칩이 PENDING·REAPPROVAL_REQUIRED 두 값을 함께 건다 (#28 설계 결정 5) */
+  approvalStatus?: AprvSttsCd[] | null;
+  /** true만 의미가 있다 — 서버가 false를 필터 없음으로 무시한다 */
+  isOverdue?: boolean | null;
+  /** ISO-8601 + 오프셋. `dueWithinDays`로 만든다 */
+  dueBefore?: string | null;
+  /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
+  cursor?: string | null;
+  /** 1~100 · 서버 기본 20 */
+  size?: number | null;
+}
+
+export interface SubWorkListPage {
+  subWorks: SubWorkListItem[];
+  /** 다음 페이지 커서 — 마지막 페이지면 null */
+  nextCursor: string | null;
+  hasNext: boolean;
+  /** 필터를 적용한 건수 — 화면 상단 'N건' */
+  totalCount: number;
+  /** 필터 없는 전체 건수 — 화면 상단 '전체 M건' */
+  overallCount: number;
+}
+
+/**
+ * GET /v1/sub-works — 하위 업무 목록 (OPS-008).
+ *
+ * '운영 통합 › 하위 업무' 화면이 진입할 때와 필터 칩을 누를 때마다 호출한다. 상위 업무를
+ * 가로지르는 목록이라 상위 업무 상세(OPS-003)의 하위 업무 목록과는 다른 리소스다.
+ *
+ * 승인 상태는 **복수 값**을 반복 쿼리 파라미터로 보낸다(`approvalStatus=PENDING&
+ * approvalStatus=REAPPROVAL_REQUIRED`) — 업무 목록(fetchWorks)의 단일값 필터와 다른 점이다.
+ */
+export async function fetchSubWorks(
+  filter: SubWorkListFilter = {},
+): Promise<SubWorkListPage> {
+  const query = new URLSearchParams();
+  if (filter.workStatus) query.set("workStatus", filter.workStatus);
+  for (const status of filter.approvalStatus ?? []) {
+    query.append("approvalStatus", status);
+  }
+  if (filter.isOverdue) query.set("isOverdue", "true");
+  if (filter.dueBefore) query.set("dueBefore", filter.dueBefore);
+  if (filter.cursor) query.set("cursor", filter.cursor);
+  if (filter.size != null) query.set("size", String(filter.size));
+
+  const qs = query.toString();
+  const { data, page } = await apiFetchList<SubWorkListItemResponse>(
+    qs ? `/v1/sub-works?${qs}` : "/v1/sub-works",
+  );
+
+  return {
+    subWorks: data.map(toSubWorkListItem),
+    nextCursor: page?.nextCursor ?? null,
+    hasNext: page?.hasNext ?? false,
+    totalCount: page?.totalCount ?? data.length,
+    overallCount: page?.overallCount ?? data.length,
   };
 }
 

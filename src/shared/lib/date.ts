@@ -121,3 +121,19 @@ export function deadlineFlag(
   if (d < 0) return "지연";
   return d <= 3 ? "마감임박" : "";
 }
+
+/**
+ * 마감임박 조회의 `dueBefore` 임계값 — 서비스 시간대 기준 오늘로부터 N일 후 자정 직전.
+ *
+ * ssccops-server는 "마감임박"의 기준을 정하지 않고 `dueBefore`만 받는다(설계 결정 6,
+ * ssccops-server #28) — 임박의 기준(3일 등)은 화면 정책이라는 판단이다. 여기서 정하는 N일은
+ * 목 데이터 시절 `deadlineFlag`가 쓰던 기준(d <= 3)과 같은 값을 그대로 쓴다.
+ *
+ * 하루 끝(23:59:59)으로 두는 것은 `deadlineFlag`가 날짜 단위(시각 무시)로 비교했던 것과
+ * 같은 폭을 유지하기 위해서다 — 자정으로 두면 그날 마감인 건이 임계값보다 늦어져 빠진다.
+ */
+export function dueWithinDays(days: number, today: string = todayInSeoul()): string {
+  const base = Date.parse(`${today}T00:00:00Z`);
+  const target = new Date(base + days * 86_400_000).toISOString().slice(0, 10);
+  return `${target}T23:59:59${SERVICE_UTC_OFFSET}`;
+}

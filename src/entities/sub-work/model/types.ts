@@ -226,3 +226,34 @@ export interface SubWorkChecklistUpdate {
   item: SubWorkChecklistItem;
   checklistSummary: SubWorkChecklistSummary;
 }
+
+/* ── 목록 (ssccops-server OPS-008 · #28·#74·ssccops-web#41) ──── */
+
+/** 하위 업무 목록의 '상위 업무' 칸 — 배지 문구와 상세(OPS-003)로 갈 식별자만 담는다 */
+export interface SubWorkWorkRef {
+  workId: number;
+  title: string;
+}
+
+/**
+ * 하위 업무 목록(OPS-008)의 한 행.
+ *
+ * 상세(SubWorkDetail)와 필드가 겹치지만 별도 타입이다 — 목록은 상위 업무를 가로지르므로
+ * 상위 업무 제목·유형명이 더 있고, 반대로 체크리스트·승인 판단 근거는 없다(서버
+ * SubWorkSummaryResponse 주석과 같은 판단).
+ */
+export interface SubWorkListItem {
+  subWorkId: number;
+  title: string;
+  /** 스키마상 항상 채워진다(sub_work.work_id NOT NULL) — nullable로 두는 것은 방어적 표기다 */
+  work: SubWorkWorkRef | null;
+  subWorkTypeId: number;
+  subWorkTypeName: string;
+  owner: SubWorkMemberRef | null;
+  workStatus: WorkSttsCd;
+  approvalStatus: AprvSttsCd;
+  progressRate: number;
+  dueAt: string | null;
+  /** dly_yn 컬럼이 아니라 서버가 조회 시점에 판정한 값이다 (SubWorkDetail.isDelayed와 같다) */
+  isDelayed: boolean;
+}

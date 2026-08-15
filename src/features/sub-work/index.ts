@@ -10,6 +10,8 @@ export type {
   SubWorkDetailQuery,
   SubWorkDetailStatus,
 } from "./model/use-sub-work-detail";
+export { SUB_WORK_LIST_TABS, useSubWorkList } from "./model/use-sub-work-list";
+export type { SubWorkList, SubWorkListStatus, SubWorkListTab } from "./model/use-sub-work-list";
 export { useSubWorkActions } from "./model/use-sub-work-actions";
 export type {
   SubWorkActionControl,
