@@ -72,6 +72,13 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "회원",
     mono: "회",
     items: [
+      /*
+       * 회원 명부 (#52 · 서버 #76).
+       *
+       * 조회(GET /v1/members)부터 MEMBER_MANAGE 를 요구한다 — 학번·연락처·이메일이 담긴
+       * 실제 명부라 목록 자체가 보호 대상이다. 그래서 requires 를 둔다.
+       * 상세·수정·등록은 목록에서 들어가므로 목차에 따로 올리지 않는다.
+       */
       {
         label: "회원 목록",
         href: ROUTES.members,
@@ -81,7 +88,16 @@ export const NAV_GROUPS: NavGroup[] = [
           !p.startsWith("/members/role-labels") &&
           !p.startsWith("/members/authorities") &&
           !p.startsWith("/members/csv-import"),
+        requires: CAPABILITY.MEMBER_MANAGE,
       },
+      /*
+       * 역할 관리에는 requires 를 두지 않는다 (#52).
+       *
+       * 역할·역할 분류 조회는 서버가 권한 없이 열어 두었고 등록·수정·삭제만 ROLE_MANAGE 를
+       * 요구한다 — 라벨 관리와 같은 모양이다. 메뉴를 감추면 볼 수 있는 것까지 막게 되므로
+       * 화면 안의 변경 버튼만 useCan 으로 잠근다(views/role-list 가 이미 그렇게 한다).
+       * 바로 아래 권한 관리와 갈리는 지점이 여기다 — 그쪽은 조회부터 막혀 있다.
+       */
       {
         label: "역할 관리",
         href: ROUTES.roles,
@@ -102,7 +118,13 @@ export const NAV_GROUPS: NavGroup[] = [
         isActive: starts("/members/authorities"),
         requires: CAPABILITY.ROLE_MANAGE,
       },
-      { label: "CSV 회원 이관", href: ROUTES.csvImport, isActive: starts("/members/csv-import") },
+      /* 회원 명부를 통째로 만들어 넣는 화면이다 — 회원 목록과 같은 권한으로 잠근다 (#52) */
+      {
+        label: "CSV 회원 이관",
+        href: ROUTES.csvImport,
+        isActive: starts("/members/csv-import"),
+        requires: CAPABILITY.MEMBER_MANAGE,
+      },
     ],
   },
   {
