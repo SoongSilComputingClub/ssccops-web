@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CAPABILITY } from "@/entities/session";
+import { useCan } from "@/features/auth";
 import {
   CSV_DEFAULT_MAP,
   CSV_ERRORS,
@@ -18,6 +20,7 @@ import {
   BarStepper,
   Button,
   Card,
+  EmptyState,
   PageBody,
   PageHeader,
   SectionLabel,
@@ -32,7 +35,34 @@ const REQ_COLOR: Record<string, string> = {
   선택: "text-n500",
 };
 
+/*
+ * CSV 회원 이관 (#52 · 서버 #76).
+ *
+ * 회원 명부를 통째로 만들어 넣는 화면이라 회원 목록과 같은 권한으로 잠근다. 근거는
+ * views/member-list 의 NO_MEMBER_MANAGE 주석.
+ */
+const NO_MEMBER_MANAGE =
+  "회원 관리(MEMBER_MANAGE) 권한이 없어 회원을 이관할 수 없습니다 — 운영진에게 요청해주세요";
+
 export function CsvImportPage() {
+  const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
+
+  /* 훅을 조건부로 부를 수 없으므로 본문을 별도 컴포넌트로 뺀다 (views/role-authorities 와 같다) */
+  if (!canManage) {
+    return (
+      <>
+        <PageHeader title="CSV 회원 이관" />
+        <PageBody>
+          <EmptyState message={NO_MEMBER_MANAGE} />
+        </PageBody>
+      </>
+    );
+  }
+
+  return <CsvImportWizard />;
+}
+
+function CsvImportWizard() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [file, setFile] = useState<string | null>(null);

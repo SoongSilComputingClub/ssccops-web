@@ -14,6 +14,8 @@ import {
   type Mbr,
 } from "@/entities/member";
 import { roleNmOf, useRoleStore } from "@/entities/role";
+import { CAPABILITY } from "@/entities/session";
+import { useCan } from "@/features/auth";
 import { ROUTES } from "@/shared/config/routes";
 import {
   Badge,
@@ -27,10 +29,43 @@ import {
   type GridColumn,
 } from "@/shared/ui";
 
+/*
+ * 회원 명부 (#52 · 서버 #76).
+ *
+ * ── 왜 화면 자체를 열지 않는가 ──────────────────────────────────
+ * 사이드바에서 메뉴를 감추는 것(#29)은 안내일 뿐이라 주소를 직접 치면 화면은 열린다. 이 화면은
+ * 학번·연락처·이메일이 담긴 실제 명부이고 서버도 조회(GET /v1/members)부터 MEMBER_MANAGE 를
+ * 요구하므로, 권한이 없으면 목록 대신 안내를 보여 준다 — 권한 관리 화면(views/authority-tree ·
+ * views/role-authorities)이 쓴 방식 그대로다. 판정은 #29 의 useCan 하나만 쓴다.
+ *
+ * MEMBER_MANAGE 는 EXECUTIVE 의 자식이라 국장(OPERATOR)에게는 없다. 그래서 국장이 이 안내를
+ * 보는 것은 정상이다 — 근거는 entities/session/model/types.ts 의 CAPABILITY 주석.
+ */
+const NO_MEMBER_MANAGE =
+  "회원 관리(MEMBER_MANAGE) 권한이 없어 회원 명부를 볼 수 없습니다 — 운영진에게 요청해주세요";
+
 const SORTS = ["이름순", "기수순", "가입일순", "최근 수정순"] as const;
 const ALL = "전체";
 
 export function MemberListPage() {
+  const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
+
+  /* 훅을 조건부로 부를 수 없으므로 본문을 별도 컴포넌트로 뺀다 (views/role-authorities 와 같다) */
+  if (!canManage) {
+    return (
+      <>
+        <PageHeader title="회원 관리" subtitle="SSCC 운영관리시스템" />
+        <PageBody>
+          <EmptyState message={NO_MEMBER_MANAGE} />
+        </PageBody>
+      </>
+    );
+  }
+
+  return <MemberListView />;
+}
+
+function MemberListView() {
   const router = useRouter();
   const { mbrs, mbrGrds, mbrSttss, mbrRoleRels } = useMbrStore();
   const roles = useRoleStore((s) => s.roles);
