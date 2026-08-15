@@ -8,8 +8,9 @@ import type {
 } from "react";
 import { cn } from "@/shared/lib/cn";
 
+/* disabled 표시를 base에 둔 것은 권한이 없어 잠긴 입력란이 눌리지 않는 이유를 보여야 하기 때문이다 (#29) */
 const INPUT_BASE =
-  "w-full rounded-[12px] border text-[15.5px] text-ink outline-none placeholder:text-n500 focus:border-accent";
+  "w-full rounded-[12px] border text-[15.5px] text-ink outline-none placeholder:text-n500 focus:border-accent disabled:cursor-not-allowed disabled:opacity-45";
 
 export function TextField({
   inset,
