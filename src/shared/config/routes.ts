@@ -23,6 +23,10 @@ export const ROUTES = {
   roles: "/members/roles",
   roleNew: "/members/roles/new",
   roleEdit: (roleId: number) => `/members/roles/${roleId}/edit`,
+  /** 역할별 권한 부여 (#32) */
+  roleAuthorities: (roleId: number) => `/members/roles/${roleId}/authorities`,
+  /** 권한 트리 관리 (#32) */
+  authorities: "/members/authorities",
   roleLabels: "/members/role-labels",
   csvImport: "/members/csv-import",
 
