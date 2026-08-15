@@ -2,14 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMbrStore } from "@/entities/member";
-import { useMtgStore, type MtgDtl } from "@/entities/meeting";
-import { findOper, useOperStore } from "@/entities/oper";
 import { useSessionStore } from "@/entities/session";
-import { useSubWorkStore } from "@/entities/sub-work";
-import { useWorkStore } from "@/entities/work";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
+import { useCreateMeeting } from "@/features/meeting";
 import { useCreateSubWork } from "@/features/sub-work";
 import { useActiveSubWorkTypes } from "@/features/sub-work-type";
 import { useCreateWork, useWorkDetail } from "@/features/work";
@@ -20,8 +16,6 @@ import {
   MTG_SE_CDS,
   MTG_SE_NM,
   OPER_TYPE_NM,
-  PRCS_SE_CDS,
-  PRCS_SE_NM,
   PRRTY_RNK_CDS,
   PRRTY_RNK_NM,
   WORK_TYPE_CDS,
@@ -29,7 +23,6 @@ import {
   type AtndTrgtCd,
   type MtgSeCd,
   type OperTypeCd,
-  type PrcsSeCd,
   type PrrtyRnkCd,
   type WorkTypeCd,
 } from "@/shared/config/codes";
@@ -43,7 +36,6 @@ import {
   PageBody,
   PageHeader,
   SectionLabel,
-  SelectField,
   TextArea,
   TextField,
   flash,
@@ -65,23 +57,26 @@ const KIND_META: Record<OperTypeCd, { table: string; note: string }> = {
 };
 
 /** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
-const NO_WORK_MANAGE = "업무·하위 업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다";
+const NO_MANAGE_REASON: Record<OperTypeCd, string> = {
+  WORK: "업무·하위 업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
+  SUB_WORK: "업무·하위 업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
+  MEETING: "회의를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
+};
 
-type AgendaDraft = Pick<MtgDtl, "agndNm" | "prcsSeCd" | "operId" | "agndCn">;
-
-export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }) {
+export function OperationCreatePage({
+  workId: fixedWorkId,
+  kind: fixedKind,
+}: {
+  workId?: number;
+  /** 특정 운영_유형 화면(예: 회의 목록의 '+ 등록')에서 들어온 경우 선택 카드를 그 유형 하나로 고정한다 */
+  kind?: OperTypeCd;
+}) {
   const router = useRouter();
-  const works = useWorkStore((s) => s.works);
-  const subWorks = useSubWorkStore((s) => s.subWorks);
-  const { opers, addOper } = useOperStore();
-  const addMtg = useMtgStore((s) => s.addMtg);
-  const addMtgDtl = useMtgStore((s) => s.addMtgDtl);
-  const mbrs = useMbrStore((s) => s.mbrs);
-  const sessionMbrId = useSessionStore((s) => s.mbrId);
-  /* 업무(WORK)·하위 업무(SUB_WORK)가 서버로 나간다 (#30 · #36). 회의는 아직 목 스토어에 쌓인다 */
+  /* 업무(WORK)·하위 업무(SUB_WORK)·회의(MEETING)가 모두 서버로 나간다 (#30 · #36 · #83) */
   const sessionMember = useSessionStore((s) => s.member);
   const workCreation = useCreateWork();
   const subWorkCreation = useCreateSubWork();
+  const meetingCreation = useCreateMeeting();
 
   /*
    * 상위 업무 식별자는 쿼리 파라미터(`/operations/new?workId=2`)로 온다 — 손으로 고칠 수
@@ -105,12 +100,21 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
   /* 하위 업무 폼을 그리는 화면(상위 업무에서 들어온 경우)에서만 유형 목록을 부른다 */
   const subWorkTypeOptions = useActiveSubWorkTypes(parentWorkId !== null);
 
-  const kinds: OperTypeCd[] = parentWorkId ? ["SUB_WORK"] : ["WORK", "MEETING"];
+  /*
+   * 회의 목록의 '+ 등록'처럼 특정 운영_유형에서 들어온 경우(`?kind=MEETING`) 선택 카드를
+   * 그 유형 하나로 고정한다 — 하위 업무가 parentWorkId로 고정되는 것과 같은 방식이다.
+   * 상위 업무 연결(parentWorkId)이 우선이며, kind는 SUB_WORK를 가리킬 수 없다(하위 업무는
+   * 상위 업무 상세를 거쳐야만 생긴다).
+   */
+  const kinds: OperTypeCd[] = parentWorkId
+    ? ["SUB_WORK"]
+    : fixedKind === "WORK" || fixedKind === "MEETING"
+      ? [fixedKind]
+      : ["WORK", "MEETING"];
   const [operTypeCd, setOperTypeCd] = useState<OperTypeCd>(kinds[0]);
 
   // oper 공통 속성
   const [operTtl, setOperTtl] = useState("");
-  const [picId, setPicId] = useState<number>(sessionMbrId || mbrs[0]?.mbrId || 1);
   const [prrtyRnkCd, setPrrtyRnkCd] = useState<PrrtyRnkCd>("NORMAL");
   const [bgngDt, setBgngDt] = useState("");
   const [endDt, setEndDt] = useState("");
@@ -133,23 +137,18 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
   const [mtgSeCd, setMtgSeCd] = useState<MtgSeCd>("REGULAR");
   const [atndTrgtCd, setAtndTrgtCd] = useState<AtndTrgtCd>("ALL");
   const [mtgPlcNm, setMtgPlcNm] = useState("");
-  const [mtgRbprsnId, setMtgRbprsnId] = useState<number>(
-    sessionMbrId || mbrs[0]?.mbrId || 1,
-  );
-  const [agenda, setAgenda] = useState<AgendaDraft[]>([]);
 
   /*
-   * 업무·하위 업무 등록은 WORK_MANAGE 다 (#29 · 서버 WorkController·SubWorkController 전체).
-   *
-   * 회의는 아직 목 스토어에만 쌓이고 서버 계약이 없어 권한을 걸지 않는다 — 서버가 막지 않는
-   * 것을 화면이 먼저 막으면, 회의 API가 붙을 때 어떤 권한이었는지 아무도 모르는 규칙이 하나
-   * 남는다. 그래서 잠금은 **지금 고른 운영_유형**에 따라 정한다.
+   * 업무·하위 업무·회의 등록은 각각 WORK_MANAGE·WORK_MANAGE·MEETING_MANAGE 다 (#29 · 서버
+   * WorkController·SubWorkController·MeetingController 전체, #83). 잠금은 **지금 고른
+   * 운영_유형**에 따라 정한다.
    */
   const canManageWork = useCan(CAPABILITY.WORK_MANAGE);
-  const allowed = operTypeCd === "MEETING" || canManageWork;
+  const canManageMeeting = useCan(CAPABILITY.MEETING_MANAGE);
+  const allowed = operTypeCd === "MEETING" ? canManageMeeting : canManageWork;
 
-  /* 서버로 나가는 두 경로(업무·하위 업무) 중 하나라도 응답을 기다리는 중이면 버튼을 잠근다 */
-  const pending = workCreation.pending || subWorkCreation.pending;
+  /* 서버로 나가는 세 경로(업무·하위 업무·회의) 중 하나라도 응답을 기다리는 중이면 버튼을 잠근다 */
+  const pending = workCreation.pending || subWorkCreation.pending || meetingCreation.pending;
 
   /* 고른 유형의 승인 규칙 — 서버 목록에서 온 값이라 화면과 실제 판정이 갈리지 않는다 */
   const rule =
@@ -165,17 +164,6 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
       : parentWork.status === "loading"
         ? "불러오는 중"
         : `업무 #${parentWorkId}`;
-  const operTtlOf = (operId: number) => findOper(opers, operId)?.operTtl ?? "-";
-  const operRefs = [
-    ...works.map((w) => ({
-      operId: w.operId,
-      label: `업무 · ${operTtlOf(w.operId)}`,
-    })),
-    ...subWorks.map((sw) => ({
-      operId: sw.operId,
-      label: `하위 업무 · ${sw.subWorkTtl}`,
-    })),
-  ];
 
   /*
    * 업무 등록 (OPS-002 · POST /v1/works).
@@ -260,6 +248,41 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
     if (subWorkId) router.replace(ROUTES.workDetail(workId));
   };
 
+  /*
+   * 회의 등록 (OPS-024 · POST /v1/meetings, #83).
+   *
+   * 담당자는 업무·하위 업무와 같은 이유로 **로그인한 회원 본인**이다. 회의 책임자를 따로
+   * 입력받지 않는 것도 이슈 본문의 결정이다 — 담당자가 곧 책임자이므로 서버가
+   * personInChargeId 하나로 oper.pic_id·mtg.mtg_rbprsn_id 양쪽을 채운다(ssccops-web#56).
+   *
+   * 안건은 이 화면에서 함께 등록하지 않는다 — 등록 직후 상세 화면에서 안건을 상정한다
+   * (OPS-027). 등록 폼에 안건 입력까지 얹으면 "무엇에 연결할지"를 고르는 목록이 필요한데,
+   * 지금 업무·하위 업무 목록 API(OPS-008·OPS-020)는 카드에 필요한 값만 내리고 oper_id를
+   * 담지 않아 여기서 바로 쓸 수 없다.
+   */
+  const submitMeeting = async () => {
+    if (!sessionMember) {
+      flash("회원 정보를 확인할 수 없습니다. 다시 로그인해주세요");
+      return;
+    }
+
+    const { meetingId, message } = await meetingCreation.create({
+      title: operTtl.trim(),
+      meetingCategory: mtgSeCd,
+      personInChargeId: sessionMember.memberId,
+      startAt: fromInput(bgngDt, true),
+      endAt: endDt ? fromInput(endDt, true) : null,
+      priority: prrtyRnkCd,
+      attendeeScope: atndTrgtCd,
+      location: mtgPlcNm.trim() || null,
+      agendas: [],
+    });
+
+    if (!message) return; // 진행 중 중복 클릭 — 아무것도 보내지 않았다
+    flash(message);
+    if (meetingId) router.replace(ROUTES.meetingDetail(meetingId));
+  };
+
   const submit = () => {
     if (!operTtl.trim() || !bgngDt) {
       flash("운영_제목 · 시작_일시는 필수입니다");
@@ -281,42 +304,7 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
       return;
     }
 
-    const operDraft = {
-      operTypeCd,
-      operTtl: operTtl.trim(),
-      operRgtrId: sessionMbrId || null,
-      prrtyRnkCd,
-      bgngDt: fromInput(bgngDt, true),
-      endDt: endDt ? fromInput(endDt, true) : null,
-      picId,
-      delDt: null,
-    };
-
-    const operId = addOper(operDraft);
-    const newMtgId = addMtg({
-      operId,
-      mtgSeCd,
-      atndTrgtCd,
-      mtgSttsCd: "SCHEDULED",
-      mtgRbprsnId,
-      mtgPlcNm: mtgPlcNm.trim() || null,
-      insdMtgDtlCn: null,
-      otsdMtgDtlCn: null,
-    });
-    agenda.forEach((a, i) =>
-      addMtgDtl({
-        mtgId: newMtgId,
-        agndNm: a.agndNm,
-        prcsSeCd: a.prcsSeCd,
-        agndSeq: i + 1,
-        operId: a.operId,
-        agndCn: a.agndCn,
-        rsltCn: null,
-        prsnrId: mtgRbprsnId,
-      }),
-    );
-    flash("회의를 등록했습니다");
-    router.replace(ROUTES.meetingDetail(newMtgId));
+    void submitMeeting();
   };
 
   return (
@@ -373,31 +361,18 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
                 />
               </Field>
               {/*
-                업무·하위 업무는 담당자를 고르지 않고 본인으로 고정한다 — 서버에 회원 목록
-                API가 없어 고를 후보를 받아올 데가 없고, 목 회원의 mbrId를 보내면 400
-                (담당자로 지정할 수 없는 회원입니다)으로 끊긴다.
-                회의는 아직 목 데이터라 종전대로 셀렉트를 둔다.
+                담당자는 항상 본인으로 고정한다 — 서버에 회원 목록 API가 없어 고를 후보를
+                받아올 데가 없고, 다른 회원의 식별자를 보내면 400(담당자로 지정할 수 없는
+                회원입니다)으로 끊긴다. 회의도 #83부터 같은 제약을 받는다 — 책임자가 곧
+                담당자이므로(ssccops-web#56) 셀렉트를 별도로 두지 않는다.
               */}
               <Field label="담당자">
-                {operTypeCd !== "MEETING" ? (
-                  <div className="pt-[6px]">
-                    <div className="text-[15px]">{sessionMember?.name ?? "-"}</div>
-                    <div className="mt-1 text-[13px] text-n500">
-                      본인으로 등록됩니다 · 담당자 위임은 추후 지원
-                    </div>
+                <div className="pt-[6px]">
+                  <div className="text-[15px]">{sessionMember?.name ?? "-"}</div>
+                  <div className="mt-1 text-[13px] text-n500">
+                    본인으로 등록됩니다 · 담당자 위임은 추후 지원
                   </div>
-                ) : (
-                  <SelectField
-                    value={String(picId)}
-                    onChange={(e) => setPicId(Number(e.target.value))}
-                  >
-                    {mbrs.map((m) => (
-                      <option key={m.mbrId} value={m.mbrId}>
-                        {m.mbrNm}
-                      </option>
-                    ))}
-                  </SelectField>
-                )}
+                </div>
               </Field>
               <Field label="우선_순위_코드">
                 <div className="flex gap-[7px] pt-[6px]">
@@ -609,119 +584,16 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
                     </Chip>
                   ))}
                 </div>
-                <div className="grid grid-cols-2 gap-[14px]">
-                  <Field label="회의_장소_명">
-                    <TextField
-                      value={mtgPlcNm}
-                      onChange={(e) => setMtgPlcNm(e.target.value)}
-                      placeholder="예: 동아리방"
-                    />
-                  </Field>
-                  <Field label="회의_책임자_ID">
-                    <SelectField
-                      value={String(mtgRbprsnId)}
-                      onChange={(e) => setMtgRbprsnId(Number(e.target.value))}
-                    >
-                      {mbrs.map((m) => (
-                        <option key={m.mbrId} value={m.mbrId}>
-                          {m.mbrNm}
-                        </option>
-                      ))}
-                    </SelectField>
-                  </Field>
-                </div>
-
-                <div className="mt-4 flex flex-col gap-3">
-                  {agenda.map((a, i) => (
-                    <div key={i} className="rounded-[12px] border border-line p-3">
-                      <div className="flex items-center">
-                        <div className="text-[14px] font-semibold">안건 {i + 1}</div>
-                        <div className="flex-1" />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setAgenda((list) => list.filter((_, j) => j !== i))
-                          }
-                          className="cursor-pointer text-[13.5px] text-n400 hover:text-danger"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                      <div className="mt-2">
-                        <div className="mb-[6px] text-[13.5px] text-n400">
-                          연결 운영 <span className="text-accent">*</span>
-                        </div>
-                        <SelectField
-                          value={a.operId === null ? "" : String(a.operId)}
-                          onChange={(e) => {
-                            const operId = e.target.value ? Number(e.target.value) : null;
-                            const agndNm =
-                              operRefs
-                                .find((o) => o.operId === operId)
-                                ?.label.split(" · ")[1] ?? null;
-                            setAgenda((list) =>
-                              list.map((x, j) =>
-                                j === i ? { ...x, operId, agndNm } : x,
-                              ),
-                            );
-                          }}
-                        >
-                          <option value="">선택하세요</option>
-                          {operRefs.map((o) => (
-                            <option key={o.operId} value={o.operId}>
-                              {o.label}
-                            </option>
-                          ))}
-                        </SelectField>
-                      </div>
-                      <div className="mt-2 flex gap-[7px]">
-                        {PRCS_SE_CDS.map((cd) => (
-                          <Chip
-                            key={cd}
-                            active={a.prcsSeCd === cd}
-                            onClick={() =>
-                              setAgenda((list) =>
-                                list.map((x, j) =>
-                                  j === i ? { ...x, prcsSeCd: cd as PrcsSeCd } : x,
-                                ),
-                              )
-                            }
-                          >
-                            {PRCS_SE_NM[cd]}
-                          </Chip>
-                        ))}
-                      </div>
-                      <TextArea
-                        value={a.agndCn ?? ""}
-                        onChange={(e) =>
-                          setAgenda((list) =>
-                            list.map((x, j) =>
-                              j === i ? { ...x, agndCn: e.target.value || null } : x,
-                            ),
-                          )
-                        }
-                        placeholder="안건_내용 (선택)"
-                        className="mt-2"
-                      />
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setAgenda((list) => [
-                        ...list,
-                        {
-                          agndNm: null,
-                          prcsSeCd: "PENDING",
-                          operId: null,
-                          agndCn: null,
-                        },
-                      ])
-                    }
-                    className="cursor-pointer rounded-[12px] border border-dashed border-line-strong py-3 text-[14.5px] text-n400 hover:border-accent hover:text-accent"
-                  >
-                    + 안건 추가
-                  </button>
+                <Field label="회의_장소_명">
+                  <TextField
+                    value={mtgPlcNm}
+                    onChange={(e) => setMtgPlcNm(e.target.value)}
+                    placeholder="예: 동아리방"
+                  />
+                </Field>
+                <div className="mt-3 text-[13px] text-n500">
+                  회의 책임자는 항상 위 담당자와 같은 회원입니다 — 별도로 입력받지 않습니다.
+                  안건은 등록 뒤 회의 상세에서 상정합니다.
                 </div>
               </>
             )}
@@ -734,13 +606,13 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
             className="px-[26px] py-[11px]"
             onClick={submit}
             disabled={pending || !allowed}
-            title={allowed ? undefined : NO_WORK_MANAGE}
+            title={allowed ? undefined : NO_MANAGE_REASON[operTypeCd]}
           >
             {pending ? "등록하는 중…" : `${OPER_TYPE_NM[operTypeCd]} 등록`}
           </Button>
           {/* 잠긴 버튼의 툴팁만으로는 긴 폼을 다 채운 뒤에야 이유를 알게 된다 — 밖에도 적는다 */}
           {!allowed && (
-            <div className="mt-2 text-[13.5px] text-n500">{NO_WORK_MANAGE}</div>
+            <div className="mt-2 text-[13.5px] text-n500">{NO_MANAGE_REASON[operTypeCd]}</div>
           )}
         </div>
       </PageBody>
