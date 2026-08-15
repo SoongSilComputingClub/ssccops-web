@@ -7,11 +7,12 @@ import { useMtgStore, type MtgDtl } from "@/entities/meeting";
 import { findOper, useOperStore } from "@/entities/oper";
 import { useSessionStore } from "@/entities/session";
 import { useSubWorkStore } from "@/entities/sub-work";
-import { crtrAmtText, useSubWorkTypeStore } from "@/entities/sub-work-type";
 import { useWorkStore } from "@/entities/work";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
-import { useCreateWork } from "@/features/work";
+import { useCreateSubWork } from "@/features/sub-work";
+import { useActiveSubWorkTypes } from "@/features/sub-work-type";
+import { useCreateWork, useWorkDetail } from "@/features/work";
 import {
   ATND_TRGT_CDS,
   ATND_TRGT_NM,
@@ -63,8 +64,6 @@ const KIND_META: Record<OperTypeCd, { table: string; note: string }> = {
   },
 };
 
-const DEFAULT_CHCK_ARTCLS = ["세부 계획 수립", "진행", "결과 정리", "보고"] as const;
-
 /** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
 const NO_WORK_MANAGE = "업무·하위 업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다";
 
@@ -73,19 +72,40 @@ type AgendaDraft = Pick<MtgDtl, "agndNm" | "prcsSeCd" | "operId" | "agndCn">;
 export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }) {
   const router = useRouter();
   const works = useWorkStore((s) => s.works);
-  const { subWorks, addSubWork, addSubWorkPicAltmnt, addChckArtcls } =
-    useSubWorkStore();
+  const subWorks = useSubWorkStore((s) => s.subWorks);
   const { opers, addOper } = useOperStore();
   const addMtg = useMtgStore((s) => s.addMtg);
   const addMtgDtl = useMtgStore((s) => s.addMtgDtl);
-  const subWorkTypes = useSubWorkTypeStore((s) => s.subWorkTypes);
   const mbrs = useMbrStore((s) => s.mbrs);
   const sessionMbrId = useSessionStore((s) => s.mbrId);
-  /* 업무(WORK)만 서버로 나간다 (#30). 하위 업무·회의는 아직 목 스토어에 쌓인다 */
+  /* 업무(WORK)·하위 업무(SUB_WORK)가 서버로 나간다 (#30 · #36). 회의는 아직 목 스토어에 쌓인다 */
   const sessionMember = useSessionStore((s) => s.member);
   const workCreation = useCreateWork();
+  const subWorkCreation = useCreateSubWork();
 
-  const kinds: OperTypeCd[] = fixedWorkId ? ["SUB_WORK"] : ["WORK", "MEETING"];
+  /*
+   * 상위 업무 식별자는 쿼리 파라미터(`/operations/new?workId=2`)로 온다 — 손으로 고칠 수
+   * 있으므로 숫자가 아니면 상위 업무가 없는 것으로 본다. 그러면 kinds가 업무·회의로 갈려
+   * 하위 업무 폼 자체가 그려지지 않는다.
+   */
+  const parentWorkId =
+    fixedWorkId != null && Number.isInteger(fixedWorkId) && fixedWorkId > 0
+      ? fixedWorkId
+      : null;
+
+  /*
+   * 상위 업무는 **서버에서 다시 받는다** (OPS-003). 목 스토어에서 찾으면 화면에 뜨는 이름이
+   * 실제로 하위 업무가 붙을 업무와 무관해진다 — 목 데이터의 1번 업무 이름('2026 동아리
+   * 박람회')이 서버의 1번 업무와 같을 이유가 없다(#36에서 이 어긋남이 그대로 보였다).
+   *
+   * 조회 실패는 등록을 막는다. 없는 업무·삭제된 업무라면 서버가 어차피 404로 끊고, 권한이
+   * 없으면 등록도 403이다 — 긴 폼을 다 채운 뒤에 알게 하지 않는다.
+   */
+  const parentWork = useWorkDetail(parentWorkId ?? 0);
+  /* 하위 업무 폼을 그리는 화면(상위 업무에서 들어온 경우)에서만 유형 목록을 부른다 */
+  const subWorkTypeOptions = useActiveSubWorkTypes(parentWorkId !== null);
+
+  const kinds: OperTypeCd[] = parentWorkId ? ["SUB_WORK"] : ["WORK", "MEETING"];
   const [operTypeCd, setOperTypeCd] = useState<OperTypeCd>(kinds[0]);
 
   // oper 공통 속성
@@ -99,9 +119,13 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
   const [workTypeCd, setWorkTypeCd] = useState<WorkTypeCd>("EVENT");
   const [grvwCn, setGrvwCn] = useState("");
 
-  // sub_work 확장
+  /*
+   * sub_work 확장. 상위 업무를 고르는 상태를 두지 않는 것은 **하위 업무가 상위 업무 안에서만
+   * 생기기 때문이다** — 이 화면은 상위 업무 상세의 '+ 하위 업무'로만 SUB_WORK 폼을 그리므로
+   * (kinds가 parentWorkId로 갈린다) 연결 대상은 언제나 그 한 건이다. 고르는 칩을 남겨
+   * 두면 목 업무 목록에서 아무 업무나 골라 서버로 보내는 길이 생긴다.
+   */
   const [subWorkTypeId, setSubWorkTypeId] = useState<number | null>(null);
-  const [parentWorkId, setParentWorkId] = useState<number | null>(fixedWorkId ?? null);
   const [workCn, setWorkCn] = useState("");
   const [otsdUrlAddr, setOtsdUrlAddr] = useState("");
 
@@ -124,7 +148,23 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
   const canManageWork = useCan(CAPABILITY.WORK_MANAGE);
   const allowed = operTypeCd === "MEETING" || canManageWork;
 
-  const rule = subWorkTypes.find((t) => t.subWorkTypeId === subWorkTypeId) ?? null;
+  /* 서버로 나가는 두 경로(업무·하위 업무) 중 하나라도 응답을 기다리는 중이면 버튼을 잠근다 */
+  const pending = workCreation.pending || subWorkCreation.pending;
+
+  /* 고른 유형의 승인 규칙 — 서버 목록에서 온 값이라 화면과 실제 판정이 갈리지 않는다 */
+  const rule =
+    subWorkTypeOptions.types.find((t) => t.subWorkTypeId === subWorkTypeId) ?? null;
+
+  /*
+   * 상위 업무 칩 문구. 아직 못 받았거나 조회에 실패했으면 **식별자를 그대로 보여 준다** —
+   * 이름을 지어내거나 비워 두면 어느 업무에 붙이려던 것인지 화면에서 사라진다.
+   */
+  const parentWorkLabel =
+    parentWork.status === "ready"
+      ? parentWork.work?.title || `업무 #${parentWorkId}`
+      : parentWork.status === "loading"
+        ? "불러오는 중"
+        : `업무 #${parentWorkId}`;
   const operTtlOf = (operId: number) => findOper(opers, operId)?.operTtl ?? "-";
   const operRefs = [
     ...works.map((w) => ({
@@ -169,6 +209,57 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
     if (workId) router.replace(ROUTES.workDetail(workId));
   };
 
+  /*
+   * 하위 업무 등록 (OPS-007 · POST /v1/sub-works · #36).
+   *
+   * 담당자는 업무 등록과 같은 이유로 **로그인한 회원 본인**이다 (회원 목록 API가 없다).
+   *
+   * 화면의 '마감_일시' 한 칸이 서버의 endAt(oper 종료_일시)과 dueAt(sub_work 마감_일시)을
+   * 함께 채운다. 두 값을 나눠 받을 입력란이 시안에 없고, 한쪽만 채우면 다른 쪽 기능이
+   * 조용히 죽는다 — endAt만 보내면 지연 판정·마감 임박 조회(OPS-008)가 볼 값이 없고,
+   * dueAt만 보내면 상세의 '기간'이 비어 버린다. 목 스토어 시절에도 같은 값을 두 곳에 넣었다.
+   *
+   * 업무_상태·승인_상태·완료 체크리스트는 보내지 않는다 — 서버가 각각 기획(PLANNING)·
+   * 유형의 승인 필요 여부·유형의 완료 점검 항목 복사로 정한다. 목 시절 화면이 만들어 넣던
+   * 기본 점검 항목 4개는 그래서 사라졌다(유형마다 다른 항목이 서버에서 붙는다).
+   *
+   * 등록 후에는 **상위 업무 상세로 돌아간다.** 하위 업무 상세 화면은 아직 목 데이터라
+   * 방금 받은 서버 식별자를 찾지 못한다 — 등록은 성공했는데 "없는 하위 업무"가 뜨는 화면으로
+   * 보내지 않는다. 상위 업무 상세는 서버 연동(#30)이라 목록에 새 하위 업무가 그대로 보인다.
+   */
+  const submitSubWork = async (workId: number) => {
+    if (!sessionMember) {
+      flash("회원 정보를 확인할 수 없습니다. 다시 로그인해주세요");
+      return;
+    }
+    if (!subWorkTypeId) {
+      flash("하위_업무_유형을 선택하세요");
+      return;
+    }
+    if (parentWork.status !== "ready") {
+      flash("상위 업무를 확인하지 못했습니다. 업무 상세에서 다시 들어와주세요");
+      return;
+    }
+
+    const ddlnDt = endDt ? fromInput(endDt, true) : null;
+    const { subWorkId, message } = await subWorkCreation.create({
+      workId,
+      title: operTtl.trim(),
+      subWorkTypeId,
+      ownerId: sessionMember.memberId,
+      startAt: fromInput(bgngDt, true),
+      endAt: ddlnDt,
+      dueAt: ddlnDt,
+      priority: prrtyRnkCd,
+      content: workCn,
+      externalLink: otsdUrlAddr,
+    });
+
+    if (!message) return; // 진행 중 중복 클릭 — 아무것도 보내지 않았다
+    flash(message);
+    if (subWorkId) router.replace(ROUTES.workDetail(workId));
+  };
+
   const submit = () => {
     if (!operTtl.trim() || !bgngDt) {
       flash("운영_제목 · 시작_일시는 필수입니다");
@@ -177,6 +268,16 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
 
     if (operTypeCd === "WORK") {
       void submitWork();
+      return;
+    }
+
+    if (operTypeCd === "SUB_WORK") {
+      // 하위 업무 폼은 상위 업무에서 들어왔을 때만 그려진다 — 여기에 상위 업무가 없을 수 없다
+      if (parentWorkId === null) {
+        flash("상위 업무 상세에서 '+ 하위 업무'로 들어와주세요");
+        return;
+      }
+      void submitSubWork(parentWorkId);
       return;
     }
 
@@ -190,37 +291,6 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
       picId,
       delDt: null,
     };
-
-    if (operTypeCd === "SUB_WORK") {
-      if (!parentWorkId) {
-        flash("상위 업무를 선택하세요");
-        return;
-      }
-      if (!subWorkTypeId) {
-        flash("하위_업무_유형을 선택하세요");
-        return;
-      }
-      const operId = addOper(operDraft);
-      const newSubWorkId = addSubWork({
-        workId: parentWorkId,
-        operId,
-        subWorkTtl: operTtl.trim(),
-        subWorkTypeId,
-        workSttsCd: "PLANNING",
-        aprvSttsCd: rule?.aprvNeedYn ? "PENDING" : "NOT_REQUIRED",
-        workCn: workCn.trim() || null,
-        cmptnCrtrCn: rule?.cmptnChckArtclCn ?? null,
-        dlyYn: false,
-        otsdUrlAddr: otsdUrlAddr.trim() || null,
-        ddlnDt: endDt ? fromInput(endDt, true) : null,
-        cmptnDt: null,
-      });
-      addSubWorkPicAltmnt(newSubWorkId, picId, "OWNER");
-      addChckArtcls(newSubWorkId, DEFAULT_CHCK_ARTCLS);
-      flash("하위 업무를 등록했습니다");
-      router.replace(ROUTES.subWorkDetail(newSubWorkId));
-      return;
-    }
 
     const operId = addOper(operDraft);
     const newMtgId = addMtg({
@@ -254,7 +324,7 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
       <PageHeader
         title="운영 등록"
         subtitle="운영_유형별 등록 폼"
-        showBack={!!fixedWorkId}
+        showBack={parentWorkId !== null}
       />
       <PageBody>
         <Card className="mb-4">
@@ -303,12 +373,13 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
                 />
               </Field>
               {/*
-                업무는 담당자를 고르지 않고 본인으로 고정한다 — 서버에 회원 목록 API가 없어
-                고를 후보를 받아올 데가 없고, 목 회원의 mbrId를 보내면 400으로 끊긴다.
-                회의·하위 업무는 아직 목 데이터라 종전대로 셀렉트를 둔다.
+                업무·하위 업무는 담당자를 고르지 않고 본인으로 고정한다 — 서버에 회원 목록
+                API가 없어 고를 후보를 받아올 데가 없고, 목 회원의 mbrId를 보내면 400
+                (담당자로 지정할 수 없는 회원입니다)으로 끊긴다.
+                회의는 아직 목 데이터라 종전대로 셀렉트를 둔다.
               */}
               <Field label="담당자">
-                {operTypeCd === "WORK" ? (
+                {operTypeCd !== "MEETING" ? (
                   <div className="pt-[6px]">
                     <div className="text-[15px]">{sessionMember?.name ?? "-"}</div>
                     <div className="mt-1 text-[13px] text-n500">
@@ -394,79 +465,104 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
 
             {operTypeCd === "SUB_WORK" && (
               <>
+                {/*
+                  상위 업무 연결을 유형보다 먼저 그린다 — '무엇에 붙는 하위 업무인가'가 유형
+                  선택보다 앞선 정보이고, 이 값이 확인되지 않으면 아래를 다 채워도 등록되지 않는다.
+                  이름은 서버 상세(OPS-003)에서 온 값이라 실제로 붙을 업무와 어긋날 수 없다.
+                */}
+                <div className="mb-2 text-[13.5px] text-n400">상위 업무 연결</div>
+                <Chip active>{parentWorkLabel} 고정</Chip>
+                <div
+                  className={
+                    parentWork.status === "ready"
+                      ? "mt-2 mb-4 text-[13px] text-n500"
+                      : "mt-2 mb-4 text-[13px] text-danger"
+                  }
+                >
+                  {parentWork.status === "ready"
+                    ? "하위 업무는 상위 업무 안에서만 생성됩니다"
+                    : parentWork.status === "loading"
+                      ? "상위 업무를 불러오는 중입니다"
+                      : parentWork.errorMessage ||
+                        "상위 업무를 찾을 수 없습니다. 업무 상세에서 다시 들어와주세요"}
+                </div>
+
+                {/*
+                  유형은 **사용 중인 것만** 서버에서 받아 칩으로 그리고 하나만 고른다 (OPS-018).
+                  꺼진 유형까지 고를 수 있으면 서버가 400 SUB_WORK_TYPE_INACTIVE로 끊는데,
+                  사용자 눈에는 목록에 있던 유형을 골랐을 뿐이라 이유를 알 수 없다.
+                */}
                 <div className="mb-2 text-[13.5px] text-n400">하위_업무_유형</div>
+                {subWorkTypeOptions.status === "loading" && (
+                  <div className="mb-3 text-[13.5px] text-n500">
+                    하위_업무_유형을 불러오는 중입니다
+                  </div>
+                )}
+                {subWorkTypeOptions.status === "error" && (
+                  <div className="mb-3 text-[13.5px] text-danger">
+                    {subWorkTypeOptions.errorMessage}{" "}
+                    <button
+                      type="button"
+                      onClick={subWorkTypeOptions.reload}
+                      className="cursor-pointer underline"
+                    >
+                      다시 시도
+                    </button>
+                  </div>
+                )}
+                {subWorkTypeOptions.status === "ready" &&
+                  subWorkTypeOptions.types.length === 0 && (
+                    <div className="mb-3 text-[13.5px] text-n500">
+                      사용 중인 하위 업무 유형이 없습니다 — 하위 업무 유형 관리에서 먼저
+                      등록하거나 사용을 켜야 합니다
+                    </div>
+                  )}
                 <div className="mb-3 flex flex-wrap gap-[7px]">
-                  {subWorkTypes.map((t) => (
+                  {subWorkTypeOptions.types.map((t) => (
                     <Chip
                       key={t.subWorkTypeId}
                       active={subWorkTypeId === t.subWorkTypeId}
                       onClick={() => setSubWorkTypeId(t.subWorkTypeId)}
                     >
-                      {t.typeNm}
+                      {t.typeName}
                     </Chip>
                   ))}
                 </div>
+                {/*
+                  기준_금액은 이 표에 없다 — 서버의 유형 API 범위 밖이라(위험도 판정 REQ-016이
+                  붙을 때 열린다) 목 스토어에서만 보이던 값이고, 남겨 두면 저장되지도 않는 규칙을
+                  화면이 약속하게 된다.
+                */}
                 {rule ? (
                   <div className="mb-4 rounded-[12px] bg-bg p-3">
                     <div className="text-[13.5px] font-semibold">
-                      {rule.typeNm} 유형 규칙
+                      {rule.typeName} 유형 규칙
                     </div>
                     <div className="mt-2 grid grid-cols-[92px_1fr] gap-y-[6px] text-[13.5px]">
                       <div className="text-n500">승인_필요</div>
-                      <div className={rule.aprvNeedYn ? "text-danger" : undefined}>
-                        {rule.aprvNeedYn
-                          ? `${rule.autzrRoleCd ? AUTZR_ROLE_NM[rule.autzrRoleCd] : "책임자"} 승인 필요`
+                      <div className={rule.approvalNeeded ? "text-danger" : undefined}>
+                        {rule.approvalNeeded
+                          ? `${rule.authorizerRoleCode ? AUTZR_ROLE_NM[rule.authorizerRoleCode] : "책임자"} 승인 필요`
                           : "승인 없이 진행"}
                       </div>
                       <div className="text-n500">최소_동의_수</div>
                       <div>
-                        {rule.minNeedAgreCntYn
-                          ? `${rule.minNeedAgreCnt}명 동의`
+                        {rule.minAgreeCountNeeded
+                          ? `${rule.minAgreeCount}명 동의`
                           : "해당 없음"}
                       </div>
-                      <div className="text-n500">기준_금액</div>
-                      <div>{crtrAmtText(rule)}</div>
                       <div className="text-n500">완료_점검</div>
-                      <div>{rule.cmptnChckArtclCn ?? "-"}</div>
+                      <div>
+                        {rule.completionCheckArticles.length > 0
+                          ? rule.completionCheckArticles.join(" · ")
+                          : "-"}
+                      </div>
                     </div>
                   </div>
                 ) : (
                   <div className="mb-4 text-[13.5px] text-n500">
                     하위_업무_유형을 선택하면 승인 규칙이 표시됩니다
                   </div>
-                )}
-                <div className="mb-2 text-[13.5px] text-n400">상위 업무 연결</div>
-                {fixedWorkId ? (
-                  <>
-                    <Chip active>
-                      {works.find((w) => w.workId === fixedWorkId)
-                        ? operTtlOf(
-                            works.find((w) => w.workId === fixedWorkId)!.operId,
-                          )
-                        : fixedWorkId}{" "}
-                      고정
-                    </Chip>
-                    <div className="mt-2 mb-4 text-[13px] text-n500">
-                      하위 업무는 상위 업무 안에서만 생성됩니다
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="mb-2 flex flex-wrap gap-[7px]">
-                      {works.map((w) => (
-                        <Chip
-                          key={w.workId}
-                          active={parentWorkId === w.workId}
-                          onClick={() => setParentWorkId(w.workId)}
-                        >
-                          {operTtlOf(w.operId)}
-                        </Chip>
-                      ))}
-                    </div>
-                    <div className="mb-4 text-[13px] text-n500">
-                      상위 업무를 반드시 선택하세요
-                    </div>
-                  </>
                 )}
                 <div className="flex flex-col gap-[14px]">
                   <Field label="업무_내용">
@@ -480,12 +576,13 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
                     <TextField
                       value={otsdUrlAddr}
                       onChange={(e) => setOtsdUrlAddr(e.target.value)}
-                      placeholder="문서 · 시트 URL"
+                      placeholder="https:// 로 시작하는 문서 · 시트 URL"
                     />
                   </Field>
                 </div>
                 <div className="mt-3 text-[13px] text-n500">
-                  등록 직후 업무_상태는 기획(PLANNING)입니다.
+                  등록 직후 업무_상태는 기획(PLANNING)이며, 완료 점검 목록은 고른 유형의
+                  항목을 복사해 함께 만들어집니다.
                 </div>
               </>
             )}
@@ -636,10 +733,10 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
           <Button
             className="px-[26px] py-[11px]"
             onClick={submit}
-            disabled={workCreation.pending || !allowed}
+            disabled={pending || !allowed}
             title={allowed ? undefined : NO_WORK_MANAGE}
           >
-            {workCreation.pending ? "등록하는 중…" : `${OPER_TYPE_NM[operTypeCd]} 등록`}
+            {pending ? "등록하는 중…" : `${OPER_TYPE_NM[operTypeCd]} 등록`}
           </Button>
           {/* 잠긴 버튼의 툴팁만으로는 긴 폼을 다 채운 뒤에야 이유를 알게 된다 — 밖에도 적는다 */}
           {!allowed && (
