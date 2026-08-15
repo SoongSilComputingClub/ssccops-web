@@ -39,11 +39,20 @@ export interface AuthUser {
  *  - FORM_LABEL_MANAGE    POST·PATCH /v1/form-labels…
  *  - RESPONSE_REVIEW      FormResponseController 전체
  *  - ROLE_MANAGE         AuthorityController · RoleAuthorityController 전체 (#32 · 서버 #65)
+ *  - MEMBER_MANAGE        MemberController 조회·수정·등급·상태 (#52 · 서버 #76)
  *
  * ROLE_MANAGE 는 이 목록에서 유일하게 묶음처럼 생겼지만 **잎 코드로 다뤄도 되는 자리**다.
  * 서버가 두 컨트롤러 클래스 전체에 `@RequireAuthority(ROLE_MANAGE)`를 걸어 두어 이 코드 자체가
  * 엔드포인트가 요구하는 값이기 때문이다. 조회까지 막혀 있으므로 화면은 이 코드가 없으면 아예
- * 열지 않는다 — 열어 봐야 첫 조회부터 403이다.
+ * 열지 않는다 — 열어 봐야 첫 조회부터 403이다. MEMBER_MANAGE 도 같은 자리다.
+ *
+ * ── MEMBER_MANAGE 를 국장(OPERATOR)이 갖지 못하는 것은 정상이다 (#52) ──────────
+ * 표준코드상 MEMBER_MANAGE 는 **EXECUTIVE 의 자식**이다. 시드에서 회장·부회장·총무는 EXECUTIVE
+ * 를 통해 이 권한에 닿지만, 국장은 OPERATOR 를 통해 닿는다 — OPERATOR 는 MEMBER_MANAGE 의
+ * 형제이지 조상이 아니므로 국장의 capabilities 에는 MEMBER_MANAGE 가 실려 오지 않는다(펼침은
+ * 언제나 아래로만 간다). 그래서 국장에게는 회원 메뉴가 보이지 않는다. 이는 시드가 의도한
+ * 결과이므로 웹에서 우회하지 않는다 — 국장이 회원 관리를 해야 한다면 그건 화면에 예외를 넣을
+ * 일이 아니라 역할별 권한 부여 화면(#32)에서 그 역할에 MEMBER_MANAGE 를 직접 주어 정할 일이다.
  *
  * 묶음 코드로 판정하면 어긋난다. 예를 들어 어떤 역할에 FORM_WRITE만 직접 부여하면 그 회원의
  * 배열에 FORM_MANAGE는 없는데, 화면이 FORM_MANAGE를 찾으면 서버는 허용하는 버튼을 감춘다.
@@ -60,6 +69,7 @@ export const CAPABILITY = {
   FORM_LABEL_MANAGE: "FORM_LABEL_MANAGE",
   RESPONSE_REVIEW: "RESPONSE_REVIEW",
   ROLE_MANAGE: "ROLE_MANAGE",
+  MEMBER_MANAGE: "MEMBER_MANAGE",
 } as const;
 
 export type Capability = (typeof CAPABILITY)[keyof typeof CAPABILITY];
