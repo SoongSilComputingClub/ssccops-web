@@ -30,6 +30,15 @@ export {
   fetchMemberStatuses,
   MEMBER_ERROR,
 } from "./api/members";
+/* 회원 정보 수정 (#47 · 서버 #77) */
+export {
+  updateMember,
+  updateMyProfile,
+  MEMBER_FIELD_MAX,
+  ACADEMIC_YEAR_MIN,
+  ACADEMIC_YEAR_MAX,
+} from "./api/members";
+export type { MemberUpdateInput, MemberSelfUpdateInput } from "./api/members";
 export type {
   AssignableMember,
   MemberSummary,
