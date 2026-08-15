@@ -14,7 +14,11 @@ export function PageHeader({
   title: ReactNode;
   subtitle?: ReactNode;
   showBack?: boolean;
-  action?: { label: string; onClick: () => void };
+  /**
+   * 주요 액션. `disabled`와 `title`은 권한이 없을 때 쓴다 (#29) — 감추지 않고 잠근 채
+   * 이유를 툴팁으로 붙인다. 근거는 features/auth/model/use-can.ts.
+   */
+  action?: { label: string; onClick: () => void; disabled?: boolean; title?: string };
 }) {
   const router = useRouter();
   return (
@@ -40,7 +44,11 @@ export function PageHeader({
         <div className="text-[24px] font-medium tracking-[-.3px]">{title}</div>
         {subtitle && <div className="mt-[2px] text-[13.5px] text-n500">{subtitle}</div>}
       </div>
-      {action && <Button onClick={action.onClick}>{action.label}</Button>}
+      {action && (
+        <Button onClick={action.onClick} disabled={action.disabled} title={action.title}>
+          {action.label}
+        </Button>
+      )}
     </div>
   );
 }

@@ -9,6 +9,8 @@ import {
   rspnsValueText,
   type FormResponseDetail,
 } from "@/entities/response";
+import { CAPABILITY } from "@/entities/session";
+import { useCan } from "@/features/auth";
 import { useFormDetail } from "@/features/form";
 import { ResponseStatusSheet, useResponseDetail } from "@/features/response";
 import { ROUTES } from "@/shared/config/routes";
@@ -23,6 +25,9 @@ import {
   PageHeader,
   SectionLabel,
 } from "@/shared/ui";
+
+/** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
+const NO_REVIEW = "응답을 심사할 권한이 없습니다";
 
 /**
  * 응답 한 건을 그린다.
@@ -45,10 +50,16 @@ function ResponseDetailContent({
 }) {
   const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const canReview = useCan(CAPABILITY.RESPONSE_REVIEW);
 
   const { member } = response;
   const badge = RSPNS_STTS_BADGE[response.rspnsSttsCd];
-  const reviewable = response.rspnsSttsCd !== "DRAFT";
+  /*
+   * 심사할 수 없는 이유가 둘이고 사용자에게는 서로 다른 말이 필요하다 — "아직 제출 전"은
+   * 기다리면 풀리고 "권한 없음"은 역할을 받아야 풀린다. 버튼은 둘 다 잠그되 문구는 나눈다.
+   */
+  const submitted = response.rspnsSttsCd !== "DRAFT";
+  const reviewable = submitted && canReview;
 
   /*
    * 이전/다음은 서버가 준 인접 ID로만 움직인다.
@@ -138,7 +149,11 @@ function ResponseDetailContent({
           >
             이전
           </Button>
-          <Button disabled={!reviewable} onClick={() => setSheetOpen(true)}>
+          <Button
+            disabled={!reviewable}
+            title={canReview ? undefined : NO_REVIEW}
+            onClick={() => setSheetOpen(true)}
+          >
             응답 상태 변경
           </Button>
           <Button
@@ -148,10 +163,12 @@ function ResponseDetailContent({
           >
             다음
           </Button>
-          {!reviewable && (
+          {!submitted ? (
             <div className="text-[13.5px] text-n500">
               아직 제출되지 않은 응답이라 심사할 수 없습니다.
             </div>
+          ) : (
+            !canReview && <div className="text-[13.5px] text-n500">{NO_REVIEW}</div>
           )}
         </div>
 

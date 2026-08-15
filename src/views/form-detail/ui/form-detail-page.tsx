@@ -8,6 +8,8 @@ import {
   type FormPage,
   type Qitem,
 } from "@/entities/form";
+import { CAPABILITY } from "@/entities/session";
+import { useCan } from "@/features/auth";
 import {
   FormCloseSheet,
   useDuplicateForm,
@@ -33,6 +35,10 @@ import {
   StatBox,
   flash,
 } from "@/shared/ui";
+
+/** 잠긴 버튼에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
+const NO_WRITE = "폼을 고치거나 복제할 권한이 없습니다";
+const NO_STATUS_CHANGE = "접수 상태를 바꿀 권한이 없습니다";
 
 function QitemPreview({
   qitem,
@@ -120,6 +126,13 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
   const router = useRouter();
   const status = useFormStatus();
   const duplication = useDuplicateForm();
+  /*
+   * 두 권한을 따로 본다 (#29). 서버가 폼 편집(FORM_WRITE)과 접수 상태 전이(FORM_STATUS_CHANGE)를
+   * 다른 권한으로 막고 있어서다 — 하나로 묶으면 접수만 여닫을 수 있는 회원에게서 그 버튼까지
+   * 잠근다. 둘 다 FORM_MANAGE 아래라 대개 함께 오지만, 함께 온다는 사실에 기대지 않는다.
+   */
+  const canWrite = useCan(CAPABILITY.FORM_WRITE);
+  const canChangeStatus = useCan(CAPABILITY.FORM_STATUS_CHANGE);
   const [closeSheetOpen, setCloseSheetOpen] = useState(false);
   const [page, setPage] = useState(0);
   const [sel, setSel] = useState<Record<string, string[]>>({});
@@ -250,9 +263,12 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 </div>
               )}
               <div className="mt-4 flex gap-2">
+                {/* 권한이 없어도 감추지 않고 잠근다 — 근거는 features/auth/model/use-can.ts */}
                 <Button
                   variant="ghost"
                   className="flex-1"
+                  disabled={!canWrite}
+                  title={canWrite ? undefined : NO_WRITE}
                   onClick={() => router.push(ROUTES.formEdit(form.formId))}
                 >
                   수정
@@ -260,7 +276,8 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 <Button
                   variant="ghost"
                   className="flex-1"
-                  disabled={duplication.pending}
+                  disabled={duplication.pending || !canWrite}
+                  title={canWrite ? undefined : NO_WRITE}
                   onClick={() => void runDuplicate()}
                 >
                   {duplication.pending ? "복제하는 중…" : "복제"}
@@ -276,13 +293,14 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 */}
                 <button
                   type="button"
-                  disabled={status.pending}
+                  disabled={status.pending || !canChangeStatus}
+                  title={canChangeStatus ? undefined : NO_STATUS_CHANGE}
                   onClick={
                     form.formSttsCd === "OPEN"
                       ? () => setCloseSheetOpen(true)
                       : startReceipt
                   }
-                  className="cursor-pointer rounded-[10px] border border-line-strong bg-bg px-3 py-[6px] text-[14px] hover:border-accent hover:text-accent disabled:cursor-default disabled:opacity-50"
+                  className="cursor-pointer rounded-[10px] border border-line-strong bg-bg px-3 py-[6px] text-[14px] hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {form.formSttsCd === "OPEN" ? "마감" : "접수 시작"}
                 </button>

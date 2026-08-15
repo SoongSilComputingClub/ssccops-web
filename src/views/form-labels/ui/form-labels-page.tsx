@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { CAPABILITY } from "@/entities/session";
+import { useCan } from "@/features/auth";
 import { useFormLabels } from "@/features/form";
 import {
   Button,
@@ -27,12 +29,18 @@ import {
  * "사용 중인 폼 N건"은 **서버 집계값(usageCount)** 이다. 예전에는 메모리의 formLblRels를 세었는데,
  * 그 배열은 이 브라우저가 들고 있는 목 데이터일 뿐이라 실제 지정 수와 무관했다.
  *
- * 권한: 추가·비활성화는 최고운영자 전용이지만 역할 인가(#9)가 아직 없다. 화면을 미리 막지 않고
- * 서버가 403으로 거절하면 그 사유를 그대로 보여 준다.
+ * ── 권한 (#29 · 서버 #9) ───────────────────────────────────────
+ * 목록 조회에는 서버가 권한을 걸지 않았고 추가·비활성화만 FORM_LABEL_MANAGE 를 요구한다.
+ * 그래서 **화면은 누구에게나 열되 두 조작만 잠근다** — 감추면 라벨이 무엇무엇 있는지조차
+ * 볼 수 없게 되는데, 폼 목록 필터의 분류 축을 알아야 할 사람은 관리 권한자보다 훨씬 많다.
  */
+
+/** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
+const NO_MANAGE = "라벨을 추가하거나 사용_여부를 바꿀 권한이 없습니다 — 조회만 할 수 있습니다";
 
 export function FormLabelsPage() {
   const admin = useFormLabels();
+  const canManage = useCan(CAPABILITY.FORM_LABEL_MANAGE);
   const [newLblNm, setNewLblNm] = useState("");
 
   const add = async () => {
@@ -54,18 +62,30 @@ export function FormLabelsPage() {
               onChange={(e) => setNewLblNm(e.target.value)}
               // 엔터로도 추가한다 — 여러 개를 이어서 넣는 화면이라 매번 버튼까지 가지 않게
               onKeyDown={(e) => {
-                if (e.key === "Enter") void add();
+                if (e.key === "Enter" && canManage) void add();
               }}
+              disabled={!canManage}
               invalid={Boolean(admin.addErrorMessage)}
               placeholder="새 라벨_명"
               className="w-[260px]"
             />
-            <Button onClick={() => void add()} disabled={admin.adding}>
+            <Button
+              onClick={() => void add()}
+              disabled={admin.adding || !canManage}
+              title={canManage ? undefined : NO_MANAGE}
+            >
               {admin.adding ? "추가 중…" : "추가"}
             </Button>
           </div>
           {admin.addErrorMessage && (
             <div className="mt-[6px] text-[13px] text-danger">{admin.addErrorMessage}</div>
+          )}
+          {/*
+            잠긴 입력란만 두면 왜 못 쓰는지가 툴팁에만 남는다 — 이 화면은 조작이 화면의
+            전부라 사유를 한 줄로 밖에 꺼내 둔다.
+          */}
+          {!canManage && (
+            <div className="mt-[6px] text-[13px] text-n500">{NO_MANAGE}</div>
           )}
         </div>
 
@@ -116,6 +136,8 @@ export function FormLabelsPage() {
                         <Toggle
                           on={l.useYn}
                           onChange={() => void admin.toggle(l)}
+                          disabled={!canManage}
+                          title={canManage ? undefined : NO_MANAGE}
                           className={admin.isToggling(l.formLblId) ? "opacity-50" : undefined}
                         />
                       </div>

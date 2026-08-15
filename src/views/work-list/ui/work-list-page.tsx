@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { CAPABILITY } from "@/entities/session";
 import { workSttsTone, type WorkListItem } from "@/entities/work";
+import { useCan } from "@/features/auth";
 import { useWorkList } from "@/features/work";
 import { WORK_STTS_NM, WORK_TYPE_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
@@ -25,6 +27,9 @@ import {
  * 진행률의 분모가 화면 계산에 달려 있어 상세와 어긋날 여지가 있었다. 지금은 둘 다 서버가
  * 같은 집계(AGG-01·AGG-03)로 내려 준다.
  */
+
+/** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
+const NO_WORK_MANAGE = "업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다";
 
 function WorkCardSkeleton() {
   return (
@@ -78,6 +83,12 @@ export function WorkListPage() {
     reload,
   } = useWorkList();
 
+  /*
+   * 이 목록은 조회부터 WORK_MANAGE 로 막혀 있어(서버 WorkController 전체) 여기까지 온 사람은
+   * 대개 권한이 있다. 그래도 잠금을 붙이는 것은 권한이 방금 회수된 경우 때문이다 — 세션
+   * 재동기화가 끝나면 이 버튼이 스스로 잠긴다.
+   */
+  const canManage = useCan(CAPABILITY.WORK_MANAGE);
   const openCreate = () => router.push(ROUTES.operationNew);
 
   const runLoadMore = async () => {
@@ -90,7 +101,12 @@ export function WorkListPage() {
       <PageHeader
         title="업무"
         subtitle="행사 · 상시 · 정례 운영"
-        action={{ label: "+ 등록", onClick: openCreate }}
+        action={{
+          label: "+ 등록",
+          onClick: openCreate,
+          disabled: !canManage,
+          title: canManage ? undefined : NO_WORK_MANAGE,
+        }}
       />
       <PageBody>
         {status === "loading" && (
@@ -112,7 +128,8 @@ export function WorkListPage() {
           (works.length === 0 ? (
             <EmptyState
               message="등록된 업무가 없습니다."
-              action={{ label: "+ 등록", onClick: openCreate }}
+              /* 유도 버튼은 감춘다 — 권하면서 누르지 못하게 하는 모순이고, 사유는 헤더가 말한다 */
+              action={canManage ? { label: "+ 등록", onClick: openCreate } : undefined}
             />
           ) : (
             <>

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Qitem } from "@/entities/form";
+import { CAPABILITY } from "@/entities/session";
+import { useCan } from "@/features/auth";
 import {
   FormSaveStatusBar,
   isTextQitemType,
@@ -59,6 +61,28 @@ import {
 
 export function FormEditPage({ formId }: { formId?: number }) {
   const editor = useFormEditor(formId);
+  const canWrite = useCan(CAPABILITY.FORM_WRITE);
+
+  /*
+   * 이 화면만은 잠그는 것이 아니라 **아예 열지 않는다** (#29).
+   *
+   * 다른 곳과 규칙이 다른 이유는 편집기가 자동 저장이기 때문이다. 입력란을 열어 두면 타이핑
+   * 한 번마다 저장 요청이 나가 전부 403으로 떨어지고, 사용자는 자기가 쓴 내용이 어디에도
+   * 남지 않았다는 것을 저장 실패 배너로만 알게 된다. 잠긴 입력란 수십 개를 보여 주는 것도
+   * 안내가 아니다 — 여기서는 못 쓴다는 사실 하나가 필요한 전부다.
+   *
+   * 목록·상세의 '수정'은 이미 잠겨 있으므로 이 분기에 닿는 것은 주소를 직접 친 경우다.
+   */
+  if (!canWrite) {
+    return (
+      <>
+        <PageHeader title="폼 편집" showBack />
+        <PageBody>
+          <EmptyState message="폼을 고칠 권한이 없습니다 — 운영진에게 역할 부여를 요청해주세요." />
+        </PageBody>
+      </>
+    );
+  }
 
   if (editor.status === "ready") return <FormEditContent editor={editor} />;
 

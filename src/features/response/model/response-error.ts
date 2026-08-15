@@ -21,6 +21,13 @@ export function toResponseErrorMessage(error: unknown): string {
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
       return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
+    /*
+     * 응답 API는 조회까지 RESPONSE_REVIEW로 막혀 있다(서버 #9) — 가입한 회원이라도 권한이
+     * 없으면 목록조차 못 본다. 상태(403)가 아니라 코드로 보는 이유는 form-error.ts와 같다.
+     */
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "응답을 심사할 권한이 없습니다 — 운영진에게 역할 부여를 요청해주세요";
     case RESPONSE_ERROR.FORM_RESPONSE_NOT_FOUND:
       return "응답을 찾을 수 없습니다";
     case RESPONSE_ERROR.INVALID_RESPONSE_STATUS_TRANSITION:

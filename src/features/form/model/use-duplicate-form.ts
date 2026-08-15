@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { duplicateForm } from "@/entities/form";
+import { syncSessionOnForbidden } from "@/entities/session";
 import { toFormDuplicateErrorMessage } from "./form-error";
 
 /*
@@ -54,6 +55,8 @@ export function useDuplicateForm(): FormDuplicateControl {
         message: "작성 중(DRAFT) 폼으로 복제했습니다 — 라벨과 접수 기간은 승계되지 않습니다",
       };
     } catch (error: unknown) {
+      // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다
+      syncSessionOnForbidden(error);
       return { formId: null, message: toFormDuplicateErrorMessage(error) };
     } finally {
       inFlightRef.current = false;
