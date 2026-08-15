@@ -76,6 +76,22 @@ export function formatMd(value: string | null): string {
   return `${Number(m)}월 ${Number(d)}일`;
 }
 
+/**
+ * 오늘 날짜(Asia/Seoul) — "YYYY-MM-DD".
+ *
+ * **서버에서 받아 온 값의 D-day는 이 함수로 센다.** 기본 기준일 `TODAY`는 목 데이터의 D-day
+ * 시맨틱을 고정하려고 박아 둔 상수(2026-08-09)라, 실제 데이터에 쓰면 이미 지난 마감이
+ * "D-11"로 보이는 식으로 조용히 틀린다.
+ *
+ * 브라우저의 로컬 시간대가 아니라 서비스 시간대로 센다 — 서버가 일시를 Asia/Seoul 오프셋으로
+ * 내려주고 화면도 그 문자열을 그대로 잘라 쓰므로(`formatDt`), 여기서만 현지 시간대를 쓰면
+ * 해외에서 접속한 운영자에게 하루가 어긋난다 (`withServiceOffset`과 같은 판단).
+ */
+export function todayInSeoul(): string {
+  // sv-SE 로케일이 ISO와 같은 YYYY-MM-DD 표기를 준다
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(new Date());
+}
+
 /** 기준일(TODAY)로부터 남은 일수. 값이 없으면 null */
 export function daysUntil(value: string | null, today: string = TODAY): number | null {
   if (!value) return null;

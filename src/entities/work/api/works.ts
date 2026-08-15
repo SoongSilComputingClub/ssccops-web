@@ -242,6 +242,41 @@ export async function fetchWork(workId: number): Promise<WorkDetail> {
   return toWorkDetail(work);
 }
 
+/* ── 수정 ──────────────────────────────────────────────────── */
+
+/**
+ * PATCH /v1/works/{workId} — 기본 정보 수정 (OPS-004).
+ *
+ * 등록(OPS-002)과 같은 입력이라 {@link WorkCreateInput}을 그대로 재사용한다 — 서버 요청
+ * 필드가 실제로 같고(WorkUpdateRequest), 같은 값을 담는 타입을 하나 더 선언하면 등록·수정이
+ * 갈릴 때 어느 쪽을 고쳤는지 헷갈리는 자리가 하나 생긴다.
+ *
+ * **PATCH이지만 전체 교체다** — review처럼 선택 입력인 필드도 생략하면 서버가 지운 것으로
+ * 본다(서버 WorkUpdateRequest 주석). 화면은 그래서 현재 값을 전부 입력란에 채워 보여주고,
+ * 부분 입력 폼을 만들지 않는다.
+ *
+ * `workStatus`는 요청에 없다 — 이 경로로 상태를 바꿀 수 없다(POL-003). 응답이 상세 조회와
+ * 같은 모양이므로 화면은 수정 직후 재조회 없이 그대로 갱신할 수 있다.
+ */
+export async function updateWork(
+  workId: number,
+  input: WorkCreateInput,
+): Promise<WorkDetail> {
+  const res = await apiFetch<WorkDetailResponse>(`/v1/works/${workId}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      title: input.title.trim(),
+      itemType: input.itemType,
+      ownerId: input.ownerId,
+      startAt: withServiceOffset(input.startAt),
+      endAt: withServiceOffset(input.endAt),
+      priority: input.priority,
+      review: input.review?.trim() || null,
+    }),
+  });
+  return toWorkDetail(res);
+}
+
 /* ── 등록 ──────────────────────────────────────────────────── */
 
 /**

@@ -15,6 +15,7 @@ import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
 import {
   Badge,
+  Button,
   Card,
   EmptyState,
   GridTable,
@@ -32,9 +33,9 @@ import {
  * 좌측 상세 카드와 우측 하위 업무 목록을 **이 한 번의 호출로** 채운다(#30). 하위 업무의
  * 담당자·진행률도 서버가 함께 내려주므로 목 스토어를 조합하던 계산이 전부 사라졌다.
  *
- * 하위 업무 행을 클릭하면 하위 업무 상세로 가는데, 그 화면은 아직 목 데이터라 서버에서 온
- * subWorkId를 찾지 못한다. 그래도 링크를 끊지 않는 것은 그 화면이 연동되는 순간 그대로
- * 이어져야 할 이동이기 때문이다.
+ * '수정' 버튼을 헤더가 아니라 좌측 카드 안에 둔 것은 헤더의 action 슬롯이 하나뿐이고
+ * '+ 하위 업무'가 이미 그 자리를 쓰기 때문이다 — 상세 카드가 보여주는 값을 고치는
+ * 버튼이니 그 카드 안에 있는 편이 더 자연스럽기도 하다.
  */
 
 /**
@@ -166,6 +167,18 @@ export function WorkDetailPage({ workId }: { workId: number }) {
                 {WORK_STTS_NM[work.workStatus]}
               </Badge>
               <div className="text-[14px] text-n400">{WORK_TYPE_NM[work.workType]}</div>
+              <div className="flex-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push(ROUTES.workEdit(work.workId))}
+                disabled={!canManage}
+                title={
+                  canManage ? undefined : "업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다"
+                }
+              >
+                수정
+              </Button>
             </div>
             <div className="mt-2 text-[23px] font-medium">{work.title}</div>
             <div className="mt-3 flex items-center gap-[10px]">

@@ -1,19 +1,40 @@
-import type { AprvSttsCd, PrrtyRnkCd, WorkSttsCd } from "@/shared/config/codes";
+import type {
+  AprvSttsCd,
+  OperTypeCd,
+  PrrtyRnkCd,
+  WorkSttsCd,
+} from "@/shared/config/codes";
 import { ApiError, apiFetch } from "@/shared/lib/api/client";
 import { withServiceOffset } from "@/shared/lib/date";
+import type {
+  SubWorkChecklistItem,
+  SubWorkChecklistSummary,
+  SubWorkChecklistUpdate,
+  SubWorkDetail,
+  SubWorkMemberRef,
+  SubWorkQuorum,
+  SubWorkRejection,
+  SubWorkTransition,
+  SubWorkTransitionResult,
+} from "../model/types";
 
 /*
- * 하위 업무 API (ssccops-server OPS-007 등록 · #36).
+ * 하위 업무 API (ssccops-server OPS-007 등록 · #36 / OPS-009 상세 · OPS-010 전이 ·
+ * OPS-013 체크리스트 · OPS-030 기본 정보 수정 · #39).
  *
  * **서버 응답의 모양을 아는 곳은 이 파일 하나로 제한한다** — 폼·업무 도메인이 잡아 둔 규칙
  * 그대로다. 화면이 응답 객체를 그대로 들고 다니면 계약이 바뀔 때마다 뷰 전체를 훑어야 한다.
  *
  * 인가는 상위 업무와 같은 `WORK_MANAGE`다 (서버 #9 · SubWorkController 클래스 애노테이션) —
  * 상위 업무와 하위 업무를 나눠 부여할 이유가 없다는 판단이고, 그래서 화면도 업무 등록과 같은
- * capability로 잠근다.
+ * capability로 잠근다. **조회도 함께 막힌다** — 담당자와 진행 상황이 들어 있기 때문이다.
  *
- * 목록(OPS-008)·상세(OPS-009)·전이(OPS-010)는 아직 여기 없다. 그 화면들은 목 스토어를 쓰며
- * 이 이슈의 범위는 등록 하나다 — 붙이는 순간 같은 파일에 이어 쓴다.
+ * 승인·반려 자격은 이 권한과 **별개**다(서버 ApprovalAuthorityPolicy) — '무슨 일을 하는
+ * 사람인가'가 아니라 '이 건의 승인자 본인인가'라 건마다 답이 달라진다. 그 판정은 웹이 역할
+ * 이름으로 다시 계산하지 않고 상세 응답의 canApprove·canReject를 그대로 쓴다.
+ *
+ * 목록(OPS-008)과 투표(OPS-015)는 아직 여기 없다. 목록 화면과 승인함은 목 스토어를 쓰며
+ * 그 API가 붙는 순간 같은 파일에 이어 쓴다.
  */
 
 /** 외부_URL_주소 최대 길이 (sub_work.otsd_url_addr 주소V200) — 서버 400을 기다리지 않고 먼저 걸러 준다 */
@@ -31,15 +52,33 @@ export const EXTERNAL_LINK_MAX_LENGTH = 200;
  * 있으므로 이 두 코드는 문구를 뭉개지 말고 서버 문장을 그대로 보여 준다.
  */
 export const SUB_WORK_ERROR = {
-  /** 담당자 부적격·기간 역전·꺼진 유형·필수값 누락 (400) */
+  /** 담당자 부적격·기간 역전·꺼진 유형·필수값 누락·반려 사유 500자 초과 (400) */
   VALIDATION_FAILED: "VALIDATION_FAILED",
-  /** 기준 코드에 없는 값 (400) — 우선_순위가 어긋났을 때 */
+  /** 기준 코드에 없는 값 (400) — 우선_순위·전이 액션이 어긋났을 때 */
   INVALID_CODE_VALUE: "INVALID_CODE_VALUE",
-  /** 없는(삭제된) 상위 업무 · 없는 하위 업무 유형 (404) */
+  /**
+   * 없는(삭제된) 상위 업무 · 없는 하위 업무 유형 · 없는 하위 업무 · 이 하위 업무의 것이 아닌
+   * 체크리스트 항목 (404). 마지막 것을 403으로 나누지 않는 것은 서버가 그렇게 정했기 때문이다 —
+   * 남의 하위 업무에 그 번호의 항목이 있는지가 새어 나가지 않는다.
+   */
   NOT_FOUND: "NOT_FOUND",
-  /** WORK_MANAGE 권한 없음 (403) */
+  /** WORK_MANAGE 권한 없음 · **이 건의 승인자가 아님** (403) — 서버가 두 뜻에 같은 코드를 쓴다 */
   FORBIDDEN: "FORBIDDEN",
+  /**
+   * 전이표(TR-01~TR-04)에 없는 상태 전환 (409). 완료된 건의 체크 해제도 이 코드다 —
+   * 서버가 전용 코드를 새로 만들지 않고 재사용한다(SubWorkEntity.requireChecklistEditable).
+   */
+  TRANSITION_NOT_ALLOWED: "TRANSITION_NOT_ALLOWED",
+  /** 완료 점검 목록을 다 채우지 않은 채 완료 승인 (409) */
+  COMPLETION_CRITERIA_UNMET: "COMPLETION_CRITERIA_UNMET",
+  /** 정족수 유형에서 찬성 수가 모자란 채로 완료 승인 (409) — 투표가 아니라 최종 승인에서 난다 */
+  QUORUM_NOT_MET: "QUORUM_NOT_MET",
+  /** 반려 사유 누락 (422). **길이 초과는 400 VALIDATION_FAILED로 갈린다** */
+  REASON_REQUIRED: "REASON_REQUIRED",
 } as const;
+
+/** 반려 사유 최대 길이 (sub_work_rjct.rjct_rsn · OPS-010 reason) — 초과는 400이다 */
+export const REJECT_REASON_MAX_LENGTH = 500;
 
 /* ── 서버 응답(Response DTO) ────────────────────────────────── */
 
@@ -153,4 +192,348 @@ export async function createSubWork(
     approvalStatus: res.approvalStatus ?? null,
     checklistCount: res.checklist?.length ?? 0,
   };
+}
+
+/* ── 상세 · 전이 · 체크리스트 (OPS-009·010·013) ─────────────── */
+
+interface MemberSummaryResponse {
+  memberId: number | null;
+  name: string | null;
+}
+
+interface ChecklistItemResponse {
+  checklistItemId: number;
+  article: string | null;
+  isCompleted: boolean | null;
+  sortOrder: number | null;
+}
+
+interface ChecklistSummaryResponse {
+  completedCount: number | null;
+  totalCount: number | null;
+}
+
+interface QuorumResponse {
+  needed: boolean | null;
+  requiredCount: number | null;
+  currentCount: number | null;
+  met: boolean | null;
+}
+
+interface RejectionResponse {
+  rejectionId: number | null;
+  rejector: MemberSummaryResponse | null;
+  reason: string | null;
+  rejectedAt: string | null;
+}
+
+interface SubWorkDetailResponse {
+  subWorkId: number;
+  operationId: number | null;
+  workId: number | null;
+  workTitle: string | null;
+  operationType: OperTypeCd | null;
+  title: string | null;
+  subWorkTypeId: number | null;
+  subWorkTypeName: string | null;
+  workStatus: WorkSttsCd;
+  approvalStatus: AprvSttsCd;
+  approvalRequired: boolean | null;
+  authorizerRoleCode: string | null;
+  owner: MemberSummaryResponse | null;
+  registrant: MemberSummaryResponse | null;
+  collaborators: MemberSummaryResponse[] | null;
+  startAt: string | null;
+  endAt: string | null;
+  dueAt: string | null;
+  priority: PrrtyRnkCd;
+  content: string | null;
+  completionCriteria: string | null;
+  externalLink: string | null;
+  isDelayed: boolean | null;
+  completedAt: string | null;
+  checklist: ChecklistItemResponse[] | null;
+  checklistSummary: ChecklistSummaryResponse | null;
+  quorum: QuorumResponse | null;
+  /* myVote는 받지 않는다 — 이 화면에 찬반 버튼이 없다(승인함 OPS-015의 몫) */
+  latestRejection: RejectionResponse | null;
+  canApprove: boolean | null;
+  canReject: boolean | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+interface SubWorkTransitionResponse {
+  subWorkId: number | null;
+  transition: SubWorkTransition | null;
+  previousWorkStatus: WorkSttsCd | null;
+  workStatus: WorkSttsCd | null;
+  previousApprovalStatus: AprvSttsCd | null;
+  approvalStatus: AprvSttsCd | null;
+  isSelfApproval: boolean | null;
+  completedAt: string | null;
+  /* parentWorkProgressRate는 받지 않는다 — 이 화면에 상위 업무 진행률 표기가 없다 */
+  changedAt: string | null;
+}
+
+interface ChecklistItemUpdateResponse {
+  subWorkId: number | null;
+  item: ChecklistItemResponse | null;
+  checklistSummary: ChecklistSummaryResponse | null;
+}
+
+/* ── 응답 → 도메인 ─────────────────────────────────────────── */
+
+/**
+ * 회원 요약. 이름이 비었다고 "-"로 채우지 않는다 — 값이 없으면 없는 대로 드러나야 하고,
+ * 표시용 폴백은 그리는 쪽(뷰)이 정한다 (업무 도메인이 잡아 둔 규칙 그대로).
+ */
+function toMemberRef(member: MemberSummaryResponse | null): SubWorkMemberRef | null {
+  if (!member || member.memberId == null) return null;
+  return { memberId: member.memberId, name: member.name ?? "" };
+}
+
+function toChecklistItem(res: ChecklistItemResponse): SubWorkChecklistItem {
+  return {
+    checklistItemId: res.checklistItemId,
+    article: res.article ?? "",
+    isCompleted: res.isCompleted === true,
+    sortOrder: res.sortOrder ?? 0,
+  };
+}
+
+/**
+ * '2/4 완료' 표기값.
+ *
+ * 서버가 비워 보낸 경우에도 목록 길이로 다시 세지 않는다 — 세는 규칙이 두 벌이 되는 순간
+ * 상세와 상위 업무 상세(OPS-003)의 진행률이 갈린다. 값이 없으면 0/0이다.
+ */
+function toChecklistSummary(
+  res: ChecklistSummaryResponse | null,
+): SubWorkChecklistSummary {
+  return {
+    completedCount: res?.completedCount ?? 0,
+    totalCount: res?.totalCount ?? 0,
+  };
+}
+
+/**
+ * 정족수 진행.
+ *
+ * `needed`가 false면 나머지는 서버가 null로 내리며 **0으로 채우지 않는다** — 0으로 바꾸면
+ * '정족수가 있는데 아무도 찬성하지 않은 상태'와 구별되지 않는다(서버 주석).
+ */
+function toQuorum(res: QuorumResponse | null): SubWorkQuorum {
+  if (!res?.needed) return { needed: false, requiredCount: null, currentCount: null, met: null };
+  return {
+    needed: true,
+    requiredCount: res.requiredCount,
+    currentCount: res.currentCount,
+    met: res.met,
+  };
+}
+
+function toRejection(res: RejectionResponse | null): SubWorkRejection | null {
+  // 사유가 없는 반려는 서버가 만들지 않는다(REASON_REQUIRED) — 빈 사유면 보여줄 것이 없다
+  if (!res || res.rejectionId == null || !res.reason) return null;
+  return {
+    rejectionId: res.rejectionId,
+    rejector: toMemberRef(res.rejector),
+    reason: res.reason,
+    rejectedAt: res.rejectedAt,
+  };
+}
+
+function toSubWorkDetail(res: SubWorkDetailResponse): SubWorkDetail {
+  const checklist = (res.checklist ?? []).map(toChecklistItem);
+  return {
+    subWorkId: res.subWorkId,
+    operationId: res.operationId ?? 0,
+    workId: res.workId ?? 0,
+    workTitle: res.workTitle ?? "",
+    operationType: res.operationType ?? "SUB_WORK",
+    title: res.title ?? "",
+    subWorkTypeId: res.subWorkTypeId ?? 0,
+    subWorkTypeName: res.subWorkTypeName ?? "",
+    workStatus: res.workStatus,
+    approvalStatus: res.approvalStatus,
+    approvalRequired: res.approvalRequired === true,
+    authorizerRoleCode: res.authorizerRoleCode,
+    owner: toMemberRef(res.owner),
+    registrant: toMemberRef(res.registrant),
+    collaborators: (res.collaborators ?? [])
+      .map(toMemberRef)
+      .filter((m): m is SubWorkMemberRef => m !== null),
+    startAt: res.startAt,
+    endAt: res.endAt,
+    dueAt: res.dueAt,
+    priority: res.priority,
+    content: res.content,
+    completionCriteria: res.completionCriteria,
+    externalLink: res.externalLink,
+    isDelayed: res.isDelayed === true,
+    completedAt: res.completedAt,
+    checklist,
+    checklistSummary: toChecklistSummary(res.checklistSummary),
+    quorum: toQuorum(res.quorum),
+    latestRejection: toRejection(res.latestRejection),
+    /*
+     * 권한 값이 빠진 응답을 '가능'으로 읽지 않는다. 버튼을 그렸다가 누를 때 403을 받는 것보다
+     * 승인자에게 버튼이 잠깐 보이지 않는 쪽이 낫다 — 다시 불러오면 값이 채워진다.
+     */
+    canApprove: res.canApprove === true,
+    canReject: res.canReject === true,
+    createdAt: res.createdAt,
+    updatedAt: res.updatedAt,
+  };
+}
+
+/**
+ * GET /v1/sub-works/{subWorkId} — 상세 (OPS-009).
+ *
+ * 상세 화면 한 장이 이 호출 하나로 채워진다 — 단계 스테퍼·공통 속성·확장 속성·완료 점검
+ * 목록·승인 판단 근거가 모두 여기서 나온다. 상위 업무 상세(OPS-003)의 하위 업무 요약에서
+ * 골라 쓰지 않는다: 그 요약에는 체크리스트도 승인 값도 없고, URL로 바로 들어온 경우 목록
+ * 자체가 메모리에 없다.
+ *
+ * 없는 하위 업무·소프트 삭제된 하위 업무는 404 `NOT_FOUND`다.
+ */
+export async function fetchSubWork(subWorkId: number): Promise<SubWorkDetail> {
+  const detail = await apiFetch<SubWorkDetailResponse>(`/v1/sub-works/${subWorkId}`);
+  return toSubWorkDetail(detail);
+}
+
+/**
+ * POST /v1/sub-works/{subWorkId}/transitions — 상태 전이 (OPS-010).
+ *
+ * 착수·완료 승인 요청·완료 승인·반려가 **모두 이 하나의 경로**를 쓴다. 상태를 직접 쓰는
+ * PATCH 경로는 서버에 없다(POL-003·AP-03) — 화면이 다음 상태를 고르는 것이 아니라 액션을
+ * 보내고, 다음 상태는 전이표가 정한다.
+ *
+ * `reason`은 반려에서만 필수다. 누락은 422 `REASON_REQUIRED`, 500자 초과는 400
+ * `VALIDATION_FAILED`로 **코드가 갈린다** — 서버가 필수 여부는 전이 메서드에서, 길이는
+ * 요청 DTO에서 보기 때문이다.
+ */
+export async function transitionSubWork(
+  subWorkId: number,
+  transition: SubWorkTransition,
+  reason: string | null = null,
+): Promise<SubWorkTransitionResult> {
+  const res = await apiFetch<SubWorkTransitionResponse | null>(
+    `/v1/sub-works/${subWorkId}/transitions`,
+    {
+      method: "POST",
+      body: JSON.stringify({ transition, reason: reason?.trim() || null }),
+    },
+  );
+
+  if (!res?.workStatus) {
+    throw new ApiError(
+      SUB_WORK_ERROR.VALIDATION_FAILED,
+      "상태는 바뀌었지만 서버가 전이 결과를 돌려주지 않았습니다. 화면을 새로고침해주세요",
+    );
+  }
+
+  return {
+    subWorkId: res.subWorkId ?? subWorkId,
+    transition: res.transition ?? transition,
+    previousWorkStatus: res.previousWorkStatus ?? res.workStatus,
+    workStatus: res.workStatus,
+    previousApprovalStatus: res.previousApprovalStatus ?? "NOT_REQUIRED",
+    approvalStatus: res.approvalStatus ?? "NOT_REQUIRED",
+    isSelfApproval: res.isSelfApproval === true,
+    completedAt: res.completedAt,
+    changedAt: res.changedAt,
+  };
+}
+
+/**
+ * PATCH /v1/sub-works/{subWorkId}/checklist/{checklistItemId} — 체크·해제 (OPS-013).
+ *
+ * 체크와 해제가 같은 경로를 쓰므로 토글이 아니라 **값**을 보낸다 — 화면의 체크박스가 같은
+ * 자리에서 켜지고 꺼지기 때문이고, 토글로 두면 요청이 엇갈렸을 때 화면과 서버가 반대로 간다.
+ *
+ * 완료(DONE)된 건은 되돌릴 수 없어 409 `TRANSITION_NOT_ALLOWED`다. 상태 전이가 아니므로
+ * 업무_상태·승인_상태는 응답에 없다 — 체크가 스테퍼를 움직이지 않는다.
+ */
+export async function updateSubWorkChecklistItem(
+  subWorkId: number,
+  checklistItemId: number,
+  isCompleted: boolean,
+): Promise<SubWorkChecklistUpdate> {
+  const res = await apiFetch<ChecklistItemUpdateResponse | null>(
+    `/v1/sub-works/${subWorkId}/checklist/${checklistItemId}`,
+    { method: "PATCH", body: JSON.stringify({ isCompleted }) },
+  );
+
+  if (!res?.item) {
+    throw new ApiError(
+      SUB_WORK_ERROR.VALIDATION_FAILED,
+      "체크는 저장됐지만 서버가 결과를 돌려주지 않았습니다. 화면을 새로고침해주세요",
+    );
+  }
+
+  return {
+    subWorkId: res.subWorkId ?? subWorkId,
+    item: toChecklistItem(res.item),
+    checklistSummary: toChecklistSummary(res.checklistSummary),
+  };
+}
+
+/* ── 기본 정보 수정 ────────────────────────────────────────── */
+
+/**
+ * 하위 업무 수정 입력 (OPS-030).
+ *
+ * 등록(SubWorkCreateInput)과 같은 확장 속성이되 **workId·subWorkTypeId가 없다** — 다른
+ * 상위 업무로 옮기거나 유형을 바꾸는 기능이 아니다. 유형이 바뀌면 승인 필요 여부·승인자·
+ * 정족수·완료 점검 항목이 통째로 달라지는데, 그 값들은 등록 시점에 이미 복사돼 있다
+ * (#43 소급 금지 · 서버 SubWorkUpdateRequest 주석).
+ *
+ * `completionCriteria`(완료 기준 내용)는 등록 화면에 입력란이 없어 늘 비어 있던 값을
+ * 처음으로 채울 수 있는 자리다(서버 #70).
+ */
+export interface SubWorkUpdateInput {
+  title: string;
+  ownerId: number;
+  startAt: string | null;
+  /** oper의 종료_일시. 화면의 '마감_일시' 한 칸이 dueAt과 함께 이 값도 채운다 (등록과 같은 규칙) */
+  endAt: string | null;
+  dueAt: string | null;
+  priority: PrrtyRnkCd;
+  content: string | null;
+  completionCriteria: string | null;
+  externalLink: string | null;
+}
+
+/**
+ * PATCH /v1/sub-works/{subWorkId} — 기본 정보 수정 (OPS-030).
+ *
+ * **PATCH이지만 전체 교체다** — content·completionCriteria·externalLink처럼 선택 입력인
+ * 필드도 생략하면 서버가 지운 것으로 본다(서버 SubWorkUpdateRequest 주석). 화면은 그래서
+ * 현재 값을 전부 입력란에 채워 보여주고, 부분 입력 폼을 만들지 않는다.
+ *
+ * `workStatus`·`subWorkTypeId`는 요청에 없다 — 이 경로로 상태·유형을 바꿀 수 없다. 응답이
+ * 상세 조회와 같은 모양이므로(canApprove·canReject·quorum까지) 화면은 수정 직후 재조회 없이
+ * 그대로 갱신할 수 있다.
+ */
+export async function updateSubWork(
+  subWorkId: number,
+  input: SubWorkUpdateInput,
+): Promise<SubWorkDetail> {
+  const res = await apiFetch<SubWorkDetailResponse>(`/v1/sub-works/${subWorkId}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      title: input.title.trim(),
+      ownerId: input.ownerId,
+      startAt: withServiceOffset(input.startAt),
+      endAt: withServiceOffset(input.endAt),
+      dueAt: withServiceOffset(input.dueAt),
+      priority: input.priority,
+      content: input.content?.trim() || null,
+      completionCriteria: input.completionCriteria?.trim() || null,
+      externalLink: input.externalLink?.trim() || null,
+    }),
+  });
+  return toSubWorkDetail(res);
 }

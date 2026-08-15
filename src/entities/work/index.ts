@@ -6,7 +6,7 @@ export type {
   WorkSubWorkSummary,
 } from "./model/types";
 export { useWorkStore, workPrgrsRtText, workSttsTone } from "./model/store";
-export { WORK_ERROR, createWork, fetchWork, fetchWorks } from "./api/works";
+export { WORK_ERROR, createWork, fetchWork, fetchWorks, updateWork } from "./api/works";
 export type {
   WorkCreateInput,
   WorkCreateResult,
