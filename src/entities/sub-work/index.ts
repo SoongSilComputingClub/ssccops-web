@@ -5,6 +5,7 @@ export type {
   SubWorkChecklistSummary,
   SubWorkChecklistUpdate,
   SubWorkDetail,
+  SubWorkListItem,
   SubWorkMemberRef,
   SubWorkPicAltmnt,
   SubWorkQuorum,
@@ -12,6 +13,7 @@ export type {
   SubWorkSttsHstry,
   SubWorkTransition,
   SubWorkTransitionResult,
+  SubWorkWorkRef,
 } from "./model/types";
 export {
   useSubWorkStore,
@@ -27,6 +29,7 @@ export {
   SUB_WORK_ERROR,
   createSubWork,
   fetchSubWork,
+  fetchSubWorks,
   transitionSubWork,
   updateSubWork,
   updateSubWorkChecklistItem,
@@ -34,5 +37,7 @@ export {
 export type {
   SubWorkCreateInput,
   SubWorkCreateResult,
+  SubWorkListFilter,
+  SubWorkListPage,
   SubWorkUpdateInput,
 } from "./api/sub-works";
