@@ -9,6 +9,7 @@ import {
   setFormLabelUse,
   type FormLabelSummary,
 } from "@/entities/form";
+import { syncSessionOnForbidden } from "@/entities/session";
 import { ApiError } from "@/shared/lib/api/client";
 import { toFormLabelErrorMessage } from "./form-error";
 
@@ -178,6 +179,8 @@ export function useFormLabels(): FormLabelAdmin {
         });
         return true;
       } catch (error: unknown) {
+        // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다
+        syncSessionOnForbidden(error);
         if (aliveRef.current) setAddErrorMessage(toFormLabelErrorMessage(error));
         return false;
       } finally {
@@ -205,6 +208,8 @@ export function useFormLabels(): FormLabelAdmin {
         // 토글 자체는 끝났다 — 재조회 실패를 토글 실패로 보이게 하지 않는다
         await refresh().catch(() => {});
       } catch (error: unknown) {
+        // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다
+        syncSessionOnForbidden(error);
         if (aliveRef.current) setToggleErrorMessage(toFormLabelErrorMessage(error));
         /*
          * 없는 라벨(404)이면 화면이 들고 있는 목록이 이미 낡았다는 뜻이다 — 그 상태로 두면

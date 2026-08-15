@@ -10,6 +10,7 @@ import {
   type FormLabelRef,
   type FormSaveInput,
 } from "@/entities/form";
+import { syncSessionOnForbidden } from "@/entities/session";
 import { ROUTES } from "@/shared/config/routes";
 import { API_ERROR, ApiError } from "@/shared/lib/api/client";
 import { emptyFormDraft, toFormDraft, toFormSaveInput, type FormDraft } from "./form-draft";
@@ -428,6 +429,12 @@ export function useFormEditor(formId?: number): FormEditor {
       }
       return result.formId;
     } catch (error: unknown) {
+      /*
+       * 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다.
+       * 자동 저장은 403을 재시도하지 않는다(isRetryable이 5xx만 통과시킨다) — 권한이 없는데
+       * 계속 다시 보내면 실패 배너만 깜빡이고 서버에는 403이 쌓인다.
+       */
+      syncSessionOnForbidden(error);
       const count = attemptsRef.current.key === key ? attemptsRef.current.count + 1 : 1;
       attemptsRef.current = { key, count };
       if (aliveRef.current) {

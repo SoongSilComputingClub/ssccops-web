@@ -7,6 +7,7 @@ import {
   type FormStatusAction,
   type FormStatusChangeResult,
 } from "@/entities/form";
+import { syncSessionOnForbidden } from "@/entities/session";
 import { ApiError } from "@/shared/lib/api/client";
 import { toFormStatusErrorMessage } from "./form-error";
 
@@ -106,6 +107,8 @@ export function useFormStatus(): FormStatusControl {
           result,
         };
       } catch (error: unknown) {
+        // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다
+        syncSessionOnForbidden(error);
         const code = error instanceof ApiError ? error.code : "";
         const outcome: FormStatusOutcome =
           code === FORM_ERROR.INVALID_FORM_STATUS_TRANSITION
