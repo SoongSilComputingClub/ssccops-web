@@ -1,26 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSessionStore, type AuthSession, type SessionStatus } from "@/entities/session";
-import { API_ERROR, ApiError, apiFetch } from "@/shared/lib/api/client";
+import { fetchAuthSession, useSessionStore, type SessionStatus } from "@/entities/session";
+import { API_ERROR, ApiError } from "@/shared/lib/api/client";
 
 /*
- * 세션 조회는 AuthGate와 SignupGate 양쪽에서 시작된다. 가입 화면으로 넘어가는 순간
- * 두 게이트가 잠깐 겹치므로, 진행 중인 요청이 있으면 그 promise를 공유해 같은 조회가
- * 두 번 나가지 않게 한다.
+ * 세션 조회 자체(fetchAuthSession)는 entities/session으로 내려갔다 — 403을 받은 다른 feature도
+ * 세션을 다시 받아야 하는데, features끼리 가져오면 레이어가 깨지기 때문이다(그쪽 주석 참고).
+ * 이 훅은 조회 결과를 부트스트랩 상태로 옮기는 일만 한다.
  *
- * 새로고침하면 모듈이 다시 로드되므로 여기 캐시를 두는 의미는 없다. 대신 훅이
- * 스토어에 이미 세션이 있으면 재조회를 건너뛰어, 한 번의 페이지 로드에서는 한 번만 부른다.
+ * 훅이 스토어에 이미 세션이 있으면 재조회를 건너뛰므로, 한 번의 페이지 로드에서는 한 번만 부른다.
  */
-let inflight: Promise<AuthSession> | null = null;
-
-/** GET /v1/auth/session — 이 사용자가 우리 서비스의 누구인지 판정하는 유일한 출처 */
-export function fetchAuthSession(): Promise<AuthSession> {
-  inflight ??= apiFetch<AuthSession>("/v1/auth/session").finally(() => {
-    inflight = null;
-  });
-  return inflight;
-}
 
 export interface AuthBootstrap {
   status: SessionStatus;

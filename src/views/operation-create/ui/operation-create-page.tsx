@@ -9,6 +9,8 @@ import { useSessionStore } from "@/entities/session";
 import { useSubWorkStore } from "@/entities/sub-work";
 import { crtrAmtText, useSubWorkTypeStore } from "@/entities/sub-work-type";
 import { useWorkStore } from "@/entities/work";
+import { CAPABILITY } from "@/entities/session";
+import { useCan } from "@/features/auth";
 import { useCreateWork } from "@/features/work";
 import {
   ATND_TRGT_CDS,
@@ -63,6 +65,9 @@ const KIND_META: Record<OperTypeCd, { table: string; note: string }> = {
 
 const DEFAULT_CHCK_ARTCLS = ["세부 계획 수립", "진행", "결과 정리", "보고"] as const;
 
+/** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
+const NO_WORK_MANAGE = "업무·하위 업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다";
+
 type AgendaDraft = Pick<MtgDtl, "agndNm" | "prcsSeCd" | "operId" | "agndCn">;
 
 export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }) {
@@ -108,6 +113,16 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
     sessionMbrId || mbrs[0]?.mbrId || 1,
   );
   const [agenda, setAgenda] = useState<AgendaDraft[]>([]);
+
+  /*
+   * 업무·하위 업무 등록은 WORK_MANAGE 다 (#29 · 서버 WorkController·SubWorkController 전체).
+   *
+   * 회의는 아직 목 스토어에만 쌓이고 서버 계약이 없어 권한을 걸지 않는다 — 서버가 막지 않는
+   * 것을 화면이 먼저 막으면, 회의 API가 붙을 때 어떤 권한이었는지 아무도 모르는 규칙이 하나
+   * 남는다. 그래서 잠금은 **지금 고른 운영_유형**에 따라 정한다.
+   */
+  const canManageWork = useCan(CAPABILITY.WORK_MANAGE);
+  const allowed = operTypeCd === "MEETING" || canManageWork;
 
   const rule = subWorkTypes.find((t) => t.subWorkTypeId === subWorkTypeId) ?? null;
   const operTtlOf = (operId: number) => findOper(opers, operId)?.operTtl ?? "-";
@@ -621,10 +636,15 @@ export function OperationCreatePage({ workId: fixedWorkId }: { workId?: number }
           <Button
             className="px-[26px] py-[11px]"
             onClick={submit}
-            disabled={workCreation.pending}
+            disabled={workCreation.pending || !allowed}
+            title={allowed ? undefined : NO_WORK_MANAGE}
           >
             {workCreation.pending ? "등록하는 중…" : `${OPER_TYPE_NM[operTypeCd]} 등록`}
           </Button>
+          {/* 잠긴 버튼의 툴팁만으로는 긴 폼을 다 채운 뒤에야 이유를 알게 된다 — 밖에도 적는다 */}
+          {!allowed && (
+            <div className="mt-2 text-[13.5px] text-n500">{NO_WORK_MANAGE}</div>
+          )}
         </div>
       </PageBody>
     </>

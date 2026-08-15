@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { representativeRole, useSessionStore } from "@/entities/session";
 import { ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
 import { flash } from "@/shared/ui";
-import { NAV_FOOT, NAV_GROUPS, groupHasActive, type NavItem } from "./nav";
+import { NAV_FOOT, NAV_GROUPS, groupHasActive, visibleGroups, type NavItem } from "./nav";
 
 function NavRow({
   item,
@@ -74,6 +74,13 @@ export function Sidebar() {
 
   const meName = member?.name ?? authUser?.name ?? "-";
 
+  /*
+   * 권한 없는 메뉴는 감춘다 (#29 · 근거는 nav.ts의 visibleGroups 주석).
+   * 세션이 아직 없으면(member === null) 아무 권한도 없는 것으로 본다 — 잠깐 보였다 사라지는
+   * 편보다 처음부터 안 보이는 편이 낫다. 세션이 도착하면 다시 계산된다.
+   */
+  const groups = useMemo(() => visibleGroups(NAV_GROUPS, member), [member]);
+
   /** 프로필 부제 — 대표 역할이 있으면 역할명, 없으면 등급명 · 등급명 */
   const meLabel = (() => {
     if (!member) return "";
@@ -111,7 +118,7 @@ export function Sidebar() {
           ›
         </button>
         <div className="my-[2px] h-px w-6 bg-bg" />
-        {NAV_GROUPS.map((g) => (
+        {groups.map((g) => (
           <button
             key={g.label}
             type="button"
@@ -168,7 +175,7 @@ export function Sidebar() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {NAV_GROUPS.map((g) => (
+        {groups.map((g) => (
           <div key={g.label}>
             <div
               onClick={() => setClosed((c) => ({ ...c, [g.label]: !c[g.label] }))}

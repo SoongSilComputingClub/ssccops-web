@@ -8,6 +8,9 @@ import { API_ERROR, ApiError } from "@/shared/lib/api/client";
  * 여기서 다루지 않는다. 남은 403은 **권한 부족**이다 — 목록 조회에도 `SUB_WORK_TYPE_READ`가
  * 걸려 있어(서버 #9) 가입한 회원도 권한이 없으면 표를 못 본다.
  *
+ * 403은 상태가 아니라 **코드로 분기한다**(#29). 상태(403)로만 보면 SIGNUP_REQUIRED까지 같은
+ * 문장을 받게 되는데, 그쪽은 apiFetch가 이미 가입 화면으로 보낸 뒤라 잘못된 안내가 된다.
+ *
  * 알 수 없는 코드는 서버 메시지를 그대로 보여 준다 — 임의로 뭉개면 원인을 알려주려고 서버가
  * 내려보낸 문장이 사라진다.
  */
@@ -16,11 +19,10 @@ export function toSubWorkTypeErrorMessage(error: unknown): string {
     return "하위 업무 유형을 불러오지 못했습니다. 잠시 후 다시 시도해주세요";
   }
 
-  if (error.status === 403) {
-    return "하위 업무 유형을 볼 권한이 없습니다 — 국장 이상 권한이 필요합니다";
-  }
-
   switch (error.code) {
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "하위 업무 유형을 볼 권한이 없습니다 — 국장 이상 권한이 필요합니다";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
@@ -46,11 +48,10 @@ export function toSubWorkTypeSaveErrorMessage(error: unknown): string {
     return "하위 업무 유형을 저장하지 못했습니다. 잠시 후 다시 시도해주세요";
   }
 
-  if (error.status === 403) {
-    return "하위 업무 유형을 관리할 권한이 없습니다 — 회장·부회장·총무만 할 수 있습니다";
-  }
-
   switch (error.code) {
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "하위 업무 유형을 관리할 권한이 없습니다 — 회장·부회장·총무만 할 수 있습니다";
     // 클라이언트 선검사와 같은 문구를 쓴다 — 어디서 걸렸든 사용자에게는 같은 말이어야 한다
     case SUB_WORK_TYPE_ERROR.DUPLICATE_SUB_WORK_TYPE_NAME:
       return "이미 있는 유형_명입니다";

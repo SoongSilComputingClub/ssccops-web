@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { RSPNS_STTS_BADGE } from "@/entities/response";
+import { CAPABILITY, hasCapability, useSessionStore } from "@/entities/session";
 import { RSPNS_RVW_STTS_CDS, type RspnsSttsCd } from "@/shared/config/codes";
 import { Chip, Sheet, flash } from "@/shared/ui";
 import { useResponseStatusChange } from "../model/use-response-status";
@@ -31,9 +32,21 @@ export function ResponseStatusSheet({
   onChanged: () => void;
 }) {
   const { saving, change } = useResponseStatusChange();
+  /*
+   * 판정 훅(features/auth의 useCan)을 쓰지 않고 세션을 직접 읽는다 — features끼리 가져오면
+   * FSD 레이어가 깨진다. 판정 자체는 useCan과 같은 hasCapability라 규칙은 한 곳뿐이다.
+   */
+  const canReview = useSessionStore((s) => hasCapability(s.member, CAPABILITY.RESPONSE_REVIEW));
   const [pick, setPick] = useState<RspnsSttsCd | null>(null);
 
   if (formRspnsId === null) return null;
+
+  /*
+   * 권한이 없으면 시트를 열지 않는다. 호출부(목록·상세)가 이미 심사 진입을 잠그고 있지만
+   * 여기서도 끊는 이유는 DRAFT와 같다 — 어느 경로로 열리든 서버가 403으로 거절할 조작이라
+   * 열어 봤자 실패만 보게 된다.
+   */
+  if (!canReview) return null;
 
   /*
    * 작성 중(DRAFT) 응답에는 시트를 열지 않는다. 호출부가 이미 막고 있지만 여기서도 끊는 이유는,

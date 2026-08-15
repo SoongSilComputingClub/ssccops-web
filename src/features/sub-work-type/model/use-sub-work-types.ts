@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { syncSessionOnForbidden } from "@/entities/session";
 import {
   createSubWorkType,
   fetchSubWorkTypes,
@@ -217,6 +218,8 @@ export function useSubWorkTypes(): SubWorkTypeAdmin {
         return true;
       } catch (error: unknown) {
         if (aliveRef.current) setSaveErrorMessage(toSubWorkTypeSaveErrorMessage(error));
+        // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다
+        syncSessionOnForbidden(error);
         /*
          * 없는 유형(404)이면 화면이 들고 있는 목록이 이미 낡았다는 뜻이다 — 사라진 행을
          * 계속 고치게 두지 않고 조용히 다시 받는다. 재조회까지 실패하면 그냥 둔다
@@ -255,6 +258,8 @@ export function useSubWorkTypes(): SubWorkTypeAdmin {
         await refresh().catch(() => {});
       } catch (error: unknown) {
         if (aliveRef.current) setToggleErrorMessage(toSubWorkTypeSaveErrorMessage(error));
+        // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다
+        syncSessionOnForbidden(error);
         if (
           error instanceof ApiError &&
           error.code === SUB_WORK_TYPE_ERROR.SUB_WORK_TYPE_NOT_FOUND

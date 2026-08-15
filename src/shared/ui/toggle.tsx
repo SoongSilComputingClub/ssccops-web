@@ -7,11 +7,17 @@ export function Toggle({
   on,
   onChange,
   size = "md",
+  disabled,
+  title,
   className,
 }: {
   on: boolean;
   onChange: (on: boolean) => void;
   size?: "md" | "sm";
+  /** 권한이 없을 때 잠근다 (#29). 감추지 않는 근거는 features/auth/model/use-can.ts */
+  disabled?: boolean;
+  /** 잠긴 이유 — 툴팁으로 붙는다 */
+  title?: string;
   className?: string;
 }) {
   const md = size === "md";
@@ -20,9 +26,12 @@ export function Toggle({
       type="button"
       role="switch"
       aria-checked={on}
+      disabled={disabled}
+      title={title}
       onClick={() => onChange(!on)}
       className={cn(
         "relative cursor-pointer rounded-full transition-colors duration-[180ms]",
+        "disabled:cursor-not-allowed disabled:opacity-45",
         md ? "h-[22px] w-[38px]" : "h-[20px] w-[34px]",
         on ? "bg-accent" : "bg-line-strong",
         className,

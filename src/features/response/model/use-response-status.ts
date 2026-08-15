@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { updateFormResponseStatus } from "@/entities/response";
+import { syncSessionOnForbidden } from "@/entities/session";
 import type { RspnsSttsCd } from "@/shared/config/codes";
 import { toResponseErrorMessage } from "./response-error";
 
@@ -43,6 +44,8 @@ export function useResponseStatusChange(): ResponseStatusChange {
         await updateFormResponseStatus(formId, formRspnsId, rspnsSttsCd);
         return "";
       } catch (error: unknown) {
+        // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다
+        syncSessionOnForbidden(error);
         return toResponseErrorMessage(error);
       } finally {
         inFlight.current = false;

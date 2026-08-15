@@ -2,6 +2,8 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { FORM_RECEIPT_BADGE, type FormSummary } from "@/entities/form";
+import { CAPABILITY } from "@/entities/session";
+import { useCan } from "@/features/auth";
 import { useDuplicateForm, useFormLabelOptions, useFormList } from "@/features/form";
 import { FORM_STTS_CDS, FORM_STTS_NM, type FormSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
@@ -18,6 +20,9 @@ import {
 } from "@/shared/ui";
 
 const ALL = "전체";
+
+/** 잠긴 버튼에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
+const NO_WRITE = "폼을 만들거나 고칠 권한이 없습니다";
 
 /*
  * 필터 상태를 컴포넌트 state가 아니라 URL 쿼리스트링에 둔다.
@@ -56,11 +61,14 @@ function FormCardSkeleton() {
 function FormCard({
   form,
   duplicating,
+  canWrite,
   onDuplicate,
 }: {
   form: FormSummary;
   /** 이 카드의 복제가 진행 중인가 — 연타로 사본이 여러 장 생기는 것을 막는다 */
   duplicating: boolean;
+  /** FORM_WRITE 보유 여부 — 복제·수정을 잠글지 정한다 */
+  canWrite: boolean;
   onDuplicate: () => void;
 }) {
   const router = useRouter();
@@ -99,18 +107,22 @@ function FormCard({
         </div>
       )}
       <div className="mt-3 flex items-center gap-3 border-t border-black/5 pt-3 text-[14px]">
+        {/* 권한이 없으면 감추지 않고 잠근다 — 사라지면 기능이 없어진 것인지 고장인지 알 수 없다 */}
         <button
           type="button"
-          disabled={duplicating}
+          disabled={duplicating || !canWrite}
+          title={canWrite ? undefined : NO_WRITE}
           onClick={onDuplicate}
-          className="cursor-pointer text-accent disabled:cursor-default disabled:opacity-50"
+          className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           {duplicating ? "복제하는 중…" : "복제"}
         </button>
         <button
           type="button"
+          disabled={!canWrite}
+          title={canWrite ? undefined : NO_WRITE}
           onClick={() => router.push(ROUTES.formEdit(form.formId))}
-          className="cursor-pointer text-accent"
+          className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           수정
         </button>
@@ -125,6 +137,8 @@ export function FormListPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const duplication = useDuplicateForm();
+  /* 새 폼·복제·수정은 모두 FORM_WRITE 한 가지다 — 서버 FormController의 @RequireAuthority와 같다 */
+  const canWrite = useCan(CAPABILITY.FORM_WRITE);
 
   const formSttsCd = parseFormSttsCd(searchParams.get(QUERY_STATUS));
   const formLblId = parseFormLblId(searchParams.get(QUERY_LABEL));
@@ -163,7 +177,12 @@ export function FormListPage() {
       <PageHeader
         title="폼 관리"
         subtitle="라벨 중심 분류"
-        action={{ label: "+ 새 폼", onClick: () => router.push(ROUTES.formNew) }}
+        action={{
+          label: "+ 새 폼",
+          onClick: () => router.push(ROUTES.formNew),
+          disabled: !canWrite,
+          title: canWrite ? undefined : NO_WRITE,
+        }}
       />
       <PageBody>
         <div className="mb-4 flex flex-wrap items-center gap-[7px]">
@@ -228,7 +247,16 @@ export function FormListPage() {
                   ? "조건에 맞는 폼이 없습니다."
                   : "등록된 폼이 없습니다."
               }
-              action={{ label: "+ 새 폼", onClick: () => router.push(ROUTES.formNew) }}
+              /*
+               * 빈 화면의 유도 버튼만은 감춘다. 여기서는 잠긴 버튼이 "여기를 누르세요"라고
+               * 권하면서 동시에 누르지 못하게 하는 모순이 되고, 사유는 이미 헤더의 잠긴
+               * '+ 새 폼'이 툴팁으로 말해 준다 — 같은 화면에서 두 번 말할 필요가 없다.
+               */
+              action={
+                canWrite
+                  ? { label: "+ 새 폼", onClick: () => router.push(ROUTES.formNew) }
+                  : undefined
+              }
             />
           ) : (
             <div className="grid grid-cols-2 gap-[14px]">
@@ -237,6 +265,7 @@ export function FormListPage() {
                   key={f.formId}
                   form={f}
                   duplicating={duplication.pendingFormId === f.formId}
+                  canWrite={canWrite}
                   onDuplicate={() => void runDuplicate(f.formId)}
                 />
               ))}

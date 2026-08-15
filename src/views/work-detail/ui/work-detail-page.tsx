@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { CAPABILITY } from "@/entities/session";
 import { workSttsTone, type WorkSubWorkSummary } from "@/entities/work";
+import { useCan } from "@/features/auth";
 import { useWorkDetail } from "@/features/work";
 import {
   OPER_TYPE_NM,
@@ -69,6 +71,8 @@ function DetailSkeleton() {
 export function WorkDetailPage({ workId }: { workId: number }) {
   const router = useRouter();
   const { work, status, errorMessage, reload } = useWorkDetail(workId);
+  /* 하위 업무 등록도 WORK_MANAGE 다 (서버 SubWorkController 전체) */
+  const canManage = useCan(CAPABILITY.WORK_MANAGE);
 
   if (status !== "ready" || !work) {
     return (
@@ -148,6 +152,10 @@ export function WorkDetailPage({ workId }: { workId: number }) {
         action={{
           label: "+ 하위 업무",
           onClick: () => router.push(`${ROUTES.operationNew}?workId=${work.workId}`),
+          disabled: !canManage,
+          title: canManage
+            ? undefined
+            : "하위 업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
         }}
       />
       <PageBody>

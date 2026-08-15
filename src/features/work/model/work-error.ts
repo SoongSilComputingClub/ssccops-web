@@ -17,11 +17,14 @@ export function toWorkErrorMessage(error: unknown): string {
     return "업무 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요";
   }
 
-  if (error.status === 403) {
-    return "업무를 볼 권한이 없습니다 — 운영진 권한이 필요합니다";
-  }
-
   switch (error.code) {
+    /*
+     * 상태(403)가 아니라 코드로 본다(#29). 403에는 미가입(SIGNUP_REQUIRED)도 실려 오는데
+     * 그쪽은 apiFetch가 이미 가입 화면으로 보낸 뒤라, 상태로만 보면 여기 문장이 잘못 뜬다.
+     */
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "업무를 볼 권한이 없습니다 — 운영진 권한(WORK_MANAGE)이 필요합니다";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
@@ -43,8 +46,8 @@ export function toWorkCreateErrorMessage(error: unknown): string {
     return "업무를 등록하지 못했습니다. 잠시 후 다시 시도해주세요";
   }
 
-  if (error.status === 403) {
-    return "업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다";
+  if (error.code === API_ERROR.FORBIDDEN || error.code === API_ERROR.ACCESS_DENIED) {
+    return "업무를 등록할 권한이 없습니다 — 운영진 권한(WORK_MANAGE)이 필요합니다";
   }
 
   if (error.code === WORK_ERROR.INVALID_CODE_VALUE) {

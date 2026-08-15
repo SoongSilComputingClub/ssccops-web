@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { CAPABILITY } from "@/entities/session";
 import type { SubWorkTypeSaveInput, SubWorkTypeSummary } from "@/entities/sub-work-type";
+import { useCan } from "@/features/auth";
 import { useSubWorkTypes } from "@/features/sub-work-type";
 import { AUTZR_ROLE_CDS, AUTZR_ROLE_NM, type AutzrRoleCd } from "@/shared/config/codes";
 import {
@@ -37,10 +39,19 @@ import {
  *    삭제 대신 사용을 내리며, 그래서 목록에는 비활성 유형도 취소선으로 계속 보인다
  *    (되돌릴 수 있어야 한다). 라벨 관리 화면과 같은 축이다.
  *
- * 권한: 조회는 SUB_WORK_TYPE_READ(국장 이상), 등록·수정·토글은 SUB_WORK_TYPE_MANAGE
- * (회장·부회장·총무)다. **목록은 보이는데 저장만 403인 상태가 정상적으로 존재한다** —
- * 화면을 미리 막지 않고 서버가 거절하면 그 사유를 그대로 보여 준다.
+ * ── 권한 (#29 · 서버 #9) ───────────────────────────────────────
+ * 조회는 SUB_WORK_TYPE_READ(국장 이상), 등록·수정·사용 전환은 SUB_WORK_TYPE_MANAGE
+ * (회장·부회장·총무)다. **목록은 보이는데 저장만 403인 상태가 정상적으로 존재한다.**
+ * 그래서 화면은 열되 추가·수정·토글만 잠근다 — 유형별 승인 규칙은 하위 업무를 등록하는
+ * 사람이라면 누구나 알아야 하는 기준정보라 표를 감추면 곤란하다.
+ *
+ * 잠금은 화면을 미리 막는 것이 아니라 겹쳐 두는 것이다. 권한이 방금 회수돼 잠기지 않은
+ * 버튼을 눌렀다면 서버가 403으로 거절하고, 훅이 그 사유를 보여 주면서 세션을 다시 받아
+ * 화면이 스스로 잠긴다 (syncSessionOnForbidden).
  */
+
+/** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
+const NO_MANAGE = "하위 업무 유형을 등록·수정할 권한이 없습니다 — 조회만 할 수 있습니다";
 
 interface Draft {
   typeName: string;
@@ -99,6 +110,12 @@ function agreeCountText(type: SubWorkTypeSummary): string {
 
 export function SubWorkTypeListPage() {
   const admin = useSubWorkTypes();
+  /*
+   * 조회와 관리를 서버가 다른 권한으로 나눠 두었다 (#29 · SubWorkTypeController) —
+   * 목록은 SUB_WORK_TYPE_READ, 등록·수정·사용 전환은 SUB_WORK_TYPE_MANAGE 다.
+   * 판정은 useCan 하나만 쓴다: 역할 이름이나 트리 펼침을 웹에서 다시 계산하지 않는다.
+   */
+  const canManage = useCan(CAPABILITY.SUB_WORK_TYPE_MANAGE);
   /** null=닫힘, 0=신규, n=해당 subWorkTypeId 수정 */
   const [editing, setEditing] = useState<number | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
@@ -123,8 +140,16 @@ export function SubWorkTypeListPage() {
     <>
       <PageHeader title="하위 업무 유형 관리" subtitle="승인 규칙 기준정보" />
       <PageBody>
-        <div className="mb-4 flex justify-end">
-          <Button onClick={() => startEdit()}>＋ 하위 업무 유형 추가</Button>
+        <div className="mb-4 flex items-center justify-end gap-3">
+          {/* 잠긴 버튼의 툴팁만으로는 왜 안 되는지 놓치기 쉬워 사유를 옆에 적는다 */}
+          {!canManage && <div className="text-[13.5px] text-n500">{NO_MANAGE}</div>}
+          <Button
+            onClick={() => startEdit()}
+            disabled={!canManage}
+            title={canManage ? undefined : NO_MANAGE}
+          >
+            ＋ 하위 업무 유형 추가
+          </Button>
         </div>
 
         {editing !== null && (
@@ -321,6 +346,8 @@ export function SubWorkTypeListPage() {
                         <Toggle
                           on={t.useYn}
                           onChange={() => void admin.toggle(t)}
+                          disabled={!canManage}
+                          title={canManage ? undefined : NO_MANAGE}
                           className={
                             admin.isToggling(t.subWorkTypeId) ? "opacity-50" : undefined
                           }
@@ -329,8 +356,10 @@ export function SubWorkTypeListPage() {
                       <div className="border-t border-black/5 py-3">
                         <button
                           type="button"
+                          disabled={!canManage}
+                          title={canManage ? undefined : NO_MANAGE}
                           onClick={() => startEdit(t)}
-                          className="cursor-pointer text-[14px] text-accent"
+                          className="cursor-pointer text-[14px] text-accent disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           수정
                         </button>

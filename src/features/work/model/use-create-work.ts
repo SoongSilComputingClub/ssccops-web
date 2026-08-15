@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { syncSessionOnForbidden } from "@/entities/session";
 import { createWork, type WorkCreateInput } from "@/entities/work";
 import { toWorkCreateErrorMessage } from "./work-error";
 
@@ -52,6 +53,8 @@ export function useCreateWork(): WorkCreateControl {
       // 상태는 서버가 기획(PLANNING)으로 고정한다 — 등록 화면에 상태 입력란이 없는 이유다
       return { workId: created.workId, message: "업무를 등록했습니다" };
     } catch (error: unknown) {
+      // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다
+      syncSessionOnForbidden(error);
       return { workId: null, message: toWorkCreateErrorMessage(error) };
     } finally {
       inFlightRef.current = false;
