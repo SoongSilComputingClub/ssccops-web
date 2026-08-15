@@ -79,6 +79,7 @@ export const NAV_GROUPS: NavGroup[] = [
           p.startsWith("/members") &&
           !p.startsWith("/members/roles") &&
           !p.startsWith("/members/role-labels") &&
+          !p.startsWith("/members/authorities") &&
           !p.startsWith("/members/csv-import"),
       },
       {
@@ -86,6 +87,20 @@ export const NAV_GROUPS: NavGroup[] = [
         href: ROUTES.roles,
         isActive: (p) =>
           p.startsWith("/members/roles") || p.startsWith("/members/role-labels"),
+      },
+      /*
+       * 권한 트리 관리 (#32 · 서버 #65).
+       *
+       * 조회(GET /v1/authorities)부터 ROLE_MANAGE 를 요구한다 — 어떤 묶음 권한이 있는지 자체가
+       * 운영 구조를 드러내기 때문이다. 그래서 라벨 관리와 달리 requires 를 반드시 둔다.
+       * 역할별 권한 부여(/members/roles/{roleId}/authorities)는 역할 목록에서 들어가므로
+       * 목차에 따로 올리지 않는다 — 역할을 먼저 고르지 않으면 갈 수 없는 화면이다.
+       */
+      {
+        label: "권한 관리",
+        href: ROUTES.authorities,
+        isActive: starts("/members/authorities"),
+        requires: CAPABILITY.ROLE_MANAGE,
       },
       { label: "CSV 회원 이관", href: ROUTES.csvImport, isActive: starts("/members/csv-import") },
     ],
