@@ -10,8 +10,10 @@ import {
   useSubWorkStore,
   type SubWork,
 } from "@/entities/sub-work";
+import { CAPABILITY } from "@/entities/session";
 import { subWorkTypeNm, useSubWorkTypeStore } from "@/entities/sub-work-type";
 import { RejectSheet, useApprovalActions } from "@/features/approval";
+import { useCan } from "@/features/auth";
 import { WORK_STTS_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { daysUntil, ddayText, deadlineFlag, formatMd } from "@/shared/lib/date";
@@ -37,6 +39,8 @@ export function DashboardPage() {
   const subWorkTypes = useSubWorkTypeStore((s) => s.subWorkTypes);
   const mbrs = useMbrStore((s) => s.mbrs);
   const { decide } = useApprovalActions();
+  /* 헤더의 '+ 등록'은 운영 등록 화면으로 간다 — 그 화면의 업무·하위 업무 등록과 같은 권한이다 */
+  const canManageWork = useCan(CAPABILITY.WORK_MANAGE);
 
   const [myFilter, setMyFilter] = useState<(typeof MY_FILTERS)[number]>("전체");
   const [rejectTarget, setRejectTarget] = useState<SubWork | null>(null);
@@ -180,7 +184,14 @@ export function DashboardPage() {
       <PageHeader
         title="운영 대시보드"
         subtitle="승인 대기 · 다가오는 마감 · 내 업무"
-        action={{ label: "+ 등록", onClick: () => router.push(ROUTES.operationNew) }}
+        action={{
+          label: "+ 등록",
+          onClick: () => router.push(ROUTES.operationNew),
+          disabled: !canManageWork,
+          title: canManageWork
+            ? undefined
+            : "업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
+        }}
       />
       <PageBody>
         <div className="grid grid-cols-[1.7fr_1fr] items-start gap-4">

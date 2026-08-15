@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { CAPABILITY } from "@/entities/session";
 import { crtrAmtText, useSubWorkTypeStore, type SubWorkType } from "@/entities/sub-work-type";
+import { useCan } from "@/features/auth";
 import { AUTZR_ROLE_CDS, AUTZR_ROLE_NM, type AutzrRoleCd } from "@/shared/config/codes";
 import {
   Badge,
@@ -15,6 +17,9 @@ import {
   TextField,
   flash,
 } from "@/shared/ui";
+
+/** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
+const NO_MANAGE = "하위 업무 유형을 등록·수정할 권한이 없습니다 — 조회만 할 수 있습니다";
 
 type Draft = Omit<SubWorkType, "subWorkTypeId">;
 
@@ -37,6 +42,16 @@ function toAmt(v: string): number | null {
 
 export function SubWorkTypeListPage() {
   const { subWorkTypes, addSubWorkType, updateSubWorkType } = useSubWorkTypeStore();
+  /*
+   * 조회와 관리를 서버가 다른 권한으로 나눠 두었다 (#29 · SubWorkTypeController) —
+   * 목록은 SUB_WORK_TYPE_READ, 등록·수정은 SUB_WORK_TYPE_MANAGE 다. 그래서 화면은 열되
+   * 추가·수정만 잠근다. 유형별 승인 규칙은 하위 업무를 등록하는 사람이라면 누구나 알아야
+   * 하는 기준정보이므로 표를 감추면 곤란하다.
+   *
+   * 이 화면은 아직 목 스토어로 동작한다 — 서버 연동 전이라 잠금이 실제 403을 막는 것은
+   * 아니지만, 권한 규칙을 서버와 같은 자리에 먼저 맞춰 둔다.
+   */
+  const canManage = useCan(CAPABILITY.SUB_WORK_TYPE_MANAGE);
   /** null=닫힘, 0=신규, n=해당 subWorkTypeId 수정 */
   const [editing, setEditing] = useState<number | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
@@ -74,8 +89,16 @@ export function SubWorkTypeListPage() {
     <>
       <PageHeader title="하위 업무 유형 관리" subtitle="승인 규칙 기준정보" />
       <PageBody>
-        <div className="mb-4 flex justify-end">
-          <Button onClick={() => startEdit()}>＋ 하위 업무 유형 추가</Button>
+        <div className="mb-4 flex items-center justify-end gap-3">
+          {/* 잠긴 버튼의 툴팁만으로는 왜 안 되는지 놓치기 쉬워 사유를 옆에 적는다 */}
+          {!canManage && <div className="text-[13.5px] text-n500">{NO_MANAGE}</div>}
+          <Button
+            onClick={() => startEdit()}
+            disabled={!canManage}
+            title={canManage ? undefined : NO_MANAGE}
+          >
+            ＋ 하위 업무 유형 추가
+          </Button>
         </div>
 
         {editing !== null && (
@@ -229,8 +252,10 @@ export function SubWorkTypeListPage() {
                 <div className="border-t border-black/5 py-3">
                   <button
                     type="button"
+                    disabled={!canManage}
+                    title={canManage ? undefined : NO_MANAGE}
                     onClick={() => startEdit(t)}
-                    className="cursor-pointer text-[14px] text-accent"
+                    className="cursor-pointer text-[14px] text-accent disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     수정
                   </button>
