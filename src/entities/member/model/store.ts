@@ -127,7 +127,17 @@ export function mbrSttsTone(cd: MbrSttsCd): "red" | "grey" {
 
 /** 기수_번호 표기 — "12기" */
 export function genNoText(mbr: Mbr): string {
-  return mbr.genNo ? `${mbr.genNo}기` : "미배정";
+  return generationText(mbr.genNo);
+}
+
+/**
+ * 기수_번호 표기 — 서버 응답(`MemberSummary.generationNumber`)용. {@link genNoText}의 짝이다.
+ *
+ * 목 `Mbr`은 기수를 0으로, 서버는 null로 '미배정'을 표현한다. 값 하나를 받는 이 함수가 둘을
+ * 같은 문장으로 옮긴다 — 화면마다 `?? "미배정"`을 적으면 0을 "0기"로 그리는 자리가 생긴다.
+ */
+export function generationText(generationNumber: number | null): string {
+  return generationNumber ? `${generationNumber}기` : "미배정";
 }
 
 /** 졸업생 여부 — 회원_상태_코드에서 파생 */
