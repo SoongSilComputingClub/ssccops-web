@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   aprvSttsTone,
   type ApprovalInboxItem,
@@ -32,8 +32,10 @@ import {
  * 직전 반려 사유·내 표·승인 권한)을 모두 서버가 계산해 내려주므로 더 이상 클라이언트에서
  * 조인하지 않는다(하위 업무 상세 #39가 밟은 경로와 같다).
  *
- * 대시보드의 '승인 대기 목록' 카드는 아직 목 스토어를 쓴다 — 그쪽은 하위 업무 목록도 함께
- * 목 스토어라 이 화면만 따로 연동할 수 없다(별도 이슈).
+ * 대시보드(ssccops-web#60)의 '승인 대기 목록' 카드가 이 화면과 같은 서버 응답을 미리보기로
+ * 재사용한다. 그 카드는 반려·승인 버튼을 두지 않고 행 클릭 시 `?subWorkId=`를 실어 여기로
+ * 이동하는데, 그 값을 받으면 대기 탭에서 해당 카드로 스크롤하고 잠깐 강조한다 — 목록 어디에
+ * 있는지 찾아 스크롤하는 수고를 없애는 것이 대시보드 카드에서 버튼을 뺀 대신이다.
  */
 
 const TABS: ApprovalInboxTab[] = ["PENDING", "APPROVED", "REJECTED"];
@@ -58,13 +60,30 @@ function isChecklistDone(item: ApprovalInboxItem): boolean {
   return completedCount >= totalCount;
 }
 
+/** 대시보드 카드에서 넘어온 강조 대상. 값이 없거나 숫자가 아니면 강조하지 않는다 */
+function parseHighlightSubWorkId(raw: string | null): number | null {
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
 export function ApprovalBoxPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const highlightSubWorkId = parseHighlightSubWorkId(searchParams.get("subWorkId"));
   const [tab, setTab] = useState<ApprovalInboxTab>("PENDING");
   const { approvals, status, errorMessage, totalCount, hasNext, loadingMore, loadMore, reload } =
     useApprovalInbox(tab);
   const { pendingSubWorkId, vote, decide } = useApprovalDecisions();
   const [rejectTarget, setRejectTarget] = useState<ApprovalInboxItem | null>(null);
+
+  // 대시보드에서 넘어온 카드로 스크롤하고 잠깐 강조한다 — 대기 탭에 없으면(이미 처리된 건) 아무 일도 하지 않는다
+  useEffect(() => {
+    if (status !== "ready" || highlightSubWorkId == null) return;
+    document
+      .getElementById(`approval-card-${highlightSubWorkId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [status, highlightSubWorkId]);
 
   const runLoadMore = async () => {
     const message = await loadMore();
@@ -132,8 +151,14 @@ export function ApprovalBoxPage() {
                   item.authorizerRoleCode ??
                   "-";
 
+                const highlighted = item.subWorkId === highlightSubWorkId;
+
                 return (
-                  <Card key={item.subWorkId}>
+                  <Card
+                    key={item.subWorkId}
+                    id={`approval-card-${item.subWorkId}`}
+                    className={highlighted ? "shadow-[0_0_0_2px_#1b64da]" : undefined}
+                  >
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge tone={aprvSttsTone(item.approvalStatus)}>
                         {APRV_STTS_NM[item.approvalStatus]}

@@ -2,27 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { aprvOf, useAprvStore } from "@/entities/approval";
-import { useMbrStore } from "@/entities/member";
-import {
-  chckPrgrsRt,
-  ownerMbrId,
-  useSubWorkStore,
-  type SubWork,
-} from "@/entities/sub-work";
+import type { ApprovalInboxItem } from "@/entities/approval";
 import { CAPABILITY } from "@/entities/session";
-import { subWorkTypeNm, useSubWorkTypeStore } from "@/entities/sub-work-type";
-import { RejectSheet, useApprovalActions } from "@/features/approval";
+import type { SubWorkListItem } from "@/entities/sub-work";
 import { useCan } from "@/features/auth";
+import { useDashboard } from "@/features/dashboard";
 import { WORK_STTS_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
-import { daysUntil, ddayText, deadlineFlag, formatMd } from "@/shared/lib/date";
+import { daysUntil, ddayText, deadlineFlag, formatMd, todayInSeoul } from "@/shared/lib/date";
 import {
   Badge,
-  Button,
   Card,
   CardTitle,
   Chip,
+  EmptyState,
   GridTable,
   PageBody,
   PageHeader,
@@ -30,100 +23,88 @@ import {
   type GridColumn,
 } from "@/shared/ui";
 
+/*
+ * 운영 대시보드 (ssccops-server OPS-038 · GET /v1/dashboard · ssccops-web#60).
+ *
+ * 목 스토어(subWorks·subWorkAprvs를 화면에서 이어 붙이던 방식)를 서버 응답 한 벌로 바꿨다 —
+ * 승인 대기 미리보기 · 다가오는 마감(±5일) · 내 업무 목록(담당자 본인 전량)을 모두 서버가
+ * 계산해 내려주므로 더 이상 클라이언트가 여러 스토어를 조인하지 않는다(승인함 #45·하위 업무
+ * 목록 #41이 밟은 경로와 같다).
+ *
+ * 승인 대기 카드는 이슈 설명의 UI 변경 계획을 반영해 반려·승인 버튼을 두지 않는다 — 행을
+ * 클릭하면 승인함(ROUTES.approvals)으로 이동하고, 그 화면이 `subWorkId` 쿼리로 해당 카드에
+ * 스크롤·강조한다(승인함 쪽 구현은 features/approval의 useApprovalHighlight).
+ */
+
 const MY_FILTERS = ["전체", "마감임박", "지연"] as const;
+
+function DashboardSkeleton() {
+  return (
+    <div className="grid grid-cols-[1.7fr_1fr] items-start gap-4">
+      {[0, 1].map((i) => (
+        <Card key={i} className="animate-pulse">
+          <div className="h-[20px] w-2/5 rounded bg-black/5" />
+          <div className="mt-3 h-[80px] w-full rounded bg-black/5" />
+        </Card>
+      ))}
+    </div>
+  );
+}
 
 export function DashboardPage() {
   const router = useRouter();
-  const { subWorks, subWorkChckLists, subWorkPicAltmnts } = useSubWorkStore();
-  const subWorkAprvs = useAprvStore((s) => s.subWorkAprvs);
-  const subWorkTypes = useSubWorkTypeStore((s) => s.subWorkTypes);
-  const mbrs = useMbrStore((s) => s.mbrs);
-  const { decide } = useApprovalActions();
+  const { data, status, errorMessage, reload } = useDashboard();
   /* 헤더의 '+ 등록'은 운영 등록 화면으로 간다 — 그 화면의 업무·하위 업무 등록과 같은 권한이다 */
   const canManageWork = useCan(CAPABILITY.WORK_MANAGE);
 
   const [myFilter, setMyFilter] = useState<(typeof MY_FILTERS)[number]>("전체");
-  const [rejectTarget, setRejectTarget] = useState<SubWork | null>(null);
+  // 서버가 Asia/Seoul 오프셋으로 내려주는 마감_일시와 같은 시간대로 D-day를 센다 (withServiceOffset과 같은 판단)
+  const today = todayInSeoul();
 
-  const mbrNmOf = (mbrId: number | undefined) =>
-    mbrs.find((m) => m.mbrId === mbrId)?.mbrNm ?? "-";
+  const goToSubWorkApproval = (subWorkId: number) =>
+    router.push(`${ROUTES.approvals}?subWorkId=${subWorkId}`);
 
-  const pending = subWorks.filter((sw) => sw.aprvSttsCd === "PENDING");
-  const myTasks = subWorks.filter(
-    (sw) => myFilter === "전체" || deadlineFlag(sw.ddlnDt, sw.dlyYn) === myFilter,
+  const myTasks = data.myTasks.filter(
+    (sw) => myFilter === "전체" || deadlineFlag(sw.dueAt, sw.isDelayed, today) === myFilter,
   );
 
-  /** 다가오는 마감 — 캘린더 테이블이 없어 하위 업무의 마감_일시에서 파생 */
-  const upcoming = [...subWorks]
-    .filter((sw) => sw.ddlnDt && sw.workSttsCd !== "DONE")
-    .sort((a, b) => (a.ddlnDt ?? "").localeCompare(b.ddlnDt ?? ""))
-    .slice(0, 6);
-
-  const approvalColumns: GridColumn<SubWork>[] = [
+  const approvalColumns: GridColumn<ApprovalInboxItem>[] = [
     {
-      key: "subWorkTtl",
+      key: "title",
       header: "하위 업무명",
       width: "2fr",
-      render: (sw) => (
+      render: (item) => (
         <span
-          onClick={() => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
+          onClick={() => goToSubWorkApproval(item.subWorkId)}
           className="cursor-pointer font-semibold hover:text-accent"
         >
-          {sw.subWorkTtl}
+          {item.title}
         </span>
       ),
     },
     {
-      key: "pic",
-      header: "담당자",
+      key: "registrantName",
+      header: "요청자",
       width: ".8fr",
-      render: (sw) => (
-        <span className="text-n400">
-          {mbrNmOf(ownerMbrId(subWorkPicAltmnts, sw.subWorkId))}
-        </span>
-      ),
+      render: (item) => <span className="text-n400">{item.registrantName ?? "-"}</span>,
     },
     {
-      key: "ddlnDt",
+      key: "dueAt",
       header: "마감_일시",
       width: ".8fr",
-      render: (sw) => <span className="text-n400">{formatMd(sw.ddlnDt) || "-"}</span>,
+      render: (item) => <span className="text-n400">{formatMd(item.dueAt) || "-"}</span>,
     },
     {
-      key: "subWorkTypeId",
+      key: "subWorkTypeName",
       header: "하위_업무_유형",
       width: ".9fr",
-      render: (sw) => (
-        <Badge tone="grey">{subWorkTypeNm(subWorkTypes, sw.subWorkTypeId)}</Badge>
-      ),
-    },
-    {
-      key: "actions",
-      header: "조치",
-      width: "150px",
-      align: "right",
-      render: (sw) => (
-        <span className="flex justify-end gap-[7px]">
-          <Button variant="ghost-danger" size="sm" onClick={() => setRejectTarget(sw)}>
-            반려
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              const aprv = aprvOf(subWorkAprvs, sw.subWorkId);
-              if (aprv) decide(aprv.subWorkAprvId, sw.subWorkId, true);
-            }}
-          >
-            승인
-          </Button>
-        </span>
-      ),
+      render: (item) => <Badge tone="grey">{item.subWorkTypeName || "-"}</Badge>,
     },
   ];
 
-  const taskColumns: GridColumn<SubWork>[] = [
+  const taskColumns: GridColumn<SubWorkListItem>[] = [
     {
-      key: "subWorkTtl",
+      key: "title",
       header: "하위 업무명",
       width: "2fr",
       render: (sw) => (
@@ -131,30 +112,30 @@ export function DashboardPage() {
           onClick={() => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
           className="cursor-pointer font-semibold hover:text-accent"
         >
-          {sw.subWorkTtl}
+          {sw.title}
         </span>
       ),
     },
     {
-      key: "workSttsCd",
+      key: "workStatus",
       header: "업무_상태",
       width: ".7fr",
       render: (sw) => (
-        <Badge tone={sw.workSttsCd === "DONE" ? "outline-accent" : "outline"}>
-          {WORK_STTS_NM[sw.workSttsCd]}
+        <Badge tone={sw.workStatus === "DONE" ? "outline-accent" : "outline"}>
+          {WORK_STTS_NM[sw.workStatus]}
         </Badge>
       ),
     },
     {
-      key: "ddlnDt",
+      key: "dueAt",
       header: "마감_일시",
       width: ".9fr",
       render: (sw) => {
-        const flag = deadlineFlag(sw.ddlnDt, sw.dlyYn);
+        const flag = deadlineFlag(sw.dueAt, sw.isDelayed, today);
         return (
           <span className="flex items-center gap-2">
             <span className={flag === "지연" ? "text-danger" : undefined}>
-              {formatMd(sw.ddlnDt) || "-"}
+              {formatMd(sw.dueAt) || "-"}
             </span>
             {flag && (
               <Badge tone={flag === "지연" ? "red" : "outline-accent"}>{flag}</Badge>
@@ -164,18 +145,17 @@ export function DashboardPage() {
       },
     },
     {
-      key: "prgrs",
+      key: "progressRate",
       header: "진행률",
       width: "1.2fr",
-      render: (sw) => {
-        const rt = chckPrgrsRt(subWorkChckLists, sw.subWorkId);
-        return (
-          <span className="flex items-center gap-[10px]">
-            <ProgressBar value={rt} danger={sw.dlyYn} />
-            <span className="w-[38px] text-right text-[14px] text-n500">{rt}%</span>
+      render: (sw) => (
+        <span className="flex items-center gap-[10px]">
+          <ProgressBar value={sw.progressRate} danger={sw.isDelayed} />
+          <span className="w-[38px] text-right text-[14px] text-n500">
+            {sw.progressRate}%
           </span>
-        );
-      },
+        </span>
+      ),
     },
   ];
 
@@ -194,96 +174,106 @@ export function DashboardPage() {
         }}
       />
       <PageBody>
-        <div className="grid grid-cols-[1.7fr_1fr] items-start gap-4">
-          <Card>
-            <CardTitle
-              right={<div className="text-[14px] text-accent">{pending.length}건</div>}
-            >
-              승인 대기 목록
-            </CardTitle>
-            <GridTable
-              columns={approvalColumns}
-              rows={pending}
-              rowKey={(sw) => String(sw.subWorkId)}
-              dense
-              empty={
-                <div className="py-6 text-center text-[15px] text-n500">
-                  승인 대기 중인 하위 업무가 없습니다.
-                </div>
-              }
-            />
-          </Card>
+        {status === "loading" && <DashboardSkeleton />}
 
-          <Card>
-            <CardTitle>다가오는 마감</CardTitle>
-            <div className="flex flex-col gap-[13px]">
-              {upcoming.length === 0 ? (
-                <div className="text-[14.5px] text-n500">예정된 마감이 없습니다.</div>
-              ) : (
-                upcoming.map((sw) => {
-                  const flag = deadlineFlag(sw.ddlnDt, sw.dlyYn);
-                  const d = daysUntil(sw.ddlnDt);
-                  return (
-                    <div
-                      key={sw.subWorkId}
-                      onClick={() => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
-                      className="flex cursor-pointer items-start gap-3 hover:opacity-80"
-                    >
-                      <div className="w-[64px] flex-none pt-[2px] text-[14px] text-n500">
-                        {formatMd(sw.ddlnDt)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <Badge
-                          tone={
-                            flag === "지연"
-                              ? "outline-red"
-                              : d !== null && d <= 3
-                                ? "outline-accent"
-                                : "outline"
-                          }
-                        >
-                          {ddayText(sw.ddlnDt)}
-                        </Badge>
-                        <div className="mt-[6px] text-[15.5px]">{sw.subWorkTtl}</div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </Card>
-        </div>
-
-        <Card className="mt-4">
-          <div className="mb-[14px] flex items-center gap-3">
-            <div className="text-[18px] font-medium">내 업무 목록</div>
-            <div className="flex gap-[7px]">
-              {MY_FILTERS.map((f) => (
-                <Chip key={f} active={myFilter === f} onClick={() => setMyFilter(f)}>
-                  {f}
-                </Chip>
-              ))}
-            </div>
-            <div className="flex-1" />
-            <div className="text-[14px] text-n500">{myTasks.length}건</div>
-          </div>
-          <GridTable
-            columns={taskColumns}
-            rows={myTasks}
-            rowKey={(sw) => String(sw.subWorkId)}
-            dense
+        {status === "error" && (
+          <EmptyState
+            message={errorMessage || "운영 대시보드를 불러오지 못했습니다."}
+            action={{ label: "다시 시도", onClick: reload }}
           />
-        </Card>
+        )}
 
-        <RejectSheet
-          open={rejectTarget !== null}
-          onClose={() => setRejectTarget(null)}
-          onReject={(reason) => {
-            if (!rejectTarget) return;
-            const aprv = aprvOf(subWorkAprvs, rejectTarget.subWorkId);
-            if (aprv) decide(aprv.subWorkAprvId, rejectTarget.subWorkId, false, reason);
-          }}
-        />
+        {status === "ready" && (
+          <>
+            <div className="grid grid-cols-[1.7fr_1fr] items-start gap-4">
+              <Card>
+                <CardTitle
+                  right={
+                    <span
+                      onClick={() => router.push(ROUTES.approvals)}
+                      className="cursor-pointer text-[14px] text-accent hover:underline"
+                    >
+                      전체보기
+                    </span>
+                  }
+                >
+                  승인 대기 목록
+                </CardTitle>
+                <GridTable
+                  columns={approvalColumns}
+                  rows={data.pendingApproval}
+                  rowKey={(item) => String(item.subWorkId)}
+                  dense
+                  empty={
+                    <div className="py-6 text-center text-[15px] text-n500">
+                      승인 대기 중인 하위 업무가 없습니다.
+                    </div>
+                  }
+                />
+              </Card>
+
+              <Card>
+                <CardTitle>다가오는 마감</CardTitle>
+                <div className="flex flex-col gap-[13px]">
+                  {data.upcomingDeadlines.length === 0 ? (
+                    <div className="text-[14.5px] text-n500">예정된 마감이 없습니다.</div>
+                  ) : (
+                    data.upcomingDeadlines.map((sw) => {
+                      const flag = deadlineFlag(sw.dueAt, sw.isDelayed, today);
+                      const d = daysUntil(sw.dueAt, today);
+                      return (
+                        <div
+                          key={sw.subWorkId}
+                          onClick={() => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
+                          className="flex cursor-pointer items-start gap-3 hover:opacity-80"
+                        >
+                          <div className="w-[64px] flex-none pt-[2px] text-[14px] text-n500">
+                            {formatMd(sw.dueAt)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <Badge
+                              tone={
+                                flag === "지연"
+                                  ? "outline-red"
+                                  : d !== null && d <= 3
+                                    ? "outline-accent"
+                                    : "outline"
+                              }
+                            >
+                              {ddayText(sw.dueAt, today)}
+                            </Badge>
+                            <div className="mt-[6px] text-[15.5px]">{sw.title}</div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </Card>
+            </div>
+
+            <Card className="mt-4">
+              <div className="mb-[14px] flex items-center gap-3">
+                <div className="text-[18px] font-medium">내 업무 목록</div>
+                <div className="flex gap-[7px]">
+                  {MY_FILTERS.map((f) => (
+                    <Chip key={f} active={myFilter === f} onClick={() => setMyFilter(f)}>
+                      {f}
+                    </Chip>
+                  ))}
+                </div>
+                <div className="flex-1" />
+                <div className="text-[14px] text-n500">{myTasks.length}건</div>
+              </div>
+              <GridTable
+                columns={taskColumns}
+                rows={myTasks}
+                rowKey={(sw) => String(sw.subWorkId)}
+                dense
+              />
+            </Card>
+          </>
+        )}
       </PageBody>
     </>
   );

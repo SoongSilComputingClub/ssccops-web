@@ -6,13 +6,17 @@ export function Card({
   className,
   children,
   onClick,
+  id,
 }: {
   className?: string;
   children: ReactNode;
   onClick?: () => void;
+  /** 목록에서 특정 카드로 스크롤·강조할 때만 필요하다(승인함의 대시보드 딥링크 등) */
+  id?: string;
 }) {
   return (
     <div
+      id={id}
       onClick={onClick}
       className={cn(
         "rounded-2xl bg-surface p-[18px] shadow-[0_0_0_1px_#e5e8eb]",
