@@ -1,3 +1,4 @@
+import { CAPABILITY, hasCapability, type Capability, type MemberProfile } from "@/entities/session";
 import { ROUTES } from "@/shared/config/routes";
 
 export interface NavItem {
@@ -5,6 +6,14 @@ export interface NavItem {
   href: string;
   isActive: (pathname: string) => boolean;
   children?: NavItem[];
+  /**
+   * 이 메뉴를 보려면 필요한 권한. 없으면 누구에게나 보인다 (#29).
+   *
+   * 값은 그 화면이 **첫 조회에 부르는 API가 요구하는 권한**이다. 버튼이 아니라 화면 진입에
+   * 필요한 것을 적어야 한다 — 목록은 볼 수 있고 등록만 못 하는 화면(라벨 관리)을 감추면
+   * 조회조차 막게 된다.
+   */
+  requires?: Capability;
 }
 
 export interface NavGroup {
@@ -27,18 +36,36 @@ export const NAV_GROUPS: NavGroup[] = [
         href: ROUTES.operations,
         isActive: (p) => p === "/operations",
         children: [
-          { label: "업무", href: ROUTES.works, isActive: starts("/operations/works") },
-          { label: "하위 업무", href: ROUTES.subWorks, isActive: starts("/operations/sub-works") },
+          {
+            label: "업무",
+            href: ROUTES.works,
+            isActive: starts("/operations/works"),
+            requires: CAPABILITY.WORK_MANAGE,
+          },
+          {
+            label: "하위 업무",
+            href: ROUTES.subWorks,
+            isActive: starts("/operations/sub-works"),
+            requires: CAPABILITY.WORK_MANAGE,
+          },
           { label: "회의", href: ROUTES.meetings, isActive: starts("/operations/meetings") },
         ],
       },
+      /* 승인함은 권한 코드로 표현되지 않는다 — 승인자 본인인지를 서버가 건별로 본다 */
       { label: "승인함", href: ROUTES.approvals, isActive: starts("/approvals") },
       {
         label: "하위 업무 유형 관리",
         href: ROUTES.subWorkTypes,
         isActive: starts("/operations/types"),
+        // 화면 진입은 목록 조회다 — 등록·수정만 SUB_WORK_TYPE_MANAGE 로 따로 잠근다
+        requires: CAPABILITY.SUB_WORK_TYPE_READ,
       },
-      { label: "운영 등록", href: ROUTES.operationNew, isActive: starts("/operations/new") },
+      {
+        label: "운영 등록",
+        href: ROUTES.operationNew,
+        isActive: starts("/operations/new"),
+        requires: CAPABILITY.WORK_MANAGE,
+      },
     ],
   },
   {
@@ -71,7 +98,13 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "폼 목록",
         href: ROUTES.forms,
         isActive: (p) => p.startsWith("/forms") && !p.startsWith("/forms/labels"),
+        requires: CAPABILITY.FORM_READ,
       },
+      /*
+       * 라벨 관리에는 requires 를 두지 않는다. 목록 조회(GET /v1/form-labels)에는 서버가
+       * 권한을 걸지 않았고 추가·비활성화만 FORM_LABEL_MANAGE 를 요구한다 — 이슈에도
+       * "조회는 허용"으로 적혀 있다. 메뉴를 감추면 볼 수 있는 것까지 막게 된다.
+       */
       { label: "라벨 관리", href: ROUTES.formLabels, isActive: starts("/forms/labels") },
     ],
   },
@@ -85,6 +118,41 @@ export const NAV_FOOT: NavGroup = {
     { label: "로그아웃", href: ROUTES.login, isActive: () => false },
   ],
 };
+
+/*
+ * 권한이 없는 메뉴를 걷어낸다 (#29).
+ *
+ * ── 왜 감추는가 ────────────────────────────────────────────────
+ * 사이드바는 "여기서 무엇을 할 수 있는가"의 목차다. 잠긴 항목을 남기면 눌러도 아무 일이
+ * 없고 이유를 물어볼 곳도 없다(툴팁은 마우스를 올려야 보이고 터치에서는 아예 안 보인다).
+ * 무엇보다 **그 뒤의 화면이 실제로 쓸 수 없다** — 업무 목록은 조회부터 WORK_MANAGE 로 막혀
+ * 있어 들어가 봐야 오류 화면뿐이다. 갈 수 없는 곳을 목차에 남기면 목차 전체를 믿을 수 없게
+ * 된다. 화면 **안**의 동작 버튼은 반대로 잠근다 — 근거는 features/auth/model/use-can.ts.
+ *
+ * ── 왜 useCan 이 아니라 hasCapability 인가 ──────────────────────
+ * 메뉴는 데이터라 항목 수만큼 판정이 필요한데 훅은 반복문 안에서 부를 수 없다. 그래서 세션
+ * 회원 한 번만 읽고(호출부가 이미 읽고 있다) 판정 함수를 직접 쓴다 — useCan 도 같은
+ * hasCapability 를 부르므로 판정 규칙은 여전히 한 곳이다.
+ *
+ * 감추기는 어디까지나 안내다. 주소를 직접 치면 화면은 열리고, 실제 차단은 서버가 한다.
+ */
+export function visibleGroups(
+  groups: NavGroup[],
+  member: MemberProfile | null,
+): NavGroup[] {
+  const allowed = (item: NavItem) => !item.requires || hasCapability(member, item.requires);
+
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(allowed).map((item) => ({
+        ...item,
+        children: item.children?.filter(allowed),
+      })),
+    }))
+    // 항목이 하나도 남지 않은 묶음은 제목만 떠 있게 두지 않는다 (접힌 사이드바의 타일도 같다)
+    .filter((group) => group.items.length > 0);
+}
 
 export function groupHasActive(group: NavGroup, pathname: string): boolean {
   return group.items.some(
