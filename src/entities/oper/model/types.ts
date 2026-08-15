@@ -1,4 +1,21 @@
 import type { OperTypeCd, PrrtyRnkCd } from "@/shared/config/codes";
+import type { MeetingListItem } from "@/entities/meeting";
+import type { SubWorkListItem } from "@/entities/sub-work";
+import type { WorkListItem } from "@/entities/work";
+
+/**
+ * 운영 통합 조회 응답 (ssccops-server OPS-001 · GET /v1/operations · ssccops-web#63).
+ *
+ * 세 배열은 업무 목록(OPS-020)·하위 업무 목록(OPS-008)·회의 목록(OPS-031)과 같은 도메인
+ * 타입을 재사용한다 — 서버가 같은 DTO를 쓰는 자원이라 통합 화면이 다른 타입으로 다시
+ * 정의하면 통합 화면과 각 목록 화면이 같은 건을 다르게 그릴 수 있다(DashboardData와 같은
+ * 판단). 우측 트리는 `subWorks[].work.workId`로 상위 업무에 묶는다.
+ */
+export interface OperationsHubData {
+  works: WorkListItem[];
+  subWorks: SubWorkListItem[];
+  meetings: MeetingListItem[];
+}
 
 /**
  * table: oper — 운영
