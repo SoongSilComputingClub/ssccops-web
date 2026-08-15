@@ -37,6 +37,61 @@ export function toMemberErrorMessage(error: unknown): string {
 }
 
 /**
+ * 회원 정보 저장 실패 → 폼 아래 띄울 한 줄 (PATCH /v1/members/{memberId} · #47 · 서버 #77).
+ *
+ * 조회용 문구(`toMemberErrorMessage`)를 그대로 쓰지 않는 것은 저장에서만 나오는 코드가 있고,
+ * "불러오지 못했습니다"가 저장 실패에는 거짓이기 때문이다.
+ *
+ * **400 `VALIDATION_FAILED`는 서버 메시지를 그대로 보여 준다.** 이 코드가 오는 대표적인 경우가
+ * 재학 회원의 학과·학년 누락인데(서버 `AcademicProfilePolicy`), 화면이 같은 규칙을 먼저 거르므로
+ * 여기까지 왔다는 것은 화면의 판정과 서버의 판정이 갈렸다는 뜻이다 — 그때 화면이 지어낸 문장을
+ * 보여 주면 실제 거절 사유가 사라진다. 길이·범위 위반(@Size·@Min)도 이 자리로 온다.
+ *
+ * 404는 저장 직전에 회원이 사라진 경우다. 다시 시도해도 결과가 같으므로 목록으로 보낸다.
+ */
+export function toMemberSaveErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "회원 정보를 저장하지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case MEMBER_ERROR.MEMBER_NOT_FOUND:
+      return "회원을 찾을 수 없습니다 — 이미 삭제되었거나 잘못된 주소입니다";
+    case MEMBER_ERROR.VALIDATION_FAILED:
+      // 서버 문장을 그대로 옮긴다 (위 주석)
+      return error.message;
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "회원 정보를 수정할 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없어 저장하지 못했습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}
+
+/**
+ * 내 프로필 저장 실패 → 내 계정 화면에 띄울 한 줄 (PATCH /v1/members/me · #47).
+ *
+ * 운영진 경로와 **403 문장만** 갈린다. 본인 수정은 권한 코드를 요구하지 않으므로(인증 + 가입)
+ * "MEMBER_MANAGE 권한이 필요합니다"는 이 화면에서 거짓이고, 자기 이름을 고치려던 사람이
+ * 자기 권한을 의심하게 된다. 여기서 403이 뜰 수 있는 경우는 사실상 미가입(SIGNUP_REQUIRED)
+ * 뿐인데 그쪽은 apiFetch가 이미 가입 화면으로 보낸 뒤다 — 담당자 후보 조회가 같은 자리에서
+ * 같은 판단을 했다.
+ */
+export function toMyProfileSaveErrorMessage(error: unknown): string {
+  if (
+    error instanceof ApiError &&
+    (error.code === API_ERROR.FORBIDDEN || error.code === API_ERROR.ACCESS_DENIED)
+  ) {
+    return "프로필을 저장하지 못했습니다. 다시 로그인한 뒤 시도해주세요";
+  }
+  return toMemberSaveErrorMessage(error);
+}
+
+/**
  * 담당자 후보 조회 실패 → 등록 폼에 띄울 한 줄 (GET /v1/members/assignable · #53).
  *
  * `toMemberErrorMessage`를 그대로 쓰지 않는 것은 **403 문장이 이 목록에서는 거짓이기

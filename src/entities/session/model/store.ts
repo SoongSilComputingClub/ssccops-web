@@ -36,6 +36,18 @@ interface SessionState {
   signupResult: MemberProfile | null;
 
   setSession: (session: AuthSession) => void;
+  /**
+   * 본인이 방금 고친 프로필을 세션에 반영한다 (PATCH /v1/members/me · #47).
+   *
+   * 서버가 수정 응답으로 세션의 member와 같은 모양(`MemberProfileResponse`)을 주므로 세션을
+   * 다시 조회하지 않는다 — 가입 응답을 그대로 쓰는 것과 같은 계약이다. 다시 조회하면 왕복 한
+   * 번 동안 사이드바에 옛 이름이 남고, 그 사이 조회가 실패하면 저장은 됐는데 화면만 낡은
+   * 상태가 된다.
+   *
+   * `status`를 건드리지 않는 것은 이 갱신이 로그인·가입 상태를 바꾸지 않기 때문이다 —
+   * 이 화면은 이미 ready인 회원만 연다.
+   */
+  applyMyProfile: (member: MemberProfile) => void;
   setStatus: (status: SessionStatus) => void;
   fail: (message: string) => void;
   /** 가입 성공을 기록한다. 세션 자체는 아직 signup-required로 둔다 (applySignupResult 주석 참고) */
@@ -67,6 +79,9 @@ export const useSessionStore = create<SessionState>((set) => ({
       member: session.member,
       mbrId: session.member?.memberId ?? 0,
     }),
+
+  /* 인터페이스 쪽 주석 참고 — 서버 응답이 세션의 member와 같은 모양이라 그대로 갈아 끼운다 */
+  applyMyProfile: (member) => set({ member, mbrId: member.memberId }),
 
   setStatus: (status) => set({ status }),
 

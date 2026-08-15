@@ -1,3 +1,4 @@
+import type { MemberProfile } from "@/entities/session";
 import type { MbrGrdCd, MbrSttsCd } from "@/shared/config/codes";
 import { apiFetch, apiFetchList } from "@/shared/lib/api/client";
 
@@ -273,6 +274,105 @@ export interface AssignableMember {
 export async function fetchAssignableMembers(): Promise<AssignableMember[]> {
   const members = await apiFetch<AssignableMember[] | null>("/v1/members/assignable");
   return members ?? [];
+}
+
+/* ── 수정 ──────────────────────────────────────────────────── */
+
+/**
+ * 입력값 길이·범위 상한 (데이터사전 `mbr` 컬럼 · 서버 `MemberUpdateRequest`의 @Size·@Min·@Max).
+ *
+ * 서버가 400으로 거절할 값을 화면이 먼저 걸러 주려는 것이고, **판정 근거는 서버다** — 여기
+ * 숫자가 낡으면 화면이 통과시킨 값이 서버에서 막힐 뿐 그 반대는 없다.
+ */
+export const MEMBER_FIELD_MAX = {
+  /** 회원_명V50 — 유일한 필수 항목이다 */
+  name: 50,
+  /** 학과_명V100 */
+  departmentName: 100,
+  /** 전화번호V20 */
+  phoneNumber: 20,
+  /** 이메일V255 */
+  email: 255,
+} as const;
+
+/** 학년_번호N1은 1~4다 (서버 @Min(1) @Max(4)) */
+export const ACADEMIC_YEAR_MIN = 1;
+export const ACADEMIC_YEAR_MAX = 4;
+
+/**
+ * PATCH /v1/members/{memberId} 요청 본문 (서버 `MemberUpdateRequest` · #77).
+ *
+ * ── PATCH이지만 부분 수정이 아니라 **전체 교체**다 ──────────────
+ * 서버가 record + 전체 교체(PUT 의미)로 확정했다(근거는 `MemberUpdateRequest` 주석). 그래서
+ * **생략한 선택 필드는 '건드리지 마라'가 아니라 '지워라'로 읽힌다.** 바뀐 값만 골라 보내면
+ * 나머지 항목이 조용히 비워진다 — 이 파일의 타입에 `?`를 두지 않고 여섯 필드를 모두 필수로
+ * 둔 것이 그 사고를 막는 장치다. 화면은 폼을 서버 응답으로 채우고 통째로 되돌려 보낸다.
+ *
+ * ── 여기 없는 필드가 곧 계약이다 ────────────────────────────────
+ * 등급·상태는 변경 이력을 함께 남겨야 해 전용 API가 따로 있고(#48), 학번·가입일은 가입 후
+ * 변경 불가로 확정됐다(ssccops#74). 요청 본문에 자리가 없으므로 넣어도 무시된다.
+ *
+ * `generationNumber`의 null은 '지움'이 아니라 **미배정**이다 — `gen_no`가 NOT NULL이라 지울
+ * 자리가 없고, 서버가 null을 0(미배정 센티널)으로 바꿔 저장한다(가입 경로와 같다).
+ */
+export interface MemberUpdateInput {
+  generationNumber: number | null;
+  name: string;
+  departmentName: string | null;
+  academicYear: number | null;
+  phoneNumber: string | null;
+  email: string | null;
+}
+
+/**
+ * PATCH /v1/members/me 요청 본문 (서버 `MemberSelfUpdateRequest` · #77).
+ *
+ * 운영진 경로에서 **기수와 이메일이 빠진** 모양이다. 서버가 DTO를 나눈 것 자체가 권한 차이의
+ * 표현이므로 화면도 같은 경계를 그린다 — 기수는 운영진이 배정하는 값이고, 이메일은 Supabase
+ * 인증 계정에서 오는 값이라 본인이 바꾸면 로그인 계정과 갈린다.
+ *
+ * 전체 교체 의미는 운영진 경로와 같다.
+ */
+export type MemberSelfUpdateInput = Omit<
+  MemberUpdateInput,
+  "generationNumber" | "email"
+>;
+
+/**
+ * PATCH /v1/members/{memberId} — 운영진이 남의 회원 정보를 고친다 (`MEMBER_MANAGE`).
+ *
+ * 응답은 조회와 같은 `MemberDetailResponse`라 저장 직후의 화면을 다시 조회 없이 그릴 수 있다.
+ * 오류는 404 `NOT_FOUND` · 400 `VALIDATION_FAILED`(재학 회원이 학과·학년을 비움) · 403이다.
+ */
+export async function updateMember(
+  memberId: number,
+  input: MemberUpdateInput,
+): Promise<MemberDetail> {
+  return apiFetch<MemberDetail>(`/v1/members/${memberId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * PATCH /v1/members/me — 본인이 자기 정보를 고친다 (인증 + 가입).
+ *
+ * **경로에도 본문에도 대상 회원을 넣을 자리가 없다.** 대상은 언제나 인증 주체 본인이며, 자리를
+ * 만들지 않는 것이 남의 행에 닿는 경로를 막는 방법이라는 것이 서버의 판단이다.
+ *
+ * 응답이 세션(`GET /v1/auth/session`)의 member 블록과 **같은 모양**이라, 저장 뒤 세션을 다시
+ * 조회하지 않고 그대로 스토어에 넣을 수 있다(가입 API가 이미 쓰는 계약이다). 그래서 응답
+ * 타입도 세션의 `MemberProfile`을 그대로 가져다 쓴다 — 같은 DTO를 이 파일에 한 벌 더 적으면
+ * 서버가 필드를 하나 늘렸을 때 세션과 여기가 갈리고, 그 갈림은 사이드바에 옛 이름이 남는
+ * 식으로만 드러난다. 타입만 가져오므로(import type) 런타임 의존은 생기지 않는다.
+ */
+export async function updateMyProfile(
+  input: MemberSelfUpdateInput,
+): Promise<MemberProfile> {
+  return apiFetch<MemberProfile>("/v1/members/me", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 }
 
 /* ── 기준 코드 ─────────────────────────────────────────────── */
