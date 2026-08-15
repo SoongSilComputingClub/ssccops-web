@@ -126,6 +126,14 @@ export const MEMBER_ERROR = {
   VALIDATION_FAILED: "VALIDATION_FAILED",
   /** 기준 코드에 없는 등급·상태·정렬 값 (400) */
   INVALID_CODE_VALUE: "INVALID_CODE_VALUE",
+  /**
+   * 지금과 같은 값으로의 등급·상태 변경 (400 · #48 · 서버 `MemberErrorCode.NO_CHANGE`).
+   *
+   * 서버가 `VALIDATION_FAILED`로 뭉개지 않고 전용 문자열을 내리는 것은 화면이 이것만 다르게
+   * 안내해야 하기 때문이다 — 값이 잘못된 것이 아니라 **바뀐 것이 없다**. 시트는 애초에 같은
+   * 값이면 저장 버튼을 잠가 여기까지 오지 않게 한다.
+   */
+  NO_CHANGE: "NO_CHANGE",
   /** MEMBER_MANAGE 권한 없음 (403) */
   FORBIDDEN: "FORBIDDEN",
 } as const;
@@ -373,6 +381,155 @@ export async function updateMyProfile(
     method: "PATCH",
     body: JSON.stringify(input),
   });
+}
+
+/* ── 등급·상태 변경 ────────────────────────────────────────── */
+
+/**
+ * 변경 사유(`grd_chg_rsn_cn` · `stts_chg_rsn_cn`) 상한 — 서버 `@Size(max = 500)`.
+ *
+ * `MEMBER_FIELD_MAX`와 같은 이유로 화면이 먼저 걸러 주는 값이며 판정 근거는 서버다.
+ */
+export const CHANGE_REASON_MAX = 500;
+
+/**
+ * 등급·상태 변경 응답에 함께 실리는 경고 한 줄 (MemberChangeWarningResponse · 서버 #78).
+ *
+ * **경고는 요청을 막지 않는다.** 400이 아니라 200 응답에 실려 오는 사실이다 — 탈퇴·제명으로
+ * 옮긴 회원이 아직 쥐고 있는 역할·하위 업무의 건수이며, 서버는 그것들을 자동으로 정리하지
+ * 않는다(운영 규칙이 정해지지 않아 부수 효과를 넣지 않기로 했다). 그래서 **화면이 이 사실을
+ * 사람에게 넘기는 마지막 지점**이고, 사라지는 토스트로 알리면 아무도 처리하지 않은 채 조직을
+ * 떠난 회원이 국장 역할을 그대로 쥐고 남는다.
+ *
+ * `count`가 문구와 따로 실려 오는 것은 화면이 값으로 쓸 수 있게 하기 위해서다.
+ */
+export interface MemberChangeWarning {
+  code: string;
+  message: string;
+  count: number;
+}
+
+/** 경고 코드 (서버 `MemberChangeWarningResponse`의 상수) — 화면은 코드로 분기한다 */
+export const MEMBER_CHANGE_WARNING = {
+  /** 조직을 떠난 회원에게 아직 종료되지 않은 역할이 남았다 */
+  CURRENT_ROLES_REMAIN: "CURRENT_ROLES_REMAIN",
+  /** 조직을 떠난 회원이 아직 담당 중인(완료되지 않은) 하위 업무가 남았다 */
+  ASSIGNED_SUB_WORKS_REMAIN: "ASSIGNED_SUB_WORKS_REMAIN",
+} as const;
+
+/**
+ * 등급·상태 변경 결과 (MemberGradeChangeResponse · MemberStatusChangeResponse).
+ *
+ * 두 응답의 모양이 같아 타입도 하나로 둔다 — 시트가 한 컴포넌트라 같은 처리로 받는다(서버가
+ * 등급 응답에도 `warnings`를 둔 이유가 그것이다. 등급 쪽은 언제나 빈 목록이다).
+ *
+ * `member`는 조회와 같은 `MemberDetailResponse`이고 `recentChanges` 맨 앞에 방금 남긴 이력이
+ * 들어 있다 — **저장 직후 상세를 다시 조회하지 않는다.** 다시 조회하면 왕복 한 번 동안 옛
+ * 뱃지가 남고, 그 사이 다른 사람이 바꾼 값이 섞여 방금 내가 한 변경과 구분되지 않는다.
+ */
+export interface MemberChangeResult {
+  member: MemberDetail;
+  warnings: MemberChangeWarning[];
+}
+
+/**
+ * POST /v1/members/{memberId}/grade-changes 요청 본문 (서버 `MemberGradeChangeRequest`).
+ *
+ * **변경자(`chnrgMbrId`)를 싣지 않는다.** 서버가 인증 주체에서 가져간다 — 화면이 세션의
+ * 회원 번호를 적어 보내면 "누가 바꿨는가"를 요청자가 스스로 정하는 것이라 이력이 증거가
+ * 되지 못한다. 본문에 자리를 만들지 않는 것이 그 경로를 막는 방법이다.
+ *
+ * `grdAplcnYmd`를 생략하면 **서버의 오늘**이다. 화면이 자기 시계로 오늘을 채워 보내지 않는
+ * 것은 시간대가 다른 기기에서 하루 어긋난 이력이 남기 때문이다. 미래 일자는 400
+ * `VALIDATION_FAILED`다.
+ *
+ * `grdChgRsnCn`은 적지 않았으면 `null`이다 — '사유 미기재' 같은 문자열을 화면이 지어내면
+ * 사유가 없다는 사실이 사유처럼 이력에 남는다.
+ */
+export interface MemberGradeChangeInput {
+  aftrMbrGrdCd: MbrGrdCd;
+  /** 일자D · 생략하면 서버의 오늘 */
+  grdAplcnYmd?: string | null;
+  /** 최대 500자 · 없으면 null */
+  grdChgRsnCn?: string | null;
+}
+
+/**
+ * POST /v1/members/{memberId}/status-changes 요청 본문 (서버 `MemberStatusChangeRequest`).
+ *
+ * 변경자·적용 일자·사유의 규칙은 등급과 같다({@link MemberGradeChangeInput}).
+ *
+ * `sttsEndPrnmntYmd`(상태_종료_예정_일자)는 **휴학·군휴학에만** 실을 수 있다
+ * ({@link statusAllowsExpectedEndDate}). 다른 상태에 실려 오면 서버가 조용히 버리지 않고
+ * 400 `VALIDATION_FAILED`로 거절한다 — 이력 행이 뒤에 고칠 수 없게 잠겨 있어, 버리면
+ * 운영자는 적어 넣었다고 믿는데 어디에도 남지 않기 때문이다.
+ */
+export interface MemberStatusChangeInput {
+  aftrMbrSttsCd: MbrSttsCd;
+  /** 일자D · 생략하면 서버의 오늘 */
+  sttsAplcnYmd?: string | null;
+  /** 일자D · 휴학·군휴학에만 실을 수 있다. 그 밖의 상태에서는 보내지 않는다 */
+  sttsEndPrnmntYmd?: string | null;
+  /** 최대 500자 · 없으면 null */
+  sttsChgRsnCn?: string | null;
+}
+
+/**
+ * 종료 예정일을 가질 수 있는 상태인가 (서버 `MemberStatusCode.allowsExpectedEndDate`).
+ *
+ * 끝이 정해진 상태 — 휴학·군휴학뿐이다. 재학·졸업·탈퇴·제명에는 '언제 끝나는가'가 없다.
+ * **판정 근거는 서버**이며 화면의 이 함수는 입력란을 열지 말지를 정하는 것뿐이다. 서버가
+ * 목록을 넓히면 화면은 칸을 감춰 사용자가 값을 못 넣을 뿐이고, 반대(화면이 열고 서버가
+ * 거절)는 400으로 드러난다.
+ */
+export function statusAllowsExpectedEndDate(code: MbrSttsCd): boolean {
+  return code === "LEAVE" || code === "MIL_LEAVE";
+}
+
+/** 서버가 `warnings`를 빠뜨렸어도 화면이 `.map`에서 터지지 않게 배열로 굳힌다 */
+function toChangeResult(raw: MemberChangeResult): MemberChangeResult {
+  return { member: raw.member, warnings: raw.warnings ?? [] };
+}
+
+/**
+ * POST /v1/members/{memberId}/grade-changes — 등급 변경 + 이력(mbr_grd_hstry) 기록 (`MEMBER_MANAGE`).
+ *
+ * 회원 정보 수정(PATCH)에 등급 필드가 없는 것이 곧 계약이다 — 같은 API에 섞으면 이력 없이
+ * 등급이 바뀌는 경로가 반드시 생긴다. 서버가 mbr 갱신과 이력 INSERT를 한 트랜잭션으로 묶는다.
+ *
+ * 201이 아니라 200인 것은 결과가 '새 자원'이 아니기 때문이다(이력 행을 가리키는 조회 경로가
+ * 없어 Location에 실을 URI가 없다). 화면이 받는 것은 바뀐 회원이다.
+ *
+ * 오류는 400 `NO_CHANGE`(같은 값) · 400 `VALIDATION_FAILED`(미래 일자) ·
+ * 400 `INVALID_CODE_VALUE`(기준 코드 밖) · 404 `NOT_FOUND` · 403이다.
+ */
+export async function changeMemberGrade(
+  memberId: number,
+  input: MemberGradeChangeInput,
+): Promise<MemberChangeResult> {
+  const raw = await apiFetch<MemberChangeResult>(`/v1/members/${memberId}/grade-changes`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return toChangeResult(raw);
+}
+
+/**
+ * POST /v1/members/{memberId}/status-changes — 상태 변경 + 이력(mbr_stts_hstry) 기록 (`MEMBER_MANAGE`).
+ *
+ * 규칙은 등급과 같고, 여기에만 종료 예정일이 있다({@link MemberStatusChangeInput}).
+ * 탈퇴·제명으로 옮기면 `warnings`가 채워져 온다 — 남은 역할·하위 업무는 서버가 정리하지
+ * 않으므로 화면이 반드시 보여 줘야 한다({@link MemberChangeWarning}).
+ */
+export async function changeMemberStatus(
+  memberId: number,
+  input: MemberStatusChangeInput,
+): Promise<MemberChangeResult> {
+  const raw = await apiFetch<MemberChangeResult>(`/v1/members/${memberId}/status-changes`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return toChangeResult(raw);
 }
 
 /* ── 기준 코드 ─────────────────────────────────────────────── */

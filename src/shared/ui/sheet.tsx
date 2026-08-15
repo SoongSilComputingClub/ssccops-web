@@ -11,6 +11,8 @@ export function Sheet({
   onClose,
   onOk,
   okLabel = "확인",
+  okDisabled,
+  okTitle,
   children,
 }: {
   open: boolean;
@@ -19,6 +21,14 @@ export function Sheet({
   onClose: () => void;
   onOk?: () => void;
   okLabel?: string;
+  /**
+   * 확인 버튼을 잠근다 — 감추지 않고 잠근 채 이유를 `okTitle`로 붙인다 (PageHeader와 같은 판단).
+   *
+   * 서버가 어차피 거절할 입력(등급·상태 시트에서 현재와 같은 값 · 미래 적용 일자)을 왕복 없이
+   * 그 자리에서 막는 데 쓴다. 버튼 자체를 없애면 왜 저장이 안 되는지가 화면에서 사라진다.
+   */
+  okDisabled?: boolean;
+  okTitle?: string;
   children?: ReactNode;
 }) {
   if (!open) return null;
@@ -36,7 +46,11 @@ export function Sheet({
           <Button variant="ghost" onClick={onClose}>
             취소
           </Button>
-          {onOk && <Button onClick={onOk}>{okLabel}</Button>}
+          {onOk && (
+            <Button onClick={onOk} disabled={okDisabled} title={okTitle}>
+              {okLabel}
+            </Button>
+          )}
         </div>
       </div>
     </>

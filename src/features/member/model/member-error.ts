@@ -92,6 +92,48 @@ export function toMyProfileSaveErrorMessage(error: unknown): string {
 }
 
 /**
+ * 등급·상태 변경 실패 → 변경 시트 안에 띄울 한 줄 (#48 · 서버 #78).
+ *
+ * 시트가 사라지기 전에 그 자리에서 보여 준다 — 토스트로 알리면 사용자가 방금 고른 값과 거절
+ * 사유를 나란히 볼 수 없고, 문장이 사라진 뒤에는 다시 볼 길도 없다.
+ *
+ * ── 왜 저장용 문구(`toMemberSaveErrorMessage`)를 그대로 쓰지 않는가 ──
+ * 이 경로에만 `NO_CHANGE`가 있다. 값이 잘못된 것이 아니라 **바뀐 것이 없다**는 뜻이라 다른
+ * 문장이어야 한다. 시트는 같은 값이면 버튼을 잠가 이 코드가 오지 않게 하지만, 다른 사람이
+ * 그 사이에 같은 값으로 바꿔 두면 화면이 아는 현재 값이 낡아 여기까지 온다.
+ *
+ * `VALIDATION_FAILED`는 서버 문장을 그대로 옮긴다. 이 코드가 오는 경우가 셋(미래 적용 일자 ·
+ * 종료 예정일을 허용하지 않는 상태 · 적용 일자보다 앞선 종료 예정일)인데 화면이 셋을 다시
+ * 구분해 문장을 지어내면, 서버가 규칙을 하나 더 늘렸을 때 엉뚱한 안내가 뜬다.
+ */
+export function toMemberChangeErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "등급·상태를 변경하지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case MEMBER_ERROR.NO_CHANGE:
+      return "이미 같은 값입니다 — 변경할 내용이 없습니다";
+    case MEMBER_ERROR.MEMBER_NOT_FOUND:
+      return "회원을 찾을 수 없습니다 — 이미 삭제되었거나 잘못된 주소입니다";
+    case MEMBER_ERROR.INVALID_CODE_VALUE:
+      return "선택한 등급·상태가 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+    case MEMBER_ERROR.VALIDATION_FAILED:
+      // 서버 문장을 그대로 옮긴다 (위 주석)
+      return error.message;
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "등급·상태를 변경할 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없어 변경하지 못했습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}
+
+/**
  * 담당자 후보 조회 실패 → 등록 폼에 띄울 한 줄 (GET /v1/members/assignable · #53).
  *
  * `toMemberErrorMessage`를 그대로 쓰지 않는 것은 **403 문장이 이 목록에서는 거짓이기

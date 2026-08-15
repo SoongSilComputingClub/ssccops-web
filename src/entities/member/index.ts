@@ -39,6 +39,20 @@ export {
   ACADEMIC_YEAR_MAX,
 } from "./api/members";
 export type { MemberUpdateInput, MemberSelfUpdateInput } from "./api/members";
+/* 등급·상태 변경 (#48 · 서버 #78) — 이력을 남기는 전용 경로다 */
+export {
+  changeMemberGrade,
+  changeMemberStatus,
+  statusAllowsExpectedEndDate,
+  CHANGE_REASON_MAX,
+  MEMBER_CHANGE_WARNING,
+} from "./api/members";
+export type {
+  MemberChangeResult,
+  MemberChangeWarning,
+  MemberGradeChangeInput,
+  MemberStatusChangeInput,
+} from "./api/members";
 export type {
   AssignableMember,
   MemberSummary,
