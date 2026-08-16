@@ -21,10 +21,12 @@ import { Button, Card, SectionLabel, flash } from "@/shared/ui";
  * 그 사고다(entities/member/api/member-imports.ts 첫 주석).
  */
 
+/** 안내표의 구분 색 — '이관 안 함'은 지킬 규칙이 아니라 사실이라 가장 옅게 둔다 */
 const REQ_COLOR: Record<string, string> = {
   필수: "text-accent",
   조건부: "text-[#f59f00]",
   선택: "text-n500",
+  "이관 안 함": "text-n500",
 };
 
 export function FileStep({ wizard }: { wizard: MemberImportWizard }) {
@@ -138,7 +140,9 @@ export function FileStep({ wizard }: { wizard: MemberImportWizard }) {
               <div className="border-t border-black/5 py-[10px] text-[14.5px] font-medium">
                 {r.col}
               </div>
-              <div className={`border-t border-black/5 py-[10px] text-[14px] ${REQ_COLOR[r.req]}`}>
+              <div
+                className={`border-t border-black/5 py-[10px] text-[14px] ${REQ_COLOR[r.req] ?? "text-n500"}`}
+              >
                 {r.req}
               </div>
               <div className="border-t border-black/5 py-[10px] text-[14px] text-n400">
