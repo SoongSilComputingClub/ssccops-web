@@ -43,8 +43,8 @@ export const EMPTY_MEMBER_LINK_VALUES: MemberLinkFormValues = {
  */
 export function validateMemberLink(values: MemberLinkFormValues): MemberLinkFieldErrors {
   const errors: MemberLinkFieldErrors = {};
-  if (!values.studentNumber.trim()) errors.studentNumber = "학생_번호를 입력하세요";
-  if (!values.name.trim()) errors.name = "회원_명을 입력하세요";
+  if (!values.studentNumber.trim()) errors.studentNumber = "학번을 입력하세요";
+  if (!values.name.trim()) errors.name = "회원명을 입력하세요";
   if (!values.phoneNumber.trim()) errors.phoneNumber = "전화번호를 입력하세요";
   return errors;
 }

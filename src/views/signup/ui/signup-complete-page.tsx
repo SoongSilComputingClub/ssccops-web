@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { mbrGrdTone } from "@/entities/member";
 import { useSessionStore } from "@/entities/session";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { safeNextPath } from "@/shared/lib/next-path";
 import { Badge, Button, Card, flash } from "@/shared/ui";
@@ -47,16 +48,16 @@ export function SignupCompletePage() {
   const linked = resultKind === "link";
   const genText = member.generationNumber ? `${member.generationNumber}기` : "미배정";
   const rows: [string, string][] = [
-    ["회원_명", member.name],
-    ["학생_번호", member.studentNumber || "미입력"],
-    ["학년_번호", member.academicYear ? `${member.academicYear}학년` : "미입력"],
-    ["학과_명", member.departmentName || "미입력"],
-    ["기수_번호", genText === "미배정" ? "미배정 (운영진 배정)" : genText],
+    [FIELD_LABEL.memberName, member.name],
+    [FIELD_LABEL.studentNumber, member.studentNumber || "미입력"],
+    [FIELD_LABEL.academicYear, member.academicYear ? `${member.academicYear}학년` : "미입력"],
+    [FIELD_LABEL.departmentName, member.departmentName || "미입력"],
+    [FIELD_LABEL.generationNumber, genText === "미배정" ? "미배정 (운영진 배정)" : genText],
     ["전화번호", member.phoneNumber || "미입력"],
     ["이메일", member.email || "미입력"],
     // 등급·상태 명칭은 서버가 준 것을 쓴다 — 기준정보에서 이름을 바꿔도 화면이 따라간다
-    ["회원_등급", member.membershipGradeName],
-    ["회원_상태", member.membershipStatusName],
+    [FIELD_LABEL.membershipGrade, member.membershipGradeName],
+    [FIELD_LABEL.membershipStatus, member.membershipStatusName],
   ];
   /*
    * 역할은 연결한 사람에게만 보여 준다 (#58). 갓 가입한 회원에게는 언제나 빈 줄이라 "역할:
@@ -64,7 +65,7 @@ export function SignupCompletePage() {
    * 그대로 실려 왔다는 것이 새 가입이 아니라는 증거다.
    */
   if (linked && member.roles.length > 0) {
-    rows.push(["현재_역할", member.roles.map((r) => r.roleName).join(" · ")]);
+    rows.push([FIELD_LABEL.currentRoles, member.roles.map((r) => r.roleName).join(" · ")]);
   }
 
   return (

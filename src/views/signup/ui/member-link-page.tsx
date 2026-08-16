@@ -13,6 +13,7 @@ import {
   type MemberLinkFieldErrors,
   type MemberLinkFormValues,
 } from "@/features/auth";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { safeNextPath, withNextParam } from "@/shared/lib/next-path";
 import { Button, Card, Field, TextField, flash } from "@/shared/ui";
@@ -138,7 +139,7 @@ export function MemberLinkPage() {
 
       <Card className="mt-4">
         <div className="grid gap-[14px]">
-          <Field label="학생_번호" required error={errors.studentNumber}>
+          <Field label={FIELD_LABEL.studentNumber} required error={errors.studentNumber}>
             <TextField
               value={f.studentNumber}
               onChange={(e) => set({ studentNumber: e.target.value })}
@@ -147,7 +148,7 @@ export function MemberLinkPage() {
               placeholder="필수 · 명부에 등록된 학번"
             />
           </Field>
-          <Field label="회원_명" required error={errors.name}>
+          <Field label={FIELD_LABEL.memberName} required error={errors.name}>
             <TextField
               value={f.name}
               onChange={(e) => set({ name: e.target.value })}
