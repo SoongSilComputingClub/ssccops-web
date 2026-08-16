@@ -2,6 +2,14 @@
 export const ROUTES = {
   login: "/login",
   signup: "/signup",
+  /**
+   * 기존(이관) 회원 계정 연결 (#58).
+   *
+   * 가입 폼 안의 모드가 아니라 **별도 주소**인 것은 두 화면이 서로 다른 일을 하기 때문이다 —
+   * 한쪽은 회원을 새로 만들고 다른 쪽은 이미 있는 회원에 계정을 붙인다. 한 폼에 섞으면
+   * 사용자는 자기가 무엇을 눌렀는지 모르고, 잘못 고르면 명부에 같은 사람이 두 줄이 된다.
+   */
+  signupLink: "/signup/link",
   signupComplete: "/signup/complete",
 
   dashboard: "/dashboard",
