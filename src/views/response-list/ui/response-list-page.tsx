@@ -13,6 +13,7 @@ import {
   RSPNS_STTS_CDS,
   type RspnsSttsCd,
 } from "@/shared/config/codes";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
 import {
@@ -83,7 +84,7 @@ export function ResponseListPage({ formId }: { formId: number }) {
   const columns: GridColumn<FormResponseItem>[] = [
     {
       key: "mbrNm",
-      header: "회원_명",
+      header: FIELD_LABEL.memberName,
       width: "1fr",
       render: (r) => (
         <span
@@ -97,7 +98,7 @@ export function ResponseListPage({ formId }: { formId: number }) {
     },
     {
       key: "stdntNo",
-      header: "학생_번호",
+      header: FIELD_LABEL.studentNumber,
       width: ".9fr",
       render: (r) => r.member.stdntNo || "-",
     },
@@ -110,14 +111,14 @@ export function ResponseListPage({ formId }: { formId: number }) {
     },
     {
       key: "sbmsnDt",
-      header: "제출_일시",
+      header: FIELD_LABEL.submittedAt,
       width: "1fr",
       // 작성 중 응답은 제출 일시가 없다
       render: (r) => formatDt(r.sbmsnDt) || "-",
     },
     {
       key: "rspnsSttsCd",
-      header: "응답_상태",
+      header: FIELD_LABEL.responseStatus,
       width: "150px",
       render: (r) => {
         const badge = RSPNS_STTS_BADGE[r.rspnsSttsCd];

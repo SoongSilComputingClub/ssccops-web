@@ -16,6 +16,7 @@ import {
   type FormDraft,
   type FormEditor,
 } from "@/features/form";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { PATTERN_PRESETS } from "@/shared/config/constants";
 import {
   isChoiceQitemType,
@@ -363,7 +364,7 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
             <Card>
               <SectionLabel className="mb-3">기본정보</SectionLabel>
               <div className="flex flex-col gap-[14px]">
-                <Field label="폼_제목_명" required error={issues.formTtlNm || null}>
+                <Field label={FIELD_LABEL.formTitle} required error={issues.formTtlNm || null}>
                   <TextField
                     value={draft.formTtlNm}
                     invalid={Boolean(issues.formTtlNm)}
@@ -374,7 +375,7 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                   />
                 </Field>
                 <div className="grid grid-cols-2 gap-[14px]">
-                  <Field label="접수_시작_일시">
+                  <Field label={FIELD_LABEL.receiptStartAt}>
                     <TextField
                       type="datetime-local"
                       value={toInput(draft.rcptBgngDt, true)}
@@ -389,7 +390,7 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                       }
                     />
                   </Field>
-                  <Field label="접수_종료_일시" error={issues.rcptDt || null}>
+                  <Field label={FIELD_LABEL.receiptEndAt} error={issues.rcptDt || null}>
                     <TextField
                       type="datetime-local"
                       value={toInput(draft.rcptEndDt, true)}
@@ -407,7 +408,7 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
             </Card>
 
             <Card>
-              <SectionLabel className="mb-3">폼_라벨</SectionLabel>
+              <SectionLabel className="mb-3">{FIELD_LABEL.formLabel}</SectionLabel>
               {/*
                 라벨 지정은 폼 저장 본문(labelIds)에 함께 실린다 — 별도 라벨 API를 같이 부르면
                 자동 저장 화면에서 두 요청의 도착 순서에 따라 지정이 되살아난다 (#10 합의)
