@@ -1,5 +1,5 @@
 export type { Role, RoleClsf } from "./model/types";
-export { useRoleStore, roleClsfNm, roleNmOf } from "./model/store";
+export { useRoleStore } from "./model/store";
 export {
   ROLE_CLASSIFICATION_ERROR,
   ROLE_CLSF_CD_PATTERN,

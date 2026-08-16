@@ -82,13 +82,3 @@ export const useRoleStore = create<RoleState>((set) => ({
   removeRoleClsf: (roleClsfCd) =>
     set((s) => ({ roleClsfs: s.roleClsfs.filter((c) => c.roleClsfCd !== roleClsfCd) })),
 }));
-
-/** 역할_분류_코드 → 분류명 */
-export function roleClsfNm(clsfs: RoleClsf[], cd: string): string {
-  return clsfs.find((c) => c.roleClsfCd === cd)?.roleClsfNm ?? cd;
-}
-
-/** 역할_ID → 역할명 */
-export function roleNmOf(roles: Role[], roleId: number): string {
-  return roles.find((r) => r.roleId === roleId)?.roleNm ?? "-";
-}

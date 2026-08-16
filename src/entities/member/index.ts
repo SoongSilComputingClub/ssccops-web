@@ -6,18 +6,18 @@ export type {
   MbrGrdHstry,
   MbrSttsHstry,
 } from "./model/types";
+export { useMbrStore } from "./model/store";
+/*
+ * 표시 규칙 — 목 시드가 아니라 코드값에 딸린 규칙이라 목 스토어와 갈라 두었다 (#54).
+ * 근거는 model/display.ts 첫 주석.
+ */
 export {
-  useMbrStore,
   mbrGrdNm,
   mbrSttsNm,
   mbrGrdTone,
   mbrSttsTone,
-  genNoText,
   generationText,
-  isGraduate,
-  currentRoleRels,
-  rprsRoleRel,
-} from "./model/store";
+} from "./model/display";
 /*
  * 서버 계약 (ssccops-server #76). 위쪽 목 스토어와 이름이 겹치지 않는 것은 의도한 것이다 —
  * 근거는 api/members.ts 첫 주석.

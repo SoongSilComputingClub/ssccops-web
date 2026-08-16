@@ -1,7 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import { MBR_GRD_NM, MBR_STTS_NM, type MbrGrdCd, type MbrSttsCd } from "@/shared/config/codes";
 import { nextId } from "@/shared/lib/id";
 import mbrSeed from "../api/get-mbr.json";
 import mbrGrdSeed from "../api/get-mbr-grd.json";
@@ -102,56 +101,3 @@ export const useMbrStore = create<MbrState>((set) => ({
       ),
     })),
 }));
-
-/* ── 코드 → 표시명 ─────────────────────────────────────────── */
-
-export function mbrGrdNm(cd: MbrGrdCd): string {
-  return MBR_GRD_NM[cd];
-}
-
-export function mbrSttsNm(cd: MbrSttsCd): string {
-  return MBR_STTS_NM[cd];
-}
-
-/** 등급 배지 톤: 임시회원=grey, 그 외=blue */
-export function mbrGrdTone(cd: MbrGrdCd): "grey" | "blue" {
-  return cd === "TEMP" ? "grey" : "blue";
-}
-
-/** 상태 배지 톤: 탈퇴·제명=red, 그 외=grey */
-export function mbrSttsTone(cd: MbrSttsCd): "red" | "grey" {
-  return cd === "WITHDRAWN" || cd === "EXPELLED" ? "red" : "grey";
-}
-
-/* ── 파생 ──────────────────────────────────────────────────── */
-
-/** 기수_번호 표기 — "12기" */
-export function genNoText(mbr: Mbr): string {
-  return generationText(mbr.genNo);
-}
-
-/**
- * 기수_번호 표기 — 서버 응답(`MemberSummary.generationNumber`)용. {@link genNoText}의 짝이다.
- *
- * 목 `Mbr`은 기수를 0으로, 서버는 null로 '미배정'을 표현한다. 값 하나를 받는 이 함수가 둘을
- * 같은 문장으로 옮긴다 — 화면마다 `?? "미배정"`을 적으면 0을 "0기"로 그리는 자리가 생긴다.
- */
-export function generationText(generationNumber: number | null): string {
-  return generationNumber ? `${generationNumber}기` : "미배정";
-}
-
-/** 졸업생 여부 — 회원_상태_코드에서 파생 */
-export function isGraduate(mbr: Mbr): boolean {
-  return mbr.mbrSttsCd === "GRADUATED";
-}
-
-/** 해당 회원의 현재(종료일 없는) 역할 관계 */
-export function currentRoleRels(rels: MbrRoleRel[], mbrId: number): MbrRoleRel[] {
-  return rels.filter((r) => r.mbrId === mbrId && !r.roleEndYmd);
-}
-
-/** 사이드바 프로필용 대표 역할 관계 — 대표_역할_여부 우선, 없으면 첫 현재 역할 */
-export function rprsRoleRel(rels: MbrRoleRel[], mbrId: number): MbrRoleRel | undefined {
-  const current = currentRoleRels(rels, mbrId);
-  return current.find((r) => r.rprsRoleYn) ?? current[0];
-}
