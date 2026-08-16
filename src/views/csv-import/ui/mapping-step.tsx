@@ -52,11 +52,16 @@ export function MappingStep({ wizard }: { wizard: MemberImportWizard }) {
         </div>
 
         <div className="flex flex-col gap-3">
-          {headers.map((header, index) => {
+          {headers.map((header) => {
             const fieldKey = mapping[header];
             const duplicated = fieldKey !== "" && (assignedCount.get(fieldKey) ?? 0) > 1;
-            /* 첫 행의 값 — 어느 컬럼인지 이름만으로 갈리지 않을 때 사람이 보는 단서다 */
-            const sample = preview.sampleRows[0]?.[index] ?? "";
+            /*
+             * 첫 행의 값 — 어느 컬럼인지 이름만으로 갈리지 않을 때 사람이 보는 단서다.
+             * 칸을 찾을 때 헤더 목록에서의 **첫 번째** 자리를 쓰는 것은 서버가 같은 이름의
+             * 헤더를 만났을 때 고르는 컬럼이 그것이기 때문이다(`MemberImportMapping.of`).
+             */
+            const column = preview.headers.indexOf(header);
+            const sample = preview.sampleRows[0]?.[column] ?? "";
 
             return (
               <div key={header} className="flex items-center gap-3">

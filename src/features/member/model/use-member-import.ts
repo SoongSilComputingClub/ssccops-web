@@ -159,6 +159,14 @@ export function useMemberImport(): MemberImportWizard {
    */
   const busyRef = useRef(false);
 
+  /*
+   * 미리보기는 파일을 고르는 즉시 나가므로 앞의 응답이 아직 오지 않은 채 다음 파일이 선택될 수
+   * 있다(끌어다 놓기는 연속으로 하기 쉽다). 순번을 달아 **마지막 선택의 응답만** 받는다 —
+   * 그러지 않으면 나중에 도착한 옛 응답이 헤더와 매핑을 덮어써, 화면에 보이는 파일과 매핑이
+   * 서로 다른 파일의 것이 된다.
+   */
+  const previewSeqRef = useRef(0);
+
   /**
    * 실행 중 창을 닫거나 새로고침하지 못하게 막는다.
    *
@@ -185,6 +193,9 @@ export function useMemberImport(): MemberImportWizard {
     (next: File) => {
       if (busyRef.current) return;
 
+      const seq = previewSeqRef.current + 1;
+      previewSeqRef.current = seq;
+
       const rejected = checkMemberImportFile(next);
       if (rejected) {
         /* 고른 파일을 남겨 두지 않는다 — 거절된 파일이 이름만 남아 있으면 올라간 줄 안다 */
@@ -210,18 +221,18 @@ export function useMemberImport(): MemberImportWizard {
        */
       previewMemberImport(next)
         .then((result) => {
-          if (!aliveRef.current) return;
+          if (!aliveRef.current || previewSeqRef.current !== seq) return;
           setPreview(result);
           setMapping(initialMapping(result));
         })
         .catch((error: unknown) => {
           syncSessionOnForbidden(error);
-          if (!aliveRef.current) return;
+          if (!aliveRef.current || previewSeqRef.current !== seq) return;
           setFile(null);
           setFileErrorMessage(toMemberImportErrorMessage(error));
         })
         .finally(() => {
-          if (aliveRef.current) setPreviewing(false);
+          if (aliveRef.current && previewSeqRef.current === seq) setPreviewing(false);
         });
     },
     [dropValidation],
@@ -229,6 +240,9 @@ export function useMemberImport(): MemberImportWizard {
 
   const clearFile = useCallback(() => {
     if (busyRef.current) return;
+    /* 나가 있는 미리보기의 응답도 버린다 — 지운 파일의 헤더가 뒤늦게 떠오르지 않게 */
+    previewSeqRef.current += 1;
+    setPreviewing(false);
     setFile(null);
     setPreview(null);
     setMapping({});
