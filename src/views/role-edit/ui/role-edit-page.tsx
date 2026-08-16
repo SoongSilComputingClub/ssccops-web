@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useRoleEditor } from "@/features/role";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import {
   Badge,
@@ -86,7 +87,7 @@ function RoleEditorView({ roleId }: { roleId?: number }) {
     <>
       <PageHeader
         title={editor.editing ? "역할 수정" : "역할 추가"}
-        subtitle="역할_명 · 역할_분류"
+        subtitle={`${FIELD_LABEL.roleName} · ${FIELD_LABEL.roleClassification}`}
         showBack
       />
       <PageBody maxWidth={1040}>
@@ -105,7 +106,7 @@ function RoleEditorView({ roleId }: { roleId?: number }) {
                 <SectionLabel className="mb-3">
                   {editor.editing ? "역할 수정" : "새 역할 추가"}
                 </SectionLabel>
-                <div className="mb-[6px] text-[13.5px] text-n400">역할_명</div>
+                <div className="mb-[6px] text-[13.5px] text-n400">{FIELD_LABEL.roleName}</div>
                 <TextField
                   value={editor.roleNm}
                   onChange={(e) => editor.setRoleNm(e.target.value)}
@@ -137,7 +138,7 @@ function RoleEditorView({ roleId }: { roleId?: number }) {
 
               <Card>
                 <div className="mb-3 flex items-center">
-                  <SectionLabel>역할_분류</SectionLabel>
+                  <SectionLabel>{FIELD_LABEL.roleClassification}</SectionLabel>
                   <div className="flex-1" />
                   <button
                     type="button"

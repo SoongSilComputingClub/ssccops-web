@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useRoleList } from "@/features/role";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import {
   Card,
@@ -78,10 +79,15 @@ function RoleListView() {
   const filtered = list.roles.filter((r) => filter === ALL || r.roleClsfCd === filter);
 
   const columns: GridColumn<RoleSummary>[] = [
-    { key: "indctSeqno", header: "표시_순번", width: "80px", render: (r) => r.indctSeqno },
+    {
+      key: "indctSeqno",
+      header: FIELD_LABEL.displayOrder,
+      width: "80px",
+      render: (r) => r.indctSeqno,
+    },
     {
       key: "roleNm",
-      header: "역할_명",
+      header: FIELD_LABEL.roleName,
       width: "1fr",
       render: (r) => <span className="font-semibold hover:text-accent">{r.roleNm}</span>,
     },
@@ -91,7 +97,7 @@ function RoleListView() {
      */
     {
       key: "roleClsfNm",
-      header: "역할_분류",
+      header: FIELD_LABEL.roleClassification,
       width: "140px",
       render: (r) => r.roleClsfNm,
     },
