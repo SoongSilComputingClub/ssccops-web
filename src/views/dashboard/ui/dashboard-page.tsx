@@ -199,17 +199,27 @@ export function DashboardPage() {
                 >
                   승인 대기 목록
                 </CardTitle>
-                <GridTable
-                  columns={approvalColumns}
-                  rows={data.pendingApproval}
-                  rowKey={(item) => String(item.subWorkId)}
-                  dense
-                  empty={
-                    <div className="py-6 text-center text-[15px] text-n500">
-                      승인 대기 중인 하위 업무가 없습니다.
-                    </div>
-                  }
-                />
+                {canManageWork ? (
+                  <GridTable
+                    columns={approvalColumns}
+                    rows={data.pendingApproval}
+                    rowKey={(item) => String(item.subWorkId)}
+                    dense
+                    empty={
+                      <div className="py-6 text-center text-[15px] text-n500">
+                        승인 대기 중인 하위 업무가 없습니다.
+                      </div>
+                    }
+                  />
+                ) : (
+                  // 서버가 WORK_MANAGE 없는 조회자에게는 pendingApproval을 항상 빈 배열로
+                  // 준다(#71) — "0건"으로 보이면 실제로는 대기 건이 있는데 볼 권한만 없는
+                  // 경우와 구분이 안 되므로, 권한이 없다는 것 자체를 다른 문구로 알린다
+                  <div className="py-6 text-center text-[15px] text-n500">
+                    승인함(WORK_MANAGE) 권한이 없어 승인 대기 목록을 볼 수 없습니다 —
+                    운영진에게 문의해주세요
+                  </div>
+                )}
               </Card>
 
               <Card>
