@@ -5,8 +5,17 @@ export { RoleSheet } from "./ui/role-sheet";
 export { useMembers, type MemberList, type MemberListQuery } from "./model/use-members";
 export { useMemberDetail, type MemberDetailQuery } from "./model/use-member-detail";
 export { useMemberCodes, type MemberCodes } from "./model/use-member-codes";
+/* 회원 역할 부여·종료 (#50 · 서버 #81) — 요구 권한이 ROLE_MANAGE 라 회원 조회와 갈린다 */
+export {
+  useMemberRoles,
+  useAssignableRoles,
+  type AssignableRoles,
+  type MemberRoles,
+  type MemberRolesStatus,
+} from "./model/use-member-roles";
 export {
   toMemberErrorMessage,
+  toMemberRoleErrorMessage,
   toAssignableMemberErrorMessage,
   toMemberSaveErrorMessage,
   toMyProfileSaveErrorMessage,
