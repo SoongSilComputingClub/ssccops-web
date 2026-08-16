@@ -9,6 +9,7 @@ import {
   fetchAuthSession,
   hasErrors,
   requiresAcademicInfo,
+  setMemberLinkDraft,
   useSignup,
   validateSignup,
   type SignupFieldErrors,
@@ -55,6 +56,14 @@ export function SignupPage() {
   const [serverErrors, setServerErrors] = useState<SignupFieldErrors>({});
   const [statusError, setStatusError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  /**
+   * 학번 중복(409)으로 막혔는가 — 오류 한 줄이 아니라 **연결 경로 안내**를 띄우는 상태다 (#58).
+   *
+   * 이 자리에 서는 사람은 거의 언제나 CSV로 이관된 본인이다(features/auth/model/signup-form.ts).
+   * 학번 칸 밑에 빨간 글씨만 놓으면 남은 선택지가 "학번을 지우고 가입"뿐인 것처럼 보이고,
+   * 그렇게 하면 명부에 같은 사람이 두 줄이 된다 — 정확히 막으려던 일이다.
+   */
+  const [duplicatedStudentNumber, setDuplicatedStudentNumber] = useState(false);
 
   const errors: SignupFieldErrors = {
     ...(attempted ? validateSignup(f, statusCode) : {}),
@@ -69,6 +78,23 @@ export function SignupPage() {
       return next;
     });
     setFormError(null);
+    /* 학번을 고쳤다면 그 판정은 낡았다 — 안내를 남겨 두면 다른 학번을 두고 하는 말이 된다 */
+    if (patch.studentNumber !== undefined) setDuplicatedStudentNumber(false);
+  };
+
+  /**
+   * 연결 화면으로. 지금 폼에 친 세 값을 그대로 들려 보낸다 (#58).
+   *
+   * 연결 폼이 요구하는 것이 정확히 학번·회원명·전화번호라, 여기까지 적은 사람에게 같은 값을
+   * 다시 치게 할 이유가 없다. 값이 아직 비어 있어도 그대로 넘긴다 — 비면 빈 폼일 뿐이다.
+   */
+  const goToLink = () => {
+    setMemberLinkDraft({
+      studentNumber: f.studentNumber,
+      name: f.name,
+      phoneNumber: f.phoneNumber,
+    });
+    router.push(withNextParam(ROUTES.signupLink, next, ROUTES.dashboard));
   };
 
   const selectStatus = (code: SignupStatusCode) => {
@@ -87,6 +113,7 @@ export function SignupPage() {
     setStatusError(null);
     setFormError(null);
     setServerErrors({});
+    setDuplicatedStudentNumber(false);
 
     if (hasErrors(validateSignup(f, statusCode))) return;
 
@@ -111,6 +138,13 @@ export function SignupPage() {
           .catch(() => undefined)
           // 이 갈래에는 완료 화면이 없으니 바로 원래 가려던 곳(없으면 대시보드)으로 보낸다
           .finally(() => router.replace(next));
+        return;
+      case "student-number-duplicated":
+        /*
+         * 막다른 오류가 아니라 갈림길이다 — 이 학번의 회원이 이미 명부에 있다는 뜻이므로,
+         * 학번 칸을 붉히는 대신 연결 경로를 편다(아래 안내 카드).
+         */
+        setDuplicatedStudentNumber(true);
         return;
       case "field":
         setServerErrors({ [failure.field]: failure.message });
@@ -140,6 +174,22 @@ export function SignupPage() {
           가입을 마치면 열려던 폼으로 돌아가 이어서 응답할 수 있습니다.
         </div>
       )}
+
+      {/*
+       * 연결 경로의 상시 진입점 (#58).
+       *
+       * 학번 중복(409)으로 막힌 뒤에만 보여 주면, 학번을 아예 넣지 않고 가입해 버리는 사람은
+       * 이 길이 있다는 것을 끝내 모른 채 명부에 두 번째 줄을 만든다. 그래서 **누르기 전부터**
+       * 보인다. 기본 동작은 어디까지나 새 가입이므로 눈에 덜 띄는 한 줄로 둔다.
+       */}
+      <div className="mt-3 flex items-center justify-between gap-3 rounded-[12px] border border-line bg-surface px-[14px] py-[10px]">
+        <div className="text-[13.5px] leading-[1.6] text-n400">
+          이미 SSCC 회원이신가요? 명부에 등록돼 있다면 기존 회원 정보에 연결하세요.
+        </div>
+        <Button variant="ghost" size="sm" disabled={pending} onClick={goToLink}>
+          기존 회원 정보와 연결하기
+        </Button>
+      </div>
 
       <div className="mt-5 flex gap-[7px]">
         {(
@@ -226,6 +276,36 @@ export function SignupPage() {
             : "졸업 회원은 회원_명 · 전화번호만 필수입니다. 학번과 기수는 기억나지 않으면 비워두세요."}
         </div>
       </Card>
+
+      {/*
+       * 학번 중복 409 — 오류가 아니라 갈림길로 그린다 (#58).
+       *
+       * 붉은 오류 상자를 쓰지 않는 것은 의도한 것이다. 여기 선 사람은 잘못 입력한 것이 아니라
+       * **이미 명부에 있는** 사람이며, 해야 할 일은 값을 고치는 것이 아니라 화면을 옮기는
+       * 것이다. 학번을 지우고 가입하면 통과한다는 사실은 알려주지 않는다 — 그 길의 끝이 같은
+       * 사람의 두 번째 회원 행이다.
+       */}
+      {duplicatedStudentNumber && (
+        <div className="mt-3 rounded-[12px] border border-accent/40 bg-accent/8 px-[14px] py-3">
+          <div className="text-[14.5px] font-semibold text-ink">
+            이 학번은 이미 명부에 등록돼 있습니다
+          </div>
+          <div className="mt-1 text-[13.5px] leading-[1.7] text-n400">
+            본인 학번이 맞다면 이미 SSCC 명부에 등록된 회원일 가능성이 높습니다. 새로 가입하는
+            대신 <span className="font-semibold text-ink">기존 회원 정보에 이 계정을 연결</span>
+            하세요 — 기수 · 등급 · 역할이 그대로 유지됩니다. 연결에는 학번 · 회원명 · 전화번호가
+            모두 필요하며, 명부의 값과 다르면 연결되지 않습니다.
+          </div>
+          <div className="mt-[10px] flex gap-2">
+            <Button size="sm" disabled={pending} onClick={goToLink}>
+              기존 회원 정보와 연결하기
+            </Button>
+          </div>
+          <div className="mt-[10px] text-[12.5px] leading-[1.6] text-n500">
+            명부에 전화번호가 없거나 연결되지 않는다면 운영진에게 문의해주세요.
+          </div>
+        </div>
+      )}
 
       {formError && (
         <div className="mt-3 rounded-[12px] border border-danger/28 bg-danger/8 px-[14px] py-3 text-[14px] text-danger">

@@ -174,12 +174,14 @@ export const SIGNUP_ERROR = {
  * - `status` 재학/졸업 칩 재선택 유도
  * - `form` 어느 칸의 문제인지 알 수 없는 실패 — 제출 버튼 위에 한 줄
  * - `already-signed-up` 오류가 아니다. 세션을 다시 받아 서비스로 들여보낸다
+ * - `student-number-duplicated` 막다른 오류가 아니다. 연결 경로로 안내한다 (아래 주석)
  */
 export type SignupFailure =
   | { kind: "field"; field: SignupField; message: string }
   | { kind: "status"; message: string }
   | { kind: "form"; message: string }
-  | { kind: "already-signed-up" };
+  | { kind: "already-signed-up" }
+  | { kind: "student-number-duplicated" };
 
 export function toSignupFailure(error: unknown): SignupFailure {
   if (!(error instanceof ApiError)) {
@@ -192,14 +194,19 @@ export function toSignupFailure(error: unknown): SignupFailure {
 
     case SIGNUP_ERROR.STUDENT_NUMBER_DUPLICATED:
       /*
-       * CSV로 이관된 기존 회원과 학번이 겹칠 때도 이 코드가 온다. 그 계정을 자동으로
-       * 이어 붙이지 않기로 확정됐으므로(#3), 본인 학번이 맞다면 운영진에게 보낸다.
+       * **이 코드가 오는 경우는 사실상 하나다 — 본인이 이미 명부에 있다**(CSV로 이관된 회원이
+       * 처음 로그인해 자기 학번을 넣었다). 그래서 인라인 오류로 끝내지 않는다.
+       *
+       * 예전에는 학번 칸에 "이미 등록된 학번입니다. 운영진에게 문의해주세요"를 붙였다. 그 문장을
+       * 본 사람이 실제로 하는 일은 둘 중 하나였다 — 아무것도 못 하고 멈추거나, **학번을 지우고
+       * 가입**하거나. 뒤쪽이 더 나쁘다: 통과는 되지만 같은 사람이 명부에 두 줄이 되고 이관된 줄은
+       * 로그인 없는 유령으로 남는다. 이제는 자동으로 이어 붙이지 않는다는 원칙(#3)은 그대로
+       * 두되, 본인임을 스스로 증명할 수 있는 경로(연결 화면 · #58)로 보낸다.
+       *
+       * 문장을 여기서 만들지 않고 종류만 돌려주는 것은 화면이 붙여야 할 것이 한 줄이 아니라
+       * **버튼이 달린 안내**이기 때문이다(views/signup/ui/signup-page.tsx).
        */
-      return {
-        kind: "field",
-        field: "studentNumber",
-        message: "이미 등록된 학번입니다. 본인 학번이 맞다면 운영진에게 문의해주세요",
-      };
+      return { kind: "student-number-duplicated" };
 
     case SIGNUP_ERROR.INVALID_CODE_VALUE:
       return { kind: "status", message: "재학 · 졸업 상태를 다시 선택해주세요" };
