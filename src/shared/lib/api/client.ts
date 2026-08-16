@@ -144,7 +144,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse
   const send = async (token: string | undefined): Promise<Response> => {
     const headers = new Headers(init?.headers);
     if (token) headers.set("Authorization", `Bearer ${token}`);
-    if (init?.body !== undefined && !headers.has("Content-Type")) {
+    /*
+     * FormData 본문에는 Content-Type을 **손으로 넣지 않는다** (#57 · CSV 이관).
+     *
+     * multipart/form-data 헤더에는 파트를 가르는 boundary 문자열이 함께 실려야 하는데 그 값을
+     * 아는 것은 브라우저뿐이다. 여기서 "multipart/form-data"만 적어 보내면 boundary가 빠진 채
+     * 나가고, 서버는 파트를 하나도 찾지 못해 파일이 비어 있다고 답한다 — 화면에서는 "CSV 파일을
+     * 읽을 수 없습니다"로만 보여 원인을 짚기 어려운 종류의 실패다. 값을 비워 두면 fetch가
+     * boundary까지 붙여 스스로 채운다.
+     */
+    const isMultipart =
+      typeof FormData !== "undefined" && init?.body instanceof FormData;
+    if (init?.body !== undefined && !isMultipart && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
     try {
@@ -200,6 +211,24 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse
 /** 단건 호출 — 봉투를 벗겨 data만 돌려준다 */
 export async function apiFetch<T = unknown>(path: string, init?: RequestInit): Promise<T> {
   const envelope = await request<T>(path, init);
+  return envelope.data as T;
+}
+
+/**
+ * 파일 업로드 호출 (multipart/form-data · #57 CSV 이관).
+ *
+ * `apiFetch`와 **같은 경로**를 탄다 — 토큰 주입도, 401 갱신·재로그인도, 403 SIGNUP_REQUIRED
+ * 처리도, 오류를 `ApiError`로 통일하는 것도 그대로다. 여기서 fetch를 직접 부르는 함수를 따로
+ * 만들면 그 경로만 세션 만료를 다르게 다루게 되고, 파일을 고른 뒤 업로드에서만 조용히 실패한다.
+ *
+ * 갈리는 것은 본문의 모양뿐이라 별도 함수를 둔 이유도 그 하나다 — 호출부가 `JSON.stringify`
+ * 대신 `FormData`를 넘긴다는 사실을 타입으로 못 박는다(문자열을 넘기면 곧바로 타입 오류다).
+ *
+ * 401 재시도에서 **같은 FormData를 다시 보낸다.** FormData는 스트림이 아니라 값의 목록이라
+ * fetch가 요청마다 새로 직렬화하므로 두 번 보내도 두 번째가 빈 본문이 되지 않는다.
+ */
+export async function apiUpload<T = unknown>(path: string, form: FormData): Promise<T> {
+  const envelope = await request<T>(path, { method: "POST", body: form });
   return envelope.data as T;
 }
 
