@@ -9,5 +9,7 @@ export type { RoleEditor, RoleEditorStatus } from "./model/use-role-editor";
 export { useRoleClassifications } from "./model/use-role-classifications";
 export type {
   RoleClassificationAdmin,
+  RoleClassificationEditInput,
+  RoleClassificationField,
   RoleClassificationsStatus,
 } from "./model/use-role-classifications";
