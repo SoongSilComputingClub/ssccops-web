@@ -5,6 +5,23 @@ export { fetchAuthSession } from "@/entities/session";
 export { useCan } from "./model/use-can";
 export { useSignup } from "./model/use-signup";
 export type { Signup, SignupOutcome } from "./model/use-signup";
+export { useMemberLink } from "./model/use-member-link";
+export type { MemberLink, MemberLinkOutcome } from "./model/use-member-link";
+export {
+  EMPTY_MEMBER_LINK_VALUES,
+  buildMemberLinkRequest,
+  hasMemberLinkErrors,
+  setMemberLinkDraft,
+  takeMemberLinkDraft,
+  toMemberLinkFailure,
+  validateMemberLink,
+} from "./model/link-form";
+export type {
+  MemberLinkField,
+  MemberLinkFieldErrors,
+  MemberLinkFailure,
+  MemberLinkFormValues,
+} from "./model/link-form";
 export {
   EMPTY_SIGNUP_VALUES,
   SIGNUP_ERROR,

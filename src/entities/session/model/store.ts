@@ -15,6 +15,9 @@ import type { AuthSession, AuthUser, MemberProfile, MemberRole } from "./types";
  */
 export type SessionStatus = "idle" | "pending" | "ready" | "signup-required" | "error";
 
+/** 완료 화면이 방금 일어난 일을 무엇이라 부를지 — 새 가입인가, 기존 회원과의 연결인가 (#58) */
+export type SignupResultKind = "signup" | "link";
+
 interface SessionState {
   status: SessionStatus;
   /** status === "error" 일 때 화면에 보여줄 메시지 */
@@ -34,6 +37,17 @@ interface SessionState {
    * 대시보드로 비켜 준다 — 예전처럼 목록의 마지막 회원을 대신 보여주지 않는다.
    */
   signupResult: MemberProfile | null;
+  /**
+   * `signupResult`가 어느 경로로 채워졌는가 (#58).
+   *
+   * - `signup` 새 회원으로 가입했다 — 임시회원 등급이 부여된 새 행이다
+   * - `link` 이미 명부에 있던(CSV로 이관된) 회원에 이 계정을 붙였다 — 행은 원래 있던 것이다
+   *
+   * 완료 화면의 문장이 갈리기 때문에 둔다. 두 경로에 같은 "회원 가입이 완료되었습니다"를
+   * 보여 주면, 연결한 사람은 자기가 방금 **새 회원을 하나 더 만든 것인지** 알 수 없다 —
+   * 그것이 이 화면이 막으려던 바로 그 사고(같은 사람이 두 행이 되는 것)다.
+   */
+  signupResultKind: SignupResultKind;
 
   setSession: (session: AuthSession) => void;
   /**
@@ -52,6 +66,13 @@ interface SessionState {
   fail: (message: string) => void;
   /** 가입 성공을 기록한다. 세션 자체는 아직 signup-required로 둔다 (applySignupResult 주석 참고) */
   setSignupResult: (member: MemberProfile) => void;
+  /**
+   * 기존 회원과의 연결 성공을 기록한다 (POST /v1/members/link · #58).
+   *
+   * 승격을 미루는 규칙은 가입과 같아 값도 같은 자리(`signupResult`)에 담는다 — 완료 화면이
+   * 둘을 같은 방식으로 그리고 `applySignupResult`로 세션에 올린다. 다른 것은 종류뿐이다.
+   */
+  setLinkResult: (member: MemberProfile) => void;
   /** 가입 완료 화면을 떠나 서비스로 들어갈 때 — 가입 결과를 세션의 정본으로 승격한다 */
   applySignupResult: () => void;
   /** Supabase 로그아웃. 성공 여부를 돌려주므로 호출부가 실패를 사용자에게 알릴 수 있다 */
@@ -65,6 +86,7 @@ const EMPTY = {
   member: null,
   mbrId: 0,
   signupResult: null,
+  signupResultKind: "signup" as SignupResultKind,
 };
 
 export const useSessionStore = create<SessionState>((set) => ({
@@ -99,7 +121,9 @@ export const useSessionStore = create<SessionState>((set) => ({
    * 게이트가 대시보드로 되돌리는 것과 완료 화면으로 이동하는 것이 동시에 일어나 어느 쪽이
    * 이길지 알 수 없다. 승격 시점을 "완료 화면을 떠날 때"로 미뤄 이 경합을 없앤다.
    */
-  setSignupResult: (member) => set({ signupResult: member }),
+  setSignupResult: (member) => set({ signupResult: member, signupResultKind: "signup" }),
+
+  setLinkResult: (member) => set({ signupResult: member, signupResultKind: "link" }),
 
   applySignupResult: () =>
     set((s) =>
@@ -109,6 +133,7 @@ export const useSessionStore = create<SessionState>((set) => ({
             member: s.signupResult,
             mbrId: s.signupResult.memberId,
             signupResult: null,
+            /* 종류는 되돌리지 않는다 — 완료 화면이 사라지기 전에 문장이 바뀌면 안 된다 */
           }
         : {},
     ),
