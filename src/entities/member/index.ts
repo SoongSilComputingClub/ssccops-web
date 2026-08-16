@@ -1,27 +1,20 @@
-export type {
-  Mbr,
-  MbrGrd,
-  MbrStts,
-  MbrRoleRel,
-  MbrGrdHstry,
-  MbrSttsHstry,
-} from "./model/types";
+/*
+ * 회원 엔티티.
+ *
+ * 목 스토어(`model/store.ts`)와 시드(`api/get-mbr*.json`), 그리고 그것이 쓰던 데이터사전 표기
+ * 타입(`Mbr`·`MbrGrd` …)은 #54에서 지웠다 — 회원 화면은 전부 서버 계약 위에서 돈다.
+ * 남은 것은 서버 API와, 코드값에 딸린 표시 규칙(`model/display.ts`)뿐이다.
+ */
+
+/* 표시 규칙 — 근거는 model/display.ts 첫 주석 */
 export {
-  useMbrStore,
   mbrGrdNm,
   mbrSttsNm,
   mbrGrdTone,
   mbrSttsTone,
-  genNoText,
   generationText,
-  isGraduate,
-  currentRoleRels,
-  rprsRoleRel,
-} from "./model/store";
-/*
- * 서버 계약 (ssccops-server #76). 위쪽 목 스토어와 이름이 겹치지 않는 것은 의도한 것이다 —
- * 근거는 api/members.ts 첫 주석.
- */
+} from "./model/display";
+/* 서버 계약 (ssccops-server #76) */
 export {
   fetchMembers,
   fetchMember,

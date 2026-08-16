@@ -25,8 +25,11 @@ interface SessionState {
   authUser: AuthUser | null;
   member: MemberProfile | null;
   /**
-   * 아직 목 스토어(entities/member)를 참조하는 화면들이 쓰는 회원 식별자 — member.memberId 사본.
-   * 목 데이터가 걷히면 함께 사라진다. 새 코드는 member를 직접 쓴다.
+   * 아직 목 스토어를 조작하는 화면들이 쓰는 회원 식별자 — member.memberId 사본.
+   *
+   * 회원·역할 목 스토어는 #54에서 걷혔고, 지금 이 값을 읽는 곳은 결재 목 스토어
+   * (features/approval)뿐이다. 그쪽이 서버로 옮겨 가면 함께 사라진다 — 새 코드는 member를
+   * 직접 쓴다.
    */
   mbrId: number;
   /**

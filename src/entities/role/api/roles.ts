@@ -12,9 +12,9 @@ import { apiFetch } from "@/shared/lib/api/client";
  * 알리는 것보다 처음부터 화면을 닫는 편이 정직하다(views/role-authorities 와 같은 방식).
  *
  * ── 타입은 서버 응답 스키마를 그대로 옮긴다 ──────────────────────
- * entities/role/model/types.ts 의 `Role` 은 목 스토어(#54 에서 제거)가 쓰는 시드 타입이라
- * `roleClsfNm`·`memberCount` 가 없고 `roleNm` 이 null 을 허용한다. 서버가 주는 것과 목이 주는
- * 것을 한 타입으로 합치면 어느 화면이 서버 값을 보고 있는지가 흐려지므로 여기에 따로 둔다.
+ * 목 스토어가 쓰던 시드 타입 `Role`(entities/role/model/types.ts)은 #54 에서 지웠다. 그쪽은
+ * `roleClsfNm`·`memberCount` 가 없고 `roleNm` 이 null 을 허용해, 한 타입으로 합쳤다면 어느
+ * 화면이 서버 값을 보고 있는지가 흐려졌을 것이다 — 역할 화면의 타입은 이 파일이 정본이다.
  */
 
 /**
