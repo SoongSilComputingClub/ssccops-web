@@ -5,13 +5,12 @@ import { apiFetch, apiFetchList } from "@/shared/lib/api/client";
 /*
  * 회원 조회 API (ssccops-server #76 · MemberController · MemberCodeController).
  *
- * ── 왜 목 `Mbr` 타입과 섞지 않는가 ─────────────────────────────
+ * ── 필드 이름이 데이터사전 표기와 다른 이유 ─────────────────────
  * 여기 선언된 타입은 **서버 응답 스키마를 그대로 옮긴 것**이다(memberId·studentNumber …).
- * 데이터사전 표기(mbrId·stdntNo …)를 쓰는 `model/types.ts`의 `Mbr`과 필드 이름이 다른 것은
- * 의도한 것이며, 세션 계약(`entities/session/model/types.ts`)이 같은 판단을 한 것과 같은
- * 이유다 — 두 벌을 한 타입에 섞으면 응답이 바뀌었을 때 어디를 고쳐야 하는지가 흐려진다.
- * 목 스토어(`model/store.ts`)는 아직 운영·회의 화면이 읽고 있어 그대로 두었고, 목록·상세
- * 화면만 이 파일 위로 옮겼다(제거는 ssccops-web#54).
+ * 데이터사전 표기(mbrId·stdntNo …)를 쓰지 않는 것은 의도한 것이며, 세션 계약
+ * (`entities/session/model/types.ts`)이 같은 판단을 한 것과 같은 이유다 — 두 벌을 한 타입에
+ * 섞으면 응답이 바뀌었을 때 어디를 고쳐야 하는지가 흐려진다. 데이터사전 표기를 쓰던 목 타입
+ * (`Mbr` 등)과 목 스토어는 #54에서 지웠고, 회원 화면은 전부 이 파일 위에서 돈다.
  *
  * ── 등급·상태의 표시 명칭은 서버가 준 값을 쓴다 ────────────────
  * `membershipGradeName`·`membershipStatusName`을 그대로 화면에 뿌린다. `shared/config/codes.ts`의

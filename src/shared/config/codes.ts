@@ -47,7 +47,7 @@ export const MBR_STTS_CDS = codesOf(MBR_STTS_NM);
 
 /*
  * 역할_분류(role_clsf)는 화면에서 추가·수정·삭제하는 사용자 관리 코드테이블이라
- * 고정 유니온으로 두지 않는다 — entities/role 의 get-role-clsf.json 참조.
+ * 고정 유니온으로 두지 않는다 — 코드값은 서버가 준다(entities/role/api/role-classifications.ts).
  */
 
 /* ── 운영_유형 (oper.oper_type_cd) · DB 명시 ────────────────── */

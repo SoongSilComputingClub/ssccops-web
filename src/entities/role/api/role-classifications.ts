@@ -10,9 +10,9 @@ import { apiFetch } from "@/shared/lib/api/client";
  * 그래서 관리 화면은 **누구에게나 열되 변경 버튼만 잠근다**(views/form-labels 와 같은 방식).
  *
  * ── 타입은 서버 응답 스키마를 그대로 옮긴다 ──────────────────────
- * entities/role/model/types.ts 의 `RoleClsf` 는 목 스토어(#54 에서 제거)가 쓰는 시드 타입이라
- * `roleCount` 가 없다. 서버가 주는 것과 목이 주는 것을 한 타입으로 합치면 어느 화면이 서버
- * 값을 보고 있는지가 흐려지므로, 서버 스키마는 여기에 따로 둔다.
+ * 목 스토어가 쓰던 시드 타입 `RoleClsf`(entities/role/model/types.ts)는 #54 에서 지웠다.
+ * 그쪽은 `roleCount` 가 없어, 한 타입으로 합쳤다면 어느 화면이 서버 값을 보고 있는지가
+ * 흐려졌을 것이다 — 분류 화면의 타입은 이 파일이 정본이다.
  */
 
 /**
