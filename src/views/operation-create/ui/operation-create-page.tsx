@@ -33,6 +33,7 @@ import {
   Button,
   Card,
   Chip,
+  EmptyState,
   Field,
   PageBody,
   PageHeader,
@@ -103,17 +104,30 @@ export function OperationCreatePage({
   const subWorkTypeOptions = useActiveSubWorkTypes(parentWorkId !== null);
 
   /*
+   * 업무·하위 업무·회의 등록은 각각 WORK_MANAGE·WORK_MANAGE·MEETING_MANAGE 다 (#29 · 서버
+   * WorkController·SubWorkController·MeetingController, #83). kinds보다 먼저 계산하는 것은
+   * 아래에서 유형 자체를 걸러내는 데 쓰기 때문이다 — 국원처럼 둘 다 없는 회원에게는 선택
+   * 카드 자체를 보여 주지 않는다(#71, 등록 버튼만 잠그던 것에서 한 단계 더 막는다).
+   */
+  const canManageWork = useCan(CAPABILITY.WORK_MANAGE);
+  const canManageMeeting = useCan(CAPABILITY.MEETING_MANAGE);
+  const canManageKind = (cd: OperTypeCd) => (cd === "MEETING" ? canManageMeeting : canManageWork);
+
+  /*
    * 회의 목록의 '+ 등록'처럼 특정 운영_유형에서 들어온 경우(`?kind=MEETING`) 선택 카드를
    * 그 유형 하나로 고정한다 — 하위 업무가 parentWorkId로 고정되는 것과 같은 방식이다.
    * 상위 업무 연결(parentWorkId)이 우선이며, kind는 SUB_WORK를 가리킬 수 없다(하위 업무는
-   * 상위 업무 상세를 거쳐야만 생긴다).
+   * 상위 업무 상세를 거쳐야만 생긴다). 마지막에 canManageKind로 거르므로, 위 세 갈래 중 어느
+   * 것을 골랐어도 권한이 없는 유형은 kinds에 남지 않는다.
    */
-  const kinds: OperTypeCd[] = parentWorkId
-    ? ["SUB_WORK"]
-    : fixedKind === "WORK" || fixedKind === "MEETING"
-      ? [fixedKind]
-      : ["WORK", "MEETING"];
-  const [operTypeCd, setOperTypeCd] = useState<OperTypeCd>(kinds[0]);
+  const kinds: OperTypeCd[] = (
+    parentWorkId
+      ? (["SUB_WORK"] as OperTypeCd[])
+      : fixedKind === "WORK" || fixedKind === "MEETING"
+        ? [fixedKind]
+        : (["WORK", "MEETING"] as OperTypeCd[])
+  ).filter(canManageKind);
+  const [operTypeCd, setOperTypeCd] = useState<OperTypeCd>(kinds[0] ?? "WORK");
 
   /*
    * 담당자 후보는 **서버에서 받는다** (#53 · GET /v1/members/assignable). 목 회원 스토어에서
@@ -122,7 +136,18 @@ export function OperationCreatePage({
    * 가리키는 FK라 엉뚱한 회원에게 배정되거나 400 OWNER_NOT_ACTIVE_MEMBER로 끊긴다. 상위 업무를
    * 서버에서 다시 받는 것(바로 위)과 같은 이유이며, 그쪽이 이 어긋남을 먼저 겪었다(#36).
    */
-  const assignable = useAssignableMembers();
+  /*
+   * 업무·회의는 담당자·책임자도 국장 이상만 고를 수 있어야 한다(#71, 서버 #101) — 유형이
+   * 바뀌면 훅이 authority 인자로 다시 불러 후보를 새로 받는다. 하위 업무는 국원도 담당자가
+   * 될 수 있으므로 authority를 주지 않는다(전체 활동 회원).
+   */
+  const assignable = useAssignableMembers(
+    operTypeCd === "MEETING"
+      ? CAPABILITY.MEETING_MANAGE
+      : operTypeCd === "SUB_WORK"
+        ? undefined
+        : CAPABILITY.WORK_MANAGE,
+  );
 
   // oper 공통 속성
   const [operTtl, setOperTtl] = useState("");
@@ -180,14 +205,8 @@ export function OperationCreatePage({
   const [atndTrgtCd, setAtndTrgtCd] = useState<AtndTrgtCd>("ALL");
   const [mtgPlcNm, setMtgPlcNm] = useState("");
 
-  /*
-   * 업무·하위 업무·회의 등록은 각각 WORK_MANAGE·WORK_MANAGE·MEETING_MANAGE 다 (#29 · 서버
-   * WorkController·SubWorkController·MeetingController 전체, #83). 잠금은 **지금 고른
-   * 운영_유형**에 따라 정한다.
-   */
-  const canManageWork = useCan(CAPABILITY.WORK_MANAGE);
-  const canManageMeeting = useCan(CAPABILITY.MEETING_MANAGE);
-  const allowed = operTypeCd === "MEETING" ? canManageMeeting : canManageWork;
+  /* 등록 버튼 잠금은 위에서 이미 걸러진 kinds 중 **지금 고른 운영_유형**을 다시 확인한다 */
+  const allowed = canManageKind(operTypeCd);
 
   /* 서버로 나가는 세 경로(업무·하위 업무·회의) 중 하나라도 응답을 기다리는 중이면 버튼을 잠근다 */
   const pending = workCreation.pending || subWorkCreation.pending || meetingCreation.pending;
@@ -344,6 +363,29 @@ export function OperationCreatePage({
 
     void submitMeeting(picId);
   };
+
+  /*
+   * kinds가 비었다는 것은 이 화면으로 오게 만든 유형(상위 업무 연결이면 하위 업무, ?kind=면
+   * 그 유형, 아니면 업무·회의 둘 다)을 국장 이상 권한 없이는 하나도 등록할 수 없다는 뜻이다
+   * (#71). 폼을 그대로 그리고 등록 버튼만 잠그던 것에서 한 단계 더 나아가, 아예 폼을 보여
+   * 주지 않는다 — 사이드바(nav.ts)가 "운영 등록" 메뉴 자체를 감추는 것과 같은 판단을 주소를
+   * 직접 친 경우에도 지킨다.
+   */
+  if (kinds.length === 0) {
+    const blockedReason = parentWorkId
+      ? NO_MANAGE_REASON.SUB_WORK
+      : fixedKind
+        ? NO_MANAGE_REASON[fixedKind]
+        : "업무·회의를 등록하려면 국장 이상의 운영진 권한이 필요합니다";
+    return (
+      <>
+        <PageHeader title="운영 등록" subtitle="운영_유형별 등록 폼" showBack={parentWorkId !== null} />
+        <PageBody>
+          <EmptyState message={blockedReason} />
+        </PageBody>
+      </>
+    );
+  }
 
   return (
     <>

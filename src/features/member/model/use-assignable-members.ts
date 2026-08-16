@@ -53,14 +53,20 @@ export interface AssignableMembers {
   reload: () => void;
 }
 
-export function useAssignableMembers(): AssignableMembers {
+/*
+ * authority가 있으면 그 권한을 오늘 행사할 수 있는 회원으로 좁혀 받는다(#71 · 서버 #101) —
+ * 업무·회의 등록처럼 국장 이상만 담당자로 고를 수 있어야 하는 화면이 쓴다. authority가
+ * 바뀌면(예: 등록 유형을 업무↔회의로 전환) 새 조건으로 다시 불러야 하므로 effect 의존성에
+ * 넣는다 — 훅을 유형마다 따로 부르지 않고 하나로 재사용할 수 있는 것이 이 덕분이다.
+ */
+export function useAssignableMembers(authority?: string): AssignableMembers {
   const [loaded, setLoaded] = useState<LoadedAssignable | null>(null);
   const [requestKey, setRequestKey] = useState(0);
 
   useEffect(() => {
     let alive = true;
 
-    fetchAssignableMembers()
+    fetchAssignableMembers(authority)
       .then((members) => {
         if (alive) setLoaded({ key: requestKey, members, errorMessage: "" });
       })
@@ -77,7 +83,7 @@ export function useAssignableMembers(): AssignableMembers {
     return () => {
       alive = false;
     };
-  }, [requestKey]);
+  }, [requestKey, authority]);
 
   const reload = useCallback(() => setRequestKey((k) => k + 1), []);
 
