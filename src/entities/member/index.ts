@@ -71,6 +71,37 @@ export type {
   MemberRoleAssignInput,
   MemberRoleUpdateInput,
 } from "./api/member-roles";
+/*
+ * CSV 회원 이관 (#57 · 서버 #84·#85).
+ *
+ * multipart/form-data라 전송 경로가 다르고(`apiUpload`) 요구 권한도 `MEMBER_MANAGE`로 회원
+ * API와 같지만, 파일이 API 경계를 넘나드는 유일한 자리라 파일을 나눠 두었다.
+ */
+export {
+  previewMemberImport,
+  validateMemberImport,
+  executeMemberImport,
+  checkMemberImportFile,
+  memberImportFieldLabel,
+  MEMBER_IMPORT_FIELDS,
+  MEMBER_IMPORT_ERROR,
+  MEMBER_IMPORT_MAX_FILE_SIZE,
+} from "./api/member-imports";
+export type {
+  MemberImportFieldKey,
+  MemberImportFieldOption,
+  MemberImportMapping,
+  MemberImportPreview,
+  MemberImportValidation,
+  MemberImportValidationSummary,
+  MemberImportRowResult,
+  MemberImportRowStatus,
+  MemberImportRowIssue,
+  MemberImportExecution,
+  MemberImportExecutionSummary,
+  MemberImportExecutionRow,
+  MemberImportExecutionStatus,
+} from "./api/member-imports";
 export type {
   AssignableMember,
   MemberSummary,
