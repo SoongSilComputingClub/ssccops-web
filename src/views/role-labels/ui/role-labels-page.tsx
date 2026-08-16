@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { SYSTEM_ROLE_CLSF_CD, type RoleClassification } from "@/entities/role";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
-import { useRoleClassifications } from "@/features/role";
+import { useRoleClassifications, type RoleClassificationField } from "@/features/role";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import {
   Badge,
@@ -38,10 +39,12 @@ import {
  * PK 이자 `role.role_clsf_cd` 가 NOT NULL FK 로 가리키는 값이라 수정 요청 본문에 아예 없다.
  * 바꾸는 경로는 '새로 만들고 → 역할을 옮기고 → 기존 것을 지운다' 하나뿐이다.
  *
- * ── SYSTEM 분류는 삭제·이름 변경이 잠긴다 ───────────────────────
- * 서버가 409 SYSTEM_ROLE_CLASSIFICATION_IMMUTABLE 로 거절한다 — '최고관리자' 역할이 여기
- * 매달려 있어 인가의 뿌리가 되는 분류다. 목록 응답에 '잠김' 플래그가 없으므로 코드 문자열이
- * 화면이 버튼을 잠글 유일한 근거다(entities/role 의 SYSTEM_ROLE_CLSF_CD).
+ * ── SYSTEM 분류는 삭제·이름 변경만 잠긴다 (ssccops#87 D-004) ─────
+ * 서버가 잠그는 것은 그 둘뿐이고 **표시 순번은 SYSTEM 도 바꿀 수 있다** —
+ * RoleClassificationServiceImpl 이 이름이 실제로 달라졌을 때만 409 를 던지고, 순번은 그대로
+ * 반영한다("목록에서 몇 번째로 그릴지일 뿐이라 무엇도 깨뜨리지 않는다"). 그런데 화면은 수정
+ * 버튼 자체를 잠가 편집에 들어가지도 못하게 하고 있었다 — 웹이 서버보다 더 잠그면 서버가
+ * 열어 둔 조작에 닿을 길이 사라진다. 이제 편집은 열고 **이름 칸만** 잠근다.
  *
  * ── 사용 중인 분류 삭제 ─────────────────────────────────────────
  * `roleCount` 가 0 이 아니면 화면이 먼저 막지만 **판정 근거는 서버**다(409
@@ -52,8 +55,14 @@ import {
 /** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
 const NO_MANAGE =
   "역할 분류를 바꿀 권한(ROLE_MANAGE)이 없습니다 — 조회만 할 수 있습니다";
-const SYSTEM_LOCKED =
-  "SYSTEM 분류는 최고관리자 역할이 매달린 분류라 이름을 바꾸거나 지울 수 없습니다";
+const SYSTEM_NAME_LOCKED =
+  "SYSTEM 분류는 최고관리자 역할이 매달린 분류라 이름을 바꿀 수 없습니다 — 표시 순번은 바꿀 수 있습니다";
+const SYSTEM_DELETE_LOCKED =
+  "SYSTEM 분류는 최고관리자 역할이 매달린 분류라 지울 수 없습니다";
+
+/* 오류 문구를 입력란에 묶어 준다 — 색과 위치만으로는 어느 칸의 이야기인지 전달되지 않는다 */
+const ADD_ERROR_ID = "role-clsf-add-error";
+const ROW_ERROR_ID = "role-clsf-row-error";
 
 export function RoleLabelsPage() {
   const router = useRouter();
@@ -64,6 +73,7 @@ export function RoleLabelsPage() {
   const [newNm, setNewNm] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [editNm, setEditNm] = useState("");
+  const [editSeqno, setEditSeqno] = useState("");
 
   /*
    * 훅은 마지막 변이의 실패 사유 하나만 들고 있다(어느 조작이 실패했든 사용자가 볼 문장은
@@ -74,6 +84,16 @@ export function RoleLabelsPage() {
   const [errorScope, setErrorScope] = useState<"add" | "row">("add");
   const addError = Boolean(admin.mutationErrorMessage) && errorScope === "add";
   const rowError = Boolean(admin.mutationErrorMessage) && errorScope === "row";
+
+  /*
+   * `aria-invalid` 는 **틀린 칸에만** 건다.
+   *
+   * 예전에는 "오류가 있다"는 사실만으로 코드·이름 두 칸에 함께 걸었다. 코드 형식 하나가
+   * 틀려도 보조기술에는 "두 칸이 잘못됐다"로 전달됐고, 그러면서 정작 이유를 담은 문장은
+   * 어느 칸에도 묶여 있지 않아 읽히지 않았다 (ssccops#87 D-003).
+   */
+  const invalidField = (scope: boolean, field: RoleClassificationField) =>
+    scope && admin.mutationErrorField === field;
 
   const add = async () => {
     const roleClsfNm = newNm.trim();
@@ -86,11 +106,19 @@ export function RoleLabelsPage() {
   };
 
   const saveEdit = async (c: RoleClassification) => {
-    const next = editNm.trim();
+    const nextNm = editNm.trim();
+    const nextSeqno = editSeqno.trim();
     setErrorScope("row");
-    if (await admin.rename(c.roleClsfCd, editNm)) {
+    if (await admin.update(c.roleClsfCd, { roleClsfNm: editNm, indctSeqno: editSeqno })) {
       setEditing(null);
-      flash(`${c.roleClsfNm} → ${next}`);
+      /* 이름과 순번 중 실제로 달라진 것만 알린다 — 안 바꾼 값을 되읊으면 무엇이 바뀌었는지 흐려진다 */
+      const changes = [
+        nextNm === c.roleClsfNm ? "" : `${c.roleClsfNm} → ${nextNm}`,
+        !nextSeqno || Number(nextSeqno) === c.indctSeqno
+          ? ""
+          : `${FIELD_LABEL.displayOrder} ${c.indctSeqno} → ${nextSeqno}`,
+      ].filter(Boolean);
+      flash(changes.length > 0 ? changes.join(" · ") : `${c.roleClsfNm} 그대로 저장됨`);
     }
   };
 
@@ -103,6 +131,7 @@ export function RoleLabelsPage() {
     admin.clearMutationError();
     setEditing(c.roleClsfCd);
     setEditNm(c.roleClsfNm);
+    setEditSeqno(String(c.indctSeqno));
   };
 
   return (
@@ -130,8 +159,9 @@ export function RoleLabelsPage() {
               value={newCd}
               onChange={(e) => setNewCd(e.target.value)}
               disabled={!canManage}
-              invalid={addError}
-              placeholder="분류 코드 (예: PROJECT)"
+              invalid={invalidField(addError, "roleClsfCd")}
+              aria-describedby={addError ? ADD_ERROR_ID : undefined}
+              placeholder={`${FIELD_LABEL.roleClassificationCode} (예: PROJECT)`}
               className="w-[220px] font-mono"
             />
             <TextField
@@ -141,8 +171,9 @@ export function RoleLabelsPage() {
                 if (e.key === "Enter" && canManage) void add();
               }}
               disabled={!canManage}
-              invalid={addError}
-              placeholder="새 분류명"
+              invalid={invalidField(addError, "roleClsfNm")}
+              aria-describedby={addError ? ADD_ERROR_ID : undefined}
+              placeholder={`새 ${FIELD_LABEL.roleClassificationName}`}
               className="w-[240px]"
             />
             <Button
@@ -153,15 +184,26 @@ export function RoleLabelsPage() {
               {admin.busy ? "처리 중…" : "추가"}
             </Button>
           </div>
+          {/*
+            role="alert" 를 붙이는 것은 이 줄이 조작에 대한 **응답**이기 때문이다. 붙지 않으면
+            보조기술 사용자에게는 아무 일도 일어나지 않은 것과 같다 — 화면을 보는 사용자에게도
+            바로 아래 상시 안내문과 문장이 비슷하면 같은 일이 일어난다(그래서 훅의 문구가
+            실패 사실로 시작한다).
+          */}
           {addError && (
-            <div className="mt-[6px] text-[13.5px] leading-[1.6] text-danger">
+            <div
+              id={ADD_ERROR_ID}
+              role="alert"
+              className="mt-[6px] text-[13.5px] leading-[1.6] text-danger"
+            >
               {admin.mutationErrorMessage}
             </div>
           )}
           <div className="mt-[6px] text-[13px] leading-[1.6] text-n500">
-            분류 코드는 대문자로 시작하고 대문자·숫자·밑줄만 2~20자로 씁니다.{" "}
-            <strong>코드는 만든 뒤에 바꿀 수 없습니다</strong> — 이름만 바꿀 수 있습니다.
-            새 코드는 데이터사전의 표준코드 시트에도 등재해주세요.
+            {FIELD_LABEL.roleClassificationCode}는 대문자로 시작하고 대문자·숫자·밑줄만
+            2~20자로 씁니다. <strong>코드는 만든 뒤에 바꿀 수 없습니다</strong> — 이름과{" "}
+            {FIELD_LABEL.displayOrder}만 바꿀 수 있습니다. 새 코드는 데이터사전의 표준코드
+            시트에도 등재해주세요.
           </div>
           {!canManage && (
             <div className="mt-[6px] text-[13px] text-n500">{NO_MANAGE}</div>
@@ -182,13 +224,22 @@ export function RoleLabelsPage() {
           ) : (
             <>
               {rowError && (
-                <div className="mb-3 max-w-[820px] text-[13.5px] leading-[1.6] text-danger">
+                <div
+                  id={ROW_ERROR_ID}
+                  role="alert"
+                  className="mb-3 max-w-[820px] text-[13.5px] leading-[1.6] text-danger"
+                >
                   {admin.mutationErrorMessage}
                 </div>
               )}
               <Card className="max-w-[820px] px-5 pt-4 pb-[6px]">
-                <div className="grid grid-cols-[60px_180px_1fr_130px]">
-                  {["표시_순번", "역할_분류_코드", "역할_분류_명", "관리"].map((h) => (
+                <div className="grid grid-cols-[100px_180px_1fr_130px]">
+                  {[
+                    FIELD_LABEL.displayOrder,
+                    FIELD_LABEL.roleClassificationCode,
+                    FIELD_LABEL.roleClassificationName,
+                    "관리",
+                  ].map((h) => (
                     <div key={h} className="pb-[10px] text-[13px] tracking-[.3px] text-n500">
                       {h}
                     </div>
@@ -198,22 +249,41 @@ export function RoleLabelsPage() {
                     const isSystem = c.roleClsfCd === SYSTEM_ROLE_CLSF_CD;
                     const inUse = c.roleCount > 0;
 
-                    /* 잠기는 이유가 셋이라 사유를 하나로 정해 버튼 title 에 붙인다 */
-                    const editLocked = !canManage
+                    /*
+                     * 편집 진입을 막는 이유는 이제 권한 하나뿐이다. SYSTEM 은 편집에 들어간
+                     * 뒤 이름 칸에서만 잠긴다 — 순번은 서버가 허용하므로 여기서 막을 근거가 없다.
+                     */
+                    const editLocked = canManage ? "" : NO_MANAGE;
+                    const removeLocked = !canManage
                       ? NO_MANAGE
                       : isSystem
-                        ? SYSTEM_LOCKED
-                        : "";
-                    const removeLocked = editLocked
-                      ? editLocked
-                      : inUse
-                        ? `${c.roleCount}개 역할이 이 분류를 쓰고 있습니다 — 다른 분류로 먼저 옮겨주세요`
-                        : "";
+                        ? SYSTEM_DELETE_LOCKED
+                        : inUse
+                          ? `${c.roleCount}개 역할이 이 분류를 쓰고 있습니다 — 다른 분류로 먼저 옮겨주세요`
+                          : "";
 
                     return (
                       <div key={c.roleClsfCd} className="contents">
                         <div className="border-t border-black/5 py-3 text-[15px]">
-                          {c.indctSeqno}
+                          {isEditing ? (
+                            <input
+                              value={editSeqno}
+                              onChange={(e) => setEditSeqno(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") void saveEdit(c);
+                                if (e.key === "Escape") setEditing(null);
+                              }}
+                              inputMode="numeric"
+                              aria-label={`${c.roleClsfNm} ${FIELD_LABEL.displayOrder}`}
+                              aria-invalid={
+                                invalidField(rowError, "indctSeqno") || undefined
+                              }
+                              aria-describedby={rowError ? ROW_ERROR_ID : undefined}
+                              className="w-[64px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[14.5px] outline-none"
+                            />
+                          ) : (
+                            c.indctSeqno
+                          )}
                         </div>
                         <div className="border-t border-black/5 py-3">
                           <span className="font-mono text-[13.5px] text-n400">
@@ -222,16 +292,30 @@ export function RoleLabelsPage() {
                         </div>
                         <div className="border-t border-black/5 py-3 text-[15px]">
                           {isEditing ? (
-                            <input
-                              value={editNm}
-                              onChange={(e) => setEditNm(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") void saveEdit(c);
-                                if (e.key === "Escape") setEditing(null);
-                              }}
-                              autoFocus
-                              className="w-[200px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[14.5px] outline-none"
-                            />
+                            <>
+                              <input
+                                value={editNm}
+                                onChange={(e) => setEditNm(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") void saveEdit(c);
+                                  if (e.key === "Escape") setEditing(null);
+                                }}
+                                autoFocus={!isSystem}
+                                disabled={isSystem}
+                                title={isSystem ? SYSTEM_NAME_LOCKED : undefined}
+                                aria-label={`${c.roleClsfCd} ${FIELD_LABEL.roleClassificationName}`}
+                                aria-invalid={
+                                  invalidField(rowError, "roleClsfNm") || undefined
+                                }
+                                aria-describedby={rowError ? ROW_ERROR_ID : undefined}
+                                className="w-[200px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[14.5px] outline-none disabled:cursor-not-allowed disabled:border-line disabled:opacity-45"
+                              />
+                              {isSystem && (
+                                <span className="ml-2 text-[13px] text-n500">
+                                  이름은 잠겨 있고 {FIELD_LABEL.displayOrder}만 바꿉니다
+                                </span>
+                              )}
+                            </>
                           ) : (
                             <>
                               <span className="font-semibold">{c.roleClsfNm}</span>
@@ -240,7 +324,7 @@ export function RoleLabelsPage() {
                               </span>
                               {isSystem && (
                                 <Badge tone="outline" className="ml-2">
-                                  잠김
+                                  이름 잠김
                                 </Badge>
                               )}
                             </>
@@ -298,10 +382,12 @@ export function RoleLabelsPage() {
 
         <div className="mt-3 max-w-[820px] text-[13.5px] leading-[1.7] text-n500">
           역할이 하나라도 지정된 분류는 삭제할 수 없습니다 — 역할을 다른 분류로 먼저
-          옮겨주세요. 분류명을 바꿔도 역할_분류_코드는 그대로 유지됩니다.
+          옮겨주세요. 분류명을 바꿔도 {FIELD_LABEL.roleClassificationCode}는 그대로
+          유지됩니다. {FIELD_LABEL.displayOrder}은 목록을 그리는 순서이며 비워 두면 지금
+          값을 그대로 씁니다.
           <br />
           <strong>SYSTEM</strong> 분류는 최고관리자 역할이 매달린 분류라 이름 변경·삭제가
-          잠겨 있습니다.
+          잠겨 있습니다 — {FIELD_LABEL.displayOrder}은 바꿀 수 있습니다.
         </div>
       </PageBody>
     </>
