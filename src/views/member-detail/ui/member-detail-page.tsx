@@ -252,8 +252,32 @@ function MemberDetailView({ mbrId }: { mbrId: number }) {
               roles={roles}
             />
 
+            {/*
+              최근 변경이력 카드 (#51에서 '전체 보기'가 붙었다).
+
+              ── 카드는 단건 응답의 3건을 그대로 쓴다 ────────────────────
+              이력 화면(views/member-history)이 여는 통합 조회 API를 여기서 부르지 않는다.
+              같은 데이터를 두 번 받는 것이고, 두 벌이 되면 상세 카드와 이력 화면이 같은
+              이력을 다르게 보여 줄 자리가 생긴다 — 서버도 같은 이유로 두 응답이 한 벌의
+              변환·정렬(MemberChangeHistoryAssembler)을 공유한다.
+
+              ── 이 카드에는 역할이 들어 있지 않다 ───────────────────────
+              서버가 상세의 최근 3건에 역할을 싣지 않는다(recentChangesOf가 역할을 빈 목록으로
+              넘긴다) — 지난 임기의 부여·종료가 세 칸을 채우면 등급·상태의 최근 변화가
+              밀려나기 때문이다. 역할까지 포함한 시간축은 '전체 보기'가 여는 화면에 있고,
+              링크 아래 문장이 그 차이를 말한다. 그 말이 없으면 이 카드가 이력의 전부로 보인다.
+            */}
             <Card>
-              <SectionLabel className="mb-3">최근 변경이력</SectionLabel>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <SectionLabel>최근 변경이력</SectionLabel>
+                <button
+                  type="button"
+                  onClick={() => router.push(ROUTES.memberHistories(member.memberId))}
+                  className="cursor-pointer text-[13.5px] text-accent"
+                >
+                  전체 보기 ›
+                </button>
+              </div>
               {member.recentChanges.length === 0 ? (
                 <div className="text-[14.5px] text-n500">변경 이력이 없습니다</div>
               ) : (
@@ -263,6 +287,10 @@ function MemberDetailView({ mbrId }: { mbrId: number }) {
                   ))}
                 </div>
               )}
+              <div className="mt-3 text-[12.5px] leading-[1.6] text-n500">
+                등급 · 상태의 최근 3건입니다. 역할 부여 · 종료까지 합친 시간축은 전체 보기에
+                있습니다.
+              </div>
             </Card>
           </div>
         </div>
