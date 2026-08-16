@@ -1,7 +1,6 @@
 "use client";
 
 import { mbrGrdTone, mbrSttsTone } from "@/entities/member";
-import { representativeRole } from "@/entities/session";
 import { useMyProfileEdit } from "@/features/member";
 import {
   Badge,
@@ -11,6 +10,7 @@ import {
   KeyValueGrid,
   PageBody,
   PageHeader,
+  Pill,
   SectionLabel,
   TextField,
   flash,
@@ -44,7 +44,6 @@ export function MyAccountPage() {
   if (!member) return null;
 
   const genText = member.generationNumber ? `${member.generationNumber}기` : "미배정";
-  const role = representativeRole(member);
 
   const save = async () => {
     const saved = await editor.save();
@@ -228,7 +227,25 @@ export function MyAccountPage() {
                     </Badge>
                   ),
                 },
-                { k: "현재_역할", v: role ? role.roleName : "없음" },
+                {
+                  // 대표 역할 하나가 아니라 지금 유효한 역할 전부를 보여준다 — 권한은
+                  // 그 전부를 합쳐서 계산되므로(AuthorityPolicy) 대표 하나만 보이면 실제로
+                  // 뭘 할 수 있는지를 이 화면만 보고는 알 수 없다
+                  k: "현재_역할",
+                  v:
+                    member.roles.length === 0 ? (
+                      "없음"
+                    ) : (
+                      <div className="flex flex-wrap gap-[6px]">
+                        {member.roles.map((role) => (
+                          <span key={role.roleId} className="flex items-center gap-1">
+                            <Badge tone="grey">{role.roleName}</Badge>
+                            {role.representative && <Pill tone="blue">대표</Pill>}
+                          </span>
+                        ))}
+                      </div>
+                    ),
+                },
                 { k: "가입_일자", v: member.joinDate },
               ]}
             />
