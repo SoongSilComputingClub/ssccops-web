@@ -4,20 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   changeMemberGrade,
   changeMemberStatus,
-  useMbrStore,
   type MemberChangeResult,
   type MemberGradeChangeInput,
   type MemberStatusChangeInput,
-  type Mbr,
 } from "@/entities/member";
-import { useRoleStore } from "@/entities/role";
 import { syncSessionOnForbidden } from "@/entities/session";
-import { TODAY } from "@/shared/config/constants";
-import { flash } from "@/shared/ui";
 import { toMemberChangeErrorMessage } from "./member-error";
 
 /*
- * 회원 등급·상태 변경 (#48 · 서버 #78) + 역할 부여·종료(아직 목).
+ * 회원 등급·상태 변경 (#48 · 서버 #78).
  *
  * ── 목 스토어 조작을 서버 호출로 바꾼 자리다 ────────────────────
  * 예전에는 등급·상태를 `useMbrStore`의 회원 행에 쓰고 이력까지 화면이 지어냈다. 토스트는 떴지만
@@ -33,7 +28,11 @@ import { toMemberChangeErrorMessage } from "./member-error";
  * 최근 변경이력을 갈아 끼우고, `warnings`(탈퇴·제명 뒤 남은 역할·하위 업무)를 눈에 남는 형태로
  * 그린다 — 사라지는 토스트로 알리면 아무도 처리하지 않은 채 지나간다.
  *
- * 역할 부여·종료는 아직 목 스토어를 쓴다(#50에서 서버로 옮긴다) — 이 이슈의 범위는 등급·상태다.
+ * ── 역할 부여·종료는 여기 없다 (#50) ────────────────────────────
+ * 목 스토어를 고치던 `assignRole`·`endRole`이 사라졌다. 서버로 옮긴 자리가
+ * `use-member-roles.ts`이고 훅을 나눈 것은 **요구 권한이 다르기 때문**이다 — 등급·상태는
+ * `MEMBER_MANAGE`, 역할 부여·종료는 `ROLE_MANAGE`다. 한 훅에 두면 화면이 어느 권한으로
+ * 잠가야 하는지가 호출부마다 흐려진다.
  */
 
 export interface MemberActions {
@@ -52,16 +51,9 @@ export interface MemberActions {
     memberId: number,
     input: MemberStatusChangeInput,
   ) => Promise<MemberChangeResult | null>;
-  /** 아직 목 스토어를 고친다 (#50) */
-  assignRole: (mbr: Mbr, roleId: number) => void;
-  endRole: (mbr: Mbr, roleId: number) => void;
 }
 
 export function useMemberActions(): MemberActions {
-  const addMbrRoleRel = useMbrStore((s) => s.addMbrRoleRel);
-  const endMbrRoleRel = useMbrStore((s) => s.endMbrRoleRel);
-  const roles = useRoleStore((s) => s.roles);
-
   const [changing, setChanging] = useState(false);
   const [changeErrorMessage, setChangeErrorMessage] = useState("");
 
@@ -117,25 +109,11 @@ export function useMemberActions(): MemberActions {
     [run],
   );
 
-  const assignRole = (mbr: Mbr, roleId: number) => {
-    addMbrRoleRel(mbr.mbrId, roleId, TODAY);
-    const roleNm = roles.find((r) => r.roleId === roleId)?.roleNm ?? "역할";
-    flash(`${roleNm} 역할을 부여했습니다`);
-  };
-
-  const endRole = (mbr: Mbr, roleId: number) => {
-    endMbrRoleRel(mbr.mbrId, roleId, TODAY);
-    const roleNm = roles.find((r) => r.roleId === roleId)?.roleNm ?? "역할";
-    flash(`${roleNm} 역할을 종료했습니다`);
-  };
-
   return {
     changing,
     changeErrorMessage,
     clearChangeError,
     changeGrade,
     changeStatus,
-    assignRole,
-    endRole,
   };
 }
