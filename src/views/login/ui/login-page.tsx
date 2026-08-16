@@ -1,34 +1,80 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useSessionStore } from "@/entities/session";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ROUTES } from "@/shared/config/routes";
-import { cn } from "@/shared/lib/cn";
+import { safeNextPath } from "@/shared/lib/next-path";
+import { rememberOAuthNext } from "@/shared/lib/oauth-next";
+import { createClient } from "@/shared/lib/supabase/client";
 
-const PROVIDERS = [
-  {
-    p: "GOOGLE",
-    hint: "연결된 회원 · 김도현 (회장)",
-    memberKey: "m1",
-    filled: true,
-  },
-  {
-    p: "GITHUB",
-    hint: "연결된 회원 · 이서연 (국장)",
-    memberKey: "m2",
-    filled: false,
-  },
-  {
-    p: "NAVER",
-    hint: "연결된 회원 없음 · 회원 가입으로 이동",
-    memberKey: null,
-    filled: false,
-  },
-] as const;
+/*
+ * /auth/callback 이 붙여 주는 실패 원인 → 사용자 문구.
+ *
+ * access_denied 처럼 Supabase(=OAuth 제공자)가 그대로 넘겨주는 코드도 있고,
+ * missing_code · exchange_failed 처럼 콜백 라우트가 붙이는 코드도 있다.
+ * 표에 없는 코드는 error_description 을 함께 보여주므로 원인을 잃지 않는다.
+ */
+const ERROR_MESSAGE: Record<string, string> = {
+  access_denied: "Google 로그인이 취소되었습니다",
+  missing_code: "인증 정보를 받지 못했습니다. 다시 시도해주세요",
+  exchange_failed: "로그인 처리 중 문제가 발생했습니다. 다시 시도해주세요",
+  oauth_failed: "Google 로그인에 실패했습니다. 다시 시도해주세요",
+  server_error: "인증 서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요",
+};
 
 export function LoginPage() {
-  const router = useRouter();
-  const login = useSessionStore((s) => s.login);
+  const searchParams = useSearchParams();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  /*
+   * 공개 폼 링크를 열었다가 여기로 튕겨 온 경우인지. 아무 설명 없이 로그인 화면이 뜨면
+   * "링크가 깨졌나?"로 읽히므로 어디서 왔는지는 말해 줘야 한다.
+   *
+   * 폼 제목까지 보여주려면 공개 폼 메타 조회가 하나 더 필요한데, 로그인 화면은 인증
+   * 이전이라 그 조회만을 위해 별도 공개 API를 뚫어야 한다. 값에 비해 비싸므로 지금은
+   * 폼을 특정하지 않는 일반 안내로 둔다.
+   */
+  const fromPublicForm = safeNextPath(searchParams.get("next"), ROUTES.dashboard).startsWith(
+    "/f/",
+  );
+
+  const errorCode = searchParams.get("error");
+  const errorDescription = searchParams.get("error_description");
+  const message =
+    error ??
+    (errorCode ? (ERROR_MESSAGE[errorCode] ?? "로그인에 실패했습니다") : null);
+  // 표에 있는 문구로 이미 설명된 경우가 아니면 제공자가 준 원문도 함께 보여준다
+  const detail = error ? null : errorCode && !ERROR_MESSAGE[errorCode] ? errorDescription : null;
+
+  const signInWithGoogle = async () => {
+    setPending(true);
+    setError(null);
+
+    // 사용자가 리다이렉트되지 않거나 취소한 경우 버튼이 무한 잠금되는 현상 방지
+    const timer = setTimeout(() => setPending(false), 8000);
+
+    /*
+     * 목적지는 redirectTo 쿼리가 아니라 쿠키로 넘긴다 — Supabase 화이트리스트는 쿼리까지
+     * 포함해 매칭하므로, 쿼리를 달면 등록해 둔 항목과 어긋나 Site URL로 폴백된다.
+     * 자세한 사정은 shared/lib/oauth-next.ts (ssccops#84).
+     */
+    const next = safeNextPath(searchParams.get("next"), ROUTES.dashboard);
+    rememberOAuthNext(next);
+
+    const { error: signInError } = await createClient().auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (signInError) {
+      clearTimeout(timer);
+      setError("Google 로그인을 시작하지 못했습니다. 잠시 후 다시 시도해주세요");
+      setPending(false);
+    }
+  };
 
   return (
     <div className="w-[392px] px-4">
@@ -41,42 +87,47 @@ export function LoginPage() {
         운영관리시스템
       </h1>
       <p className="mt-3 text-[14.5px] leading-[1.6] text-n400">
-        소셜 계정으로 로그인합니다. 내부 회원 식별은 로그인 이후 회원 도메인에서
+        Google 계정으로 로그인합니다. 내부 회원 식별은 로그인 이후 회원 도메인에서
         처리됩니다.
       </p>
       <div className="mt-7 mb-6 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
-      <div className="flex flex-col gap-[10px]">
-        {PROVIDERS.map((item) => (
-          <button
-            key={item.p}
-            type="button"
-            onClick={() => {
-              if (item.memberKey) {
-                login(item.memberKey);
-                router.push(ROUTES.members);
-              } else {
-                router.push(ROUTES.signup);
-              }
-            }}
-            className={cn(
-              "cursor-pointer rounded-[14px] border px-[18px] py-[15px] text-left transition-colors",
-              item.filled
-                ? "border-accent bg-accent text-white hover:bg-accent-strong"
-                : "border-line bg-surface hover:border-accent",
-            )}
-          >
-            <div className="text-[15px] font-semibold">{item.p}로 계속하기</div>
-            <div
-              className={cn(
-                "mt-[2px] text-[13.5px]",
-                item.filled ? "text-white/72" : "text-n500",
-              )}
-            >
-              {item.hint}
+
+      {fromPublicForm && (
+        <div className="mb-4 rounded-[12px] border border-accent/28 bg-accent/8 px-[14px] py-3">
+          <div className="text-[14px] font-semibold text-accent">
+            폼에 참여하려면 로그인이 필요합니다
+          </div>
+          <div className="mt-1 text-[13px] leading-[1.6] text-n400">
+            응답자를 회원으로 식별하기 때문입니다. 로그인과 가입을 마치면 열려던 폼으로
+            바로 돌아갑니다.
+          </div>
+        </div>
+      )}
+
+      {message && (
+        <div className="mb-4 rounded-[12px] border border-danger/28 bg-danger/8 px-[14px] py-3">
+          <div className="text-[14px] text-danger">{message}</div>
+          {detail && (
+            <div className="mt-1 text-[12.5px] leading-[1.55] break-all text-n500">
+              {detail}
             </div>
-          </button>
-        ))}
-      </div>
+          )}
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={signInWithGoogle}
+        disabled={pending}
+        className="w-full cursor-pointer rounded-[14px] border border-accent bg-accent px-[18px] py-[15px] text-left transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-accent"
+      >
+        <div className="text-[15px] font-semibold text-white">
+          {pending ? "Google로 이동 중…" : "Google로 계속하기"}
+        </div>
+        <div className="mt-[2px] text-[13.5px] text-white/72">
+          Google 계정으로 로그인 또는 회원가입
+        </div>
+      </button>
       <p className="mt-5 text-[13px] leading-[1.6] text-n500">
         처음 가입하면 임시회원 등급으로 바로 시작할 수 있습니다. 졸업생도 동일하게
         가입할 수 있습니다.

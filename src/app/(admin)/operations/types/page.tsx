@@ -1,5 +1,5 @@
-import { OpTypeListPage } from "@/views/op-type-list";
+import { SubWorkTypeListPage } from "@/views/sub-work-type-list";
 
 export default function Page() {
-  return <OpTypeListPage />;
+  return <SubWorkTypeListPage />;
 }

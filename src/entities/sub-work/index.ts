@@ -1,7 +1,46 @@
-export type { SubWork, ChecklistItem } from "./model/types";
+export type {
+  SubWork,
+  SubWorkChckList,
+  SubWorkChecklistItem,
+  SubWorkChecklistSummary,
+  SubWorkChecklistUpdate,
+  SubWorkDetail,
+  SubWorkListItem,
+  SubWorkMemberRef,
+  SubWorkPicAltmnt,
+  SubWorkQuorum,
+  SubWorkRejection,
+  SubWorkSttsHstry,
+  SubWorkTransition,
+  SubWorkTransitionResult,
+  SubWorkVoteResult,
+  SubWorkWorkRef,
+  VoteChoice,
+} from "./model/types";
 export {
   useSubWorkStore,
-  subWorkTypeTone,
-  subWorkStatus,
+  chckPrgrsRt,
+  ownerMbrId,
+  subWorkSttsBadge,
   isSubWorkDone,
+  completedPatch,
 } from "./model/store";
+export {
+  EXTERNAL_LINK_MAX_LENGTH,
+  REJECT_REASON_MAX_LENGTH,
+  SUB_WORK_ERROR,
+  createSubWork,
+  fetchSubWork,
+  fetchSubWorks,
+  transitionSubWork,
+  updateSubWork,
+  updateSubWorkChecklistItem,
+  voteOnSubWork,
+} from "./api/sub-works";
+export type {
+  SubWorkCreateInput,
+  SubWorkCreateResult,
+  SubWorkListFilter,
+  SubWorkListPage,
+  SubWorkUpdateInput,
+} from "./api/sub-works";

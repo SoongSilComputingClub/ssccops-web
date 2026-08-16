@@ -1,66 +1,68 @@
 "use client";
 
-import { useApprovalStore } from "@/entities/approval";
-import { useAuditStore } from "@/entities/audit";
-import { useSubWorkStore } from "@/entities/sub-work";
+import { useAprvStore } from "@/entities/approval";
+import { useSessionStore } from "@/entities/session";
+import { completedPatch, useSubWorkStore } from "@/entities/sub-work";
 import { TODAY } from "@/shared/config/constants";
 import { flash } from "@/shared/ui";
 
 /**
- * 승인 처리 오케스트레이션 — 원본 decideApproval 로직 그대로:
- * 승인함 상태 + 하위 업무 단계/진행률 + 감사 로그를 함께 갱신
+ * 승인 처리 오케스트레이션 —
+ * sub_work_aprv(승인) · sub_work_rjct(반려) · sub_work(승인_상태·업무_상태)를 함께 갱신한다.
  */
 export function useApprovalActions() {
-  const updateApproval = useApprovalStore((s) => s.updateApproval);
-  const voteInStore = useApprovalStore((s) => s.vote);
-  const rejectByTask = useApprovalStore((s) => s.rejectByTask);
-  const updateTask = useSubWorkStore((s) => s.updateTask);
-  const appendAudit = useAuditStore((s) => s.append);
+  const approveInStore = useAprvStore((s) => s.approve);
+  const voteInStore = useAprvStore((s) => s.vote);
+  const rejectInStore = useAprvStore((s) => s.reject);
+  const updateSubWork = useSubWorkStore((s) => s.updateSubWork);
+  const addSubWorkSttsHstry = useSubWorkStore((s) => s.addSubWorkSttsHstry);
+  const mbrId = useSessionStore((s) => s.mbrId);
 
-  const decide = (id: string, taskId: string, ok: boolean, reason = "") => {
-    updateApproval(id, {
-      state: ok ? "승인" : "반려",
-      reason: ok ? "" : reason,
+  const decide = (
+    subWorkAprvId: number,
+    subWorkId: number,
+    ok: boolean,
+    rjctRsn = "",
+  ) => {
+    if (ok) {
+      approveInStore(subWorkAprvId, mbrId);
+      updateSubWork(subWorkId, { aprvSttsCd: "APPROVED", ...completedPatch() });
+    } else {
+      rejectInStore(subWorkId, mbrId, rjctRsn);
+      updateSubWork(subWorkId, {
+        aprvSttsCd: "REJECTED",
+        workSttsCd: "IN_PROGRESS",
+      });
+    }
+    addSubWorkSttsHstry({
+      subWorkId,
+      prfmrId: mbrId,
+      chgRsn: ok ? "승인 완료" : `반려 · ${rjctRsn}`,
+      chgDt: `${TODAY}T10:00:00`,
     });
-    updateTask(taskId, {
-      approval: "",
-      stage: ok ? 4 : 2,
-      ...(ok ? { progress: 100, reject: "" } : { reject: reason }),
-    });
-    appendAudit({
-      target: "승인",
-      id,
-      action: ok ? "승인" : "반려",
-      by: "이민우",
-      before: "대기",
-      after: ok ? "승인" : `반려 · ${reason}`,
-      ip: "10.0.12.4",
-      at: `${TODAY} 10:00`,
-    });
-    flash(ok ? "승인했습니다" : `반려했습니다 · ${reason}`);
+    flash(ok ? "승인했습니다" : `반려했습니다 · ${rjctRsn}`);
   };
 
-  const vote = (id: string, yes: boolean) => {
-    voteInStore(id, yes);
-    flash(yes ? "찬성을 등록했습니다" : "반대를 등록했습니다");
+  const vote = (subWorkAprvId: number, agreYn: boolean) => {
+    voteInStore(subWorkAprvId, mbrId, agreYn);
+    flash(agreYn ? "동의를 등록했습니다" : "부동의를 등록했습니다");
   };
 
-  /** 하위 업무 상세에서의 직접 반려 (연결 승인 건 일괄 반려) */
-  const rejectTask = (taskId: string, reason: string) => {
-    updateTask(taskId, { approval: "", stage: 2, reject: reason });
-    rejectByTask(taskId, reason);
-    appendAudit({
-      target: "하위 업무",
-      id: taskId,
-      action: "반려",
-      by: "이민우",
-      before: "대기",
-      after: `반려 · ${reason}`,
-      ip: "10.0.12.4",
-      at: `${TODAY} 10:00`,
+  /** 하위 업무 상세에서의 직접 반려 */
+  const rejectSubWork = (subWorkId: number, rjctRsn: string) => {
+    rejectInStore(subWorkId, mbrId, rjctRsn);
+    updateSubWork(subWorkId, {
+      aprvSttsCd: "REJECTED",
+      workSttsCd: "IN_PROGRESS",
     });
-    flash(`반려했습니다 · ${reason}`);
+    addSubWorkSttsHstry({
+      subWorkId,
+      prfmrId: mbrId,
+      chgRsn: `반려 · ${rjctRsn}`,
+      chgDt: `${TODAY}T10:00:00`,
+    });
+    flash(`반려했습니다 · ${rjctRsn}`);
   };
 
-  return { decide, vote, rejectTask };
+  return { decide, vote, rejectSubWork };
 }

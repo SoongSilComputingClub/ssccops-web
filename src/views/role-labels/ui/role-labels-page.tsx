@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useRoleStore } from "@/entities/role";
+import { SYSTEM_ROLE_CLSF_CD, type RoleClassification } from "@/entities/role";
+import { CAPABILITY } from "@/entities/session";
+import { useCan } from "@/features/auth";
+import { useRoleClassifications } from "@/features/role";
 import { ROUTES } from "@/shared/config/routes";
 import {
+  Badge,
   Button,
   Card,
+  EmptyState,
   PageBody,
   PageHeader,
   Segmented,
@@ -14,53 +19,90 @@ import {
   flash,
 } from "@/shared/ui";
 
+/*
+ * 역할 분류 관리 (/members/role-labels · #49 · 서버 #80).
+ *
+ * ── 조회는 열고 변경만 잠근다 ───────────────────────────────────
+ * 분류 조회(GET)에는 서버가 권한을 걸지 않았고 생성·수정·삭제만 ROLE_MANAGE 를 요구한다 —
+ * 역할 목록의 필터 칩이 이 값을 쓰기 때문이다. 그래서 **화면은 누구에게나 열되 변경 조작만
+ * 잠근다**(views/form-labels 와 같은 방식 · 감추지 않고 잠그는 근거는 features/auth 의 use-can).
+ * 역할 목록 쪽이 화면 전체를 닫는 것과 갈리는데, 그쪽은 조회부터 403 이라 열어 봐야 오류뿐이다.
+ *
+ * ── 분류 코드를 사용자가 입력한다 ───────────────────────────────
+ * 프런트 채번(`CLSF_1`, `CLSF_2` …)을 제거했다. 그 코드는 서버에 없는 값이라 저장되는 순간
+ * 역할과 연결할 수 없었고, 무엇보다 `role_clsf_cd` 는 데이터사전의 표준코드 시트에 **사람이
+ * 등재하는** 값이라 뜻이 읽혀야 한다 — 일련번호를 등재하면 시트가 아무것도 설명하지 못한다.
+ * 형식(`^[A-Z][A-Z0-9_]{1,19}$`)은 서버가 400 으로 검증하고 훅이 같은 규칙으로 먼저 걸러 준다.
+ *
+ * ── 코드는 생성 후 바꿀 수 없다 ─────────────────────────────────
+ * PK 이자 `role.role_clsf_cd` 가 NOT NULL FK 로 가리키는 값이라 수정 요청 본문에 아예 없다.
+ * 바꾸는 경로는 '새로 만들고 → 역할을 옮기고 → 기존 것을 지운다' 하나뿐이다.
+ *
+ * ── SYSTEM 분류는 삭제·이름 변경이 잠긴다 ───────────────────────
+ * 서버가 409 SYSTEM_ROLE_CLASSIFICATION_IMMUTABLE 로 거절한다 — '최고관리자' 역할이 여기
+ * 매달려 있어 인가의 뿌리가 되는 분류다. 목록 응답에 '잠김' 플래그가 없으므로 코드 문자열이
+ * 화면이 버튼을 잠글 유일한 근거다(entities/role 의 SYSTEM_ROLE_CLSF_CD).
+ *
+ * ── 사용 중인 분류 삭제 ─────────────────────────────────────────
+ * `roleCount` 가 0 이 아니면 화면이 먼저 막지만 **판정 근거는 서버**다(409
+ * ROLE_CLASSIFICATION_IN_USE). 화면이 들고 있는 숫자는 다른 사람이 방금 역할을 이 분류로
+ * 옮겼으면 이미 낡았고, 그때는 서버 문구를 그대로 보여 준 뒤 목록을 다시 받는다.
+ */
+
+/** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
+const NO_MANAGE =
+  "역할 분류를 바꿀 권한(ROLE_MANAGE)이 없습니다 — 조회만 할 수 있습니다";
+const SYSTEM_LOCKED =
+  "SYSTEM 분류는 최고관리자 역할이 매달린 분류라 이름을 바꾸거나 지울 수 없습니다";
+
 export function RoleLabelsPage() {
   const router = useRouter();
-  const { roles, roleLabels, addLabel, renameLabel, removeLabel } = useRoleStore();
-  const [newName, setNewName] = useState("");
+  const admin = useRoleClassifications();
+  const canManage = useCan(CAPABILITY.ROLE_MANAGE);
+
+  const [newCd, setNewCd] = useState("");
+  const [newNm, setNewNm] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
+  const [editNm, setEditNm] = useState("");
 
-  const rolesOf = (label: string) => roles.filter((r) => r.label === label);
+  /*
+   * 훅은 마지막 변이의 실패 사유 하나만 들고 있다(어느 조작이 실패했든 사용자가 볼 문장은
+   * 하나뿐이다). 그 한 줄을 **어디에** 붙일지는 화면이 정한다 — 추가 실패면 입력란 아래,
+   * 행 조작 실패면 표 위다. 한자리에만 두면 표 아래쪽 행의 삭제가 실패했을 때 사유가 화면
+   * 밖에 뜨거나, 반대로 입력란이 자기 잘못도 아닌데 빨갛게 된다.
+   */
+  const [errorScope, setErrorScope] = useState<"add" | "row">("add");
+  const addError = Boolean(admin.mutationErrorMessage) && errorScope === "add";
+  const rowError = Boolean(admin.mutationErrorMessage) && errorScope === "row";
 
-  const add = () => {
-    const name = newName.trim();
-    if (!name) {
-      flash("분류명을 입력하세요");
-      return;
+  const add = async () => {
+    const roleClsfNm = newNm.trim();
+    setErrorScope("add");
+    if (await admin.create({ roleClsfCd: newCd, roleClsfNm: newNm })) {
+      setNewCd("");
+      setNewNm("");
+      flash(`${roleClsfNm} 분류 추가됨`);
     }
-    if (roleLabels.includes(name)) {
-      flash("이미 있는 분류입니다");
-      return;
-    }
-    addLabel(name);
-    setNewName("");
-    flash(`${name} 분류 추가됨`);
   };
 
-  const saveEdit = (oldName: string) => {
-    const name = editName.trim();
-    if (!name) {
-      flash("분류명을 입력하세요");
-      return;
+  const saveEdit = async (c: RoleClassification) => {
+    const next = editNm.trim();
+    setErrorScope("row");
+    if (await admin.rename(c.roleClsfCd, editNm)) {
+      setEditing(null);
+      flash(`${c.roleClsfNm} → ${next}`);
     }
-    if (name !== oldName && roleLabels.includes(name)) {
-      flash("이미 있는 분류입니다");
-      return;
-    }
-    renameLabel(oldName, name);
-    setEditing(null);
-    flash(`${oldName} → ${name}`);
   };
 
-  const remove = (name: string) => {
-    const used = rolesOf(name).length;
-    if (used > 0) {
-      flash(`${used}개 역할이 사용 중입니다`);
-      return;
-    }
-    removeLabel(name);
-    flash(`${name} 삭제됨`);
+  const remove = async (c: RoleClassification) => {
+    setErrorScope("row");
+    if (await admin.remove(c.roleClsfCd)) flash(`${c.roleClsfNm} 삭제됨`);
+  };
+
+  const startEdit = (c: RoleClassification) => {
+    admin.clearMutationError();
+    setEditing(c.roleClsfCd);
+    setEditNm(c.roleClsfNm);
   };
 
   return (
@@ -78,96 +120,188 @@ export function RoleLabelsPage() {
           />
         </div>
 
-        <div className="mb-4 flex items-center gap-2">
-          <TextField
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="새 분류명"
-            className="w-[240px]"
-          />
-          <Button onClick={add}>추가</Button>
+        {/*
+          코드와 이름을 나란히 받는다. 코드는 뜻이 읽히는 짧은 대문자 문자열이라 폭을 좁게 두고
+          형식을 placeholder 로 보여 준다 — 규칙을 모르면 첫 시도가 400 으로 돌아온다.
+        */}
+        <div className="mb-4 max-w-[820px]">
+          <div className="flex items-center gap-2">
+            <TextField
+              value={newCd}
+              onChange={(e) => setNewCd(e.target.value)}
+              disabled={!canManage}
+              invalid={addError}
+              placeholder="분류 코드 (예: PROJECT)"
+              className="w-[220px] font-mono"
+            />
+            <TextField
+              value={newNm}
+              onChange={(e) => setNewNm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && canManage) void add();
+              }}
+              disabled={!canManage}
+              invalid={addError}
+              placeholder="새 분류명"
+              className="w-[240px]"
+            />
+            <Button
+              onClick={() => void add()}
+              disabled={admin.busy || !canManage}
+              title={canManage ? undefined : NO_MANAGE}
+            >
+              {admin.busy ? "처리 중…" : "추가"}
+            </Button>
+          </div>
+          {addError && (
+            <div className="mt-[6px] text-[13.5px] leading-[1.6] text-danger">
+              {admin.mutationErrorMessage}
+            </div>
+          )}
+          <div className="mt-[6px] text-[13px] leading-[1.6] text-n500">
+            분류 코드는 대문자로 시작하고 대문자·숫자·밑줄만 2~20자로 씁니다.{" "}
+            <strong>코드는 만든 뒤에 바꿀 수 없습니다</strong> — 이름만 바꿀 수 있습니다.
+            새 코드는 데이터사전의 표준코드 시트에도 등재해주세요.
+          </div>
+          {!canManage && (
+            <div className="mt-[6px] text-[13px] text-n500">{NO_MANAGE}</div>
+          )}
         </div>
 
-        <Card className="max-w-[820px] px-5 pt-4 pb-[6px]">
-          <div className="grid grid-cols-[60px_200px_1fr_130px]">
-            {["순번", "분류명", "지정된 역할", "관리"].map((h) => (
-              <div key={h} className="pb-[10px] text-[13px] tracking-[.3px] text-n500">
-                {h}
-              </div>
-            ))}
-            {roleLabels.map((label, i) => {
-              const assigned = rolesOf(label);
-              const isEditing = editing === label;
-              return (
-                <div key={label} className="contents">
-                  <div className="border-t border-black/5 py-3 text-[15px]">{i + 1}</div>
-                  <div className="border-t border-black/5 py-3 text-[15px]">
-                    {isEditing ? (
-                      <input
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="w-[160px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[14.5px] outline-none"
-                      />
-                    ) : (
-                      <>
-                        <span className="font-semibold">{label}</span>
-                        <span className="ml-2 text-[13px] text-n500">
-                          {assigned.length}개 역할
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <div className="min-w-0 truncate border-t border-black/5 py-3 text-[15px] text-n400">
-                    {assigned.map((r) => r.name).join(" · ") || "지정된 역할 없음"}
-                  </div>
-                  <div className="flex gap-3 border-t border-black/5 py-3 text-[14px]">
-                    {isEditing ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => saveEdit(label)}
-                          className="cursor-pointer text-accent"
-                        >
-                          저장
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditing(null)}
-                          className="cursor-pointer text-n400"
-                        >
-                          취소
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditing(label);
-                            setEditName(label);
-                          }}
-                          className="cursor-pointer text-accent"
-                        >
-                          수정
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => remove(label)}
-                          className="cursor-pointer text-n400 hover:text-danger"
-                        >
-                          삭제
-                        </button>
-                      </>
-                    )}
-                  </div>
+        {admin.status === "loading" && <EmptyState message="불러오는 중…" />}
+        {admin.status === "error" && (
+          <EmptyState
+            message={admin.errorMessage || "역할 분류를 불러오지 못했습니다."}
+            action={{ label: "다시 시도", onClick: admin.reload }}
+          />
+        )}
+
+        {admin.status === "ready" &&
+          (admin.classifications.length === 0 ? (
+            <EmptyState message="등록된 분류가 없습니다." />
+          ) : (
+            <>
+              {rowError && (
+                <div className="mb-3 max-w-[820px] text-[13.5px] leading-[1.6] text-danger">
+                  {admin.mutationErrorMessage}
                 </div>
-              );
-            })}
-          </div>
-        </Card>
-        <div className="mt-3 text-[13.5px] text-n500">
-          사용 중인 분류는 삭제할 수 없습니다. 분류명을 바꾸면 지정된 역할에 함께
-          반영됩니다.
+              )}
+              <Card className="max-w-[820px] px-5 pt-4 pb-[6px]">
+                <div className="grid grid-cols-[60px_180px_1fr_130px]">
+                  {["표시_순번", "역할_분류_코드", "역할_분류_명", "관리"].map((h) => (
+                    <div key={h} className="pb-[10px] text-[13px] tracking-[.3px] text-n500">
+                      {h}
+                    </div>
+                  ))}
+                  {admin.classifications.map((c) => {
+                    const isEditing = editing === c.roleClsfCd;
+                    const isSystem = c.roleClsfCd === SYSTEM_ROLE_CLSF_CD;
+                    const inUse = c.roleCount > 0;
+
+                    /* 잠기는 이유가 셋이라 사유를 하나로 정해 버튼 title 에 붙인다 */
+                    const editLocked = !canManage
+                      ? NO_MANAGE
+                      : isSystem
+                        ? SYSTEM_LOCKED
+                        : "";
+                    const removeLocked = editLocked
+                      ? editLocked
+                      : inUse
+                        ? `${c.roleCount}개 역할이 이 분류를 쓰고 있습니다 — 다른 분류로 먼저 옮겨주세요`
+                        : "";
+
+                    return (
+                      <div key={c.roleClsfCd} className="contents">
+                        <div className="border-t border-black/5 py-3 text-[15px]">
+                          {c.indctSeqno}
+                        </div>
+                        <div className="border-t border-black/5 py-3">
+                          <span className="font-mono text-[13.5px] text-n400">
+                            {c.roleClsfCd}
+                          </span>
+                        </div>
+                        <div className="border-t border-black/5 py-3 text-[15px]">
+                          {isEditing ? (
+                            <input
+                              value={editNm}
+                              onChange={(e) => setEditNm(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") void saveEdit(c);
+                                if (e.key === "Escape") setEditing(null);
+                              }}
+                              autoFocus
+                              className="w-[200px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[14.5px] outline-none"
+                            />
+                          ) : (
+                            <>
+                              <span className="font-semibold">{c.roleClsfNm}</span>
+                              <span className="ml-2 text-[13px] text-n500">
+                                {c.roleCount}개 역할
+                              </span>
+                              {isSystem && (
+                                <Badge tone="outline" className="ml-2">
+                                  잠김
+                                </Badge>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        <div className="flex gap-3 border-t border-black/5 py-3 text-[14px]">
+                          {isEditing ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => void saveEdit(c)}
+                                disabled={admin.busy}
+                                className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-45"
+                              >
+                                저장
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditing(null)}
+                                className="cursor-pointer text-n400"
+                              >
+                                취소
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => startEdit(c)}
+                                disabled={Boolean(editLocked) || admin.busy}
+                                title={editLocked || undefined}
+                                className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-45"
+                              >
+                                수정
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void remove(c)}
+                                disabled={Boolean(removeLocked) || admin.busy}
+                                title={removeLocked || undefined}
+                                className="cursor-pointer text-n400 hover:text-danger disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:text-n400"
+                              >
+                                삭제
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  </div>
+              </Card>
+            </>
+          ))}
+
+        <div className="mt-3 max-w-[820px] text-[13.5px] leading-[1.7] text-n500">
+          역할이 하나라도 지정된 분류는 삭제할 수 없습니다 — 역할을 다른 분류로 먼저
+          옮겨주세요. 분류명을 바꿔도 역할_분류_코드는 그대로 유지됩니다.
+          <br />
+          <strong>SYSTEM</strong> 분류는 최고관리자 역할이 매달린 분류라 이름 변경·삭제가
+          잠겨 있습니다.
         </div>
       </PageBody>
     </>

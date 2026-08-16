@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "aprvVoteId": 1,
+      "subWorkAprvId": 1,
+      "mbrId": 2,
+      "agreYn": true,
+      "voteDt": "2026-08-06T15:00:00"
+    },
+    {
+      "aprvVoteId": 2,
+      "subWorkAprvId": 1,
+      "mbrId": 3,
+      "agreYn": true,
+      "voteDt": "2026-08-07T10:00:00"
+    }
+  ]
+}

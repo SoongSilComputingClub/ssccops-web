@@ -1,45 +1,16 @@
-/** 더미데이터 기준일 — 실제 시계를 쓰면 D-day·캘린더 시맨틱이 어긋나므로 고정 */
+/** 더미데이터 기준일 — 실제 시계를 쓰면 D-day 시맨틱이 어긋나므로 고정 */
 export const TODAY = "2026-08-09";
 
-/** 캘린더 연도 (원본 하드코딩) */
-export const CAL_YEAR = 2026;
+/*
+ * CSV 이관 매핑 대상 필드(`CSV_FIELDS`)가 있던 자리다 (#57).
+ *
+ * 목록의 근거가 데이터사전이 아니라 **서버의 `MemberImportField`**여서 entities/member로 옮겼다
+ * — 여기 있는 동안에는 서버가 받지 않는 값을 화면이 고르게 둘 수 있었고(반대로 서버가 필드를
+ * 늘려도 화면은 몰랐고), 매핑이 필수인 셋(회원명·등급·상태)이라는 사실도 담을 자리가 없었다.
+ * 표시 이름도 컬럼ID('회원_명')가 아니라 사람이 읽는 이름('회원명')으로 바뀌었다.
+ */
 
-/** 하위 업무 단계 */
-export const STAGES = ["기획", "진행", "검토", "완료"] as const;
-
-/** 회의 안건 구분 */
-export const AG_KINDS = ["논의", "결정", "보고"] as const;
-
-/** 폼 문항 유형 */
-export const QTYPES = ["단답형", "장문형", "단일선택", "다중선택", "날짜"] as const;
-export const CHOICE_TYPES = ["단일선택", "다중선택"] as const;
-
-export function isChoiceType(t: string): boolean {
-  return (CHOICE_TYPES as readonly string[]).includes(t);
-}
-
-/** 하위 업무 유형의 승인자 역할 후보 */
-export const OT_ROLES = ["회장", "부회장", "총무", "국장", "-"] as const;
-
-/** 소셜 로그인 제공자 (내 계정 탭 고정 순서) */
-export const PROVIDERS = ["GOOGLE", "GITHUB", "NAVER", "KAKAO"] as const;
-
-/** CSV 매핑 대상 시스템 필드 */
-export const CSV_FIELDS = [
-  "매핑 안함",
-  "학생번호",
-  "기수번호",
-  "회원명",
-  "학과명",
-  "학년번호",
-  "연락처번호",
-  "이메일주소",
-  "회원등급",
-  "회원상태",
-  "가입일자",
-] as const;
-
-/** 폼 빌더 입력 형식 검증 프리셋 */
+/** 폼 빌더 입력 형식 검증 프리셋 — form.qitem_cpst_cn 의 ptrnCn/ptrnNm 에 저장된다 */
 export const PATTERN_PRESETS = [
   { name: "자유 입력", pattern: "" },
   { name: "이메일", pattern: "^[^@\\s]+@[^@\\s]+\\.[a-zA-Z]{2,}$" },

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemberStore, memberRoleLabel } from "@/entities/member";
-import { useSessionStore } from "@/entities/session";
+import { representativeRole, useSessionStore } from "@/entities/session";
+import { ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
-import { NAV_FOOT, NAV_GROUPS, groupHasActive, type NavItem } from "./nav";
+import { flash } from "@/shared/ui";
+import { NAV_FOOT, NAV_GROUPS, groupHasActive, visibleGroups, type NavItem } from "./nav";
 
 function NavRow({
   item,
@@ -66,12 +67,40 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [closed, setClosed] = useState<Record<string, boolean>>({});
 
-  const memberKey = useSessionStore((s) => s.memberKey);
+  // 프로필은 서버 세션이 정본이다 — 목 회원 스토어를 거치지 않는다
+  const member = useSessionStore((s) => s.member);
+  const authUser = useSessionStore((s) => s.authUser);
   const logout = useSessionStore((s) => s.logout);
-  const me = useMemberStore((s) => s.members.find((m) => m.key === memberKey));
+
+  const meName = member?.name ?? authUser?.name ?? "-";
+
+  /*
+   * 권한 없는 메뉴는 감춘다 (#29 · 근거는 nav.ts의 visibleGroups 주석).
+   * 세션이 아직 없으면(member === null) 아무 권한도 없는 것으로 본다 — 잠깐 보였다 사라지는
+   * 편보다 처음부터 안 보이는 편이 낫다. 세션이 도착하면 다시 계산된다.
+   */
+  const groups = useMemo(() => visibleGroups(NAV_GROUPS, member), [member]);
+
+  /** 프로필 부제 — 대표 역할이 있으면 역할명, 없으면 등급명 · 등급명 */
+  const meLabel = (() => {
+    if (!member) return "";
+    const role = representativeRole(member);
+    return `${role?.roleName ?? member.membershipGradeName} · ${member.membershipGradeName}`;
+  })();
 
   const navigate = (href: string) => {
-    if (href === "/login") logout();
+    if (href === ROUTES.login) {
+      void logout().then((ok) => {
+        if (!ok) {
+          // 쿠키가 남아 있어 실제로는 여전히 로그인 상태다 — 화면만 로그아웃된 척하지 않는다
+          flash("로그아웃에 실패했습니다. 잠시 후 다시 시도해주세요");
+          return;
+        }
+        // 서버 컴포넌트·미들웨어가 들고 있던 세션까지 확실히 버리려면 전체 이동이 필요하다
+        window.location.replace(ROUTES.login);
+      });
+      return;
+    }
     router.push(href);
   };
 
@@ -89,7 +118,7 @@ export function Sidebar() {
           ›
         </button>
         <div className="my-[2px] h-px w-6 bg-bg" />
-        {NAV_GROUPS.map((g) => (
+        {groups.map((g) => (
           <button
             key={g.label}
             type="button"
@@ -146,7 +175,7 @@ export function Sidebar() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {NAV_GROUPS.map((g) => (
+        {groups.map((g) => (
           <div key={g.label}>
             <div
               onClick={() => setClosed((c) => ({ ...c, [g.label]: !c[g.label] }))}
@@ -171,13 +200,11 @@ export function Sidebar() {
       <div className="mt-2 border-t border-bg pt-2">
         <div className="flex items-center gap-[9px] px-[18px] pb-2">
           <div className="flex size-[30px] flex-none items-center justify-center rounded-full bg-accent-soft text-[13.5px] font-semibold text-accent">
-            {me?.name.charAt(0) ?? "S"}
+            {meName.charAt(0) || "S"}
           </div>
           <div className="min-w-0">
-            <div className="truncate text-[14.5px] font-semibold">{me?.name ?? "-"}</div>
-            <div className="truncate text-[12.5px] text-n500">
-              {me ? memberRoleLabel(me) : ""}
-            </div>
+            <div className="truncate text-[14.5px] font-semibold">{meName}</div>
+            <div className="truncate text-[12.5px] text-n500">{meLabel}</div>
           </div>
         </div>
         {NAV_FOOT.items.map((item) => (

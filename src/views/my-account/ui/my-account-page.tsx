@@ -1,17 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import {
-  cohortText,
-  gradeTone,
-  isGraduate,
-  statusTone,
-  useMemberStore,
-  type Member,
-  type SocialLink,
-} from "@/entities/member";
-import { useSessionStore } from "@/entities/session";
-import { PROVIDERS, TODAY } from "@/shared/config/constants";
+import { mbrGrdTone, mbrSttsTone } from "@/entities/member";
+import { useMyProfileEdit } from "@/features/member";
 import {
   Badge,
   Button,
@@ -22,254 +12,245 @@ import {
   PageHeader,
   Pill,
   SectionLabel,
-  Segmented,
   TextField,
   flash,
 } from "@/shared/ui";
 
-const EDITABLE = [
-  { key: "name", label: "회원명", ph: "필수" },
-  { key: "sid", label: "학생번호", ph: "선택" },
-  { key: "dept", label: "학과명", ph: "" },
-  { key: "phone", label: "연락처번호", ph: "" },
-] as const;
-
-type EditableKey = (typeof EDITABLE)[number]["key"] | "year" | "gradYear";
-
-function ProfileTab({ member }: { member: Member }) {
-  const updateMember = useMemberStore((s) => s.updateMember);
-  const addHistory = useMemberStore((s) => s.addHistory);
-  const [draft, setDraft] = useState<Partial<Record<EditableKey, string>>>({});
-
-  const value = (key: EditableKey) => draft[key] ?? (member[key] as string) ?? "";
-  const dirty = Object.entries(draft).some(
-    ([k, v]) => v !== undefined && v !== ((member[k as EditableKey] as string) ?? ""),
-  );
-
-  const save = () => {
-    if (!value("name").trim()) {
-      flash("회원명은 비울 수 없습니다");
-      return;
-    }
-    const changed = Object.entries(draft).filter(
-      ([k, v]) => v !== undefined && v !== ((member[k as EditableKey] as string) ?? ""),
-    );
-    changed.forEach(([k, v]) => {
-      const labels: Record<string, string> = {
-        name: "회원명",
-        sid: "학생번호",
-        dept: "학과명",
-        year: "학년번호",
-        gradYear: "졸업연도",
-        phone: "연락처번호",
-      };
-      addHistory({
-        type: "기본정보",
-        member: member.name,
-        from: `${(member[k as EditableKey] as string) || "미입력"} (${labels[k]})`,
-        to: v as string,
-        reason: "내 정보 수정(본인)",
-        by: member.name,
-        at: `${TODAY} 10:00`,
-      });
-    });
-    updateMember(member.key, Object.fromEntries(changed));
-    setDraft({});
-    flash(`${changed.length}건을 저장했습니다`);
-  };
-
-  return (
-    <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4">
-      <Card>
-        <SectionLabel className="mb-3">내가 수정할 수 있는 항목</SectionLabel>
-        <div className="grid grid-cols-2 gap-[14px]">
-          {EDITABLE.map((f) => (
-            <Field key={f.key} label={f.label}>
-              <TextField
-                value={value(f.key)}
-                onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                placeholder={f.ph}
-              />
-            </Field>
-          ))}
-          {isGraduate(member) ? (
-            <Field label="졸업연도">
-              <TextField
-                value={value("gradYear")}
-                onChange={(e) => setDraft((d) => ({ ...d, gradYear: e.target.value }))}
-                placeholder="예: 2021"
-              />
-            </Field>
-          ) : (
-            <Field label="학년번호">
-              <TextField
-                value={value("year")}
-                onChange={(e) => setDraft((d) => ({ ...d, year: e.target.value }))}
-              />
-            </Field>
-          )}
-        </div>
-        {dirty && (
-          <div className="mt-4 flex gap-2">
-            <Button variant="ghost" onClick={() => setDraft({})}>
-              되돌리기
-            </Button>
-            <Button onClick={save}>저장</Button>
-          </div>
-        )}
-      </Card>
-
-      <Card>
-        <SectionLabel className="mb-3">운영진만 변경할 수 있는 항목</SectionLabel>
-        <KeyValueGrid
-          items={[
-            {
-              k: "기수",
-              v:
-                cohortText(member) === "미배정"
-                  ? "미배정 · 운영진이 배정합니다"
-                  : cohortText(member),
-            },
-            { k: "이메일", v: member.email || "미입력" },
-            { k: "회원등급", v: <Badge tone={gradeTone(member.grade)}>{member.grade}</Badge> },
-            { k: "회원상태", v: <Badge tone={statusTone(member.status)}>{member.status}</Badge> },
-          ]}
-        />
-      </Card>
-    </div>
-  );
-}
-
-function LinksTab({ member }: { member: Member }) {
-  const links = useMemberStore((s) => s.links[member.key] ?? []);
-  const setLinks = useMemberStore((s) => s.setLinks);
-
-  const handleOf = (p: string) => {
-    const local = (member.email.split("@")[0] || member.name).toLowerCase();
-    if (p === "GOOGLE") return `${local}@gmail.com`;
-    if (p === "NAVER") return `${local}@naver.com`;
-    if (p === "KAKAO") return `${local}@kakao.com`;
-    return `${local}-dev`;
-  };
-
-  const unlink = (link: SocialLink) => {
-    if (links.length <= 1) {
-      flash("마지막 로그인 수단은 해제할 수 없습니다");
-      return;
-    }
-    if (link.primary) {
-      flash("대표 계정은 해제할 수 없습니다. 먼저 대표를 변경하세요");
-      return;
-    }
-    setLinks(member.key, links.filter((l) => l.p !== link.p));
-    flash(`${link.p} 연결을 해제했습니다`);
-  };
-
-  const connect = (p: string) => {
-    setLinks(member.key, [
-      ...links,
-      { p, account: handleOf(p), linked: TODAY, last: "-", primary: links.length === 0 },
-    ]);
-    flash(`${p} 계정을 연결했습니다`);
-  };
-
-  const setPrimary = (p: string) => {
-    setLinks(
-      member.key,
-      links.map((l) => ({ ...l, primary: l.p === p })),
-    );
-    flash(`${p} 을(를) 대표 계정으로 지정했습니다`);
-  };
-
-  return (
-    <>
-      <div className="grid grid-cols-2 gap-[14px]">
-        {PROVIDERS.map((p) => {
-          const link = links.find((l) => l.p === p);
-          return (
-            <Card key={p}>
-              <div className="flex items-center gap-2">
-                <Badge tone={link ? "blue" : "grey"}>{p}</Badge>
-                {link?.primary && <Pill tone="blue">대표</Pill>}
-                <div className="flex-1" />
-                {link ? (
-                  <button
-                    type="button"
-                    onClick={() => unlink(link)}
-                    className="cursor-pointer text-[13.5px] text-n400 hover:text-danger"
-                  >
-                    연결 해제
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => connect(p)}
-                    className="cursor-pointer text-[13.5px] text-accent"
-                  >
-                    연결
-                  </button>
-                )}
-              </div>
-              <div className="mt-2 font-mono text-[14px]">
-                {link ? link.account : <span className="text-n500">연결되지 않음</span>}
-              </div>
-              <div className="mt-1 text-[13px] text-n500">
-                {link
-                  ? `연결 ${link.linked} · 최근 로그인 ${link.last}`
-                  : "이 계정으로도 로그인할 수 있습니다"}
-              </div>
-              {link && !link.primary && (
-                <button
-                  type="button"
-                  onClick={() => setPrimary(p)}
-                  className="mt-2 cursor-pointer text-left text-[13.5px] text-accent"
-                >
-                  대표 계정으로 지정
-                </button>
-              )}
-            </Card>
-          );
-        })}
-      </div>
-      <div className="mt-3 text-[13.5px] text-n500">
-        대표 계정은 로그인 식별에 사용되며, 최소 한 개의 소셜 계정은 연결되어 있어야
-        합니다.
-      </div>
-    </>
-  );
-}
-
+/*
+ * 내 계정 — 서버 세션(GET /v1/auth/session)의 회원 정보를 보여 주고, 본인이 고칠 수 있는
+ * 네 항목을 여기서 고친다 (#47 · 서버 #77 · PATCH /v1/members/me).
+ *
+ * ── 왜 고칠 수 있는 것이 넷뿐인가 ───────────────────────────────
+ * 서버가 본인 경로의 요청 본문에 이름·학과·학년·연락처만 두었고, 그 DTO를 운영진 경로와 나눈
+ * 것 자체가 권한 차이의 표현이다. 화면도 같은 경계를 그린다 — 여기서 기수나 등급을 입력할 수
+ * 있게 두면 저장은 되는데 값은 안 바뀌는 칸이 생긴다.
+ *
+ *  - 이메일   Supabase 인증 계정에서 오는 값이다. 여기서 바꾸면 로그인 계정과 갈린다.
+ *  - 학번     가입 후 변경 불가로 확정됐다(데이터사전 ssccops#74).
+ *  - 기수·등급·상태·역할  운영진이 정하는 값이라 '운영진만 변경할 수 있는 항목' 카드에 둔다.
+ *
+ * ── 저장 뒤 세션을 다시 조회하지 않는다 ─────────────────────────
+ * 서버가 세션의 member와 같은 모양(`MemberProfileResponse`)을 돌려주므로 훅이 그대로 스토어에
+ * 넣는다 — 사이드바 이름이 그 자리에서 바뀐다. 가입 응답을 그대로 쓰는 것과 같은 계약이다.
+ *
+ * 예전에는 목 회원 스토어를 고쳐 새로고침하면 사라지는 수정을 했고, 그것을 걷어낸 뒤로는
+ * "프로필 수정은 회원 API 연동 이후에 열립니다"라고 적어 두었다. 그 API가 생겨 안내를 지운다.
+ */
 export function MyAccountPage() {
-  const memberKey = useSessionStore((s) => s.memberKey);
-  const member = useMemberStore((s) => s.members.find((m) => m.key === memberKey));
-  const [tab, setTab] = useState<"프로필" | "연결된 계정">("프로필");
+  const editor = useMyProfileEdit();
+  const { member, values, errors, academicRequired } = editor;
 
+  // AuthGate가 ready일 때만 이 화면이 열리므로 member는 사실상 항상 있다
   if (!member) return null;
 
+  const genText = member.generationNumber ? `${member.generationNumber}기` : "미배정";
+
+  const save = async () => {
+    const saved = await editor.save();
+    if (!saved) return;
+    flash("프로필이 저장되었습니다");
+  };
+
   return (
     <>
-      <PageHeader title="내 계정" subtitle="프로필 · 연결된 소셜 계정" />
+      <PageHeader title="내 계정" subtitle="프로필" />
       <PageBody>
         <Card className="mb-4">
           <div className="flex items-center gap-[10px]">
             <div className="text-[25px] font-medium">{member.name}</div>
-            <Badge tone={gradeTone(member.grade)}>{member.grade}</Badge>
-            <Badge tone={statusTone(member.status)}>{member.status}</Badge>
+            <Badge tone={mbrGrdTone(member.membershipGradeCode)}>
+              {member.membershipGradeName}
+            </Badge>
+            <Badge tone={mbrSttsTone(member.membershipStatusCode)}>
+              {member.membershipStatusName}
+            </Badge>
             <div className="flex-1" />
             <div className="text-[14px] text-n500">
-              {member.id} · {cohortText(member)} · {member.dept || "학과 미입력"}
+              회원 #{member.memberId} · {genText} ·{" "}
+              {member.departmentName || "학과 미입력"}
             </div>
           </div>
         </Card>
 
-        <Segmented
-          options={["프로필", "연결된 계정"] as const}
-          value={tab}
-          onChange={setTab}
-          className="mb-4 w-[320px]"
-        />
+        <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4">
+          <Card>
+            <div className="mb-3 flex items-center">
+              <SectionLabel>회원 정보</SectionLabel>
+              <div className="flex-1" />
+              {!editor.editing && (
+                <button
+                  type="button"
+                  onClick={editor.start}
+                  className="cursor-pointer text-[14px] text-accent"
+                >
+                  프로필 수정
+                </button>
+              )}
+            </div>
 
-        {tab === "프로필" ? <ProfileTab member={member} /> : <LinksTab member={member} />}
+            {editor.editing ? (
+              <>
+                <div className="grid grid-cols-2 gap-[14px]">
+                  <Field label="회원_명" required error={errors.name}>
+                    <TextField
+                      value={values.name}
+                      onChange={(e) => editor.set({ name: e.target.value })}
+                      invalid={!!errors.name}
+                      placeholder="필수"
+                    />
+                  </Field>
+                  <Field label="전화번호" error={errors.phoneNumber}>
+                    <TextField
+                      value={values.phoneNumber}
+                      onChange={(e) => editor.set({ phoneNumber: e.target.value })}
+                      invalid={!!errors.phoneNumber}
+                      placeholder="010-0000-0000"
+                    />
+                  </Field>
+                  <Field
+                    label="학과_명"
+                    required={academicRequired}
+                    error={errors.departmentName}
+                  >
+                    <TextField
+                      value={values.departmentName}
+                      onChange={(e) => editor.set({ departmentName: e.target.value })}
+                      invalid={!!errors.departmentName}
+                      placeholder={academicRequired ? "필수" : "선택"}
+                    />
+                  </Field>
+                  <Field
+                    label="학년_번호"
+                    required={academicRequired}
+                    error={errors.academicYear}
+                  >
+                    <TextField
+                      value={values.academicYear}
+                      onChange={(e) => editor.set({ academicYear: e.target.value })}
+                      invalid={!!errors.academicYear}
+                      inputMode="numeric"
+                      placeholder={academicRequired ? "필수 · 1~4" : "선택 · 1~4"}
+                    />
+                  </Field>
+
+                  {/* 학번과 이메일은 고칠 수 없다 — 이유는 각 칸 아래 한 줄로 적는다 */}
+                  <Field label="학생_번호">
+                    <div className="rounded-[12px] bg-bg px-[11px] py-[9px] text-[15.5px] text-n300">
+                      {member.studentNumber || "미입력"}
+                    </div>
+                    <div className="mt-1 text-[12.5px] text-n500">
+                      학번은 가입 후 바꿀 수 없습니다 — 잘못 적혔다면 운영진에게 문의해주세요
+                    </div>
+                  </Field>
+                  <Field label="이메일">
+                    <div className="rounded-[12px] bg-bg px-[11px] py-[9px] text-[15.5px] text-n300">
+                      {member.email || "미입력"}
+                    </div>
+                    <div className="mt-1 text-[12.5px] text-n500">
+                      로그인에 쓰는 소셜 계정에서 가져온 값이라 여기서 바꾸면 로그인 계정과
+                      갈립니다
+                    </div>
+                  </Field>
+                </div>
+
+                <div className="mt-4 text-[13px] leading-[1.6] text-n500">
+                  {academicRequired
+                    ? "재학 회원은 학과_명 · 학년_번호가 필수입니다. "
+                    : "학과_명 · 학년_번호는 선택입니다. "}
+                  비워 둔 칸은 저장할 때 <b>지워집니다</b> — 네 항목을 통째로 저장합니다.
+                </div>
+
+                {editor.saveErrorMessage && (
+                  <div className="mt-3 rounded-[10px] border border-danger/28 bg-danger/8 px-3 py-[10px] text-[14px] leading-[1.6] text-danger">
+                    {editor.saveErrorMessage}
+                  </div>
+                )}
+
+                <div className="mt-4 flex gap-2">
+                  <Button variant="ghost" disabled={editor.saving} onClick={editor.cancel}>
+                    취소
+                  </Button>
+                  <Button
+                    className="flex-1 py-3"
+                    onClick={() => void save()}
+                    disabled={editor.saving || !editor.dirty}
+                    title={editor.dirty ? undefined : "변경된 내용이 없습니다"}
+                  >
+                    {editor.saving ? "저장 중…" : "저장"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <KeyValueGrid
+                  items={[
+                    { k: "회원_명", v: member.name },
+                    { k: "학생_번호", v: member.studentNumber || "미입력" },
+                    {
+                      k: "학년_번호",
+                      v: member.academicYear ? `${member.academicYear}학년` : "미입력",
+                    },
+                    { k: "학과_명", v: member.departmentName || "미입력" },
+                    { k: "전화번호", v: member.phoneNumber || "미입력" },
+                    { k: "이메일", v: member.email || "미입력" },
+                  ]}
+                />
+                <div className="mt-4 text-[13px] leading-[1.6] text-n500">
+                  회원_명 · 학과_명 · 학년_번호 · 전화번호를 직접 고칠 수 있습니다. 이메일은
+                  로그인에 쓰는 소셜 계정에서 가져온 값이라 여기서 바꾸지 않습니다.
+                </div>
+              </>
+            )}
+          </Card>
+
+          <Card>
+            <SectionLabel className="mb-3">운영진만 변경할 수 있는 항목</SectionLabel>
+            <KeyValueGrid
+              items={[
+                {
+                  k: "기수_번호",
+                  v: genText === "미배정" ? "미배정 · 운영진이 배정합니다" : genText,
+                },
+                {
+                  k: "회원_등급",
+                  v: (
+                    <Badge tone={mbrGrdTone(member.membershipGradeCode)}>
+                      {member.membershipGradeName}
+                    </Badge>
+                  ),
+                },
+                {
+                  k: "회원_상태",
+                  v: (
+                    <Badge tone={mbrSttsTone(member.membershipStatusCode)}>
+                      {member.membershipStatusName}
+                    </Badge>
+                  ),
+                },
+                {
+                  // 대표 역할 하나가 아니라 지금 유효한 역할 전부를 보여준다 — 권한은
+                  // 그 전부를 합쳐서 계산되므로(AuthorityPolicy) 대표 하나만 보이면 실제로
+                  // 뭘 할 수 있는지를 이 화면만 보고는 알 수 없다
+                  k: "현재_역할",
+                  v:
+                    member.roles.length === 0 ? (
+                      "없음"
+                    ) : (
+                      <div className="flex flex-wrap gap-[6px]">
+                        {member.roles.map((role) => (
+                          <span key={role.roleId} className="flex items-center gap-1">
+                            <Badge tone="grey">{role.roleName}</Badge>
+                            {role.representative && <Pill tone="blue">대표</Pill>}
+                          </span>
+                        ))}
+                      </div>
+                    ),
+                },
+                { k: "가입_일자", v: member.joinDate },
+              ]}
+            />
+          </Card>
+        </div>
       </PageBody>
     </>
   );

@@ -1,0 +1,109 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "subWorkPicAltmntId": 1,
+      "subWorkId": 1,
+      "mbrId": 2,
+      "tkcgSeCd": "OWNER"
+    },
+    {
+      "subWorkPicAltmntId": 2,
+      "subWorkId": 1,
+      "mbrId": 3,
+      "tkcgSeCd": "COLLABORATOR"
+    },
+    {
+      "subWorkPicAltmntId": 3,
+      "subWorkId": 1,
+      "mbrId": 4,
+      "tkcgSeCd": "COLLABORATOR"
+    },
+    {
+      "subWorkPicAltmntId": 4,
+      "subWorkId": 2,
+      "mbrId": 3,
+      "tkcgSeCd": "OWNER"
+    },
+    {
+      "subWorkPicAltmntId": 5,
+      "subWorkId": 2,
+      "mbrId": 2,
+      "tkcgSeCd": "COLLABORATOR"
+    },
+    {
+      "subWorkPicAltmntId": 6,
+      "subWorkId": 3,
+      "mbrId": 4,
+      "tkcgSeCd": "OWNER"
+    },
+    {
+      "subWorkPicAltmntId": 7,
+      "subWorkId": 3,
+      "mbrId": 1,
+      "tkcgSeCd": "COLLABORATOR"
+    },
+    {
+      "subWorkPicAltmntId": 8,
+      "subWorkId": 4,
+      "mbrId": 2,
+      "tkcgSeCd": "OWNER"
+    },
+    {
+      "subWorkPicAltmntId": 9,
+      "subWorkId": 5,
+      "mbrId": 1,
+      "tkcgSeCd": "OWNER"
+    },
+    {
+      "subWorkPicAltmntId": 10,
+      "subWorkId": 6,
+      "mbrId": 1,
+      "tkcgSeCd": "OWNER"
+    },
+    {
+      "subWorkPicAltmntId": 11,
+      "subWorkId": 6,
+      "mbrId": 2,
+      "tkcgSeCd": "COLLABORATOR"
+    },
+    {
+      "subWorkPicAltmntId": 12,
+      "subWorkId": 7,
+      "mbrId": 1,
+      "tkcgSeCd": "OWNER"
+    },
+    {
+      "subWorkPicAltmntId": 13,
+      "subWorkId": 7,
+      "mbrId": 2,
+      "tkcgSeCd": "COLLABORATOR"
+    },
+    {
+      "subWorkPicAltmntId": 14,
+      "subWorkId": 7,
+      "mbrId": 3,
+      "tkcgSeCd": "COLLABORATOR"
+    },
+    {
+      "subWorkPicAltmntId": 15,
+      "subWorkId": 8,
+      "mbrId": 6,
+      "tkcgSeCd": "OWNER"
+    },
+    {
+      "subWorkPicAltmntId": 16,
+      "subWorkId": 8,
+      "mbrId": 4,
+      "tkcgSeCd": "COLLABORATOR"
+    },
+    {
+      "subWorkPicAltmntId": 17,
+      "subWorkId": 8,
+      "mbrId": 1,
+      "tkcgSeCd": "COLLABORATOR"
+    }
+  ]
+}

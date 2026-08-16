@@ -1,45 +1,44 @@
 "use client";
 
 import { create } from "zustand";
-import { nextKey } from "@/shared/lib/id";
-import seed from "../api/get-operations-works.json";
+import type { WorkSttsCd } from "@/shared/config/codes";
+import { nextId } from "@/shared/lib/id";
+import workSeed from "../api/get-work.json";
 import type { Work } from "./types";
 
 interface WorkState {
   works: Work[];
-  addWork: (draft: Omit<Work, "id">) => Work;
-  updateWork: (id: string, patch: Partial<Work>) => void;
-  /** 하위 업무 연결 */
-  attachSub: (workId: string, taskId: string) => void;
+
+  addWork: (draft: Omit<Work, "workId">) => number;
+  updateWork: (workId: number, patch: Partial<Work>) => void;
 }
 
 export const useWorkStore = create<WorkState>((set) => ({
-  works: seed.data as Work[],
+  works: workSeed.data as Work[],
 
   addWork: (draft) => {
-    let work: Work = { ...draft, id: "" };
+    let workId = 0;
     set((s) => {
-      work = { ...work, id: nextKey("w", s.works.length) };
-      return { works: [...s.works, work] };
+      workId = nextId(s.works, "workId");
+      return { works: [...s.works, { ...draft, workId }] };
     });
-    return work;
+    return workId;
   },
 
-  updateWork: (id, patch) =>
-    set((s) => ({ works: s.works.map((w) => (w.id === id ? { ...w, ...patch } : w)) })),
-
-  attachSub: (workId, taskId) =>
+  updateWork: (workId, patch) =>
     set((s) => ({
-      works: s.works.map((w) =>
-        w.id === workId ? { ...w, subs: [...w.subs, taskId] } : w,
-      ),
+      works: s.works.map((w) => (w.workId === workId ? { ...w, ...patch } : w)),
     })),
 }));
 
+/** 업무_진행_률 표기 — "25%" */
+export function workPrgrsRtText(work: Work): string {
+  return `${Math.round(work.workPrgrsRt)}%`;
+}
+
 /** 업무 상태 배지 톤 */
-export function workStatusTone(status: string): "grey" | "blue" | "amber" | "red" {
-  if (status === "진행") return "blue";
-  if (status === "검토") return "amber";
-  if (status === "보류" || status === "취소") return "red";
+export function workSttsTone(cd: WorkSttsCd): "blue" | "amber" | "grey" {
+  if (cd === "IN_PROGRESS") return "blue";
+  if (cd === "REVIEW") return "amber";
   return "grey";
 }

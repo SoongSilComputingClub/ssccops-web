@@ -1,0 +1,231 @@
+{
+  "success": true,
+  "code": "COMMON200",
+  "message": "요청이 성공적으로 처리되었습니다.",
+  "data": [
+    {
+      "subWorkChckListId": 1,
+      "subWorkId": 1,
+      "chckArtclCn": "장소 후보 3곳 리스트업",
+      "cmptnYn": true,
+      "sortSeq": 1
+    },
+    {
+      "subWorkChckListId": 2,
+      "subWorkId": 1,
+      "chckArtclCn": "대관비 견적 비교",
+      "cmptnYn": true,
+      "sortSeq": 2
+    },
+    {
+      "subWorkChckListId": 3,
+      "subWorkId": 1,
+      "chckArtclCn": "현장 답사 완료",
+      "cmptnYn": false,
+      "sortSeq": 3
+    },
+    {
+      "subWorkChckListId": 4,
+      "subWorkId": 1,
+      "chckArtclCn": "최종 후보 회장단 보고",
+      "cmptnYn": false,
+      "sortSeq": 4
+    },
+    {
+      "subWorkChckListId": 5,
+      "subWorkId": 2,
+      "chckArtclCn": "견적서 확인",
+      "cmptnYn": true,
+      "sortSeq": 1
+    },
+    {
+      "subWorkChckListId": 6,
+      "subWorkId": 2,
+      "chckArtclCn": "예산안 대비 확인",
+      "cmptnYn": true,
+      "sortSeq": 2
+    },
+    {
+      "subWorkChckListId": 7,
+      "subWorkId": 2,
+      "chckArtclCn": "이체 처리",
+      "cmptnYn": false,
+      "sortSeq": 3
+    },
+    {
+      "subWorkChckListId": 8,
+      "subWorkId": 2,
+      "chckArtclCn": "영수증 등록",
+      "cmptnYn": false,
+      "sortSeq": 4
+    },
+    {
+      "subWorkChckListId": 9,
+      "subWorkId": 3,
+      "chckArtclCn": "디자인 초안 완료",
+      "cmptnYn": true,
+      "sortSeq": 1
+    },
+    {
+      "subWorkChckListId": 10,
+      "subWorkId": 3,
+      "chckArtclCn": "문구 검토 완료",
+      "cmptnYn": true,
+      "sortSeq": 2
+    },
+    {
+      "subWorkChckListId": 11,
+      "subWorkId": 3,
+      "chckArtclCn": "인쇄 발주",
+      "cmptnYn": false,
+      "sortSeq": 3
+    },
+    {
+      "subWorkChckListId": 12,
+      "subWorkId": 3,
+      "chckArtclCn": "게시 일정 확정",
+      "cmptnYn": false,
+      "sortSeq": 4
+    },
+    {
+      "subWorkChckListId": 13,
+      "subWorkId": 4,
+      "chckArtclCn": "교재 확정",
+      "cmptnYn": true,
+      "sortSeq": 1
+    },
+    {
+      "subWorkChckListId": 14,
+      "subWorkId": 4,
+      "chckArtclCn": "구매처 비교",
+      "cmptnYn": true,
+      "sortSeq": 2
+    },
+    {
+      "subWorkChckListId": 15,
+      "subWorkId": 4,
+      "chckArtclCn": "구매 요청",
+      "cmptnYn": false,
+      "sortSeq": 3
+    },
+    {
+      "subWorkChckListId": 16,
+      "subWorkId": 4,
+      "chckArtclCn": "정산 등록",
+      "cmptnYn": false,
+      "sortSeq": 4
+    },
+    {
+      "subWorkChckListId": 17,
+      "subWorkId": 5,
+      "chckArtclCn": "신청서 취합",
+      "cmptnYn": true,
+      "sortSeq": 1
+    },
+    {
+      "subWorkChckListId": 18,
+      "subWorkId": 5,
+      "chckArtclCn": "명단 정리",
+      "cmptnYn": false,
+      "sortSeq": 2
+    },
+    {
+      "subWorkChckListId": 19,
+      "subWorkId": 5,
+      "chckArtclCn": "매칭 확정",
+      "cmptnYn": false,
+      "sortSeq": 3
+    },
+    {
+      "subWorkChckListId": 20,
+      "subWorkId": 5,
+      "chckArtclCn": "공지 발송",
+      "cmptnYn": false,
+      "sortSeq": 4
+    },
+    {
+      "subWorkChckListId": 21,
+      "subWorkId": 6,
+      "chckArtclCn": "안건 수합",
+      "cmptnYn": true,
+      "sortSeq": 1
+    },
+    {
+      "subWorkChckListId": 22,
+      "subWorkId": 6,
+      "chckArtclCn": "자료 정리",
+      "cmptnYn": false,
+      "sortSeq": 2
+    },
+    {
+      "subWorkChckListId": 23,
+      "subWorkId": 6,
+      "chckArtclCn": "사전 공유",
+      "cmptnYn": false,
+      "sortSeq": 3
+    },
+    {
+      "subWorkChckListId": 24,
+      "subWorkId": 6,
+      "chckArtclCn": "회의록 양식 준비",
+      "cmptnYn": false,
+      "sortSeq": 4
+    },
+    {
+      "subWorkChckListId": 25,
+      "subWorkId": 7,
+      "chckArtclCn": "부서별 활동 취합",
+      "cmptnYn": true,
+      "sortSeq": 1
+    },
+    {
+      "subWorkChckListId": 26,
+      "subWorkId": 7,
+      "chckArtclCn": "초안 작성",
+      "cmptnYn": false,
+      "sortSeq": 2
+    },
+    {
+      "subWorkChckListId": 27,
+      "subWorkId": 7,
+      "chckArtclCn": "검토 반영",
+      "cmptnYn": false,
+      "sortSeq": 3
+    },
+    {
+      "subWorkChckListId": 28,
+      "subWorkId": 7,
+      "chckArtclCn": "제출",
+      "cmptnYn": false,
+      "sortSeq": 4
+    },
+    {
+      "subWorkChckListId": 29,
+      "subWorkId": 8,
+      "chckArtclCn": "운영 인력 배치",
+      "cmptnYn": false,
+      "sortSeq": 1
+    },
+    {
+      "subWorkChckListId": 30,
+      "subWorkId": 8,
+      "chckArtclCn": "홍보물 준비",
+      "cmptnYn": false,
+      "sortSeq": 2
+    },
+    {
+      "subWorkChckListId": 31,
+      "subWorkId": 8,
+      "chckArtclCn": "체험 프로그램 확정",
+      "cmptnYn": false,
+      "sortSeq": 3
+    },
+    {
+      "subWorkChckListId": 32,
+      "subWorkId": 8,
+      "chckArtclCn": "당일 진행 점검",
+      "cmptnYn": false,
+      "sortSeq": 4
+    }
+  ]
+}
