@@ -14,6 +14,7 @@ import {
   type PrrtyRnkCd,
   type WorkTypeCd,
 } from "@/shared/config/codes";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { fromInput, toInput } from "@/shared/lib/date";
 import {
@@ -110,7 +111,7 @@ function WorkEditForm({
 
   const save = async () => {
     if (!title.trim() || !startAt) {
-      flash("업무_제목 · 시작_일시는 필수입니다");
+      flash("운영 제목 · 시작 일시는 필수입니다");
       return;
     }
     if (!work.owner) {
@@ -142,7 +143,7 @@ function WorkEditForm({
           <Card>
             <SectionLabel className="mb-3">상위 속성 · oper</SectionLabel>
             <div className="grid grid-cols-2 gap-[14px]">
-              <Field label="운영_제목" required className="col-span-2">
+              <Field label={FIELD_LABEL.operationTitle} required className="col-span-2">
                 <TextField value={title} onChange={(e) => setTitle(e.target.value)} />
               </Field>
               <Field label="담당자">
@@ -153,7 +154,7 @@ function WorkEditForm({
                   </div>
                 </div>
               </Field>
-              <Field label="우선_순위_코드">
+              <Field label={FIELD_LABEL.priority}>
                 <div className="flex gap-[7px] pt-[6px]">
                   {PRRTY_RNK_CDS.map((cd) => (
                     <Chip key={cd} active={priority === cd} onClick={() => setPriority(cd)}>
@@ -162,14 +163,14 @@ function WorkEditForm({
                   ))}
                 </div>
               </Field>
-              <Field label="시작_일시" required>
+              <Field label={FIELD_LABEL.startAt} required>
                 <TextField
                   type="datetime-local"
                   value={startAt}
                   onChange={(e) => setStartAt(e.target.value)}
                 />
               </Field>
-              <Field label="종료_일시">
+              <Field label={FIELD_LABEL.endAt}>
                 <TextField
                   type="datetime-local"
                   value={endAt}
@@ -181,7 +182,7 @@ function WorkEditForm({
 
           <Card>
             <SectionLabel className="mb-3">확장 속성 · work</SectionLabel>
-            <div className="mb-2 text-[13.5px] text-n400">업무_유형_코드</div>
+            <div className="mb-2 text-[13.5px] text-n400">{FIELD_LABEL.workType}</div>
             <div className="mb-4 flex gap-[7px]">
               {WORK_TYPE_CDS.map((cd) => (
                 <Chip key={cd} active={workType === cd} onClick={() => setWorkType(cd)}>
@@ -189,7 +190,7 @@ function WorkEditForm({
                 </Chip>
               ))}
             </div>
-            <Field label="총평_내용">
+            <Field label={FIELD_LABEL.generalReview}>
               <TextArea
                 value={generalReview}
                 onChange={(e) => setGeneralReview(e.target.value)}

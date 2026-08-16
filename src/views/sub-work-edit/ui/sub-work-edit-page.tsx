@@ -6,6 +6,7 @@ import { CAPABILITY } from "@/entities/session";
 import type { SubWorkDetail } from "@/entities/sub-work";
 import { useCan } from "@/features/auth";
 import { useSubWorkDetail, useUpdateSubWork } from "@/features/sub-work";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { PRRTY_RNK_CDS, PRRTY_RNK_NM, type PrrtyRnkCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { fromInput, toInput } from "@/shared/lib/date";
@@ -115,7 +116,7 @@ function SubWorkEditForm({
 
   const save = async () => {
     if (!title.trim() || !startAt) {
-      flash("업무_제목 · 시작_일시는 필수입니다");
+      flash("운영 제목 · 시작 일시는 필수입니다");
       return;
     }
     if (!subWork.owner) {
@@ -150,7 +151,7 @@ function SubWorkEditForm({
           <Card>
             <SectionLabel className="mb-3">상위 속성 · oper</SectionLabel>
             <div className="grid grid-cols-2 gap-[14px]">
-              <Field label="운영_제목" required className="col-span-2">
+              <Field label={FIELD_LABEL.operationTitle} required className="col-span-2">
                 <TextField value={title} onChange={(e) => setTitle(e.target.value)} />
               </Field>
               <Field label="담당자">
@@ -161,7 +162,7 @@ function SubWorkEditForm({
                   </div>
                 </div>
               </Field>
-              <Field label="우선_순위_코드">
+              <Field label={FIELD_LABEL.priority}>
                 <div className="flex gap-[7px] pt-[6px]">
                   {PRRTY_RNK_CDS.map((cd) => (
                     <Chip key={cd} active={priority === cd} onClick={() => setPriority(cd)}>
@@ -170,14 +171,14 @@ function SubWorkEditForm({
                   ))}
                 </div>
               </Field>
-              <Field label="시작_일시" required>
+              <Field label={FIELD_LABEL.startAt} required>
                 <TextField
                   type="datetime-local"
                   value={startAt}
                   onChange={(e) => setStartAt(e.target.value)}
                 />
               </Field>
-              <Field label="마감_일시">
+              <Field label={FIELD_LABEL.dueAt}>
                 <TextField
                   type="datetime-local"
                   value={dueAt}
@@ -190,7 +191,7 @@ function SubWorkEditForm({
           <Card>
             <SectionLabel className="mb-3">확장 속성 · sub_work</SectionLabel>
             <div className="mb-4 flex items-center gap-[8px]">
-              <div className="text-[13.5px] text-n400">하위_업무_유형</div>
+              <div className="text-[13.5px] text-n400">{FIELD_LABEL.subWorkType}</div>
               <Badge tone="outline">{subWork.subWorkTypeName}</Badge>
               <div className="text-[13px] text-n500">수정 화면에서는 바꿀 수 없습니다</div>
             </div>
@@ -199,21 +200,21 @@ function SubWorkEditForm({
               <span className="text-n300">{subWork.workTitle || `업무 #${subWork.workId}`}</span>
             </div>
             <div className="flex flex-col gap-[14px]">
-              <Field label="업무_내용">
+              <Field label={FIELD_LABEL.workContent}>
                 <TextField
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="무엇을 하는 하위 업무인지"
                 />
               </Field>
-              <Field label="완료_기준_내용">
+              <Field label={FIELD_LABEL.completionCriteria}>
                 <TextArea
                   value={completionCriteria}
                   onChange={(e) => setCompletionCriteria(e.target.value)}
                   placeholder="완료로 인정하는 기준 · 비워도 됩니다"
                 />
               </Field>
-              <Field label="외부_URL_주소">
+              <Field label={FIELD_LABEL.externalUrl}>
                 <TextField
                   value={externalLink}
                   onChange={(e) => setExternalLink(e.target.value)}

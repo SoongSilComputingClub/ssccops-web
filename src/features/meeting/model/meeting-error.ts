@@ -47,7 +47,7 @@ export function toMeetingCreateErrorMessage(error: unknown): string {
   }
 
   if (error.code === MEETING_ERROR.INVALID_CODE_VALUE) {
-    return "회의_구분·참석_대상·우선_순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+    return "회의 구분·참석 대상·우선순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
   }
 
   return toMeetingErrorMessage(error);

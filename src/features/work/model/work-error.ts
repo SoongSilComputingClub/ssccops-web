@@ -51,7 +51,7 @@ export function toWorkCreateErrorMessage(error: unknown): string {
   }
 
   if (error.code === WORK_ERROR.INVALID_CODE_VALUE) {
-    return "업무_유형·우선_순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+    return "업무 유형·우선순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
   }
 
   return toWorkErrorMessage(error);

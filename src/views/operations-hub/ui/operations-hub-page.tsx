@@ -17,6 +17,7 @@ import {
   WORK_TYPE_NM,
   type OperTypeCd,
 } from "@/shared/config/codes";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt, formatMd } from "@/shared/lib/date";
 import {
@@ -72,7 +73,7 @@ function workRow(w: WorkListItem): OperRow {
     ttl: w.title,
     date: `${formatMd(w.startAt)} ~`,
     pic: w.owner?.name || "-",
-    ext: `업무_유형 ${WORK_TYPE_NM[w.workType]} · 업무_상태 ${WORK_STTS_NM[w.workStatus]} · 하위 ${w.subWorkCount}건`,
+    ext: `업무 유형 ${WORK_TYPE_NM[w.workType]} · 업무 상태 ${WORK_STTS_NM[w.workStatus]} · 하위 ${w.subWorkCount}건`,
     href: ROUTES.workDetail(w.workId),
   };
 }
@@ -84,7 +85,7 @@ function subWorkRow(sw: SubWorkListItem): OperRow {
     ttl: sw.title,
     date: formatMd(sw.dueAt) || "-",
     pic: sw.owner?.name || "-",
-    ext: `업무_상태 ${WORK_STTS_NM[sw.workStatus]} · 승인 ${APRV_STTS_NM[sw.approvalStatus]} · 진행 ${sw.progressRate}%`,
+    ext: `업무 상태 ${WORK_STTS_NM[sw.workStatus]} · 승인 ${APRV_STTS_NM[sw.approvalStatus]} · 진행 ${sw.progressRate}%`,
     href: ROUTES.subWorkDetail(sw.subWorkId),
   };
 }
@@ -96,7 +97,7 @@ function meetingRow(m: MeetingListItem): OperRow {
     ttl: m.title,
     date: formatDt(m.startAt),
     pic: m.personInCharge?.name || "-",
-    ext: `회의_구분 ${m.meetingCategory ? MTG_SE_NM[m.meetingCategory] : "-"} · 회의_상태 ${
+    ext: `회의 구분 ${m.meetingCategory ? MTG_SE_NM[m.meetingCategory] : "-"} · 회의 상태 ${
       m.meetingStatus ? MTG_STTS_NM[m.meetingStatus] : "-"
     } · 안건 ${m.agendaCount}건`,
     href: ROUTES.meetingDetail(m.meetingId),
@@ -133,7 +134,7 @@ export function OperationsHubPage() {
       cd: "WORK" as const,
       table: "work",
       count: data.works.length,
-      note: "행사·상시·정례 운영 단위. 업무_유형·업무_상태·총평_내용·업무_진행_률 보유",
+      note: "행사·상시·정례 운영 단위. 업무 유형·업무 상태·총평·진행률 보유",
       href: ROUTES.works,
     },
     {
@@ -147,7 +148,7 @@ export function OperationsHubPage() {
       cd: "MEETING" as const,
       table: "mtg",
       count: data.meetings.length,
-      note: "정례·주제 회의. 안건(mtg_dtl)과 결과_내용을 기록",
+      note: "정례·주제 회의. 안건(mtg_dtl)과 결과 내용을 기록",
       href: ROUTES.meetings,
     },
   ];
@@ -200,7 +201,7 @@ export function OperationsHubPage() {
                   <EmptyState message="표시할 운영 건이 없습니다" />
                 ) : (
                   <div className="grid grid-cols-[.9fr_2fr_1.1fr_.9fr]">
-                    {["운영_유형", "제목", "일시", "담당자"].map((h) => (
+                    {[FIELD_LABEL.operationType, "제목", "일시", "담당자"].map((h) => (
                       <div
                         key={h}
                         className="pb-[10px] text-[13px] tracking-[.3px] text-n500"
