@@ -23,6 +23,15 @@
  * 회원·응답·가입에 나온다. 엔티티별로 나누면 같은 값이 세 벌이 되어 지금 고치는 문제로
  * 되돌아온다.
  *
+ * ── 어디까지 사전에서 꺼내는가 ─────────────────────────────────
+ * **항목의 이름을 부르는 자리**만이다 — 입력란 라벨, 표 머리글, 키-값 표의 키. 그 자리는
+ * 같은 값이 화면마다 다르게 불리면 곧바로 문제가 되므로 한곳에서 와야 한다.
+ *
+ * 반대로 **문장 속의 말은 사전에서 꺼내지 않는다.** "재학 회원은 기수를 제외한 모든 항목이
+ * 필수입니다" 같은 안내문이나 "학번을 입력하세요" 같은 검증 문구는 조사가 앞말에 붙어
+ * 바뀌므로(`학번을` / `학과를`) 사전 값을 끼워 넣으면 조사를 문장이 아니라 사전 값에
+ * 맞춰야 한다. 문장은 문장으로 적고, 대신 언더스코어 표기를 쓰지 않는다.
+ *
  * 키는 컬럼 ID가 아니라 웹이 쓰는 필드 이름(카멜케이스)이고, 값 옆 주석에 대응하는
  * 데이터사전 컬럼을 남긴다.
  */
@@ -44,6 +53,10 @@ export const FIELD_LABEL = {
   membershipGrade: "회원 등급",
   /** mbr_stts_cd (회원_상태) */
   membershipStatus: "회원 상태",
+  /** mbr_role 이 이어 준 지금 유효한 역할들 (현재_역할) */
+  currentRoles: "현재 역할",
+  /** join_ymd (가입_일자) */
+  joinDate: "가입 일자",
 
   /* ── 역할 분류 (role_clsf) ──────────────────────────────── */
   /** indct_seqno (표시_순번) */
@@ -52,8 +65,14 @@ export const FIELD_LABEL = {
   roleClassificationCode: "분류 코드",
   /** role_clsf_nm (역할_분류_명) */
   roleClassificationName: "분류명",
+  /** role.role_clsf_cd 가 가리키는 분류 자체 (역할_분류) — 역할 목록·편집의 칸 이름 */
+  roleClassification: "역할 분류",
+  /** role_nm (역할_명) */
+  roleName: "역할명",
 
   /* ── 운영 · 업무 (oper · work · sub_work) ───────────────── */
+  /** oper_id (운영_ID) */
+  operationId: "운영 ID",
   /** oper_type_cd (운영_유형) */
   operationType: "운영 유형",
   /** oper_ttl_nm (운영_제목) */
@@ -66,16 +85,48 @@ export const FIELD_LABEL = {
   endAt: "종료 일시",
   /** dline_dt (마감_일시) */
   dueAt: "마감 일시",
+  /** work_id (업무_ID) */
+  workId: "업무 ID",
   /** work_type_cd (업무_유형_코드) */
   workType: "업무 유형",
+  /** sub_work_id (하위_업무_ID) */
+  subWorkId: "하위 업무 ID",
   /** sub_work_type_id (하위_업무_유형) */
   subWorkType: "하위 업무 유형",
   /** work_stts_cd (업무_상태) */
   workStatus: "업무 상태",
+  /** aprv_stts_cd (승인_상태) */
+  approvalStatus: "승인 상태",
+  /** work_cn (업무_내용) */
+  workContent: "업무 내용",
+  /** cmptn_crtr_cn (완료_기준_내용) */
+  completionCriteria: "완료 기준",
+  /** extrl_url_addr (외부_URL_주소) */
+  externalUrl: "외부 URL",
   /** gnrl_evl_cn (총평_내용) */
   generalReview: "총평",
   /** work_prgrs_rt (업무_진행_률) */
   progressRate: "진행률",
+
+  /* ── 회의 (mtg · mtg_dtl) ───────────────────────────────── */
+  /** mtg_id (회의_ID) */
+  meetingId: "회의 ID",
+  /** mtg_se_cd (회의_구분) */
+  meetingCategory: "회의 구분",
+  /** atndnc_trgt_cd (참석_대상) */
+  attendeeTarget: "참석 대상",
+  /** mtg_plc_nm (회의_장소_명) */
+  meetingPlace: "회의 장소",
+  /** mtg_mngr (회의_책임자) */
+  meetingOwner: "회의 책임자",
+  /** intrnl_mtg_dtl (내부_회의_상세) */
+  internalMeetingDetail: "내부 회의 상세",
+  /** extrl_mtg_dtl (외부_회의_상세) */
+  externalMeetingSummary: "외부 회의 상세",
+  /** agnd_cn (안건_내용) */
+  agendaContent: "안건 내용",
+  /** rslt_cn (결과_내용) */
+  agendaResult: "결과 내용",
 
   /* ── 폼 (form · form_lbl) ───────────────────────────────── */
   /** form_ttl_nm (폼_제목_명) */
@@ -86,6 +137,12 @@ export const FIELD_LABEL = {
   receiptEndAt: "접수 종료 일시",
   /** form_lbl (폼_라벨) */
   formLabel: "폼 라벨",
+  /** crtr_mbr_id 가 가리키는 회원 (생성자_회원) */
+  creator: "생성자",
+  /** crt_dt (생성_일시) */
+  createdAt: "생성 일시",
+  /** mdfcn_dt (수정_일시) */
+  updatedAt: "수정 일시",
 
   /* ── 응답 (form_rspns_hstry) ────────────────────────────── */
   /** sbmsn_dt (제출_일시) */
