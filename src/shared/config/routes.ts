@@ -22,6 +22,13 @@ export const ROUTES = {
   memberNew: "/members/new",
   memberDetail: (mbrId: number) => `/members/${mbrId}`,
   memberEdit: (mbrId: number) => `/members/${mbrId}/edit`,
+  /**
+   * 회원 변경 이력 (#51) — 등급 · 상태 · 역할 변경만 담긴다.
+   *
+   * 이름이 `memberHistories`이지 `memberAuditLog`가 아닌 것은 담기는 것이 세 이력 테이블뿐이고
+   * 회원 정보(이름·연락처·학과) 수정은 어디에도 쌓이지 않기 때문이다 (views/member-history).
+   */
+  memberHistories: (mbrId: number) => `/members/${mbrId}/histories`,
   roles: "/members/roles",
   roleNew: "/members/roles/new",
   roleEdit: (roleId: number) => `/members/roles/${roleId}/edit`,

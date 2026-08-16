@@ -19,6 +19,12 @@ export {
   toMemberImportErrorMessage,
   toMemberImportExecuteErrorMessage,
 } from "./model/import-error";
+/* 회원 변경 이력 통합 조회 (#51 · 서버 #82) — 등급·상태·역할을 한 타임라인으로 받는다 */
+export {
+  useMemberHistories,
+  type MemberHistories,
+  type MemberHistoriesStatus,
+} from "./model/use-member-histories";
 export {
   toMemberErrorMessage,
   toMemberRoleErrorMessage,
@@ -26,6 +32,7 @@ export {
   toMemberSaveErrorMessage,
   toMyProfileSaveErrorMessage,
   toMemberChangeErrorMessage,
+  toMemberHistoryErrorMessage,
 } from "./model/member-error";
 /* 회원 정보 수정 · 내 프로필 수정 (#47 · 서버 #77) */
 export {
