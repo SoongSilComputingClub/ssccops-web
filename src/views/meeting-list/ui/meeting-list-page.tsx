@@ -66,8 +66,9 @@ export function MeetingListPage() {
   const { meetings, status, errorMessage, reload } = useMeetingList();
 
   /*
-   * 이 목록은 조회부터 MEETING_MANAGE 로 막혀 있어(서버 MeetingController 전체) 여기까지 온
-   * 사람은 대개 권한이 있다. 그래도 잠금을 붙이는 것은 권한이 방금 회수된 경우 때문이다.
+   * 조회(GET /v1/meetings)는 MEETING_READ만 있어도 되지만(서버 #101), 등록은 여전히
+   * MEETING_MANAGE다 — 그래서 목록 자체는 이동 가드(nav.ts)만으로 충분하고, 여기서는
+   * '+ 등록' 버튼만 잠근다. 잠금을 붙이는 것은 권한이 방금 회수된 경우 때문이다.
    */
   const canManage = useCan(CAPABILITY.MEETING_MANAGE);
   // 회의 목록에서 들어간 등록 폼은 운영_유형 선택 카드를 회의 하나로 고정한다

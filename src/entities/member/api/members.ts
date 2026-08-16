@@ -277,9 +277,18 @@ export interface AssignableMember {
  * `mbr.mbr_id`를 가리키는 FK이기 때문이다 — 목 데이터의 1~12번은 서버의 같은 번호와 아무
  * 관계가 없어, 화면에 뜬 이름과 실제로 배정되는 사람이 갈린다(#53 · 상위 업무 조회가 #36에서
  * 같은 이유로 서버 재조회가 됐다).
+ *
+ * `authority`를 주면 그 권한을 오늘 행사할 수 있는 회원으로 좁혀 받는다(#71 · 서버 #101) —
+ * 업무 등록의 담당자·회의 등록의 책임자는 국장 이상(`WORK_MANAGE`·`MEETING_MANAGE`)만 고를
+ * 수 있어야 하는데, 그 판정은 서버 한 곳(AuthorityPolicy.memberIdsWithAuthority)에서만 한다.
+ * 생략하면 지금처럼 활동 회원 전량이다 — 하위 업무 담당자는 국원도 될 수 있어야 하므로
+ * 그 경로는 필터를 걸지 않는다. 타입을 `Capability`가 아니라 `string`으로 둔 것은 이 계층
+ * (entities/member)이 다른 엔티티(entities/session)의 타입에 기대지 않기 위해서다 — 호출하는
+ * 쪽(features/views)이 `CAPABILITY.WORK_MANAGE` 같은 값을 그대로 넘긴다.
  */
-export async function fetchAssignableMembers(): Promise<AssignableMember[]> {
-  const members = await apiFetch<AssignableMember[] | null>("/v1/members/assignable");
+export async function fetchAssignableMembers(authority?: string): Promise<AssignableMember[]> {
+  const qs = authority ? `?authority=${encodeURIComponent(authority)}` : "";
+  const members = await apiFetch<AssignableMember[] | null>(`/v1/members/assignable${qs}`);
   return members ?? [];
 }
 

@@ -8,7 +8,7 @@ import type {
   SubWorkTransition,
 } from "@/entities/sub-work";
 import { REJECT_REASON_MAX_LENGTH } from "@/entities/sub-work";
-import { CAPABILITY } from "@/entities/session";
+import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { RejectSheet } from "@/features/approval";
 import { useSubWorkActions, useSubWorkDetail } from "@/features/sub-work";
@@ -104,6 +104,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
     useSubWorkDetail(subWorkId);
   const { pending, transition, setChecklistItem } = useSubWorkActions(subWorkId);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const sessionMember = useSessionStore((s) => s.member);
   /* 기본 정보 수정도 WORK_MANAGE 다 (서버 SubWorkController 클래스 애노테이션) */
   const canManage = useCan(CAPABILITY.WORK_MANAGE);
 
@@ -175,6 +176,17 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
         : null;
   const ownerActionBlocked = ownerAction?.action === "REQUEST_REVIEW" && !checklistDone;
 
+  /*
+   * WORK_MANAGE 보유자거나 담당자 본인만 착수·완료 승인 요청·수정을 시도할 수 있다
+   * (서버 SubWorkOwnershipPolicy, #71) — 국원은 자신이 담당자인 건에서만 이 버튼들을 본다.
+   * canApprove·canReject(완료 승인·반려)는 이것과 별개 축이라(승인자 판정) 그대로 둔다.
+   */
+  const isOwner =
+    sessionMember != null &&
+    subWork.owner != null &&
+    sessionMember.memberId === subWork.owner.memberId;
+  const canActOnOwnerTasks = canManage || isOwner;
+
   const approveBlockReason = !checklistDone
     ? "완료 점검 목록을 모두 체크해야 완료 승인할 수 있습니다"
     : quorumUnmet
@@ -198,19 +210,15 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
             )}
             {subWork.isDelayed && <Badge tone="red">지연</Badge>}
             <div className="flex-1" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push(ROUTES.subWorkEdit(subWork.subWorkId))}
-              disabled={!canManage}
-              title={
-                canManage
-                  ? undefined
-                  : "하위 업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다"
-              }
-            >
-              수정
-            </Button>
+            {canActOnOwnerTasks && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push(ROUTES.subWorkEdit(subWork.subWorkId))}
+              >
+                수정
+              </Button>
+            )}
             {isReview ? (
               <div className="flex gap-[9px]">
                 {subWork.canReject && (
@@ -238,7 +246,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
                 )}
               </div>
             ) : (
-              ownerAction && (
+              ownerAction && canActOnOwnerTasks && (
                 <Button
                   disabled={pending || ownerActionBlocked}
                   title={
