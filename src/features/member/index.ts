@@ -13,6 +13,12 @@ export {
   type MemberRoles,
   type MemberRolesStatus,
 } from "./model/use-member-roles";
+/* CSV 회원 이관 위저드 (#57 · 서버 #84·#85) — 네 단계의 상태를 한 훅에 둔다 */
+export { useMemberImport, type MemberImportWizard, type MemberImportStep } from "./model/use-member-import";
+export {
+  toMemberImportErrorMessage,
+  toMemberImportExecuteErrorMessage,
+} from "./model/import-error";
 export {
   toMemberErrorMessage,
   toMemberRoleErrorMessage,
