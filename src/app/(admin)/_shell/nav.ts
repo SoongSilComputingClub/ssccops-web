@@ -30,29 +30,61 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "운영",
     mono: "운",
     items: [
-      { label: "운영 대시보드", href: ROUTES.dashboard, isActive: starts("/dashboard") },
+      {
+        label: "운영 대시보드",
+        href: ROUTES.dashboard,
+        isActive: starts("/dashboard"),
+        // GET /v1/dashboard는 WORK_READ만 있어도 된다(#71) — 국원도 내 업무·다가오는 마감은
+        // 볼 수 있다. 승인 대기 영역만 서버가 WORK_MANAGE 여부로 따로 가려서 내려준다.
+        requires: CAPABILITY.WORK_READ,
+      },
       {
         label: "운영 통합",
         href: ROUTES.operations,
         isActive: (p) => p === "/operations",
+        /*
+         * GET /v1/operations 자체는 WORK_MANAGE다(#71, 대시보드와 같은 이유로 이번 요청
+         * 범위 밖) — 그래서 부모 행에도 이 requires를 그대로 건다. 국원처럼 부모는 못 열어도
+         * 자식(업무·하위 업무·회의)은 열 수 있는 경우, visibleGroups가 부모 행 없이 자식만
+         * 최상위로 끌어올려 보여준다 — 부모를 안 보여준다고 자식까지 같이 감추지 않는다.
+         */
+        requires: CAPABILITY.WORK_MANAGE,
         children: [
           {
             label: "업무",
             href: ROUTES.works,
             isActive: starts("/operations/works"),
-            requires: CAPABILITY.WORK_MANAGE,
+            // 조회는 WORK_MANAGE가 아니라 그 자식인 WORK_READ다(서버 #101) — WORK_MANAGE
+            // 보유자는 트리 펼침으로 이미 포함되므로 국장 이상은 그대로 보인다
+            requires: CAPABILITY.WORK_READ,
           },
           {
             label: "하위 업무",
             href: ROUTES.subWorks,
             isActive: starts("/operations/sub-works"),
-            requires: CAPABILITY.WORK_MANAGE,
+            requires: CAPABILITY.WORK_READ,
           },
-          { label: "회의", href: ROUTES.meetings, isActive: starts("/operations/meetings") },
+          {
+            label: "회의",
+            href: ROUTES.meetings,
+            isActive: starts("/operations/meetings"),
+            // 조회는 MEETING_MANAGE가 아니라 그 자식인 MEETING_READ다(서버 #101)
+            requires: CAPABILITY.MEETING_READ,
+          },
         ],
       },
-      /* 승인함은 권한 코드로 표현되지 않는다 — 승인자 본인인지를 서버가 건별로 본다 */
-      { label: "승인함", href: ROUTES.approvals, isActive: starts("/approvals") },
+      /*
+       * 승인함 (#71). 승인·반려 자체는 여전히 권한 코드로 표현되지 않지만(건별 승인자
+       * 판정, ApprovalAuthorityPolicy), 승인함 화면에 들어갈 수 있는지는 서버가 이제
+       * WORK_MANAGE로 가드한다(ApprovalController 클래스 애노테이션) — 이전엔 이 가드가
+       * 아예 없어 운영진이 아닌 회원도 승인함을 볼 수 있었다.
+       */
+      {
+        label: "승인함",
+        href: ROUTES.approvals,
+        isActive: starts("/approvals"),
+        requires: CAPABILITY.WORK_MANAGE,
+      },
       {
         label: "하위 업무 유형 관리",
         href: ROUTES.subWorkTypes,
@@ -172,6 +204,16 @@ export const NAV_FOOT: NavGroup = {
  * hasCapability 를 부르므로 판정 규칙은 여전히 한 곳이다.
  *
  * 감추기는 어디까지나 안내다. 주소를 직접 치면 화면은 열리고, 실제 차단은 서버가 한다.
+ *
+ * ── 부모를 못 열어도 자식은 최상위로 끌어올린다 ──────────────────
+ * "운영 통합"은 자신은 더 넓은 권한(WORK_MANAGE)을 요구하는 화면(GET /v1/operations)으로
+ * 이어지지만, 그 아래 자식(업무·하위 업무·회의)은 각자 더 좁은 권한(WORK_READ·MEETING_READ)
+ * 으로 따로 열린다(#71). 국원처럼 부모의 requires는 못 채워도 일부 자식은 채우는 경우,
+ * 부모 행을 감춘다고 자식까지 같이 감추면 국원에게 업무·하위 업무·회의 메뉴가 전부 사라진다.
+ * 그래서 부모가 막히면 부모 행 없이 **통과한 자식만 최상위로 끌어올려** 보여준다. 부모가
+ * 열리면(WORK_MANAGE 보유) 기존처럼 자식을 부모 아래 중첩해 보여준다. 자식이 있던 항목의
+ * 자식이 전부(또는 애초에 하나도) 걸러지면 그 항목은 통째로 사라진다 — 죽은 링크를 남기지
+ * 않기 위해서다.
  */
 export function visibleGroups(
   groups: NavGroup[],
@@ -179,13 +221,21 @@ export function visibleGroups(
 ): NavGroup[] {
   const allowed = (item: NavItem) => !item.requires || hasCapability(member, item.requires);
 
+  const visibleItems = (item: NavItem): NavItem[] => {
+    if (!item.children) {
+      return allowed(item) ? [item] : [];
+    }
+    const children = item.children.filter(allowed);
+    if (allowed(item)) {
+      return [{ ...item, children }];
+    }
+    return children;
+  };
+
   return groups
     .map((group) => ({
       ...group,
-      items: group.items.filter(allowed).map((item) => ({
-        ...item,
-        children: item.children?.filter(allowed),
-      })),
+      items: group.items.flatMap(visibleItems),
     }))
     // 항목이 하나도 남지 않은 묶음은 제목만 떠 있게 두지 않는다 (접힌 사이드바의 타일도 같다)
     .filter((group) => group.items.length > 0);

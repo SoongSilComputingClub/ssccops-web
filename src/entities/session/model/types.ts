@@ -30,8 +30,11 @@ export interface AuthUser {
  * 그래서 화면은 **엔드포인트가 실제로 요구하는 잎 코드**만 본다. 서버 컨트롤러의
  * `@RequireAuthority`와 1:1로 맞춘 목록이 아래다.
  *
- *  - WORK_MANAGE          WorkController · SubWorkController 전체
- *  - MEETING_MANAGE       MeetingController 전체 (서버 #83)
+ *  - WORK_MANAGE          POST·PATCH /v1/works… · /v1/sub-works…(조회 제외, 서버 #101)
+ *  - WORK_READ            GET  /v1/works… · /v1/sub-works…(조회 전용, WORK_MANAGE 보유자는 자동 포함, 서버 #101)
+ *  - MEETING_MANAGE       POST /v1/meetings · POST .../transitions(조회·안건 제외, 서버 #101)
+ *  - MEETING_READ         GET  /v1/meetings…(조회 전용, MEETING_MANAGE 보유자는 자동 포함, 서버 #101)
+ *  - MEETING_AGENDA_WRITE POST·PATCH·DELETE /v1/meetings/{id}/agendas…(서버 #101)
  *  - SUB_WORK_TYPE_READ   GET  /v1/sub-work-types
  *  - SUB_WORK_TYPE_MANAGE POST·PATCH /v1/sub-work-types…
  *  - FORM_READ            GET  /v1/forms · /v1/forms/{id}
@@ -41,6 +44,12 @@ export interface AuthUser {
  *  - RESPONSE_REVIEW      FormResponseController 전체
  *  - ROLE_MANAGE         AuthorityController · RoleAuthorityController 전체 (#32 · 서버 #65)
  *  - MEMBER_MANAGE        MemberController 조회·수정·등급·상태 (#52 · 서버 #76)
+ *
+ * WORK_MANAGE·MEETING_MANAGE는 원래 조회까지 포함한 컨트롤러 전체였으나(#83), 국원에게
+ * 조회만 열어 주기 위해 조회 전용 잎(WORK_READ·MEETING_READ)이 각각의 자식으로 새로
+ * 갈라졌다(서버 #101). WORK_MANAGE·MEETING_MANAGE 보유자는 트리 펼침으로 조회 코드도 이미
+ * 갖고 있으므로, 화면은 "조회만 되면 되는 자리"에는 WORK_READ·MEETING_READ를, "쓰기가
+ * 필요한 자리"에는 여전히 WORK_MANAGE·MEETING_MANAGE를 본다.
  *
  * ROLE_MANAGE 는 이 목록에서 유일하게 묶음처럼 생겼지만 **잎 코드로 다뤄도 되는 자리**다.
  * 서버가 두 컨트롤러 클래스 전체에 `@RequireAuthority(ROLE_MANAGE)`를 걸어 두어 이 코드 자체가
@@ -62,7 +71,10 @@ export interface AuthUser {
  */
 export const CAPABILITY = {
   WORK_MANAGE: "WORK_MANAGE",
+  WORK_READ: "WORK_READ",
   MEETING_MANAGE: "MEETING_MANAGE",
+  MEETING_READ: "MEETING_READ",
+  MEETING_AGENDA_WRITE: "MEETING_AGENDA_WRITE",
   SUB_WORK_TYPE_READ: "SUB_WORK_TYPE_READ",
   SUB_WORK_TYPE_MANAGE: "SUB_WORK_TYPE_MANAGE",
   FORM_READ: "FORM_READ",

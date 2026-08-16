@@ -84,9 +84,10 @@ export function WorkListPage() {
   } = useWorkList();
 
   /*
-   * 이 목록은 조회부터 WORK_MANAGE 로 막혀 있어(서버 WorkController 전체) 여기까지 온 사람은
-   * 대개 권한이 있다. 그래도 잠금을 붙이는 것은 권한이 방금 회수된 경우 때문이다 — 세션
-   * 재동기화가 끝나면 이 버튼이 스스로 잠긴다.
+   * 조회(GET /v1/works)는 WORK_READ만 있어도 되지만(서버 #101), 등록은 여전히 WORK_MANAGE다 —
+   * 그래서 목록 자체는 이동 가드(nav.ts)만으로 충분하고, 여기서는 '+ 등록' 버튼만 잠근다.
+   * WORK_MANAGE 보유자는 이미 목록에 온 것이므로 대개 통과하지만, 잠금을 붙이는 것은 권한이
+   * 방금 회수된 경우 때문이다 — 세션 재동기화가 끝나면 이 버튼이 스스로 잠긴다.
    */
   const canManage = useCan(CAPABILITY.WORK_MANAGE);
   const openCreate = () => router.push(ROUTES.operationNew);
