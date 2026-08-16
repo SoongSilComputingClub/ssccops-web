@@ -57,8 +57,8 @@ export function historyTypeOf(changeType: MemberHistoryChangeType): MemberHistor
  *
  * ── 이전 → 이후의 양쪽이 비는 자리가 있다 ────────────────────────
  * `previous*`는 가입 시점의 최초 부여와 **역할 부여**에서 null이고(그때는 아무것도 아니었다),
- * `new*`는 **역할 종료**에서 null이다(그 뒤로는 아무것도 아니다). 화면은 빈 쪽을 '신규'·'없음'
- * 같은 말로 지어내지 않고 그 사실 그대로 그린다.
+ * `new*`는 **역할 종료**에서 null이다(그 뒤로는 아무것도 아니다). 화면은 빈 쪽에 값을 지어
+ * 넣지 않고 "그 자리에 값이 없었다"는 뜻의 말로 그린다(views/member-history의 `NONE_LABEL`).
  *
  * ── 역할 줄은 변경자·사유가 언제나 null이다 ─────────────────────
  * `mbr_role_rel`에 변경자(`chnrg_mbr_id`)·사유 컬럼이 **없어서** 서버가 답할 근거를 갖고 있지

@@ -134,6 +134,39 @@ export function toMemberChangeErrorMessage(error: unknown): string {
 }
 
 /**
+ * 회원 변경 이력 조회 실패 → 이력 화면에 띄울 한 줄 (#51 · 서버 #82).
+ *
+ * ── 왜 조회용 문구(`toMemberErrorMessage`)를 그대로 쓰지 않는가 ───
+ * 두 문장이 이 화면에서 어긋난다. 하나는 403인데, 저쪽은 "회원 **명부**를 볼 권한이 없습니다"
+ * 라고 말한다 — 회원 한 명의 이력을 열려던 사람에게 명부 이야기를 하면 무엇이 막혔는지가
+ * 흐려진다(요구 권한은 `MEMBER_MANAGE`로 같다). 다른 하나는 400 `VALIDATION_FAILED`로,
+ * 이 API에서는 **`type` 값이 서버 어휘와 갈렸다**는 뜻뿐이다. 화면이 칩으로만 값을 만드므로
+ * 여기까지 왔다는 것은 화면이 낡았다는 신호이며, 사용자가 할 수 있는 일은 새로고침이다.
+ *
+ * 404는 이 함수로 오지 않는다 — 훅이 "없는 회원"을 오류가 아니라 별도 상태로 가른다
+ * (use-member-histories).
+ */
+export function toMemberHistoryErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "변경 이력을 불러오지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "변경 이력을 볼 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";
+    case MEMBER_ERROR.VALIDATION_FAILED:
+      return "이력 유형 값이 서버와 다릅니다 — 화면이 낡았을 수 있습니다. 새로고침해주세요";
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}
+
+/**
  * 회원 역할 조회·부여·종료 실패 → 역할 카드·시트에 띄울 한 줄 (#50 · 서버 #81).
  *
  * ── 왜 회원 문구를 그대로 쓰지 않는가 ────────────────────────────
