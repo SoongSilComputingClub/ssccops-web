@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ROUTES } from "@/shared/config/routes";
 import { safeNextPath } from "@/shared/lib/next-path";
+import { rememberOAuthNext } from "@/shared/lib/oauth-next";
 import { createClient } from "@/shared/lib/supabase/client";
 
 /*
@@ -53,11 +54,18 @@ export function LoginPage() {
     // 사용자가 리다이렉트되지 않거나 취소한 경우 버튼이 무한 잠금되는 현상 방지
     const timer = setTimeout(() => setPending(false), 8000);
 
+    /*
+     * 목적지는 redirectTo 쿼리가 아니라 쿠키로 넘긴다 — Supabase 화이트리스트는 쿼리까지
+     * 포함해 매칭하므로, 쿼리를 달면 등록해 둔 항목과 어긋나 Site URL로 폴백된다.
+     * 자세한 사정은 shared/lib/oauth-next.ts (ssccops#84).
+     */
     const next = safeNextPath(searchParams.get("next"), ROUTES.dashboard);
+    rememberOAuthNext(next);
+
     const { error: signInError } = await createClient().auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
