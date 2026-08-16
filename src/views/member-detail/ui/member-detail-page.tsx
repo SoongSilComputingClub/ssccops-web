@@ -9,21 +9,34 @@ import {
   MEMBER_CHANGE_WARNING,
   type MemberChange,
   type MemberChangeWarning,
+  type MemberRoleAssignment,
+  type MemberRoleRef,
 } from "@/entities/member";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
-import { GradeStatusSheet, useMemberDetail } from "@/features/member";
+import {
+  GradeStatusSheet,
+  RoleSheet,
+  useMemberDetail,
+  useMemberRoles,
+  type MemberRoles,
+} from "@/features/member";
 import { ROUTES } from "@/shared/config/routes";
+import { cn } from "@/shared/lib/cn";
+import { todayInSeoul } from "@/shared/lib/date";
 import {
   Badge,
   Button,
   Card,
   EmptyState,
+  Field,
   flash,
   PageBody,
   PageHeader,
   Pill,
   SectionLabel,
+  Sheet,
+  TextField,
 } from "@/shared/ui";
 
 /*
@@ -42,14 +55,24 @@ const NO_MEMBER_MANAGE =
   "회원 관리(MEMBER_MANAGE) 권한이 없어 회원 정보를 볼 수 없습니다 — 운영진에게 요청해주세요";
 
 /**
- * 아직 이 화면에서 열리지 않는 조작.
+ * 역할 카드의 조작이 잠긴 이유 (#50).
  *
- * 정보 수정은 #47(PATCH /v1/members/{memberId}), 등급·상태 변경은 #48(전용 변경 API)에서
- * 열렸다. 남은 역할 부여(#50)는 서버 호출이 아직 붙지 않았다 — 그때까지 버튼을 열어 두면 목
- * 스토어를 고치는 조작이 되는데, 그 목 회원은 이 화면이 보여 주는 서버 회원과 다른 사람이다.
- * 저장되지 않는 입력창을 열어 두지 않는다는 판단은 views/my-account 가 먼저 했다.
+ * ── 회원 상세와 역할 조작의 요구 권한이 다르다 ──────────────────
+ * 이 화면 자체는 `MEMBER_MANAGE`로 열리지만 역할 부여·종료는 **`ROLE_MANAGE`**를 요구한다
+ * (서버가 `MemberRoleAssignmentController` 클래스 전체에 걸었다 · VR-M12). 표준코드가
+ * `MEMBER_MANAGE`를 "회원 정보·등급·상태"로, `ROLE_MANAGE`를 인가 조작으로 갈라 놓았기
+ * 때문이다 — 회원 정보를 고칠 수 있다고 스스로에게 임원 역할을 붙일 수 있으면
+ * `MEMBER_MANAGE`가 사실상 최고 권한이 된다.
+ *
+ * 그래서 **여기까지 온 사람이 역할 카드에서는 막히는 조합이 정상적으로 존재한다.** 화면은 그
+ * 어긋남을 감추지 않고 버튼을 잠근 채 이유를 말한다(features/auth/model/use-can.ts의 "이동은
+ * 감추고 동작은 잠근다").
+ *
+ * 다만 **조회까지 함께 막히지는 않는다** — 현재 역할은 회원 상세 응답(`MEMBER_MANAGE`)에 이미
+ * 실려 오므로 그것으로 그린다. 지난 재임 이력만 `ROLE_MANAGE` 뒤에 있다.
  */
-const READ_ONLY_NOTE = "역할 부여는 역할 변경 API 연동 이후에 열립니다.";
+const NO_ROLE_MANAGE =
+  "역할을 다루려면 권한 관리(ROLE_MANAGE) 권한이 필요합니다 — 회원 관리 권한과는 별개입니다";
 
 export function MemberDetailPage({ mbrId }: { mbrId: number }) {
   const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
@@ -72,6 +95,13 @@ export function MemberDetailPage({ mbrId }: { mbrId: number }) {
 function MemberDetailView({ mbrId }: { mbrId: number }) {
   const router = useRouter();
   const { member, status, errorMessage, reload, apply } = useMemberDetail(mbrId);
+
+  /*
+   * 역할 조작은 회원 상세와 요구 권한이 다르다(NO_ROLE_MANAGE 주석). 배정 목록 조회부터
+   * ROLE_MANAGE 로 막혀 있어 권한이 없으면 **호출조차 하지 않는다** — 어차피 403이다.
+   */
+  const canManageRole = useCan(CAPABILITY.ROLE_MANAGE);
+  const roles = useMemberRoles(mbrId, { enabled: canManageRole });
 
   /** 어느 시트가 열려 있는가 — null이면 닫혀 있다 */
   const [sheet, setSheet] = useState<"grd" | "stts" | null>(null);
@@ -171,7 +201,6 @@ function MemberDetailView({ mbrId }: { mbrId: number }) {
                 <div className="text-[14px] text-n500">이메일</div>
                 <div>{member.email || "미입력"}</div>
               </div>
-              <div className="mt-4 text-[13px] text-n500">{READ_ONLY_NOTE}</div>
             </Card>
 
             {/*
@@ -215,29 +244,13 @@ function MemberDetailView({ mbrId }: { mbrId: number }) {
           </div>
 
           <div className="flex flex-col gap-4">
-            <Card>
-              <SectionLabel className="mb-3">현재 역할</SectionLabel>
-              {member.roles.length === 0 ? (
-                <EmptyState message="부여된 역할이 없습니다." padding="sm" />
-              ) : (
-                <div className="flex flex-col gap-[9px]">
-                  {/*
-                    현재(오늘이 효력 기간 안인) 역할만 실려 온다 — 기간 판정은 서버가 한다
-                    (BR-M25). 화면이 시작·종료일을 다시 견주지 않으므로 그 두 날짜는 응답에
-                    없고, 여기서도 보여 주지 않는다.
-                  */}
-                  {member.roles.map((role) => (
-                    <div
-                      key={role.roleId}
-                      className="flex items-center gap-2 rounded-[12px] border border-line p-3"
-                    >
-                      <div className="text-[16px] font-medium">{role.roleName}</div>
-                      {role.representative && <Pill tone="blue">대표</Pill>}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
+            <MemberRoleCard
+              memberId={member.memberId}
+              memberName={member.name}
+              fallbackRoles={member.roles}
+              canManage={canManageRole}
+              roles={roles}
+            />
 
             <Card>
               <SectionLabel className="mb-3">최근 변경이력</SectionLabel>
@@ -273,6 +286,317 @@ function MemberDetailView({ mbrId }: { mbrId: number }) {
         }}
       />
     </>
+  );
+}
+
+/**
+ * 역할 카드 (#50 · 서버 #81).
+ *
+ * ── 현재와 종료를 나눠 보여 준다 ────────────────────────────────
+ * **종료는 삭제가 아니다.** 서버에 `DELETE`가 없고 임기를 끝내는 길은 `roleEndYmd`를 채우는
+ * 것뿐이라, 지난 재임이 목록에 그대로 남는다 — 지우면 "언제까지 국장이었는가"가 사라진다.
+ * 두 묶음을 가르는 것은 `roleEndYmd`의 유무가 아니라 **서버가 준 `current`**다(BR-M25):
+ * 종료일이 미래로 채워진 배정(임기가 정해진 국장)은 아직 유효하고, 화면이 종료일만 보고
+ * 판단하면 그 사람이 지금 가진 권한과 배지가 갈린다.
+ *
+ * ── 조회는 열려 있고 조작만 잠긴다 ──────────────────────────────
+ * 요구 권한이 어긋나는 자리다(NO_ROLE_MANAGE 주석). `ROLE_MANAGE`가 없으면 배정 목록 API가
+ * 403이므로 **회원 상세 응답에 실려 온 현재 역할**(`fallbackRoles`)로 그린다 — 그것은
+ * `MEMBER_MANAGE`로 이미 받은 값이라 보여 주지 않을 이유가 없다. 그때 볼 수 없는 것은 지난
+ * 재임 이력뿐이고, 화면은 그 사실을 문장으로 남긴다(빈 목록으로 보이면 이력이 없는 것인지
+ * 못 보는 것인지 알 수 없다).
+ */
+function MemberRoleCard({
+  memberId,
+  memberName,
+  fallbackRoles,
+  canManage,
+  roles,
+}: {
+  memberId: number;
+  memberName: string;
+  /** 회원 상세 응답의 현재 역할 — ROLE_MANAGE 가 없을 때 그리는 값이다 */
+  fallbackRoles: MemberRoleRef[];
+  canManage: boolean;
+  roles: MemberRoles;
+}) {
+  const [assignOpen, setAssignOpen] = useState(false);
+  /** 종료 확인을 기다리는 배정 — null이면 확인 창이 닫혀 있다 */
+  const [ending, setEnding] = useState<MemberRoleAssignment | null>(null);
+
+  return (
+    <Card>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <SectionLabel>역할</SectionLabel>
+        {/*
+          잠그되 감추지 않는다 — 이 화면을 멀쩡히 보는 사람에게서 버튼만 사라지면 기능이
+          없어진 것인지 고장인지 알 수 없다. 잠긴 이유는 title 로 붙인다.
+        */}
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={!canManage || roles.status !== "ready"}
+          title={canManage ? undefined : NO_ROLE_MANAGE}
+          onClick={() => setAssignOpen(true)}
+        >
+          역할 부여
+        </Button>
+      </div>
+
+      {!canManage ? (
+        <>
+          {fallbackRoles.length === 0 ? (
+            <EmptyState message="부여된 역할이 없습니다." padding="sm" />
+          ) : (
+            <div className="flex flex-col gap-[9px]">
+              {fallbackRoles.map((role) => (
+                <div
+                  key={role.roleId}
+                  className="flex items-center gap-2 rounded-[12px] border border-line p-3"
+                >
+                  <div className="text-[16px] font-medium">{role.roleName}</div>
+                  {role.representative && <Pill tone="blue">대표</Pill>}
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="mt-3 text-[12.5px] text-n500">{NO_ROLE_MANAGE}</div>
+        </>
+      ) : roles.status === "loading" ? (
+        <div className="flex flex-col gap-[9px]">
+          <div className="h-[46px] animate-pulse rounded-[12px] bg-black/5" />
+          <div className="h-[46px] animate-pulse rounded-[12px] bg-black/5" />
+        </div>
+      ) : roles.status === "error" ? (
+        <EmptyState
+          message={roles.errorMessage || "역할을 불러오지 못했습니다."}
+          padding="sm"
+          action={{ label: "다시 시도", onClick: roles.reload }}
+        />
+      ) : (
+        <>
+          <div className="mb-[7px] text-[13px] text-n400">현재 역할</div>
+          {roles.current.length === 0 ? (
+            <EmptyState message="부여된 역할이 없습니다." padding="sm" />
+          ) : (
+            <div className="flex flex-col gap-[9px]">
+              {roles.current.map((assignment) => (
+                <AssignmentRow
+                  key={assignment.mbrRoleId}
+                  assignment={assignment}
+                  busy={roles.saving}
+                  onEnd={() => setEnding(assignment)}
+                  onRepresent={async () => {
+                    if (await roles.setRepresentative(assignment.mbrRoleId)) {
+                      flash(`${assignment.roleNm}을(를) 대표 역할로 지정했습니다`);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {roles.ended.length > 0 && (
+            <>
+              <div className="mt-5 mb-[7px] text-[13px] text-n400">
+                종료된 역할 · {roles.ended.length}건
+              </div>
+              <div className="flex flex-col gap-[9px]">
+                {roles.ended.map((assignment) => (
+                  <AssignmentRow key={assignment.mbrRoleId} assignment={assignment} ended />
+                ))}
+              </div>
+              <div className="mt-[7px] text-[12.5px] text-n500">
+                종료는 삭제가 아니라 종료일을 채우는 것이라 지난 재임이 그대로 남습니다
+              </div>
+            </>
+          )}
+
+          {/*
+            대표 지정 실패는 확인 창 없이 일어나므로 사유를 붙일 자리가 카드밖에 없다. 종료
+            실패는 확인 창 안에서 보여 주고(그쪽이 닫히기 전에 읽어야 한다) 여기는 비운다.
+          */}
+          {roles.saveErrorMessage && ending === null && !assignOpen && (
+            <div className="mt-3 rounded-[12px] border border-danger/40 bg-danger/5 px-3 py-[9px] text-[13.5px] text-danger">
+              {roles.saveErrorMessage}
+            </div>
+          )}
+        </>
+      )}
+
+      <RoleSheet
+        memberId={memberId}
+        memberName={memberName}
+        open={assignOpen}
+        roles={roles}
+        onClose={() => setAssignOpen(false)}
+        onAssigned={(assignment) => flash(`${assignment.roleNm} 역할을 부여했습니다`)}
+      />
+      <EndRoleSheet
+        assignment={ending}
+        roles={roles}
+        onClose={() => {
+          setEnding(null);
+          roles.clearSaveError();
+        }}
+      />
+    </Card>
+  );
+}
+
+/**
+ * 배정 한 줄.
+ *
+ * 시작·종료일을 함께 보여 준다. 회원 상세 응답의 현재 역할에는 이 두 날짜가 없어 예전 카드는
+ * 이름만 그렸는데, 종료된 배정까지 한 카드에 놓이면 **어느 임기인지가 날짜로만 구별된다** —
+ * 같은 역할을 두 번 맡은 사람의 줄 두 개는 그 밖에 다른 점이 없다.
+ *
+ * 종료된 줄에는 대표 배지를 달지 않는다. `rprsRoleYn`은 끝난 임기에도 값이 남아 있는데(서버가
+ * 지난 이력을 건드리지 않는다), 그것을 배지로 그리면 대표가 둘로 보인다 — 대표는 **유효한 것
+ * 중 최대 1건**이라는 규칙과 화면이 어긋난다.
+ */
+function AssignmentRow({
+  assignment,
+  ended,
+  busy,
+  onEnd,
+  onRepresent,
+}: {
+  assignment: MemberRoleAssignment;
+  ended?: boolean;
+  busy?: boolean;
+  onEnd?: () => void;
+  onRepresent?: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-[12px] border border-line p-3",
+        ended && "opacity-60",
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <div className="truncate text-[16px] font-medium">{assignment.roleNm}</div>
+          {/* 대표는 표시용이며 권한과 무관하다 (BR-M26 · 부여 시트가 그 문장을 갖는다) */}
+          {!ended && assignment.rprsRoleYn && <Pill tone="blue">대표</Pill>}
+          {ended && <Pill tone="outline">종료</Pill>}
+        </div>
+        <div className="mt-[2px] text-[12.5px] text-n500">
+          {assignment.roleBgngYmd} ~ {assignment.roleEndYmd ?? "무기한"}
+        </div>
+      </div>
+      {onRepresent && !assignment.rprsRoleYn && (
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={busy}
+          title="사이드바 프로필에 내걸 역할로 지정합니다 (권한과 무관)"
+          onClick={onRepresent}
+        >
+          대표 지정
+        </Button>
+      )}
+      {onEnd && (
+        <Button variant="ghost-danger" size="sm" disabled={busy} onClick={onEnd}>
+          종료
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 역할 종료 확인 (#50 · PATCH .../roles/{mbrRoleId}).
+ *
+ * ── 왜 확인 절차를 두는가 ───────────────────────────────────────
+ * **되돌리는 길이 이 API에 없다.** 서버의 PATCH는 부분 수정이라 종료일을 다시 비울 수 없고
+ * (JSON이 '필드 없음'과 'null'을 구별하지 못한다), 되살리려면 **다시 부여**해야 하는데 그러면
+ * 기간이 끊긴 두 건으로 남는다 — 한 줄이 두 줄이 되는 것을 눌러 놓고 알게 하면 안 된다.
+ * 게다가 이 조작은 그 사람이 지금 할 수 있는 일을 바로 줄인다(BR-M31 · 재로그인이 필요 없다).
+ *
+ * 종료일을 고를 수 있게 둔 것은 임기가 지난 뒤에 정리하는 경우가 정상이기 때문이다. 시작일보다
+ * 이른 날짜는 서버가 400으로 거절하므로 그 판정을 앞당겨 버튼을 잠근다 — **근거는 서버다.**
+ */
+function EndRoleSheet({
+  assignment,
+  roles,
+  onClose,
+}: {
+  /** null이면 닫혀 있다 */
+  assignment: MemberRoleAssignment | null;
+  roles: MemberRoles;
+  onClose: () => void;
+}) {
+  const [endDate, setEndDate] = useState("");
+
+  if (!assignment) return null;
+
+  /*
+   * 서버는 종료일을 생략하면 아무것도 하지 않으므로(부분 수정) 화면이 반드시 값을 보낸다.
+   * 기본값은 서울 기준 오늘이다 — 등급·상태 변경과 달리 "비워 두면 서버가 채운다"가 없다.
+   */
+  const value = endDate || todayInSeoul();
+  const beforeStart = value < assignment.roleBgngYmd;
+
+  const close = () => {
+    setEndDate("");
+    onClose();
+  };
+
+  const submit = async () => {
+    const result = await roles.endAssignment(assignment.mbrRoleId, value);
+    /* 실패하면 닫지 않는다 — 자기 잠금(409) 안내가 여기서 사라지면 다시 볼 길이 없다 */
+    if (!result) return;
+    flash(`${assignment.roleNm} 역할을 종료했습니다`);
+    close();
+  };
+
+  return (
+    <Sheet
+      open
+      title="역할 종료"
+      hint={`${assignment.roleNm} · ${assignment.roleBgngYmd}부터`}
+      onClose={close}
+      onOk={submit}
+      okLabel={roles.saving ? "종료 중…" : "종료"}
+      okDisabled={roles.saving || beforeStart}
+      okTitle={beforeStart ? "종료일은 시작일보다 이를 수 없습니다" : undefined}
+    >
+      <Field
+        label="종료일"
+        required
+        error={beforeStart ? "종료일은 시작일보다 이를 수 없습니다" : null}
+        className="mb-4"
+      >
+        <TextField
+          type="date"
+          value={value}
+          min={assignment.roleBgngYmd}
+          invalid={beforeStart}
+          onChange={(e) => {
+            setEndDate(e.target.value);
+            roles.clearSaveError();
+          }}
+        />
+      </Field>
+
+      <div className="rounded-[12px] border border-amber bg-amber-soft px-3 py-[10px] text-[13px] text-amber">
+        종료해도 <b>기록은 지워지지 않고</b> 지난 재임으로 남습니다. 다만 <b>되돌릴 수는
+        없어</b>, 다시 맡기려면 새로 부여해야 하고 그러면 기간이 끊긴 두 건이 됩니다.
+      </div>
+
+      {/*
+        자기 잠금(409 CANNOT_REVOKE_OWN_ROLE_MANAGE)이 여기로 온다 — 마지막 ROLE_MANAGE
+        보유자가 스스로를 잠그는 것을 서버가 막은 것이라, 실패가 아니라 방어라는 것이 문장에
+        있어야 한다(features/member/model/member-error.ts).
+      */}
+      {roles.saveErrorMessage && (
+        <div className="mt-4 rounded-[12px] border border-danger/40 bg-danger/5 px-3 py-[9px] text-[13.5px] text-danger">
+          {roles.saveErrorMessage}
+        </div>
+      )}
+    </Sheet>
   );
 }
 
