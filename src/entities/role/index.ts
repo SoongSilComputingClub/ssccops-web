@@ -1,5 +1,9 @@
-export type { Role, RoleClsf } from "./model/types";
-export { useRoleStore } from "./model/store";
+/*
+ * 역할 엔티티.
+ *
+ * 목 스토어(`model/store.ts`)와 시드(`api/get-role*.json`), 그리고 그것이 쓰던 시드 타입
+ * (`Role`·`RoleClsf`)은 #54에서 지웠다 — 역할 목록·수정·분류 관리는 전부 서버 계약 위에서 돈다.
+ */
 export {
   ROLE_CLASSIFICATION_ERROR,
   ROLE_CLSF_CD_PATTERN,
