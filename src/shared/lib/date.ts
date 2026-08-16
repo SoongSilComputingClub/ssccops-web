@@ -64,6 +64,41 @@ export function formatDt(value: string | null): string {
   return value.slice(0, 16).replace("T", " ");
 }
 
+/**
+ * UTC 순간(`Instant`) → 서비스 시간대의 "2026-08-12 19:00".
+ *
+ * **`formatDt`와 갈리는 자리는 값의 출처다.** 서버의 응답 대부분은 `OffsetDateTime`이라
+ * Asia/Seoul 오프셋이 붙은 문자열로 오고, 그때는 앞 16자를 그대로 잘라 쓰면 맞다. 그런데
+ * 변경 이력의 `createdAt`처럼 `Instant`로 내려오는 자리는 `"2026-08-12T10:00:00Z"`(UTC)라
+ * 같은 방식으로 자르면 **아홉 시간 어긋난 시각**이 화면에 뜬다 — 오전 10시에 남긴 이력이
+ * 새벽 1시로 보이는 식이라, 틀렸다는 것을 알아채기 전까지는 그냥 읽힌다.
+ *
+ * 브라우저의 로컬 시간대가 아니라 서비스 시간대로 옮기는 것은 `todayInSeoul`·
+ * `withServiceOffset`과 같은 판단이다 — 이력에 적힌 시각은 운영자들이 공유하는 하나의 사실이고,
+ * 해외에서 접속한 사람에게만 다른 시각으로 보이면 같은 이력을 두고 말이 갈린다.
+ *
+ * 오프셋이 없는 문자열(파싱 실패 포함)은 손대지 않고 `formatDt`와 같게 잘라 쓴다 — 시간대를
+ * 모르는 값에 아홉 시간을 더하면 없던 어긋남을 만든다.
+ */
+export function formatInstant(value: string | null): string {
+  if (!value) return "";
+  if (!HAS_OFFSET.test(value)) return formatDt(value);
+
+  const ms = Date.parse(value);
+  if (Number.isNaN(ms)) return formatDt(value);
+
+  // sv-SE 로케일이 "2026-08-12 19:00" 표기를 준다 (todayInSeoul 과 같은 이유)
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(ms));
+}
+
 /** 일시TS·일자D → "2026-08-12" */
 export function formatYmd(value: string | null): string {
   return value ? value.slice(0, 10) : "";

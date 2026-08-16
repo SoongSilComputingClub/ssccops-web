@@ -102,6 +102,24 @@ export type {
   MemberImportExecutionRow,
   MemberImportExecutionStatus,
 } from "./api/member-imports";
+
+/*
+ * 회원 변경 이력 통합 조회 (#51 · 서버 #82).
+ *
+ * 요구 권한은 회원 조회와 같은 `MEMBER_MANAGE`지만 응답의 nullable 자리가 상세의 '최근 변경'과
+ * 달라 타입을 따로 둔다 — 근거는 api/member-histories.ts 첫 주석.
+ */
+export {
+  fetchMemberHistories,
+  historyTypeOf,
+  MEMBER_HISTORY_TYPES,
+} from "./api/member-histories";
+export type {
+  MemberHistoryEntry,
+  MemberHistoryFilter,
+  MemberHistoryType,
+  MemberHistoryChangeType,
+} from "./api/member-histories";
 export type {
   AssignableMember,
   MemberSummary,
