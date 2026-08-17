@@ -16,6 +16,7 @@ import {
   type SignupFormValues,
   type SignupStatusCode,
 } from "@/features/auth";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { safeNextPath, withNextParam } from "@/shared/lib/next-path";
 import { Button, Card, Chip, Field, TextField, flash } from "@/shared/ui";
@@ -217,7 +218,7 @@ export function SignupPage() {
             </div>
           </div>
 
-          <Field label="회원_명" required error={errors.name}>
+          <Field label={FIELD_LABEL.memberName} required error={errors.name}>
             <TextField
               value={f.name}
               onChange={(e) => set({ name: e.target.value })}
@@ -233,7 +234,11 @@ export function SignupPage() {
               placeholder="필수 · 010-1234-5678"
             />
           </Field>
-          <Field label="학생_번호" required={isEnrolled} error={errors.studentNumber}>
+          <Field
+            label={FIELD_LABEL.studentNumber}
+            required={isEnrolled}
+            error={errors.studentNumber}
+          >
             <TextField
               value={f.studentNumber}
               onChange={(e) => set({ studentNumber: e.target.value })}
@@ -241,7 +246,11 @@ export function SignupPage() {
               placeholder={isEnrolled ? "필수 · 숫자만" : "선택 · 기억나는 경우"}
             />
           </Field>
-          <Field label="학과_명" required={isEnrolled} error={errors.departmentName}>
+          <Field
+            label={FIELD_LABEL.departmentName}
+            required={isEnrolled}
+            error={errors.departmentName}
+          >
             <TextField
               value={f.departmentName}
               onChange={(e) => set({ departmentName: e.target.value })}
@@ -250,7 +259,7 @@ export function SignupPage() {
             />
           </Field>
           {isEnrolled && (
-            <Field label="학년_번호" required error={errors.academicYear}>
+            <Field label={FIELD_LABEL.academicYear} required error={errors.academicYear}>
               <TextField
                 value={f.academicYear}
                 onChange={(e) => set({ academicYear: e.target.value })}
@@ -260,7 +269,7 @@ export function SignupPage() {
               />
             </Field>
           )}
-          <Field label="기수_번호" error={errors.generationNumber}>
+          <Field label={FIELD_LABEL.generationNumber} error={errors.generationNumber}>
             <TextField
               value={f.generationNumber}
               onChange={(e) => set({ generationNumber: e.target.value })}
@@ -272,8 +281,8 @@ export function SignupPage() {
         </div>
         <div className="mt-4 text-[13px] text-n500">
           {isEnrolled
-            ? "재학 회원은 기수_번호를 제외한 모든 항목이 필수입니다. 기수는 운영진이 배정합니다."
-            : "졸업 회원은 회원_명 · 전화번호만 필수입니다. 학번과 기수는 기억나지 않으면 비워두세요."}
+            ? "재학 회원은 기수를 제외한 모든 항목이 필수입니다. 기수는 운영진이 배정합니다."
+            : "졸업 회원은 회원명 · 전화번호만 필수입니다. 학번과 기수는 기억나지 않으면 비워두세요."}
         </div>
       </Card>
 

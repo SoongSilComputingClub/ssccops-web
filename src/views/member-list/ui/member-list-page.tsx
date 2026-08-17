@@ -12,6 +12,7 @@ import {
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useMemberCodes, useMembers } from "@/features/member";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import type { MbrGrdCd, MbrSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import {
@@ -133,7 +134,7 @@ function MemberListView() {
   const columns: GridColumn<MemberSummary>[] = [
     {
       key: "name",
-      header: "회원명",
+      header: FIELD_LABEL.memberName,
       width: "1.2fr",
       render: (m) => (
         <span className="flex items-center gap-[6px]">
@@ -153,13 +154,13 @@ function MemberListView() {
     },
     {
       key: "studentNumber",
-      header: "학생번호",
+      header: FIELD_LABEL.studentNumber,
       width: ".9fr",
       render: (m) => m.studentNumber || <span className="text-n500">학번 미확인</span>,
     },
     {
       key: "generationNumber",
-      header: "기수",
+      header: FIELD_LABEL.generationNumber,
       width: ".5fr",
       render: (m) => generationText(m.generationNumber),
     },

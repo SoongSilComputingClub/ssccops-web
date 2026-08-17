@@ -89,7 +89,7 @@ export function validateSignup(
   const errors: SignupFieldErrors = {};
   const academic = requiresAcademicInfo(statusCode);
 
-  if (!values.name.trim()) errors.name = "회원_명을 입력하세요";
+  if (!values.name.trim()) errors.name = "회원명을 입력하세요";
 
   const phoneNumber = values.phoneNumber.trim();
   if (!phoneNumber) {
@@ -100,25 +100,25 @@ export function validateSignup(
 
   const studentNumber = values.studentNumber.trim();
   if (!studentNumber) {
-    if (academic) errors.studentNumber = "학생_번호를 입력하세요";
+    if (academic) errors.studentNumber = "학번을 입력하세요";
   } else if (!STUDENT_NUMBER_PATTERN.test(studentNumber)) {
-    errors.studentNumber = "학생_번호는 숫자 8~10자리입니다";
+    errors.studentNumber = "학번은 숫자 8~10자리입니다";
   }
 
   if (academic && !values.departmentName.trim()) {
-    errors.departmentName = "학과_명을 입력하세요";
+    errors.departmentName = "학과를 입력하세요";
   }
 
   const academicYear = values.academicYear.trim();
   if (!academicYear) {
-    if (academic) errors.academicYear = "학년_번호를 입력하세요";
+    if (academic) errors.academicYear = "학년을 입력하세요";
   } else if (!DIGITS_ONLY.test(academicYear) || Number(academicYear) < 1 || Number(academicYear) > 4) {
-    errors.academicYear = "학년_번호는 1~4 사이의 숫자입니다";
+    errors.academicYear = "학년은 1~4 사이의 숫자입니다";
   }
 
   const generationNumber = values.generationNumber.trim();
   if (generationNumber && (!DIGITS_ONLY.test(generationNumber) || Number(generationNumber) < 1)) {
-    errors.generationNumber = "기수_번호는 1 이상의 숫자입니다";
+    errors.generationNumber = "기수는 1 이상의 숫자입니다";
   }
 
   return errors;

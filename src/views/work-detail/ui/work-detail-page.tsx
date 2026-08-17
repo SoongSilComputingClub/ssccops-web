@@ -11,6 +11,7 @@ import {
   WORK_STTS_NM,
   WORK_TYPE_NM,
 } from "@/shared/config/codes";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
 import {
@@ -117,7 +118,7 @@ export function WorkDetailPage({ workId }: { workId: number }) {
     },
     {
       key: "workStatus",
-      header: "업무_상태",
+      header: FIELD_LABEL.workStatus,
       width: ".8fr",
       render: (sw) => {
         const badge = subWorkBadge(sw);
@@ -192,12 +193,12 @@ export function WorkDetailPage({ workId }: { workId: number }) {
               labelWidth={88}
               items={[
                 {
-                  k: "운영_ID",
+                  k: FIELD_LABEL.operationId,
                   v: <span className="font-mono text-[13.5px]">{work.operationId}</span>,
                 },
-                { k: "운영_유형", v: OPER_TYPE_NM[work.operationType] },
-                { k: "운영_제목", v: work.title },
-                { k: "우선_순위", v: PRRTY_RNK_NM[work.priority] },
+                { k: FIELD_LABEL.operationType, v: OPER_TYPE_NM[work.operationType] },
+                { k: FIELD_LABEL.operationTitle, v: work.title },
+                { k: FIELD_LABEL.priority, v: PRRTY_RNK_NM[work.priority] },
                 { k: "담당자", v: work.owner?.name || "-" },
                 // 이관 데이터는 등록자가 없다 — 서버가 null로 내린다
                 { k: "등록자", v: work.registrant?.name || "-" },
@@ -213,13 +214,13 @@ export function WorkDetailPage({ workId }: { workId: number }) {
               labelWidth={88}
               items={[
                 {
-                  k: "업무_ID",
+                  k: FIELD_LABEL.workId,
                   v: <span className="font-mono text-[13.5px]">{work.workId}</span>,
                 },
-                { k: "업무_유형", v: WORK_TYPE_NM[work.workType] },
-                { k: "업무_상태", v: WORK_STTS_NM[work.workStatus] },
-                { k: "업무_진행_률", v: `${prgrs}%` },
-                { k: "총평_내용", v: work.generalReview || "-" },
+                { k: FIELD_LABEL.workType, v: WORK_TYPE_NM[work.workType] },
+                { k: FIELD_LABEL.workStatus, v: WORK_STTS_NM[work.workStatus] },
+                { k: FIELD_LABEL.progressRate, v: `${prgrs}%` },
+                { k: FIELD_LABEL.generalReview, v: work.generalReview || "-" },
               ]}
             />
           </Card>

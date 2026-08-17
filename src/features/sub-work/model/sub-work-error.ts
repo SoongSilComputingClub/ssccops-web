@@ -105,7 +105,7 @@ export function toSubWorkCreateErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return "하위 업무를 등록할 권한이 없습니다 — 운영진 권한(WORK_MANAGE)이 필요합니다";
     case SUB_WORK_ERROR.INVALID_CODE_VALUE:
-      return "우선_순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+      return "우선순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:

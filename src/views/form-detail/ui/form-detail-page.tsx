@@ -17,6 +17,7 @@ import {
   useFormStatus,
   type FormStatusChange,
 } from "@/features/form";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { isChoiceQitemType, QITEM_TYPE_NM } from "@/shared/config/codes";
 import { publicFormUrl, ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
@@ -245,12 +246,12 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 className="mt-4"
                 labelWidth={90}
                 items={[
-                  { k: "접수_시작_일시", v: formatDt(form.rcptBgngDt) || "미설정" },
-                  { k: "접수_종료_일시", v: formatDt(form.rcptEndDt) || "미설정" },
+                  { k: FIELD_LABEL.receiptStartAt, v: formatDt(form.rcptBgngDt) || "미설정" },
+                  { k: FIELD_LABEL.receiptEndAt, v: formatDt(form.rcptEndDt) || "미설정" },
                   // 서버가 mbr을 조인해 준 이름 — 회원 목록을 따로 뒤지지 않는다
-                  { k: "생성자_회원", v: form.creatr.mbrNm },
-                  { k: "생성_일시", v: formatYmd(form.crtDt) },
-                  { k: "수정_일시", v: formatYmd(form.mdfcnDt) },
+                  { k: FIELD_LABEL.creator, v: form.creatr.mbrNm },
+                  { k: FIELD_LABEL.createdAt, v: formatYmd(form.crtDt) },
+                  { k: FIELD_LABEL.updatedAt, v: formatYmd(form.mdfcnDt) },
                 ]}
               />
               {form.labels.length > 0 && (
@@ -321,7 +322,7 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 </Button>
               </div>
               <div className="mt-2 text-[13px] text-n500">
-                공개 링크는 폼_ID 기준으로 고정됩니다.
+                공개 링크는 폼 ID 기준으로 고정됩니다.
               </div>
             </Card>
 

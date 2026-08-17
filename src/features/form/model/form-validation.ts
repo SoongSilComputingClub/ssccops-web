@@ -61,7 +61,7 @@ export function validateFormDraft(
 
   /* ── 기본정보 ─────────────────────────────────────────────── */
 
-  const formTtlNm = draft.formTtlNm.trim() ? "" : "폼_제목_명을 입력해야 저장됩니다";
+  const formTtlNm = draft.formTtlNm.trim() ? "" : "폼 제목을 입력해야 저장됩니다";
 
   /*
    * 문자열 비교로 충분하다 — 둘 다 같은 형식(오프셋이 붙은 ISO-8601)으로만 들어온다.
@@ -70,7 +70,7 @@ export function validateFormDraft(
    */
   const rcptDt =
     draft.rcptBgngDt && draft.rcptEndDt && draft.rcptBgngDt > draft.rcptEndDt
-      ? "접수_종료_일시가 시작보다 빠릅니다"
+      ? "접수 종료 일시가 시작보다 빠릅니다"
       : "";
 
   /* ── 문항 구성 (서버 규칙과 1:1) ──────────────────────────── */

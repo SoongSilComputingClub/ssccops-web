@@ -22,6 +22,7 @@ import {
   workSttsStep,
   type AutzrRoleCd,
 } from "@/shared/config/codes";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { ddayText, formatDt, todayInSeoul } from "@/shared/lib/date";
 import {
@@ -294,14 +295,14 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
               className="mt-[10px] border-b border-black/8 pb-[14px]"
               items={[
                 {
-                  k: "운영_ID",
+                  k: FIELD_LABEL.operationId,
                   v: (
                     <span className="font-mono text-[13.5px]">{subWork.operationId}</span>
                   ),
                 },
-                { k: "운영_유형", v: OPER_TYPE_NM[subWork.operationType] },
-                { k: "운영_제목", v: subWork.title },
-                { k: "우선_순위", v: PRRTY_RNK_NM[subWork.priority] },
+                { k: FIELD_LABEL.operationType, v: OPER_TYPE_NM[subWork.operationType] },
+                { k: FIELD_LABEL.operationTitle, v: subWork.title },
+                { k: FIELD_LABEL.priority, v: PRRTY_RNK_NM[subWork.priority] },
                 { k: "담당자", v: subWork.owner?.name || "-" },
                 // 이관 데이터는 등록자가 없다 — 서버가 null로 내린다
                 { k: "등록자", v: subWork.registrant?.name || "-" },
@@ -325,10 +326,10 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
             <KeyValueGrid
               items={[
                 {
-                  k: "하위_업무_ID",
+                  k: FIELD_LABEL.subWorkId,
                   v: <span className="font-mono text-[13.5px]">{subWork.subWorkId}</span>,
                 },
-                { k: "하위_업무_유형", v: subWork.subWorkTypeName || "-" },
+                { k: FIELD_LABEL.subWorkType, v: subWork.subWorkTypeName || "-" },
                 {
                   k: "협업자",
                   /*
@@ -339,7 +340,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
                   v: subWork.collaborators.map((m) => m.name).join(", ") || "-",
                 },
                 {
-                  k: "마감_일시",
+                  k: FIELD_LABEL.dueAt,
                   v: (
                     <span className="flex items-center gap-2">
                       {formatDt(subWork.dueAt) || "-"}
@@ -349,11 +350,11 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
                     </span>
                   ),
                 },
-                { k: "업무_상태", v: WORK_STTS_NM[subWork.workStatus] },
-                { k: "승인_상태", v: APRV_STTS_NM[subWork.approvalStatus] },
-                { k: "업무_내용", v: subWork.content || "-" },
+                { k: FIELD_LABEL.workStatus, v: WORK_STTS_NM[subWork.workStatus] },
+                { k: FIELD_LABEL.approvalStatus, v: APRV_STTS_NM[subWork.approvalStatus] },
+                { k: FIELD_LABEL.workContent, v: subWork.content || "-" },
                 // 등록 화면에 입력란이 없어 지금은 늘 비어 있다 (서버 #70)
-                { k: "완료_기준_내용", v: subWork.completionCriteria || "-" },
+                { k: FIELD_LABEL.completionCriteria, v: subWork.completionCriteria || "-" },
               ]}
             />
             {subWork.externalLink && (

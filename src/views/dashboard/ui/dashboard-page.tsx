@@ -7,6 +7,7 @@ import { CAPABILITY } from "@/entities/session";
 import type { SubWorkListItem } from "@/entities/sub-work";
 import { useCan } from "@/features/auth";
 import { useDashboard } from "@/features/dashboard";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { WORK_STTS_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { daysUntil, ddayText, deadlineFlag, formatMd, todayInSeoul } from "@/shared/lib/date";
@@ -90,13 +91,13 @@ export function DashboardPage() {
     },
     {
       key: "dueAt",
-      header: "마감_일시",
+      header: FIELD_LABEL.dueAt,
       width: ".8fr",
       render: (item) => <span className="text-n400">{formatMd(item.dueAt) || "-"}</span>,
     },
     {
       key: "subWorkTypeName",
-      header: "하위_업무_유형",
+      header: FIELD_LABEL.subWorkType,
       width: ".9fr",
       render: (item) => <Badge tone="grey">{item.subWorkTypeName || "-"}</Badge>,
     },
@@ -118,7 +119,7 @@ export function DashboardPage() {
     },
     {
       key: "workStatus",
-      header: "업무_상태",
+      header: FIELD_LABEL.workStatus,
       width: ".7fr",
       render: (sw) => (
         <Badge tone={sw.workStatus === "DONE" ? "outline-accent" : "outline"}>
@@ -128,7 +129,7 @@ export function DashboardPage() {
     },
     {
       key: "dueAt",
-      header: "마감_일시",
+      header: FIELD_LABEL.dueAt,
       width: ".9fr",
       render: (sw) => {
         const flag = deadlineFlag(sw.dueAt, sw.isDelayed, today);

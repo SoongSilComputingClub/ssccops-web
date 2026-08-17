@@ -23,6 +23,7 @@ import {
   WORK_TYPE_NM,
   type PrcsSeCd,
 } from "@/shared/config/codes";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
 import {
@@ -150,7 +151,7 @@ function AgendaCard({
     <div className="rounded-[12px] border border-line p-[14px]">
       <div className="flex items-center gap-2">
         <div className="text-[15px] font-semibold">안건 {agenda.agendaOrder ?? "-"}</div>
-        <span className="font-mono text-[12px] text-n500">회의_상세 #{agenda.agendaId}</span>
+        <span className="font-mono text-[12px] text-n500">안건 #{agenda.agendaId}</span>
         <div className="flex-1" />
         <span className="text-[12.5px] text-n500">제출 {agenda.submitter?.name || "-"}</span>
         {editable && withdrawable && (
@@ -206,7 +207,7 @@ function AgendaCard({
         </Badge>
       </div>
       <div className="mt-3">
-        <div className="mb-[6px] text-[13.5px] text-n400">안건_내용</div>
+        <div className="mb-[6px] text-[13.5px] text-n400">{FIELD_LABEL.agendaContent}</div>
         <TextArea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -215,7 +216,7 @@ function AgendaCard({
         />
       </div>
       <div className="mt-3">
-        <div className="mb-[6px] text-[13.5px] text-n400">결과_내용</div>
+        <div className="mb-[6px] text-[13.5px] text-n400">{FIELD_LABEL.agendaResult}</div>
         <TextField
           value={resultContent}
           onChange={(e) => setResultContent(e.target.value)}
@@ -410,7 +411,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                 {meeting.meetingStatus ? MTG_STTS_NM[meeting.meetingStatus] : "-"}
               </Badge>
               <span className="rounded-[6px] bg-bg px-[7px] py-[2px] font-mono text-[12.5px] text-n400">
-                운영_ID · {meeting.operationId}
+                {FIELD_LABEL.operationId} · {meeting.operationId}
               </span>
               <div className="flex-1" />
               {isChair && chairAction && (
@@ -441,13 +442,13 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
               labelWidth={88}
               items={[
                 {
-                  k: "운영_ID",
+                  k: FIELD_LABEL.operationId,
                   v: <span className="font-mono text-[13.5px]">{meeting.operationId}</span>,
                 },
-                { k: "운영_유형", v: OPER_TYPE_NM[meeting.operationType] },
-                { k: "운영_제목", v: meeting.title },
-                { k: "시작_일시", v: formatDt(meeting.startAt) || "-" },
-                { k: "우선_순위", v: PRRTY_RNK_NM[meeting.priority] },
+                { k: FIELD_LABEL.operationType, v: OPER_TYPE_NM[meeting.operationType] },
+                { k: FIELD_LABEL.operationTitle, v: meeting.title },
+                { k: FIELD_LABEL.startAt, v: formatDt(meeting.startAt) || "-" },
+                { k: FIELD_LABEL.priority, v: PRRTY_RNK_NM[meeting.priority] },
                 { k: "담당자", v: meeting.personInCharge?.name || "-" },
               ]}
             />
@@ -457,21 +458,21 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
               labelWidth={88}
               items={[
                 {
-                  k: "회의_ID",
+                  k: FIELD_LABEL.meetingId,
                   v: <span className="font-mono text-[13.5px]">{meeting.meetingId}</span>,
                 },
                 {
-                  k: "회의_구분",
+                  k: FIELD_LABEL.meetingCategory,
                   v: meeting.meetingCategory ? MTG_SE_NM[meeting.meetingCategory] : "-",
                 },
-                { k: "회의_장소_명", v: meeting.location ?? "-" },
-                { k: "회의_책임자", v: meeting.personInCharge?.name || "-" },
+                { k: FIELD_LABEL.meetingPlace, v: meeting.location ?? "-" },
+                { k: FIELD_LABEL.meetingOwner, v: meeting.personInCharge?.name || "-" },
                 {
-                  k: "참석_대상",
+                  k: FIELD_LABEL.attendeeTarget,
                   v: meeting.attendeeScope ? ATND_TRGT_NM[meeting.attendeeScope] : "-",
                 },
-                { k: "내부_회의_상세", v: meeting.internalDetail ?? "-" },
-                { k: "외부_회의_상세", v: meeting.externalSummary ?? "-" },
+                { k: FIELD_LABEL.internalMeetingDetail, v: meeting.internalDetail ?? "-" },
+                { k: FIELD_LABEL.externalMeetingSummary, v: meeting.externalSummary ?? "-" },
               ]}
             />
           </Card>
@@ -586,7 +587,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                 <TextArea
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  placeholder="안건_내용 (선택)"
+                  placeholder={`${FIELD_LABEL.agendaContent} (선택)`}
                   className="mt-3"
                 />
                 <Button

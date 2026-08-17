@@ -5,6 +5,7 @@ import { generationText, mbrGrdTone, mbrSttsTone } from "@/entities/member";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useMemberEdit } from "@/features/member";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import {
   Badge,
@@ -120,7 +121,7 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
           <Card>
             <SectionLabel className="mb-3">기본정보</SectionLabel>
             <div className="grid grid-cols-2 gap-[14px]">
-              <Field label="회원_명" required error={errors.name}>
+              <Field label={FIELD_LABEL.memberName} required error={errors.name}>
                 <TextField
                   value={values.name}
                   onChange={(e) => editor.set({ name: e.target.value })}
@@ -128,7 +129,7 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
                   placeholder="필수"
                 />
               </Field>
-              <Field label="기수_번호" error={errors.generationNumber}>
+              <Field label={FIELD_LABEL.generationNumber} error={errors.generationNumber}>
                 <TextField
                   value={values.generationNumber}
                   onChange={(e) => editor.set({ generationNumber: e.target.value })}
@@ -138,7 +139,7 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
                 />
               </Field>
               <Field
-                label="학과_명"
+                label={FIELD_LABEL.departmentName}
                 required={academicRequired}
                 error={errors.departmentName}
               >
@@ -150,7 +151,7 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
                 />
               </Field>
               <Field
-                label="학년_번호"
+                label={FIELD_LABEL.academicYear}
                 required={academicRequired}
                 error={errors.academicYear}
               >
@@ -182,8 +183,8 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
 
             <div className="mt-4 text-[13px] leading-[1.6] text-n500">
               {academicRequired
-                ? "재학 회원은 학과_명 · 학년_번호가 필수입니다. "
-                : "학과_명 · 학년_번호는 선택입니다. "}
+                ? "재학 회원은 학과 · 학년이 필수입니다. "
+                : "학과 · 학년은 선택입니다. "}
               비워 둔 칸은 저장할 때 <b>지워집니다</b> — 이 화면은 여섯 항목을 통째로 저장합니다.
             </div>
 

@@ -15,6 +15,7 @@ import {
   TextField,
   flash,
 } from "@/shared/ui";
+import { FIELD_LABEL } from "@/shared/config/labels";
 
 /*
  * 내 계정 — 서버 세션(GET /v1/auth/session)의 회원 정보를 보여 주고, 본인이 고칠 수 있는
@@ -91,7 +92,7 @@ export function MyAccountPage() {
             {editor.editing ? (
               <>
                 <div className="grid grid-cols-2 gap-[14px]">
-                  <Field label="회원_명" required error={errors.name}>
+                  <Field label={FIELD_LABEL.memberName} required error={errors.name}>
                     <TextField
                       value={values.name}
                       onChange={(e) => editor.set({ name: e.target.value })}
@@ -108,7 +109,7 @@ export function MyAccountPage() {
                     />
                   </Field>
                   <Field
-                    label="학과_명"
+                    label={FIELD_LABEL.departmentName}
                     required={academicRequired}
                     error={errors.departmentName}
                   >
@@ -120,7 +121,7 @@ export function MyAccountPage() {
                     />
                   </Field>
                   <Field
-                    label="학년_번호"
+                    label={FIELD_LABEL.academicYear}
                     required={academicRequired}
                     error={errors.academicYear}
                   >
@@ -134,7 +135,7 @@ export function MyAccountPage() {
                   </Field>
 
                   {/* 학번과 이메일은 고칠 수 없다 — 이유는 각 칸 아래 한 줄로 적는다 */}
-                  <Field label="학생_번호">
+                  <Field label={FIELD_LABEL.studentNumber}>
                     <div className="rounded-[12px] bg-bg px-[11px] py-[9px] text-[15.5px] text-n300">
                       {member.studentNumber || "미입력"}
                     </div>
@@ -155,8 +156,8 @@ export function MyAccountPage() {
 
                 <div className="mt-4 text-[13px] leading-[1.6] text-n500">
                   {academicRequired
-                    ? "재학 회원은 학과_명 · 학년_번호가 필수입니다. "
-                    : "학과_명 · 학년_번호는 선택입니다. "}
+                    ? "재학 회원은 학과 · 학년이 필수입니다. "
+                    : "학과 · 학년은 선택입니다. "}
                   비워 둔 칸은 저장할 때 <b>지워집니다</b> — 네 항목을 통째로 저장합니다.
                 </div>
 
@@ -184,19 +185,19 @@ export function MyAccountPage() {
               <>
                 <KeyValueGrid
                   items={[
-                    { k: "회원_명", v: member.name },
-                    { k: "학생_번호", v: member.studentNumber || "미입력" },
+                    { k: FIELD_LABEL.memberName, v: member.name },
+                    { k: FIELD_LABEL.studentNumber, v: member.studentNumber || "미입력" },
                     {
-                      k: "학년_번호",
+                      k: FIELD_LABEL.academicYear,
                       v: member.academicYear ? `${member.academicYear}학년` : "미입력",
                     },
-                    { k: "학과_명", v: member.departmentName || "미입력" },
+                    { k: FIELD_LABEL.departmentName, v: member.departmentName || "미입력" },
                     { k: "전화번호", v: member.phoneNumber || "미입력" },
                     { k: "이메일", v: member.email || "미입력" },
                   ]}
                 />
                 <div className="mt-4 text-[13px] leading-[1.6] text-n500">
-                  회원_명 · 학과_명 · 학년_번호 · 전화번호를 직접 고칠 수 있습니다. 이메일은
+                  회원명 · 학과 · 학년 · 전화번호를 직접 고칠 수 있습니다. 이메일은
                   로그인에 쓰는 소셜 계정에서 가져온 값이라 여기서 바꾸지 않습니다.
                 </div>
               </>
@@ -208,11 +209,11 @@ export function MyAccountPage() {
             <KeyValueGrid
               items={[
                 {
-                  k: "기수_번호",
+                  k: FIELD_LABEL.generationNumber,
                   v: genText === "미배정" ? "미배정 · 운영진이 배정합니다" : genText,
                 },
                 {
-                  k: "회원_등급",
+                  k: FIELD_LABEL.membershipGrade,
                   v: (
                     <Badge tone={mbrGrdTone(member.membershipGradeCode)}>
                       {member.membershipGradeName}
@@ -220,7 +221,7 @@ export function MyAccountPage() {
                   ),
                 },
                 {
-                  k: "회원_상태",
+                  k: FIELD_LABEL.membershipStatus,
                   v: (
                     <Badge tone={mbrSttsTone(member.membershipStatusCode)}>
                       {member.membershipStatusName}
@@ -231,7 +232,7 @@ export function MyAccountPage() {
                   // 대표 역할 하나가 아니라 지금 유효한 역할 전부를 보여준다 — 권한은
                   // 그 전부를 합쳐서 계산되므로(AuthorityPolicy) 대표 하나만 보이면 실제로
                   // 뭘 할 수 있는지를 이 화면만 보고는 알 수 없다
-                  k: "현재_역할",
+                  k: FIELD_LABEL.currentRoles,
                   v:
                     member.roles.length === 0 ? (
                       "없음"
@@ -246,7 +247,7 @@ export function MyAccountPage() {
                       </div>
                     ),
                 },
-                { k: "가입_일자", v: member.joinDate },
+                { k: FIELD_LABEL.joinDate, v: member.joinDate },
               ]}
             />
           </Card>
