@@ -6,11 +6,12 @@ import type {
   SubWorkChecklistItem,
   SubWorkDetail,
   SubWorkTransition,
+  VoteChoice,
 } from "@/entities/sub-work";
 import { REJECT_REASON_MAX_LENGTH } from "@/entities/sub-work";
 import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
-import { RejectSheet } from "@/features/approval";
+import { RejectSheet, useApprovalDecisions } from "@/features/approval";
 import { useSubWorkActions, useSubWorkDetail } from "@/features/sub-work";
 import {
   APRV_STTS_NM,
@@ -51,6 +52,13 @@ import {
  * 그 한 번으로 두 단계를 건너뛸 수는 없다 — 두 요청을 이어 보내면 앞만 성공한 채 끊겼을 때
  * 사용자가 누른 적 없는 '진행' 상태로 남는다. 그래서 기획에서는 `착수`를 보여 주고, 화면
  * 위쪽의 스테퍼가 가리키는 단계와 버튼이 언제나 같은 것을 말하게 했다.
+ *
+ * ── 정족수 투표는 이 화면에서 한다 (ssccops-web#82) ──────────────
+ * 원래 찬반 버튼은 승인함(OPS-017)에만 있었는데, 그 화면은 서버가 WORK_MANAGE 로 잠근 반면
+ * 투표 자격(ApprovalAuthorityPolicy.requireStaff)은 그보다 넓어 국원은 자격만 갖고 투표할
+ * 화면이 없었다. 승인함을 여는 대신(그 좁힘은 서버 #101 의 의도다) 투표를 하위 업무 상세로
+ * 옮겨 푼다. 두 화면의 버튼은 같은 훅(useApprovalDecisions)을 쓴다 — 판정도 오류 문구도
+ * 두 벌이 되지 않게 한다.
  *
  * ── 권한과 선행 조건을 나눠서 본다 ───────────────────────────────
  * `canApprove`·`canReject`는 **권한만** 답한다(서버 #58). 버튼을 그릴지는 이 값으로 정하고,
@@ -104,6 +112,11 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
   const { subWork, status, errorMessage, reload, applyChecklistUpdate } =
     useSubWorkDetail(subWorkId);
   const { pending, transition, setChecklistItem } = useSubWorkActions(subWorkId);
+  /*
+   * 투표는 승인함 카드와 같은 훅을 쓴다 — 이 화면은 대상이 하나뿐이라 pendingSubWorkId 가
+   * 사실상 불리언이지만, 호출·오류 문구·403 세션 동기화가 한 곳에 모여 있는 값이 더 크다.
+   */
+  const { pendingSubWorkId, vote } = useApprovalDecisions();
   const [rejectOpen, setRejectOpen] = useState(false);
   const sessionMember = useSessionStore((s) => s.member);
   /* 기본 정보 수정도 WORK_MANAGE 다 (서버 SubWorkController 클래스 애노테이션) */
@@ -141,12 +154,36 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
   const isDone = subWork.workStatus === "DONE";
 
   /*
+   * 지금 표를 던질 수 있는 건인가 — 서버 SubWorkEntity.requireVotable 과 같은 세 조건이다
+   * (정족수 유형 · 검토 단계 · 승인 대기). **자격은 여기서 보지 않는다**: 상세 응답에 canVote
+   * 가 없고, 역할로 되짚는 판정을 웹이 다시 구현하지 않는 것이 #29 의 규칙이다. 운영진이
+   * 아닌 회원이 눌렀을 때의 403 은 훅이 "투표할 수 있는 운영진 권한이 없습니다"로 옮긴다.
+   */
+  const votable =
+    subWork.quorum.needed &&
+    isReview &&
+    (subWork.approvalStatus === "PENDING" ||
+      subWork.approvalStatus === "REAPPROVAL_REQUIRED");
+  const votePending = pendingSubWorkId === subWork.subWorkId;
+
+  /*
    * 전이 뒤에는 상세를 통째로 다시 부른다. 전이 응답에는 업무_상태·승인_상태밖에 없는데
    * 화면은 직전 반려 사유·완료 일시·지연 여부·정족수까지 함께 그리기 때문이다 — 응답만으로
    * 부분 갱신하면 반려 직후 화면에 이전 반려 사유가 그대로 남는다.
    */
   const runTransition = async (action: SubWorkTransition, reason?: string) => {
     const { result, message } = await transition(action, reason ?? null);
+    if (message) flash(message);
+    if (result) reload();
+  };
+
+  /*
+   * 투표 뒤에도 상세를 다시 부른다. 투표 응답에는 이번 회차의 집계만 있는데 화면은 그 값으로
+   * 완료 승인 버튼의 잠금(정족수 충족)까지 다시 그려야 하기 때문이다 — 승인함이 표를 던진 뒤
+   * 목록을 다시 부르는 것과 같은 이유다.
+   */
+  const runVote = async (choice: VoteChoice) => {
+    const { result, message } = await vote(subWork.subWorkId, choice);
     if (message) flash(message);
     if (result) reload();
   };
@@ -276,14 +313,54 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
           </div>
 
           {/*
-           * 정족수는 완료 승인의 선행 조건이라 여기서 진행을 보여 준다. **찬반 버튼은 두지 않는다** —
-           * 투표(OPS-015)는 승인함 화면의 동작이고, 이 화면의 시안에도 그 버튼이 없다.
+           * 정족수는 완료 승인의 선행 조건이라 진행을 보여 주고, 검토 단계에서는 여기서 표를
+           * 던진다(OPS-015 · ssccops-web#82). 승인함으로 안내하던 문구를 지운 것은 그 화면이
+           * WORK_MANAGE 로 잠겨 있어 투표 자격만 있는 국원이 따라갈 수 없기 때문이다.
            */}
           {subWork.quorum.needed && !isDone && (
-            <div className="mt-2 text-center text-[13.5px] text-n400">
-              정족수 {subWork.quorum.currentCount ?? 0}/{subWork.quorum.requiredCount ?? 0}{" "}
-              동의
-              {subWork.quorum.met !== true && " · 승인함에서 찬성 표를 받아야 합니다"}
+            <div className="mt-2 flex flex-col items-center gap-2">
+              <div className="text-center text-[13.5px] text-n400">
+                정족수 {subWork.quorum.currentCount ?? 0}/{subWork.quorum.requiredCount ?? 0}{" "}
+                동의
+                {subWork.quorum.met !== true && " · 운영진 동의 표가 더 필요합니다"}
+              </div>
+
+              {votable && (
+                <>
+                  <div className="flex items-center gap-[9px]">
+                    {/* 이미 던진 표는 버튼 모양으로만 드러낸다 — 다시 누르면 서버가 바꿔 준다(1인 1표) */}
+                    <Button
+                      variant={subWork.myVote === "AGREE" ? "primary" : "ghost"}
+                      size="sm"
+                      disabled={votePending}
+                      onClick={() => void runVote("AGREE")}
+                    >
+                      동의
+                    </Button>
+                    <Button
+                      variant="ghost-danger"
+                      size="sm"
+                      disabled={votePending}
+                      className={
+                        subWork.myVote === "DISAGREE"
+                          ? "border-danger bg-danger/10 text-danger"
+                          : undefined
+                      }
+                      onClick={() => void runVote("DISAGREE")}
+                    >
+                      부동의
+                    </Button>
+                  </div>
+                  {/*
+                   * 정족수는 승인자를 **대체하지 않는다** — 표가 다 모여도 완료는 승인자가
+                   * 누르고, 승인자라도 정족수 전에는 누를 수 없다. 두 조건이 함께 걸린다는
+                   * 것을 여기서 말해 두지 않으면 표를 다 모은 뒤 화면이 멈춘 것처럼 보인다.
+                   */}
+                  <div className="text-center text-[12.5px] text-n400">
+                    동의가 다 모여도 완료 전환은 승인자가 눌러야 합니다.
+                  </div>
+                </>
+              )}
             </div>
           )}
         </Card>

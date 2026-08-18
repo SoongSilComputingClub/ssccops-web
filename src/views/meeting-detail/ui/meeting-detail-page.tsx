@@ -247,6 +247,14 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
   const [cancelOpen, setCancelOpen] = useState(false);
   const sessionMember = useSessionStore((s) => s.member);
   const canManage = useCan(CAPABILITY.MEETING_MANAGE);
+  /*
+   * 안건 쓰기는 회의 관리와 **다른 권한이다** (서버 #101 · ssccops-web#82). 서버는
+   * POST·PATCH·DELETE /v1/meetings/{id}/agendas 에 MEETING_AGENDA_WRITE 를 요구하고, 그 권한을
+   * 국원 역할에도 준 것은 "국원은 회의를 열거나 닫지는 못해도 안건은 작성할 수 있어야 한다"는
+   * 뜻이었다. 안건 UI 를 MEETING_MANAGE 로 잠가 두면 서버가 허용하는 일을 화면에서 할 수 없다 —
+   * 개회·종료·취소(상태 전이)만 canManage 로 남긴다.
+   */
+  const canWriteAgenda = useCan(CAPABILITY.MEETING_AGENDA_WRITE);
 
   /*
    * 안건으로 연결할 업무·하위 업무 후보. 목록 API(OPS-008·OPS-020)는 카드에 필요한 값만
@@ -488,7 +496,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                     <AgendaCard
                       key={a.agendaId}
                       agenda={a}
-                      editable={isEditable && canManage}
+                      editable={isEditable && canWriteAgenda}
                       pending={pending}
                       withdrawable={isWithdrawable}
                       onUpdate={(content, resultContent, cd) =>
@@ -501,7 +509,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
               )}
             </Card>
 
-            {isEditable && canManage && (
+            {isEditable && canWriteAgenda && (
               <div className="rounded-2xl border border-dashed border-line-strong bg-surface p-[18px]">
                 <div className="text-[16px] font-medium">안건 추가</div>
                 <div className="mt-1 text-[13.5px] text-n500">
