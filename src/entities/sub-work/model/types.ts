@@ -181,6 +181,12 @@ export interface SubWorkDetail {
   checklist: SubWorkChecklistItem[];
   checklistSummary: SubWorkChecklistSummary;
   quorum: SubWorkQuorum;
+  /**
+   * **이번 회차**의 내 표 (OPS-009 myVote). 아직 던지지 않았으면 null이고, 정족수 유형이
+   * 아니면 서버가 늘 null로 내린다. 반려 후 재상정되면 회차가 바뀌어 다시 null이 된다 —
+   * 이전 회차의 표를 이번 회차의 선택 상태로 그리지 않기 위해서다(승인함 카드와 같은 값).
+   */
+  myVote: VoteChoice | null;
   latestRejection: SubWorkRejection | null;
   /**
    * **권한만** 답한다 — "이 회원이 승인자인가"이지 "지금 누르면 성공하는가"가 아니다.

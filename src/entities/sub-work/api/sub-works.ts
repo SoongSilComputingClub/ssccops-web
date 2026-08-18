@@ -385,7 +385,12 @@ interface SubWorkDetailResponse {
   checklist: ChecklistItemResponse[] | null;
   checklistSummary: ChecklistSummaryResponse | null;
   quorum: QuorumResponse | null;
-  /* myVote는 받지 않는다 — 이 화면에 찬반 버튼이 없다(승인함 OPS-015의 몫) */
+  /*
+   * 이번 회차의 내 표. 상세 화면에서도 투표하므로 받는다(ssccops-web#82) — 승인함은
+   * WORK_MANAGE로 잠겨 있는데 투표 자격(운영진)은 그보다 넓어, 국원은 그 화면에 들어가지
+   * 못한 채 자격만 갖고 있었다.
+   */
+  myVote: VoteChoice | null;
   latestRejection: RejectionResponse | null;
   canApprove: boolean | null;
   canReject: boolean | null;
@@ -506,6 +511,8 @@ function toSubWorkDetail(res: SubWorkDetailResponse): SubWorkDetail {
     checklist,
     checklistSummary: toChecklistSummary(res.checklistSummary),
     quorum: toQuorum(res.quorum),
+    // 정족수 유형이 아니면 서버가 null로 내린다 — 그때는 화면에 찬반 버튼 자체가 없다
+    myVote: res.myVote ?? null,
     latestRejection: toRejection(res.latestRejection),
     /*
      * 권한 값이 빠진 응답을 '가능'으로 읽지 않는다. 버튼을 그렸다가 누를 때 403을 받는 것보다
