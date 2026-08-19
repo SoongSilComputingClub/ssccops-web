@@ -145,7 +145,8 @@ export function RoleLabelsPage() {
             onChange={(v) => {
               if (v === "역할 목록") router.push(ROUTES.roles);
             }}
-            className="w-[400px]"
+            /* 400px 고정은 375px 화면을 넘겨 페이지 전체가 가로로 밀린다 (역할 목록과 같은 탭) */
+            className="w-full max-w-[400px] lg:w-[400px]"
           />
         </div>
 
