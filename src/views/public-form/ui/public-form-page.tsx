@@ -296,14 +296,14 @@ function QitemCard({
           value={text}
           onChange={(e) => onChange(e.target.value)}
           placeholder="자유롭게 작성해주세요"
-          className="mt-3 min-h-[104px] w-full resize-y rounded-[12px] border border-line px-[11px] py-[9px] text-[15.5px] outline-none placeholder:text-n500 focus:border-accent"
+          className="mt-3 min-h-[104px] w-full resize-y rounded-[12px] border border-line px-[11px] py-[9px] text-[16px] outline-none placeholder:text-n500 focus:border-accent lg:text-[15.5px]"
         />
       ) : qitem.qitemTypeCd === "SHORT_TEXT" || qitem.qitemTypeCd === "DATE" ? (
         <input
           type={qitem.qitemTypeCd === "DATE" ? "date" : "text"}
           value={text}
           onChange={(e) => onChange(e.target.value)}
-          className="mt-3 w-full rounded-[12px] border border-line px-[11px] py-[9px] text-[15.5px] outline-none placeholder:text-n500 focus:border-accent"
+          className="mt-3 w-full rounded-[12px] border border-line px-[11px] py-[9px] text-[16px] outline-none placeholder:text-n500 focus:border-accent lg:text-[15.5px]"
         />
       ) : (
         <div className="mt-3 flex flex-col gap-1">
