@@ -61,11 +61,13 @@ export function ResultStep({ wizard }: { wizard: MemberImportWizard }) {
   return (
     <div className="flex flex-col gap-4">
       <Card>
-        <div className="flex items-baseline gap-1">
+        <div className="flex flex-wrap items-baseline gap-1">
           <div className="text-[40px] font-medium text-accent">{summary.createdCount}</div>
           <div className="text-[16px]">명이 새 회원으로 등록되었습니다</div>
         </div>
-        <div className="mt-4 grid grid-cols-4 gap-3">
+        {/* 4칸을 375px에 늘어놓으면 한 칸이 70px이라 '건너뜀 (중복)' 같은 라벨이
+            글자마다 끊긴다 — 좁은 화면에서는 2×2로 접고 lg 부터 예전 배치다 */}
+        <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatBox label="전체 행" value={summary.totalCount} />
           <StatBox label="등록" value={summary.createdCount} tone="accent" />
           <StatBox label="건너뜀 (중복)" value={summary.skippedCount} />
@@ -103,8 +105,13 @@ export function ResultStep({ wizard }: { wizard: MemberImportWizard }) {
           행 번호는 원본 CSV의 줄 번호입니다 (헤더가 1행).
         </div>
 
-        <div className="max-h-[420px] overflow-y-auto">
-          <div className="grid grid-cols-[90px_1fr_110px_1.2fr]">
+        {/*
+          행별 결과도 가로로만 밀리게 둔다 (#96) — 행 번호·대상·결과·비고가 한 줄로 붙어야
+          "어느 줄이 어떻게 됐는지"가 되고, 이 응답은 되돌릴 수도 다시 받을 수도 없어
+          읽는 순간의 정확함이 중요하다. 전량이 필요하면 CSV 내려받기가 따로 있다.
+        */}
+        <div className="max-h-[420px] overflow-x-auto overflow-y-auto">
+          <div className="grid min-w-[560px] grid-cols-[90px_1fr_110px_1.2fr] lg:min-w-0">
             {["행", "대상", "결과", "비고"].map((h) => (
               <div
                 key={h}

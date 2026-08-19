@@ -186,7 +186,12 @@ function AuthorityTreeAdminView() {
         )}
 
         {admin.status === "ready" && (
-          <div className="grid grid-cols-[1.25fr_1fr] items-start gap-4">
+          /*
+           * 좁은 화면에서는 1열로 쌓는다 — 트리가 위, 고른 권한의 편집 폼이 아래다.
+           * 트리에서 무엇을 골랐는지는 배경색으로 드러나므로 폼이 아래로 내려가도
+           * 대상이 흐려지지 않는다. 펼침 계산은 서버 규칙 그대로이고 여기서 손대지 않는다.
+           */
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.25fr_1fr]">
             <AuthorityList
               admin={admin}
               selected={selected}
@@ -310,7 +315,9 @@ function AuthorityForm({
             readOnly={!isNew}
             disabled={!isNew}
             placeholder="STUDY_MANAGE"
-            className="font-mono"
+            /* iOS Safari 는 16px 미만 입력란에 포커스가 가면 페이지를 통째로 확대한다 —
+               TextField·TextArea 기본값 15.5px, SelectField 15px 이 전부 여기 걸린다 */
+            className="font-mono text-[16px] lg:text-[15.5px]"
           />
           <div className="mt-[5px] text-[12.5px] text-n500">
             {isNew
@@ -324,6 +331,7 @@ function AuthorityForm({
             value={values.authrtNm}
             onChange={(e) => setValue({ authrtNm: e.target.value })}
             placeholder="스터디 관리"
+            className="text-[16px] lg:text-[15.5px]"
           />
         </Field>
 
@@ -332,6 +340,7 @@ function AuthorityForm({
             value={values.authrtExpln}
             onChange={(e) => setValue({ authrtExpln: e.target.value })}
             placeholder="이 권한이 무엇을 열어 주는지 적어 두면 역할에 부여할 때 판단이 쉽습니다"
+            className="text-[16px] lg:text-[15.5px]"
           />
         </Field>
 
@@ -339,6 +348,7 @@ function AuthorityForm({
           <SelectField
             value={values.upAuthrtCd}
             onChange={(e) => setValue({ upAuthrtCd: e.target.value })}
+            className="text-[16px] lg:text-[15px]"
           >
             <option value="">(최상위 권한)</option>
             {candidates.map(({ node: c, depth }) => (
@@ -356,6 +366,7 @@ function AuthorityForm({
             value={values.indctSeqno}
             onChange={(e) => setValue({ indctSeqno: e.target.value })}
             placeholder={String(siblingCount + 1)}
+            className="text-[16px] lg:text-[15.5px]"
           />
         </Field>
       </div>

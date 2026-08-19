@@ -145,7 +145,8 @@ export function RoleLabelsPage() {
             onChange={(v) => {
               if (v === "역할 목록") router.push(ROUTES.roles);
             }}
-            className="w-[400px]"
+            /* 400px 고정은 375px 화면을 넘겨 페이지 전체가 가로로 밀린다 (역할 목록과 같은 탭) */
+            className="w-full max-w-[400px] lg:w-[400px]"
           />
         </div>
 
@@ -154,7 +155,9 @@ export function RoleLabelsPage() {
           형식을 placeholder 로 보여 준다 — 규칙을 모르면 첫 시도가 400 으로 돌아온다.
         */}
         <div className="mb-4 max-w-[820px]">
-          <div className="flex items-center gap-2">
+          {/* 코드 220px + 이름 240px + 추가 버튼은 좁은 화면에 한 줄로 들어가지 않는다 —
+              세로로 쌓고 lg 부터 예전처럼 한 줄에 나란히 둔다 */}
+          <div className="flex flex-col items-stretch gap-2 lg:flex-row lg:items-center">
             <TextField
               value={newCd}
               onChange={(e) => setNewCd(e.target.value)}
@@ -162,7 +165,8 @@ export function RoleLabelsPage() {
               invalid={invalidField(addError, "roleClsfCd")}
               aria-describedby={addError ? ADD_ERROR_ID : undefined}
               placeholder={`${FIELD_LABEL.roleClassificationCode} (예: PROJECT)`}
-              className="w-[220px] font-mono"
+              /* iOS Safari 는 16px 미만 입력란에 포커스가 가면 페이지를 통째로 확대한다 */
+              className="w-full font-mono text-[16px] lg:w-[220px] lg:text-[15.5px]"
             />
             <TextField
               value={newNm}
@@ -174,7 +178,7 @@ export function RoleLabelsPage() {
               invalid={invalidField(addError, "roleClsfNm")}
               aria-describedby={addError ? ADD_ERROR_ID : undefined}
               placeholder={`새 ${FIELD_LABEL.roleClassificationName}`}
-              className="w-[240px]"
+              className="w-full text-[16px] lg:w-[240px] lg:text-[15.5px]"
             />
             <Button
               onClick={() => void add()}
@@ -233,7 +237,15 @@ export function RoleLabelsPage() {
                 </div>
               )}
               <Card className="max-w-[820px] px-5 pt-4 pb-[6px]">
-                <div className="grid grid-cols-[100px_180px_1fr_130px]">
+                {/*
+                  분류 표는 순번·코드·이름·관리 네 열이 서로를 설명하는 값이라 카드로 쪼개면
+                  '어느 분류의 수정 버튼인지'가 흐려진다(GridTable 을 쓰지 않고 직접 그린
+                  이유도 인라인 편집 때문이다). 좁은 화면에서는 표를 바꾸는 대신 **이 표만**
+                  가로로 스크롤시킨다 — 화면 전체가 밀리면 위의 탭·추가 줄까지 따라 밀린다.
+                  min-w 는 1fr(이름) 열이 짜부라지지 않을 만큼만 잡고 lg 에서 되돌린다.
+                */}
+                <div className="overflow-x-auto">
+                <div className="grid min-w-[600px] grid-cols-[100px_180px_1fr_130px] lg:min-w-0">
                   {[
                     FIELD_LABEL.displayOrder,
                     FIELD_LABEL.roleClassificationCode,
@@ -279,7 +291,7 @@ export function RoleLabelsPage() {
                                 invalidField(rowError, "indctSeqno") || undefined
                               }
                               aria-describedby={rowError ? ROW_ERROR_ID : undefined}
-                              className="w-[64px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[14.5px] outline-none"
+                              className="w-[64px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none lg:text-[14.5px]"
                             />
                           ) : (
                             c.indctSeqno
@@ -308,7 +320,7 @@ export function RoleLabelsPage() {
                                   invalidField(rowError, "roleClsfNm") || undefined
                                 }
                                 aria-describedby={rowError ? ROW_ERROR_ID : undefined}
-                                className="w-[200px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[14.5px] outline-none disabled:cursor-not-allowed disabled:border-line disabled:opacity-45"
+                                className="w-[200px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none disabled:cursor-not-allowed disabled:border-line disabled:opacity-45 lg:text-[14.5px]"
                               />
                               {isSystem && (
                                 <span className="ml-2 text-[13px] text-n500">
@@ -375,7 +387,8 @@ export function RoleLabelsPage() {
                       </div>
                     );
                   })}
-                  </div>
+                </div>
+                </div>
               </Card>
             </>
           ))}

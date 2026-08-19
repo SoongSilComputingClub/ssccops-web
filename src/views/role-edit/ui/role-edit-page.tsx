@@ -100,7 +100,9 @@ function RoleEditorView({ roleId }: { roleId?: number }) {
         )}
 
         {editor.status === "ready" && (
-          <div className="grid grid-cols-[1.2fr_1fr] items-start gap-4">
+          /* 좁은 화면에서는 1열로 쌓는다 — 편집 카드가 먼저, 재임 회원이 그 아래다.
+             DOM 순서가 곧 화면 순서라 마크업을 바꾸지 않아도 읽는 차례가 맞는다 */
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.2fr_1fr]">
             <div className="flex flex-col gap-4">
               <Card>
                 <SectionLabel className="mb-3">
@@ -115,6 +117,9 @@ function RoleEditorView({ roleId }: { roleId?: number }) {
                   }}
                   invalid={Boolean(editor.saveErrorMessage)}
                   placeholder="역할명"
+                  /* iOS Safari 는 16px 미만 입력란에 포커스가 가면 페이지를 통째로 확대한다.
+                     TextField 기본값이 15.5px 이라 여기 걸린다 — lg 부터는 예전 값 그대로다 */
+                  className="text-[16px] lg:text-[15.5px]"
                 />
                 {editor.saveErrorMessage && (
                   <div className="mt-[6px] text-[13.5px] leading-[1.6] text-danger">
