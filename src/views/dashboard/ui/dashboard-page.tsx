@@ -41,7 +41,7 @@ const MY_FILTERS = ["전체", "마감임박", "지연"] as const;
 
 function DashboardSkeleton() {
   return (
-    <div className="grid grid-cols-[1.7fr_1fr] items-start gap-4">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.7fr_1fr]">
       {[0, 1].map((i) => (
         <Card key={i} className="animate-pulse">
           <div className="h-[20px] w-2/5 rounded bg-black/5" />
@@ -186,7 +186,7 @@ export function DashboardPage() {
 
         {status === "ready" && (
           <>
-            <div className="grid grid-cols-[1.7fr_1fr] items-start gap-4">
+            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.7fr_1fr]">
               <Card>
                 <CardTitle
                   right={
