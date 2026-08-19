@@ -398,10 +398,12 @@ export function OperationCreatePage({
       <PageBody>
         <Card className="mb-4">
           <SectionLabel className="mb-3">등록할 {FIELD_LABEL.operationType}</SectionLabel>
-          <div
-            className="grid gap-3"
-            style={{ gridTemplateColumns: `repeat(${kinds.length},1fr)` }}
-          >
+          {/*
+            열 수를 인라인 style로 주면 미디어 쿼리로 덮을 수 없어 좁은 화면에서도 2열로
+            남는다 — 유형 카드는 설명 문장까지 담고 있어 그 폭에서는 글자만 세로로 쌓인다.
+            kinds는 많아야 둘이므로(업무·회의) 클래스로 옮겨 모바일 1열 · lg 2열로 둔다.
+          */}
+          <div className={kinds.length > 1 ? "grid gap-3 lg:grid-cols-2" : "grid gap-3"}>
             {kinds.map((cd) => (
               <div
                 key={cd}
@@ -426,11 +428,15 @@ export function OperationCreatePage({
           </div>
         </Card>
 
-        <div className="grid grid-cols-[1.1fr_1fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.1fr_1fr]">
           <Card>
             <SectionLabel className="mb-3">상위 속성 · oper</SectionLabel>
-            <div className="grid grid-cols-2 gap-[14px]">
-              <Field label={FIELD_LABEL.operationTitle} required className="col-span-2">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+              <Field
+                label={FIELD_LABEL.operationTitle}
+                required
+                className="col-span-1 lg:col-span-2"
+              >
                 <TextField
                   value={operTtl}
                   onChange={(e) => setOperTtl(e.target.value)}
@@ -493,7 +499,7 @@ export function OperationCreatePage({
                 )}
               </Field>
               <Field label={FIELD_LABEL.priority}>
-                <div className="flex gap-[7px] pt-[6px]">
+                <div className="flex flex-wrap gap-[7px] pt-[6px]">
                   {PRRTY_RNK_CDS.map((cd) => (
                     <Chip
                       key={cd}
@@ -532,7 +538,7 @@ export function OperationCreatePage({
             {operTypeCd === "WORK" && (
               <>
                 <div className="mb-2 text-[13.5px] text-n400">{FIELD_LABEL.workType}</div>
-                <div className="mb-4 flex gap-[7px]">
+                <div className="mb-4 flex flex-wrap gap-[7px]">
                   {WORK_TYPE_CDS.map((cd) => (
                     <Chip
                       key={cd}
@@ -683,7 +689,7 @@ export function OperationCreatePage({
             {operTypeCd === "MEETING" && (
               <>
                 <div className="mb-2 text-[13.5px] text-n400">{FIELD_LABEL.meetingCategory}</div>
-                <div className="mb-4 flex gap-[7px]">
+                <div className="mb-4 flex flex-wrap gap-[7px]">
                   {MTG_SE_CDS.map((cd) => (
                     <Chip key={cd} active={mtgSeCd === cd} onClick={() => setMtgSeCd(cd)}>
                       {MTG_SE_NM[cd]}
@@ -691,7 +697,7 @@ export function OperationCreatePage({
                   ))}
                 </div>
                 <div className="mb-2 text-[13.5px] text-n400">{FIELD_LABEL.attendeeTarget}</div>
-                <div className="mb-4 flex gap-[7px]">
+                <div className="mb-4 flex flex-wrap gap-[7px]">
                   {ATND_TRGT_CDS.map((cd) => (
                     <Chip
                       key={cd}

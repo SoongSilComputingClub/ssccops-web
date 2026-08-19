@@ -359,7 +359,7 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
       <PageBody>
         <FormSaveStatusBar save={editor.save} onRetry={editor.retry} />
 
-        <div className="mt-4 grid grid-cols-[1fr_1.15fr] items-start gap-4">
+        <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.15fr]">
           <div className="flex flex-col gap-4">
             <Card>
               <SectionLabel className="mb-3">기본정보</SectionLabel>
@@ -374,7 +374,7 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                     placeholder="예: 2026-1 신규 부원 모집"
                   />
                 </Field>
-                <div className="grid grid-cols-2 gap-[14px]">
+                <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
                   <Field label={FIELD_LABEL.receiptStartAt}>
                     <TextField
                       type="datetime-local"
@@ -807,6 +807,13 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                                       </Chip>
                                     ))}
                                   </div>
+                                  {/*
+                                    iOS Safari는 글자 크기가 16px 미만인 입력란에 포커스가 가면
+                                    페이지를 통째로 확대하고 되돌리지 않는다 (#87이 공개 폼에서
+                                    먼저 겪었다). 이 여섯 화면에서 호출부가 입력란 글자 크기를
+                                    직접 낮춘 자리는 여기 하나뿐이라 모바일만 16px로 올리고
+                                    lg:에서 원래의 13.5px 고정폭을 되살린다.
+                                  */}
                                   <TextField
                                     value={q.ptrnCn ?? ""}
                                     invalid={!isCompilableRegExp(q.ptrnCn)}
@@ -814,7 +821,7 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                                       patchQ(q.qitemId, { ptrnCn: e.target.value })
                                     }
                                     placeholder="정규식 (예: ^[0-9]{9}$)"
-                                    className="mt-2 font-mono text-[13.5px]"
+                                    className="mt-2 font-mono text-[16px] lg:text-[13.5px]"
                                   />
                                   {/* 깨진 정규식은 공개 폼의 응답 검증을 통째로 무너뜨린다 */}
                                   {!isCompilableRegExp(q.ptrnCn) && (

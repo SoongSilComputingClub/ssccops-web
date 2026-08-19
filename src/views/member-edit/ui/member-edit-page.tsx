@@ -117,10 +117,10 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
         showBack
       />
       <PageBody>
-        <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.15fr_1fr]">
           <Card>
             <SectionLabel className="mb-3">기본정보</SectionLabel>
-            <div className="grid grid-cols-2 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
               <Field label={FIELD_LABEL.memberName} required error={errors.name}>
                 <TextField
                   value={values.name}

@@ -147,11 +147,15 @@ function SubWorkEditForm({
     <>
       <PageHeader title="하위 업무 수정" subtitle={subWork.title} showBack />
       <PageBody>
-        <div className="grid grid-cols-[1.1fr_1fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.1fr_1fr]">
           <Card>
             <SectionLabel className="mb-3">상위 속성 · oper</SectionLabel>
-            <div className="grid grid-cols-2 gap-[14px]">
-              <Field label={FIELD_LABEL.operationTitle} required className="col-span-2">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+              <Field
+                label={FIELD_LABEL.operationTitle}
+                required
+                className="col-span-1 lg:col-span-2"
+              >
                 <TextField value={title} onChange={(e) => setTitle(e.target.value)} />
               </Field>
               <Field label="담당자">
@@ -163,7 +167,7 @@ function SubWorkEditForm({
                 </div>
               </Field>
               <Field label={FIELD_LABEL.priority}>
-                <div className="flex gap-[7px] pt-[6px]">
+                <div className="flex flex-wrap gap-[7px] pt-[6px]">
                   {PRRTY_RNK_CDS.map((cd) => (
                     <Chip key={cd} active={priority === cd} onClick={() => setPriority(cd)}>
                       {PRRTY_RNK_NM[cd]}
@@ -190,7 +194,7 @@ function SubWorkEditForm({
 
           <Card>
             <SectionLabel className="mb-3">확장 속성 · sub_work</SectionLabel>
-            <div className="mb-4 flex items-center gap-[8px]">
+            <div className="mb-4 flex flex-wrap items-center gap-[8px]">
               <div className="text-[13.5px] text-n400">{FIELD_LABEL.subWorkType}</div>
               <Badge tone="outline">{subWork.subWorkTypeName}</Badge>
               <div className="text-[13px] text-n500">수정 화면에서는 바꿀 수 없습니다</div>
