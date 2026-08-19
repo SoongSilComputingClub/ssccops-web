@@ -117,6 +117,9 @@ function RoleEditorView({ roleId }: { roleId?: number }) {
                   }}
                   invalid={Boolean(editor.saveErrorMessage)}
                   placeholder="역할명"
+                  /* iOS Safari 는 16px 미만 입력란에 포커스가 가면 페이지를 통째로 확대한다.
+                     TextField 기본값이 15.5px 이라 여기 걸린다 — lg 부터는 예전 값 그대로다 */
+                  className="text-[16px] lg:text-[15.5px]"
                 />
                 {editor.saveErrorMessage && (
                   <div className="mt-[6px] text-[13.5px] leading-[1.6] text-danger">

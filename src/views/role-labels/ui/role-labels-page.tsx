@@ -164,7 +164,8 @@ export function RoleLabelsPage() {
               invalid={invalidField(addError, "roleClsfCd")}
               aria-describedby={addError ? ADD_ERROR_ID : undefined}
               placeholder={`${FIELD_LABEL.roleClassificationCode} (예: PROJECT)`}
-              className="w-full font-mono lg:w-[220px]"
+              /* iOS Safari 는 16px 미만 입력란에 포커스가 가면 페이지를 통째로 확대한다 */
+              className="w-full font-mono text-[16px] lg:w-[220px] lg:text-[15.5px]"
             />
             <TextField
               value={newNm}
@@ -176,7 +177,7 @@ export function RoleLabelsPage() {
               invalid={invalidField(addError, "roleClsfNm")}
               aria-describedby={addError ? ADD_ERROR_ID : undefined}
               placeholder={`새 ${FIELD_LABEL.roleClassificationName}`}
-              className="w-full lg:w-[240px]"
+              className="w-full text-[16px] lg:w-[240px] lg:text-[15.5px]"
             />
             <Button
               onClick={() => void add()}
@@ -289,7 +290,7 @@ export function RoleLabelsPage() {
                                 invalidField(rowError, "indctSeqno") || undefined
                               }
                               aria-describedby={rowError ? ROW_ERROR_ID : undefined}
-                              className="w-[64px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[14.5px] outline-none"
+                              className="w-[64px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none lg:text-[14.5px]"
                             />
                           ) : (
                             c.indctSeqno
@@ -318,7 +319,7 @@ export function RoleLabelsPage() {
                                   invalidField(rowError, "roleClsfNm") || undefined
                                 }
                                 aria-describedby={rowError ? ROW_ERROR_ID : undefined}
-                                className="w-[200px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[14.5px] outline-none disabled:cursor-not-allowed disabled:border-line disabled:opacity-45"
+                                className="w-[200px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none disabled:cursor-not-allowed disabled:border-line disabled:opacity-45 lg:text-[14.5px]"
                               />
                               {isSystem && (
                                 <span className="ml-2 text-[13px] text-n500">
