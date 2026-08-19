@@ -92,7 +92,8 @@ function QitemPreview({
                     picked ? "border-accent bg-accent" : "border-line-strong",
                   )}
                 />
-                <span>{o}</span>
+                {/* 플렉스 아이템의 min-width:auto를 풀어 준다 — 띄어쓰기 없는 긴 보기 대비 */}
+                <span className="min-w-0 break-words">{o}</span>
                 {branch !== undefined && (
                   <span className="text-[12.5px] text-accent">
                     → {branch + 1}. {pages[branch]?.pageTtl ?? ""}
