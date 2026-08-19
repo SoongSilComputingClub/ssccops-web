@@ -329,7 +329,7 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
             <Card>
               <SectionLabel className="mb-3">응답 요약</SectionLabel>
               {/* 서버 집계값 — 작성 중(DRAFT) 응답은 어느 칸에도 들어가지 않는다 */}
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                 <StatBox label="전체" value={summary.total} />
                 <StatBox label="제출" value={summary.submitted} />
                 <StatBox label="승인" value={summary.accepted} tone="accent" />
