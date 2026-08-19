@@ -77,7 +77,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="w-[392px] px-4">
+    <div className="w-full max-w-[392px] px-4">
       <div className="flex size-[34px] items-center justify-center rounded-[12px] border border-accent text-[16px] text-accent">
         S
       </div>
