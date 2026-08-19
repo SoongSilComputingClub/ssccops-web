@@ -88,7 +88,7 @@ export function MemberListPage() {
 
 function MemberTableSkeleton() {
   return (
-    <Card className="animate-pulse px-5 pt-4 pb-[6px]">
+    <Card className="animate-pulse p-3 lg:px-5 lg:pt-4 lg:pb-[6px]">
       {[0, 1, 2, 3, 4].map((i) => (
         <div key={i} className="border-t border-black/5 py-[13px] first:border-t-0">
           <div className="h-[18px] w-full rounded bg-black/5" />
@@ -289,7 +289,12 @@ function MemberListView() {
 
         {status === "ready" && (
           <>
-            <Card className="px-5 pt-4 pb-[6px]">
+            {/*
+              px-5 · pb-[6px]는 표의 행 보더에 맞춘 값이다. lg 미만에서는 GridTable이
+              카드 목록으로 바뀌어 그 안쪽에 다시 여백이 생기므로 바깥을 p-3으로 낮춘다 —
+              375px 화면에서 카드가 쓸 수 있는 폭이 271px에서 287px로 늘어난다.
+            */}
+            <Card className="p-3 lg:px-5 lg:pt-4 lg:pb-[6px]">
               <GridTable
                 columns={columns}
                 rows={members}
