@@ -15,6 +15,14 @@ export const metadata: Metadata = {
     title: "SSCC 운영",
     statusBarStyle: "default",
   },
+  /*
+   * iOS는 manifest의 icons를 보지 않는다 — 이 링크가 없으면 홈 화면 아이콘 자리에
+   * 페이지 스크린샷이 들어간다. 투명도를 지원하지 않고 모서리는 iOS가 알아서 깎으므로
+   * 배경을 가장자리까지 채운 이미지를 쓴다 (#106 임시 아이콘).
+   */
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 /*
