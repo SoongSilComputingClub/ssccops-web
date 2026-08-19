@@ -225,7 +225,7 @@ export function FormListPage() {
         </div>
 
         {status === "loading" && (
-          <div className="grid grid-cols-2 gap-[14px]">
+          <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
             {[0, 1, 2, 3].map((i) => (
               <FormCardSkeleton key={i} />
             ))}
@@ -259,7 +259,7 @@ export function FormListPage() {
               }
             />
           ) : (
-            <div className="grid grid-cols-2 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
               {forms.map((f) => (
                 <FormCard
                   key={f.formId}
