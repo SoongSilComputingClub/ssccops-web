@@ -67,7 +67,12 @@ export function FormLabelsPage() {
               disabled={!canManage}
               invalid={Boolean(admin.addErrorMessage)}
               placeholder="새 라벨_명"
-              className="w-[260px]"
+              /*
+               * input은 min-width:auto가 기본 size(약 20자)로 잡혀 플렉스 안에서 그
+               * 아래로 줄지 않는다 — 260px 고정과 겹치면 좁은 화면에서 '추가' 버튼을
+               * 화면 밖으로 밀어낸다. 상한만 남기고 min-w-0으로 줄 수 있게 푼다.
+               */
+              className="w-full max-w-[260px] min-w-0"
             />
             <Button
               onClick={() => void add()}
