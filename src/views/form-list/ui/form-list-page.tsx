@@ -205,7 +205,13 @@ export function FormListPage() {
               {FORM_STTS_NM[cd]}
             </Chip>
           ))}
-          <div className="mx-2 h-5 w-px bg-line" />
+          {/*
+            상태 축과 라벨 축을 가르는 칸막이. 좁은 화면에서는 칩이 여러 줄로 접히는데,
+            세로 1px 막대는 접힌 줄 어딘가에 끼어 두 축의 경계로 읽히지 않는다 —
+            w-full로 한 줄을 통째로 차지하게 해 가로선으로 만들면 그 아래부터 라벨
+            필터라는 것이 드러난다(flex-wrap에서 100% 항목은 반드시 혼자 한 줄을 쓴다).
+          */}
+          <div className="mx-0 h-px w-full bg-line lg:mx-2 lg:h-5 lg:w-px" />
           <Chip
             active={formLblId === null}
             onClick={() => applyFilter(QUERY_LABEL, null)}
@@ -225,7 +231,7 @@ export function FormListPage() {
         </div>
 
         {status === "loading" && (
-          <div className="grid grid-cols-2 gap-[14px]">
+          <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
             {[0, 1, 2, 3].map((i) => (
               <FormCardSkeleton key={i} />
             ))}
@@ -259,7 +265,7 @@ export function FormListPage() {
               }
             />
           ) : (
-            <div className="grid grid-cols-2 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
               {forms.map((f) => (
                 <FormCard
                   key={f.formId}

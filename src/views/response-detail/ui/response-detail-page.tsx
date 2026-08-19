@@ -86,7 +86,7 @@ function ResponseDetailContent({
         showBack
       />
       <PageBody>
-        <div className="grid grid-cols-[1fr_1.2fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.2fr]">
           <Card>
             <div className="flex items-center gap-2">
               <div className="text-[23px] font-medium">{member.mbrNm || "-"}</div>
@@ -132,7 +132,9 @@ function ResponseDetailContent({
                       {q.qitemLblNm}
                       <span className="ml-1 font-mono text-[12px]">({q.qitemId})</span>
                     </div>
-                    <div className="mt-[2px] text-[16px]">
+                    {/* 답변은 응답자가 쓴 자유 입력이다 — 링크·이메일처럼 띄어쓰기가
+                        없는 값이 오면 줄바꿈되지 않고 카드 밖으로 밀린다 */}
+                    <div className="mt-[2px] text-[16px] break-words">
                       {v || <span className="text-n500">(응답 없음)</span>}
                     </div>
                   </div>
@@ -142,7 +144,12 @@ function ResponseDetailContent({
           </Card>
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
+        {/*
+          Button은 whitespace-nowrap이라 자리가 모자라면 접히는 대신 글자가 테두리 밖으로
+          밀려 나간다 — 잠긴 사유 문구까지 같은 줄에 서는 자리라 좁은 화면에서는 조각
+          단위로 접히게 한다. lg:flex-nowrap으로 1024px 이상은 지금까지처럼 한 줄이다.
+        */}
+        <div className="mt-4 flex flex-wrap items-center gap-2 lg:flex-nowrap">
           <Button
             variant="ghost"
             disabled={response.prevFormRspnsId === null}

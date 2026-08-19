@@ -92,7 +92,8 @@ function QitemPreview({
                     picked ? "border-accent bg-accent" : "border-line-strong",
                   )}
                 />
-                <span>{o}</span>
+                {/* 플렉스 아이템의 min-width:auto를 풀어 준다 — 띄어쓰기 없는 긴 보기 대비 */}
+                <span className="min-w-0 break-words">{o}</span>
                 {branch !== undefined && (
                   <span className="text-[12.5px] text-accent">
                     → {branch + 1}. {pages[branch]?.pageTtl ?? ""}
@@ -232,7 +233,7 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
         }}
       />
       <PageBody>
-        <div className="grid grid-cols-2 items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <div className="flex flex-col gap-4">
             <Card>
               <div className="flex items-center gap-2">
@@ -329,7 +330,7 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
             <Card>
               <SectionLabel className="mb-3">응답 요약</SectionLabel>
               {/* 서버 집계값 — 작성 중(DRAFT) 응답은 어느 칸에도 들어가지 않는다 */}
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                 <StatBox label="전체" value={summary.total} />
                 <StatBox label="제출" value={summary.submitted} />
                 <StatBox label="승인" value={summary.accepted} tone="accent" />
