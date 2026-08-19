@@ -88,7 +88,7 @@ export function MeetingListPage() {
       />
       <PageBody>
         {status === "loading" && (
-          <div className="grid grid-cols-2 gap-[14px]">
+          <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
             {[0, 1, 2, 3].map((i) => (
               <MeetingCardSkeleton key={i} />
             ))}
@@ -109,7 +109,7 @@ export function MeetingListPage() {
               action={canManage ? { label: "+ 등록", onClick: openCreate } : undefined}
             />
           ) : (
-            <div className="grid grid-cols-2 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
               {meetings.map((m) => (
                 <MeetingCard
                   key={m.meetingId}
