@@ -207,8 +207,12 @@ export function SignupPage() {
       {statusError && <div className="mt-[6px] text-[12.5px] text-danger">{statusError}</div>}
 
       <Card className="mt-4">
-        <div className="grid grid-cols-2 gap-[14px]">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+          {/*
+           * col-span-2를 좁은 화면에 그대로 두면 1열 격자에 **암시적 2열**이 생겨
+           * 다른 칸까지 반쪽으로 밀린다 — 열 수와 함께 되돌려야 한다.
+           */}
+          <div className="col-span-1 lg:col-span-2">
             <div className="mb-[6px] text-[13.5px] text-n400">이메일</div>
             <div className="rounded-[12px] bg-bg px-[11px] py-[9px] text-[15.5px] text-n300">
               {authUser.email}
