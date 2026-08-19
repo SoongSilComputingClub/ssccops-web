@@ -42,7 +42,7 @@ const TABS: ApprovalInboxTab[] = ["PENDING", "APPROVED", "REJECTED"];
 
 function ApprovalBoxSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-[14px]">
+    <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
       {[0, 1, 2, 3].map((i) => (
         <Card key={i} className="animate-pulse">
           <div className="h-[20px] w-2/5 rounded bg-black/5" />
@@ -135,7 +135,7 @@ export function ApprovalBoxPage() {
 
         {status === "ready" && approvals.length > 0 && (
           <>
-            <div className="grid grid-cols-2 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
               {approvals.map((item) => {
                 const pending = pendingSubWorkId === item.subWorkId;
                 const checklistDone = isChecklistDone(item);
