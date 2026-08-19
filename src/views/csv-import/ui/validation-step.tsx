@@ -238,9 +238,15 @@ function IssueTable({
   rows: MemberImportRowResult[];
   kind: "error" | "warning";
 }) {
+  /*
+   * 좁은 화면에서는 가로로도 스크롤한다 (#96). 행 번호·대상·사유는 세 값이 한 줄로 붙어야
+   * "몇 번째 줄의 누구를 왜 못 넣는지"가 되는 목록이라, 카드로 쪼개면 파일을 고치는 사람이
+   * 매번 세 조각을 다시 맞춰야 한다. 세로 스크롤 상자는 그대로 두어 아래 실행 버튼이
+   * 화면 밖으로 밀려나지 않는다는 성질도 유지된다.
+   */
   return (
-    <div className="max-h-[360px] overflow-y-auto">
-      <div className="grid grid-cols-[90px_1fr_1.4fr]">
+    <div className="max-h-[360px] overflow-x-auto overflow-y-auto">
+      <div className="grid min-w-[520px] grid-cols-[90px_1fr_1.4fr] lg:min-w-0">
         {["행", "대상", kind === "error" ? "사유" : "경고"].map((h) => (
           <div
             key={h}
