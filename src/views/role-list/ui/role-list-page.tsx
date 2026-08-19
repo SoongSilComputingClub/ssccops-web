@@ -78,17 +78,25 @@ function RoleListView() {
    */
   const filtered = list.roles.filter((r) => filter === ALL || r.roleClsfCd === filter);
 
+  /*
+   * 좁은 화면에서 GridTable 은 같은 데이터를 카드로 그린다 (#85 · #96). 표에서는 열이 늘어도
+   * 가로로 흡수되지만 카드에서는 세로로 쌓이므로, 카드에서 뜻이 없는 열을 덜어 낸다.
+   */
   const columns: GridColumn<RoleSummary>[] = [
     {
       key: "indctSeqno",
       header: FIELD_LABEL.displayOrder,
       width: "80px",
+      /* 표시 순번은 목록을 그리는 순서일 뿐이라 카드에서는 위아래 순서가 이미 그것을 말한다 */
+      mobileHide: true,
       render: (r) => r.indctSeqno,
     },
     {
       key: "roleNm",
       header: FIELD_LABEL.roleName,
       width: "1fr",
+      /* 카드 제목은 첫 열이 기본인데 그 자리가 순번이라, 행을 가리키는 이름을 제목으로 올린다 */
+      mobilePrimary: true,
       render: (r) => <span className="font-semibold hover:text-accent">{r.roleNm}</span>,
     },
     /*
@@ -139,6 +147,9 @@ function RoleListView() {
       header: "",
       width: "60px",
       align: "right",
+      /* 카드는 그 자체가 눌리는 덩어리라 '들어가는 곳'을 화살표로 따로 가리킬 필요가 없다 —
+         머리글도 비어 있어 카드에서는 라벨 없는 빈 줄만 남는다 */
+      mobileHide: true,
       render: () => <span className="text-n500">›</span>,
     },
   ];
