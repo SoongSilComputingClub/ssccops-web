@@ -15,9 +15,15 @@ import type { MetadataRoute } from "next";
  * showBack을 쓰고, 그것이 없는 화면은 드로어에서 바로 갈 수 있는 최상위 화면뿐이다.
  *
  * ── 아이콘 ────────────────────────────────────────────────
- * 아직 앱 아이콘이 없다(ssccops#106). Android는 설치 판정에 192·512 PNG를 요구하는 것으로
- * 알려져 있어 지금은 설치 배너가 안 뜰 수 있고, iOS는 manifest 아이콘을 아예 보지 않는다
- * (apple-touch-icon을 쓴다). 아이콘이 나오면 여기에 더한다.
+ * 지금 것은 **임시 아이콘**이다(ssccops#106). 화면의 S 마크를 그대로 옮겨 만든 것이며,
+ * 정식 로고가 나오면 같은 파일명으로 교체하면 된다.
+ *
+ * 192·512가 둘 다 있어야 하는 이유는 측정으로 확인했다 — 이 둘이 없을 때 Chrome의
+ * `beforeinstallprompt`가 발생하지 않아 설치가 아예 열리지 않았다.
+ *
+ * maskable을 따로 두는 것은 안드로이드 런처가 아이콘을 원형·둥근사각으로 잘라내기
+ * 때문이다. 잘려도 되도록 배경을 가장자리까지 채우고 글자는 가운데 80% 안에 뒀다.
+ * iOS는 manifest 아이콘을 아예 보지 않으므로 apple-touch-icon을 layout.tsx에서 건다.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -33,11 +39,15 @@ export default function manifest(): MetadataRoute.Manifest {
     // 상단 바가 bg-surface(흰색)라 상태 표시줄도 같은 색으로 이어 붙인다
     theme_color: "#ffffff",
     icons: [
+      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
       {
-        src: "/favicon.ico",
-        sizes: "any",
-        type: "image/x-icon",
+        src: "/icons/icon-512-maskable.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
       },
+      { src: "/favicon.ico", sizes: "any", type: "image/x-icon" },
     ],
   };
 }
