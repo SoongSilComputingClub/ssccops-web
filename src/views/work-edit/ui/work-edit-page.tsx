@@ -139,11 +139,15 @@ function WorkEditForm({
     <>
       <PageHeader title="업무 수정" subtitle={work.title} showBack />
       <PageBody>
-        <div className="grid grid-cols-[1.1fr_1fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.1fr_1fr]">
           <Card>
             <SectionLabel className="mb-3">상위 속성 · oper</SectionLabel>
-            <div className="grid grid-cols-2 gap-[14px]">
-              <Field label={FIELD_LABEL.operationTitle} required className="col-span-2">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+              <Field
+                label={FIELD_LABEL.operationTitle}
+                required
+                className="col-span-1 lg:col-span-2"
+              >
                 <TextField value={title} onChange={(e) => setTitle(e.target.value)} />
               </Field>
               <Field label="담당자">
@@ -155,7 +159,7 @@ function WorkEditForm({
                 </div>
               </Field>
               <Field label={FIELD_LABEL.priority}>
-                <div className="flex gap-[7px] pt-[6px]">
+                <div className="flex flex-wrap gap-[7px] pt-[6px]">
                   {PRRTY_RNK_CDS.map((cd) => (
                     <Chip key={cd} active={priority === cd} onClick={() => setPriority(cd)}>
                       {PRRTY_RNK_NM[cd]}
@@ -183,7 +187,7 @@ function WorkEditForm({
           <Card>
             <SectionLabel className="mb-3">확장 속성 · work</SectionLabel>
             <div className="mb-2 text-[13.5px] text-n400">{FIELD_LABEL.workType}</div>
-            <div className="mb-4 flex gap-[7px]">
+            <div className="mb-4 flex flex-wrap gap-[7px]">
               {WORK_TYPE_CDS.map((cd) => (
                 <Chip key={cd} active={workType === cd} onClick={() => setWorkType(cd)}>
                   {WORK_TYPE_NM[cd]}
