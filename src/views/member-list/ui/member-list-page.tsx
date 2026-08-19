@@ -88,7 +88,7 @@ export function MemberListPage() {
 
 function MemberTableSkeleton() {
   return (
-    <Card className="animate-pulse px-5 pt-4 pb-[6px]">
+    <Card className="animate-pulse p-3 lg:px-5 lg:pt-4 lg:pb-[6px]">
       {[0, 1, 2, 3, 4].map((i) => (
         <div key={i} className="border-t border-black/5 py-[13px] first:border-t-0">
           <div className="h-[18px] w-full rounded bg-black/5" />
@@ -212,25 +212,36 @@ function MemberListView() {
         action={{ label: "CSV 이관", onClick: () => router.push(ROUTES.csvImport) }}
       />
       <PageBody>
-        <div className="mb-[14px] flex items-center gap-[10px]">
+        {/*
+          검색 · 건수 · 정렬을 lg 미만에서 세로로 쌓는다 — 한 줄에 두면 375px 화면에서
+          검색칸(최대 320px)만으로 폭이 차 건수와 정렬 버튼이 밖으로 밀린다.
+        */}
+        <div className="mb-[14px] flex flex-col gap-[10px] lg:flex-row lg:items-center">
           <SearchInput
             value={q}
             onChange={setQ}
             placeholder="회원명 · 학생번호"
-            className="max-w-[320px] flex-1"
+            className="lg:max-w-[320px] lg:flex-1"
           />
-          <div className="flex-1" />
-          {/* 걸린 건수와 전체 건수 모두 서버가 센 값이다 (PageResponse) */}
-          <div className="text-[14px] text-n500">
-            {status === "ready" ? `${totalCount}명 · 전체 ${overallCount}명` : " "}
+          {/* 밀어내기용 빈 칸 — 세로로 쌓일 때는 높이만 만드는 자리라 접는다 */}
+          <div className="hidden flex-1 lg:block" />
+          {/*
+            건수와 정렬은 좁은 화면에서도 한 줄에 둔다. lg:contents 로 이 상자가 사라지므로
+            1024px 이상에서는 두 요소가 예전처럼 바깥 줄의 형제로 놓인다.
+          */}
+          <div className="flex items-center justify-between gap-[10px] lg:contents">
+            {/* 걸린 건수와 전체 건수 모두 서버가 센 값이다 (PageResponse) */}
+            <div className="text-[14px] text-n500">
+              {status === "ready" ? `${totalCount}명 · 전체 ${overallCount}명` : " "}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSortIdx((i) => (i + 1) % SORTS.length)}
+              className="cursor-pointer text-[14px] whitespace-nowrap text-accent"
+            >
+              {SORTS[sortIdx].label} ⇅
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setSortIdx((i) => (i + 1) % SORTS.length)}
-            className="cursor-pointer text-[14px] whitespace-nowrap text-accent"
-          >
-            {SORTS[sortIdx].label} ⇅
-          </button>
         </div>
 
         {/* 칩은 기준 코드 API(GET /v1/member-grades · /v1/member-statuses)로 그린다 */}
@@ -278,7 +289,12 @@ function MemberListView() {
 
         {status === "ready" && (
           <>
-            <Card className="px-5 pt-4 pb-[6px]">
+            {/*
+              px-5 · pb-[6px]는 표의 행 보더에 맞춘 값이다. lg 미만에서는 GridTable이
+              카드 목록으로 바뀌어 그 안쪽에 다시 여백이 생기므로 바깥을 p-3으로 낮춘다 —
+              375px 화면에서 카드가 쓸 수 있는 폭이 271px에서 287px로 늘어난다.
+            */}
+            <Card className="p-3 lg:px-5 lg:pt-4 lg:pb-[6px]">
               <GridTable
                 columns={columns}
                 rows={members}

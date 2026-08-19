@@ -57,7 +57,8 @@ export function MyAccountPage() {
       <PageHeader title="내 계정" subtitle="프로필" />
       <PageBody>
         <Card className="mb-4">
-          <div className="flex items-center gap-[10px]">
+          {/* 이름 + 등급 · 상태 뱃지 + 요약이 한 줄이다 — 좁은 화면에서는 줄바꿈으로 흡수한다 */}
+          <div className="flex flex-wrap items-center gap-[10px] lg:flex-nowrap">
             <div className="text-[25px] font-medium">{member.name}</div>
             <Badge tone={mbrGrdTone(member.membershipGradeCode)}>
               {member.membershipGradeName}
@@ -65,7 +66,8 @@ export function MyAccountPage() {
             <Badge tone={mbrSttsTone(member.membershipStatusCode)}>
               {member.membershipStatusName}
             </Badge>
-            <div className="flex-1" />
+            {/* 밀어내기용 빈 칸 — 줄바꿈된 화면에서는 한 줄을 통째로 먹는 자리라 접는다 */}
+            <div className="hidden flex-1 lg:block" />
             <div className="text-[14px] text-n500">
               회원 #{member.memberId} · {genText} ·{" "}
               {member.departmentName || "학과 미입력"}
@@ -73,7 +75,8 @@ export function MyAccountPage() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4">
+        {/* 좌우 두 단은 lg 미만에서 한 단으로 쌓는다 — 회원 정보 다음에 운영진 항목이 온다 */}
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.15fr_1fr]">
           <Card>
             <div className="mb-3 flex items-center">
               <SectionLabel>회원 정보</SectionLabel>
@@ -91,9 +94,21 @@ export function MyAccountPage() {
 
             {editor.editing ? (
               <>
-                <div className="grid grid-cols-2 gap-[14px]">
+                {/*
+                  수정 폼은 좁은 화면에서 한 칸씩 세로로 놓는다. 두 칸을 유지하면 375px
+                  기준으로 입력란 하나가 130px 남짓이라 "010-0000-0000"이 들어가지 않고,
+                  학번 · 이메일 아래 안내 문장은 글자마다 줄바꿈된다.
+                */}
+                <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
                   <Field label={FIELD_LABEL.memberName} required error={errors.name}>
+                    {/*
+                      iOS Safari는 글자가 16px 미만인 입력란에 포커스가 가면 페이지를
+                      통째로 확대하고 되돌리지 않는다. TextField 기본값이 15.5px이라
+                      첫 칸을 누르는 순간 화면이 커진 채 나머지 칸을 채우게 된다.
+                      자동 확대는 모바일 사파리에만 있으니 lg 이상은 예전 값 그대로 둔다.
+                    */}
                     <TextField
+                      className="text-[16px] lg:text-[15.5px]"
                       value={values.name}
                       onChange={(e) => editor.set({ name: e.target.value })}
                       invalid={!!errors.name}
@@ -102,6 +117,7 @@ export function MyAccountPage() {
                   </Field>
                   <Field label="전화번호" error={errors.phoneNumber}>
                     <TextField
+                      className="text-[16px] lg:text-[15.5px]"
                       value={values.phoneNumber}
                       onChange={(e) => editor.set({ phoneNumber: e.target.value })}
                       invalid={!!errors.phoneNumber}
@@ -114,6 +130,7 @@ export function MyAccountPage() {
                     error={errors.departmentName}
                   >
                     <TextField
+                      className="text-[16px] lg:text-[15.5px]"
                       value={values.departmentName}
                       onChange={(e) => editor.set({ departmentName: e.target.value })}
                       invalid={!!errors.departmentName}
@@ -126,6 +143,7 @@ export function MyAccountPage() {
                     error={errors.academicYear}
                   >
                     <TextField
+                      className="text-[16px] lg:text-[15.5px]"
                       value={values.academicYear}
                       onChange={(e) => editor.set({ academicYear: e.target.value })}
                       invalid={!!errors.academicYear}
