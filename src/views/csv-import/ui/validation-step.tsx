@@ -102,7 +102,9 @@ export function ValidationStep({ wizard }: { wizard: MemberImportWizard }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-4 gap-3">
+      {/* 4칸을 375px에 늘어놓으면 한 칸이 70px이라 세 자리 수가 줄바꿈된다 —
+          좁은 화면에서는 2×2로 접고 lg 부터 예전처럼 한 줄에 넷을 둔다 */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatBox label="전체 행" value={summary.totalCount} size="lg" />
         <StatBox label="정상 후보" value={summary.okCount} tone="accent" size="lg" />
         <StatBox label="오류" value={summary.errorCount} tone="danger" size="lg" />
