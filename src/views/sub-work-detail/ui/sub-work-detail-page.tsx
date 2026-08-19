@@ -238,7 +238,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
       <PageHeader title="하위 업무 상세" subtitle="상태 · 점검 목록 · 승인" showBack />
       <PageBody>
         <Card className="mb-4">
-          <div className="flex items-center gap-[10px]">
+          <div className="flex flex-wrap items-center gap-[10px] lg:flex-nowrap">
             <div className="text-[24px] font-medium">{subWork.title}</div>
             <Badge tone="outline">{subWork.subWorkTypeName}</Badge>
             {subWork.approvalRequired && subWork.approvalStatus !== "APPROVED" && (
