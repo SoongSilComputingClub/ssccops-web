@@ -57,7 +57,8 @@ export function MyAccountPage() {
       <PageHeader title="내 계정" subtitle="프로필" />
       <PageBody>
         <Card className="mb-4">
-          <div className="flex items-center gap-[10px]">
+          {/* 이름 + 등급 · 상태 뱃지 + 요약이 한 줄이다 — 좁은 화면에서는 줄바꿈으로 흡수한다 */}
+          <div className="flex flex-wrap items-center gap-[10px] lg:flex-nowrap">
             <div className="text-[25px] font-medium">{member.name}</div>
             <Badge tone={mbrGrdTone(member.membershipGradeCode)}>
               {member.membershipGradeName}
@@ -65,7 +66,8 @@ export function MyAccountPage() {
             <Badge tone={mbrSttsTone(member.membershipStatusCode)}>
               {member.membershipStatusName}
             </Badge>
-            <div className="flex-1" />
+            {/* 밀어내기용 빈 칸 — 줄바꿈된 화면에서는 한 줄을 통째로 먹는 자리라 접는다 */}
+            <div className="hidden flex-1 lg:block" />
             <div className="text-[14px] text-n500">
               회원 #{member.memberId} · {genText} ·{" "}
               {member.departmentName || "학과 미입력"}
@@ -73,7 +75,8 @@ export function MyAccountPage() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4">
+        {/* 좌우 두 단은 lg 미만에서 한 단으로 쌓는다 — 회원 정보 다음에 운영진 항목이 온다 */}
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.15fr_1fr]">
           <Card>
             <div className="mb-3 flex items-center">
               <SectionLabel>회원 정보</SectionLabel>
