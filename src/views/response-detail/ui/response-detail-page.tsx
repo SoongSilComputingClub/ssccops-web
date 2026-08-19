@@ -86,7 +86,7 @@ function ResponseDetailContent({
         showBack
       />
       <PageBody>
-        <div className="grid grid-cols-[1fr_1.2fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.2fr]">
           <Card>
             <div className="flex items-center gap-2">
               <div className="text-[23px] font-medium">{member.mbrNm || "-"}</div>
