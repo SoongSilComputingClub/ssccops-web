@@ -101,7 +101,14 @@ export function MyAccountPage() {
                 */}
                 <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
                   <Field label={FIELD_LABEL.memberName} required error={errors.name}>
+                    {/*
+                      iOS Safari는 글자가 16px 미만인 입력란에 포커스가 가면 페이지를
+                      통째로 확대하고 되돌리지 않는다. TextField 기본값이 15.5px이라
+                      첫 칸을 누르는 순간 화면이 커진 채 나머지 칸을 채우게 된다.
+                      자동 확대는 모바일 사파리에만 있으니 lg 이상은 예전 값 그대로 둔다.
+                    */}
                     <TextField
+                      className="text-[16px] lg:text-[15.5px]"
                       value={values.name}
                       onChange={(e) => editor.set({ name: e.target.value })}
                       invalid={!!errors.name}
@@ -110,6 +117,7 @@ export function MyAccountPage() {
                   </Field>
                   <Field label="전화번호" error={errors.phoneNumber}>
                     <TextField
+                      className="text-[16px] lg:text-[15.5px]"
                       value={values.phoneNumber}
                       onChange={(e) => editor.set({ phoneNumber: e.target.value })}
                       invalid={!!errors.phoneNumber}
@@ -122,6 +130,7 @@ export function MyAccountPage() {
                     error={errors.departmentName}
                   >
                     <TextField
+                      className="text-[16px] lg:text-[15.5px]"
                       value={values.departmentName}
                       onChange={(e) => editor.set({ departmentName: e.target.value })}
                       invalid={!!errors.departmentName}
@@ -134,6 +143,7 @@ export function MyAccountPage() {
                     error={errors.academicYear}
                   >
                     <TextField
+                      className="text-[16px] lg:text-[15.5px]"
                       value={values.academicYear}
                       onChange={(e) => editor.set({ academicYear: e.target.value })}
                       invalid={!!errors.academicYear}
