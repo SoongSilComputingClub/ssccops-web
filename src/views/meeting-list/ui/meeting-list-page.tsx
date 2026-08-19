@@ -38,7 +38,7 @@ function MeetingCardSkeleton() {
 function MeetingCard({ meeting, onClick }: { meeting: MeetingListItem; onClick: () => void }) {
   return (
     <Card onClick={onClick}>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
         <Badge tone={mtgSttsTone(meeting.meetingStatus)}>
           {meeting.meetingStatus ? MTG_STTS_NM[meeting.meetingStatus] : "-"}
         </Badge>
@@ -88,7 +88,7 @@ export function MeetingListPage() {
       />
       <PageBody>
         {status === "loading" && (
-          <div className="grid grid-cols-2 gap-[14px]">
+          <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
             {[0, 1, 2, 3].map((i) => (
               <MeetingCardSkeleton key={i} />
             ))}
@@ -109,7 +109,7 @@ export function MeetingListPage() {
               action={canManage ? { label: "+ 등록", onClick: openCreate } : undefined}
             />
           ) : (
-            <div className="grid grid-cols-2 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
               {meetings.map((m) => (
                 <MeetingCard
                   key={m.meetingId}

@@ -67,7 +67,7 @@ interface AgendaTargetOption {
 
 function DetailSkeleton() {
   return (
-    <div className="grid grid-cols-[1fr_1.6fr] items-start gap-4">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.6fr]">
       <Card className="animate-pulse">
         <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
         <div className="mt-3 h-[28px] w-3/5 rounded bg-black/5" />
@@ -149,7 +149,7 @@ function AgendaCard({
 
   return (
     <div className="rounded-[12px] border border-line p-[14px]">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
         <div className="text-[15px] font-semibold">안건 {agenda.agendaOrder ?? "-"}</div>
         <span className="font-mono text-[12px] text-n500">안건 #{agenda.agendaId}</span>
         <div className="flex-1" />
@@ -191,7 +191,7 @@ function AgendaCard({
           {agenda.agendaName ?? "제목 없음"} · 연결된 운영 없음
         </div>
       )}
-      <div className="mt-3 flex gap-[7px]">
+      <div className="mt-3 flex flex-wrap gap-[7px] lg:flex-nowrap">
         {PRCS_SE_CDS.map((cd) => (
           <Chip
             key={cd}
@@ -412,9 +412,9 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
     <>
       <PageHeader title="회의 상세" subtitle="안건 · 처리 결과" showBack />
       <PageBody>
-        <div className="grid grid-cols-[1fr_1.6fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.6fr]">
           <Card>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
               <Badge tone={mtgSttsTone(meeting.meetingStatus)}>
                 {meeting.meetingStatus ? MTG_STTS_NM[meeting.meetingStatus] : "-"}
               </Badge>

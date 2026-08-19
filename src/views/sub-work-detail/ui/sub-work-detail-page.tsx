@@ -95,7 +95,7 @@ function DetailSkeleton() {
         <div className="h-[28px] w-2/5 rounded bg-black/5" />
         <div className="mt-6 h-[60px] w-full rounded bg-black/5" />
       </Card>
-      <div className="grid grid-cols-2 items-start gap-4">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <Card className="animate-pulse">
           <div className="h-[240px] w-full rounded bg-black/5" />
         </Card>
@@ -238,7 +238,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
       <PageHeader title="하위 업무 상세" subtitle="상태 · 점검 목록 · 승인" showBack />
       <PageBody>
         <Card className="mb-4">
-          <div className="flex items-center gap-[10px]">
+          <div className="flex flex-wrap items-center gap-[10px] lg:flex-nowrap">
             <div className="text-[24px] font-medium">{subWork.title}</div>
             <Badge tone="outline">{subWork.subWorkTypeName}</Badge>
             {subWork.approvalRequired && subWork.approvalStatus !== "APPROVED" && (
@@ -365,7 +365,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
           )}
         </Card>
 
-        <div className="grid grid-cols-2 items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <Card>
             <SectionLabel>상위 속성 · oper</SectionLabel>
             <KeyValueGrid
