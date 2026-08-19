@@ -118,7 +118,12 @@ export function FormLabelsPage() {
                 </div>
               )}
               <Card className="max-w-[640px] px-5 pt-4 pb-[6px]">
-                <div className="grid grid-cols-[1fr_120px_80px]">
+                {/*
+                  좁은 화면에서는 고정 열 두 개를 200px에서 152px로 줄인다 — 그만큼이
+                  라벨_명 열로 가야 이름이 글자마다 접히지 않는다. 머리글("사용 중인 폼"
+                  약 78px · "사용_여부" 약 59px)과 토글(38px)이 들어가는 하한이 이 값이다.
+                */}
+                <div className="grid grid-cols-[1fr_88px_64px] lg:grid-cols-[1fr_120px_80px]">
                   {["라벨_명", "사용 중인 폼", "사용_여부"].map((h) => (
                     <div key={h} className="pb-[10px] text-[13px] tracking-[.3px] text-n500">
                       {h}
