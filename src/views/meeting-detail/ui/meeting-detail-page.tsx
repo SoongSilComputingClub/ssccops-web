@@ -67,7 +67,7 @@ interface AgendaTargetOption {
 
 function DetailSkeleton() {
   return (
-    <div className="grid grid-cols-[1fr_1.6fr] items-start gap-4">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.6fr]">
       <Card className="animate-pulse">
         <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
         <div className="mt-3 h-[28px] w-3/5 rounded bg-black/5" />
@@ -412,7 +412,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
     <>
       <PageHeader title="회의 상세" subtitle="안건 · 처리 결과" showBack />
       <PageBody>
-        <div className="grid grid-cols-[1fr_1.6fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.6fr]">
           <Card>
             <div className="flex items-center gap-2">
               <Badge tone={mtgSttsTone(meeting.meetingStatus)}>
