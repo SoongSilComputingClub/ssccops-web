@@ -72,7 +72,12 @@ export function FormLabelsPage() {
                * 아래로 줄지 않는다 — 260px 고정과 겹치면 좁은 화면에서 '추가' 버튼을
                * 화면 밖으로 밀어낸다. 상한만 남기고 min-w-0으로 줄 수 있게 푼다.
                */
-              className="w-full max-w-[260px] min-w-0"
+              /*
+               * iOS Safari는 16px 미만 입력란에 포커스가 가면 화면을 통째로 확대하고
+               * 되돌리지 않는다 — TextField의 기본값 15.5px가 여기 걸린다. 데스크톱은
+               * lg:text-[15.5px]로 기본값과 같은 값을 되돌려 둔다.
+               */
+              className="w-full max-w-[260px] min-w-0 text-[16px] lg:text-[15.5px]"
             />
             <Button
               onClick={() => void add()}
