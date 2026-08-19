@@ -228,7 +228,8 @@ export function SignupPage() {
            */}
           <div className="col-span-1 lg:col-span-2">
             <div className="mb-[6px] text-[13.5px] text-n400">이메일</div>
-            <div className="rounded-[12px] bg-bg px-[11px] py-[9px] text-[15.5px] text-n300">
+            {/* 이메일에는 띄어쓰기가 없다 — 그냥 두면 긴 학교 계정이 상자 밖으로 밀려 나간다 */}
+            <div className="rounded-[12px] bg-bg px-[11px] py-[9px] text-[15.5px] break-words text-n300">
               {authUser.email}
             </div>
             <div className="mt-1 text-[12.5px] text-n500">
