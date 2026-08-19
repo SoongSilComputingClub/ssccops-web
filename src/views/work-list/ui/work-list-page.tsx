@@ -111,7 +111,7 @@ export function WorkListPage() {
       />
       <PageBody>
         {status === "loading" && (
-          <div className="grid grid-cols-2 gap-[14px]">
+          <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
             {[0, 1, 2, 3].map((i) => (
               <WorkCardSkeleton key={i} />
             ))}
@@ -134,7 +134,7 @@ export function WorkListPage() {
             />
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-[14px]">
+              <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
                 {works.map((w) => (
                   <WorkCard
                     key={w.workId}
