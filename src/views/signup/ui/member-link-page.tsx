@@ -112,7 +112,7 @@ export function MemberLinkPage() {
   };
 
   return (
-    <div className="w-[560px] px-6 py-14">
+    <div className="w-full max-w-[560px] px-4 py-14 lg:px-6">
       <h1 className="text-[28px] font-medium tracking-[-.4px]">기존 회원 정보와 연결</h1>
       <p className="mt-2 text-[14.5px] leading-[1.6] text-n400">
         이미 SSCC 명부에 등록된 회원이라면, 새로 가입하는 대신 그 회원 정보에 지금 로그인한

@@ -69,7 +69,7 @@ export function SignupCompletePage() {
   }
 
   return (
-    <div className="w-[480px] px-4">
+    <div className="w-full max-w-[480px] px-4 py-10 lg:py-0">
       <Badge tone={mbrGrdTone(member.membershipGradeCode)}>{member.membershipGradeName}</Badge>
       <h1 className="mt-3 text-[27px] font-medium tracking-[-.4px]">
         {linked ? "기존 회원 정보와 연결되었습니다" : "회원 가입이 완료되었습니다"}

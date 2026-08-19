@@ -159,7 +159,7 @@ export function SignupPage() {
   };
 
   return (
-    <div className="w-[640px] px-6 py-14">
+    <div className="w-full max-w-[640px] px-4 py-14 lg:px-6">
       <h1 className="text-[28px] font-medium tracking-[-.4px]">회원 가입</h1>
       <p className="mt-2 text-[14.5px] text-n400">
         소셜 계정 <span className="font-semibold text-ink">{provider}</span> 로
