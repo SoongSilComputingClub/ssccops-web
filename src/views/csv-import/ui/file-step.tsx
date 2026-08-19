@@ -103,7 +103,7 @@ export function FileStep({ wizard }: { wizard: MemberImportWizard }) {
       )}
 
       {file && preview && (
-        <div className="flex items-center gap-3 text-[13.5px] text-n500">
+        <div className="flex flex-wrap items-center gap-3 text-[13.5px] text-n500 lg:flex-nowrap">
           <span>
             헤더 {preview.headers.length}개를 읽었습니다 — 다음 단계에서 컬럼을 맞춥니다
           </span>
@@ -129,7 +129,14 @@ export function FileStep({ wizard }: { wizard: MemberImportWizard }) {
             양식 CSV 내려받기
           </button>
         </div>
-        <div className="grid grid-cols-[130px_70px_1fr_150px]">
+        {/*
+          안내표는 컬럼·구분·설명·예시를 가로로 맞춰 읽는 표라 세로로 쪼개면 '이 예시가 어느
+          컬럼의 것인지'를 다시 찾아야 한다. 좁은 화면에서는 표 구조를 바꾸는 대신 **이 표만**
+          가로로 스크롤시킨다 — 화면 전체가 밀리면 위의 파일 선택 영역까지 따라 밀린다.
+          CSV 이관은 원래 데스크톱 작업이라 여기서는 '깨지지 않는 것'까지가 목표다 (#96).
+        */}
+        <div className="overflow-x-auto">
+        <div className="grid min-w-[560px] grid-cols-[130px_70px_1fr_150px] lg:min-w-0">
           {["컬럼", "구분", "설명", "예시"].map((h) => (
             <div key={h} className="pb-[10px] text-[13px] tracking-[.3px] text-n500">
               {h}
@@ -153,6 +160,7 @@ export function FileStep({ wizard }: { wizard: MemberImportWizard }) {
               </div>
             </div>
           ))}
+        </div>
         </div>
         <div className="mt-3 text-[13.5px] text-n500">
           헤더 이름이 달라도 다음 단계에서 직접 매핑할 수 있습니다. 컬럼 순서는 상관없습니다.
