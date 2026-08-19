@@ -136,7 +136,13 @@ export function WorkDetailPage({ workId }: { workId: number }) {
       render: (sw) => {
         const rt = Math.round(sw.progressRate);
         return (
-          <span className="flex items-center gap-[10px]">
+          /*
+           * 좁은 화면에서 폭을 못 박는 이유: GridTable 카드의 값 칸은 내용 크기로 잡히는
+           * flex 항목인데, ProgressBar는 flex-1(기준 폭 0)이라 최대 콘텐츠 폭에 0으로
+           * 계산된다 — 폭을 주지 않으면 칸이 "100%" 글자만큼만 넓어지고 막대는 0px로
+           * 사라진다. lg:w-auto로 데스크톱(표의 열 트랙을 채우던 동작)은 그대로 둔다.
+           */
+          <span className="flex w-[120px] items-center gap-[10px] lg:w-auto">
             <ProgressBar value={rt} />
             <span className="w-[38px] text-right text-[14px] text-n500">{rt}%</span>
           </span>
