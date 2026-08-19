@@ -42,7 +42,7 @@ export function PublicFormPage({ formId }: { formId: number }) {
 
   if (status === "loading") {
     return (
-      <div className="mx-auto max-w-[720px] px-6 py-10">
+      <div className="mx-auto max-w-[720px] px-4 py-10 lg:px-6">
         <EmptyState message="폼을 불러오는 중입니다…" />
       </div>
     );
@@ -50,7 +50,7 @@ export function PublicFormPage({ formId }: { formId: number }) {
 
   if (status === "not-found") {
     return (
-      <div className="mx-auto max-w-[720px] px-6 py-10">
+      <div className="mx-auto max-w-[720px] px-4 py-10 lg:px-6">
         <EmptyState message="존재하지 않는 폼입니다." />
       </div>
     );
@@ -58,7 +58,7 @@ export function PublicFormPage({ formId }: { formId: number }) {
 
   if (status === "error") {
     return (
-      <div className="mx-auto max-w-[720px] px-6 py-10">
+      <div className="mx-auto max-w-[720px] px-4 py-10 lg:px-6">
         <EmptyState
           message={publicForm.errorMessage}
           action={{ label: "다시 시도", onClick: publicForm.reload }}
@@ -160,8 +160,8 @@ export function PublicFormPage({ formId }: { formId: number }) {
   };
 
   return (
-    <div className="mx-auto flex max-w-[720px] flex-col gap-3 px-6 pt-7 pb-10">
-      <div className="rounded-2xl bg-surface px-6 py-[22px] shadow-[0_0_0_1px_#e5e8eb]">
+    <div className="mx-auto flex max-w-[720px] flex-col gap-3 px-4 pt-7 pb-10 lg:px-6">
+      <div className="rounded-2xl bg-surface px-[18px] py-[22px] shadow-[0_0_0_1px_#e5e8eb] lg:px-6">
         <div className="flex items-center gap-[10px]">
           <div className="flex size-[26px] items-center justify-center rounded-[7px] border border-accent text-[13px] text-accent">
             S
@@ -204,7 +204,7 @@ export function PublicFormPage({ formId }: { formId: number }) {
         </div>
       )}
 
-      <div className="rounded-2xl bg-surface px-6 py-[22px] shadow-[0_0_0_1px_#e5e8eb]">
+      <div className="rounded-2xl bg-surface px-[18px] py-[22px] shadow-[0_0_0_1px_#e5e8eb] lg:px-6">
         <div className="text-[18px] font-semibold">
           {currentPage + 1}. {pages[currentPage]?.pageTtl}
         </div>
