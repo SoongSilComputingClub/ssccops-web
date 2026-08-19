@@ -314,7 +314,7 @@ function QitemCard({
                 key={o}
                 onClick={() => onChange(toggleOption(qitem, value, o))}
                 className={cn(
-                  "flex cursor-pointer items-center gap-[10px] rounded-[12px] px-[10px] py-[11px] text-[15px]",
+                  "flex cursor-pointer items-center gap-[10px] rounded-[12px] px-[10px] py-[13px] text-[15px] lg:py-[11px]",
                   picked ? "bg-accent/8" : "hover:bg-black/2",
                 )}
               >
@@ -325,7 +325,7 @@ function QitemCard({
                     picked ? "border-accent bg-accent" : "border-line-strong",
                   )}
                 />
-                {o}
+                <span className="min-w-0 break-words">{o}</span>
               </div>
             );
           })}
