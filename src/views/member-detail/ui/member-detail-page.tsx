@@ -170,7 +170,8 @@ function MemberDetailView({ mbrId }: { mbrId: number }) {
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.15fr_1fr]">
           <div className="flex flex-col gap-4">
             <Card>
-              <div className="flex items-center gap-[10px]">
+              {/* 이름 + 뱃지 셋은 좁은 화면에서 줄바꿈으로 흡수한다 (lg 이상은 한 줄 그대로) */}
+              <div className="flex flex-wrap items-center gap-[10px] lg:flex-nowrap">
                 <div className="text-[26px] font-medium">{member.name}</div>
                 {/* 색은 코드로 고르고 글자는 서버가 준 명칭을 쓴다 (api/members.ts 주석) */}
                 <Badge tone={mbrGrdTone(member.membershipGradeCode)}>
@@ -505,12 +506,16 @@ function AssignmentRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-[12px] border border-line p-3",
+        /*
+          좁은 화면에서는 세로로 쌓는다 — 대표 지정 · 종료 두 버튼이 150px 남짓을
+          가져가면 역할 이름(truncate)에 남는 폭이 거의 없어 몇 글자만 보인다.
+        */
+        "flex flex-col gap-2 rounded-[12px] border border-line p-3 lg:flex-row lg:items-center",
         ended && "opacity-60",
       )}
     >
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+      <div className="min-w-0 lg:flex-1">
+        <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
           <div className="truncate text-[16px] font-medium">{assignment.roleNm}</div>
           {/* 대표는 표시용이며 권한과 무관하다 (BR-M26 · 부여 시트가 그 문장을 갖는다) */}
           {!ended && assignment.rprsRoleYn && <Pill tone="blue">대표</Pill>}
@@ -520,21 +525,29 @@ function AssignmentRow({
           {assignment.roleBgngYmd} ~ {assignment.roleEndYmd ?? "무기한"}
         </div>
       </div>
-      {onRepresent && !assignment.rprsRoleYn && (
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={busy}
-          title="사이드바 프로필에 내걸 역할로 지정합니다 (권한과 무관)"
-          onClick={onRepresent}
-        >
-          대표 지정
-        </Button>
-      )}
-      {onEnd && (
-        <Button variant="ghost-danger" size="sm" disabled={busy} onClick={onEnd}>
-          종료
-        </Button>
+      {/*
+        두 버튼은 세로로 쌓인 뒤에도 서로 나란히 둔다. lg:contents 로 이 상자가 사라지므로
+        1024px 이상에서는 예전처럼 정보 칸의 형제로 놓인다.
+      */}
+      {(onEnd || (onRepresent && !assignment.rprsRoleYn)) && (
+        <div className="flex gap-2 lg:contents">
+          {onRepresent && !assignment.rprsRoleYn && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={busy}
+              title="사이드바 프로필에 내걸 역할로 지정합니다 (권한과 무관)"
+              onClick={onRepresent}
+            >
+              대표 지정
+            </Button>
+          )}
+          {onEnd && (
+            <Button variant="ghost-danger" size="sm" disabled={busy} onClick={onEnd}>
+              종료
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -659,7 +672,11 @@ function ChangeWarningPanel({
       role="alert"
       className="mb-4 rounded-2xl border border-amber bg-amber-soft p-[18px]"
     >
-      <div className="flex items-start gap-[10px]">
+      {/*
+        '확인했습니다'는 좁은 화면에서 아래 줄로 내린다 — 폭을 100%로 잡아 두면 첫 줄에
+        들어가지 못해 다음 줄로 넘어간다. lg 이상에서는 w-auto라 예전 자리 그대로다.
+      */}
+      <div className="flex flex-wrap items-start gap-[10px] lg:flex-nowrap">
         <div className="mt-[3px] flex size-[18px] flex-none items-center justify-center rounded-full bg-amber text-[12px] font-bold text-white">
           !
         </div>
@@ -681,7 +698,12 @@ function ChangeWarningPanel({
             처리해주세요.
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={onDismiss}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full lg:w-auto"
+          onClick={onDismiss}
+        >
           확인했습니다
         </Button>
       </div>
