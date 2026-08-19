@@ -183,7 +183,7 @@ export function SignupPage() {
        * 이 길이 있다는 것을 끝내 모른 채 명부에 두 번째 줄을 만든다. 그래서 **누르기 전부터**
        * 보인다. 기본 동작은 어디까지나 새 가입이므로 눈에 덜 띄는 한 줄로 둔다.
        */}
-      <div className="mt-3 flex items-center justify-between gap-3 rounded-[12px] border border-line bg-surface px-[14px] py-[10px]">
+      <div className="mt-3 flex flex-col items-start justify-between gap-3 rounded-[12px] border border-line bg-surface px-[14px] py-[10px] lg:flex-row lg:items-center">
         <div className="text-[13.5px] leading-[1.6] text-n400">
           이미 SSCC 회원이신가요? 명부에 등록돼 있다면 기존 회원 정보에 연결하세요.
         </div>

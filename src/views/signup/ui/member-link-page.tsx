@@ -184,7 +184,8 @@ export function MemberLinkPage() {
         </div>
       )}
 
-      <div className="mt-4 flex gap-2">
+      {/* 두 버튼 다 whitespace-nowrap이라 좁은 화면에서 합이 넘치면 잘린다 — 넘치면 줄을 바꾼다 */}
+      <div className="mt-4 flex flex-wrap gap-2">
         {/* 여기서 되돌아가는 곳은 로그인이 아니라 가입 화면이다 — 인증은 이미 끝나 있다 */}
         <Button
           variant="ghost"
