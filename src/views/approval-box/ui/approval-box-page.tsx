@@ -177,7 +177,7 @@ export function ApprovalBoxPage() {
                       {item.title}
                     </div>
 
-                    <div className="mt-1 flex items-center gap-2 text-[13.5px] text-n500">
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[13.5px] text-n500 lg:flex-nowrap">
                       <span>등록자 {item.registrantName || "-"}</span>
                       <span>· 승인자 {roleName}</span>
                       {dday && (
