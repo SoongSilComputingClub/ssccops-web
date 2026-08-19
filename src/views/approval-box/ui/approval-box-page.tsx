@@ -217,7 +217,7 @@ export function ApprovalBoxPage() {
                     )}
 
                     {tab === "PENDING" && (
-                      <div className="mt-4 grid grid-cols-4 gap-2">
+                      <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
                         {item.quorum.needed && (
                           <>
                             <Button
@@ -248,7 +248,7 @@ export function ApprovalBoxPage() {
                             variant="ghost-danger"
                             size="sm"
                             disabled={pending}
-                            className={item.quorum.needed ? undefined : "col-span-2"}
+                            className={item.quorum.needed ? undefined : "lg:col-span-2"}
                             onClick={() => setRejectTarget(item)}
                           >
                             반려
@@ -259,7 +259,7 @@ export function ApprovalBoxPage() {
                             size="sm"
                             disabled={pending || approveBlockReason !== ""}
                             title={approveBlockReason || undefined}
-                            className={item.quorum.needed ? undefined : "col-span-2"}
+                            className={item.quorum.needed ? undefined : "lg:col-span-2"}
                             onClick={() => void runDecide(item, "APPROVE_COMPLETE")}
                           >
                             승인
