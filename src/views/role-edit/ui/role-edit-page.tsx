@@ -100,7 +100,9 @@ function RoleEditorView({ roleId }: { roleId?: number }) {
         )}
 
         {editor.status === "ready" && (
-          <div className="grid grid-cols-[1.2fr_1fr] items-start gap-4">
+          /* 좁은 화면에서는 1열로 쌓는다 — 편집 카드가 먼저, 재임 회원이 그 아래다.
+             DOM 순서가 곧 화면 순서라 마크업을 바꾸지 않아도 읽는 차례가 맞는다 */
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.2fr_1fr]">
             <div className="flex flex-col gap-4">
               <Card>
                 <SectionLabel className="mb-3">
