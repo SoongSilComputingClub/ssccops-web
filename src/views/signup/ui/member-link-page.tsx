@@ -32,6 +32,15 @@ import { Button, Card, Field, TextField, flash } from "@/shared/ui";
  * **이미 있는 회원이 나임을 증명하는 것**이고, 그래서 받는 값도 학적 정보가 아니라 명부와
  * 대조할 세 가지(학번·회원명·전화번호)뿐이다.
  */
+/**
+ * 입력란 글자 크기 — 좁은 화면에서만 16px로 올린다.
+ *
+ * 이유와 `!`가 필요한 사정은 가입 화면(signup-page.tsx)의 같은 상수 주석에 있다. 여기는
+ * 세 칸을 **명부와 한 글자도 다르지 않게** 쳐야 하는 화면이라, 첫 칸에서 화면이 확대된 채
+ * 나머지를 채우면 오타를 확인할 길이 없는데 서버는 어느 칸이 틀렸는지 알려주지 않는다.
+ */
+const INPUT_TEXT = "text-[16px]! lg:text-[15.5px]!";
+
 export function MemberLinkPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -141,6 +150,7 @@ export function MemberLinkPage() {
         <div className="grid gap-[14px]">
           <Field label={FIELD_LABEL.studentNumber} required error={errors.studentNumber}>
             <TextField
+              className={INPUT_TEXT}
               value={f.studentNumber}
               onChange={(e) => set({ studentNumber: e.target.value })}
               invalid={!!errors.studentNumber}
@@ -150,6 +160,7 @@ export function MemberLinkPage() {
           </Field>
           <Field label={FIELD_LABEL.memberName} required error={errors.name}>
             <TextField
+              className={INPUT_TEXT}
               value={f.name}
               onChange={(e) => set({ name: e.target.value })}
               invalid={!!errors.name}
@@ -159,6 +170,7 @@ export function MemberLinkPage() {
           </Field>
           <Field label="전화번호" required error={errors.phoneNumber}>
             <TextField
+              className={INPUT_TEXT}
               value={f.phoneNumber}
               onChange={(e) => set({ phoneNumber: e.target.value })}
               invalid={!!errors.phoneNumber}

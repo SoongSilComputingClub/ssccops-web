@@ -21,6 +21,20 @@ import { ROUTES } from "@/shared/config/routes";
 import { safeNextPath, withNextParam } from "@/shared/lib/next-path";
 import { Button, Card, Chip, Field, TextField, flash } from "@/shared/ui";
 
+/**
+ * 입력란 글자 크기 — 좁은 화면에서만 16px로 올린다.
+ *
+ * iOS Safari는 글자가 16px 미만인 입력란에 포커스가 가면 페이지를 통째로 확대하고 되돌리지
+ * 않는다. 가입 폼은 필수 칸이 최대 다섯이라 첫 칸을 누르는 순간 나머지를 가로로 밀린 채
+ * 채우게 된다(#87이 폼 응답 화면에서 고친 것과 같은 문제다).
+ *
+ * `!`를 붙이는 이유: shared/ui의 `cn`은 tailwind-merge가 아니라 단순 join이라 TextField가
+ * 기본으로 가진 `text-[15.5px]`가 클래스 목록에 그대로 남는다. 같은 층의 두 클래스 중
+ * 무엇이 이기는지는 생성된 CSS 순서에 달려 있어 확실하지 않다 — 둘 다 important로 두면
+ * `lg:`가 항상 뒤에 오므로 1024px 이상은 예전 값 15.5px로 확정된다.
+ */
+const INPUT_TEXT = "text-[16px]! lg:text-[15.5px]!";
+
 export function SignupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -224,6 +238,7 @@ export function SignupPage() {
 
           <Field label={FIELD_LABEL.memberName} required error={errors.name}>
             <TextField
+              className={INPUT_TEXT}
               value={f.name}
               onChange={(e) => set({ name: e.target.value })}
               invalid={!!errors.name}
@@ -232,6 +247,7 @@ export function SignupPage() {
           </Field>
           <Field label="전화번호" required error={errors.phoneNumber}>
             <TextField
+              className={INPUT_TEXT}
               value={f.phoneNumber}
               onChange={(e) => set({ phoneNumber: e.target.value })}
               invalid={!!errors.phoneNumber}
@@ -244,6 +260,7 @@ export function SignupPage() {
             error={errors.studentNumber}
           >
             <TextField
+              className={INPUT_TEXT}
               value={f.studentNumber}
               onChange={(e) => set({ studentNumber: e.target.value })}
               invalid={!!errors.studentNumber}
@@ -256,6 +273,7 @@ export function SignupPage() {
             error={errors.departmentName}
           >
             <TextField
+              className={INPUT_TEXT}
               value={f.departmentName}
               onChange={(e) => set({ departmentName: e.target.value })}
               invalid={!!errors.departmentName}
@@ -265,6 +283,7 @@ export function SignupPage() {
           {isEnrolled && (
             <Field label={FIELD_LABEL.academicYear} required error={errors.academicYear}>
               <TextField
+              className={INPUT_TEXT}
                 value={f.academicYear}
                 onChange={(e) => set({ academicYear: e.target.value })}
                 invalid={!!errors.academicYear}
@@ -275,6 +294,7 @@ export function SignupPage() {
           )}
           <Field label={FIELD_LABEL.generationNumber} error={errors.generationNumber}>
             <TextField
+              className={INPUT_TEXT}
               value={f.generationNumber}
               onChange={(e) => set({ generationNumber: e.target.value })}
               invalid={!!errors.generationNumber}
