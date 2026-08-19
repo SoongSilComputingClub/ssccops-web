@@ -106,7 +106,7 @@ function meetingRow(m: MeetingListItem): OperRow {
 
 function OperationsHubSkeleton() {
   return (
-    <div className="grid grid-cols-[1.5fr_1fr] items-start gap-4">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.5fr_1fr]">
       {[0, 1].map((i) => (
         <Card key={i} className="animate-pulse">
           <div className="h-[20px] w-2/5 rounded bg-black/5" />
@@ -168,7 +168,7 @@ export function OperationsHubPage() {
 
         {status === "ready" && (
           <>
-            <div className="grid grid-cols-3 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-3">
               {kindCards.map((k) => (
                 <Card key={k.cd} onClick={() => router.push(k.href)}>
                   <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export function OperationsHubPage() {
               ))}
             </div>
 
-            <div className="mt-4 grid grid-cols-[1.5fr_1fr] items-start gap-4">
+            <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.5fr_1fr]">
               <Card>
                 <div className="mb-[14px] flex items-center gap-[7px]">
                   {KIND_TABS.map((t) => (
