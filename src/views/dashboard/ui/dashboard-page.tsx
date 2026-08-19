@@ -264,9 +264,15 @@ export function DashboardPage() {
             </div>
 
             <Card className="mt-4">
-              <div className="mb-[14px] flex items-center gap-3">
-                <div className="text-[18px] font-medium">내 업무 목록</div>
-                <div className="flex gap-[7px]">
+              {/*
+                좁은 화면에서는 제목 · 필터 칩 · 건수가 한 줄에 다 들어가지 않는다.
+                줄바꿈을 열어 두지 않으면 flex 항목끼리 밀어내다 제목이 38px까지 찌그러져
+                "내 업 무 목 록"처럼 글자마다 줄이 바뀐다(#103). 칩을 마지막 순서로 내려
+                제목과 건수가 첫 줄에 온전히 남게 하고, lg에서는 기존 한 줄 배치로 되돌린다.
+              */}
+              <div className="mb-[14px] flex flex-wrap items-center gap-3 lg:flex-nowrap">
+                <div className="shrink-0 text-[18px] font-medium">내 업무 목록</div>
+                <div className="order-last flex gap-[7px] lg:order-none">
                   {MY_FILTERS.map((f) => (
                     <Chip key={f} active={myFilter === f} onClick={() => setMyFilter(f)}>
                       {f}
@@ -274,7 +280,7 @@ export function DashboardPage() {
                   ))}
                 </div>
                 <div className="flex-1" />
-                <div className="text-[14px] text-n500">{myTasks.length}건</div>
+                <div className="shrink-0 text-[14px] text-n500">{myTasks.length}건</div>
               </div>
               <GridTable
                 columns={taskColumns}
