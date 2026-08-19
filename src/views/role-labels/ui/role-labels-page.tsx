@@ -235,7 +235,15 @@ export function RoleLabelsPage() {
                 </div>
               )}
               <Card className="max-w-[820px] px-5 pt-4 pb-[6px]">
-                <div className="grid grid-cols-[100px_180px_1fr_130px]">
+                {/*
+                  분류 표는 순번·코드·이름·관리 네 열이 서로를 설명하는 값이라 카드로 쪼개면
+                  '어느 분류의 수정 버튼인지'가 흐려진다(GridTable 을 쓰지 않고 직접 그린
+                  이유도 인라인 편집 때문이다). 좁은 화면에서는 표를 바꾸는 대신 **이 표만**
+                  가로로 스크롤시킨다 — 화면 전체가 밀리면 위의 탭·추가 줄까지 따라 밀린다.
+                  min-w 는 1fr(이름) 열이 짜부라지지 않을 만큼만 잡고 lg 에서 되돌린다.
+                */}
+                <div className="overflow-x-auto">
+                <div className="grid min-w-[600px] grid-cols-[100px_180px_1fr_130px] lg:min-w-0">
                   {[
                     FIELD_LABEL.displayOrder,
                     FIELD_LABEL.roleClassificationCode,
@@ -377,7 +385,8 @@ export function RoleLabelsPage() {
                       </div>
                     );
                   })}
-                  </div>
+                </div>
+                </div>
               </Card>
             </>
           ))}
