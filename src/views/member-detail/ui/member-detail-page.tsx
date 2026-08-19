@@ -616,8 +616,14 @@ function EndRoleSheet({
         error={beforeStart ? "종료일은 시작일보다 이를 수 없습니다" : null}
         className="mb-4"
       >
+        {/*
+          iOS Safari는 글자가 16px 미만인 입력란에 포커스가 가면 페이지를 통째로 확대한다.
+          TextField 기본값은 15.5px이라 날짜를 고르는 순간 시트 밖으로 화면이 밀린다.
+          자동 확대는 모바일 사파리에만 있는 동작이라 lg 이상은 예전 값 그대로 둔다.
+        */}
         <TextField
           type="date"
+          className="text-[16px] lg:text-[15.5px]"
           value={value}
           min={assignment.roleBgngYmd}
           invalid={beforeStart}
