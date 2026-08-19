@@ -55,7 +55,7 @@ function subWorkBadge(subWork: WorkSubWorkSummary) {
 
 function DetailSkeleton() {
   return (
-    <div className="grid grid-cols-[1fr_1.3fr] items-start gap-4">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.3fr]">
       <Card className="animate-pulse">
         <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
         <div className="mt-3 h-[28px] w-3/5 rounded bg-black/5" />
@@ -161,7 +161,7 @@ export function WorkDetailPage({ workId }: { workId: number }) {
         }}
       />
       <PageBody>
-        <div className="grid grid-cols-[1fr_1.3fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.3fr]">
           <Card>
             <div className="flex items-center gap-2">
               <Badge tone={workSttsTone(work.workStatus)}>
