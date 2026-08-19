@@ -28,7 +28,8 @@ export function SearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 border-none bg-transparent py-[9px] text-[15.5px] text-ink outline-none placeholder:text-n500"
+        // 16px는 iOS 자동 확대 방지다 — field.tsx의 INPUT_BASE 주석 참조 (#105)
+        className="flex-1 border-none bg-transparent py-[9px] text-[16px] text-ink outline-none placeholder:text-n500 lg:text-[15.5px]"
       />
     </div>
   );
