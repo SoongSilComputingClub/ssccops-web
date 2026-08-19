@@ -5,6 +5,16 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "SSCC 운영관리",
   description: "SSCC 운영관리시스템",
+  /*
+   * iOS Safari는 manifest를 보지 않는다 (#108) — 홈 화면에 추가했을 때 전체 화면으로 뜨게
+   * 하려면 이 메타가 따로 있어야 한다. 상태 표시줄을 default로 둔 것은 상단 바가 흰색이라
+   * 글자가 검게 나와야 읽히기 때문이다.
+   */
+  appleWebApp: {
+    capable: true,
+    title: "SSCC 운영",
+    statusBarStyle: "default",
+  },
 };
 
 /*
@@ -15,6 +25,12 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  /*
+   * manifest에도 theme_color가 있지만 여기에도 둔다 (#108) — manifest 쪽은 설치된 앱의
+   * 창 색이고, 이쪽은 브라우저로 열었을 때의 주소창 색이라 적용 시점이 다르다.
+   * Next 14부터 themeColor는 metadata가 아니라 viewport에 넣는다.
+   */
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
