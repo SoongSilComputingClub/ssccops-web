@@ -166,7 +166,8 @@ function MemberDetailView({ mbrId }: { mbrId: number }) {
         {warnings.length > 0 && (
           <ChangeWarningPanel warnings={warnings} onDismiss={() => setWarnings([])} />
         )}
-        <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4">
+        {/* 좌우 두 단은 lg 미만에서 한 단으로 쌓는다 — 프로필 · 역할 · 이력 순서 그대로다 */}
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.15fr_1fr]">
           <div className="flex flex-col gap-4">
             <Card>
               <div className="flex items-center gap-[10px]">
@@ -185,7 +186,12 @@ function MemberDetailView({ mbrId }: { mbrId: number }) {
                 회원 #{member.memberId} · 가입 {member.joinDate}
               </div>
               <div className="my-4 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
-              <div className="grid grid-cols-[84px_1fr_84px_1fr] gap-y-[9px] text-[15px]">
+              {/*
+                라벨-값을 두 쌍씩 놓던 4열은 좁은 화면에서 한 쌍씩 놓는다. 84px 라벨을
+                그대로 둔 채 값을 1fr로 남기면 375px에서 값에 남는 폭이 60px 남짓이라
+                연락처 · 이메일이 통째로 줄바꿈된다.
+              */}
+              <div className="grid grid-cols-[84px_1fr] gap-y-[9px] text-[15px] lg:grid-cols-[84px_1fr_84px_1fr]">
                 <div className="text-[14px] text-n500">학생번호</div>
                 <div>{member.studentNumber || "학번 미확인"}</div>
                 <div className="text-[14px] text-n500">기수</div>
