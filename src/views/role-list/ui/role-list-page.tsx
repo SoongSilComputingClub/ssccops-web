@@ -147,7 +147,9 @@ function RoleListView() {
     <>
       <PageHeader title="역할 관리" subtitle="역할 목록 · 역할 분류" />
       <PageBody>
-        <div className="mb-4 flex items-center gap-3">
+        {/* 좁은 화면에서는 탭이 한 줄을 다 쓰고 '새 역할'이 다음 줄로 내려간다 —
+            lg:flex-nowrap 으로 1024px 이상은 예전처럼 한 줄에 둔다 */}
+        <div className="mb-4 flex flex-wrap items-center gap-3 lg:flex-nowrap">
           <RoleTabs value="역할 목록" />
           <div className="flex-1" />
           <button
@@ -171,7 +173,7 @@ function RoleListView() {
           <>
             {/* 분류 칩은 분류 API 가 그린다 — 역할 응답에서 코드를 모아 만들면 역할이 하나도
                 없는 분류가 필터에서 사라져, 그 분류가 있다는 것조차 알 수 없게 된다 */}
-            <div className="mb-[14px] flex items-center gap-[7px]">
+            <div className="mb-[14px] flex flex-wrap items-center gap-[7px] lg:flex-nowrap">
               <Chip active={filter === ALL} onClick={() => setFilter(ALL)}>
                 {ALL}
               </Chip>
@@ -231,7 +233,9 @@ function RoleTabs({ value }: { value: "역할 목록" | "역할 분류" }) {
       onChange={(v) => {
         if (v !== value) router.push(v === "역할 분류" ? ROUTES.roleLabels : ROUTES.roles);
       }}
-      className="w-[400px]"
+      /* 400px 고정은 375px 화면을 넘겨 페이지 전체가 가로로 밀린다 — 좁은 화면에서는
+         칸에 맞추고 1024px 이상에서는 예전 폭 그대로 둔다 */
+      className="w-full max-w-[400px] lg:w-[400px]"
     />
   );
 }
