@@ -94,7 +94,12 @@ export function MyAccountPage() {
 
             {editor.editing ? (
               <>
-                <div className="grid grid-cols-2 gap-[14px]">
+                {/*
+                  수정 폼은 좁은 화면에서 한 칸씩 세로로 놓는다. 두 칸을 유지하면 375px
+                  기준으로 입력란 하나가 130px 남짓이라 "010-0000-0000"이 들어가지 않고,
+                  학번 · 이메일 아래 안내 문장은 글자마다 줄바꿈된다.
+                */}
+                <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
                   <Field label={FIELD_LABEL.memberName} required error={errors.name}>
                     <TextField
                       value={values.name}
