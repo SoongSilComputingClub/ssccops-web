@@ -95,7 +95,7 @@ function DetailSkeleton() {
         <div className="h-[28px] w-2/5 rounded bg-black/5" />
         <div className="mt-6 h-[60px] w-full rounded bg-black/5" />
       </Card>
-      <div className="grid grid-cols-2 items-start gap-4">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <Card className="animate-pulse">
           <div className="h-[240px] w-full rounded bg-black/5" />
         </Card>
@@ -365,7 +365,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
           )}
         </Card>
 
-        <div className="grid grid-cols-2 items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <Card>
             <SectionLabel>상위 속성 · oper</SectionLabel>
             <KeyValueGrid
