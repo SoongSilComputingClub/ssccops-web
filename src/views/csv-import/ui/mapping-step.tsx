@@ -64,19 +64,27 @@ export function MappingStep({ wizard }: { wizard: MemberImportWizard }) {
             const sample = preview.sampleRows[0]?.[column] ?? "";
 
             return (
-              <div key={header} className="flex items-center gap-3">
-                <div className="w-[180px] min-w-0">
+              /*
+               * 헤더(180px) → 화살표 → 선택(240px)이 한 줄에 붙어 있어 좁은 화면에서는
+               * 선택 상자가 화면 밖으로 나간다. 매핑은 이 화면의 유일한 조작이라
+               * 세로로 쌓아 둘 다 온전히 보이게 한다.
+               */
+              <div key={header} className="flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-3">
+                <div className="min-w-0 lg:w-[180px]">
                   <div className="truncate text-[15px] font-medium">{header || "(빈 헤더)"}</div>
                   {sample && (
                     <div className="truncate font-mono text-[12.5px] text-n500">{sample}</div>
                   )}
                 </div>
-                <div className="text-n500">→</div>
+                {/* 세로로 쌓이면 화살표가 가리키는 방향이 어긋난다 — 그 배치에서는 감춘다 */}
+                <div className="hidden text-n500 lg:block">→</div>
                 <SelectField
                   value={fieldKey}
                   onChange={(e) => mapHeader(header, e.target.value)}
                   aria-label={`${header} 컬럼이 들어갈 시스템 필드`}
-                  className={`max-w-[240px] ${duplicated ? "border-danger" : ""}`}
+                  /* iOS Safari 는 16px 미만 입력란에 포커스가 가면 페이지를 통째로 확대한다 —
+                     SelectField 기본값이 15px 이라 여기 걸린다 */
+                  className={`max-w-[240px] text-[16px] lg:text-[15px] ${duplicated ? "border-danger" : ""}`}
                 >
                   <option value="">매핑 안 함</option>
                   {MEMBER_IMPORT_FIELDS.map((f) => (
