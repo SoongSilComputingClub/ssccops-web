@@ -38,7 +38,12 @@ export function Sheet({
         className="fixed inset-0 z-[90] animate-fade-in bg-black/55"
         onClick={onClose}
       />
-      <div className="fixed top-1/2 left-1/2 z-[91] max-h-[78%] w-[440px] -translate-x-1/2 -translate-y-1/2 animate-pop-in overflow-y-auto rounded-2xl bg-surface p-[22px] shadow-[0_0_0_1px_#8b95a1,0_16px_40px_rgba(0,0,0,.56)]">
+      {/*
+        폭이 w-[440px] 고정이면 375px 화면에서 좌우가 잘려 취소·확인 버튼에 닿을 수 없다 (#85).
+        max-w로 바꾸고 좌우 여백을 빼 좁은 화면에서는 화면에 맞추고, 440px 이상에서는
+        예전과 같은 크기를 유지한다.
+      */}
+      <div className="fixed top-1/2 left-1/2 z-[91] max-h-[78%] w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 animate-pop-in overflow-y-auto rounded-2xl bg-surface p-[22px] shadow-[0_0_0_1px_#8b95a1,0_16px_40px_rgba(0,0,0,.56)]">
         <div className="text-[20px] font-medium">{title}</div>
         {hint && <div className="mt-[5px] mb-[18px] text-[14px] text-n500">{hint}</div>}
         {children}
