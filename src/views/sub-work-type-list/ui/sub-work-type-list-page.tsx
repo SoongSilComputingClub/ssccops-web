@@ -140,7 +140,7 @@ export function SubWorkTypeListPage() {
     <>
       <PageHeader title="하위 업무 유형 관리" subtitle="승인 규칙 기준정보" />
       <PageBody>
-        <div className="mb-4 flex items-center justify-end gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
           {/* 잠긴 버튼의 툴팁만으로는 왜 안 되는지 놓치기 쉬워 사유를 옆에 적는다 */}
           {!canManage && <div className="text-[13.5px] text-n500">{NO_MANAGE}</div>}
           <Button
@@ -169,7 +169,7 @@ export function SubWorkTypeListPage() {
             </Field>
             <div className="mt-4">
               <div className="mb-2 text-[13.5px] text-n400">승인_필요_여부</div>
-              <div className="flex gap-[7px]">
+              <div className="flex flex-wrap gap-[7px]">
                 {["필요", "불필요"].map((v) => (
                   <Chip
                     key={v}
@@ -192,7 +192,7 @@ export function SubWorkTypeListPage() {
               <>
                 <div className="mt-4">
                   <div className="mb-2 text-[13.5px] text-n400">승인자_역할_코드</div>
-                  <div className="flex gap-[7px]">
+                  <div className="flex flex-wrap gap-[7px]">
                     {AUTZR_ROLE_CDS.map((cd) => (
                       <Chip
                         key={cd}
@@ -206,7 +206,7 @@ export function SubWorkTypeListPage() {
                 </div>
                 <div className="mt-4">
                   <div className="mb-2 text-[13.5px] text-n400">최소_필요_동의_수</div>
-                  <div className="flex items-center gap-[7px]">
+                  <div className="flex flex-wrap items-center gap-[7px]">
                     {["단독", "정족수"].map((v) => (
                       <Chip
                         key={v}
@@ -294,7 +294,14 @@ export function SubWorkTypeListPage() {
                   {admin.toggleErrorMessage}
                 </div>
               )}
-              <Card className="px-5 pt-4 pb-[6px]">
+              {/*
+                7열짜리 표라 375px에서는 열마다 40~50px밖에 남지 않는다. GridTable이 아니라
+                손으로 짠 표여서 카드 전환이 따라오지 않으므로, 같은 방식(두 벌을 그리고
+                hidden으로 가린다)을 여기서 되풀이한다 — 행이 `contents`라 행마다 박스가 없어
+                CSS만으로는 카드로 바꿀 수 없고, 폭에 따라 한쪽만 렌더하면 서버 렌더 결과와
+                어긋나 첫 페인트에서 잘못된 쪽이 보인다 (shared/ui/grid-table.tsx와 같은 이유).
+              */}
+              <Card className="hidden px-5 pt-4 pb-[6px] lg:block">
                 <div className="grid grid-cols-[1fr_.7fr_.7fr_.8fr_1.6fr_70px_60px]">
                   {[
                     "유형_명",
@@ -368,6 +375,61 @@ export function SubWorkTypeListPage() {
                   ))}
                 </div>
               </Card>
+
+              {/* 모바일 — 같은 데이터를 카드로. 잠금 판정(canManage)과 사유는 표와 같다 */}
+              <div className="flex flex-col gap-2 lg:hidden">
+                {admin.types.map((t) => (
+                  <div
+                    key={t.subWorkTypeId}
+                    className="rounded-xl border border-line bg-surface p-3"
+                  >
+                    <div className="flex items-start gap-2">
+                      <div
+                        className={
+                          t.useYn
+                            ? "min-w-0 flex-1 text-[15px] font-semibold break-words"
+                            : "min-w-0 flex-1 text-[15px] font-semibold break-words text-n500 line-through"
+                        }
+                      >
+                        {t.typeName}
+                      </div>
+                      <Toggle
+                        on={t.useYn}
+                        onChange={() => void admin.toggle(t)}
+                        disabled={!canManage}
+                        title={canManage ? undefined : NO_MANAGE}
+                        className={
+                          admin.isToggling(t.subWorkTypeId)
+                            ? "mt-[3px] flex-none opacity-50"
+                            : "mt-[3px] flex-none"
+                        }
+                      />
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-[7px]">
+                      <Badge tone={t.approvalNeeded ? "blue" : "grey"}>
+                        {t.approvalNeeded ? "필요" : "불필요"}
+                      </Badge>
+                      <span className="text-[13.5px] text-n400">
+                        {t.authorizerRoleCode ? AUTZR_ROLE_NM[t.authorizerRoleCode] : "-"} ·{" "}
+                        {agreeCountText(t)}
+                      </span>
+                    </div>
+                    {/* 카드에서는 자르지 않는다 — 세로로 늘어나도 항목이 다 보이는 편이 낫다 */}
+                    <div className="mt-2 text-[13.5px] break-words text-n400">
+                      완료 점검 · {t.completionCheckArticles.join(" · ") || "-"}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!canManage}
+                      title={canManage ? undefined : NO_MANAGE}
+                      onClick={() => startEdit(t)}
+                      className="mt-2 cursor-pointer text-[14px] text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      수정
+                    </button>
+                  </div>
+                ))}
+              </div>
             </>
           ))}
         <div className="mt-3 text-[13.5px] text-n500">
