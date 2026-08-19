@@ -142,7 +142,12 @@ function ResponseDetailContent({
           </Card>
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
+        {/*
+          Button은 whitespace-nowrap이라 자리가 모자라면 접히는 대신 글자가 테두리 밖으로
+          밀려 나간다 — 잠긴 사유 문구까지 같은 줄에 서는 자리라 좁은 화면에서는 조각
+          단위로 접히게 한다. lg:flex-nowrap으로 1024px 이상은 지금까지처럼 한 줄이다.
+        */}
+        <div className="mt-4 flex flex-wrap items-center gap-2 lg:flex-nowrap">
           <Button
             variant="ghost"
             disabled={response.prevFormRspnsId === null}
