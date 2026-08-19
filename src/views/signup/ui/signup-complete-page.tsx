@@ -69,7 +69,7 @@ export function SignupCompletePage() {
   }
 
   return (
-    <div className="w-[480px] px-4">
+    <div className="w-full max-w-[480px] px-4 py-10 lg:py-0">
       <Badge tone={mbrGrdTone(member.membershipGradeCode)}>{member.membershipGradeName}</Badge>
       <h1 className="mt-3 text-[27px] font-medium tracking-[-.4px]">
         {linked ? "기존 회원 정보와 연결되었습니다" : "회원 가입이 완료되었습니다"}
@@ -91,11 +91,17 @@ export function SignupCompletePage() {
         </div>
       )}
       <Card className="mt-5">
-        <div className="grid grid-cols-[90px_1fr] gap-y-[9px] text-[15px]">
+        {/*
+         * 값 열이 `1fr`이면 min-width:auto가 걸려 띄어쓰기 없는 값(이메일)이 줄바꿈되지 않고
+         * 격자를 통째로 넓힌다 — 480px에서는 남는 폭이 있어 드러나지 않지만 375px에서는
+         * 화면 밖으로 나간다. 좁은 화면만 minmax(0,1fr)로 줄여 줄바꿈을 허용하고,
+         * lg:는 예전 그대로 둔다. 라벨은 가장 긴 것이 다섯 글자(회원 등급)라 90px에 든다.
+         */}
+        <div className="grid grid-cols-[90px_minmax(0,1fr)] gap-y-[9px] text-[15px] lg:grid-cols-[90px_1fr]">
           {rows.map(([k, v]) => (
             <div key={k} className="contents">
               <div className="text-[14px] text-n500">{k}</div>
-              <div>{v}</div>
+              <div className="break-words">{v}</div>
             </div>
           ))}
         </div>

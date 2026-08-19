@@ -19,6 +19,15 @@ import { safeNextPath, withNextParam } from "@/shared/lib/next-path";
 import { Button, Card, Field, TextField, flash } from "@/shared/ui";
 
 /**
+ * 입력란 글자 크기 — 좁은 화면에서만 16px로 올린다.
+ *
+ * 이유와 `!`가 필요한 사정은 가입 화면(signup-page.tsx)의 같은 상수 주석에 있다. 여기는
+ * 세 칸을 **명부와 한 글자도 다르지 않게** 쳐야 하는 화면이라, 첫 칸에서 화면이 확대된 채
+ * 나머지를 채우면 오타를 확인할 길이 없는데 서버는 어느 칸이 틀렸는지 알려주지 않는다.
+ */
+const INPUT_TEXT = "text-[16px]! lg:text-[15.5px]!";
+
+/**
  * 기존 회원 정보와 연결 (#58 · POST /v1/members/link · 서버 #86).
  *
  * ── 이 화면이 있는 이유 ────────────────────────────────────
@@ -112,7 +121,7 @@ export function MemberLinkPage() {
   };
 
   return (
-    <div className="w-[560px] px-6 py-14">
+    <div className="w-full max-w-[560px] px-4 py-14 lg:px-6">
       <h1 className="text-[28px] font-medium tracking-[-.4px]">기존 회원 정보와 연결</h1>
       <p className="mt-2 text-[14.5px] leading-[1.6] text-n400">
         이미 SSCC 명부에 등록된 회원이라면, 새로 가입하는 대신 그 회원 정보에 지금 로그인한
@@ -141,6 +150,7 @@ export function MemberLinkPage() {
         <div className="grid gap-[14px]">
           <Field label={FIELD_LABEL.studentNumber} required error={errors.studentNumber}>
             <TextField
+              className={INPUT_TEXT}
               value={f.studentNumber}
               onChange={(e) => set({ studentNumber: e.target.value })}
               invalid={!!errors.studentNumber}
@@ -150,6 +160,7 @@ export function MemberLinkPage() {
           </Field>
           <Field label={FIELD_LABEL.memberName} required error={errors.name}>
             <TextField
+              className={INPUT_TEXT}
               value={f.name}
               onChange={(e) => set({ name: e.target.value })}
               invalid={!!errors.name}
@@ -159,6 +170,7 @@ export function MemberLinkPage() {
           </Field>
           <Field label="전화번호" required error={errors.phoneNumber}>
             <TextField
+              className={INPUT_TEXT}
               value={f.phoneNumber}
               onChange={(e) => set({ phoneNumber: e.target.value })}
               invalid={!!errors.phoneNumber}
@@ -184,7 +196,8 @@ export function MemberLinkPage() {
         </div>
       )}
 
-      <div className="mt-4 flex gap-2">
+      {/* 두 버튼 다 whitespace-nowrap이라 좁은 화면에서 합이 넘치면 잘린다 — 넘치면 줄을 바꾼다 */}
+      <div className="mt-4 flex flex-wrap gap-2">
         {/* 여기서 되돌아가는 곳은 로그인이 아니라 가입 화면이다 — 인증은 이미 끝나 있다 */}
         <Button
           variant="ghost"
