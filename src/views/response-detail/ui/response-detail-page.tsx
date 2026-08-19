@@ -132,7 +132,9 @@ function ResponseDetailContent({
                       {q.qitemLblNm}
                       <span className="ml-1 font-mono text-[12px]">({q.qitemId})</span>
                     </div>
-                    <div className="mt-[2px] text-[16px]">
+                    {/* 답변은 응답자가 쓴 자유 입력이다 — 링크·이메일처럼 띄어쓰기가
+                        없는 값이 오면 줄바꿈되지 않고 카드 밖으로 밀린다 */}
+                    <div className="mt-[2px] text-[16px] break-words">
                       {v || <span className="text-n500">(응답 없음)</span>}
                     </div>
                   </div>
