@@ -38,7 +38,7 @@ function MeetingCardSkeleton() {
 function MeetingCard({ meeting, onClick }: { meeting: MeetingListItem; onClick: () => void }) {
   return (
     <Card onClick={onClick}>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
         <Badge tone={mtgSttsTone(meeting.meetingStatus)}>
           {meeting.meetingStatus ? MTG_STTS_NM[meeting.meetingStatus] : "-"}
         </Badge>
