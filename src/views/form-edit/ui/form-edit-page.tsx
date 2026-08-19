@@ -359,7 +359,7 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
       <PageBody>
         <FormSaveStatusBar save={editor.save} onRetry={editor.retry} />
 
-        <div className="mt-4 grid grid-cols-[1fr_1.15fr] items-start gap-4">
+        <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.15fr]">
           <div className="flex flex-col gap-4">
             <Card>
               <SectionLabel className="mb-3">기본정보</SectionLabel>
@@ -374,7 +374,7 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                     placeholder="예: 2026-1 신규 부원 모집"
                   />
                 </Field>
-                <div className="grid grid-cols-2 gap-[14px]">
+                <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
                   <Field label={FIELD_LABEL.receiptStartAt}>
                     <TextField
                       type="datetime-local"
