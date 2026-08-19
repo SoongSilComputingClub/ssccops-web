@@ -186,7 +186,12 @@ function AuthorityTreeAdminView() {
         )}
 
         {admin.status === "ready" && (
-          <div className="grid grid-cols-[1.25fr_1fr] items-start gap-4">
+          /*
+           * 좁은 화면에서는 1열로 쌓는다 — 트리가 위, 고른 권한의 편집 폼이 아래다.
+           * 트리에서 무엇을 골랐는지는 배경색으로 드러나므로 폼이 아래로 내려가도
+           * 대상이 흐려지지 않는다. 펼침 계산은 서버 규칙 그대로이고 여기서 손대지 않는다.
+           */
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.25fr_1fr]">
             <AuthorityList
               admin={admin}
               selected={selected}
