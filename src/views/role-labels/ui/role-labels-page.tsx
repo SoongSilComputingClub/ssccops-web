@@ -154,7 +154,9 @@ export function RoleLabelsPage() {
           형식을 placeholder 로 보여 준다 — 규칙을 모르면 첫 시도가 400 으로 돌아온다.
         */}
         <div className="mb-4 max-w-[820px]">
-          <div className="flex items-center gap-2">
+          {/* 코드 220px + 이름 240px + 추가 버튼은 좁은 화면에 한 줄로 들어가지 않는다 —
+              세로로 쌓고 lg 부터 예전처럼 한 줄에 나란히 둔다 */}
+          <div className="flex flex-col items-stretch gap-2 lg:flex-row lg:items-center">
             <TextField
               value={newCd}
               onChange={(e) => setNewCd(e.target.value)}
@@ -162,7 +164,7 @@ export function RoleLabelsPage() {
               invalid={invalidField(addError, "roleClsfCd")}
               aria-describedby={addError ? ADD_ERROR_ID : undefined}
               placeholder={`${FIELD_LABEL.roleClassificationCode} (예: PROJECT)`}
-              className="w-[220px] font-mono"
+              className="w-full font-mono lg:w-[220px]"
             />
             <TextField
               value={newNm}
@@ -174,7 +176,7 @@ export function RoleLabelsPage() {
               invalid={invalidField(addError, "roleClsfNm")}
               aria-describedby={addError ? ADD_ERROR_ID : undefined}
               placeholder={`새 ${FIELD_LABEL.roleClassificationName}`}
-              className="w-[240px]"
+              className="w-full lg:w-[240px]"
             />
             <Button
               onClick={() => void add()}
