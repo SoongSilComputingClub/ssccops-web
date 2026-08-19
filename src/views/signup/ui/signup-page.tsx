@@ -284,7 +284,7 @@ export function SignupPage() {
           {isEnrolled && (
             <Field label={FIELD_LABEL.academicYear} required error={errors.academicYear}>
               <TextField
-              className={INPUT_TEXT}
+                className={INPUT_TEXT}
                 value={f.academicYear}
                 onChange={(e) => set({ academicYear: e.target.value })}
                 invalid={!!errors.academicYear}

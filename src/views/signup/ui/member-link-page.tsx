@@ -19,6 +19,15 @@ import { safeNextPath, withNextParam } from "@/shared/lib/next-path";
 import { Button, Card, Field, TextField, flash } from "@/shared/ui";
 
 /**
+ * 입력란 글자 크기 — 좁은 화면에서만 16px로 올린다.
+ *
+ * 이유와 `!`가 필요한 사정은 가입 화면(signup-page.tsx)의 같은 상수 주석에 있다. 여기는
+ * 세 칸을 **명부와 한 글자도 다르지 않게** 쳐야 하는 화면이라, 첫 칸에서 화면이 확대된 채
+ * 나머지를 채우면 오타를 확인할 길이 없는데 서버는 어느 칸이 틀렸는지 알려주지 않는다.
+ */
+const INPUT_TEXT = "text-[16px]! lg:text-[15.5px]!";
+
+/**
  * 기존 회원 정보와 연결 (#58 · POST /v1/members/link · 서버 #86).
  *
  * ── 이 화면이 있는 이유 ────────────────────────────────────
@@ -32,15 +41,6 @@ import { Button, Card, Field, TextField, flash } from "@/shared/ui";
  * **이미 있는 회원이 나임을 증명하는 것**이고, 그래서 받는 값도 학적 정보가 아니라 명부와
  * 대조할 세 가지(학번·회원명·전화번호)뿐이다.
  */
-/**
- * 입력란 글자 크기 — 좁은 화면에서만 16px로 올린다.
- *
- * 이유와 `!`가 필요한 사정은 가입 화면(signup-page.tsx)의 같은 상수 주석에 있다. 여기는
- * 세 칸을 **명부와 한 글자도 다르지 않게** 쳐야 하는 화면이라, 첫 칸에서 화면이 확대된 채
- * 나머지를 채우면 오타를 확인할 길이 없는데 서버는 어느 칸이 틀렸는지 알려주지 않는다.
- */
-const INPUT_TEXT = "text-[16px]! lg:text-[15.5px]!";
-
 export function MemberLinkPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
