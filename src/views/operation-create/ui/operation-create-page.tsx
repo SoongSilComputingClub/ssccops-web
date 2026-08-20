@@ -61,9 +61,9 @@ const KIND_META: Record<OperTypeCd, { table: string; note: string }> = {
 
 /** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
 const NO_MANAGE_REASON: Record<OperTypeCd, string> = {
-  WORK: "업무·하위 업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
-  SUB_WORK: "업무·하위 업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
-  MEETING: "회의를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
+  WORK: "업무·하위 업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다",
+  SUB_WORK: "업무·하위 업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다",
+  MEETING: "회의를 등록할 권한이 없습니다 — 회의 관리(MEETING_MANAGE) 권한이 필요합니다",
 };
 
 export function OperationCreatePage({
@@ -376,7 +376,7 @@ export function OperationCreatePage({
       ? NO_MANAGE_REASON.SUB_WORK
       : fixedKind
         ? NO_MANAGE_REASON[fixedKind]
-        : "업무·회의를 등록하려면 국장 이상의 운영진 권한이 필요합니다";
+        : "업무·회의를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 또는 회의 관리(MEETING_MANAGE) 권한이 필요합니다";
     return (
       <>
         <PageHeader title="운영 등록" subtitle="운영 유형별 등록 폼" showBack={parentWorkId !== null} />

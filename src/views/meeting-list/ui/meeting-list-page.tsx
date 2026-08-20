@@ -22,7 +22,7 @@ import { Badge, Card, EmptyState, PageBody, PageHeader } from "@/shared/ui";
  */
 
 /** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
-const NO_MEETING_MANAGE = "회의를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다";
+const NO_MEETING_MANAGE = "회의를 등록할 권한이 없습니다 — 회의 관리(MEETING_MANAGE) 권한이 필요합니다";
 
 function MeetingCardSkeleton() {
   return (

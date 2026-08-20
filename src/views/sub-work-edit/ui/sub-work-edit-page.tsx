@@ -235,14 +235,14 @@ function SubWorkEditForm({
             onClick={() => void save()}
             disabled={pending || !canManage}
             title={
-              canManage ? undefined : "하위 업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다"
+              canManage ? undefined : "하위 업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다"
             }
           >
             {pending ? "저장하는 중…" : "저장"}
           </Button>
           {!canManage && (
             <div className="mt-2 text-[13.5px] text-n500">
-              하위 업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다
+              하위 업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다
             </div>
           )}
         </div>

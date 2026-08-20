@@ -50,7 +50,8 @@ import {
  */
 
 /** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
-const NO_MANAGE = "하위 업무 유형을 등록·수정할 권한이 없습니다 — 조회만 할 수 있습니다";
+const NO_MANAGE =
+  "하위 업무 유형을 등록·수정할 권한이 없습니다 — 하위 업무 유형 관리(SUB_WORK_TYPE_MANAGE) 권한이 필요합니다";
 
 interface Draft {
   typeName: string;

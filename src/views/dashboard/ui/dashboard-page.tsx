@@ -171,7 +171,7 @@ export function DashboardPage() {
           disabled: !canManageWork,
           title: canManageWork
             ? undefined
-            : "업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
+            : "업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다",
         }}
       />
       <PageBody>
