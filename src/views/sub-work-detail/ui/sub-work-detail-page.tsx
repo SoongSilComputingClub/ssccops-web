@@ -15,13 +15,11 @@ import { RejectSheet, useApprovalDecisions } from "@/features/approval";
 import { useSubWorkActions, useSubWorkDetail } from "@/features/sub-work";
 import {
   APRV_STTS_NM,
-  AUTZR_ROLE_NM,
   OPER_TYPE_NM,
   PRRTY_RNK_NM,
   WORK_STTS_CDS,
   WORK_STTS_NM,
   workSttsStep,
-  type AutzrRoleCd,
 } from "@/shared/config/codes";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
@@ -69,6 +67,9 @@ import {
 
 const STAGE_LABELS = WORK_STTS_CDS.map((cd) => WORK_STTS_NM[cd]);
 
+/** 잠긴 투표 버튼에 붙는 사유 — 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
+const NO_VOTE = "찬반 투표 권한이 없습니다 — 역할별 권한 화면에서 부여할 수 있습니다";
+
 /**
  * 완료 점검 목록을 다 채웠는가.
  *
@@ -81,11 +82,10 @@ function isChecklistDone(subWork: SubWorkDetail): boolean {
   return completedCount >= totalCount;
 }
 
-/** 완료 전환 안내 문구 — 유형이 승인자를 지정했으면 그 역할명으로 적는다 */
+/** 완료 전환 안내 문구 — 유형이 승인자를 지정했으면 그 결재 권한 이름으로 적는다 (서버 #123) */
 function approvalGuide(subWork: SubWorkDetail): string {
   if (!subWork.approvalRequired) return "승인이 필요하지 않은 유형입니다.";
-  const roleName = AUTZR_ROLE_NM[subWork.authorizerRoleCode as AutzrRoleCd];
-  return `완료 전환은 ${roleName ?? "승인자"} 승인이 필요합니다.`;
+  return `완료 전환은 ${subWork.authorizerAuthorityName ?? "승인자"} 승인이 필요합니다.`;
 }
 
 function DetailSkeleton() {
@@ -121,6 +121,13 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
   const sessionMember = useSessionStore((s) => s.member);
   /* 기본 정보 수정도 WORK_MANAGE 다 (서버 SubWorkController 클래스 애노테이션) */
   const canManage = useCan(CAPABILITY.WORK_MANAGE);
+  /*
+   * 투표 자격 (서버 #123). 직위 코드 시절에는 상세 응답에 canVote 가 없어 자격 없는 회원도
+   * 버튼을 눌러 403 을 보고서야 알았는데, 자격이 권한(APPROVAL_VOTE)으로 통합되며 capabilities
+   * 에 실려 사전에 잠글 수 있게 됐다. 감추지 않고 잠그는 것은 다른 버튼들과 같은 규칙이다 —
+   * 방금 회수된 권한으로 뚫고 눌렀을 때의 403 은 여전히 훅이 문구로 옮긴다.
+   */
+  const canVote = useCan(CAPABILITY.APPROVAL_VOTE);
 
   if (status !== "ready" || !subWork) {
     return (
@@ -154,10 +161,9 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
   const isDone = subWork.workStatus === "DONE";
 
   /*
-   * 지금 표를 던질 수 있는 건인가 — 서버 SubWorkEntity.requireVotable 과 같은 세 조건이다
-   * (정족수 유형 · 검토 단계 · 승인 대기). **자격은 여기서 보지 않는다**: 상세 응답에 canVote
-   * 가 없고, 역할로 되짚는 판정을 웹이 다시 구현하지 않는 것이 #29 의 규칙이다. 운영진이
-   * 아닌 회원이 눌렀을 때의 403 은 훅이 "투표할 수 있는 운영진 권한이 없습니다"로 옮긴다.
+   * 지금 표를 던질 수 있는 **건**인가 — 서버 SubWorkEntity.requireVotable 과 같은 세 조건이다
+   * (정족수 유형 · 검토 단계 · 승인 대기). 던질 수 있는 **사람**인가(canVote)와 나눠서 본다 —
+   * 권한과 선행 조건을 섞으면 자격 있는 회원까지 조건 문구 없이 버튼만 사라진다.
    */
   const votable =
     subWork.quorum.needed &&
@@ -327,12 +333,14 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
 
               {votable && (
                 <>
+                  {/* 자격이 없으면 감추지 않고 잠근다 — 사유는 title 로 (서버 #123 APPROVAL_VOTE) */}
                   <div className="flex items-center gap-[9px]">
                     {/* 이미 던진 표는 버튼 모양으로만 드러낸다 — 다시 누르면 서버가 바꿔 준다(1인 1표) */}
                     <Button
                       variant={subWork.myVote === "AGREE" ? "primary" : "ghost"}
                       size="sm"
-                      disabled={votePending}
+                      disabled={votePending || !canVote}
+                      title={canVote ? undefined : NO_VOTE}
                       onClick={() => void runVote("AGREE")}
                     >
                       동의
@@ -340,7 +348,8 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
                     <Button
                       variant="ghost-danger"
                       size="sm"
-                      disabled={votePending}
+                      disabled={votePending || !canVote}
+                      title={canVote ? undefined : NO_VOTE}
                       className={
                         subWork.myVote === "DISAGREE"
                           ? "border-danger bg-danger/10 text-danger"

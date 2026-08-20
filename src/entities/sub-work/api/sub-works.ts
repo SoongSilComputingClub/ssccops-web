@@ -369,7 +369,8 @@ interface SubWorkDetailResponse {
   workStatus: WorkSttsCd;
   approvalStatus: AprvSttsCd;
   approvalRequired: boolean | null;
-  authorizerRoleCode: string | null;
+  authorizerAuthorityCode: string | null;
+  authorizerAuthorityName: string | null;
   owner: MemberSummaryResponse | null;
   registrant: MemberSummaryResponse | null;
   collaborators: MemberSummaryResponse[] | null;
@@ -493,7 +494,8 @@ function toSubWorkDetail(res: SubWorkDetailResponse): SubWorkDetail {
     workStatus: res.workStatus,
     approvalStatus: res.approvalStatus,
     approvalRequired: res.approvalRequired === true,
-    authorizerRoleCode: res.authorizerRoleCode,
+    authorizerAuthorityCode: res.authorizerAuthorityCode,
+    authorizerAuthorityName: res.authorizerAuthorityName,
     owner: toMemberRef(res.owner),
     registrant: toMemberRef(res.registrant),
     collaborators: (res.collaborators ?? [])

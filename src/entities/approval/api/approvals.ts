@@ -1,4 +1,4 @@
-import type { AprvSttsCd, AutzrRoleCd } from "@/shared/config/codes";
+import type { AprvSttsCd } from "@/shared/config/codes";
 import { apiFetchList } from "@/shared/lib/api/client";
 import type { VoteChoice } from "@/entities/sub-work";
 import type {
@@ -38,7 +38,8 @@ interface ApprovalInboxItemResponse {
   title: string | null;
   approvalStatus: AprvSttsCd;
   subWorkTypeName: string | null;
-  authorizerRoleCode: string | null;
+  authorizerAuthorityCode: string | null;
+  authorizerAuthorityName: string | null;
   registrantName: string | null;
   requestedAt: string | null;
   dueAt: string | null;
@@ -75,7 +76,8 @@ function toApprovalInboxItem(res: ApprovalInboxItemResponse): ApprovalInboxItem 
     title: res.title ?? "",
     approvalStatus: res.approvalStatus,
     subWorkTypeName: res.subWorkTypeName ?? "",
-    authorizerRoleCode: res.authorizerRoleCode as AutzrRoleCd | string | null,
+    authorizerAuthorityCode: res.authorizerAuthorityCode,
+    authorizerAuthorityName: res.authorizerAuthorityName,
     registrantName: res.registrantName,
     requestedAt: res.requestedAt,
     dueAt: res.dueAt,

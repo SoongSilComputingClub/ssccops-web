@@ -4,11 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { syncSessionOnForbidden } from "@/entities/session";
 import {
   createSubWorkType,
+  fetchAuthorizerAuthorities,
   fetchSubWorkTypes,
   setSubWorkTypeUse,
   SUB_WORK_TYPE_ERROR,
   TYPE_NAME_MAX_LENGTH,
   updateSubWorkType,
+  type AuthorizerAuthority,
   type SubWorkTypeSaveInput,
   type SubWorkTypeSummary,
 } from "@/entities/sub-work-type";
@@ -56,6 +58,12 @@ export interface SubWorkTypeAdmin {
   errorMessage: string;
   reload: () => void;
 
+  /**
+   * 폼의 승인자 선택지 (서버 #123). 코드 어휘는 고정이지만 표시명이 운영 데이터라 서버에서
+   * 받는다. 로드 전·실패 시 빈 배열이다 — 그때 폼은 선택지 없이 뜨고 저장 선검사가 막는다.
+   */
+  authorizerAuthorities: AuthorizerAuthority[];
+
   /** 저장 폼 아래에 붙일 오류. 비어 있으면 정상 */
   saveErrorMessage: string;
   saving: boolean;
@@ -82,6 +90,9 @@ export function useSubWorkTypes(): SubWorkTypeAdmin {
   const [saving, setSaving] = useState(false);
   const [toggleErrorMessage, setToggleErrorMessage] = useState("");
   const [togglingIds, setTogglingIds] = useState<readonly number[]>([]);
+  const [authorizerAuthorities, setAuthorizerAuthorities] = useState<
+    AuthorizerAuthority[]
+  >([]);
 
   const aliveRef = useRef(true);
   useEffect(() => {
@@ -111,6 +122,24 @@ export function useSubWorkTypes(): SubWorkTypeAdmin {
           });
         }
       });
+
+    return () => {
+      alive = false;
+    };
+  }, [requestKey]);
+
+  /*
+   * 승인자 선택지는 목록과 별개로 받는다 — 실패해도 표는 그려져야 하므로 status에 섞지 않는다.
+   * requestKey에 걸어 두어 '다시 시도'가 선택지도 함께 다시 받는다.
+   */
+  useEffect(() => {
+    let alive = true;
+
+    fetchAuthorizerAuthorities()
+      .then((options) => {
+        if (alive) setAuthorizerAuthorities(options);
+      })
+      .catch(() => {});
 
     return () => {
       alive = false;
@@ -183,8 +212,8 @@ export function useSubWorkTypes(): SubWorkTypeAdmin {
        * 거르는 것은 서버 문장("승인 정책 설정이 올바르지 않습니다")이 두 경우를 구분하지
        * 못하기 때문이다 — 어느 칸을 채워야 하는지는 화면이 알고 있다.
        */
-      if (input.approvalNeeded && !input.authorizerRoleCode) {
-        setSaveErrorMessage("승인이 필요한 유형은 승인자_역할_코드를 골라야 합니다");
+      if (input.approvalNeeded && !input.authorizerAuthorityCode) {
+        setSaveErrorMessage("승인이 필요한 유형은 승인자 결재 권한을 골라야 합니다");
         return false;
       }
       if (
@@ -286,6 +315,7 @@ export function useSubWorkTypes(): SubWorkTypeAdmin {
     status,
     errorMessage: current?.errorMessage ?? "",
     reload,
+    authorizerAuthorities,
     saveErrorMessage,
     saving,
     save,

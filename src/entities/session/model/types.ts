@@ -84,6 +84,13 @@ export const CAPABILITY = {
   RESPONSE_REVIEW: "RESPONSE_REVIEW",
   ROLE_MANAGE: "ROLE_MANAGE",
   MEMBER_MANAGE: "MEMBER_MANAGE",
+  /**
+   * 하위 업무 찬반 투표 자격 (서버 #123). 직위 코드(role_pstn_cd)로 갈리던 투표 자격이 권한으로
+   * 통합되면서 capabilities에 실리게 됐다 — 상세 화면이 투표 버튼을 서버 판정 없이 잠글 수 있다.
+   * 승인·반려 자격(SUB_WORK_APPROVE_*)은 여기 없다: 유형(건)마다 요구 코드가 달라 화면은
+   * 지금처럼 서버가 건별로 내려주는 canApprove·canReject를 쓴다.
+   */
+  APPROVAL_VOTE: "APPROVAL_VOTE",
 } as const;
 
 export type Capability = (typeof CAPABILITY)[keyof typeof CAPABILITY];

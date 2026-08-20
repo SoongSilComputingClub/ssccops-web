@@ -1,6 +1,5 @@
-import { AUTZR_ROLE_NM, type AutzrRoleCd } from "@/shared/config/codes";
 import { apiFetch } from "@/shared/lib/api/client";
-import type { SubWorkTypeSummary } from "../model/types";
+import type { AuthorizerAuthority, SubWorkTypeSummary } from "../model/types";
 
 /*
  * 하위 업무 유형 API (ssccops-server OPS-018 목록 · OPS-019 등록·수정·사용 전환 · #67).
@@ -30,7 +29,7 @@ export const TYPE_NAME_MAX_LENGTH = 100;
 export const SUB_WORK_TYPE_ERROR = {
   /** 유형_명 누락·100자 초과, 성립하지 않는 승인 정책 조합 (400) */
   VALIDATION_FAILED: "VALIDATION_FAILED",
-  /** 승인자_역할_코드가 기준 코드 밖 (400) — 역직렬화 단계에서 걸린다 */
+  /** 승인자 결재 권한 코드가 어휘(서버 AuthorityCode.subWorkApprovers) 밖 (400) */
   INVALID_CODE_VALUE: "INVALID_CODE_VALUE",
   /** 없는 유형 (404) — 목록을 다시 불러와야 한다 */
   SUB_WORK_TYPE_NOT_FOUND: "NOT_FOUND",
@@ -46,7 +45,8 @@ interface SubWorkTypeResponse {
   subWorkTypeId: number;
   typeName: string | null;
   approvalNeeded: boolean;
-  authorizerRoleCode: string | null;
+  authorizerAuthorityCode: string | null;
+  authorizerAuthorityName: string | null;
   minAgreeCountNeeded: boolean;
   minAgreeCount: number | null;
   completionCheckArticles: string[] | null;
@@ -55,27 +55,47 @@ interface SubWorkTypeResponse {
 
 /* ── 응답 → 도메인 ─────────────────────────────────────────── */
 
-/**
- * 승인자_역할_코드. 서버는 enum이 아니라 문자열 컬럼(autzr_role_cd V20)으로 들고 있어
- * 기준 코드에 없는 값이 이관 데이터에 남아 있을 수 있다. 그런 값은 null로 떨어뜨린다 —
- * 그대로 넘기면 `AUTZR_ROLE_NM[cd]`가 undefined가 되어 표에 빈칸이 나타난다.
+/*
+ * 승인자는 코드와 표시명이 함께 온다 (서버 #123). 표시명은 권한 이름(authrt_nm)이라 화면에서
+ * 바뀌는 운영 데이터다 — 코드 → 이름 사전을 여기서 만들면(옛 AUTZR_ROLE_NM) 개명 즉시 어긋나므로
+ * 서버가 준 이름을 그대로 쓴다.
  */
-function toAuthorizerRole(code: string | null): AutzrRoleCd | null {
-  if (!code) return null;
-  return code in AUTZR_ROLE_NM ? (code as AutzrRoleCd) : null;
-}
-
 function toSubWorkType(res: SubWorkTypeResponse): SubWorkTypeSummary {
   return {
     subWorkTypeId: res.subWorkTypeId,
     typeName: res.typeName ?? "",
     approvalNeeded: res.approvalNeeded,
-    authorizerRoleCode: toAuthorizerRole(res.authorizerRoleCode),
+    authorizerAuthorityCode: res.authorizerAuthorityCode,
+    authorizerAuthorityName: res.authorizerAuthorityName,
     minAgreeCountNeeded: res.minAgreeCountNeeded,
     minAgreeCount: res.minAgreeCount,
     completionCheckArticles: res.completionCheckArticles ?? [],
     useYn: res.useYn,
   };
+}
+
+/* ── 승인자 선택지 ─────────────────────────────────────────── */
+
+interface AuthorizerAuthorityResponse {
+  authrtCd: string;
+  authrtNm: string | null;
+}
+
+/**
+ * GET /v1/sub-work-types/authorizer-authorities — 유형 폼의 승인자 선택지 (서버 #123).
+ *
+ * 코드 어휘는 서버가 고정하지만(결재 권한 4종) 표시명은 권한 관리 화면에서 바뀌는 운영
+ * 데이터라 목록째 서버에서 받는다. 응답 순서가 곧 표시 순서다. 이름이 비면 코드로 폴백한다 —
+ * 선택지가 글자 없이 그려지는 것보다 낫다.
+ */
+export async function fetchAuthorizerAuthorities(): Promise<AuthorizerAuthority[]> {
+  const options = await apiFetch<AuthorizerAuthorityResponse[] | null>(
+    "/v1/sub-work-types/authorizer-authorities",
+  );
+  return (options ?? []).map((option) => ({
+    authrtCd: option.authrtCd,
+    authrtNm: option.authrtNm ?? option.authrtCd,
+  }));
 }
 
 /* ── 목록 ──────────────────────────────────────────────────── */
@@ -114,8 +134,8 @@ export async function fetchSubWorkTypes(useYn?: boolean): Promise<SubWorkTypeSum
 export interface SubWorkTypeSaveInput {
   typeName: string;
   approvalNeeded: boolean;
-  /** 승인 불필요 유형은 null. 승인이 필요한데 null이면 서버가 400으로 끊는다 */
-  authorizerRoleCode: AutzrRoleCd | null;
+  /** 승인자 결재 권한 코드. 승인 불필요 유형은 null — 승인이 필요한데 null이면 서버가 400으로 끊는다 */
+  authorizerAuthorityCode: string | null;
   minAgreeCountNeeded: boolean;
   /** 정족수 유형에서만 1 이상. 1도 단독과 다르다 — 다른 한 명의 찬성이 먼저 있어야 한다 */
   minAgreeCount: number | null;
@@ -127,7 +147,7 @@ function toSaveBody(input: SubWorkTypeSaveInput): string {
   return JSON.stringify({
     typeName: input.typeName.trim(),
     approvalNeeded: input.approvalNeeded,
-    authorizerRoleCode: input.authorizerRoleCode,
+    authorizerAuthorityCode: input.authorizerAuthorityCode,
     minAgreeCountNeeded: input.minAgreeCountNeeded,
     minAgreeCount: input.minAgreeCount,
     completionCheckArticles: input.completionCheckArticles,
