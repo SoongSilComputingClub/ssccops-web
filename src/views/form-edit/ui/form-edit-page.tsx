@@ -79,7 +79,7 @@ export function FormEditPage({ formId }: { formId?: number }) {
       <>
         <PageHeader title="폼 편집" showBack />
         <PageBody>
-          <EmptyState message="폼을 고칠 권한이 없습니다 — 운영진에게 역할 부여를 요청해주세요." />
+          <EmptyState message="폼을 고칠 권한이 없습니다 — 폼 작성·수정(FORM_WRITE) 권한이 필요합니다." />
         </PageBody>
       </>
     );

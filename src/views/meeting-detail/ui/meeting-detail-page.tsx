@@ -276,7 +276,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
           {status === "loading" && <DetailSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="회의를 찾을 수 없습니다. 이미 삭제된 회의일 수 있습니다."
+              message="회의를 찾을 수 없습니다 — 이미 삭제된 회의일 수 있습니다."
               action={{ label: "회의 목록", onClick: () => router.replace(ROUTES.meetings) }}
             />
           )}

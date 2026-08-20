@@ -27,7 +27,7 @@ export function toResponseErrorMessage(error: unknown): string {
      */
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "응답을 심사할 권한이 없습니다 — 운영진에게 역할 부여를 요청해주세요";
+      return "응답을 심사할 권한이 없습니다 — 응답 심사(RESPONSE_REVIEW) 권한이 필요합니다";
     case RESPONSE_ERROR.FORM_RESPONSE_NOT_FOUND:
       return "응답을 찾을 수 없습니다";
     case RESPONSE_ERROR.INVALID_RESPONSE_STATUS_TRANSITION:

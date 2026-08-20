@@ -50,7 +50,7 @@ export function toDraftSaveErrorMessage(error: unknown): string {
       return "저장이 동시에 겹쳤습니다";
     case PUBLIC_FORM_ERROR.UNKNOWN_QUESTION_ITEM:
     case PUBLIC_FORM_ERROR.INVALID_ANSWER_VALUE:
-      return "폼의 문항이 바뀐 것 같습니다. 새로고침한 뒤 다시 작성해주세요";
+      return "폼의 문항이 바뀌었습니다. 새로고침한 뒤 다시 작성해주세요";
     case PUBLIC_FORM_ERROR.FORM_NOT_FOUND:
       return "폼을 찾을 수 없습니다";
     default:

@@ -84,7 +84,7 @@ export function WorkDetailPage({ workId }: { workId: number }) {
           {status === "loading" && <DetailSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="업무를 찾을 수 없습니다. 이미 삭제된 업무일 수 있습니다."
+              message="업무를 찾을 수 없습니다 — 이미 삭제된 업무일 수 있습니다."
               action={{ label: "업무 목록", onClick: () => router.replace(ROUTES.works) }}
             />
           )}
