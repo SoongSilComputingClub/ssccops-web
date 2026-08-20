@@ -176,8 +176,8 @@ export function SignupPage() {
     <div className="w-full max-w-[640px] px-4 py-14 lg:px-6">
       <h1 className="text-[28px] font-medium tracking-[-.4px]">회원 가입</h1>
       <p className="mt-2 text-[14.5px] text-n400">
-        소셜 계정 <span className="font-semibold text-ink">{provider}</span> 로
-        인증되었습니다. 등급 임시회원으로 등록되며 바로 이용할 수 있습니다.
+        소셜 계정 <span className="font-semibold text-ink">{provider}</span>로
+        인증되었습니다. 임시회원 등급으로 등록되며 바로 이용할 수 있습니다.
       </p>
       {/*
        * 폼 링크를 열었다가 여기까지 온 경우에는 가입이 목적이 아니므로, 이 화면이 종착지가
@@ -328,7 +328,7 @@ export function SignupPage() {
             본인 학번이 맞다면 이미 SSCC 명부에 등록된 회원일 가능성이 높습니다. 새로 가입하는
             대신 <span className="font-semibold text-ink">기존 회원 정보에 이 계정을 연결</span>
             하세요 — 기수 · 등급 · 역할이 그대로 유지됩니다. 연결에는 학번 · 회원명 · 전화번호가
-            모두 필요하며, 명부의 값과 다르면 연결되지 않습니다.
+            모두 필요하며 명부의 값과 다르면 연결되지 않습니다.
           </div>
           <div className="mt-[10px] flex gap-2">
             <Button size="sm" disabled={pending} onClick={goToLink}>

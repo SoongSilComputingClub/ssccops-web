@@ -138,7 +138,7 @@ export function MemberLinkPage() {
         <div className="font-semibold text-ink">연결에는 세 가지가 모두 필요합니다</div>
         <div className="mt-1">
           학번 · 회원명 · 전화번호가 <span className="font-semibold text-ink">명부의 값과 모두
-          일치</span>해야 연결됩니다. 하나라도 다르면 연결되지 않으며, 어느 항목이 달랐는지는
+          일치</span>해야 연결됩니다. 하나라도 다르면 연결되지 않으며 어느 항목이 달랐는지는
           알려드리지 않습니다.
         </div>
         <div className="mt-1">
