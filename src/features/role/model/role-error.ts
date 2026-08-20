@@ -79,7 +79,7 @@ export function toRoleClassificationErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return "역할 분류를 바꿀 권한(ROLE_MANAGE)이 없습니다 — 조회만 할 수 있습니다";
     case ROLE_CLASSIFICATION_ERROR.SYSTEM_ROLE_CLASSIFICATION_IMMUTABLE:
-      return "SYSTEM 분류는 이름을 바꾸거나 지울 수 없습니다 — 최고관리자 역할이 매달려 있어 인가의 뿌리가 되는 분류입니다";
+      return "SYSTEM 분류는 이름을 바꾸거나 지울 수 없습니다 — 최고관리자 역할이 매달려 있어 모든 권한 확인의 기준이 되는 분류입니다";
     case ROLE_CLASSIFICATION_ERROR.ROLE_CLASSIFICATION_CODE_DUPLICATED:
       return "이미 있는 분류 코드입니다 — 다른 코드를 써주세요";
     /*

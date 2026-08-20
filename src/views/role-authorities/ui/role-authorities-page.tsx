@@ -76,7 +76,7 @@ function RoleAuthoritiesEditorView({ roleId }: { roleId: number }) {
     <>
       <PageHeader
         title={editor.roleNm ? `${editor.roleNm} 권한` : "역할 권한"}
-        subtitle="체크한 권한이 이 역할에 부여됩니다 · 저장은 전체 교체입니다"
+        subtitle="체크한 권한이 이 역할에 부여됩니다 · 저장하면 기존 권한은 체크한 것으로 모두 바뀝니다"
         showBack
         action={{
           label: editor.saving ? "저장 중…" : "저장",
