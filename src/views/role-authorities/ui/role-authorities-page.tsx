@@ -41,7 +41,7 @@ import {
  */
 
 const NO_MANAGE =
-  "권한 관리(ROLE_MANAGE) 권한이 없어 역할의 권한을 볼 수 없습니다 — 최고운영자에게 요청해주세요";
+  "권한 관리(ROLE_MANAGE) 권한이 없어 역할의 권한을 볼 수 없습니다 — 최고관리자에게 요청해주세요";
 
 export function RoleAuthoritiesPage({ roleId }: { roleId: number }) {
   const canManage = useCan(CAPABILITY.ROLE_MANAGE);

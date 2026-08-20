@@ -25,7 +25,7 @@ function toCommonMessage(error: ApiError): string {
      */
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "역할을 다룰 권한(ROLE_MANAGE)이 없습니다 — 최고운영자에게 요청해주세요";
+      return "역할을 다룰 권한(ROLE_MANAGE)이 없습니다 — 최고관리자에게 요청해주세요";
     default:
       return error.message;
   }
