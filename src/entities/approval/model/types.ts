@@ -1,4 +1,4 @@
-import type { AprvSttsCd, AutzrRoleCd, EmrgSeCd } from "@/shared/config/codes";
+import type { AprvSttsCd, EmrgSeCd } from "@/shared/config/codes";
 import type { VoteChoice } from "@/entities/sub-work";
 
 /** table: sub_work_aprv — 하위_업무_승인 */
@@ -91,8 +91,10 @@ export interface ApprovalInboxItem {
   title: string;
   approvalStatus: AprvSttsCd;
   subWorkTypeName: string;
-  /** 승인자 역할 코드. 기준 코드에 없는 값이 오면 안내 문구만 총칭으로 떨어진다 */
-  authorizerRoleCode: AutzrRoleCd | string | null;
+  /** 승인자 결재 권한 코드 (서버 #123). 판정용 — 표시는 authorizerAuthorityName으로 한다 */
+  authorizerAuthorityCode: string | null;
+  /** 승인자 결재 권한 표시명 (authrt_nm) — 권한 개명이 그대로 반영되도록 서버가 내려준다 */
+  authorizerAuthorityName: string | null;
   /** 이관 데이터는 등록자가 없다 */
   registrantName: string | null;
   /** 검토요청 일시 — 검토요청을 한 번도 하지 않은 건은 null이다 */

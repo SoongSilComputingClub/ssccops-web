@@ -9,7 +9,7 @@ import {
 } from "@/entities/approval";
 import { REJECT_REASON_MAX_LENGTH } from "@/entities/sub-work";
 import { RejectSheet, useApprovalDecisions, useApprovalInbox } from "@/features/approval";
-import { APRV_STTS_NM, AUTZR_ROLE_NM, type AutzrRoleCd } from "@/shared/config/codes";
+import { APRV_STTS_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { ddayText, formatDt, todayInSeoul } from "@/shared/lib/date";
 import {
@@ -146,10 +146,9 @@ export function ApprovalBoxPage() {
                     ? "정족수를 채워야 완료 승인할 수 있습니다 — 투표가 모여야 합니다"
                     : "";
                 const dday = ddayText(item.dueAt, todayInSeoul());
+                // 승인자 표시명은 서버가 내려준다 (서버 #123) — 코드 → 이름 사전을 웹이 갖지 않는다
                 const roleName =
-                  AUTZR_ROLE_NM[item.authorizerRoleCode as AutzrRoleCd] ??
-                  item.authorizerRoleCode ??
-                  "-";
+                  item.authorizerAuthorityName ?? item.authorizerAuthorityCode ?? "-";
 
                 const highlighted = item.subWorkId === highlightSubWorkId;
 

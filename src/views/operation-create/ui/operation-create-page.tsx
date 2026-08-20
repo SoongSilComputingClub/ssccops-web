@@ -13,7 +13,6 @@ import { useCreateWork, useWorkDetail } from "@/features/work";
 import {
   ATND_TRGT_CDS,
   ATND_TRGT_NM,
-  AUTZR_ROLE_NM,
   MTG_SE_CDS,
   MTG_SE_NM,
   OPER_TYPE_NM,
@@ -641,7 +640,7 @@ export function OperationCreatePage({
                       <div className="text-n500">승인 필요</div>
                       <div className={rule.approvalNeeded ? "text-danger" : undefined}>
                         {rule.approvalNeeded
-                          ? `${rule.authorizerRoleCode ? AUTZR_ROLE_NM[rule.authorizerRoleCode] : "책임자"} 승인 필요`
+                          ? `${rule.authorizerAuthorityName ?? "책임자"} 승인 필요`
                           : "승인 없이 진행"}
                       </div>
                       <div className="text-n500">최소 동의 수</div>

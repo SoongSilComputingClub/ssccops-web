@@ -15,13 +15,11 @@ import { RejectSheet, useApprovalDecisions } from "@/features/approval";
 import { useSubWorkActions, useSubWorkDetail } from "@/features/sub-work";
 import {
   APRV_STTS_NM,
-  AUTZR_ROLE_NM,
   OPER_TYPE_NM,
   PRRTY_RNK_NM,
   WORK_STTS_CDS,
   WORK_STTS_NM,
   workSttsStep,
-  type AutzrRoleCd,
 } from "@/shared/config/codes";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
@@ -81,11 +79,10 @@ function isChecklistDone(subWork: SubWorkDetail): boolean {
   return completedCount >= totalCount;
 }
 
-/** 완료 전환 안내 문구 — 유형이 승인자를 지정했으면 그 역할명으로 적는다 */
+/** 완료 전환 안내 문구 — 유형이 승인자를 지정했으면 그 결재 권한 이름으로 적는다 (서버 #123) */
 function approvalGuide(subWork: SubWorkDetail): string {
   if (!subWork.approvalRequired) return "승인이 필요하지 않은 유형입니다.";
-  const roleName = AUTZR_ROLE_NM[subWork.authorizerRoleCode as AutzrRoleCd];
-  return `완료 전환은 ${roleName ?? "승인자"} 승인이 필요합니다.`;
+  return `완료 전환은 ${subWork.authorizerAuthorityName ?? "승인자"} 승인이 필요합니다.`;
 }
 
 function DetailSkeleton() {
