@@ -69,7 +69,7 @@ export function WorkEditPage({ workId }: { workId: number }) {
           {status === "loading" && <EditSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="업무를 찾을 수 없습니다. 이미 삭제된 업무일 수 있습니다."
+              message="업무를 찾을 수 없습니다 — 이미 삭제된 업무일 수 있습니다."
               action={{ label: "업무 목록", onClick: () => router.replace(ROUTES.works) }}
             />
           )}
@@ -209,13 +209,13 @@ function WorkEditForm({
             className="px-[26px] py-[11px]"
             onClick={() => void save()}
             disabled={pending || !canManage}
-            title={canManage ? undefined : "업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다"}
+            title={canManage ? undefined : "업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다"}
           >
             {pending ? "저장하는 중…" : "저장"}
           </Button>
           {!canManage && (
             <div className="mt-2 text-[13.5px] text-n500">
-              업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다
+              업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다
             </div>
           )}
         </div>

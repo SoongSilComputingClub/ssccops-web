@@ -26,7 +26,7 @@ export function toFormErrorMessage(error: unknown): string {
       return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "폼을 다룰 권한이 없습니다 — 운영진에게 역할 부여를 요청해주세요";
+      return "폼을 다룰 권한이 없습니다 — 폼 조회(FORM_READ) 권한이 필요합니다";
     default:
       return error.message;
   }
@@ -54,7 +54,7 @@ export function toFormStatusErrorMessage(error: unknown): string {
     case FORM_ERROR.INVALID_RECEIPT_PERIOD:
       return "접수 시작·종료 일시를 확인해주세요";
     case FORM_ERROR.FORM_NOT_FOUND:
-      return "폼을 찾을 수 없습니다. 이미 삭제된 폼일 수 있습니다";
+      return "폼을 찾을 수 없습니다 — 이미 삭제된 폼일 수 있습니다";
     default:
       return toFormErrorMessage(error);
   }
@@ -68,7 +68,7 @@ export function toFormStatusErrorMessage(error: unknown): string {
  */
 export function toFormDuplicateErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.code === FORM_ERROR.FORM_NOT_FOUND) {
-    return "원본 폼을 찾을 수 없습니다. 이미 삭제된 폼일 수 있습니다";
+    return "원본 폼을 찾을 수 없습니다 — 이미 삭제된 폼일 수 있습니다";
   }
   if (!(error instanceof ApiError)) {
     return "폼을 복제하지 못했습니다. 잠시 후 다시 시도해주세요";
@@ -95,7 +95,7 @@ export function toFormLabelErrorMessage(error: unknown): string {
   switch (error.code) {
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "라벨을 관리할 권한이 없습니다 — 조회만 할 수 있습니다";
+      return "라벨을 관리할 권한이 없습니다 — 폼 라벨 관리(FORM_LABEL_MANAGE) 권한이 필요합니다";
     // 현재 클라이언트 선검사와 같은 문구를 쓴다 — 어디서 걸렸든 사용자에게는 같은 말이어야 한다
     case FORM_LABEL_ERROR.FORM_LABEL_NAME_DUPLICATED:
       return "이미 있는 라벨입니다";

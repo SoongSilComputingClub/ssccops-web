@@ -42,7 +42,7 @@ import type { RoleSummary } from "@/entities/role";
 const ALL = "전체";
 
 const NO_MANAGE =
-  "역할을 다룰 권한(ROLE_MANAGE)이 없어 역할 목록을 볼 수 없습니다 — 최고운영자에게 요청해주세요";
+  "역할을 다룰 권한(ROLE_MANAGE)이 없어 역할 목록을 볼 수 없습니다 — 최고관리자에게 요청해주세요";
 
 export function RoleListPage() {
   const canManageRole = useCan(CAPABILITY.ROLE_MANAGE);

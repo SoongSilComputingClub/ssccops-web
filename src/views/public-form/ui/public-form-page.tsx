@@ -153,7 +153,7 @@ export function PublicFormPage({ formId }: { formId: number }) {
       return;
     }
     if (outcome === "stale") {
-      flash("폼이 변경됐습니다. 새로고침 후 다시 시도해주세요");
+      flash("폼의 문항이 바뀌었습니다. 새로고침한 뒤 다시 시도해주세요");
       return;
     }
     if (outcome === "failed") flash("제출하지 못했습니다");

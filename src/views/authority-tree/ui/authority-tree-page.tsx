@@ -47,9 +47,9 @@ import {
  */
 
 const NO_MANAGE =
-  "권한 관리(ROLE_MANAGE) 권한이 없어 권한 트리를 볼 수 없습니다 — 최고운영자에게 요청해주세요";
+  "권한 관리(ROLE_MANAGE) 권한이 없어 권한 트리를 볼 수 없습니다 — 최고관리자에게 요청해주세요";
 
-const SYS_LOCKED = "시스템 권한은 코드를 바꾸거나 삭제할 수 없습니다 — 코드가 직접 참조합니다";
+const SYS_LOCKED = "시스템 권한은 코드를 바꾸거나 삭제할 수 없습니다 — 서비스 기능이 이 코드를 직접 사용합니다";
 
 export function AuthorityTreePage() {
   const canManage = useCan(CAPABILITY.ROLE_MANAGE);
@@ -321,8 +321,8 @@ function AuthorityForm({
           />
           <div className="mt-[5px] text-[12.5px] text-n500">
             {isNew
-              ? "대문자로 시작하고 대문자·숫자·밑줄만 씁니다. 서버 @RequireAuthority 가 가리키는 값과 같은 이름 공간입니다"
-              : "코드는 PK 라 바꿀 수 없습니다 — 새로 만든 뒤 기존 권한을 삭제해주세요"}
+              ? "대문자로 시작하고 대문자·숫자·밑줄만 씁니다. 서버가 권한을 확인할 때 쓰는 이름과 같은 체계입니다"
+              : "코드는 권한을 구분하는 고유한 값이라 바꿀 수 없습니다 — 새로 만든 뒤 기존 권한을 삭제해주세요"}
           </div>
         </Field>
 

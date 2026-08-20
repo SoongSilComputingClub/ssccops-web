@@ -84,7 +84,7 @@ export function WorkDetailPage({ workId }: { workId: number }) {
           {status === "loading" && <DetailSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="업무를 찾을 수 없습니다. 이미 삭제된 업무일 수 있습니다."
+              message="업무를 찾을 수 없습니다 — 이미 삭제된 업무일 수 있습니다."
               action={{ label: "업무 목록", onClick: () => router.replace(ROUTES.works) }}
             />
           )}
@@ -163,7 +163,7 @@ export function WorkDetailPage({ workId }: { workId: number }) {
           disabled: !canManage,
           title: canManage
             ? undefined
-            : "하위 업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
+            : "하위 업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다",
         }}
       />
       <PageBody>
@@ -181,7 +181,7 @@ export function WorkDetailPage({ workId }: { workId: number }) {
                 onClick={() => router.push(ROUTES.workEdit(work.workId))}
                 disabled={!canManage}
                 title={
-                  canManage ? undefined : "업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다"
+                  canManage ? undefined : "업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다"
                 }
               >
                 수정

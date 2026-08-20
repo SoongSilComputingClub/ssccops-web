@@ -86,9 +86,13 @@ export function LoginPage() {
         <br />
         운영관리시스템
       </h1>
+      {/*
+       * 여기서 말해야 하는 것은 "로그인과 회원 확인이 따로"라는 사실 하나다. 예전 문구는
+       * 그 사실을 개발 용어("내부 회원 식별"·"회원 도메인")로 적어, 처음 들어온 사람에게는
+       * 읽어도 무엇이 어떻게 된다는 것인지 남지 않았다 (#117).
+       */}
       <p className="mt-3 text-[14.5px] leading-[1.6] text-n400">
-        Google 계정으로 로그인합니다. 내부 회원 식별은 로그인 이후 회원 도메인에서
-        처리됩니다.
+        Google 계정으로 로그인합니다. SSCC 회원인지는 로그인한 뒤에 확인합니다.
       </p>
       <div className="mt-7 mb-6 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
 
@@ -125,12 +129,12 @@ export function LoginPage() {
           {pending ? "Google로 이동 중…" : "Google로 계속하기"}
         </div>
         <div className="mt-[2px] text-[13.5px] text-white/72">
-          Google 계정으로 로그인 또는 회원가입
+          Google 계정으로 로그인 또는 회원 가입
         </div>
       </button>
       <p className="mt-5 text-[13px] leading-[1.6] text-n500">
-        처음 가입하면 임시회원 등급으로 바로 시작할 수 있습니다. 졸업생도 동일하게
-        가입할 수 있습니다.
+        처음 가입하면 임시회원 등급으로 바로 시작할 수 있습니다. 졸업생도 같은 방법으로
+        가입하면 됩니다.
       </p>
     </div>
   );

@@ -52,7 +52,7 @@ import type { RoleMember } from "@/entities/role";
  */
 
 const NO_MANAGE =
-  "역할을 다룰 권한(ROLE_MANAGE)이 없습니다 — 최고운영자에게 요청해주세요";
+  "역할을 다룰 권한(ROLE_MANAGE)이 없습니다 — 최고관리자에게 요청해주세요";
 
 export function RoleEditPage({ roleId }: { roleId?: number }) {
   const canManageRole = useCan(CAPABILITY.ROLE_MANAGE);

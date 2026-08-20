@@ -64,7 +64,7 @@ export function SubWorkEditPage({ subWorkId }: { subWorkId: number }) {
           {status === "loading" && <EditSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="하위 업무를 찾을 수 없습니다. 이미 삭제된 하위 업무일 수 있습니다."
+              message="하위 업무를 찾을 수 없습니다 — 이미 삭제된 하위 업무일 수 있습니다."
               action={{
                 label: "하위 업무 목록",
                 onClick: () => router.replace(ROUTES.subWorks),
@@ -235,14 +235,14 @@ function SubWorkEditForm({
             onClick={() => void save()}
             disabled={pending || !canManage}
             title={
-              canManage ? undefined : "하위 업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다"
+              canManage ? undefined : "하위 업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다"
             }
           >
             {pending ? "저장하는 중…" : "저장"}
           </Button>
           {!canManage && (
             <div className="mt-2 text-[13.5px] text-n500">
-              하위 업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다
+              하위 업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다
             </div>
           )}
         </div>

@@ -208,7 +208,7 @@ function toSaveErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     switch (error.code) {
       case FORM_ERROR.FORM_NOT_FOUND:
-        return "폼을 찾을 수 없습니다. 이미 삭제된 폼일 수 있습니다";
+        return "폼을 찾을 수 없습니다 — 이미 삭제된 폼일 수 있습니다";
       case FORM_ERROR.QUESTION_ITEM_IN_USE:
         return "이미 응답이 있어 기존 문항을 삭제·변경할 수 없습니다";
       case FORM_ERROR.INVALID_QUESTION_COMPOSITION:

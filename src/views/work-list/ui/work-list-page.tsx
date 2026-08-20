@@ -29,7 +29,7 @@ import {
  */
 
 /** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
-const NO_WORK_MANAGE = "업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다";
+const NO_WORK_MANAGE = "업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
 
 function WorkCardSkeleton() {
   return (

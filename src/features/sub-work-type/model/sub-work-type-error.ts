@@ -22,7 +22,7 @@ export function toSubWorkTypeErrorMessage(error: unknown): string {
   switch (error.code) {
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "하위 업무 유형을 볼 권한이 없습니다 — 국장 이상 권한이 필요합니다";
+      return "하위 업무 유형을 볼 권한이 없습니다 — 하위 업무 유형 조회(SUB_WORK_TYPE_READ) 권한이 필요합니다";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
@@ -36,8 +36,9 @@ export function toSubWorkTypeErrorMessage(error: unknown): string {
  * 유형 등록·수정·사용 전환 실패 → 화면에 띄울 한 줄 (OPS-019).
  *
  * 조회와 문구가 갈리는 자리는 403 하나다. 등록·수정·토글에는 `SUB_WORK_TYPE_MANAGE`가
- * 걸려 있어(회장·부회장·총무) **목록은 보이는데 저장만 막히는 상태가 정상적으로 존재한다** —
- * 조회와 같은 "국장 이상" 문구를 쓰면 국장이 자기 권한을 의심하게 된다.
+ * 걸려 있어 **목록은 보이는데 저장만 막히는 상태가 정상적으로 존재한다** — 조회와 같은
+ * 문구를 쓰면 목록을 멀쩡히 보고 있는 사람이 자기 권한을 의심하게 된다. 두 문장 모두
+ * 요구 권한을 이름으로 밝히는 것은 회원 도메인과 같은 규칙이다 (#117).
  *
  * `VALIDATION_FAILED`는 서버 문장을 그대로 쓴다 — 유형_명 누락과 승인 정책 조합 오류("승인
  * 정책 설정이 올바르지 않습니다")가 같은 코드로 오기 때문에, 한 문장으로 뭉개면 어느 칸을
