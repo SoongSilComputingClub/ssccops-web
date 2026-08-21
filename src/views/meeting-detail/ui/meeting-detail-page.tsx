@@ -242,11 +242,18 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
   const router = useRouter();
   const { meeting, status, errorMessage, reload, applyAgendaUpsert, applyAgendaRemoval } =
     useMeetingDetail(mtgId);
-  const { pending, transition, addAgenda, updateAgenda, withdrawAgenda } =
+  const { pending, transition, addAgenda, updateAgenda, withdrawAgenda, remove } =
     useMeetingActions(mtgId);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const sessionMember = useSessionStore((s) => s.member);
   const canManage = useCan(CAPABILITY.MEETING_MANAGE);
+  /*
+   * 삭제는 개회·종료·취소(canManage)와 다른 권한이다(서버 #125) — 회의 책임자 본인이거나
+   * MEETING_MANAGE를 가졌어도 MEETING_DELETE가 따로 없으면 잠근다. 상태와 무관하게 항상
+   * 노출한다(취소 버튼처럼 SCHEDULED로 좁히지 않는다) — 종료·취소된 회의도 삭제 가능하다.
+   */
+  const canDelete = useCan(CAPABILITY.MEETING_DELETE);
   /*
    * 안건 쓰기는 회의 관리와 **다른 권한이다** (서버 #101 · ssccops-web#82). 서버는
    * POST·PATCH·DELETE /v1/meetings/{id}/agendas 에 MEETING_AGENDA_WRITE 를 요구하고, 그 권한을
@@ -441,6 +448,19 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                   취소
                 </Button>
               )}
+              <Button
+                variant="danger"
+                size="sm"
+                disabled={!canDelete || pending}
+                title={
+                  canDelete
+                    ? undefined
+                    : "회의를 삭제할 권한이 없습니다 — 회의 삭제(MEETING_DELETE) 권한이 필요합니다"
+                }
+                onClick={() => setDeleteOpen(true)}
+              >
+                삭제
+              </Button>
             </div>
             <div className="mt-2 text-[22px] font-medium">{meeting.title}</div>
 
@@ -614,6 +634,22 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
           open={cancelOpen}
           onClose={() => setCancelOpen(false)}
           onCancel={(reason) => void runTransition("CANCEL", reason)}
+        />
+
+        <Sheet
+          open={deleteOpen}
+          title="회의 삭제"
+          hint="삭제하면 되돌릴 수 없습니다."
+          onClose={() => setDeleteOpen(false)}
+          onOk={() => {
+            setDeleteOpen(false);
+            void (async () => {
+              const { result, message } = await remove();
+              if (message) flash(message);
+              if (result) router.replace(ROUTES.meetings);
+            })();
+          }}
+          okLabel="삭제"
         />
       </PageBody>
     </>

@@ -79,6 +79,8 @@ export const SUB_WORK_ERROR = {
   QUORUM_NOT_MET: "QUORUM_NOT_MET",
   /** 반려 사유 누락 (422). **길이 초과는 400 VALIDATION_FAILED로 갈린다** */
   REASON_REQUIRED: "REASON_REQUIRED",
+  /** 이미 소프트 삭제된 하위 업무를 다시 삭제 시도 (409, 서버 #125) */
+  ALREADY_DELETED: "ALREADY_DELETED",
 } as const;
 
 /** 반려 사유 최대 길이 (sub_work_rjct.rjct_rsn · OPS-010 reason) — 초과는 400이다 */
@@ -720,4 +722,19 @@ export async function updateSubWork(
     }),
   });
   return toSubWorkDetail(res);
+}
+
+/* ── 삭제 ──────────────────────────────────────────────────── */
+
+/**
+ * DELETE /v1/sub-works/{subWorkId} — 소프트 삭제 (서버 #125).
+ *
+ * 자기 자신만 삭제한다(상위 업무처럼 계단식으로 번지지 않는다). 상태(완료 등)와 무관하게
+ * 항상 허용되고, 소유권(담당자 본인)도 보지 않는다 — 다른 하위 업무 쓰기 작업이 쓰는
+ * WORK_MANAGE + 소유권 조합과 달리 **SUB_WORK_DELETE 보유 여부만으로** 판정한다
+ * (entities/session의 CAPABILITY.SUB_WORK_DELETE 주석 참고). 이미 삭제된 건은 409
+ * ALREADY_DELETED, 대상이 아예 없으면 기존 404 NOT_FOUND다.
+ */
+export async function deleteSubWork(subWorkId: number): Promise<void> {
+  await apiFetch<void>(`/v1/sub-works/${subWorkId}`, { method: "DELETE" });
 }

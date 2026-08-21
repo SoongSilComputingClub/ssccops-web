@@ -192,6 +192,8 @@ export const MEETING_ERROR = {
   MEETING_CLOSED: "MEETING_CLOSED",
   /** 취소 사유 누락 (422) */
   REASON_REQUIRED: "REASON_REQUIRED",
+  /** 이미 소프트 삭제된 회의를 다시 삭제 시도 (409, 서버 #125) */
+  ALREADY_DELETED: "ALREADY_DELETED",
 } as const;
 
 /* ── 목록 ──────────────────────────────────────────────────── */
@@ -394,4 +396,19 @@ export async function withdrawMeetingAgenda(
   await apiFetch<void>(`/v1/meetings/${meetingId}/agendas/${agendaId}`, {
     method: "DELETE",
   });
+}
+
+/* ── 삭제 ──────────────────────────────────────────────────── */
+
+/**
+ * DELETE /v1/meetings/{meetingId} — 소프트 삭제 (서버 #125).
+ *
+ * 자기 자신만 삭제한다 — 안건(mtg_dtl)은 지우지 않고 그대로 둔다(부모가 삭제되면 조회
+ * 경로가 막혀 도달 불가능해질 뿐이다). 상태(종료·취소 포함)와 무관하게 항상 허용되고,
+ * 회의 책임자(의장) 본인 여부도 보지 않는다 — MEETING_DELETE 보유 여부만으로 판정한다
+ * (entities/session의 CAPABILITY.MEETING_DELETE 주석 참고). 이미 삭제된 건은 409
+ * ALREADY_DELETED, 대상이 아예 없으면 기존 404 NOT_FOUND다.
+ */
+export async function deleteMeeting(meetingId: number): Promise<void> {
+  await apiFetch<void>(`/v1/meetings/${meetingId}`, { method: "DELETE" });
 }

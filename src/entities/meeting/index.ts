@@ -12,6 +12,7 @@ export {
   MEETING_ERROR,
   addMeetingAgenda,
   createMeeting,
+  deleteMeeting,
   fetchMeeting,
   fetchMeetings,
   transitionMeeting,

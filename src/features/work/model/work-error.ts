@@ -56,3 +56,32 @@ export function toWorkCreateErrorMessage(error: unknown): string {
 
   return toWorkErrorMessage(error);
 }
+
+/**
+ * 업무 삭제 실패 → 화면에 띄울 한 줄 (서버 #125).
+ *
+ * 403은 조회(WORK_MANAGE 없음)와 다른 뜻이다 — 삭제는 담당자 본인이어도 WORK_DELETE가
+ * 따로 없으면 막힌다(소유권을 보지 않는 판정). 409 ALREADY_DELETED는 화면을 열어 둔 사이
+ * 다른 사람이 먼저 지운 경우라 '다시 불러오기'가 할 일이다.
+ */
+export function toWorkDeleteErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "업무를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "업무를 삭제할 권한이 없습니다 — 업무 삭제(WORK_DELETE) 권한이 필요합니다";
+    case WORK_ERROR.WORK_NOT_FOUND:
+      return "업무를 찾을 수 없습니다. 이미 삭제됐을 수 있습니다";
+    case WORK_ERROR.ALREADY_DELETED:
+      return "이미 삭제된 업무입니다";
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}

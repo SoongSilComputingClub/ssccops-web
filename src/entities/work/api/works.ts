@@ -178,6 +178,8 @@ export const WORK_ERROR = {
   INVALID_CODE_VALUE: "INVALID_CODE_VALUE",
   /** WORK_MANAGE 권한 없음 (403) */
   FORBIDDEN: "FORBIDDEN",
+  /** 이미 소프트 삭제된 업무를 다시 삭제 시도 (409, 서버 #125) */
+  ALREADY_DELETED: "ALREADY_DELETED",
 } as const;
 
 /* ── 목록 ──────────────────────────────────────────────────── */
@@ -348,4 +350,19 @@ export async function createWork(input: WorkCreateInput): Promise<WorkCreateResu
     // 서버가 PLANNING으로 고정하는 값이라 폴백도 같은 값이다
     workStatus: res.workStatus ?? "PLANNING",
   };
+}
+
+/* ── 삭제 ──────────────────────────────────────────────────── */
+
+/**
+ * DELETE /v1/works/{workId} — 소프트 삭제 (서버 #125).
+ *
+ * 자기 자신뿐 아니라 **그 아래 살아있는 하위 업무 전체도 서버가 함께 계단식으로 삭제한다** —
+ * 웹이 하위 업무마다 따로 호출할 필요가 없다. 상태(완료 등)와 무관하게 항상 허용되고, 소유권
+ * (담당자 본인)도 보지 않는다 — WORK_DELETE 보유 여부만으로 판정한다(entities/session의
+ * CAPABILITY.WORK_DELETE 주석 참고). 이미 삭제된 건은 409 ALREADY_DELETED, 대상이 아예
+ * 없으면 기존 404 WORK_NOT_FOUND다.
+ */
+export async function deleteWork(workId: number): Promise<void> {
+  await apiFetch<void>(`/v1/works/${workId}`, { method: "DELETE" });
 }

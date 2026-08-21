@@ -1,6 +1,7 @@
 export {
   toSubWorkActionErrorMessage,
   toSubWorkCreateErrorMessage,
+  toSubWorkDeleteErrorMessage,
   toSubWorkErrorMessage,
 } from "./model/sub-work-error";
 export { useCreateSubWork } from "./model/use-create-sub-work";
@@ -22,3 +23,8 @@ export type {
   SubWorkUpdateControl,
   SubWorkUpdate,
 } from "./model/use-update-sub-work";
+export { useDeleteSubWork } from "./model/use-delete-sub-work";
+export type {
+  SubWorkDeleteControl,
+  SubWorkDeletion,
+} from "./model/use-delete-sub-work";
