@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CAPABILITY } from "@/entities/session";
 import { workSttsTone, type WorkSubWorkSummary } from "@/entities/work";
 import { useCan } from "@/features/auth";
-import { useWorkDetail } from "@/features/work";
+import { useDeleteWork, useWorkDetail } from "@/features/work";
 import {
   OPER_TYPE_NM,
   PRRTY_RNK_NM,
@@ -25,6 +26,8 @@ import {
   PageHeader,
   ProgressBar,
   SectionLabel,
+  Sheet,
+  flash,
   type GridColumn,
 } from "@/shared/ui";
 
@@ -75,6 +78,13 @@ export function WorkDetailPage({ workId }: { workId: number }) {
   const { work, status, errorMessage, reload } = useWorkDetail(workId);
   /* 하위 업무 등록도 WORK_MANAGE 다 (서버 SubWorkController 전체) */
   const canManage = useCan(CAPABILITY.WORK_MANAGE);
+  /*
+   * 삭제는 수정(WORK_MANAGE)과 다른 권한이다(서버 #125) — 담당자 본인이거나 WORK_MANAGE를
+   * 가졌어도 WORK_DELETE가 따로 없으면 잠근다. 소유권을 보지 않는 순수 권한 판정이다.
+   */
+  const canDelete = useCan(CAPABILITY.WORK_DELETE);
+  const { pending: deletePending, remove } = useDeleteWork();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (status !== "ready" || !work) {
     return (
@@ -186,6 +196,17 @@ export function WorkDetailPage({ workId }: { workId: number }) {
               >
                 수정
               </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                disabled={!canDelete || deletePending}
+                title={
+                  canDelete ? undefined : "업무를 삭제할 권한이 없습니다 — 업무 삭제(WORK_DELETE) 권한이 필요합니다"
+                }
+                onClick={() => setDeleteOpen(true)}
+              >
+                삭제
+              </Button>
             </div>
             <div className="mt-2 text-[23px] font-medium">{work.title}</div>
             <div className="mt-3 flex items-center gap-[10px]">
@@ -243,6 +264,26 @@ export function WorkDetailPage({ workId }: { workId: number }) {
             />
           </Card>
         </div>
+
+        <Sheet
+          open={deleteOpen}
+          title="업무 삭제"
+          hint={
+            work.subWorkCount > 0
+              ? `연결된 하위 업무 ${work.subWorkCount}건도 함께 삭제됩니다. 삭제하면 되돌릴 수 없습니다.`
+              : "삭제하면 되돌릴 수 없습니다."
+          }
+          onClose={() => setDeleteOpen(false)}
+          onOk={() => {
+            setDeleteOpen(false);
+            void (async () => {
+              const { deleted, message } = await remove(work.workId);
+              if (message) flash(message);
+              if (deleted) router.replace(ROUTES.works);
+            })();
+          }}
+          okLabel="삭제"
+        />
       </PageBody>
     </>
   );

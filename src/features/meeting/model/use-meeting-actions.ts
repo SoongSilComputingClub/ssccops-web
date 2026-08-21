@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { syncSessionOnForbidden } from "@/entities/session";
 import {
   addMeetingAgenda,
+  deleteMeeting,
   transitionMeeting,
   updateMeetingAgenda,
   withdrawMeetingAgenda,
@@ -13,7 +14,7 @@ import {
   type MeetingTransition,
   type MeetingTransitionResult,
 } from "@/entities/meeting";
-import { toMeetingActionErrorMessage } from "./meeting-error";
+import { toMeetingActionErrorMessage, toMeetingDeleteErrorMessage } from "./meeting-error";
 
 /*
  * 회의 상세 화면의 수정 훅 (OPS-026 전이 · OPS-027 상정 · OPS-028 수정 · OPS-029 철회, #83).
@@ -45,6 +46,7 @@ export interface MeetingActionControl {
     input: MeetingAgendaUpdateInput,
   ) => Promise<MeetingActionOutcome<MeetingAgenda>>;
   withdrawAgenda: (agendaId: number) => Promise<MeetingActionOutcome<true>>;
+  remove: () => Promise<MeetingActionOutcome<true>>;
 }
 
 const BUSY = { result: null, message: "" } as const;
@@ -70,7 +72,11 @@ export function useMeetingActions(meetingId: number): MeetingActionControl {
   }, []);
 
   const run = useCallback(
-    async <T,>(send: () => Promise<T>, doneMessage: string): Promise<MeetingActionOutcome<T>> => {
+    async <T,>(
+      send: () => Promise<T>,
+      doneMessage: string,
+      toErrorMessage: (error: unknown) => string = toMeetingActionErrorMessage,
+    ): Promise<MeetingActionOutcome<T>> => {
       if (inFlightRef.current) return BUSY;
       inFlightRef.current = true;
       setPending(true);
@@ -80,7 +86,7 @@ export function useMeetingActions(meetingId: number): MeetingActionControl {
       } catch (error: unknown) {
         // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다
         syncSessionOnForbidden(error);
-        return { result: null, message: toMeetingActionErrorMessage(error) };
+        return { result: null, message: toErrorMessage(error) };
       } finally {
         inFlightRef.current = false;
         if (aliveRef.current) setPending(false);
@@ -129,5 +135,23 @@ export function useMeetingActions(meetingId: number): MeetingActionControl {
     [run, meetingId],
   );
 
-  return { pending, transition, addAgenda, updateAgenda, withdrawAgenda };
+  /*
+   * 회의 삭제 (서버 #125). 안건 철회(withdrawAgenda)와 같은 잠금을 쓰지만 오류 문구는 다르다 —
+   * 삭제 403은 "책임자만"이 아니라 "MEETING_DELETE 권한 없음"이라 toMeetingDeleteErrorMessage를
+   * 따로 넘긴다.
+   */
+  const remove = useCallback(
+    () =>
+      run(
+        async () => {
+          await deleteMeeting(meetingId);
+          return true as const;
+        },
+        "회의를 삭제했습니다",
+        toMeetingDeleteErrorMessage,
+      ),
+    [run, meetingId],
+  );
+
+  return { pending, transition, addAgenda, updateAgenda, withdrawAgenda, remove };
 }

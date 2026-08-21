@@ -1,6 +1,7 @@
 export {
   toMeetingActionErrorMessage,
   toMeetingCreateErrorMessage,
+  toMeetingDeleteErrorMessage,
   toMeetingErrorMessage,
 } from "./model/meeting-error";
 export { useCreateMeeting } from "./model/use-create-meeting";

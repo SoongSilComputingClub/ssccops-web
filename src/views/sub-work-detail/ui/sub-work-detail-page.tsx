@@ -12,7 +12,7 @@ import { REJECT_REASON_MAX_LENGTH } from "@/entities/sub-work";
 import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { RejectSheet, useApprovalDecisions } from "@/features/approval";
-import { useSubWorkActions, useSubWorkDetail } from "@/features/sub-work";
+import { useDeleteSubWork, useSubWorkActions, useSubWorkDetail } from "@/features/sub-work";
 import {
   APRV_STTS_NM,
   OPER_TYPE_NM,
@@ -34,6 +34,7 @@ import {
   PageBody,
   PageHeader,
   SectionLabel,
+  Sheet,
   flash,
 } from "@/shared/ui";
 
@@ -118,9 +119,17 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
    */
   const { pendingSubWorkId, vote } = useApprovalDecisions();
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const sessionMember = useSessionStore((s) => s.member);
   /* 기본 정보 수정도 WORK_MANAGE 다 (서버 SubWorkController 클래스 애노테이션) */
   const canManage = useCan(CAPABILITY.WORK_MANAGE);
+  /*
+   * 삭제는 수정·착수·완료 승인 요청(canActOnOwnerTasks)과 다른 권한이다(서버 #125) — 담당자
+   * 본인이거나 WORK_MANAGE를 가졌어도 SUB_WORK_DELETE가 따로 없으면 잠근다. 소유권을 보지
+   * 않는 순수 권한 판정이다.
+   */
+  const canDelete = useCan(CAPABILITY.SUB_WORK_DELETE);
+  const { pending: deletePending, remove: removeSubWork } = useDeleteSubWork();
   /*
    * 투표 자격 (서버 #123). 직위 코드 시절에는 상세 응답에 canVote 가 없어 자격 없는 회원도
    * 버튼을 눌러 403 을 보고서야 알았는데, 자격이 권한(APPROVAL_VOTE)으로 통합되며 capabilities
@@ -263,6 +272,19 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
                 수정
               </Button>
             )}
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={!canDelete || deletePending}
+              title={
+                canDelete
+                  ? undefined
+                  : "하위 업무를 삭제할 권한이 없습니다 — 하위 업무 삭제(SUB_WORK_DELETE) 권한이 필요합니다"
+              }
+              onClick={() => setDeleteOpen(true)}
+            >
+              삭제
+            </Button>
             {isReview ? (
               <div className="flex gap-[9px]">
                 {subWork.canReject && (
@@ -517,6 +539,22 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
           onClose={() => setRejectOpen(false)}
           maxLength={REJECT_REASON_MAX_LENGTH}
           onReject={(reason) => void runTransition("REJECT", reason)}
+        />
+
+        <Sheet
+          open={deleteOpen}
+          title="하위 업무 삭제"
+          hint="삭제하면 되돌릴 수 없습니다."
+          onClose={() => setDeleteOpen(false)}
+          onOk={() => {
+            setDeleteOpen(false);
+            void (async () => {
+              const { deleted, message } = await removeSubWork(subWork.subWorkId);
+              if (message) flash(message);
+              if (deleted) router.replace(ROUTES.workDetail(subWork.workId));
+            })();
+          }}
+          okLabel="삭제"
         />
       </PageBody>
     </>
