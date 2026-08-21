@@ -86,11 +86,11 @@ export interface RoleEditor {
  * 남아 있고, 그때는 save 의 catch 가 서버 코드로 다시 문구를 정한다.
  */
 function validate(draft: RoleDraft): string {
-  if (!draft.roleNm) return "역할_명을 입력하세요";
+  if (!draft.roleNm) return "역할명을 입력하세요";
   if (draft.roleNm.length > ROLE_NM_MAX_LENGTH) {
-    return `역할_명은 ${ROLE_NM_MAX_LENGTH}자를 넘을 수 없습니다`;
+    return `역할명은 ${ROLE_NM_MAX_LENGTH}자를 넘을 수 없습니다`;
   }
-  if (!draft.roleClsfCd) return "역할_분류를 고르세요";
+  if (!draft.roleClsfCd) return "역할 분류를 고르세요";
   return "";
 }
 

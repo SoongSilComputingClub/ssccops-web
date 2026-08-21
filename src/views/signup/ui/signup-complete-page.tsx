@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { mbrGrdTone } from "@/entities/member";
 import { useSessionStore } from "@/entities/session";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { safeNextPath } from "@/shared/lib/next-path";
 import { Badge, Button, Card, flash } from "@/shared/ui";
@@ -47,16 +48,16 @@ export function SignupCompletePage() {
   const linked = resultKind === "link";
   const genText = member.generationNumber ? `${member.generationNumber}기` : "미배정";
   const rows: [string, string][] = [
-    ["회원_명", member.name],
-    ["학생_번호", member.studentNumber || "미입력"],
-    ["학년_번호", member.academicYear ? `${member.academicYear}학년` : "미입력"],
-    ["학과_명", member.departmentName || "미입력"],
-    ["기수_번호", genText === "미배정" ? "미배정 (운영진 배정)" : genText],
+    [FIELD_LABEL.memberName, member.name],
+    [FIELD_LABEL.studentNumber, member.studentNumber || "미입력"],
+    [FIELD_LABEL.academicYear, member.academicYear ? `${member.academicYear}학년` : "미입력"],
+    [FIELD_LABEL.departmentName, member.departmentName || "미입력"],
+    [FIELD_LABEL.generationNumber, genText === "미배정" ? "미배정 (운영진 배정)" : genText],
     ["전화번호", member.phoneNumber || "미입력"],
     ["이메일", member.email || "미입력"],
     // 등급·상태 명칭은 서버가 준 것을 쓴다 — 기준정보에서 이름을 바꿔도 화면이 따라간다
-    ["회원_등급", member.membershipGradeName],
-    ["회원_상태", member.membershipStatusName],
+    [FIELD_LABEL.membershipGrade, member.membershipGradeName],
+    [FIELD_LABEL.membershipStatus, member.membershipStatusName],
   ];
   /*
    * 역할은 연결한 사람에게만 보여 준다 (#58). 갓 가입한 회원에게는 언제나 빈 줄이라 "역할:
@@ -64,19 +65,19 @@ export function SignupCompletePage() {
    * 그대로 실려 왔다는 것이 새 가입이 아니라는 증거다.
    */
   if (linked && member.roles.length > 0) {
-    rows.push(["현재_역할", member.roles.map((r) => r.roleName).join(" · ")]);
+    rows.push([FIELD_LABEL.currentRoles, member.roles.map((r) => r.roleName).join(" · ")]);
   }
 
   return (
-    <div className="w-[480px] px-4">
+    <div className="w-full max-w-[480px] px-4 py-10 lg:py-0">
       <Badge tone={mbrGrdTone(member.membershipGradeCode)}>{member.membershipGradeName}</Badge>
       <h1 className="mt-3 text-[27px] font-medium tracking-[-.4px]">
         {linked ? "기존 회원 정보와 연결되었습니다" : "회원 가입이 완료되었습니다"}
       </h1>
       <p className="mt-2 text-[14.5px] leading-[1.6] text-n400">
         {linked
-          ? "명부에 등록돼 있던 회원 정보에 이 계정을 연결했습니다. 기존 등급 · 기수 · 역할이 그대로 유지됩니다. 아래 내용이 본인 정보가 맞는지 확인해주세요."
-          : "임시회원 등급으로 등록되었습니다. 폼 지원과 조회는 지금 바로 가능하며, 활동 이력이 쌓이면 운영진이 준회원으로 승급합니다."}
+          ? "명부에 등록돼 있던 회원 정보에 이 계정을 연결했습니다. 기존 기수 · 등급 · 역할이 그대로 유지됩니다. 아래 내용이 본인 정보가 맞는지 확인해주세요."
+          : "임시회원 등급으로 등록되었습니다. 폼 지원과 조회는 지금 바로 가능하며 활동 이력이 쌓이면 운영진이 준회원으로 승급합니다."}
       </p>
       {/*
        * 연결했는데 임시회원이 보인다면 연결이 아니라 **새 가입**이 일어난 것이다(#58). 그 사고는
@@ -90,11 +91,17 @@ export function SignupCompletePage() {
         </div>
       )}
       <Card className="mt-5">
-        <div className="grid grid-cols-[90px_1fr] gap-y-[9px] text-[15px]">
+        {/*
+         * 값 열이 `1fr`이면 min-width:auto가 걸려 띄어쓰기 없는 값(이메일)이 줄바꿈되지 않고
+         * 격자를 통째로 넓힌다 — 480px에서는 남는 폭이 있어 드러나지 않지만 375px에서는
+         * 화면 밖으로 나간다. 좁은 화면만 minmax(0,1fr)로 줄여 줄바꿈을 허용하고,
+         * lg:는 예전 그대로 둔다. 라벨은 가장 긴 것이 다섯 글자(회원 등급)라 90px에 든다.
+         */}
+        <div className="grid grid-cols-[90px_minmax(0,1fr)] gap-y-[9px] text-[15px] lg:grid-cols-[90px_1fr]">
           {rows.map(([k, v]) => (
             <div key={k} className="contents">
               <div className="text-[14px] text-n500">{k}</div>
-              <div>{v}</div>
+              <div className="break-words">{v}</div>
             </div>
           ))}
         </div>

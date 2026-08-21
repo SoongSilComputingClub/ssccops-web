@@ -6,6 +6,7 @@ import { CAPABILITY } from "@/entities/session";
 import type { SubWorkDetail } from "@/entities/sub-work";
 import { useCan } from "@/features/auth";
 import { useSubWorkDetail, useUpdateSubWork } from "@/features/sub-work";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { PRRTY_RNK_CDS, PRRTY_RNK_NM, type PrrtyRnkCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { fromInput, toInput } from "@/shared/lib/date";
@@ -63,7 +64,7 @@ export function SubWorkEditPage({ subWorkId }: { subWorkId: number }) {
           {status === "loading" && <EditSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="하위 업무를 찾을 수 없습니다. 이미 삭제된 하위 업무일 수 있습니다."
+              message="하위 업무를 찾을 수 없습니다 — 이미 삭제된 하위 업무일 수 있습니다."
               action={{
                 label: "하위 업무 목록",
                 onClick: () => router.replace(ROUTES.subWorks),
@@ -115,7 +116,7 @@ function SubWorkEditForm({
 
   const save = async () => {
     if (!title.trim() || !startAt) {
-      flash("업무_제목 · 시작_일시는 필수입니다");
+      flash("운영 제목 · 시작 일시는 필수입니다");
       return;
     }
     if (!subWork.owner) {
@@ -146,11 +147,15 @@ function SubWorkEditForm({
     <>
       <PageHeader title="하위 업무 수정" subtitle={subWork.title} showBack />
       <PageBody>
-        <div className="grid grid-cols-[1.1fr_1fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.1fr_1fr]">
           <Card>
             <SectionLabel className="mb-3">상위 속성 · oper</SectionLabel>
-            <div className="grid grid-cols-2 gap-[14px]">
-              <Field label="운영_제목" required className="col-span-2">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+              <Field
+                label={FIELD_LABEL.operationTitle}
+                required
+                className="col-span-1 lg:col-span-2"
+              >
                 <TextField value={title} onChange={(e) => setTitle(e.target.value)} />
               </Field>
               <Field label="담당자">
@@ -161,8 +166,8 @@ function SubWorkEditForm({
                   </div>
                 </div>
               </Field>
-              <Field label="우선_순위_코드">
-                <div className="flex gap-[7px] pt-[6px]">
+              <Field label={FIELD_LABEL.priority}>
+                <div className="flex flex-wrap gap-[7px] pt-[6px]">
                   {PRRTY_RNK_CDS.map((cd) => (
                     <Chip key={cd} active={priority === cd} onClick={() => setPriority(cd)}>
                       {PRRTY_RNK_NM[cd]}
@@ -170,14 +175,14 @@ function SubWorkEditForm({
                   ))}
                 </div>
               </Field>
-              <Field label="시작_일시" required>
+              <Field label={FIELD_LABEL.startAt} required>
                 <TextField
                   type="datetime-local"
                   value={startAt}
                   onChange={(e) => setStartAt(e.target.value)}
                 />
               </Field>
-              <Field label="마감_일시">
+              <Field label={FIELD_LABEL.dueAt}>
                 <TextField
                   type="datetime-local"
                   value={dueAt}
@@ -189,8 +194,8 @@ function SubWorkEditForm({
 
           <Card>
             <SectionLabel className="mb-3">확장 속성 · sub_work</SectionLabel>
-            <div className="mb-4 flex items-center gap-[8px]">
-              <div className="text-[13.5px] text-n400">하위_업무_유형</div>
+            <div className="mb-4 flex flex-wrap items-center gap-[8px]">
+              <div className="text-[13.5px] text-n400">{FIELD_LABEL.subWorkType}</div>
               <Badge tone="outline">{subWork.subWorkTypeName}</Badge>
               <div className="text-[13px] text-n500">수정 화면에서는 바꿀 수 없습니다</div>
             </div>
@@ -199,21 +204,21 @@ function SubWorkEditForm({
               <span className="text-n300">{subWork.workTitle || `업무 #${subWork.workId}`}</span>
             </div>
             <div className="flex flex-col gap-[14px]">
-              <Field label="업무_내용">
+              <Field label={FIELD_LABEL.workContent}>
                 <TextField
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="무엇을 하는 하위 업무인지"
                 />
               </Field>
-              <Field label="완료_기준_내용">
+              <Field label={FIELD_LABEL.completionCriteria}>
                 <TextArea
                   value={completionCriteria}
                   onChange={(e) => setCompletionCriteria(e.target.value)}
                   placeholder="완료로 인정하는 기준 · 비워도 됩니다"
                 />
               </Field>
-              <Field label="외부_URL_주소">
+              <Field label={FIELD_LABEL.externalUrl}>
                 <TextField
                   value={externalLink}
                   onChange={(e) => setExternalLink(e.target.value)}
@@ -230,14 +235,14 @@ function SubWorkEditForm({
             onClick={() => void save()}
             disabled={pending || !canManage}
             title={
-              canManage ? undefined : "하위 업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다"
+              canManage ? undefined : "하위 업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다"
             }
           >
             {pending ? "저장하는 중…" : "저장"}
           </Button>
           {!canManage && (
             <div className="mt-2 text-[13.5px] text-n500">
-              하위 업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다
+              하위 업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다
             </div>
           )}
         </div>

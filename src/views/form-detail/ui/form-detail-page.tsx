@@ -17,6 +17,7 @@ import {
   useFormStatus,
   type FormStatusChange,
 } from "@/features/form";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { isChoiceQitemType, QITEM_TYPE_NM } from "@/shared/config/codes";
 import { publicFormUrl, ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
@@ -91,7 +92,8 @@ function QitemPreview({
                     picked ? "border-accent bg-accent" : "border-line-strong",
                   )}
                 />
-                <span>{o}</span>
+                {/* 플렉스 아이템의 min-width:auto를 풀어 준다 — 띄어쓰기 없는 긴 보기 대비 */}
+                <span className="min-w-0 break-words">{o}</span>
                 {branch !== undefined && (
                   <span className="text-[12.5px] text-accent">
                     → {branch + 1}. {pages[branch]?.pageTtl ?? ""}
@@ -231,7 +233,7 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
         }}
       />
       <PageBody>
-        <div className="grid grid-cols-2 items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <div className="flex flex-col gap-4">
             <Card>
               <div className="flex items-center gap-2">
@@ -245,12 +247,12 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 className="mt-4"
                 labelWidth={90}
                 items={[
-                  { k: "접수_시작_일시", v: formatDt(form.rcptBgngDt) || "미설정" },
-                  { k: "접수_종료_일시", v: formatDt(form.rcptEndDt) || "미설정" },
+                  { k: FIELD_LABEL.receiptStartAt, v: formatDt(form.rcptBgngDt) || "미설정" },
+                  { k: FIELD_LABEL.receiptEndAt, v: formatDt(form.rcptEndDt) || "미설정" },
                   // 서버가 mbr을 조인해 준 이름 — 회원 목록을 따로 뒤지지 않는다
-                  { k: "생성자_회원", v: form.creatr.mbrNm },
-                  { k: "생성_일시", v: formatYmd(form.crtDt) },
-                  { k: "수정_일시", v: formatYmd(form.mdfcnDt) },
+                  { k: FIELD_LABEL.creator, v: form.creatr.mbrNm },
+                  { k: FIELD_LABEL.createdAt, v: formatYmd(form.crtDt) },
+                  { k: FIELD_LABEL.updatedAt, v: formatYmd(form.mdfcnDt) },
                 ]}
               />
               {form.labels.length > 0 && (
@@ -321,14 +323,14 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 </Button>
               </div>
               <div className="mt-2 text-[13px] text-n500">
-                공개 링크는 폼_ID 기준으로 고정됩니다.
+                공개 링크는 폼 ID 기준으로 고정됩니다.
               </div>
             </Card>
 
             <Card>
               <SectionLabel className="mb-3">응답 요약</SectionLabel>
               {/* 서버 집계값 — 작성 중(DRAFT) 응답은 어느 칸에도 들어가지 않는다 */}
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                 <StatBox label="전체" value={summary.total} />
                 <StatBox label="제출" value={summary.submitted} />
                 <StatBox label="승인" value={summary.accepted} tone="accent" />

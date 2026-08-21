@@ -27,8 +27,18 @@ export async function middleware(request: NextRequest) {
  * 사람을 인증 없이 폼까지 들여보내면 제출 시점에야 로그인으로 튕겨 작성한 답이 날아가므로,
  * 입구에서 한 번 걸러 내는 쪽을 택했다.
  */
+/*
+ * `.webmanifest`가 목록에 있는 이유 (#110).
+ *
+ * 매니페스트가 여기서 빠지면 미들웨어가 돌아 미인증 요청을 /login으로 돌려보낸다. 그러면
+ * 브라우저는 JSON 대신 로그인 HTML을 받아 파싱에 실패하고 **설치 후보로 잡지 못한다** —
+ * PWA 설치가 통째로 막힌다. 실제로 그렇게 배포됐다가 잡았다.
+ *
+ * 매니페스트는 비밀이 없는 공개 자산이라 인증 판단이 필요 없고, 매처에서 빼면 요청마다
+ * 붙던 Supabase 왕복도 함께 없어진다.
+ */
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|auth/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|auth/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest)$).*)",
   ],
 };

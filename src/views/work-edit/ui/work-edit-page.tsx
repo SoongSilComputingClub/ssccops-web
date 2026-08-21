@@ -14,6 +14,7 @@ import {
   type PrrtyRnkCd,
   type WorkTypeCd,
 } from "@/shared/config/codes";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { fromInput, toInput } from "@/shared/lib/date";
 import {
@@ -68,7 +69,7 @@ export function WorkEditPage({ workId }: { workId: number }) {
           {status === "loading" && <EditSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="업무를 찾을 수 없습니다. 이미 삭제된 업무일 수 있습니다."
+              message="업무를 찾을 수 없습니다 — 이미 삭제된 업무일 수 있습니다."
               action={{ label: "업무 목록", onClick: () => router.replace(ROUTES.works) }}
             />
           )}
@@ -110,7 +111,7 @@ function WorkEditForm({
 
   const save = async () => {
     if (!title.trim() || !startAt) {
-      flash("업무_제목 · 시작_일시는 필수입니다");
+      flash("운영 제목 · 시작 일시는 필수입니다");
       return;
     }
     if (!work.owner) {
@@ -138,11 +139,15 @@ function WorkEditForm({
     <>
       <PageHeader title="업무 수정" subtitle={work.title} showBack />
       <PageBody>
-        <div className="grid grid-cols-[1.1fr_1fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.1fr_1fr]">
           <Card>
             <SectionLabel className="mb-3">상위 속성 · oper</SectionLabel>
-            <div className="grid grid-cols-2 gap-[14px]">
-              <Field label="운영_제목" required className="col-span-2">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+              <Field
+                label={FIELD_LABEL.operationTitle}
+                required
+                className="col-span-1 lg:col-span-2"
+              >
                 <TextField value={title} onChange={(e) => setTitle(e.target.value)} />
               </Field>
               <Field label="담당자">
@@ -153,8 +158,8 @@ function WorkEditForm({
                   </div>
                 </div>
               </Field>
-              <Field label="우선_순위_코드">
-                <div className="flex gap-[7px] pt-[6px]">
+              <Field label={FIELD_LABEL.priority}>
+                <div className="flex flex-wrap gap-[7px] pt-[6px]">
                   {PRRTY_RNK_CDS.map((cd) => (
                     <Chip key={cd} active={priority === cd} onClick={() => setPriority(cd)}>
                       {PRRTY_RNK_NM[cd]}
@@ -162,14 +167,14 @@ function WorkEditForm({
                   ))}
                 </div>
               </Field>
-              <Field label="시작_일시" required>
+              <Field label={FIELD_LABEL.startAt} required>
                 <TextField
                   type="datetime-local"
                   value={startAt}
                   onChange={(e) => setStartAt(e.target.value)}
                 />
               </Field>
-              <Field label="종료_일시">
+              <Field label={FIELD_LABEL.endAt}>
                 <TextField
                   type="datetime-local"
                   value={endAt}
@@ -181,15 +186,15 @@ function WorkEditForm({
 
           <Card>
             <SectionLabel className="mb-3">확장 속성 · work</SectionLabel>
-            <div className="mb-2 text-[13.5px] text-n400">업무_유형_코드</div>
-            <div className="mb-4 flex gap-[7px]">
+            <div className="mb-2 text-[13.5px] text-n400">{FIELD_LABEL.workType}</div>
+            <div className="mb-4 flex flex-wrap gap-[7px]">
               {WORK_TYPE_CDS.map((cd) => (
                 <Chip key={cd} active={workType === cd} onClick={() => setWorkType(cd)}>
                   {WORK_TYPE_NM[cd]}
                 </Chip>
               ))}
             </div>
-            <Field label="총평_내용">
+            <Field label={FIELD_LABEL.generalReview}>
               <TextArea
                 value={generalReview}
                 onChange={(e) => setGeneralReview(e.target.value)}
@@ -204,13 +209,13 @@ function WorkEditForm({
             className="px-[26px] py-[11px]"
             onClick={() => void save()}
             disabled={pending || !canManage}
-            title={canManage ? undefined : "업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다"}
+            title={canManage ? undefined : "업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다"}
           >
             {pending ? "저장하는 중…" : "저장"}
           </Button>
           {!canManage && (
             <div className="mt-2 text-[13.5px] text-n500">
-              업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다
+              업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다
             </div>
           )}
         </div>

@@ -142,33 +142,33 @@ export function validateMemberEdit(
 
   const name = values.name.trim();
   if (!name) {
-    errors.name = "회원_명을 입력하세요";
+    errors.name = "회원명을 입력하세요";
   } else if (name.length > MEMBER_FIELD_MAX.name) {
-    errors.name = `회원_명은 ${MEMBER_FIELD_MAX.name}자를 넘을 수 없습니다`;
+    errors.name = `회원명은 ${MEMBER_FIELD_MAX.name}자를 넘을 수 없습니다`;
   }
 
   const generationNumber = values.generationNumber.trim();
   if (generationNumber && !DIGITS_ONLY.test(generationNumber)) {
     // 0은 미배정이라 허용한다 — 서버도 @PositiveOrZero다
-    errors.generationNumber = "기수_번호는 0 이상의 숫자입니다";
+    errors.generationNumber = "기수는 0 이상의 숫자입니다";
   }
 
   const departmentName = values.departmentName.trim();
   if (!departmentName) {
-    if (academicRequired) errors.departmentName = "재학 회원은 학과_명이 필요합니다";
+    if (academicRequired) errors.departmentName = "재학 회원은 학과가 필요합니다";
   } else if (departmentName.length > MEMBER_FIELD_MAX.departmentName) {
-    errors.departmentName = `학과_명은 ${MEMBER_FIELD_MAX.departmentName}자를 넘을 수 없습니다`;
+    errors.departmentName = `학과는 ${MEMBER_FIELD_MAX.departmentName}자를 넘을 수 없습니다`;
   }
 
   const academicYear = values.academicYear.trim();
   if (!academicYear) {
-    if (academicRequired) errors.academicYear = "재학 회원은 학년_번호가 필요합니다";
+    if (academicRequired) errors.academicYear = "재학 회원은 학년이 필요합니다";
   } else if (
     !DIGITS_ONLY.test(academicYear) ||
     Number(academicYear) < ACADEMIC_YEAR_MIN ||
     Number(academicYear) > ACADEMIC_YEAR_MAX
   ) {
-    errors.academicYear = `학년_번호는 ${ACADEMIC_YEAR_MIN}~${ACADEMIC_YEAR_MAX} 사이의 숫자입니다`;
+    errors.academicYear = `학년은 ${ACADEMIC_YEAR_MIN}~${ACADEMIC_YEAR_MAX} 사이의 숫자입니다`;
   }
 
   const phoneNumber = values.phoneNumber.trim();

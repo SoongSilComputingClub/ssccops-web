@@ -1,6 +1,5 @@
 import type {
   AprvSttsCd,
-  AutzrRoleCd,
   OperTypeCd,
   PrrtyRnkCd,
   TkcgSeCd,
@@ -160,8 +159,10 @@ export interface SubWorkDetail {
   approvalStatus: AprvSttsCd;
   /** 하위 업무가 아니라 그 유형이 갖는 값 — 안내 문구와 버튼 노출의 근거다 */
   approvalRequired: boolean;
-  /** 승인자 역할 코드. 기준 코드에 없는 값이 오면 안내 문구만 총칭으로 떨어진다 */
-  authorizerRoleCode: AutzrRoleCd | string | null;
+  /** 승인자 결재 권한 코드 (서버 #123). 판정용 — 표시는 authorizerAuthorityName으로 한다 */
+  authorizerAuthorityCode: string | null;
+  /** 승인자 결재 권한 표시명 (authrt_nm) — 안내 문구가 이 이름을 쓴다 */
+  authorizerAuthorityName: string | null;
   owner: SubWorkMemberRef | null;
   /** 이관 데이터는 등록자가 없다 */
   registrant: SubWorkMemberRef | null;
@@ -181,6 +182,12 @@ export interface SubWorkDetail {
   checklist: SubWorkChecklistItem[];
   checklistSummary: SubWorkChecklistSummary;
   quorum: SubWorkQuorum;
+  /**
+   * **이번 회차**의 내 표 (OPS-009 myVote). 아직 던지지 않았으면 null이고, 정족수 유형이
+   * 아니면 서버가 늘 null로 내린다. 반려 후 재상정되면 회차가 바뀌어 다시 null이 된다 —
+   * 이전 회차의 표를 이번 회차의 선택 상태로 그리지 않기 위해서다(승인함 카드와 같은 값).
+   */
+  myVote: VoteChoice | null;
   latestRejection: SubWorkRejection | null;
   /**
    * **권한만** 답한다 — "이 회원이 승인자인가"이지 "지금 누르면 성공하는가"가 아니다.

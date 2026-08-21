@@ -47,9 +47,9 @@ import {
  */
 
 const NO_MANAGE =
-  "권한 관리(ROLE_MANAGE) 권한이 없어 권한 트리를 볼 수 없습니다 — 최고운영자에게 요청해주세요";
+  "권한 관리(ROLE_MANAGE) 권한이 없어 권한 트리를 볼 수 없습니다 — 최고관리자에게 요청해주세요";
 
-const SYS_LOCKED = "시스템 권한은 코드를 바꾸거나 삭제할 수 없습니다 — 코드가 직접 참조합니다";
+const SYS_LOCKED = "시스템 권한은 코드를 바꾸거나 삭제할 수 없습니다 — 서비스 기능이 이 코드를 직접 사용합니다";
 
 export function AuthorityTreePage() {
   const canManage = useCan(CAPABILITY.ROLE_MANAGE);
@@ -186,7 +186,12 @@ function AuthorityTreeAdminView() {
         )}
 
         {admin.status === "ready" && (
-          <div className="grid grid-cols-[1.25fr_1fr] items-start gap-4">
+          /*
+           * 좁은 화면에서는 1열로 쌓는다 — 트리가 위, 고른 권한의 편집 폼이 아래다.
+           * 트리에서 무엇을 골랐는지는 배경색으로 드러나므로 폼이 아래로 내려가도
+           * 대상이 흐려지지 않는다. 펼침 계산은 서버 규칙 그대로이고 여기서 손대지 않는다.
+           */
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.25fr_1fr]">
             <AuthorityList
               admin={admin}
               selected={selected}
@@ -310,12 +315,14 @@ function AuthorityForm({
             readOnly={!isNew}
             disabled={!isNew}
             placeholder="STUDY_MANAGE"
-            className="font-mono"
+            /* iOS Safari 는 16px 미만 입력란에 포커스가 가면 페이지를 통째로 확대한다 —
+               TextField·TextArea 기본값 15.5px, SelectField 15px 이 전부 여기 걸린다 */
+            className="font-mono text-[16px] lg:text-[15.5px]"
           />
           <div className="mt-[5px] text-[12.5px] text-n500">
             {isNew
-              ? "대문자로 시작하고 대문자·숫자·밑줄만 씁니다. 서버 @RequireAuthority 가 가리키는 값과 같은 이름 공간입니다"
-              : "코드는 PK 라 바꿀 수 없습니다 — 새로 만든 뒤 기존 권한을 삭제해주세요"}
+              ? "대문자로 시작하고 대문자·숫자·밑줄만 씁니다. 서버가 권한을 확인할 때 쓰는 이름과 같은 체계입니다"
+              : "코드는 권한을 구분하는 고유한 값이라 바꿀 수 없습니다 — 새로 만든 뒤 기존 권한을 삭제해주세요"}
           </div>
         </Field>
 
@@ -324,6 +331,7 @@ function AuthorityForm({
             value={values.authrtNm}
             onChange={(e) => setValue({ authrtNm: e.target.value })}
             placeholder="스터디 관리"
+            className="text-[16px] lg:text-[15.5px]"
           />
         </Field>
 
@@ -332,6 +340,7 @@ function AuthorityForm({
             value={values.authrtExpln}
             onChange={(e) => setValue({ authrtExpln: e.target.value })}
             placeholder="이 권한이 무엇을 열어 주는지 적어 두면 역할에 부여할 때 판단이 쉽습니다"
+            className="text-[16px] lg:text-[15.5px]"
           />
         </Field>
 
@@ -339,6 +348,7 @@ function AuthorityForm({
           <SelectField
             value={values.upAuthrtCd}
             onChange={(e) => setValue({ upAuthrtCd: e.target.value })}
+            className="text-[16px] lg:text-[15px]"
           >
             <option value="">(최상위 권한)</option>
             {candidates.map(({ node: c, depth }) => (
@@ -356,6 +366,7 @@ function AuthorityForm({
             value={values.indctSeqno}
             onChange={(e) => setValue({ indctSeqno: e.target.value })}
             placeholder={String(siblingCount + 1)}
+            className="text-[16px] lg:text-[15.5px]"
           />
         </Field>
       </div>

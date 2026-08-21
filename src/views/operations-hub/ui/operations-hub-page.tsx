@@ -17,6 +17,7 @@ import {
   WORK_TYPE_NM,
   type OperTypeCd,
 } from "@/shared/config/codes";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt, formatMd } from "@/shared/lib/date";
 import {
@@ -72,7 +73,7 @@ function workRow(w: WorkListItem): OperRow {
     ttl: w.title,
     date: `${formatMd(w.startAt)} ~`,
     pic: w.owner?.name || "-",
-    ext: `업무_유형 ${WORK_TYPE_NM[w.workType]} · 업무_상태 ${WORK_STTS_NM[w.workStatus]} · 하위 ${w.subWorkCount}건`,
+    ext: `업무 유형 ${WORK_TYPE_NM[w.workType]} · 업무 상태 ${WORK_STTS_NM[w.workStatus]} · 하위 ${w.subWorkCount}건`,
     href: ROUTES.workDetail(w.workId),
   };
 }
@@ -84,7 +85,7 @@ function subWorkRow(sw: SubWorkListItem): OperRow {
     ttl: sw.title,
     date: formatMd(sw.dueAt) || "-",
     pic: sw.owner?.name || "-",
-    ext: `업무_상태 ${WORK_STTS_NM[sw.workStatus]} · 승인 ${APRV_STTS_NM[sw.approvalStatus]} · 진행 ${sw.progressRate}%`,
+    ext: `업무 상태 ${WORK_STTS_NM[sw.workStatus]} · 승인 ${APRV_STTS_NM[sw.approvalStatus]} · 진행 ${sw.progressRate}%`,
     href: ROUTES.subWorkDetail(sw.subWorkId),
   };
 }
@@ -96,7 +97,7 @@ function meetingRow(m: MeetingListItem): OperRow {
     ttl: m.title,
     date: formatDt(m.startAt),
     pic: m.personInCharge?.name || "-",
-    ext: `회의_구분 ${m.meetingCategory ? MTG_SE_NM[m.meetingCategory] : "-"} · 회의_상태 ${
+    ext: `회의 구분 ${m.meetingCategory ? MTG_SE_NM[m.meetingCategory] : "-"} · 회의 상태 ${
       m.meetingStatus ? MTG_STTS_NM[m.meetingStatus] : "-"
     } · 안건 ${m.agendaCount}건`,
     href: ROUTES.meetingDetail(m.meetingId),
@@ -105,7 +106,7 @@ function meetingRow(m: MeetingListItem): OperRow {
 
 function OperationsHubSkeleton() {
   return (
-    <div className="grid grid-cols-[1.5fr_1fr] items-start gap-4">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.5fr_1fr]">
       {[0, 1].map((i) => (
         <Card key={i} className="animate-pulse">
           <div className="h-[20px] w-2/5 rounded bg-black/5" />
@@ -133,7 +134,7 @@ export function OperationsHubPage() {
       cd: "WORK" as const,
       table: "work",
       count: data.works.length,
-      note: "행사·상시·정례 운영 단위. 업무_유형·업무_상태·총평_내용·업무_진행_률 보유",
+      note: "행사·상시·정례 운영 단위. 업무 유형·업무 상태·총평·진행률 보유",
       href: ROUTES.works,
     },
     {
@@ -147,7 +148,7 @@ export function OperationsHubPage() {
       cd: "MEETING" as const,
       table: "mtg",
       count: data.meetings.length,
-      note: "정례·주제 회의. 안건(mtg_dtl)과 결과_내용을 기록",
+      note: "정례·주제 회의. 안건(mtg_dtl)과 결과 내용을 기록",
       href: ROUTES.meetings,
     },
   ];
@@ -167,7 +168,7 @@ export function OperationsHubPage() {
 
         {status === "ready" && (
           <>
-            <div className="grid grid-cols-3 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-3">
               {kindCards.map((k) => (
                 <Card key={k.cd} onClick={() => router.push(k.href)}>
                   <div className="flex items-center gap-2">
@@ -183,9 +184,9 @@ export function OperationsHubPage() {
               ))}
             </div>
 
-            <div className="mt-4 grid grid-cols-[1.5fr_1fr] items-start gap-4">
+            <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.5fr_1fr]">
               <Card>
-                <div className="mb-[14px] flex items-center gap-[7px]">
+                <div className="mb-[14px] flex flex-wrap items-center gap-[7px] lg:flex-nowrap">
                   {KIND_TABS.map((t) => (
                     <Chip key={t} active={tab === t} onClick={() => setTab(t)}>
                       {t === "전체" ? "전체" : OPER_TYPE_NM[t]}
@@ -199,37 +200,49 @@ export function OperationsHubPage() {
                 {filtered.length === 0 ? (
                   <EmptyState message="표시할 운영 건이 없습니다" />
                 ) : (
-                  <div className="grid grid-cols-[.9fr_2fr_1.1fr_.9fr]">
-                    {["운영_유형", "제목", "일시", "담당자"].map((h) => (
+                  /*
+                   * 이 표는 GridTable이 아니라 손으로 짠 CSS 그리드다(제목 칸이 두 줄이고
+                   * 행 클릭이 제목 칸에만 걸려 있어 공용 컴포넌트로 옮기면 데스크톱 모양이
+                   * 달라진다). 그래서 GridTable(#85)이 쓴 방법을 여기서 되풀이한다 —
+                   * lg 미만에서는 행 래퍼의 display: contents를 풀어 카드 한 장으로 만들고,
+                   * 머리글 행은 감춘다. lg 이상에서는 lg:contents로 되돌아가 지금까지와
+                   * 똑같은 네 열 표가 된다.
+                   */
+                  <div className="grid grid-cols-1 gap-2 lg:grid-cols-[.9fr_2fr_1.1fr_.9fr] lg:gap-0">
+                    {[FIELD_LABEL.operationType, "제목", "일시", "담당자"].map((h) => (
                       <div
                         key={h}
-                        className="pb-[10px] text-[13px] tracking-[.3px] text-n500"
+                        className="hidden pb-[10px] text-[13px] tracking-[.3px] text-n500 lg:block"
                       >
                         {h}
                       </div>
                     ))}
                     {filtered.map((r) => (
-                      <div key={r.key} className="contents">
-                        <div className="border-t border-black/5 py-3">
+                      <div
+                        key={r.key}
+                        className="flex flex-wrap items-center gap-x-3 rounded-xl border border-line bg-surface p-3 lg:contents"
+                      >
+                        <div className="lg:border-t lg:border-black/5 lg:py-3">
                           <Badge tone={kindTone(r.operTypeCd)}>
                             {OPER_TYPE_NM[r.operTypeCd]}
                           </Badge>
                         </div>
                         <div
                           onClick={() => router.push(r.href)}
-                          className="min-w-0 cursor-pointer border-t border-black/5 py-3 pr-3"
+                          className="mt-2 w-full min-w-0 cursor-pointer lg:mt-0 lg:w-auto lg:border-t lg:border-black/5 lg:py-3 lg:pr-3"
                         >
-                          <div className="truncate text-[15px] font-semibold hover:text-accent">
+                          {/* 카드에서는 truncate를 풀어 줄바꿈시킨다 — 275px에서 자르면 제목이 거의 남지 않는다 */}
+                          <div className="text-[15px] font-semibold hover:text-accent lg:truncate">
                             {r.ttl}
                           </div>
-                          <div className="mt-[2px] truncate text-[13.5px] text-n500">
+                          <div className="mt-[2px] text-[13.5px] text-n500 lg:truncate">
                             {r.ext}
                           </div>
                         </div>
-                        <div className="border-t border-black/5 py-3 text-[14px] text-n400">
+                        <div className="mt-2 text-[14px] text-n400 lg:mt-0 lg:border-t lg:border-black/5 lg:py-3">
                           {r.date}
                         </div>
-                        <div className="border-t border-black/5 py-3 text-[14px] text-n400">
+                        <div className="mt-2 text-[14px] text-n400 lg:mt-0 lg:border-t lg:border-black/5 lg:py-3">
                           {r.pic}
                         </div>
                       </div>

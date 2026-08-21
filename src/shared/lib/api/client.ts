@@ -2,7 +2,20 @@ import { ROUTES } from "@/shared/config/routes";
 import { currentPath, withNextParam } from "@/shared/lib/next-path";
 import { createClient } from "@/shared/lib/supabase/client";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+/*
+ * 끝 슬래시를 떼어 둔다.
+ *
+ * 호출부는 전부 "/v1/..." 처럼 슬래시로 시작하는 경로를 넘기므로, 환경변수 값에 끝 슬래시가
+ * 하나라도 붙어 있으면 그 순간 모든 요청이 `https://.../v1/...` 가 아니라 `https://...//v1/...`
+ * 로 나간다(배포 dev 가 실제로 그 상태였다). 오늘은 대부분의 서버·프록시가 흡수하지만,
+ * **전 요청의 경로가 환경변수 값의 마지막 글자 하나에 매달려 있다는 것 자체**가 문제다 —
+ * 경로를 엄격히 보는 프록시·라우터를 앞에 두는 날 전 화면이 한꺼번에 404 가 되고, 그때
+ * 원인이 `.env` 의 슬래시 한 글자라는 것을 짚기는 어렵다.
+ *
+ * 값이 비어 있으면 빈 문자열이 아니라 undefined 로 둔다 — 미설정을 아래에서
+ * CLIENT_CONFIG_MISSING 으로 갈라내야 하는데, 빈 문자열로 뭉개면 그 분기가 사라진다.
+ */
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") || undefined;
 
 /** ssccops-server 공통 응답 봉투 (global.apipayload.ApiResponse) — 성공·실패 모두 이 모양이다 */
 export interface ApiResponse<T> {

@@ -42,7 +42,7 @@ export function PublicFormPage({ formId }: { formId: number }) {
 
   if (status === "loading") {
     return (
-      <div className="mx-auto max-w-[720px] px-6 py-10">
+      <div className="mx-auto max-w-[720px] px-4 py-10 lg:px-6">
         <EmptyState message="폼을 불러오는 중입니다…" />
       </div>
     );
@@ -50,7 +50,7 @@ export function PublicFormPage({ formId }: { formId: number }) {
 
   if (status === "not-found") {
     return (
-      <div className="mx-auto max-w-[720px] px-6 py-10">
+      <div className="mx-auto max-w-[720px] px-4 py-10 lg:px-6">
         <EmptyState message="존재하지 않는 폼입니다." />
       </div>
     );
@@ -58,7 +58,7 @@ export function PublicFormPage({ formId }: { formId: number }) {
 
   if (status === "error") {
     return (
-      <div className="mx-auto max-w-[720px] px-6 py-10">
+      <div className="mx-auto max-w-[720px] px-4 py-10 lg:px-6">
         <EmptyState
           message={publicForm.errorMessage}
           action={{ label: "다시 시도", onClick: publicForm.reload }}
@@ -153,15 +153,15 @@ export function PublicFormPage({ formId }: { formId: number }) {
       return;
     }
     if (outcome === "stale") {
-      flash("폼이 변경됐습니다. 새로고침 후 다시 시도해주세요");
+      flash("폼의 문항이 바뀌었습니다. 새로고침한 뒤 다시 시도해주세요");
       return;
     }
     if (outcome === "failed") flash("제출하지 못했습니다");
   };
 
   return (
-    <div className="mx-auto flex max-w-[720px] flex-col gap-3 px-6 pt-7 pb-10">
-      <div className="rounded-2xl bg-surface px-6 py-[22px] shadow-[0_0_0_1px_#e5e8eb]">
+    <div className="mx-auto flex max-w-[720px] flex-col gap-3 px-4 pt-7 pb-10 lg:px-6">
+      <div className="rounded-2xl bg-surface px-[18px] py-[22px] shadow-[0_0_0_1px_#e5e8eb] lg:px-6">
         <div className="flex items-center gap-[10px]">
           <div className="flex size-[26px] items-center justify-center rounded-[7px] border border-accent text-[13px] text-accent">
             S
@@ -204,7 +204,7 @@ export function PublicFormPage({ formId }: { formId: number }) {
         </div>
       )}
 
-      <div className="rounded-2xl bg-surface px-6 py-[22px] shadow-[0_0_0_1px_#e5e8eb]">
+      <div className="rounded-2xl bg-surface px-[18px] py-[22px] shadow-[0_0_0_1px_#e5e8eb] lg:px-6">
         <div className="text-[18px] font-semibold">
           {currentPage + 1}. {pages[currentPage]?.pageTtl}
         </div>
@@ -296,14 +296,14 @@ function QitemCard({
           value={text}
           onChange={(e) => onChange(e.target.value)}
           placeholder="자유롭게 작성해주세요"
-          className="mt-3 min-h-[104px] w-full resize-y rounded-[12px] border border-line px-[11px] py-[9px] text-[15.5px] outline-none placeholder:text-n500 focus:border-accent"
+          className="mt-3 min-h-[104px] w-full resize-y rounded-[12px] border border-line px-[11px] py-[9px] text-[16px] outline-none placeholder:text-n500 focus:border-accent lg:text-[15.5px]"
         />
       ) : qitem.qitemTypeCd === "SHORT_TEXT" || qitem.qitemTypeCd === "DATE" ? (
         <input
           type={qitem.qitemTypeCd === "DATE" ? "date" : "text"}
           value={text}
           onChange={(e) => onChange(e.target.value)}
-          className="mt-3 w-full rounded-[12px] border border-line px-[11px] py-[9px] text-[15.5px] outline-none placeholder:text-n500 focus:border-accent"
+          className="mt-3 w-full rounded-[12px] border border-line px-[11px] py-[9px] text-[16px] outline-none placeholder:text-n500 focus:border-accent lg:text-[15.5px]"
         />
       ) : (
         <div className="mt-3 flex flex-col gap-1">
@@ -314,7 +314,7 @@ function QitemCard({
                 key={o}
                 onClick={() => onChange(toggleOption(qitem, value, o))}
                 className={cn(
-                  "flex cursor-pointer items-center gap-[10px] rounded-[12px] px-[10px] py-[11px] text-[15px]",
+                  "flex cursor-pointer items-center gap-[10px] rounded-[12px] px-[10px] py-[13px] text-[15px] lg:py-[11px]",
                   picked ? "bg-accent/8" : "hover:bg-black/2",
                 )}
               >
@@ -325,7 +325,7 @@ function QitemCard({
                     picked ? "border-accent bg-accent" : "border-line-strong",
                   )}
                 />
-                {o}
+                <span className="min-w-0 break-words">{o}</span>
               </div>
             );
           })}

@@ -27,7 +27,7 @@ export function PublicFormNotice({
   action?: { label: string; onClick: () => void };
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center px-6 py-10">
+    <div className="flex min-h-dvh items-center justify-center px-6 py-10">
       <div className="w-full max-w-[520px] rounded-2xl bg-surface p-8 text-center shadow-[0_0_0_1px_#e5e8eb]">
         <div
           className={

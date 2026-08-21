@@ -30,6 +30,7 @@ export {
   REJECT_REASON_MAX_LENGTH,
   SUB_WORK_ERROR,
   createSubWork,
+  deleteSubWork,
   fetchSubWork,
   fetchSubWorks,
   transitionSubWork,

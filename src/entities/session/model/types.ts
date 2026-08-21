@@ -32,9 +32,14 @@ export interface AuthUser {
  *
  *  - WORK_MANAGE          POST·PATCH /v1/works… · /v1/sub-works…(조회 제외, 서버 #101)
  *  - WORK_READ            GET  /v1/works… · /v1/sub-works…(조회 전용, WORK_MANAGE 보유자는 자동 포함, 서버 #101)
+ *  - WORK_DELETE          DELETE /v1/works/{workId}(WORK_MANAGE의 자식, 서버 #125)
+ *  - SUB_WORK_DELETE      DELETE /v1/sub-works/{subWorkId}(WORK_MANAGE의 자식, 서버 #125 —
+ *                         하위 업무 쓰기와 달리 소유권(담당자 본인)을 보지 않고 이 코드로만 판정한다)
  *  - MEETING_MANAGE       POST /v1/meetings · POST .../transitions(조회·안건 제외, 서버 #101)
  *  - MEETING_READ         GET  /v1/meetings…(조회 전용, MEETING_MANAGE 보유자는 자동 포함, 서버 #101)
  *  - MEETING_AGENDA_WRITE POST·PATCH·DELETE /v1/meetings/{id}/agendas…(서버 #101)
+ *  - MEETING_DELETE       DELETE /v1/meetings/{meetingId}(MEETING_MANAGE의 자식, 서버 #125 —
+ *                         회의 책임자 본인 여부를 보지 않고 이 코드로만 판정한다)
  *  - SUB_WORK_TYPE_READ   GET  /v1/sub-work-types
  *  - SUB_WORK_TYPE_MANAGE POST·PATCH /v1/sub-work-types…
  *  - FORM_READ            GET  /v1/forms · /v1/forms/{id}
@@ -72,9 +77,15 @@ export interface AuthUser {
 export const CAPABILITY = {
   WORK_MANAGE: "WORK_MANAGE",
   WORK_READ: "WORK_READ",
+  /** 업무 소프트 삭제 전용 (서버 #125) — 담당자 본인이어도 이 코드가 없으면 삭제 버튼을 잠근다 */
+  WORK_DELETE: "WORK_DELETE",
+  /** 하위 업무 소프트 삭제 전용 (서버 #125) — WORK_MANAGE와 별개 코드다, 재사용하지 않는다 */
+  SUB_WORK_DELETE: "SUB_WORK_DELETE",
   MEETING_MANAGE: "MEETING_MANAGE",
   MEETING_READ: "MEETING_READ",
   MEETING_AGENDA_WRITE: "MEETING_AGENDA_WRITE",
+  /** 회의 소프트 삭제 전용 (서버 #125) — 회의 책임자 본인이어도 이 코드가 없으면 삭제 버튼을 잠근다 */
+  MEETING_DELETE: "MEETING_DELETE",
   SUB_WORK_TYPE_READ: "SUB_WORK_TYPE_READ",
   SUB_WORK_TYPE_MANAGE: "SUB_WORK_TYPE_MANAGE",
   FORM_READ: "FORM_READ",
@@ -84,6 +95,13 @@ export const CAPABILITY = {
   RESPONSE_REVIEW: "RESPONSE_REVIEW",
   ROLE_MANAGE: "ROLE_MANAGE",
   MEMBER_MANAGE: "MEMBER_MANAGE",
+  /**
+   * 하위 업무 찬반 투표 자격 (서버 #123). 직위 코드(role_pstn_cd)로 갈리던 투표 자격이 권한으로
+   * 통합되면서 capabilities에 실리게 됐다 — 상세 화면이 투표 버튼을 서버 판정 없이 잠글 수 있다.
+   * 승인·반려 자격(SUB_WORK_APPROVE_*)은 여기 없다: 유형(건)마다 요구 코드가 달라 화면은
+   * 지금처럼 서버가 건별로 내려주는 canApprove·canReject를 쓴다.
+   */
+  APPROVAL_VOTE: "APPROVAL_VOTE",
 } as const;
 
 export type Capability = (typeof CAPABILITY)[keyof typeof CAPABILITY];

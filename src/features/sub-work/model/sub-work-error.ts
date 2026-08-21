@@ -77,6 +77,35 @@ export function toSubWorkActionErrorMessage(error: unknown): string {
 }
 
 /**
+ * 하위 업무 삭제 실패 → 화면에 띄울 한 줄 (서버 #125).
+ *
+ * 403은 다른 쓰기 작업의 403(승인자 아님·WORK_MANAGE 없음)과 또 다르다 — 삭제는 담당자
+ * 본인이어도 SUB_WORK_DELETE가 따로 없으면 막힌다(소유권을 보지 않는 판정). 409
+ * ALREADY_DELETED는 화면을 열어 둔 사이 다른 사람이 먼저 지운 경우다.
+ */
+export function toSubWorkDeleteErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "하위 업무를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "하위 업무를 삭제할 권한이 없습니다 — 하위 업무 삭제(SUB_WORK_DELETE) 권한이 필요합니다";
+    case SUB_WORK_ERROR.NOT_FOUND:
+      return "하위 업무를 찾을 수 없습니다. 이미 삭제됐을 수 있습니다";
+    case SUB_WORK_ERROR.ALREADY_DELETED:
+      return "이미 삭제된 하위 업무입니다";
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}
+
+/**
  * 하위 업무 등록 실패 → 화면에 띄울 한 줄 (OPS-007).
  *
  * 401(재로그인)·403 SIGNUP_REQUIRED(가입 화면)는 apiFetch가 이미 리다이렉트까지 끝내므로
@@ -105,7 +134,7 @@ export function toSubWorkCreateErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return "하위 업무를 등록할 권한이 없습니다 — 운영진 권한(WORK_MANAGE)이 필요합니다";
     case SUB_WORK_ERROR.INVALID_CODE_VALUE:
-      return "우선_순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+      return "우선순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:

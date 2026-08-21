@@ -9,7 +9,7 @@ import {
 } from "@/entities/approval";
 import { REJECT_REASON_MAX_LENGTH } from "@/entities/sub-work";
 import { RejectSheet, useApprovalDecisions, useApprovalInbox } from "@/features/approval";
-import { APRV_STTS_NM, AUTZR_ROLE_NM, type AutzrRoleCd } from "@/shared/config/codes";
+import { APRV_STTS_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { ddayText, formatDt, todayInSeoul } from "@/shared/lib/date";
 import {
@@ -42,7 +42,7 @@ const TABS: ApprovalInboxTab[] = ["PENDING", "APPROVED", "REJECTED"];
 
 function ApprovalBoxSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-[14px]">
+    <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
       {[0, 1, 2, 3].map((i) => (
         <Card key={i} className="animate-pulse">
           <div className="h-[20px] w-2/5 rounded bg-black/5" />
@@ -135,7 +135,7 @@ export function ApprovalBoxPage() {
 
         {status === "ready" && approvals.length > 0 && (
           <>
-            <div className="grid grid-cols-2 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
               {approvals.map((item) => {
                 const pending = pendingSubWorkId === item.subWorkId;
                 const checklistDone = isChecklistDone(item);
@@ -146,10 +146,9 @@ export function ApprovalBoxPage() {
                     ? "정족수를 채워야 완료 승인할 수 있습니다 — 투표가 모여야 합니다"
                     : "";
                 const dday = ddayText(item.dueAt, todayInSeoul());
+                // 승인자 표시명은 서버가 내려준다 (서버 #123) — 코드 → 이름 사전을 웹이 갖지 않는다
                 const roleName =
-                  AUTZR_ROLE_NM[item.authorizerRoleCode as AutzrRoleCd] ??
-                  item.authorizerRoleCode ??
-                  "-";
+                  item.authorizerAuthorityName ?? item.authorizerAuthorityCode ?? "-";
 
                 const highlighted = item.subWorkId === highlightSubWorkId;
 
@@ -177,7 +176,7 @@ export function ApprovalBoxPage() {
                       {item.title}
                     </div>
 
-                    <div className="mt-1 flex items-center gap-2 text-[13.5px] text-n500">
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[13.5px] text-n500 lg:flex-nowrap">
                       <span>등록자 {item.registrantName || "-"}</span>
                       <span>· 승인자 {roleName}</span>
                       {dday && (
@@ -217,7 +216,7 @@ export function ApprovalBoxPage() {
                     )}
 
                     {tab === "PENDING" && (
-                      <div className="mt-4 grid grid-cols-4 gap-2">
+                      <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
                         {item.quorum.needed && (
                           <>
                             <Button
@@ -248,7 +247,7 @@ export function ApprovalBoxPage() {
                             variant="ghost-danger"
                             size="sm"
                             disabled={pending}
-                            className={item.quorum.needed ? undefined : "col-span-2"}
+                            className={item.quorum.needed ? undefined : "lg:col-span-2"}
                             onClick={() => setRejectTarget(item)}
                           >
                             반려
@@ -259,7 +258,7 @@ export function ApprovalBoxPage() {
                             size="sm"
                             disabled={pending || approveBlockReason !== ""}
                             title={approveBlockReason || undefined}
-                            className={item.quorum.needed ? undefined : "col-span-2"}
+                            className={item.quorum.needed ? undefined : "lg:col-span-2"}
                             onClick={() => void runDecide(item, "APPROVE_COMPLETE")}
                           >
                             승인

@@ -5,7 +5,6 @@ import { CAPABILITY } from "@/entities/session";
 import type { SubWorkTypeSaveInput, SubWorkTypeSummary } from "@/entities/sub-work-type";
 import { useCan } from "@/features/auth";
 import { useSubWorkTypes } from "@/features/sub-work-type";
-import { AUTZR_ROLE_CDS, AUTZR_ROLE_NM, type AutzrRoleCd } from "@/shared/config/codes";
 import {
   Badge,
   Button,
@@ -51,22 +50,28 @@ import {
  */
 
 /** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
-const NO_MANAGE = "하위 업무 유형을 등록·수정할 권한이 없습니다 — 조회만 할 수 있습니다";
+const NO_MANAGE =
+  "하위 업무 유형을 등록·수정할 권한이 없습니다 — 하위 업무 유형 관리(SUB_WORK_TYPE_MANAGE) 권한이 필요합니다";
 
 interface Draft {
   typeName: string;
   approvalNeeded: boolean;
-  authorizerRoleCode: AutzrRoleCd | null;
+  /** 승인자 결재 권한 코드 (서버 #123) — 선택지는 서버가 내려준다 */
+  authorizerAuthorityCode: string | null;
   minAgreeCountNeeded: boolean;
   minAgreeCount: number | null;
   /** 한 줄에 한 항목 — 저장할 때 배열로 끊는다 */
   completionCheckArticles: string;
 }
 
+/*
+ * 승인자 기본값을 여기 박지 않는다(옛 "PRESIDENT") — 코드 어휘가 서버 데이터가 된 이상
+ * 하드코딩이 곧 어긋날 자리다. 신규 폼을 열 때 서버가 준 선택지의 첫 항목으로 채운다.
+ */
 const EMPTY: Draft = {
   typeName: "",
   approvalNeeded: true,
-  authorizerRoleCode: "PRESIDENT",
+  authorizerAuthorityCode: null,
   minAgreeCountNeeded: false,
   minAgreeCount: null,
   completionCheckArticles: "",
@@ -76,7 +81,7 @@ function toDraft(type: SubWorkTypeSummary): Draft {
   return {
     typeName: type.typeName,
     approvalNeeded: type.approvalNeeded,
-    authorizerRoleCode: type.authorizerRoleCode,
+    authorizerAuthorityCode: type.authorizerAuthorityCode,
     minAgreeCountNeeded: type.minAgreeCountNeeded,
     minAgreeCount: type.minAgreeCount,
     completionCheckArticles: type.completionCheckArticles.join("\n"),
@@ -91,7 +96,7 @@ function toSaveInput(draft: Draft): SubWorkTypeSaveInput {
   return {
     typeName: draft.typeName,
     approvalNeeded: draft.approvalNeeded,
-    authorizerRoleCode: draft.authorizerRoleCode,
+    authorizerAuthorityCode: draft.authorizerAuthorityCode,
     minAgreeCountNeeded: draft.minAgreeCountNeeded,
     minAgreeCount: draft.minAgreeCount,
     completionCheckArticles: draft.completionCheckArticles
@@ -122,7 +127,15 @@ export function SubWorkTypeListPage() {
 
   const startEdit = (type?: SubWorkTypeSummary) => {
     setEditing(type ? type.subWorkTypeId : 0);
-    setDraft(type ? toDraft(type) : EMPTY);
+    setDraft(
+      type
+        ? toDraft(type)
+        : {
+            ...EMPTY,
+            // 신규 폼의 승인자 기본값은 서버 선택지의 첫 항목이다 (선택지가 아직 없으면 미지정)
+            authorizerAuthorityCode: admin.authorizerAuthorities[0]?.authrtCd ?? null,
+          },
+    );
     // 직전 저장의 오류 문구가 새로 연 폼에 남아 있으면 방금 입력이 잘못된 것처럼 보인다
     admin.clearSaveError();
   };
@@ -140,7 +153,7 @@ export function SubWorkTypeListPage() {
     <>
       <PageHeader title="하위 업무 유형 관리" subtitle="승인 규칙 기준정보" />
       <PageBody>
-        <div className="mb-4 flex items-center justify-end gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
           {/* 잠긴 버튼의 툴팁만으로는 왜 안 되는지 놓치기 쉬워 사유를 옆에 적는다 */}
           {!canManage && <div className="text-[13.5px] text-n500">{NO_MANAGE}</div>}
           <Button
@@ -169,7 +182,7 @@ export function SubWorkTypeListPage() {
             </Field>
             <div className="mt-4">
               <div className="mb-2 text-[13.5px] text-n400">승인_필요_여부</div>
-              <div className="flex gap-[7px]">
+              <div className="flex flex-wrap gap-[7px]">
                 {["필요", "불필요"].map((v) => (
                   <Chip
                     key={v}
@@ -191,22 +204,28 @@ export function SubWorkTypeListPage() {
             {draft.approvalNeeded && (
               <>
                 <div className="mt-4">
-                  <div className="mb-2 text-[13.5px] text-n400">승인자_역할_코드</div>
-                  <div className="flex gap-[7px]">
-                    {AUTZR_ROLE_CDS.map((cd) => (
+                  <div className="mb-2 text-[13.5px] text-n400">승인자_결재_권한</div>
+                  {/* 선택지·표시명 모두 서버가 준다 (서버 #123) — 권한 이름은 화면에서 바뀌는 운영 데이터다 */}
+                  <div className="flex flex-wrap gap-[7px]">
+                    {admin.authorizerAuthorities.map((option) => (
                       <Chip
-                        key={cd}
-                        active={draft.authorizerRoleCode === cd}
-                        onClick={() => setDraft((d) => ({ ...d, authorizerRoleCode: cd }))}
+                        key={option.authrtCd}
+                        active={draft.authorizerAuthorityCode === option.authrtCd}
+                        onClick={() =>
+                          setDraft((d) => ({
+                            ...d,
+                            authorizerAuthorityCode: option.authrtCd,
+                          }))
+                        }
                       >
-                        {AUTZR_ROLE_NM[cd]}
+                        {option.authrtNm}
                       </Chip>
                     ))}
                   </div>
                 </div>
                 <div className="mt-4">
                   <div className="mb-2 text-[13.5px] text-n400">최소_필요_동의_수</div>
-                  <div className="flex items-center gap-[7px]">
+                  <div className="flex flex-wrap items-center gap-[7px]">
                     {["단독", "정족수"].map((v) => (
                       <Chip
                         key={v}
@@ -294,12 +313,19 @@ export function SubWorkTypeListPage() {
                   {admin.toggleErrorMessage}
                 </div>
               )}
-              <Card className="px-5 pt-4 pb-[6px]">
+              {/*
+                7열짜리 표라 375px에서는 열마다 40~50px밖에 남지 않는다. GridTable이 아니라
+                손으로 짠 표여서 카드 전환이 따라오지 않으므로, 같은 방식(두 벌을 그리고
+                hidden으로 가린다)을 여기서 되풀이한다 — 행이 `contents`라 행마다 박스가 없어
+                CSS만으로는 카드로 바꿀 수 없고, 폭에 따라 한쪽만 렌더하면 서버 렌더 결과와
+                어긋나 첫 페인트에서 잘못된 쪽이 보인다 (shared/ui/grid-table.tsx와 같은 이유).
+              */}
+              <Card className="hidden px-5 pt-4 pb-[6px] lg:block">
                 <div className="grid grid-cols-[1fr_.7fr_.7fr_.8fr_1.6fr_70px_60px]">
                   {[
                     "유형_명",
                     "승인_필요",
-                    "승인자_역할",
+                    "승인자",
                     "최소_동의_수",
                     "완료_점검_항목",
                     "사용_여부",
@@ -329,7 +355,7 @@ export function SubWorkTypeListPage() {
                         </Badge>
                       </div>
                       <div className="border-t border-black/5 py-3 text-[14.5px] text-n400">
-                        {t.authorizerRoleCode ? AUTZR_ROLE_NM[t.authorizerRoleCode] : "-"}
+                        {t.authorizerAuthorityName ?? "-"}
                       </div>
                       <div className="border-t border-black/5 py-3 text-[14.5px] text-n400">
                         {agreeCountText(t)}
@@ -368,6 +394,60 @@ export function SubWorkTypeListPage() {
                   ))}
                 </div>
               </Card>
+
+              {/* 모바일 — 같은 데이터를 카드로. 잠금 판정(canManage)과 사유는 표와 같다 */}
+              <div className="flex flex-col gap-2 lg:hidden">
+                {admin.types.map((t) => (
+                  <div
+                    key={t.subWorkTypeId}
+                    className="rounded-xl border border-line bg-surface p-3"
+                  >
+                    <div className="flex items-start gap-2">
+                      <div
+                        className={
+                          t.useYn
+                            ? "min-w-0 flex-1 text-[15px] font-semibold break-words"
+                            : "min-w-0 flex-1 text-[15px] font-semibold break-words text-n500 line-through"
+                        }
+                      >
+                        {t.typeName}
+                      </div>
+                      <Toggle
+                        on={t.useYn}
+                        onChange={() => void admin.toggle(t)}
+                        disabled={!canManage}
+                        title={canManage ? undefined : NO_MANAGE}
+                        className={
+                          admin.isToggling(t.subWorkTypeId)
+                            ? "mt-[3px] flex-none opacity-50"
+                            : "mt-[3px] flex-none"
+                        }
+                      />
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-[7px]">
+                      <Badge tone={t.approvalNeeded ? "blue" : "grey"}>
+                        {t.approvalNeeded ? "필요" : "불필요"}
+                      </Badge>
+                      <span className="text-[13.5px] text-n400">
+                        {t.authorizerAuthorityName ?? "-"} · {agreeCountText(t)}
+                      </span>
+                    </div>
+                    {/* 카드에서는 자르지 않는다 — 세로로 늘어나도 항목이 다 보이는 편이 낫다 */}
+                    <div className="mt-2 text-[13.5px] break-words text-n400">
+                      완료 점검 · {t.completionCheckArticles.join(" · ") || "-"}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!canManage}
+                      title={canManage ? undefined : NO_MANAGE}
+                      onClick={() => startEdit(t)}
+                      className="mt-2 cursor-pointer text-[14px] text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      수정
+                    </button>
+                  </div>
+                ))}
+              </div>
             </>
           ))}
         <div className="mt-3 text-[13.5px] text-n500">

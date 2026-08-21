@@ -22,7 +22,7 @@ import { Badge, Card, EmptyState, PageBody, PageHeader } from "@/shared/ui";
  */
 
 /** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
-const NO_MEETING_MANAGE = "회의를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다";
+const NO_MEETING_MANAGE = "회의를 등록할 권한이 없습니다 — 회의 관리(MEETING_MANAGE) 권한이 필요합니다";
 
 function MeetingCardSkeleton() {
   return (
@@ -38,7 +38,7 @@ function MeetingCardSkeleton() {
 function MeetingCard({ meeting, onClick }: { meeting: MeetingListItem; onClick: () => void }) {
   return (
     <Card onClick={onClick}>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
         <Badge tone={mtgSttsTone(meeting.meetingStatus)}>
           {meeting.meetingStatus ? MTG_STTS_NM[meeting.meetingStatus] : "-"}
         </Badge>
@@ -88,7 +88,7 @@ export function MeetingListPage() {
       />
       <PageBody>
         {status === "loading" && (
-          <div className="grid grid-cols-2 gap-[14px]">
+          <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
             {[0, 1, 2, 3].map((i) => (
               <MeetingCardSkeleton key={i} />
             ))}
@@ -109,7 +109,7 @@ export function MeetingListPage() {
               action={canManage ? { label: "+ 등록", onClick: openCreate } : undefined}
             />
           ) : (
-            <div className="grid grid-cols-2 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
               {meetings.map((m) => (
                 <MeetingCard
                   key={m.meetingId}

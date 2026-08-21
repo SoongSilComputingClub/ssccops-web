@@ -30,6 +30,35 @@ export function toMeetingErrorMessage(error: unknown): string {
 }
 
 /**
+ * 회의 삭제 실패 → 화면에 띄울 한 줄 (서버 #125).
+ *
+ * 403은 toMeetingActionErrorMessage의 "회의 책임자만"과 다른 뜻이다 — 삭제는 의장 본인이어도
+ * MEETING_DELETE가 따로 없으면 막힌다(소유권을 보지 않는 판정). 409 ALREADY_DELETED는 화면을
+ * 열어 둔 사이 다른 사람이 먼저 지운 경우다.
+ */
+export function toMeetingDeleteErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "회의를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "회의를 삭제할 권한이 없습니다 — 회의 삭제(MEETING_DELETE) 권한이 필요합니다";
+    case MEETING_ERROR.NOT_FOUND:
+      return "회의를 찾을 수 없습니다. 이미 삭제됐을 수 있습니다";
+    case MEETING_ERROR.ALREADY_DELETED:
+      return "이미 삭제된 회의입니다";
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}
+
+/**
  * 회의 등록 실패 → 화면에 띄울 한 줄 (OPS-024).
  *
  * `VALIDATION_FAILED`는 서버 문장을 그대로 쓴다 — 담당자 부적격("담당자로 지정할 수 없는
@@ -47,7 +76,7 @@ export function toMeetingCreateErrorMessage(error: unknown): string {
   }
 
   if (error.code === MEETING_ERROR.INVALID_CODE_VALUE) {
-    return "회의_구분·참석_대상·우선_순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+    return "회의 구분·참석 대상·우선순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
   }
 
   return toMeetingErrorMessage(error);

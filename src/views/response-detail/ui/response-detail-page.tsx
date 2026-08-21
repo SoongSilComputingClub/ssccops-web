@@ -13,6 +13,7 @@ import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useFormDetail } from "@/features/form";
 import { ResponseStatusSheet, useResponseDetail } from "@/features/response";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
 import {
@@ -85,7 +86,7 @@ function ResponseDetailContent({
         showBack
       />
       <PageBody>
-        <div className="grid grid-cols-[1fr_1.2fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.2fr]">
           <Card>
             <div className="flex items-center gap-2">
               <div className="text-[23px] font-medium">{member.mbrNm || "-"}</div>
@@ -98,16 +99,16 @@ function ResponseDetailContent({
             <KeyValueGrid
               className="mt-4"
               items={[
-                { k: "회원_ID", v: String(member.mbrId) },
-                { k: "학생_번호", v: member.stdntNo || "-" },
-                { k: "기수_번호", v: member.genNo ? `${member.genNo}기` : "-" },
-                { k: "학과_명", v: member.scsbjtNm || "-" },
-                { k: "학년_번호", v: member.scyrNo ? `${member.scyrNo}학년` : "-" },
+                { k: FIELD_LABEL.memberId, v: String(member.mbrId) },
+                { k: FIELD_LABEL.studentNumber, v: member.stdntNo || "-" },
+                { k: FIELD_LABEL.generationNumber, v: member.genNo ? `${member.genNo}기` : "-" },
+                { k: FIELD_LABEL.departmentName, v: member.scsbjtNm || "-" },
+                { k: FIELD_LABEL.academicYear, v: member.scyrNo ? `${member.scyrNo}학년` : "-" },
                 { k: "전화번호", v: member.telno || "-" },
-                { k: "회원_등급", v: mbrGrdNm(member.mbrGrdCd) },
-                { k: "회원_상태", v: mbrSttsNm(member.mbrSttsCd) },
+                { k: FIELD_LABEL.membershipGrade, v: mbrGrdNm(member.mbrGrdCd) },
+                { k: FIELD_LABEL.membershipStatus, v: mbrSttsNm(member.mbrSttsCd) },
                 // 작성 중 응답은 아직 제출되지 않아 일시가 없다
-                { k: "제출_일시", v: formatDt(response.sbmsnDt) || "-" },
+                { k: FIELD_LABEL.submittedAt, v: formatDt(response.sbmsnDt) || "-" },
               ]}
             />
             <button
@@ -120,7 +121,7 @@ function ResponseDetailContent({
           </Card>
 
           <Card>
-            <SectionLabel className="mb-3">응답_내용</SectionLabel>
+            <SectionLabel className="mb-3">{FIELD_LABEL.responseContent}</SectionLabel>
             <div className="flex flex-col gap-3">
               {/* 폼의 문항 순서가 기준이다 — 응답에 없는 문항도 자리를 남긴다 */}
               {form.qitemCpstCn.qitems.map((q) => {
@@ -131,7 +132,9 @@ function ResponseDetailContent({
                       {q.qitemLblNm}
                       <span className="ml-1 font-mono text-[12px]">({q.qitemId})</span>
                     </div>
-                    <div className="mt-[2px] text-[16px]">
+                    {/* 답변은 응답자가 쓴 자유 입력이다 — 링크·이메일처럼 띄어쓰기가
+                        없는 값이 오면 줄바꿈되지 않고 카드 밖으로 밀린다 */}
+                    <div className="mt-[2px] text-[16px] break-words">
                       {v || <span className="text-n500">(응답 없음)</span>}
                     </div>
                   </div>
@@ -141,7 +144,12 @@ function ResponseDetailContent({
           </Card>
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
+        {/*
+          Button은 whitespace-nowrap이라 자리가 모자라면 접히는 대신 글자가 테두리 밖으로
+          밀려 나간다 — 잠긴 사유 문구까지 같은 줄에 서는 자리라 좁은 화면에서는 조각
+          단위로 접히게 한다. lg:flex-nowrap으로 1024px 이상은 지금까지처럼 한 줄이다.
+        */}
+        <div className="mt-4 flex flex-wrap items-center gap-2 lg:flex-nowrap">
           <Button
             variant="ghost"
             disabled={response.prevFormRspnsId === null}

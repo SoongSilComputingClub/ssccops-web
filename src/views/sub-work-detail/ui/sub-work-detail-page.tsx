@@ -6,22 +6,22 @@ import type {
   SubWorkChecklistItem,
   SubWorkDetail,
   SubWorkTransition,
+  VoteChoice,
 } from "@/entities/sub-work";
 import { REJECT_REASON_MAX_LENGTH } from "@/entities/sub-work";
 import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
-import { RejectSheet } from "@/features/approval";
-import { useSubWorkActions, useSubWorkDetail } from "@/features/sub-work";
+import { RejectSheet, useApprovalDecisions } from "@/features/approval";
+import { useDeleteSubWork, useSubWorkActions, useSubWorkDetail } from "@/features/sub-work";
 import {
   APRV_STTS_NM,
-  AUTZR_ROLE_NM,
   OPER_TYPE_NM,
   PRRTY_RNK_NM,
   WORK_STTS_CDS,
   WORK_STTS_NM,
   workSttsStep,
-  type AutzrRoleCd,
 } from "@/shared/config/codes";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { ddayText, formatDt, todayInSeoul } from "@/shared/lib/date";
 import {
@@ -34,6 +34,7 @@ import {
   PageBody,
   PageHeader,
   SectionLabel,
+  Sheet,
   flash,
 } from "@/shared/ui";
 
@@ -51,6 +52,13 @@ import {
  * 사용자가 누른 적 없는 '진행' 상태로 남는다. 그래서 기획에서는 `착수`를 보여 주고, 화면
  * 위쪽의 스테퍼가 가리키는 단계와 버튼이 언제나 같은 것을 말하게 했다.
  *
+ * ── 정족수 투표는 이 화면에서 한다 (ssccops-web#82) ──────────────
+ * 원래 찬반 버튼은 승인함(OPS-017)에만 있었는데, 그 화면은 서버가 WORK_MANAGE 로 잠근 반면
+ * 투표 자격(ApprovalAuthorityPolicy.requireStaff)은 그보다 넓어 국원은 자격만 갖고 투표할
+ * 화면이 없었다. 승인함을 여는 대신(그 좁힘은 서버 #101 의 의도다) 투표를 하위 업무 상세로
+ * 옮겨 푼다. 두 화면의 버튼은 같은 훅(useApprovalDecisions)을 쓴다 — 판정도 오류 문구도
+ * 두 벌이 되지 않게 한다.
+ *
  * ── 권한과 선행 조건을 나눠서 본다 ───────────────────────────────
  * `canApprove`·`canReject`는 **권한만** 답한다(서버 #58). 버튼을 그릴지는 이 값으로 정하고,
  * 누를 수 있는지는 업무_상태·완료 점검 목록·정족수로 따로 판단한다. 둘을 한 조건에 섞으면
@@ -59,6 +67,9 @@ import {
  */
 
 const STAGE_LABELS = WORK_STTS_CDS.map((cd) => WORK_STTS_NM[cd]);
+
+/** 잠긴 투표 버튼에 붙는 사유 — 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
+const NO_VOTE = "찬반 투표 권한이 없습니다 — 역할별 권한 화면에서 부여할 수 있습니다";
 
 /**
  * 완료 점검 목록을 다 채웠는가.
@@ -72,11 +83,10 @@ function isChecklistDone(subWork: SubWorkDetail): boolean {
   return completedCount >= totalCount;
 }
 
-/** 완료 전환 안내 문구 — 유형이 승인자를 지정했으면 그 역할명으로 적는다 */
+/** 완료 전환 안내 문구 — 유형이 승인자를 지정했으면 그 결재 권한 이름으로 적는다 (서버 #123) */
 function approvalGuide(subWork: SubWorkDetail): string {
   if (!subWork.approvalRequired) return "승인이 필요하지 않은 유형입니다.";
-  const roleName = AUTZR_ROLE_NM[subWork.authorizerRoleCode as AutzrRoleCd];
-  return `완료 전환은 ${roleName ?? "승인자"} 승인이 필요합니다.`;
+  return `완료 전환은 ${subWork.authorizerAuthorityName ?? "승인자"} 승인이 필요합니다.`;
 }
 
 function DetailSkeleton() {
@@ -86,7 +96,7 @@ function DetailSkeleton() {
         <div className="h-[28px] w-2/5 rounded bg-black/5" />
         <div className="mt-6 h-[60px] w-full rounded bg-black/5" />
       </Card>
-      <div className="grid grid-cols-2 items-start gap-4">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <Card className="animate-pulse">
           <div className="h-[240px] w-full rounded bg-black/5" />
         </Card>
@@ -103,10 +113,30 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
   const { subWork, status, errorMessage, reload, applyChecklistUpdate } =
     useSubWorkDetail(subWorkId);
   const { pending, transition, setChecklistItem } = useSubWorkActions(subWorkId);
+  /*
+   * 투표는 승인함 카드와 같은 훅을 쓴다 — 이 화면은 대상이 하나뿐이라 pendingSubWorkId 가
+   * 사실상 불리언이지만, 호출·오류 문구·403 세션 동기화가 한 곳에 모여 있는 값이 더 크다.
+   */
+  const { pendingSubWorkId, vote } = useApprovalDecisions();
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const sessionMember = useSessionStore((s) => s.member);
   /* 기본 정보 수정도 WORK_MANAGE 다 (서버 SubWorkController 클래스 애노테이션) */
   const canManage = useCan(CAPABILITY.WORK_MANAGE);
+  /*
+   * 삭제는 수정·착수·완료 승인 요청(canActOnOwnerTasks)과 다른 권한이다(서버 #125) — 담당자
+   * 본인이거나 WORK_MANAGE를 가졌어도 SUB_WORK_DELETE가 따로 없으면 잠근다. 소유권을 보지
+   * 않는 순수 권한 판정이다.
+   */
+  const canDelete = useCan(CAPABILITY.SUB_WORK_DELETE);
+  const { pending: deletePending, remove: removeSubWork } = useDeleteSubWork();
+  /*
+   * 투표 자격 (서버 #123). 직위 코드 시절에는 상세 응답에 canVote 가 없어 자격 없는 회원도
+   * 버튼을 눌러 403 을 보고서야 알았는데, 자격이 권한(APPROVAL_VOTE)으로 통합되며 capabilities
+   * 에 실려 사전에 잠글 수 있게 됐다. 감추지 않고 잠그는 것은 다른 버튼들과 같은 규칙이다 —
+   * 방금 회수된 권한으로 뚫고 눌렀을 때의 403 은 여전히 훅이 문구로 옮긴다.
+   */
+  const canVote = useCan(CAPABILITY.APPROVAL_VOTE);
 
   if (status !== "ready" || !subWork) {
     return (
@@ -116,7 +146,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
           {status === "loading" && <DetailSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="하위 업무를 찾을 수 없습니다. 이미 삭제된 하위 업무일 수 있습니다."
+              message="하위 업무를 찾을 수 없습니다 — 이미 삭제된 하위 업무일 수 있습니다."
               action={{
                 label: "하위 업무 목록",
                 onClick: () => router.replace(ROUTES.subWorks),
@@ -140,12 +170,35 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
   const isDone = subWork.workStatus === "DONE";
 
   /*
+   * 지금 표를 던질 수 있는 **건**인가 — 서버 SubWorkEntity.requireVotable 과 같은 세 조건이다
+   * (정족수 유형 · 검토 단계 · 승인 대기). 던질 수 있는 **사람**인가(canVote)와 나눠서 본다 —
+   * 권한과 선행 조건을 섞으면 자격 있는 회원까지 조건 문구 없이 버튼만 사라진다.
+   */
+  const votable =
+    subWork.quorum.needed &&
+    isReview &&
+    (subWork.approvalStatus === "PENDING" ||
+      subWork.approvalStatus === "REAPPROVAL_REQUIRED");
+  const votePending = pendingSubWorkId === subWork.subWorkId;
+
+  /*
    * 전이 뒤에는 상세를 통째로 다시 부른다. 전이 응답에는 업무_상태·승인_상태밖에 없는데
    * 화면은 직전 반려 사유·완료 일시·지연 여부·정족수까지 함께 그리기 때문이다 — 응답만으로
    * 부분 갱신하면 반려 직후 화면에 이전 반려 사유가 그대로 남는다.
    */
   const runTransition = async (action: SubWorkTransition, reason?: string) => {
     const { result, message } = await transition(action, reason ?? null);
+    if (message) flash(message);
+    if (result) reload();
+  };
+
+  /*
+   * 투표 뒤에도 상세를 다시 부른다. 투표 응답에는 이번 회차의 집계만 있는데 화면은 그 값으로
+   * 완료 승인 버튼의 잠금(정족수 충족)까지 다시 그려야 하기 때문이다 — 승인함이 표를 던진 뒤
+   * 목록을 다시 부르는 것과 같은 이유다.
+   */
+  const runVote = async (choice: VoteChoice) => {
+    const { result, message } = await vote(subWork.subWorkId, choice);
     if (message) flash(message);
     if (result) reload();
   };
@@ -200,7 +253,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
       <PageHeader title="하위 업무 상세" subtitle="상태 · 점검 목록 · 승인" showBack />
       <PageBody>
         <Card className="mb-4">
-          <div className="flex items-center gap-[10px]">
+          <div className="flex flex-wrap items-center gap-[10px] lg:flex-nowrap">
             <div className="text-[24px] font-medium">{subWork.title}</div>
             <Badge tone="outline">{subWork.subWorkTypeName}</Badge>
             {subWork.approvalRequired && subWork.approvalStatus !== "APPROVED" && (
@@ -219,6 +272,19 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
                 수정
               </Button>
             )}
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={!canDelete || deletePending}
+              title={
+                canDelete
+                  ? undefined
+                  : "하위 업무를 삭제할 권한이 없습니다 — 하위 업무 삭제(SUB_WORK_DELETE) 권한이 필요합니다"
+              }
+              onClick={() => setDeleteOpen(true)}
+            >
+              삭제
+            </Button>
             {isReview ? (
               <div className="flex gap-[9px]">
                 {subWork.canReject && (
@@ -275,33 +341,76 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
           </div>
 
           {/*
-           * 정족수는 완료 승인의 선행 조건이라 여기서 진행을 보여 준다. **찬반 버튼은 두지 않는다** —
-           * 투표(OPS-015)는 승인함 화면의 동작이고, 이 화면의 시안에도 그 버튼이 없다.
+           * 정족수는 완료 승인의 선행 조건이라 진행을 보여 주고, 검토 단계에서는 여기서 표를
+           * 던진다(OPS-015 · ssccops-web#82). 승인함으로 안내하던 문구를 지운 것은 그 화면이
+           * WORK_MANAGE 로 잠겨 있어 투표 자격만 있는 국원이 따라갈 수 없기 때문이다.
            */}
           {subWork.quorum.needed && !isDone && (
-            <div className="mt-2 text-center text-[13.5px] text-n400">
-              정족수 {subWork.quorum.currentCount ?? 0}/{subWork.quorum.requiredCount ?? 0}{" "}
-              동의
-              {subWork.quorum.met !== true && " · 승인함에서 찬성 표를 받아야 합니다"}
+            <div className="mt-2 flex flex-col items-center gap-2">
+              <div className="text-center text-[13.5px] text-n400">
+                정족수 {subWork.quorum.currentCount ?? 0}/{subWork.quorum.requiredCount ?? 0}{" "}
+                동의
+                {subWork.quorum.met !== true && " · 운영진 동의 표가 더 필요합니다"}
+              </div>
+
+              {votable && (
+                <>
+                  {/* 자격이 없으면 감추지 않고 잠근다 — 사유는 title 로 (서버 #123 APPROVAL_VOTE) */}
+                  <div className="flex items-center gap-[9px]">
+                    {/* 이미 던진 표는 버튼 모양으로만 드러낸다 — 다시 누르면 서버가 바꿔 준다(1인 1표) */}
+                    <Button
+                      variant={subWork.myVote === "AGREE" ? "primary" : "ghost"}
+                      size="sm"
+                      disabled={votePending || !canVote}
+                      title={canVote ? undefined : NO_VOTE}
+                      onClick={() => void runVote("AGREE")}
+                    >
+                      동의
+                    </Button>
+                    <Button
+                      variant="ghost-danger"
+                      size="sm"
+                      disabled={votePending || !canVote}
+                      title={canVote ? undefined : NO_VOTE}
+                      className={
+                        subWork.myVote === "DISAGREE"
+                          ? "border-danger bg-danger/10 text-danger"
+                          : undefined
+                      }
+                      onClick={() => void runVote("DISAGREE")}
+                    >
+                      부동의
+                    </Button>
+                  </div>
+                  {/*
+                   * 정족수는 승인자를 **대체하지 않는다** — 표가 다 모여도 완료는 승인자가
+                   * 누르고, 승인자라도 정족수 전에는 누를 수 없다. 두 조건이 함께 걸린다는
+                   * 것을 여기서 말해 두지 않으면 표를 다 모은 뒤 화면이 멈춘 것처럼 보인다.
+                   */}
+                  <div className="text-center text-[12.5px] text-n400">
+                    동의가 다 모여도 완료 전환은 승인자가 눌러야 합니다.
+                  </div>
+                </>
+              )}
             </div>
           )}
         </Card>
 
-        <div className="grid grid-cols-2 items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <Card>
             <SectionLabel>상위 속성 · oper</SectionLabel>
             <KeyValueGrid
               className="mt-[10px] border-b border-black/8 pb-[14px]"
               items={[
                 {
-                  k: "운영_ID",
+                  k: FIELD_LABEL.operationId,
                   v: (
                     <span className="font-mono text-[13.5px]">{subWork.operationId}</span>
                   ),
                 },
-                { k: "운영_유형", v: OPER_TYPE_NM[subWork.operationType] },
-                { k: "운영_제목", v: subWork.title },
-                { k: "우선_순위", v: PRRTY_RNK_NM[subWork.priority] },
+                { k: FIELD_LABEL.operationType, v: OPER_TYPE_NM[subWork.operationType] },
+                { k: FIELD_LABEL.operationTitle, v: subWork.title },
+                { k: FIELD_LABEL.priority, v: PRRTY_RNK_NM[subWork.priority] },
                 { k: "담당자", v: subWork.owner?.name || "-" },
                 // 이관 데이터는 등록자가 없다 — 서버가 null로 내린다
                 { k: "등록자", v: subWork.registrant?.name || "-" },
@@ -325,10 +434,10 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
             <KeyValueGrid
               items={[
                 {
-                  k: "하위_업무_ID",
+                  k: FIELD_LABEL.subWorkId,
                   v: <span className="font-mono text-[13.5px]">{subWork.subWorkId}</span>,
                 },
-                { k: "하위_업무_유형", v: subWork.subWorkTypeName || "-" },
+                { k: FIELD_LABEL.subWorkType, v: subWork.subWorkTypeName || "-" },
                 {
                   k: "협업자",
                   /*
@@ -339,7 +448,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
                   v: subWork.collaborators.map((m) => m.name).join(", ") || "-",
                 },
                 {
-                  k: "마감_일시",
+                  k: FIELD_LABEL.dueAt,
                   v: (
                     <span className="flex items-center gap-2">
                       {formatDt(subWork.dueAt) || "-"}
@@ -349,11 +458,11 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
                     </span>
                   ),
                 },
-                { k: "업무_상태", v: WORK_STTS_NM[subWork.workStatus] },
-                { k: "승인_상태", v: APRV_STTS_NM[subWork.approvalStatus] },
-                { k: "업무_내용", v: subWork.content || "-" },
+                { k: FIELD_LABEL.workStatus, v: WORK_STTS_NM[subWork.workStatus] },
+                { k: FIELD_LABEL.approvalStatus, v: APRV_STTS_NM[subWork.approvalStatus] },
+                { k: FIELD_LABEL.workContent, v: subWork.content || "-" },
                 // 등록 화면에 입력란이 없어 지금은 늘 비어 있다 (서버 #70)
-                { k: "완료_기준_내용", v: subWork.completionCriteria || "-" },
+                { k: FIELD_LABEL.completionCriteria, v: subWork.completionCriteria || "-" },
               ]}
             />
             {subWork.externalLink && (
@@ -430,6 +539,22 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
           onClose={() => setRejectOpen(false)}
           maxLength={REJECT_REASON_MAX_LENGTH}
           onReject={(reason) => void runTransition("REJECT", reason)}
+        />
+
+        <Sheet
+          open={deleteOpen}
+          title="하위 업무 삭제"
+          hint="삭제하면 되돌릴 수 없습니다."
+          onClose={() => setDeleteOpen(false)}
+          onOk={() => {
+            setDeleteOpen(false);
+            void (async () => {
+              const { deleted, message } = await removeSubWork(subWork.subWorkId);
+              if (message) flash(message);
+              if (deleted) router.replace(ROUTES.workDetail(subWork.workId));
+            })();
+          }}
+          okLabel="삭제"
         />
       </PageBody>
     </>

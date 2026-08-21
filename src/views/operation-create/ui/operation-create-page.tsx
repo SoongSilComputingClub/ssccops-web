@@ -13,7 +13,6 @@ import { useCreateWork, useWorkDetail } from "@/features/work";
 import {
   ATND_TRGT_CDS,
   ATND_TRGT_NM,
-  AUTZR_ROLE_NM,
   MTG_SE_CDS,
   MTG_SE_NM,
   OPER_TYPE_NM,
@@ -28,6 +27,7 @@ import {
   type WorkTypeCd,
 } from "@/shared/config/codes";
 import { fromInput } from "@/shared/lib/date";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import {
   Button,
@@ -61,9 +61,9 @@ const KIND_META: Record<OperTypeCd, { table: string; note: string }> = {
 
 /** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
 const NO_MANAGE_REASON: Record<OperTypeCd, string> = {
-  WORK: "업무·하위 업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
-  SUB_WORK: "업무·하위 업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
-  MEETING: "회의를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
+  WORK: "업무·하위 업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다",
+  SUB_WORK: "업무·하위 업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다",
+  MEETING: "회의를 등록할 권한이 없습니다 — 회의 관리(MEETING_MANAGE) 권한이 필요합니다",
 };
 
 export function OperationCreatePage({
@@ -272,7 +272,7 @@ export function OperationCreatePage({
    */
   const submitSubWork = async (workId: number, ownerId: number) => {
     if (!subWorkTypeId) {
-      flash("하위_업무_유형을 선택하세요");
+      flash("하위 업무 유형을 선택하세요");
       return;
     }
     if (parentWork.status !== "ready") {
@@ -332,7 +332,7 @@ export function OperationCreatePage({
 
   const submit = () => {
     if (!operTtl.trim() || !bgngDt) {
-      flash("운영_제목 · 시작_일시는 필수입니다");
+      flash("운영 제목 · 시작 일시는 필수입니다");
       return;
     }
 
@@ -376,10 +376,10 @@ export function OperationCreatePage({
       ? NO_MANAGE_REASON.SUB_WORK
       : fixedKind
         ? NO_MANAGE_REASON[fixedKind]
-        : "업무·회의를 등록하려면 국장 이상의 운영진 권한이 필요합니다";
+        : "업무·회의를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 또는 회의 관리(MEETING_MANAGE) 권한이 필요합니다";
     return (
       <>
-        <PageHeader title="운영 등록" subtitle="운영_유형별 등록 폼" showBack={parentWorkId !== null} />
+        <PageHeader title="운영 등록" subtitle="운영 유형별 등록 폼" showBack={parentWorkId !== null} />
         <PageBody>
           <EmptyState message={blockedReason} />
         </PageBody>
@@ -391,16 +391,18 @@ export function OperationCreatePage({
     <>
       <PageHeader
         title="운영 등록"
-        subtitle="운영_유형별 등록 폼"
+        subtitle="운영 유형별 등록 폼"
         showBack={parentWorkId !== null}
       />
       <PageBody>
         <Card className="mb-4">
-          <SectionLabel className="mb-3">등록할 운영_유형</SectionLabel>
-          <div
-            className="grid gap-3"
-            style={{ gridTemplateColumns: `repeat(${kinds.length},1fr)` }}
-          >
+          <SectionLabel className="mb-3">등록할 {FIELD_LABEL.operationType}</SectionLabel>
+          {/*
+            열 수를 인라인 style로 주면 미디어 쿼리로 덮을 수 없어 좁은 화면에서도 2열로
+            남는다 — 유형 카드는 설명 문장까지 담고 있어 그 폭에서는 글자만 세로로 쌓인다.
+            kinds는 많아야 둘이므로(업무·회의) 클래스로 옮겨 모바일 1열 · lg 2열로 둔다.
+          */}
+          <div className={kinds.length > 1 ? "grid gap-3 lg:grid-cols-2" : "grid gap-3"}>
             {kinds.map((cd) => (
               <div
                 key={cd}
@@ -425,11 +427,15 @@ export function OperationCreatePage({
           </div>
         </Card>
 
-        <div className="grid grid-cols-[1.1fr_1fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.1fr_1fr]">
           <Card>
             <SectionLabel className="mb-3">상위 속성 · oper</SectionLabel>
-            <div className="grid grid-cols-2 gap-[14px]">
-              <Field label="운영_제목" required className="col-span-2">
+            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+              <Field
+                label={FIELD_LABEL.operationTitle}
+                required
+                className="col-span-1 lg:col-span-2"
+              >
                 <TextField
                   value={operTtl}
                   onChange={(e) => setOperTtl(e.target.value)}
@@ -491,8 +497,8 @@ export function OperationCreatePage({
                   </button>
                 )}
               </Field>
-              <Field label="우선_순위_코드">
-                <div className="flex gap-[7px] pt-[6px]">
+              <Field label={FIELD_LABEL.priority}>
+                <div className="flex flex-wrap gap-[7px] pt-[6px]">
                   {PRRTY_RNK_CDS.map((cd) => (
                     <Chip
                       key={cd}
@@ -504,7 +510,7 @@ export function OperationCreatePage({
                   ))}
                 </div>
               </Field>
-              <Field label="시작_일시" required>
+              <Field label={FIELD_LABEL.startAt} required>
                 <TextField
                   type="datetime-local"
                   value={bgngDt}
@@ -512,7 +518,7 @@ export function OperationCreatePage({
                 />
               </Field>
               <Field
-                label={operTypeCd === "SUB_WORK" ? "마감_일시" : "종료_일시"}
+                label={operTypeCd === "SUB_WORK" ? FIELD_LABEL.dueAt : FIELD_LABEL.endAt}
               >
                 <TextField
                   type="datetime-local"
@@ -530,8 +536,8 @@ export function OperationCreatePage({
 
             {operTypeCd === "WORK" && (
               <>
-                <div className="mb-2 text-[13.5px] text-n400">업무_유형_코드</div>
-                <div className="mb-4 flex gap-[7px]">
+                <div className="mb-2 text-[13.5px] text-n400">{FIELD_LABEL.workType}</div>
+                <div className="mb-4 flex flex-wrap gap-[7px]">
                   {WORK_TYPE_CDS.map((cd) => (
                     <Chip
                       key={cd}
@@ -542,7 +548,7 @@ export function OperationCreatePage({
                     </Chip>
                   ))}
                 </div>
-                <Field label="총평_내용">
+                <Field label={FIELD_LABEL.generalReview}>
                   <TextArea
                     value={grvwCn}
                     onChange={(e) => setGrvwCn(e.target.value)}
@@ -550,7 +556,7 @@ export function OperationCreatePage({
                   />
                 </Field>
                 <div className="mt-3 text-[13px] text-n500">
-                  등록 후 하위 업무를 이 업무에 연결하면 업무_진행_률이 집계됩니다.
+                  등록 후 하위 업무를 이 업무에 연결하면 진행률이 집계됩니다.
                 </div>
               </>
             )}
@@ -584,10 +590,10 @@ export function OperationCreatePage({
                   꺼진 유형까지 고를 수 있으면 서버가 400 SUB_WORK_TYPE_INACTIVE로 끊는데,
                   사용자 눈에는 목록에 있던 유형을 골랐을 뿐이라 이유를 알 수 없다.
                 */}
-                <div className="mb-2 text-[13.5px] text-n400">하위_업무_유형</div>
+                <div className="mb-2 text-[13.5px] text-n400">{FIELD_LABEL.subWorkType}</div>
                 {subWorkTypeOptions.status === "loading" && (
                   <div className="mb-3 text-[13.5px] text-n500">
-                    하위_업무_유형을 불러오는 중입니다
+                    하위 업무 유형을 불러오는 중입니다
                   </div>
                 )}
                 {subWorkTypeOptions.status === "error" && (
@@ -631,19 +637,19 @@ export function OperationCreatePage({
                       {rule.typeName} 유형 규칙
                     </div>
                     <div className="mt-2 grid grid-cols-[92px_1fr] gap-y-[6px] text-[13.5px]">
-                      <div className="text-n500">승인_필요</div>
+                      <div className="text-n500">승인 필요</div>
                       <div className={rule.approvalNeeded ? "text-danger" : undefined}>
                         {rule.approvalNeeded
-                          ? `${rule.authorizerRoleCode ? AUTZR_ROLE_NM[rule.authorizerRoleCode] : "책임자"} 승인 필요`
+                          ? `${rule.authorizerAuthorityName ?? "책임자"} 승인 필요`
                           : "승인 없이 진행"}
                       </div>
-                      <div className="text-n500">최소_동의_수</div>
+                      <div className="text-n500">최소 동의 수</div>
                       <div>
                         {rule.minAgreeCountNeeded
                           ? `${rule.minAgreeCount}명 동의`
                           : "해당 없음"}
                       </div>
-                      <div className="text-n500">완료_점검</div>
+                      <div className="text-n500">완료 점검</div>
                       <div>
                         {rule.completionCheckArticles.length > 0
                           ? rule.completionCheckArticles.join(" · ")
@@ -653,18 +659,18 @@ export function OperationCreatePage({
                   </div>
                 ) : (
                   <div className="mb-4 text-[13.5px] text-n500">
-                    하위_업무_유형을 선택하면 승인 규칙이 표시됩니다
+                    하위 업무 유형을 선택하면 승인 규칙이 표시됩니다
                   </div>
                 )}
                 <div className="flex flex-col gap-[14px]">
-                  <Field label="업무_내용">
+                  <Field label={FIELD_LABEL.workContent}>
                     <TextField
                       value={workCn}
                       onChange={(e) => setWorkCn(e.target.value)}
                       placeholder="무엇을 하는 하위 업무인지"
                     />
                   </Field>
-                  <Field label="외부_URL_주소">
+                  <Field label={FIELD_LABEL.externalUrl}>
                     <TextField
                       value={otsdUrlAddr}
                       onChange={(e) => setOtsdUrlAddr(e.target.value)}
@@ -673,7 +679,7 @@ export function OperationCreatePage({
                   </Field>
                 </div>
                 <div className="mt-3 text-[13px] text-n500">
-                  등록 직후 업무_상태는 기획(PLANNING)이며, 완료 점검 목록은 고른 유형의
+                  등록 직후 업무 상태는 기획(PLANNING)이며, 완료 점검 목록은 고른 유형의
                   항목을 복사해 함께 만들어집니다.
                 </div>
               </>
@@ -681,16 +687,16 @@ export function OperationCreatePage({
 
             {operTypeCd === "MEETING" && (
               <>
-                <div className="mb-2 text-[13.5px] text-n400">회의_구분_코드</div>
-                <div className="mb-4 flex gap-[7px]">
+                <div className="mb-2 text-[13.5px] text-n400">{FIELD_LABEL.meetingCategory}</div>
+                <div className="mb-4 flex flex-wrap gap-[7px]">
                   {MTG_SE_CDS.map((cd) => (
                     <Chip key={cd} active={mtgSeCd === cd} onClick={() => setMtgSeCd(cd)}>
                       {MTG_SE_NM[cd]}
                     </Chip>
                   ))}
                 </div>
-                <div className="mb-2 text-[13.5px] text-n400">참석_대상_코드</div>
-                <div className="mb-4 flex gap-[7px]">
+                <div className="mb-2 text-[13.5px] text-n400">{FIELD_LABEL.attendeeTarget}</div>
+                <div className="mb-4 flex flex-wrap gap-[7px]">
                   {ATND_TRGT_CDS.map((cd) => (
                     <Chip
                       key={cd}
@@ -701,7 +707,7 @@ export function OperationCreatePage({
                     </Chip>
                   ))}
                 </div>
-                <Field label="회의_장소_명">
+                <Field label={FIELD_LABEL.meetingPlace}>
                   <TextField
                     value={mtgPlcNm}
                     onChange={(e) => setMtgPlcNm(e.target.value)}

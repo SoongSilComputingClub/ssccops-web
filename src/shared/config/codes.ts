@@ -123,18 +123,12 @@ export const APRV_STTS_NM: Record<AprvSttsCd, string> = {
 
 export const APRV_STTS_CDS = codesOf(APRV_STTS_NM);
 
-/* ── 승인자_역할 (sub_work_type.autzr_role_cd) ──────────────── */
-
-export type AutzrRoleCd = "PRESIDENT" | "VICE_PRESIDENT" | "TREASURER" | "DIRECTOR";
-
-export const AUTZR_ROLE_NM: Record<AutzrRoleCd, string> = {
-  PRESIDENT: "회장",
-  VICE_PRESIDENT: "부회장",
-  TREASURER: "총무",
-  DIRECTOR: "국장",
-};
-
-export const AUTZR_ROLE_CDS = codesOf(AUTZR_ROLE_NM);
+/*
+ * 승인자 어휘(옛 AUTZR_ROLE_NM — sub_work_type.autzr_role_cd)는 여기서 지웠다 (서버 #123).
+ * 승인자는 이제 직위 코드가 아니라 결재 권한(autzr_authrt_cd)이고, 표시명(authrt_nm)은
+ * 권한 관리 화면에서 바뀌는 운영 데이터라 서버가 응답과 선택지 API로 내려준다 —
+ * entities/sub-work-type/api/fetchAuthorizerAuthorities 참고.
+ */
 
 /* ── 담당_구분 (sub_work_pic_altmnt.tkcg_se_cd) ─────────────── */
 

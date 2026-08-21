@@ -7,6 +7,7 @@ import { CAPABILITY } from "@/entities/session";
 import type { SubWorkListItem } from "@/entities/sub-work";
 import { useCan } from "@/features/auth";
 import { useDashboard } from "@/features/dashboard";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { WORK_STTS_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { daysUntil, ddayText, deadlineFlag, formatMd, todayInSeoul } from "@/shared/lib/date";
@@ -40,7 +41,7 @@ const MY_FILTERS = ["전체", "마감임박", "지연"] as const;
 
 function DashboardSkeleton() {
   return (
-    <div className="grid grid-cols-[1.7fr_1fr] items-start gap-4">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.7fr_1fr]">
       {[0, 1].map((i) => (
         <Card key={i} className="animate-pulse">
           <div className="h-[20px] w-2/5 rounded bg-black/5" />
@@ -90,13 +91,13 @@ export function DashboardPage() {
     },
     {
       key: "dueAt",
-      header: "마감_일시",
+      header: FIELD_LABEL.dueAt,
       width: ".8fr",
       render: (item) => <span className="text-n400">{formatMd(item.dueAt) || "-"}</span>,
     },
     {
       key: "subWorkTypeName",
-      header: "하위_업무_유형",
+      header: FIELD_LABEL.subWorkType,
       width: ".9fr",
       render: (item) => <Badge tone="grey">{item.subWorkTypeName || "-"}</Badge>,
     },
@@ -118,7 +119,7 @@ export function DashboardPage() {
     },
     {
       key: "workStatus",
-      header: "업무_상태",
+      header: FIELD_LABEL.workStatus,
       width: ".7fr",
       render: (sw) => (
         <Badge tone={sw.workStatus === "DONE" ? "outline-accent" : "outline"}>
@@ -128,7 +129,7 @@ export function DashboardPage() {
     },
     {
       key: "dueAt",
-      header: "마감_일시",
+      header: FIELD_LABEL.dueAt,
       width: ".9fr",
       render: (sw) => {
         const flag = deadlineFlag(sw.dueAt, sw.isDelayed, today);
@@ -170,7 +171,7 @@ export function DashboardPage() {
           disabled: !canManageWork,
           title: canManageWork
             ? undefined
-            : "업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
+            : "업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다",
         }}
       />
       <PageBody>
@@ -185,7 +186,7 @@ export function DashboardPage() {
 
         {status === "ready" && (
           <>
-            <div className="grid grid-cols-[1.7fr_1fr] items-start gap-4">
+            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.7fr_1fr]">
               <Card>
                 <CardTitle
                   right={
@@ -263,9 +264,15 @@ export function DashboardPage() {
             </div>
 
             <Card className="mt-4">
-              <div className="mb-[14px] flex items-center gap-3">
-                <div className="text-[18px] font-medium">내 업무 목록</div>
-                <div className="flex gap-[7px]">
+              {/*
+                좁은 화면에서는 제목 · 필터 칩 · 건수가 한 줄에 다 들어가지 않는다.
+                줄바꿈을 열어 두지 않으면 flex 항목끼리 밀어내다 제목이 38px까지 찌그러져
+                "내 업 무 목 록"처럼 글자마다 줄이 바뀐다(#103). 칩을 마지막 순서로 내려
+                제목과 건수가 첫 줄에 온전히 남게 하고, lg에서는 기존 한 줄 배치로 되돌린다.
+              */}
+              <div className="mb-[14px] flex flex-wrap items-center gap-3 lg:flex-nowrap">
+                <div className="shrink-0 text-[18px] font-medium">내 업무 목록</div>
+                <div className="order-last flex gap-[7px] lg:order-none">
                   {MY_FILTERS.map((f) => (
                     <Chip key={f} active={myFilter === f} onClick={() => setMyFilter(f)}>
                       {f}
@@ -273,7 +280,7 @@ export function DashboardPage() {
                   ))}
                 </div>
                 <div className="flex-1" />
-                <div className="text-[14px] text-n500">{myTasks.length}건</div>
+                <div className="shrink-0 text-[14px] text-n500">{myTasks.length}건</div>
               </div>
               <GridTable
                 columns={taskColumns}

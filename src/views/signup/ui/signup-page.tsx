@@ -16,9 +16,24 @@ import {
   type SignupFormValues,
   type SignupStatusCode,
 } from "@/features/auth";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { safeNextPath, withNextParam } from "@/shared/lib/next-path";
 import { Button, Card, Chip, Field, TextField, flash } from "@/shared/ui";
+
+/**
+ * 입력란 글자 크기 — 좁은 화면에서만 16px로 올린다.
+ *
+ * iOS Safari는 글자가 16px 미만인 입력란에 포커스가 가면 페이지를 통째로 확대하고 되돌리지
+ * 않는다. 가입 폼은 필수 칸이 최대 다섯이라 첫 칸을 누르는 순간 나머지를 가로로 밀린 채
+ * 채우게 된다(#87이 폼 응답 화면에서 고친 것과 같은 문제다).
+ *
+ * `!`를 붙이는 이유: shared/ui의 `cn`은 tailwind-merge가 아니라 단순 join이라 TextField가
+ * 기본으로 가진 `text-[15.5px]`가 클래스 목록에 그대로 남는다. 같은 층의 두 클래스 중
+ * 무엇이 이기는지는 생성된 CSS 순서에 달려 있어 확실하지 않다 — 둘 다 important로 두면
+ * `lg:`가 항상 뒤에 오므로 1024px 이상은 예전 값 15.5px로 확정된다.
+ */
+const INPUT_TEXT = "text-[16px]! lg:text-[15.5px]!";
 
 export function SignupPage() {
   const router = useRouter();
@@ -158,11 +173,11 @@ export function SignupPage() {
   };
 
   return (
-    <div className="w-[640px] px-6 py-14">
+    <div className="w-full max-w-[640px] px-4 py-14 lg:px-6">
       <h1 className="text-[28px] font-medium tracking-[-.4px]">회원 가입</h1>
       <p className="mt-2 text-[14.5px] text-n400">
-        소셜 계정 <span className="font-semibold text-ink">{provider}</span> 로
-        인증되었습니다. 등급 임시회원으로 등록되며 바로 이용할 수 있습니다.
+        소셜 계정 <span className="font-semibold text-ink">{provider}</span>로
+        인증되었습니다. 임시회원 등급으로 등록되며 바로 이용할 수 있습니다.
       </p>
       {/*
        * 폼 링크를 열었다가 여기까지 온 경우에는 가입이 목적이 아니므로, 이 화면이 종착지가
@@ -182,7 +197,7 @@ export function SignupPage() {
        * 이 길이 있다는 것을 끝내 모른 채 명부에 두 번째 줄을 만든다. 그래서 **누르기 전부터**
        * 보인다. 기본 동작은 어디까지나 새 가입이므로 눈에 덜 띄는 한 줄로 둔다.
        */}
-      <div className="mt-3 flex items-center justify-between gap-3 rounded-[12px] border border-line bg-surface px-[14px] py-[10px]">
+      <div className="mt-3 flex flex-col items-start justify-between gap-3 rounded-[12px] border border-line bg-surface px-[14px] py-[10px] lg:flex-row lg:items-center">
         <div className="text-[13.5px] leading-[1.6] text-n400">
           이미 SSCC 회원이신가요? 명부에 등록돼 있다면 기존 회원 정보에 연결하세요.
         </div>
@@ -206,10 +221,15 @@ export function SignupPage() {
       {statusError && <div className="mt-[6px] text-[12.5px] text-danger">{statusError}</div>}
 
       <Card className="mt-4">
-        <div className="grid grid-cols-2 gap-[14px]">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+          {/*
+           * col-span-2를 좁은 화면에 그대로 두면 1열 격자에 **암시적 2열**이 생겨
+           * 다른 칸까지 반쪽으로 밀린다 — 열 수와 함께 되돌려야 한다.
+           */}
+          <div className="col-span-1 lg:col-span-2">
             <div className="mb-[6px] text-[13.5px] text-n400">이메일</div>
-            <div className="rounded-[12px] bg-bg px-[11px] py-[9px] text-[15.5px] text-n300">
+            {/* 이메일에는 띄어쓰기가 없다 — 그냥 두면 긴 학교 계정이 상자 밖으로 밀려 나간다 */}
+            <div className="rounded-[12px] bg-bg px-[11px] py-[9px] text-[15.5px] break-words text-n300">
               {authUser.email}
             </div>
             <div className="mt-1 text-[12.5px] text-n500">
@@ -217,8 +237,9 @@ export function SignupPage() {
             </div>
           </div>
 
-          <Field label="회원_명" required error={errors.name}>
+          <Field label={FIELD_LABEL.memberName} required error={errors.name}>
             <TextField
+              className={INPUT_TEXT}
               value={f.name}
               onChange={(e) => set({ name: e.target.value })}
               invalid={!!errors.name}
@@ -227,22 +248,33 @@ export function SignupPage() {
           </Field>
           <Field label="전화번호" required error={errors.phoneNumber}>
             <TextField
+              className={INPUT_TEXT}
               value={f.phoneNumber}
               onChange={(e) => set({ phoneNumber: e.target.value })}
               invalid={!!errors.phoneNumber}
               placeholder="필수 · 010-1234-5678"
             />
           </Field>
-          <Field label="학생_번호" required={isEnrolled} error={errors.studentNumber}>
+          <Field
+            label={FIELD_LABEL.studentNumber}
+            required={isEnrolled}
+            error={errors.studentNumber}
+          >
             <TextField
+              className={INPUT_TEXT}
               value={f.studentNumber}
               onChange={(e) => set({ studentNumber: e.target.value })}
               invalid={!!errors.studentNumber}
               placeholder={isEnrolled ? "필수 · 숫자만" : "선택 · 기억나는 경우"}
             />
           </Field>
-          <Field label="학과_명" required={isEnrolled} error={errors.departmentName}>
+          <Field
+            label={FIELD_LABEL.departmentName}
+            required={isEnrolled}
+            error={errors.departmentName}
+          >
             <TextField
+              className={INPUT_TEXT}
               value={f.departmentName}
               onChange={(e) => set({ departmentName: e.target.value })}
               invalid={!!errors.departmentName}
@@ -250,8 +282,9 @@ export function SignupPage() {
             />
           </Field>
           {isEnrolled && (
-            <Field label="학년_번호" required error={errors.academicYear}>
+            <Field label={FIELD_LABEL.academicYear} required error={errors.academicYear}>
               <TextField
+                className={INPUT_TEXT}
                 value={f.academicYear}
                 onChange={(e) => set({ academicYear: e.target.value })}
                 invalid={!!errors.academicYear}
@@ -260,8 +293,9 @@ export function SignupPage() {
               />
             </Field>
           )}
-          <Field label="기수_번호" error={errors.generationNumber}>
+          <Field label={FIELD_LABEL.generationNumber} error={errors.generationNumber}>
             <TextField
+              className={INPUT_TEXT}
               value={f.generationNumber}
               onChange={(e) => set({ generationNumber: e.target.value })}
               invalid={!!errors.generationNumber}
@@ -272,8 +306,8 @@ export function SignupPage() {
         </div>
         <div className="mt-4 text-[13px] text-n500">
           {isEnrolled
-            ? "재학 회원은 기수_번호를 제외한 모든 항목이 필수입니다. 기수는 운영진이 배정합니다."
-            : "졸업 회원은 회원_명 · 전화번호만 필수입니다. 학번과 기수는 기억나지 않으면 비워두세요."}
+            ? "재학 회원은 기수를 제외한 모든 항목이 필수입니다. 기수는 운영진이 배정합니다."
+            : "졸업 회원은 회원명 · 전화번호만 필수입니다. 학번과 기수는 기억나지 않으면 비워두세요."}
         </div>
       </Card>
 
@@ -294,7 +328,7 @@ export function SignupPage() {
             본인 학번이 맞다면 이미 SSCC 명부에 등록된 회원일 가능성이 높습니다. 새로 가입하는
             대신 <span className="font-semibold text-ink">기존 회원 정보에 이 계정을 연결</span>
             하세요 — 기수 · 등급 · 역할이 그대로 유지됩니다. 연결에는 학번 · 회원명 · 전화번호가
-            모두 필요하며, 명부의 값과 다르면 연결되지 않습니다.
+            모두 필요하며 명부의 값과 다르면 연결되지 않습니다.
           </div>
           <div className="mt-[10px] flex gap-2">
             <Button size="sm" disabled={pending} onClick={goToLink}>

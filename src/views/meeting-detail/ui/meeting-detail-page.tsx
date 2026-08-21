@@ -23,6 +23,7 @@ import {
   WORK_TYPE_NM,
   type PrcsSeCd,
 } from "@/shared/config/codes";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
 import {
@@ -66,7 +67,7 @@ interface AgendaTargetOption {
 
 function DetailSkeleton() {
   return (
-    <div className="grid grid-cols-[1fr_1.6fr] items-start gap-4">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.6fr]">
       <Card className="animate-pulse">
         <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
         <div className="mt-3 h-[28px] w-3/5 rounded bg-black/5" />
@@ -148,9 +149,9 @@ function AgendaCard({
 
   return (
     <div className="rounded-[12px] border border-line p-[14px]">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
         <div className="text-[15px] font-semibold">안건 {agenda.agendaOrder ?? "-"}</div>
-        <span className="font-mono text-[12px] text-n500">회의_상세 #{agenda.agendaId}</span>
+        <span className="font-mono text-[12px] text-n500">안건 #{agenda.agendaId}</span>
         <div className="flex-1" />
         <span className="text-[12.5px] text-n500">제출 {agenda.submitter?.name || "-"}</span>
         {editable && withdrawable && (
@@ -190,7 +191,7 @@ function AgendaCard({
           {agenda.agendaName ?? "제목 없음"} · 연결된 운영 없음
         </div>
       )}
-      <div className="mt-3 flex gap-[7px]">
+      <div className="mt-3 flex flex-wrap gap-[7px] lg:flex-nowrap">
         {PRCS_SE_CDS.map((cd) => (
           <Chip
             key={cd}
@@ -206,7 +207,7 @@ function AgendaCard({
         </Badge>
       </div>
       <div className="mt-3">
-        <div className="mb-[6px] text-[13.5px] text-n400">안건_내용</div>
+        <div className="mb-[6px] text-[13.5px] text-n400">{FIELD_LABEL.agendaContent}</div>
         <TextArea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -215,7 +216,7 @@ function AgendaCard({
         />
       </div>
       <div className="mt-3">
-        <div className="mb-[6px] text-[13.5px] text-n400">결과_내용</div>
+        <div className="mb-[6px] text-[13.5px] text-n400">{FIELD_LABEL.agendaResult}</div>
         <TextField
           value={resultContent}
           onChange={(e) => setResultContent(e.target.value)}
@@ -241,11 +242,26 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
   const router = useRouter();
   const { meeting, status, errorMessage, reload, applyAgendaUpsert, applyAgendaRemoval } =
     useMeetingDetail(mtgId);
-  const { pending, transition, addAgenda, updateAgenda, withdrawAgenda } =
+  const { pending, transition, addAgenda, updateAgenda, withdrawAgenda, remove } =
     useMeetingActions(mtgId);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const sessionMember = useSessionStore((s) => s.member);
   const canManage = useCan(CAPABILITY.MEETING_MANAGE);
+  /*
+   * 삭제는 개회·종료·취소(canManage)와 다른 권한이다(서버 #125) — 회의 책임자 본인이거나
+   * MEETING_MANAGE를 가졌어도 MEETING_DELETE가 따로 없으면 잠근다. 상태와 무관하게 항상
+   * 노출한다(취소 버튼처럼 SCHEDULED로 좁히지 않는다) — 종료·취소된 회의도 삭제 가능하다.
+   */
+  const canDelete = useCan(CAPABILITY.MEETING_DELETE);
+  /*
+   * 안건 쓰기는 회의 관리와 **다른 권한이다** (서버 #101 · ssccops-web#82). 서버는
+   * POST·PATCH·DELETE /v1/meetings/{id}/agendas 에 MEETING_AGENDA_WRITE 를 요구하고, 그 권한을
+   * 국원 역할에도 준 것은 "국원은 회의를 열거나 닫지는 못해도 안건은 작성할 수 있어야 한다"는
+   * 뜻이었다. 안건 UI 를 MEETING_MANAGE 로 잠가 두면 서버가 허용하는 일을 화면에서 할 수 없다 —
+   * 개회·종료·취소(상태 전이)만 canManage 로 남긴다.
+   */
+  const canWriteAgenda = useCan(CAPABILITY.MEETING_AGENDA_WRITE);
 
   /*
    * 안건으로 연결할 업무·하위 업무 후보. 목록 API(OPS-008·OPS-020)는 카드에 필요한 값만
@@ -267,7 +283,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
           {status === "loading" && <DetailSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="회의를 찾을 수 없습니다. 이미 삭제된 회의일 수 있습니다."
+              message="회의를 찾을 수 없습니다 — 이미 삭제된 회의일 수 있습니다."
               action={{ label: "회의 목록", onClick: () => router.replace(ROUTES.meetings) }}
             />
           )}
@@ -403,14 +419,14 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
     <>
       <PageHeader title="회의 상세" subtitle="안건 · 처리 결과" showBack />
       <PageBody>
-        <div className="grid grid-cols-[1fr_1.6fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.6fr]">
           <Card>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
               <Badge tone={mtgSttsTone(meeting.meetingStatus)}>
                 {meeting.meetingStatus ? MTG_STTS_NM[meeting.meetingStatus] : "-"}
               </Badge>
               <span className="rounded-[6px] bg-bg px-[7px] py-[2px] font-mono text-[12.5px] text-n400">
-                운영_ID · {meeting.operationId}
+                {FIELD_LABEL.operationId} · {meeting.operationId}
               </span>
               <div className="flex-1" />
               {isChair && chairAction && (
@@ -432,6 +448,19 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                   취소
                 </Button>
               )}
+              <Button
+                variant="danger"
+                size="sm"
+                disabled={!canDelete || pending}
+                title={
+                  canDelete
+                    ? undefined
+                    : "회의를 삭제할 권한이 없습니다 — 회의 삭제(MEETING_DELETE) 권한이 필요합니다"
+                }
+                onClick={() => setDeleteOpen(true)}
+              >
+                삭제
+              </Button>
             </div>
             <div className="mt-2 text-[22px] font-medium">{meeting.title}</div>
 
@@ -441,13 +470,13 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
               labelWidth={88}
               items={[
                 {
-                  k: "운영_ID",
+                  k: FIELD_LABEL.operationId,
                   v: <span className="font-mono text-[13.5px]">{meeting.operationId}</span>,
                 },
-                { k: "운영_유형", v: OPER_TYPE_NM[meeting.operationType] },
-                { k: "운영_제목", v: meeting.title },
-                { k: "시작_일시", v: formatDt(meeting.startAt) || "-" },
-                { k: "우선_순위", v: PRRTY_RNK_NM[meeting.priority] },
+                { k: FIELD_LABEL.operationType, v: OPER_TYPE_NM[meeting.operationType] },
+                { k: FIELD_LABEL.operationTitle, v: meeting.title },
+                { k: FIELD_LABEL.startAt, v: formatDt(meeting.startAt) || "-" },
+                { k: FIELD_LABEL.priority, v: PRRTY_RNK_NM[meeting.priority] },
                 { k: "담당자", v: meeting.personInCharge?.name || "-" },
               ]}
             />
@@ -457,21 +486,21 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
               labelWidth={88}
               items={[
                 {
-                  k: "회의_ID",
+                  k: FIELD_LABEL.meetingId,
                   v: <span className="font-mono text-[13.5px]">{meeting.meetingId}</span>,
                 },
                 {
-                  k: "회의_구분",
+                  k: FIELD_LABEL.meetingCategory,
                   v: meeting.meetingCategory ? MTG_SE_NM[meeting.meetingCategory] : "-",
                 },
-                { k: "회의_장소_명", v: meeting.location ?? "-" },
-                { k: "회의_책임자", v: meeting.personInCharge?.name || "-" },
+                { k: FIELD_LABEL.meetingPlace, v: meeting.location ?? "-" },
+                { k: FIELD_LABEL.meetingOwner, v: meeting.personInCharge?.name || "-" },
                 {
-                  k: "참석_대상",
+                  k: FIELD_LABEL.attendeeTarget,
                   v: meeting.attendeeScope ? ATND_TRGT_NM[meeting.attendeeScope] : "-",
                 },
-                { k: "내부_회의_상세", v: meeting.internalDetail ?? "-" },
-                { k: "외부_회의_상세", v: meeting.externalSummary ?? "-" },
+                { k: FIELD_LABEL.internalMeetingDetail, v: meeting.internalDetail ?? "-" },
+                { k: FIELD_LABEL.externalMeetingSummary, v: meeting.externalSummary ?? "-" },
               ]}
             />
           </Card>
@@ -487,7 +516,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                     <AgendaCard
                       key={a.agendaId}
                       agenda={a}
-                      editable={isEditable && canManage}
+                      editable={isEditable && canWriteAgenda}
                       pending={pending}
                       withdrawable={isWithdrawable}
                       onUpdate={(content, resultContent, cd) =>
@@ -500,7 +529,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
               )}
             </Card>
 
-            {isEditable && canManage && (
+            {isEditable && canWriteAgenda && (
               <div className="rounded-2xl border border-dashed border-line-strong bg-surface p-[18px]">
                 <div className="text-[16px] font-medium">안건 추가</div>
                 <div className="mt-1 text-[13.5px] text-n500">
@@ -586,7 +615,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                 <TextArea
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  placeholder="안건_내용 (선택)"
+                  placeholder={`${FIELD_LABEL.agendaContent} (선택)`}
                   className="mt-3"
                 />
                 <Button
@@ -605,6 +634,22 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
           open={cancelOpen}
           onClose={() => setCancelOpen(false)}
           onCancel={(reason) => void runTransition("CANCEL", reason)}
+        />
+
+        <Sheet
+          open={deleteOpen}
+          title="회의 삭제"
+          hint="삭제하면 되돌릴 수 없습니다."
+          onClose={() => setDeleteOpen(false)}
+          onOk={() => {
+            setDeleteOpen(false);
+            void (async () => {
+              const { result, message } = await remove();
+              if (message) flash(message);
+              if (result) router.replace(ROUTES.meetings);
+            })();
+          }}
+          okLabel="삭제"
         />
       </PageBody>
     </>

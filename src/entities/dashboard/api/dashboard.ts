@@ -1,4 +1,4 @@
-import type { AprvSttsCd, AutzrRoleCd, WorkSttsCd } from "@/shared/config/codes";
+import type { AprvSttsCd, WorkSttsCd } from "@/shared/config/codes";
 import { apiFetch } from "@/shared/lib/api/client";
 import type {
   ApprovalChecklistSummary,
@@ -45,7 +45,8 @@ interface ApprovalInboxItemResponse {
   title: string | null;
   approvalStatus: AprvSttsCd;
   subWorkTypeName: string | null;
-  authorizerRoleCode: string | null;
+  authorizerAuthorityCode: string | null;
+  authorizerAuthorityName: string | null;
   registrantName: string | null;
   requestedAt: string | null;
   dueAt: string | null;
@@ -112,7 +113,8 @@ function toApprovalInboxItem(res: ApprovalInboxItemResponse): ApprovalInboxItem 
     title: res.title ?? "",
     approvalStatus: res.approvalStatus,
     subWorkTypeName: res.subWorkTypeName ?? "",
-    authorizerRoleCode: res.authorizerRoleCode as AutzrRoleCd | string | null,
+    authorizerAuthorityCode: res.authorizerAuthorityCode,
+    authorizerAuthorityName: res.authorizerAuthorityName,
     registrantName: res.registrantName,
     requestedAt: res.requestedAt,
     dueAt: res.dueAt,

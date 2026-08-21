@@ -9,8 +9,15 @@ import type {
 import { cn } from "@/shared/lib/cn";
 
 /* disabled 표시를 base에 둔 것은 권한이 없어 잠긴 입력란이 눌리지 않는 이유를 보여야 하기 때문이다 (#29) */
+/*
+ * 좁은 화면에서 16px인 이유는 미관이 아니라 동작이다 (#105).
+ *
+ * iOS Safari는 16px 미만인 입력란에 포커스하면 화면을 자동으로 확대하고, 그 확대는 스스로
+ * 돌아오지 않는다 — 첫 칸에 입력하는 순간 폼 전체가 커진 채로 남는다. lg에서는 원래 크기를
+ * 그대로 쓴다(데스크톱에는 이 동작이 없다).
+ */
 const INPUT_BASE =
-  "w-full rounded-[12px] border text-[15.5px] text-ink outline-none placeholder:text-n500 focus:border-accent disabled:cursor-not-allowed disabled:opacity-45";
+  "w-full rounded-[12px] border text-[16px] text-ink outline-none placeholder:text-n500 focus:border-accent disabled:cursor-not-allowed disabled:opacity-45 lg:text-[15.5px]";
 
 export function TextField({
   inset,
@@ -59,7 +66,8 @@ export function SelectField({
   return (
     <select
       className={cn(
-        "w-full cursor-pointer rounded-[8px] border border-line bg-surface px-[10px] py-[8px] text-[15px] text-ink outline-none focus:border-accent",
+        // 16px는 iOS 자동 확대 방지다 — INPUT_BASE의 주석 참조 (#105)
+        "w-full cursor-pointer rounded-[8px] border border-line bg-surface px-[10px] py-[8px] text-[16px] text-ink outline-none focus:border-accent lg:text-[15px]",
         className,
       )}
       {...rest}

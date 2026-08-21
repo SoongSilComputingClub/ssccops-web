@@ -79,6 +79,8 @@ export const SUB_WORK_ERROR = {
   QUORUM_NOT_MET: "QUORUM_NOT_MET",
   /** 반려 사유 누락 (422). **길이 초과는 400 VALIDATION_FAILED로 갈린다** */
   REASON_REQUIRED: "REASON_REQUIRED",
+  /** 이미 소프트 삭제된 하위 업무를 다시 삭제 시도 (409, 서버 #125) */
+  ALREADY_DELETED: "ALREADY_DELETED",
 } as const;
 
 /** 반려 사유 최대 길이 (sub_work_rjct.rjct_rsn · OPS-010 reason) — 초과는 400이다 */
@@ -369,7 +371,8 @@ interface SubWorkDetailResponse {
   workStatus: WorkSttsCd;
   approvalStatus: AprvSttsCd;
   approvalRequired: boolean | null;
-  authorizerRoleCode: string | null;
+  authorizerAuthorityCode: string | null;
+  authorizerAuthorityName: string | null;
   owner: MemberSummaryResponse | null;
   registrant: MemberSummaryResponse | null;
   collaborators: MemberSummaryResponse[] | null;
@@ -385,7 +388,12 @@ interface SubWorkDetailResponse {
   checklist: ChecklistItemResponse[] | null;
   checklistSummary: ChecklistSummaryResponse | null;
   quorum: QuorumResponse | null;
-  /* myVote는 받지 않는다 — 이 화면에 찬반 버튼이 없다(승인함 OPS-015의 몫) */
+  /*
+   * 이번 회차의 내 표. 상세 화면에서도 투표하므로 받는다(ssccops-web#82) — 승인함은
+   * WORK_MANAGE로 잠겨 있는데 투표 자격(운영진)은 그보다 넓어, 국원은 그 화면에 들어가지
+   * 못한 채 자격만 갖고 있었다.
+   */
+  myVote: VoteChoice | null;
   latestRejection: RejectionResponse | null;
   canApprove: boolean | null;
   canReject: boolean | null;
@@ -488,7 +496,8 @@ function toSubWorkDetail(res: SubWorkDetailResponse): SubWorkDetail {
     workStatus: res.workStatus,
     approvalStatus: res.approvalStatus,
     approvalRequired: res.approvalRequired === true,
-    authorizerRoleCode: res.authorizerRoleCode,
+    authorizerAuthorityCode: res.authorizerAuthorityCode,
+    authorizerAuthorityName: res.authorizerAuthorityName,
     owner: toMemberRef(res.owner),
     registrant: toMemberRef(res.registrant),
     collaborators: (res.collaborators ?? [])
@@ -506,6 +515,8 @@ function toSubWorkDetail(res: SubWorkDetailResponse): SubWorkDetail {
     checklist,
     checklistSummary: toChecklistSummary(res.checklistSummary),
     quorum: toQuorum(res.quorum),
+    // 정족수 유형이 아니면 서버가 null로 내린다 — 그때는 화면에 찬반 버튼 자체가 없다
+    myVote: res.myVote ?? null,
     latestRejection: toRejection(res.latestRejection),
     /*
      * 권한 값이 빠진 응답을 '가능'으로 읽지 않는다. 버튼을 그렸다가 누를 때 403을 받는 것보다
@@ -711,4 +722,19 @@ export async function updateSubWork(
     }),
   });
   return toSubWorkDetail(res);
+}
+
+/* ── 삭제 ──────────────────────────────────────────────────── */
+
+/**
+ * DELETE /v1/sub-works/{subWorkId} — 소프트 삭제 (서버 #125).
+ *
+ * 자기 자신만 삭제한다(상위 업무처럼 계단식으로 번지지 않는다). 상태(완료 등)와 무관하게
+ * 항상 허용되고, 소유권(담당자 본인)도 보지 않는다 — 다른 하위 업무 쓰기 작업이 쓰는
+ * WORK_MANAGE + 소유권 조합과 달리 **SUB_WORK_DELETE 보유 여부만으로** 판정한다
+ * (entities/session의 CAPABILITY.SUB_WORK_DELETE 주석 참고). 이미 삭제된 건은 409
+ * ALREADY_DELETED, 대상이 아예 없으면 기존 404 NOT_FOUND다.
+ */
+export async function deleteSubWork(subWorkId: number): Promise<void> {
+  await apiFetch<void>(`/v1/sub-works/${subWorkId}`, { method: "DELETE" });
 }

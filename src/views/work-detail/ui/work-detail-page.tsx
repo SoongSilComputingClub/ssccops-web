@@ -1,16 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CAPABILITY } from "@/entities/session";
 import { workSttsTone, type WorkSubWorkSummary } from "@/entities/work";
 import { useCan } from "@/features/auth";
-import { useWorkDetail } from "@/features/work";
+import { useDeleteWork, useWorkDetail } from "@/features/work";
 import {
   OPER_TYPE_NM,
   PRRTY_RNK_NM,
   WORK_STTS_NM,
   WORK_TYPE_NM,
 } from "@/shared/config/codes";
+import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
 import {
@@ -24,6 +26,8 @@ import {
   PageHeader,
   ProgressBar,
   SectionLabel,
+  Sheet,
+  flash,
   type GridColumn,
 } from "@/shared/ui";
 
@@ -54,7 +58,7 @@ function subWorkBadge(subWork: WorkSubWorkSummary) {
 
 function DetailSkeleton() {
   return (
-    <div className="grid grid-cols-[1fr_1.3fr] items-start gap-4">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.3fr]">
       <Card className="animate-pulse">
         <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
         <div className="mt-3 h-[28px] w-3/5 rounded bg-black/5" />
@@ -74,6 +78,13 @@ export function WorkDetailPage({ workId }: { workId: number }) {
   const { work, status, errorMessage, reload } = useWorkDetail(workId);
   /* 하위 업무 등록도 WORK_MANAGE 다 (서버 SubWorkController 전체) */
   const canManage = useCan(CAPABILITY.WORK_MANAGE);
+  /*
+   * 삭제는 수정(WORK_MANAGE)과 다른 권한이다(서버 #125) — 담당자 본인이거나 WORK_MANAGE를
+   * 가졌어도 WORK_DELETE가 따로 없으면 잠근다. 소유권을 보지 않는 순수 권한 판정이다.
+   */
+  const canDelete = useCan(CAPABILITY.WORK_DELETE);
+  const { pending: deletePending, remove } = useDeleteWork();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (status !== "ready" || !work) {
     return (
@@ -83,7 +94,7 @@ export function WorkDetailPage({ workId }: { workId: number }) {
           {status === "loading" && <DetailSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="업무를 찾을 수 없습니다. 이미 삭제된 업무일 수 있습니다."
+              message="업무를 찾을 수 없습니다 — 이미 삭제된 업무일 수 있습니다."
               action={{ label: "업무 목록", onClick: () => router.replace(ROUTES.works) }}
             />
           )}
@@ -117,7 +128,7 @@ export function WorkDetailPage({ workId }: { workId: number }) {
     },
     {
       key: "workStatus",
-      header: "업무_상태",
+      header: FIELD_LABEL.workStatus,
       width: ".8fr",
       render: (sw) => {
         const badge = subWorkBadge(sw);
@@ -135,7 +146,13 @@ export function WorkDetailPage({ workId }: { workId: number }) {
       render: (sw) => {
         const rt = Math.round(sw.progressRate);
         return (
-          <span className="flex items-center gap-[10px]">
+          /*
+           * 좁은 화면에서 폭을 못 박는 이유: GridTable 카드의 값 칸은 내용 크기로 잡히는
+           * flex 항목인데, ProgressBar는 flex-1(기준 폭 0)이라 최대 콘텐츠 폭에 0으로
+           * 계산된다 — 폭을 주지 않으면 칸이 "100%" 글자만큼만 넓어지고 막대는 0px로
+           * 사라진다. lg:w-auto로 데스크톱(표의 열 트랙을 채우던 동작)은 그대로 둔다.
+           */
+          <span className="flex w-[120px] items-center gap-[10px] lg:w-auto">
             <ProgressBar value={rt} />
             <span className="w-[38px] text-right text-[14px] text-n500">{rt}%</span>
           </span>
@@ -156,11 +173,11 @@ export function WorkDetailPage({ workId }: { workId: number }) {
           disabled: !canManage,
           title: canManage
             ? undefined
-            : "하위 업무를 등록할 권한이 없습니다 — 운영진 권한이 필요합니다",
+            : "하위 업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다",
         }}
       />
       <PageBody>
-        <div className="grid grid-cols-[1fr_1.3fr] items-start gap-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.3fr]">
           <Card>
             <div className="flex items-center gap-2">
               <Badge tone={workSttsTone(work.workStatus)}>
@@ -174,10 +191,21 @@ export function WorkDetailPage({ workId }: { workId: number }) {
                 onClick={() => router.push(ROUTES.workEdit(work.workId))}
                 disabled={!canManage}
                 title={
-                  canManage ? undefined : "업무를 수정할 권한이 없습니다 — 운영진 권한이 필요합니다"
+                  canManage ? undefined : "업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다"
                 }
               >
                 수정
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                disabled={!canDelete || deletePending}
+                title={
+                  canDelete ? undefined : "업무를 삭제할 권한이 없습니다 — 업무 삭제(WORK_DELETE) 권한이 필요합니다"
+                }
+                onClick={() => setDeleteOpen(true)}
+              >
+                삭제
               </Button>
             </div>
             <div className="mt-2 text-[23px] font-medium">{work.title}</div>
@@ -192,12 +220,12 @@ export function WorkDetailPage({ workId }: { workId: number }) {
               labelWidth={88}
               items={[
                 {
-                  k: "운영_ID",
+                  k: FIELD_LABEL.operationId,
                   v: <span className="font-mono text-[13.5px]">{work.operationId}</span>,
                 },
-                { k: "운영_유형", v: OPER_TYPE_NM[work.operationType] },
-                { k: "운영_제목", v: work.title },
-                { k: "우선_순위", v: PRRTY_RNK_NM[work.priority] },
+                { k: FIELD_LABEL.operationType, v: OPER_TYPE_NM[work.operationType] },
+                { k: FIELD_LABEL.operationTitle, v: work.title },
+                { k: FIELD_LABEL.priority, v: PRRTY_RNK_NM[work.priority] },
                 { k: "담당자", v: work.owner?.name || "-" },
                 // 이관 데이터는 등록자가 없다 — 서버가 null로 내린다
                 { k: "등록자", v: work.registrant?.name || "-" },
@@ -213,13 +241,13 @@ export function WorkDetailPage({ workId }: { workId: number }) {
               labelWidth={88}
               items={[
                 {
-                  k: "업무_ID",
+                  k: FIELD_LABEL.workId,
                   v: <span className="font-mono text-[13.5px]">{work.workId}</span>,
                 },
-                { k: "업무_유형", v: WORK_TYPE_NM[work.workType] },
-                { k: "업무_상태", v: WORK_STTS_NM[work.workStatus] },
-                { k: "업무_진행_률", v: `${prgrs}%` },
-                { k: "총평_내용", v: work.generalReview || "-" },
+                { k: FIELD_LABEL.workType, v: WORK_TYPE_NM[work.workType] },
+                { k: FIELD_LABEL.workStatus, v: WORK_STTS_NM[work.workStatus] },
+                { k: FIELD_LABEL.progressRate, v: `${prgrs}%` },
+                { k: FIELD_LABEL.generalReview, v: work.generalReview || "-" },
               ]}
             />
           </Card>
@@ -236,6 +264,26 @@ export function WorkDetailPage({ workId }: { workId: number }) {
             />
           </Card>
         </div>
+
+        <Sheet
+          open={deleteOpen}
+          title="업무 삭제"
+          hint={
+            work.subWorkCount > 0
+              ? `연결된 하위 업무 ${work.subWorkCount}건도 함께 삭제됩니다. 삭제하면 되돌릴 수 없습니다.`
+              : "삭제하면 되돌릴 수 없습니다."
+          }
+          onClose={() => setDeleteOpen(false)}
+          onOk={() => {
+            setDeleteOpen(false);
+            void (async () => {
+              const { deleted, message } = await remove(work.workId);
+              if (message) flash(message);
+              if (deleted) router.replace(ROUTES.works);
+            })();
+          }}
+          okLabel="삭제"
+        />
       </PageBody>
     </>
   );
