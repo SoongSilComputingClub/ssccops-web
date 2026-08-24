@@ -102,11 +102,16 @@ export function ResponseReviewPanel({
         rspnsSttsCd: cd,
         rvwOpnnCn: opinion,
       });
+      /*
+       * 실패해도 확인 시트를 닫는다 — 사유는 패널 안에 뜨는데 시트가 그 위를 덮고 있으면
+       * 무엇 때문에 거절됐는지 보이지 않는다. 적어 둔 의견은 지우지 않아 그대로 고쳐 다시
+       * 누를 수 있다.
+       */
+      setConfirming(null);
       if (message) {
         setErrorMessage(message);
         return;
       }
-      setConfirming(null);
       setOpinion("");
       setErrorMessage("");
       flash(`${RSPNS_STTS_BADGE[cd].label} 처리했습니다`);
@@ -182,6 +187,7 @@ export function ResponseReviewPanel({
           if (confirming) submit(confirming);
         }}
         okLabel={saving ? "처리 중…" : "처리"}
+        okDisabled={saving}
       >
         <div className="rounded-[12px] border border-line bg-bg px-3 py-[9px] text-[14px] leading-[1.7] break-words">
           {opinion.trim() || (
