@@ -145,7 +145,19 @@ function EventEditView({
 
   return (
     <>
-      <PageHeader title="행사 수정" subtitle={event.eventTtl} showBack />
+      {/*
+        신청·참가자는 별도 화면이다 (#145) — 여기에 탭으로 얹으면 저장하지 않은 입력을 쥔
+        폼과 목록을 오가는 작업이 한 상태에 갇힌다(routes.ts의 eventParticipants 주석).
+      */}
+      <PageHeader
+        title="행사 수정"
+        subtitle={event.eventTtl}
+        showBack
+        action={{
+          label: "신청 · 참가자",
+          onClick: () => router.push(ROUTES.eventParticipants(event.eventId)),
+        }}
+      />
       <PageBody>
         <Card className="mb-4">
           <SectionLabel className="mb-3">게시 상태</SectionLabel>
