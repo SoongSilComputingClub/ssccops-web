@@ -37,6 +37,16 @@ interface FormSummaryResponse {
   receiptStatus: FormReceiptStatus | null;
   rcptBgngDt: string | null;
   rcptEndDt: string | null;
+  /*
+   * 시스템 폼 표시와 문항 구성 버전 (ssccops-server #140). 목록에도 실린다 — 상세로 들어가기
+   * 전에 잠금이 보여야 하기 때문이다.
+   *
+   * 셋 다 옵셔널로 잡는다. 서버가 옛 버전이면 통째로 빠지는데(AGENTS.md의 함정 절), 필수로
+   * 두면 목록 카드가 `undefined`를 boolean으로 읽어 잠금이 뒤집힌 채 그려진다.
+   */
+  sysFormCd?: string | null;
+  sysYn?: boolean | null;
+  qitemVer?: number | null;
   labels: FormLabelRefResponse[] | null;
   responseCount: number | null;
   mdfcnDt: string;
@@ -91,6 +101,16 @@ function toFormSummary(res: FormSummaryResponse): FormSummary {
     receiptStatus: res.receiptStatus ?? fallbackReceiptStatus(res.formSttsCd),
     rcptBgngDt: res.rcptBgngDt,
     rcptEndDt: res.rcptEndDt,
+    sysFormCd: res.sysFormCd ?? null,
+    /*
+     * **서버가 true라고 말할 때만 시스템 폼이다.** `?? false`가 아니라 `=== true`인 것은 뜻이
+     * 아니라 습관의 문제다 — 값이 빠진 응답을 "일반 폼"으로 읽는다는 판단을 여기 한 줄에
+     * 드러내 둔다. 잘못 읽어도 마지막 방어선은 서버의 409·400이며, 그 코드를 받았을 때의
+     * 문구는 화면이 미리 그리는 잠금과 같다(entities/form/model/display.ts).
+     */
+    sysYn: res.sysYn === true,
+    // 없으면 없는 대로 둔다 — 0이나 1로 채우면 "아직 안 바뀐 폼"을 지어내게 된다
+    qitemVer: res.qitemVer ?? null,
     labels: toLabelRefs(res.labels),
     responseCount: res.responseCount ?? 0,
     mdfcnDt: res.mdfcnDt,
@@ -156,6 +176,24 @@ export const FORM_ERROR = {
   INVALID_FORM_STATUS_TRANSITION: "INVALID_FORM_STATUS_TRANSITION",
   /** 문항이 0개인 폼을 접수 시작하려 함 */
   FORM_HAS_NO_QUESTION: "FORM_HAS_NO_QUESTION",
+  /**
+   * 409 — 시스템 폼을 지우려 함 (ssccops-server #140).
+   *
+   * **웹에는 아직 폼 삭제 경로가 없다**(서버에도 삭제 엔드포인트가 없다). 그래도 코드를 두는
+   * 것은, 삭제가 생기는 날 그 화면이 문구를 새로 지어내지 않게 하기 위해서다 — 잠금 안내와
+   * 거절 문구는 같은 문장이어야 한다(display.ts의 SYSTEM_FORM_DELETE_LOCKED).
+   */
+  SYSTEM_FORM_IMMUTABLE: "SYSTEM_FORM_IMMUTABLE",
+  /**
+   * 400 — 시스템 폼에서 코드가 요구하는 문항을 지움 (ssccops-server #140).
+   *
+   * `QUESTION_ITEM_IN_USE`(409)와 기준이 다르다. 그쪽은 "이미 받은 답이 끊긴다"라 응답이 없으면
+   * 지울 수 있지만, 이쪽은 응답이 한 건도 없어도 지울 수 없다 — 대신 되돌리면 그대로 저장된다.
+   *
+   * **어느 문항이 요구 대상인지는 응답에 실리지 않는다.** 서버의 요구 목록(SystemFormContract)은
+   * 코드 안에만 있어, 웹은 이 오류를 받고 나서야 방금 지운 문항이 그것이었음을 안다.
+   */
+  SYSTEM_FORM_CONTRACT_VIOLATION: "SYSTEM_FORM_CONTRACT_VIOLATION",
 } as const;
 
 /**

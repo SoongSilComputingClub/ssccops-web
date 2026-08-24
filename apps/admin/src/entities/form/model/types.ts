@@ -85,6 +85,25 @@ export interface FormSummary {
   receiptStatus: FormReceiptStatus;
   rcptBgngDt: string | null;
   rcptEndDt: string | null;
+  /**
+   * 코드가 이 폼을 찾는 열쇠 (ssccops-server #140 · `sys_form_cd`). 평범한 운영 폼은 `null`이다.
+   *
+   * **화면에 그대로 노출하지 않는다.** 사람이 읽는 값이 아니라 코드가 폼을 가리키는 이름이라
+   * 배지에는 "시스템 폼"이라고만 쓴다. 그럼에도 타입에 두는 것은, 나중에 코드별로 안내가
+   * 달라질 때 그 판단을 서버 응답에서 다시 받아 오지 않아도 되게 하기 위해서다.
+   */
+  sysFormCd: string | null;
+  /**
+   * 시스템 폼 여부 (`sys_yn`). 잠기는 것은 **삭제와 코드가 요구하는 문항 삭제 둘뿐**이고
+   * 제목·접수 기간·라벨·접수 상태 전이는 그대로 열려 있다 (서버 FormEntity의 잠금 범위와 같다).
+   */
+  sysYn: boolean;
+  /**
+   * 문항 구성 버전 (`qitem_ver`). 문항 구성이 **실제로 바뀐** 저장에서만 오른다 — 제목만 고친
+   * 자동 저장으로는 오르지 않는다. 서버가 값을 주지 않으면 `null`이며, 그때는 화면도 버전을
+   * 말하지 않는다(0이나 1로 채우면 "아직 한 번도 안 바꿨다"를 지어내는 것이 된다).
+   */
+  qitemVer: number | null;
   labels: FormLabelRef[];
   /**
    * 서버 집계 응답 수. 제출 이상(SUBMITTED·ACCEPTED·REJECTED)만 세고 작성 중(DRAFT)은 빠진다

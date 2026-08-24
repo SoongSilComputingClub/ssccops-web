@@ -137,6 +137,8 @@ export const FIELD_LABEL = {
   receiptEndAt: "접수 종료 일시",
   /** form_lbl (폼_라벨) */
   formLabel: "폼 라벨",
+  /** qitem_ver (문항_구성_버전) */
+  qitemVersion: "문항 버전",
   /** crtr_mbr_id 가 가리키는 회원 (생성자_회원) */
   creator: "생성자",
   /** crt_dt (생성_일시) */
