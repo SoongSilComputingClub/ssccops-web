@@ -40,9 +40,15 @@ export {
   toFormSaveInput,
 } from "./model/form-draft";
 export type { FormDraft, MaxSlctCntInput } from "./model/form-draft";
-export { isTextQitemType, validateFormDraft } from "./model/form-validation";
-export type { FormDraftIssues } from "./model/form-validation";
+export {
+  isTextQitemType,
+  validateFormDraft,
+  validateQitemCpst,
+} from "./model/form-validation";
+export type { FormDraftIssues, QitemCpstIssues } from "./model/form-validation";
 export { FormSaveStatusBar } from "./ui/form-save-status";
+/* 문항 구성 편집기는 폼 편집과 템플릿 편집이 함께 쓴다 — 두 벌이면 규칙이 갈린다 (#134) */
+export { QitemComposer } from "./ui/qitem-composer";
 export { usePublicForm } from "./model/use-public-form";
 export type {
   PublicFormController,
