@@ -1,7 +1,13 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { FORM_RECEIPT_BADGE, type FormSummary } from "@/entities/form";
+import {
+  FORM_RECEIPT_BADGE,
+  SYSTEM_FORM_BADGE,
+  SYSTEM_FORM_DELETE_LOCKED,
+  SYSTEM_FORM_DUPLICATE_NOTE,
+  type FormSummary,
+} from "@/entities/form";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useDuplicateForm, useFormLabelOptions, useFormList } from "@/features/form";
@@ -80,8 +86,18 @@ function FormCard({
 
   return (
     <Card>
-      <div className="flex items-center gap-2">
+      {/*
+        375px에서 배지 둘과 응답 수가 한 줄에 다 들어가지 않는다 — flex-wrap으로 접히게 두고
+        응답 수는 min-w-0 없이 오른쪽에 붙인다(숫자라 줄바꿈될 일이 없다).
+      */}
+      <div className="flex flex-wrap items-center gap-2">
         <Badge tone={badge.tone}>{badge.label}</Badge>
+        {/* 라벨(둥근 Pill)과 달리 각진 배지다 — 운영 데이터가 아니라 코드가 가리키는 폼이라는 표시 */}
+        {form.sysYn && (
+          <Badge tone={SYSTEM_FORM_BADGE.tone} title={SYSTEM_FORM_DELETE_LOCKED}>
+            {SYSTEM_FORM_BADGE.label}
+          </Badge>
+        )}
         <div className="flex-1" />
         {/* 서버가 집계한 값 — 제출 이상만 세고 작성 중 응답은 빠진다 */}
         <div className="text-[13.5px] text-n500">응답 {form.responseCount}</div>
@@ -111,7 +127,13 @@ function FormCard({
         <button
           type="button"
           disabled={duplicating || !canWrite}
-          title={canWrite ? undefined : NO_WRITE}
+          /*
+           * 시스템 폼의 복제는 막지 않는다 — 사본은 코드가 가리키지 않는 일반 폼이라 잠글
+           * 이유가 없다. 다만 시스템 표시가 따라가지 않는다는 것은 누르기 전에 알려 준다.
+           */
+          title={
+            !canWrite ? NO_WRITE : form.sysYn ? SYSTEM_FORM_DUPLICATE_NOTE : undefined
+          }
           onClick={onDuplicate}
           className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
