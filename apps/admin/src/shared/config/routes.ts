@@ -57,6 +57,17 @@ export const ROUTES = {
   formLabels: "/forms/labels",
 
   /*
+   * 폼 템플릿 (#134). 폼 아래에 두는 것은 템플릿이 폼의 문항 구성을 재사용하기 위한 것이고
+   * 서버 인가도 폼과 같은 권한(FORM_WRITE)이기 때문이다.
+   *
+   * 상세 화면은 두지 않는다 — 목록에서 이름을 누르면 곧장 편집이다. 템플릿에는 상태 전이도
+   * 응답도 없어 "읽기만 하는 화면"이 이름·설명·문항을 다시 보여 주는 것 말고 할 일이 없다.
+   */
+  formTemplates: "/forms/templates",
+  formTemplateNew: "/forms/templates/new",
+  formTemplateEdit: (formTmplId: number) => `/forms/templates/${formTmplId}/edit`,
+
+  /*
    * 행사 관리 (#136). 상세 화면이 따로 없다 — 목록에서 제목을 누르면 곧장 수정 화면이다.
    * 게시·보관 전이와 삭제도 수정 화면에서 한다(행사 정보와 전이 버튼이 같은 것을 보게).
    */

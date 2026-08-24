@@ -166,7 +166,10 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: "폼 목록",
         href: ROUTES.forms,
-        isActive: (p) => p.startsWith("/forms") && !p.startsWith("/forms/labels"),
+        isActive: (p) =>
+          p.startsWith("/forms") &&
+          !p.startsWith("/forms/labels") &&
+          !p.startsWith("/forms/templates"),
         requires: CAPABILITY.FORM_READ,
       },
       /*
@@ -175,6 +178,18 @@ export const NAV_GROUPS: NavGroup[] = [
        * "조회는 허용"으로 적혀 있다. 메뉴를 감추면 볼 수 있는 것까지 막게 된다.
        */
       { label: "라벨 관리", href: ROUTES.formLabels, isActive: starts("/forms/labels") },
+      /*
+       * 템플릿 관리 (#134). 라벨 관리와 달리 requires 를 둔다 — 템플릿 API는 **조회까지 전부
+       * FORM_WRITE**다(서버 FormTemplateController 의 클래스 레벨 @RequireAuthority). 권한 없이
+       * 들어가면 첫 조회부터 403이라, 감추지 않으면 갈 수 없는 곳이 목차에 남는다.
+       * 등록·수정은 목록에서 들어가므로 목차에 따로 올리지 않는다.
+       */
+      {
+        label: "템플릿 관리",
+        href: ROUTES.formTemplates,
+        isActive: starts("/forms/templates"),
+        requires: CAPABILITY.FORM_WRITE,
+      },
     ],
   },
   {

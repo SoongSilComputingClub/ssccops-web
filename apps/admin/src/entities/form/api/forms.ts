@@ -294,6 +294,23 @@ function toQitemRequest(qitem: Qitem): Qitem {
   };
 }
 
+/**
+ * 문항 구성을 서버로 보낼 모양으로 다듬는다.
+ *
+ * **폼 템플릿(#134)도 이 함수를 쓴다.** 서버는 폼과 템플릿의 문항 구성을 같은 검증기
+ * (QuestionCompositionValidator)로 보므로, 웹에서 다듬는 규칙이 두 벌이 되면 템플릿에서는
+ * 통과하던 구성이 그 템플릿으로 만든 폼의 저장에서 거절되는 상태가 생긴다.
+ */
+export function toQitemCpstBody(qitemCpstCn: QitemCpstCn): QitemCpstCn {
+  return {
+    pages: qitemCpstCn.pages.map((p) => ({
+      pageTtl: p.pageTtl,
+      pageDescCn: p.pageDescCn,
+    })),
+    qitems: qitemCpstCn.qitems.map(toQitemRequest),
+  };
+}
+
 function toFormSaveBody(input: FormSaveInput) {
   return {
     formTtlNm: input.formTtlNm.trim(),
@@ -307,13 +324,7 @@ function toFormSaveBody(input: FormSaveInput) {
      */
     rcptBgngDt: withServiceOffset(input.rcptBgngDt),
     rcptEndDt: withServiceOffset(input.rcptEndDt),
-    qitemCpstCn: {
-      pages: input.qitemCpstCn.pages.map((p) => ({
-        pageTtl: p.pageTtl,
-        pageDescCn: p.pageDescCn,
-      })),
-      qitems: input.qitemCpstCn.qitems.map(toQitemRequest),
-    },
+    qitemCpstCn: toQitemCpstBody(input.qitemCpstCn),
     labelIds: input.labelIds,
   };
 }

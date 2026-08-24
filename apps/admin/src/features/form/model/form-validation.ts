@@ -1,4 +1,4 @@
-import { SYSTEM_FORM_QITEM_LOCKED } from "@/entities/form";
+import { SYSTEM_FORM_QITEM_LOCKED, type QitemCpstCn } from "@/entities/form";
 import { isChoiceQitemType, type QitemTypeCd } from "@/shared/config/codes";
 import type { FormDraft } from "./form-draft";
 
@@ -45,11 +45,21 @@ export interface FormDraftIssues {
   blockingMessage: string;
 }
 
-export interface FormDraftContext {
-  /** 서버에 이미 저장돼 있는 문항 ID들 (신규 폼이면 빈 배열) */
+/**
+ * 문항 구성 검증에 필요한 맥락 — **폼 템플릿도 이 자리를 채운다**(#134).
+ *
+ * 시스템 폼 잠금(`systemRequiredQitemIds`)이 여기 없는 것은 의도된 것이다. 그것은 폼 한 건의
+ * 성격이지 문항 구성의 규칙이 아니고, 템플릿에는 애초에 그 자리가 없다 — 아래 `FormDraftContext`가
+ * 폼 쪽에만 얹는다.
+ */
+export interface QitemCpstContext {
+  /** 서버에 이미 저장돼 있는 문항 ID들 (신규 폼·템플릿이면 빈 배열) */
   savedQitemIds: string[];
-  /** 이 폼에 제출된 응답이 있는가 */
+  /** 이 폼에 제출된 응답이 있는가 (템플릿에는 응답이 달릴 수 없어 언제나 false) */
   hasResponses: boolean;
+}
+
+export interface FormDraftContext extends QitemCpstContext {
   /**
    * 시스템이 요구해 지울 수 없는 문항 ID들 (서버가 400으로 가르쳐 준 것만 · #140).
    * 무엇이 여기 담기는지는 use-form-editor.ts의 `systemRequiredQitemIds` 주석에 있다.
@@ -62,31 +72,33 @@ function qitemLabel(index: number, qitemLblNm: string): string {
   return qitemLblNm.trim() ? `‘${qitemLblNm.trim()}’ 문항` : `${index + 1}번 문항`;
 }
 
-export function validateFormDraft(
-  draft: FormDraft,
-  context: FormDraftContext,
-): FormDraftIssues {
-  const { pages, qitems } = draft.qitemCpstCn;
+/**
+ * 문항 구성만 본 검증 결과.
+ *
+ * 폼 초안 검증(`validateFormDraft`)에서 떼어 낸 것은 **폼 템플릿이 같은 규칙을 써야 하기**
+ * 때문이다(#134). 템플릿에는 폼 제목도 접수 기간도 없지만 문항 구성 규칙은 서버가 같은
+ * 검증기로 보므로, 두 벌을 적으면 템플릿에서는 통과하던 구성이 그 템플릿으로 만든 폼의
+ * 저장에서 거절된다.
+ */
+export interface QitemCpstIssues {
+  /** qitemId → 그 문항에 붙일 오류 문구들 */
+  qitems: Record<string, string[]>;
+  /** 응답이 있는 폼에서 사라진 기존 문항 ID (템플릿에는 응답이 없어 언제나 빈 배열) */
+  removedInUseQitemIds: string[];
+  /** 첫 번째 문항 오류 한 줄. 비어 있으면 문항 구성에는 문제가 없다 */
+  firstQitemIssue: string;
+}
+
+/** 문항 구성 규칙 (ssccops-server QuestionCompositionValidator와 1:1) */
+export function validateQitemCpst(
+  qitemCpstCn: QitemCpstCn,
+  context: QitemCpstContext,
+): QitemCpstIssues {
+  const { pages, qitems } = qitemCpstCn;
   const issues: Record<string, string[]> = {};
   const add = (qitemId: string, message: string) => {
     (issues[qitemId] ??= []).push(message);
   };
-
-  /* ── 기본정보 ─────────────────────────────────────────────── */
-
-  const formTtlNm = draft.formTtlNm.trim() ? "" : "폼 제목을 입력해야 저장됩니다";
-
-  /*
-   * 문자열 비교로 충분하다 — 둘 다 같은 형식(오프셋이 붙은 ISO-8601)으로만 들어온다.
-   * 그 전제를 지키는 곳은 `withServiceOffset`이다(입력 시점 · 저장 본문 두 곳). 한쪽만
-   * 오프셋이 없으면 같은 시각인데도 긴 쪽이 커서 "종료가 시작보다 빠르다"가 잘못 뜬다.
-   */
-  const rcptDt =
-    draft.rcptBgngDt && draft.rcptEndDt && draft.rcptBgngDt > draft.rcptEndDt
-      ? "접수 종료 일시가 시작보다 빠릅니다"
-      : "";
-
-  /* ── 문항 구성 (서버 규칙과 1:1) ──────────────────────────── */
 
   const seen = new Set<string>();
 
@@ -165,15 +177,44 @@ export function validateFormDraft(
     ? context.savedQitemIds.filter((qitemId) => !seen.has(qitemId))
     : [];
 
-  /* ── 시스템이 요구하는 문항의 삭제 ────────────────────────── */
+  return {
+    qitems: issues,
+    removedInUseQitemIds,
+    firstQitemIssue: Object.values(issues).flat()[0] ?? "",
+  };
+}
 
+export function validateFormDraft(
+  draft: FormDraft,
+  context: FormDraftContext,
+): FormDraftIssues {
+  const { pages } = draft.qitemCpstCn;
+  const cpst = validateQitemCpst(draft.qitemCpstCn, context);
+
+  /* ── 기본정보 ─────────────────────────────────────────────── */
+
+  const formTtlNm = draft.formTtlNm.trim() ? "" : "폼 제목을 입력해야 저장됩니다";
+
+  /*
+   * 문자열 비교로 충분하다 — 둘 다 같은 형식(오프셋이 붙은 ISO-8601)으로만 들어온다.
+   * 그 전제를 지키는 곳은 `withServiceOffset`이다(입력 시점 · 저장 본문 두 곳). 한쪽만
+   * 오프셋이 없으면 같은 시각인데도 긴 쪽이 커서 "종료가 시작보다 빠르다"가 잘못 뜬다.
+   */
+  const rcptDt =
+    draft.rcptBgngDt && draft.rcptEndDt && draft.rcptBgngDt > draft.rcptEndDt
+      ? "접수 종료 일시가 시작보다 빠릅니다"
+      : "";
+
+  /* ── 시스템이 요구하는 문항의 삭제 (#140) ─────────────────── */
+
+  const seen = new Set(draft.qitemCpstCn.qitems.map((q) => q.qitemId));
   const removedSystemQitemIds = context.systemRequiredQitemIds.filter(
     (qitemId) => !seen.has(qitemId),
   );
 
   /* ── 저장 보류 사유 ───────────────────────────────────────── */
 
-  const firstQitemIssue = Object.values(issues).flat()[0] ?? "";
+  const { removedInUseQitemIds, firstQitemIssue } = cpst;
 
   let blockingMessage = "";
   if (pages.length === 0) {
@@ -198,7 +239,7 @@ export function validateFormDraft(
   return {
     formTtlNm,
     rcptDt,
-    qitems: issues,
+    qitems: cpst.qitems,
     removedInUseQitemIds,
     removedSystemQitemIds,
     blockingMessage,
