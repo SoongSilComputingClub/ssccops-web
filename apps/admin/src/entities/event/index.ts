@@ -1,6 +1,7 @@
 export type {
   EventCategory,
   EventDetail,
+  EventParticipant,
   EventPhase,
   EventReceiptStatus,
   EventSummary,
@@ -9,6 +10,7 @@ export {
   EVENT_PHASE_BADGE,
   EVENT_RECEIPT_BADGE,
   EVENT_STTS_BADGE_TONE,
+  PTCP_STTS_BADGE,
   eventSttsBadge,
 } from "./model/display";
 export {
@@ -31,3 +33,14 @@ export {
   updateEventCategory,
 } from "./api/event-categories";
 export type { EventCategoryCreateInput } from "./api/event-categories";
+export {
+  EVENT_PARTICIPANT_ERROR,
+  changeEventParticipantStatus,
+  fetchEventParticipants,
+  registerEventParticipant,
+} from "./api/event-participants";
+export type {
+  EventParticipantRegisterInput,
+  EventParticipantRegistration,
+  EventParticipantWarning,
+} from "./api/event-participants";

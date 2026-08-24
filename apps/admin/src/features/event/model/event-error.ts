@@ -1,4 +1,8 @@
-import { EVENT_CATEGORY_ERROR, EVENT_ERROR } from "@/entities/event";
+import {
+  EVENT_CATEGORY_ERROR,
+  EVENT_ERROR,
+  EVENT_PARTICIPANT_ERROR,
+} from "@/entities/event";
 import { API_ERROR, ApiError } from "@/shared/lib/api/client";
 
 /*
@@ -80,6 +84,75 @@ export function toEventDeleteErrorMessage(error: unknown): string {
     return "참가자가 있는 행사는 삭제할 수 없습니다 — 삭제 대신 보관으로 전환해주세요";
   }
   return toEventErrorMessage(error);
+}
+
+/**
+ * 신청(연결 폼의 응답) 목록 조회 실패 (#145 · GET /v1/events/{eventId}/applications).
+ *
+ * 폼 미연결(409)은 고장이 아니라 **행사의 상태**다 — 재시도 버튼을 주는 대신 다음 행동
+ * (폼을 만들어 연결한다)을 문구에 담고, 화면은 이 경우를 오류가 아닌 안내로 그린다.
+ */
+export function toEventApplicationErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "신청 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  if (error.code === EVENT_PARTICIPANT_ERROR.EVENT_HAS_NO_FORM) {
+    return "연결된 폼이 없습니다 — 신청을 받으려면 행사 수정에서 신청 폼을 먼저 연결해주세요";
+  }
+  return toEventErrorMessage(error);
+}
+
+/** 참가자 명단 조회 실패 */
+export function toEventParticipantErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "참가자 명단을 불러오지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+  return toEventErrorMessage(error);
+}
+
+/**
+ * 참가자 등록 실패.
+ *
+ * **정원 초과는 여기 없다.** 초과해도 등록은 성공하고(D5 — 정원은 참고치다) 성공 응답의
+ * `overCapacity`로 오므로, 실패 문구에 정원 이야기를 적으면 막힌 적 없는 일을 막혔다고
+ * 알리는 셈이 된다.
+ *
+ * ACCEPTED가 아닌 응답으로 올렸을 때의 코드는 서버가 아직 이름을 정하지 않았다
+ * (ssccops-server#158의 「응답 기반 등록 거절 코드」). 그래서 여기서 코드로 분기하지 않고
+ * default로 떨어뜨려 서버 문장을 그대로 보여 준다 — 짐작한 코드를 적어 두면 이름이 달랐을 때
+ * 조용히 빗나가고, 화면은 그 사실조차 알 수 없다.
+ */
+export function toEventParticipantRegisterErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "참가자를 등록하지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case EVENT_PARTICIPANT_ERROR.EVENT_PARTICIPANT_DUPLICATED:
+      return "이미 이 행사의 명단에 있는 회원입니다 — 참가자 명단에서 상태를 확인해주세요";
+    case EVENT_PARTICIPANT_ERROR.EVENT_HAS_NO_FORM:
+      return "연결된 폼이 없어 신청으로 등록할 수 없습니다 — 회원을 직접 추가해주세요";
+    default:
+      return toEventErrorMessage(error);
+  }
+}
+
+/** 참가자 상태 전이(대기 → 확정 승격 · 확정 → 취소) 실패 */
+export function toEventParticipantStatusErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "참가자 상태를 바꾸지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    /* 전이표 밖 — 원인이 사용자가 아니라 화면이 낡은 것이다. 다시 불러온다고 알린다 */
+    case EVENT_PARTICIPANT_ERROR.INVALID_PARTICIPANT_STATUS_TRANSITION:
+      return "이미 상태가 바뀐 참가자입니다. 최신 명단을 다시 불러옵니다";
+    case EVENT_PARTICIPANT_ERROR.EVENT_PARTICIPANT_NOT_FOUND:
+      return "명단에 없는 참가자입니다. 최신 명단을 다시 불러옵니다";
+    default:
+      return toEventErrorMessage(error);
+  }
 }
 
 /**

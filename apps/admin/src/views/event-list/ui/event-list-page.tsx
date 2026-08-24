@@ -107,6 +107,19 @@ function EventCard({ event, canManage }: { event: EventSummary; canManage: boole
         >
           수정
         </button>
+        {/*
+         * 신청·참가자로 가는 길 (#145). 폼 없는 공지형 행사에도 남긴다 — 폼 없이도 회원을
+         * 직접 명단에 올릴 수 있고(D5 수동 등록), 감추면 그 길이 화면에서 사라진다.
+         */}
+        <button
+          type="button"
+          disabled={!canManage}
+          title={canManage ? undefined : NO_MANAGE}
+          onClick={() => router.push(ROUTES.eventParticipants(event.eventId))}
+          className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          신청 · 참가자
+        </button>
         <div className="flex-1" />
         <div className="text-[13px] text-n500">수정 {formatYmd(event.mdfcnDt)}</div>
       </div>

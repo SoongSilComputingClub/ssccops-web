@@ -1,4 +1,4 @@
-import type { EventSttsCd } from "@/shared/config/codes";
+import type { EventSttsCd, PtcpSttsCd } from "@/shared/config/codes";
 
 /*
  * 행사 도메인 타입 (ssccops#139 · #140 — wave2 행사관리).
@@ -58,6 +58,30 @@ export interface EventDetail extends EventSummary {
   /** 본문_내용 (Markdown · 10만 자 상한 — 초과는 서버가 413 EVENT_CONTENT_TOO_LARGE로 거절) */
   mtxtCn: string;
   thmbUrlAddr: string | null;
+}
+
+/**
+ * GET /v1/events/{eventId}/participants 항목 — 참가자 명단 한 줄 (ssccops#146 · #147).
+ *
+ * **응답(신청)과 참가자는 다른 것이다.** 심사를 통과한 응답을 운영자가 명시적으로 올려야
+ * 명단에 한 줄이 생기고(D5 — 수동 심사), 폼 없는 행사는 응답 없이 회원을 직접 올린다.
+ * 그 근거가 `formRspnsId`이며, 수동 등록이면 null이다 — 없는 값을 만들어 내지 않는다.
+ *
+ * **삭제가 없다**(D16). 취소도 행을 지우지 않고 `ptcpSttsCd`를 옮기는 것뿐이라, 명단은
+ * "지금 확정된 사람"이 아니라 "이 행사를 거쳐 간 사람 전부"를 담는다.
+ */
+export interface EventParticipant {
+  eventPtcpId: number;
+  mbrId: number;
+  mbrNm: string;
+  stdntNo: string;
+  ptcpSttsCd: PtcpSttsCd;
+  /** 응답 기반 등록의 근거가 된 폼 응답. 수동 등록이면 null */
+  formRspnsId: number | null;
+  /** 명단에 올린 운영자. 이름은 계약에 없다(서버가 조인하지 않는다) */
+  rgtrMbrId: number;
+  /** 등록 일시 — 서버가 이 순서로 내려준다(신청 순서 참고 표시의 근거 · D5) */
+  crtDt: string;
 }
 
 /**
