@@ -40,11 +40,7 @@ export {
   toFormSaveInput,
 } from "./model/form-draft";
 export type { FormDraft, MaxSlctCntInput } from "./model/form-draft";
-export {
-  isTextQitemType,
-  validateFormDraft,
-  validateQitemCpst,
-} from "./model/form-validation";
+export { validateFormDraft, validateQitemCpst } from "./model/form-validation";
 export type { FormDraftIssues, QitemCpstIssues } from "./model/form-validation";
 export { FormSaveStatusBar } from "./ui/form-save-status";
 /* 문항 구성 편집기는 폼 편집과 템플릿 편집이 함께 쓴다 — 두 벌이면 규칙이 갈린다 (#134) */
@@ -55,13 +51,11 @@ export type {
   PublicFormStatus,
   PublicFormSubmitOutcome,
 } from "./model/use-public-form";
-export {
-  nextPageSeq,
-  pageSeqOf,
-  selectedOptions,
-  toggleOption,
-  validatePageAnswers,
-} from "./model/public-form-answers";
+/*
+ * 답 다루기(분기 · 검증 · 저장 본문)와 문항 렌더링은 `@ssccops/form-renderer`로 갔다(#152).
+ * 화면은 그 패키지에서 곧바로 가져다 쓴다 — 여기서 다시 내보내면 어드민을 거쳐야만 쓸 수 있는
+ * 것처럼 보이고, 공개 앱이 같은 함수를 부르는 앞으로의 모양과도 어긋난다.
+ */
 export { useMyResponses } from "./model/use-my-responses";
 export type { MyResponseList, MyResponseListStatus } from "./model/use-my-responses";
 export { FORM_NOT_ACCEPTING_MESSAGE } from "./model/public-form-error";

@@ -2,20 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Qitem } from "@/entities/form";
+import {
+  QitemCard,
+  nextPageSeq,
+  pageSeqOf,
+  validatePageAnswers,
+} from "@ssccops/form-renderer";
 import {
   FORM_NOT_ACCEPTING_MESSAGE,
   FormSaveStatusBar,
-  nextPageSeq,
-  pageSeqOf,
-  selectedOptions,
-  toggleOption,
   usePublicForm,
-  validatePageAnswers,
 } from "@/features/form";
-import { isChoiceQitemType } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
-import { cn } from "@/shared/lib/cn";
 import { formatDt } from "@/shared/lib/date";
 import { EmptyState, flash } from "@/shared/ui";
 import { MyResponsesPanel } from "./my-responses-panel";
@@ -262,89 +260,6 @@ export function PublicFormPage({ formId }: { formId: number }) {
 }
 
 /*
- * 문항 한 칸.
- *
- * 값의 모양은 **저장 계약 그대로**다 — 다중선택만 배열이고 나머지는 문자열이다. 예전에는
- * 단일선택도 `[option]`으로 들고 있다가 서버가 벗겨 굳혔는데, 그러면 자동 저장이 복원해 온 값
- * (문자열)과 화면이 만든 값(배열)의 모양이 달라 같은 답인데도 저장이 한 번 더 나간다.
+ * 문항 한 칸(`QitemCard`)은 `@ssccops/form-renderer`에 있다(#152) — 공개 앱이 신청 흐름을 붙일 때
+ * 같은 것을 그려야 하고, 복사하면 선택 토글·최대 선택 수 같은 규칙이 두 벌이 된다.
  */
-function QitemCard({
-  qitem,
-  value,
-  error,
-  onChange,
-}: {
-  qitem: Qitem;
-  value: string | string[] | undefined;
-  error?: string;
-  onChange: (value: string | string[]) => void;
-}) {
-  const selected = selectedOptions(value);
-  const text = typeof value === "string" ? value : "";
-
-  return (
-    <div
-      className={cn(
-        "rounded-2xl bg-surface px-[18px] py-4",
-        error ? "shadow-[0_0_0_1px_#f04452]" : "shadow-[0_0_0_1px_#e5e8eb]",
-      )}
-    >
-      <div className="text-[16px] font-semibold">
-        {qitem.qitemLblNm}
-        {qitem.reqYn && <span className="ml-1 text-danger">*</span>}
-      </div>
-      {isChoiceQitemType(qitem.qitemTypeCd) && (
-        <div className="mt-[2px] text-[12.5px] text-n500">
-          {qitem.qitemTypeCd === "SINGLE_CHOICE"
-            ? "하나만 선택"
-            : `여러 개 선택 가능${qitem.maxSlctCnt ? ` · 최대 ${qitem.maxSlctCnt}개` : ""}`}
-        </div>
-      )}
-      {qitem.ptrnCn && (
-        <div className="mt-[2px] text-[12.5px] text-n500">형식 · {qitem.ptrnNm}</div>
-      )}
-
-      {qitem.qitemTypeCd === "LONG_TEXT" ? (
-        <textarea
-          value={text}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="자유롭게 작성해주세요"
-          className="mt-3 min-h-[104px] w-full resize-y rounded-[12px] border border-line px-[11px] py-[9px] text-[16px] outline-none placeholder:text-n500 focus:border-accent lg:text-[15.5px]"
-        />
-      ) : qitem.qitemTypeCd === "SHORT_TEXT" || qitem.qitemTypeCd === "DATE" ? (
-        <input
-          type={qitem.qitemTypeCd === "DATE" ? "date" : "text"}
-          value={text}
-          onChange={(e) => onChange(e.target.value)}
-          className="mt-3 w-full rounded-[12px] border border-line px-[11px] py-[9px] text-[16px] outline-none placeholder:text-n500 focus:border-accent lg:text-[15.5px]"
-        />
-      ) : (
-        <div className="mt-3 flex flex-col gap-1">
-          {qitem.optionList.map((o) => {
-            const picked = selected.includes(o);
-            return (
-              <div
-                key={o}
-                onClick={() => onChange(toggleOption(qitem, value, o))}
-                className={cn(
-                  "flex cursor-pointer items-center gap-[10px] rounded-[12px] px-[10px] py-[13px] text-[15px] lg:py-[11px]",
-                  picked ? "bg-accent/8" : "hover:bg-black/2",
-                )}
-              >
-                <div
-                  className={cn(
-                    "size-[18px] flex-none border",
-                    qitem.qitemTypeCd === "SINGLE_CHOICE" ? "rounded-full" : "rounded-[5px]",
-                    picked ? "border-accent bg-accent" : "border-line-strong",
-                  )}
-                />
-                <span className="min-w-0 break-words">{o}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      {error && <div className="mt-2 text-[13.5px] text-danger">{error}</div>}
-    </div>
-  );
-}

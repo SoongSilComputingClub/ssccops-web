@@ -1,3 +1,4 @@
+import type { Qitem, QitemCpstCn } from "@ssccops/form-renderer";
 import { isChoiceQitemType, type FormSttsCd } from "@/shared/config/codes";
 import { ApiError, apiFetch } from "@/shared/lib/api/client";
 import { withServiceOffset } from "@/shared/lib/date";
@@ -7,8 +8,6 @@ import type {
   FormReceiptStatus,
   FormResponseSummary,
   FormSummary,
-  Qitem,
-  QitemCpstCn,
 } from "../model/types";
 
 /*

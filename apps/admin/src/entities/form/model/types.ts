@@ -1,37 +1,11 @@
-import type { FormSttsCd, QitemTypeCd } from "@/shared/config/codes";
+import type { QitemCpstCn } from "@ssccops/form-renderer";
+import type { FormSttsCd } from "@/shared/config/codes";
 
-/** form.qitem_cpst_cn(JSONB) 내부의 페이지 구성 */
-export interface FormPage {
-  pageTtl: string;
-  pageDescCn: string;
-}
-
-/** form.qitem_cpst_cn(JSONB) 내부의 문항 */
-export interface Qitem {
-  /** 문항 식별자 — 응답(rspnsCn)의 key가 된다 */
-  qitemId: string;
-  qitemLblNm: string;
-  qitemTypeCd: QitemTypeCd;
-  /** 필수 응답 여부 */
-  reqYn: boolean;
-  /** 0-based 페이지 인덱스. 페이지가 1개인 폼은 생략 */
-  pageSeq?: number;
-  optionList: string[];
-  /** 단일선택 분기: 선택지 → 이동할 페이지 인덱스 */
-  branchMap?: Record<string, number>;
-  /** 입력 형식 검증 정규식 */
-  ptrnCn?: string;
-  ptrnNm?: string;
-  ptrnMsgCn?: string;
-  /** 다중선택 최대 선택 수 */
-  maxSlctCnt?: number;
-}
-
-/** 내용J(JSONB) — 해당 폼에서 실제 사용하는 문항 구조 */
-export interface QitemCpstCn {
-  pages: FormPage[];
-  qitems: Qitem[];
-}
+/*
+ * 문항 구성(JSONB) 안의 타입 — `FormPage` · `Qitem` · `QitemCpstCn` — 은 여기 없다.
+ * 공개 앱도 같은 구성을 그리므로 `@ssccops/form-renderer`로 옮겼다(#152). 이 파일에는
+ * **폼 한 건의 조회 모델**만 남는다 — 운영 화면이 쓰는 모양이라 어드민 밖으로 나갈 것이 아니다.
+ */
 
 /* ── 서버 조회 모델 (ssccops-server #32) ────────────────────────
  *

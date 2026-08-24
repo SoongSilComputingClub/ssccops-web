@@ -1,5 +1,5 @@
+import type { RspnsCn } from "@ssccops/form-renderer";
 import { apiFetch } from "@/shared/lib/api/client";
-import type { RspnsCn } from "../model/types";
 
 /*
  * 작성 중 응답(임시저장)·제출 API (ssccops-server #35 · #36).

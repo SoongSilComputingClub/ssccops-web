@@ -1,10 +1,13 @@
-import type { Qitem, QitemCpstCn } from "@/entities/form";
-import type { RspnsCn } from "@/entities/response";
-import { isChoiceQitemType } from "@/shared/config/codes";
-import { isTextQitemType } from "./form-validation";
+import { isChoiceQitemType, isTextQitemType } from "./qitem-type";
+import type { Qitem, QitemCpstCn, RspnsCn } from "./types";
 
 /*
  * 응답자 화면의 답 다루기 — 저장 형태 · 분기 경로 · 제출 전 검증.
+ *
+ * ── 이 파일이 패키지에 있는 이유 ──────────────────────────────
+ * 아래 규칙은 전부 **서버 `ResponseAnswerValidator`와 한 벌로 맞춰 둔 것**이다. 앱마다 복사하면
+ * 한쪽만 고쳐지는 순간 "웹은 통과시키는데 서버가 거절하는" 폼이 생기고, 응답자는 어느 칸을
+ * 채워야 하는지 알 수 없는 상태에 놓인다. 어드민과 공개 앱이 같은 함수를 부르게 한다.
  *
  * ── 저장 형태를 화면 상태에서부터 맞춘다 ──────────────────────
  * 저장 계약은 **다중선택만 배열, 나머지는 문자열**이다(ssccops-server ResponseContent).

@@ -28,7 +28,8 @@
 #
 # 주의:
 #   - 이 저장소는 pnpm workspace + Turborepo 모노레포다. 앱은 apps/* 아래에 있고
-#     (apps/admin = 운영관리 어드민, apps/events = 공개 행사 앱)
+#     (apps/admin = 운영관리 어드민, apps/events = 공개 행사 앱), 공유 패키지는
+#     packages/* 아래에 있다(packages/form-renderer = 폼 렌더러 · #152).
 #     pnpm install은 반드시 워크스페이스 루트에서 한다(락파일도 루트 하나뿐이다).
 #     검증 명령은 전부 **루트 turbo**로 돌린다 — `pnpm typecheck`(typegen을 선행 태스크로
 #     물고 있다) · `pnpm lint` · `pnpm build`. 앱을 새로 추가해도 이 워크플로를 고칠 필요가
@@ -124,12 +125,12 @@ jobs:
 
       # 테스트 러너를 아직 도입하지 않았다. 테스트 파일이 생기기 전까지는 이 job이
       # 통과만 하고 지나가며, 파일이 생겼는데 스크립트가 없으면 그때 드러나게 둔다.
-      # 앱 하나가 아니라 apps/*/src 전체를 본다 — 새 앱의 첫 테스트가 조용히 안 돌면
-      # 러너를 붙였다고 착각한 채 지나간다.
+      # 앱 하나가 아니라 apps/*/src 와 packages/*/src 전체를 본다 — 새 앱·새 공유 패키지의
+      # 첫 테스트가 조용히 안 돌면 러너를 붙였다고 착각한 채 지나간다.
       - name: Check for test files
         id: check-tests
         run: |
-          if find apps/*/src -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.spec.ts' -o -name '*.spec.tsx' | grep -q .; then
+          if find apps/*/src packages/*/src -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.spec.ts' -o -name '*.spec.tsx' | grep -q .; then
             echo "has_tests=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_tests=false" >> "$GITHUB_OUTPUT"
@@ -145,7 +146,9 @@ jobs:
         if: always()
         with:
           name: test-results
-          path: apps/*/coverage/
+          path: |
+            apps/*/coverage/
+            packages/*/coverage/
           if-no-files-found: ignore
 
   # ==========================================================================
@@ -198,9 +201,9 @@ jobs:
         with:
           args: >
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT }}
-            -Dsonar.sources=apps/admin/src,apps/events/src
+            -Dsonar.sources=apps/admin/src,apps/events/src,packages/form-renderer/src
             -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/*.test.ts,**/*.test.tsx
-            -Dsonar.typescript.tsconfigPath=apps/admin/tsconfig.json,apps/events/tsconfig.json
+            -Dsonar.typescript.tsconfigPath=apps/admin/tsconfig.json,apps/events/tsconfig.json,packages/form-renderer/tsconfig.json
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
       - name: SonarQube Quality Gate + PR Comment (Community)

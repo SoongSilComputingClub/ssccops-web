@@ -1,3 +1,4 @@
+import type { RspnsCn } from "@ssccops/form-renderer";
 import type {
   MbrGrdCd,
   MbrSttsCd,
@@ -5,11 +6,11 @@ import type {
   RspnsSttsCd,
 } from "@/shared/config/codes";
 
-/**
- * 응답_내용(내용J) — 문항 ID(qitemId)를 key로 저장한다.
- * 다중선택 문항은 배열, 그 외는 문자열.
+/*
+ * 응답_내용(내용J) 타입 `RspnsCn`은 여기 없다 — `@ssccops/form-renderer`가 정의한다(#152).
+ * 저장 형태(다중선택만 배열)는 응답자 화면이 답을 만드는 규칙과 한 몸이라 렌더러 쪽에 둔다.
+ * 이 파일에는 **운영자가 응답을 심사할 때 쓰는 조회 모델**만 남는다.
  */
-export type RspnsCn = Record<string, string | string[]>;
 
 /* ── 서버 조회 모델 (ssccops-server #35 · #36 · #37) ─────────────
  *
