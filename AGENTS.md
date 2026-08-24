@@ -10,11 +10,21 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENTS.md
 
-SSCC(숭실컴퓨팅클럽) 운영관리 웹 — **pnpm workspace + Turborepo 모노레포**.
-운영관리 어드민 앱은 `apps/admin`에 있다(Next.js 16 App Router / React 19 / TypeScript 5 /
-Tailwind v4). `packages/*`는 공유 패키지 자리(아직 비어 있다), 공개 행사 앱은 후속 이슈로
-`apps/`에 추가될 예정이다. 백엔드는 별도 저장소 **`ssccops-server`**(Spring Boot), 인증은
-Supabase Auth(Google OAuth), 배포는 Cloudflare Workers(OpenNext).
+SSCC(숭실컴퓨팅클럽) 웹 — **pnpm workspace + Turborepo 모노레포**. 앱은 둘이다.
+
+| 앱 | 워크스페이스 | 무엇 |
+| --- | --- | --- |
+| `apps/admin` | `@ssccops/admin` | 운영관리 어드민 — 로그인·권한이 있는 내부 화면 |
+| `apps/events` | `@ssccops/events` | 공개 행사 앱 — **로그인 없이** 보는 행사 목록·상세 (#141) |
+
+둘 다 Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4이고 같은 디자인 토큰
+(Toss 라이트 · Pretendard)을 쓴다. `packages/*`는 공유 패키지 자리(아직 비어 있다 — 토큰·
+`apiFetch`·행사 타입이 지금은 두 앱에 각각 있고, 추출은 후속 이슈다). 백엔드는 별도 저장소
+**`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth · 어드민만), 배포는
+Cloudflare Workers(OpenNext).
+
+**아래 문서는 별도로 밝히지 않는 한 `apps/admin` 이야기다.** 공개 앱만의 규약은
+「공개 행사 앱(`apps/events`)」 절에 모아 두었다.
 
 > 위의 `nextjs-agent-rules` 블록은 `next dev`가 스스로 써넣는다. 지우면 uncommitted 변경으로
 > 되살아나므로 **그대로 두고 그 바깥에** 쓴다. 개인 로컬 메모(포트·`.env.local`·증상별 원인
@@ -24,16 +34,15 @@ Supabase Auth(Google OAuth), 배포는 Cloudflare Workers(OpenNext).
 
 ```bash
 pnpm install --frozen-lockfile   # 반드시 워크스페이스 루트에서 (락파일은 루트 하나)
-cd apps/admin
-pnpm exec next typegen           # ← 빠뜨리기 쉬운 단계
-pnpm exec tsc --noEmit
+pnpm typecheck                   # turbo run typecheck — typegen 을 선행 태스크로 물고 있다
 pnpm lint
-cd ../.. && pnpm build           # 루트 build = turbo run build
+pnpm build
 ```
 
-루트에서 `pnpm typecheck`·`pnpm lint`·`pnpm build`(전부 `turbo run …` 위임)로 돌려도 같다 —
-turbo의 `typecheck`는 `typegen`을 선행 태스크로 물고 있다. CI(`integrate.yml`)는 앱 단위
-명령을 `working-directory: apps/admin`에서, build를 루트 turbo로 돌린다.
+셋 다 `turbo run …` 위임이라 **앱 전부**를 돈다. 한 앱만 돌리려면 그 앱 디렉터리에서
+`pnpm exec next typegen && pnpm exec tsc --noEmit && pnpm lint` 순서를 지킨다(typegen 이 먼저다).
+CI(`integrate.yml`)도 같은 루트 명령을 쓴다 — 앱을 새로 추가해도 워크플로를 고칠 일이 없게
+한 것이므로, 검증 단계에 앱 이름을 다시 적어 넣지 말 것.
 
 - **`pnpm lint`만 돌리면 타입 오류를 CI에서 처음 만난다.** ESLint는 타입 검사를 하지 않는다.
 - `next typegen`이 먼저인 이유: `PageProps`·`LayoutProps` 같은 전역 타입은 Next가 `.next/types`
@@ -41,7 +50,7 @@ turbo의 `typecheck`는 `typegen`을 선행 태스크로 물고 있다. CI(`inte
   `tsc`가 `Cannot find name 'PageProps'`로 죽는다(`integrate.yml`의 lint job과 같은 순서다).
 - Turborepo 기본 env 모드는 strict다 — 빌드가 새 환경변수를 읽게 되면 `turbo.json`의
   `build.env`(현재 `NEXT_PUBLIC_*`)에 선언해야 태스크에 전달되고 캐시 키에도 반영된다.
-- **테스트 러너는 아직 없다.** CI의 test job은 `apps/admin/src` 아래에 `*.test.*`·`*.spec.*`가
+- **테스트 러너는 아직 없다.** CI의 test job은 `apps/*/src` 아래에 `*.test.*`·`*.spec.*`가
   있을 때만 돈다. 테스트를 처음 추가하는 사람이 러너와 `test:coverage` 스크립트를 함께 붙인다.
 - SonarQube 분석은 토큰이 있을 때만 돌고 build를 막지 않는다. Prettier 단계는 없다(의존성도
   설정 파일도 없다 — 도입하려면 둘을 먼저 추가하고 워크플로에 단계를 되살린다).
@@ -58,6 +67,42 @@ app → views → features → entities → shared     (단방향)
   화면) · `(auth)`(로그인·가입) · `(public)`(공개 폼) · `auth/`(OAuth 콜백 라우트 핸들러)다.
 - 슬라이스 내부: `entities/<slice>/{api,model}` · `features/<slice>/{model,ui}` · `views/<slice>/ui`.
 - 화면 경로를 문자열로 적지 않고 `shared/config/routes.ts`의 `ROUTES`를 쓴다.
+
+두 앱이 같은 레이어 이름을 쓰지만 **소스를 공유하지 않는다** — 각자 `src/` 아래에 자기
+`shared`·`entities`를 갖는다. 한쪽에서 고친 것이 다른 쪽에 저절로 반영되지 않으므로, 토큰·
+행사 타입처럼 겹치는 것을 고칠 때는 두 곳을 함께 본다(공유 패키지 추출은 후속 이슈다).
+
+## 공개 행사 앱 (`apps/events`) — #141
+
+로그인 없이 누구나 보는 행사 목록(`/`)·상세(`/events/{eventId}`)다. wave2 결정 D1(비로그인
+완전 공개) · D7(SSR/OG) · D12(md 안전 렌더링)을 그대로 구현한 것이라, 아래는 취향이 아니라
+결정 사항이다.
+
+- **로그인·권한이라는 개념이 없다.** Supabase도 미들웨어도 붙이지 않는다. `shared/api/client.ts`는
+  어드민의 `apiFetch`를 복사한 것이 아니라 **봉투 벗기기와 `ApiError`만** 남긴 최소 구현이다 —
+  401·403 리다이렉트를 옮겨 오면 로그인 화면이 없는 앱에 로그인으로 가는 길만 생긴다.
+- **전 화면이 서버 컴포넌트다.** 상세를 SSR로 그리는 이유가 OG 메타태그다(카카오톡·에타 크롤러는
+  자바스크립트를 돌리지 않는다). 필터 칩도 버튼이 아니라 `Link`라서 이 앱에는 `"use client"`가
+  한 곳도 없다 — 상태를 쥐어야 할 일이 생기기 전까지 이 상태를 유지하는 편이 낫다.
+- **본문 Markdown은 원시 HTML을 해석하지 않는다**(D12). `react-markdown`의 기본 동작이 그것이고,
+  안전장치는 **`rehype-raw`를 쓰지 않는 것** 하나다. 표·체크박스가 필요해 플러그인을 더할 일이
+  생기면 sanitize를 함께 걸 것.
+- **공개 분류 목록 엔드포인트가 없다.** 필터 칩은 게시된 행사들이 실제로 쓰는 분류에서 뽑는다
+  (`toClassifications`) — 그래서 목록을 두 번 조회한다(필터 건 것 + 칩용 전체). 행사가 없는
+  분류는 칩에도 서지 않는데, 눌러도 빈 목록만 나올 칩을 세울 이유가 없다.
+- **없는 행사와 아직 공개하지 않은 행사를 화면이 가르지 않는다.** 둘 다 404(`not-found.tsx`)로
+  보낸다 — 문구로 가르면 게시 전 행사의 존재가 주소만으로 새어 나간다.
+- 코드값 표시명은 `entities/event/model/display.ts` 한 곳에서 만든다. 어드민과 어휘가 갈리는
+  자리가 있다(`ACCEPTING` → 어드민 '접수중' · 공개 '모집 중'). 화면이 보는 사람이 다르므로
+  일부러 다르게 둔 것이고, 코드값 자체는 어느 쪽에도 노출하지 않는다.
+- 일시는 서버가 준 문자열을 **잘라 쓴다**(`shared/lib/date.ts`). `new Date(...)`로 파싱해 로컬
+  시간대로 그리면 서울 밖에서 연 사람에게 다른 시각이 보인다.
+- 신청 흐름(로그인·간편가입·신청서)은 후속 이슈다. 지금 상세의 신청 버튼은 **잠긴 채로 서 있고**
+  준비 중임을 안내한다 — 감추면 신청 방법이 없는 공지형 행사와 구별되지 않는다.
+- 배포 설정 파일(`open-next.config.ts`·`wrangler.jsonc`)은 어드민과 같은 방식으로 준비만 해 뒀다.
+  **Cloudflare 리소스 생성과 Workers Builds 연결은 아직 안 돼 있다**(후속).
+- 개발 서버 포트는 **3001**로 박아 뒀다(`next dev -p 3001`). 루트 `pnpm dev`는 두 앱을 함께
+  띄우는데, 둘 다 기본 포트를 쓰면 나중에 뜬 쪽이 매번 다른 포트로 밀려 주소가 흔들린다.
 
 ## 서버 연동 규약
 
@@ -193,7 +238,8 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
 - **`CLAUDE.md`와 `AGENTS.md`의 자동 생성 블록은 `next dev`가 다시 써넣는다.** diff에서 지워도
   되살아나므로 그대로 두고 커밋한다.
 - **`.env*`는 통째로 ignore되고 `.env.example`만 예외다.** env 파일은 앱 디렉터리
-  기준이다 — `apps/admin/.env.local`처럼 앱 안에 둔다(루트에 두면 Next가 읽지 않는다).
+  기준이다 — `apps/admin/.env.local`·`apps/events/.env.local`처럼 앱 안에 각각 둔다
+  (루트에 하나 두면 Next가 읽지 않는다 — 두 앱을 함께 띄울 때 빠뜨리기 쉽다).
   `NEXT_PUBLIC_*`은 빌드 타임에 인라인되므로 **값을 바꾸면 `pnpm dev`를 재시작해야** 반영된다.
 - **`README.md`에는 PoC 시절 서술이 남아 있다**("API 미연동 PoC", zustand 시드). 지금은 대부분의
   도메인이 서버 연동이고 목 스토어는 `features/approval/model/use-approval-actions.ts`(어디서도

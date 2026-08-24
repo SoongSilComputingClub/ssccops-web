@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/*
+ * 공개 행사 앱 디자인 토큰 — 어드민(apps/admin)과 **같은 값**이다(Toss 라이트 테마).
+ * 두 앱이 한 서비스로 보여야 하므로 색·서체 어휘를 나누지 않는다. 공유 패키지로 뽑는 것은
+ * 후속 이슈이고, 지금 손으로 맞춘 값이라 어느 한쪽을 고치면 다른 쪽도 함께 고친다.
+ */
+@theme {
+  --color-*: initial;
+  --color-bg: #f2f4f6;
+  --color-surface: #ffffff;
+  --color-ink: #191f28;
+  --color-accent: #3182f6;
+  --color-accent-strong: #1b64da;
+  --color-accent-soft: #e8f2fe;
+  --color-amber: #c2620a;
+  --color-amber-soft: #fff4e6;
+  --color-n300: #4e5968;
+  --color-n400: #6b7684;
+  --color-n500: #8b95a1;
+  --color-line: #e5e8eb;
+  --color-line-strong: #d1d6db;
+  --color-danger: #f04452;
+  --color-success: #00b25f;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system,
+    BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d6db;
+  border-radius: 12px;
+}
