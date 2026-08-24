@@ -27,11 +27,13 @@
 #   - NEXT_PUBLIC_SUPABASE_ANON_KEY : Supabase anon key
 #
 # 주의:
-#   - 이 저장소는 pnpm workspace + Turborepo 모노레포다. 어드민 앱은 apps/admin에 있고
+#   - 이 저장소는 pnpm workspace + Turborepo 모노레포다. 앱은 apps/* 아래에 있고
+#     (apps/admin = 운영관리 어드민, apps/events = 공개 행사 앱)
 #     pnpm install은 반드시 워크스페이스 루트에서 한다(락파일도 루트 하나뿐이다).
-#     앱 단위 명령(typegen·tsc·eslint·test)은 working-directory: apps/admin에서 돌리고,
-#     build는 루트 `pnpm build`(= turbo run build)로 돌린다 — turbo.json이 NEXT_PUBLIC_*
-#     env 선언과 .next 캐시 제외를 관리한다.
+#     검증 명령은 전부 **루트 turbo**로 돌린다 — `pnpm typecheck`(typegen을 선행 태스크로
+#     물고 있다) · `pnpm lint` · `pnpm build`. 앱을 새로 추가해도 이 워크플로를 고칠 필요가
+#     없게 하려는 것이다(앱 이름을 여기에 적어 두면 새 앱이 조용히 검증에서 빠진다).
+#     turbo.json이 NEXT_PUBLIC_* env 선언과 .next 캐시 제외를 관리한다.
 #   - 이 저장소는 pnpm을 쓴다(pnpm-lock.yaml). npm ci / cache:'npm' 을 쓰면
 #     package-lock.json이 없어 setup-node 단계에서 곧바로 실패한다.
 #   - pnpm/action-setup은 반드시 setup-node보다 먼저 와야 cache:'pnpm'이 동작한다.
@@ -84,16 +86,12 @@ jobs:
       # PageProps/LayoutProps 같은 전역 타입은 Next.js가 .next/types 아래에 생성하고
       # next-env.d.ts가 그것을 참조한다. 새로 체크아웃한 CI에는 .next가 없어 tsc가
       # 'Cannot find name PageProps'로 죽으므로, 전체 빌드 없이 타입만 먼저 만든다.
-      - name: Generate Next.js route types
-        working-directory: apps/admin
-        run: pnpm exec next typegen
+      # 루트 `pnpm typecheck`(= turbo run typecheck)는 typegen을 선행 태스크로 물고 있어
+      # 앱마다 typegen → tsc 순서가 자동으로 지켜진다.
+      - name: Run TypeScript Check (typegen + tsc, 모든 앱)
+        run: pnpm typecheck
 
-      - name: Run TypeScript Check
-        working-directory: apps/admin
-        run: pnpm exec tsc --noEmit
-
-      - name: Run ESLint
-        working-directory: apps/admin
+      - name: Run ESLint (모든 앱)
         run: pnpm lint
 
   # ==========================================================================
@@ -126,11 +124,12 @@ jobs:
 
       # 테스트 러너를 아직 도입하지 않았다. 테스트 파일이 생기기 전까지는 이 job이
       # 통과만 하고 지나가며, 파일이 생겼는데 스크립트가 없으면 그때 드러나게 둔다.
+      # 앱 하나가 아니라 apps/*/src 전체를 본다 — 새 앱의 첫 테스트가 조용히 안 돌면
+      # 러너를 붙였다고 착각한 채 지나간다.
       - name: Check for test files
         id: check-tests
-        working-directory: apps/admin
         run: |
-          if find src -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.spec.ts' -o -name '*.spec.tsx' | grep -q .; then
+          if find apps/*/src -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.spec.ts' -o -name '*.spec.tsx' | grep -q .; then
             echo "has_tests=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_tests=false" >> "$GITHUB_OUTPUT"
@@ -139,15 +138,14 @@ jobs:
 
       - name: Run Test with Coverage (lcov)
         if: steps.check-tests.outputs.has_tests == 'true'
-        working-directory: apps/admin
-        run: pnpm test:coverage
+        run: pnpm -r test:coverage
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-results
-          path: apps/admin/coverage/
+          path: apps/*/coverage/
           if-no-files-found: ignore
 
   # ==========================================================================
@@ -200,9 +198,9 @@ jobs:
         with:
           args: >
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT }}
-            -Dsonar.sources=apps/admin/src
+            -Dsonar.sources=apps/admin/src,apps/events/src
             -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/*.test.ts,**/*.test.tsx
-            -Dsonar.typescript.tsconfigPath=apps/admin/tsconfig.json
+            -Dsonar.typescript.tsconfigPath=apps/admin/tsconfig.json,apps/events/tsconfig.json
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
       - name: SonarQube Quality Gate + PR Comment (Community)
