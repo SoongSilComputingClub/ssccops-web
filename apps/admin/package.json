@@ -1,5 +1,5 @@
 {
-  "name": "ssccops-web",
+  "name": "@ssccops/admin",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typegen": "next typegen",
+    "typecheck": "tsc --noEmit",
     "preview": "opennextjs-cloudflare build -e dev && opennextjs-cloudflare preview -e dev",
     "deploy:dev": "opennextjs-cloudflare build -e dev && opennextjs-cloudflare deploy -e dev",
     "deploy:prod": "opennextjs-cloudflare build -e prod && opennextjs-cloudflare deploy -e prod",
@@ -31,12 +33,5 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "wrangler": "^4.122.0"
-  },
-  "packageManager": "pnpm@10.29.3",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "workerd"
-    ]
   }
 }

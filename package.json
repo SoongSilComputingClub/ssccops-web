@@ -1,0 +1,15 @@
+{
+  "name": "ssccops-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.8"
+  },
+  "packageManager": "pnpm@10.29.3"
+}

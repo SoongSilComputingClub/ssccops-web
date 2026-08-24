@@ -1,0 +1,22 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "typegen": {
+      "cache": false,
+      "outputs": [".next/types/**", "next-env.d.ts"]
+    },
+    "typecheck": {
+      "dependsOn": ["typegen"]
+    },
+    "lint": {},
+    "build": {
+      "dependsOn": ["^build"],
+      "env": ["NEXT_PUBLIC_*"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}
