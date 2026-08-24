@@ -1,4 +1,9 @@
-import { FORM_ERROR, FORM_LABEL_ERROR } from "@/entities/form";
+import {
+  FORM_ERROR,
+  FORM_LABEL_ERROR,
+  SYSTEM_FORM_DELETE_LOCKED,
+  SYSTEM_FORM_QITEM_LOCKED,
+} from "@/entities/form";
 import { API_ERROR, ApiError } from "@/shared/lib/api/client";
 
 /**
@@ -27,6 +32,15 @@ export function toFormErrorMessage(error: unknown): string {
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
       return "폼을 다룰 권한이 없습니다 — 폼 조회(FORM_READ) 권한이 필요합니다";
+    /*
+     * 시스템 폼 잠금 두 가지(서버 #140)를 여기서 함께 받는다. 다른 폼 오류 매핑들이 전부 이
+     * 함수를 default로 두고 있어, 어느 경로로 들어오든 **화면이 미리 그린 잠금과 같은 문장**이
+     * 나온다 — 화면 판단을 우회한 요청(주소창·오래된 탭)이 여기 걸린다.
+     */
+    case FORM_ERROR.SYSTEM_FORM_IMMUTABLE:
+      return SYSTEM_FORM_DELETE_LOCKED;
+    case FORM_ERROR.SYSTEM_FORM_CONTRACT_VIOLATION:
+      return SYSTEM_FORM_QITEM_LOCKED;
     default:
       return error.message;
   }

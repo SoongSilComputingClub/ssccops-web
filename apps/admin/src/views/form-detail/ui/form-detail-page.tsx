@@ -4,6 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FORM_RECEIPT_BADGE,
+  SYSTEM_FORM_BADGE,
+  SYSTEM_FORM_DELETE_LOCKED,
+  SYSTEM_FORM_DUPLICATE_NOTE,
+  SYSTEM_FORM_OPEN_PARTS,
   type FormDetail,
   type FormPage,
   type Qitem,
@@ -236,8 +240,12 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
           <div className="flex flex-col gap-4">
             <Card>
-              <div className="flex items-center gap-2">
+              {/* 375px에서 배지가 둘로 늘면 한 줄에 들어가지 않는다 — 접히게 둔다 */}
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge tone={badge.tone}>{badge.label}</Badge>
+                {form.sysYn && (
+                  <Badge tone={SYSTEM_FORM_BADGE.tone}>{SYSTEM_FORM_BADGE.label}</Badge>
+                )}
                 <span className="font-mono text-[13px] text-n500">
                   폼 #{form.formId}
                 </span>
@@ -249,6 +257,13 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 items={[
                   { k: FIELD_LABEL.receiptStartAt, v: formatDt(form.rcptBgngDt) || "미설정" },
                   { k: FIELD_LABEL.receiptEndAt, v: formatDt(form.rcptEndDt) || "미설정" },
+                  /*
+                   * 문항 버전은 서버가 줄 때만 그린다. 값이 없는데 '1'로 채우면 아직 한 번도
+                   * 바꾸지 않은 폼처럼 보이는데, 그것은 웹이 알 수 없는 사실이다.
+                   */
+                  ...(form.qitemVer !== null
+                    ? [{ k: FIELD_LABEL.qitemVersion, v: `v${form.qitemVer}` }]
+                    : []),
                   // 서버가 mbr을 조인해 준 이름 — 회원 목록을 따로 뒤지지 않는다
                   { k: FIELD_LABEL.creator, v: form.creatr.mbrNm },
                   { k: FIELD_LABEL.createdAt, v: formatYmd(form.crtDt) },
@@ -262,6 +277,21 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                       {l.lblNm}
                     </Pill>
                   ))}
+                </div>
+              )}
+              {/*
+                시스템 폼 안내.
+                **잠긴 것만 말하지 않는다** — 그러면 폼 전체가 굳은 줄 알고 아무도 손대지
+                않는다. 실제로 막히는 것은 삭제와 시스템이 쓰는 문항뿐이라, 회차마다 바꾸는
+                값들이 열려 있다는 사실을 같은 상자에 적는다 (권한 트리 화면과 같은 방식).
+
+                이 화면에는 삭제 버튼이 없어(서버에도 폼 삭제 경로가 없다) 잠글 버튼 대신
+                안내가 그 자리를 대신한다.
+              */}
+              {form.sysYn && (
+                <div className="mt-3 rounded-[12px] bg-bg px-[14px] py-[10px] text-[13px] leading-[1.6] text-n400">
+                  <Badge tone={SYSTEM_FORM_BADGE.tone}>{SYSTEM_FORM_BADGE.label}</Badge>{" "}
+                  {SYSTEM_FORM_DELETE_LOCKED}. {SYSTEM_FORM_OPEN_PARTS}.
                 </div>
               )}
               <div className="mt-4 flex gap-2">
@@ -279,7 +309,14 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                   variant="ghost"
                   className="flex-1"
                   disabled={duplication.pending || !canWrite}
-                  title={canWrite ? undefined : NO_WRITE}
+                  /* 시스템 폼도 복제는 열려 있다 — 사본이 일반 폼이 된다는 것만 미리 알린다 */
+                  title={
+                    !canWrite
+                      ? NO_WRITE
+                      : form.sysYn
+                        ? SYSTEM_FORM_DUPLICATE_NOTE
+                        : undefined
+                  }
                   onClick={() => void runDuplicate()}
                 >
                   {duplication.pending ? "복제하는 중…" : "복제"}

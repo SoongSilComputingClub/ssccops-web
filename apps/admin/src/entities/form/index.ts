@@ -11,7 +11,15 @@ export type {
   Qitem,
   QitemCpstCn,
 } from "./model/types";
-export { FORM_RECEIPT_BADGE } from "./model/display";
+export {
+  FORM_RECEIPT_BADGE,
+  QITEM_VERSION_NOTE,
+  SYSTEM_FORM_BADGE,
+  SYSTEM_FORM_DELETE_LOCKED,
+  SYSTEM_FORM_DUPLICATE_NOTE,
+  SYSTEM_FORM_OPEN_PARTS,
+  SYSTEM_FORM_QITEM_LOCKED,
+} from "./model/display";
 export {
   FORM_ERROR,
   changeFormStatus,

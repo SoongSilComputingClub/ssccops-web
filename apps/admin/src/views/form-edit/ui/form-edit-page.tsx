@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Qitem } from "@/entities/form";
+import {
+  QITEM_VERSION_NOTE,
+  SYSTEM_FORM_BADGE,
+  SYSTEM_FORM_DELETE_LOCKED,
+  SYSTEM_FORM_OPEN_PARTS,
+  SYSTEM_FORM_QITEM_LOCKED,
+  type Qitem,
+} from "@/entities/form";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import {
@@ -27,6 +34,7 @@ import {
 import { fromInput, toInput, withServiceOffset } from "@/shared/lib/date";
 import { ROUTES } from "@/shared/config/routes";
 import {
+  Badge,
   Button,
   Card,
   Chip,
@@ -172,12 +180,24 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
      * 페이지를 지우면 그 페이지의 문항도 함께 사라진다. 응답이 달린 문항이 섞여 있으면
      * 서버가 409로 막을 요청이므로 여기서 먼저 알린다.
      */
-    const removed = qitems
+    const pageQitemIds = qitems
       .filter((q) => (q.pageSeq ?? 0) === index)
-      .map((q) => q.qitemId)
-      .filter((qitemId) => editor.inUseQitemIds.includes(qitemId));
+      .map((q) => q.qitemId);
+
+    const removed = pageQitemIds.filter((qitemId) =>
+      editor.inUseQitemIds.includes(qitemId),
+    );
     if (removed.length > 0) {
       flash(`이미 응답이 있는 문항이 포함돼 있습니다 (${removed.join(", ")})`);
+      return;
+    }
+
+    /* 시스템이 요구하는 문항은 페이지째 지우는 경로로도 사라지면 안 된다 */
+    const locked = pageQitemIds.filter((qitemId) =>
+      editor.systemRequiredQitemIds.includes(qitemId),
+    );
+    if (locked.length > 0) {
+      flash(`시스템이 사용하는 문항이 포함돼 있습니다 (${locked.join(", ")})`);
       return;
     }
 
@@ -251,6 +271,14 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
      */
     if (editor.inUseQitemIds.includes(qitemId)) {
       flash("이미 응답이 있어 이 문항은 삭제할 수 없습니다");
+      return;
+    }
+    /*
+     * 시스템이 요구하는 문항. 버튼이 이미 잠겨 있어 여기까지 오는 일은 드물지만, 잠금 판단이
+     * 화면 여러 곳에 흩어지지 않도록 지우는 자리에서도 한 번 더 본다.
+     */
+    if (editor.systemRequiredQitemIds.includes(qitemId)) {
+      flash(SYSTEM_FORM_QITEM_LOCKED);
       return;
     }
     setCpst((c) => ({ ...c, qitems: c.qitems.filter((q) => q.qitemId !== qitemId) }));
@@ -361,6 +389,32 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
 
         <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.15fr]">
           <div className="flex flex-col gap-4">
+            {/*
+              시스템 폼과 문항 버전 안내 (ssccops-server #140).
+
+              저장을 누르기 전에 알아야 하는 두 가지를 같은 상자에서 말한다 — 이 폼에서 무엇이
+              잠겨 있고 무엇이 열려 있는가, 그리고 문항을 고치면 무엇이 남는가. 잠긴 것만 적으면
+              폼 전체가 굳은 줄 알고 아무도 손대지 않으므로 열려 있는 값도 함께 적는다.
+            */}
+            {(editor.sysYn || editor.qitemVer !== null) && (
+              <div className="rounded-[12px] border border-line bg-bg px-[14px] py-[10px] text-[13px] leading-[1.6] text-n400">
+                {editor.sysYn && (
+                  <div>
+                    <Badge tone={SYSTEM_FORM_BADGE.tone}>{SYSTEM_FORM_BADGE.label}</Badge>{" "}
+                    {SYSTEM_FORM_DELETE_LOCKED}. {SYSTEM_FORM_OPEN_PARTS}.{" "}
+                    문항은 문구 수정·추가·순서 변경이 모두 되고, 시스템이 사용하는 문항만 지울
+                    수 없습니다.
+                  </div>
+                )}
+                {/* 버전은 서버가 준 값만 말한다 — 신규 폼은 아직 저장된 구성이 없다 */}
+                {editor.qitemVer !== null && (
+                  <div className={editor.sysYn ? "mt-2" : undefined}>
+                    {FIELD_LABEL.qitemVersion} v{editor.qitemVer} · {QITEM_VERSION_NOTE}
+                  </div>
+                )}
+              </div>
+            )}
+
             <Card>
               <SectionLabel className="mb-3">기본정보</SectionLabel>
               <div className="flex flex-col gap-[14px]">
@@ -583,6 +637,8 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                    * 어느 문항이 문제인지 서버 응답만으로는 알 수 없다.
                    */
                   const qIssues = issues.qitems[q.qitemId] ?? [];
+                  /* 서버가 400으로 가르쳐 준 잠금 — 목록은 use-form-editor.ts가 만든다 */
+                  const systemLocked = editor.systemRequiredQitemIds.includes(q.qitemId);
                   return (
                     <div
                       key={q.qitemId}
@@ -598,6 +654,12 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                         <div className="min-w-0 flex-1 truncate text-[12.5px] text-n500">
                           {qSummary(q)}
                         </div>
+                        {/* 접힌 카드에서도 잠긴 문항인지 보여야 한다 — 폼이 아니라 문항이라 '시스템'까지만 */}
+                        {systemLocked && (
+                          <Badge tone={SYSTEM_FORM_BADGE.tone} className="flex-none">
+                            시스템
+                          </Badge>
+                        )}
                         {qIssues.length > 0 && (
                           <div className="flex-none text-[12px] text-danger">
                             확인 필요 {qIssues.length}
@@ -658,10 +720,17 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                             >
                               ↓
                             </button>
+                            {/*
+                              시스템이 요구하는 문항의 삭제는 감추지 않고 잠근다 — 버튼이
+                              사라지면 이 문항만 못 지우는 것인지 편집기에 삭제가 없는 것인지
+                              알 수 없다. 문구 수정·유형 변경·순서 변경은 그대로 열려 있다.
+                            */}
                             <button
                               type="button"
+                              disabled={systemLocked}
+                              title={systemLocked ? SYSTEM_FORM_QITEM_LOCKED : undefined}
                               onClick={() => removeQitem(q.qitemId)}
-                              className="cursor-pointer text-[14px] text-n400 hover:text-danger"
+                              className="cursor-pointer text-[14px] text-n400 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-n400"
                             >
                               삭제
                             </button>
