@@ -38,6 +38,8 @@ export function EventNewPage() {
       <PageBody>
         <EventForm
           initial={null}
+          /* 아직 행사가 없어 이미지 발급 주소가 없다 — 폼이 첨부를 잠그고 사유를 붙인다 */
+          eventId={null}
           busy={pending}
           canManage={canManage}
           lockedHint={NO_MANAGE}

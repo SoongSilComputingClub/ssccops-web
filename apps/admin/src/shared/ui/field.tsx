@@ -1,10 +1,10 @@
 "use client";
 
 import type {
+  ComponentPropsWithRef,
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
-  TextareaHTMLAttributes,
 } from "react";
 import { cn } from "@/shared/lib/cn";
 
@@ -41,11 +41,16 @@ export function TextField({
   );
 }
 
+/*
+ * props에 ref가 들어 있는 것은 React 19에서 함수 컴포넌트가 ref를 평범한 prop으로 받기
+ * 때문이다(forwardRef가 필요 없다). 본문 편집처럼 **커서 위치를 알아야 하는** 화면이
+ * textarea 요소 자체를 잡아야 해서 열어 뒀다 — 행사 본문에 이미지를 넣는 자리다(#148).
+ */
 export function TextArea({
   inset,
   className,
   ...rest
-}: TextareaHTMLAttributes<HTMLTextAreaElement> & { inset?: boolean }) {
+}: ComponentPropsWithRef<"textarea"> & { inset?: boolean }) {
   return (
     <textarea
       className={cn(

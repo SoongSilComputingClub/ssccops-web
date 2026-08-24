@@ -24,6 +24,12 @@ export {
 } from "./api/events";
 export type { EventListFilter, EventSaveInput, EventStatusAction } from "./api/events";
 export {
+  EVENT_IMAGE_ERROR,
+  issueEventImageTicket,
+  putEventImage,
+} from "./api/event-images";
+export type { EventImageTicket } from "./api/event-images";
+export {
   EVENT_CATEGORY_ERROR,
   EVENT_CLSF_CD_PATTERN,
   EVENT_CLSF_NM_MAX_LENGTH,
