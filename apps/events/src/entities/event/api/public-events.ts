@@ -47,6 +47,14 @@ interface PublicEventSummaryResponse {
 }
 
 interface PublicEventDetailResponse extends PublicEventSummaryResponse {
+  /**
+   * 연결 폼 식별자 (#154 · 신청 흐름이 처음 쓴다).
+   *
+   * **옵셔널로 선언한다.** 서버가 이 필드를 내려주기 시작하기 전 배포에서는 값이 아예 오지
+   * 않는데, 필수로 두면 `undefined`가 그대로 화면까지 흘러가 "신청 버튼은 열렸는데 폼을 찾지
+   * 못하는" 상태가 된다. 없으면 아래 변환기가 null로 굳혀 화면이 신청 버튼을 열지 않는다.
+   */
+  formId?: number | null;
   mtxtCn: string;
   ptcpLmtCnt: number | null;
   confirmedCount: number;
@@ -57,7 +65,11 @@ function toSummary(response: PublicEventSummaryResponse): PublicEventSummary {
 }
 
 function toDetail(response: PublicEventDetailResponse): PublicEventDetail {
-  return { ...response };
+  /*
+   * 폼 연결은 **서버가 값을 줬을 때만** 있는 것으로 본다. 없는 값을 만들어 내지 않는다는 규칙의
+   * 한 자리이고(파일 머리말), 여기서 짐작하면 신청 화면이 열린 뒤에야 폼이 없다는 것을 알게 된다.
+   */
+  return { ...response, formId: response.formId ?? null };
 }
 
 /**

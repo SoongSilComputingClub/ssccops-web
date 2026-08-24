@@ -52,6 +52,16 @@ export interface PublicEventSummary {
 
 /** GET /public/v1/events/{eventId} — 목록 항목 + 본문(Markdown)과 정원·확정 인원 */
 export interface PublicEventDetail extends PublicEventSummary {
+  /**
+   * 연결된 신청 폼 식별자 — 폼이 없는 공지형 행사는 null (#154 · wave2 D3).
+   *
+   * **목록에는 오지 않고 상세에만 온다.** 목록에서 신청까지 갈 일이 없어 서버가 싣지 않았다
+   * (공개 목록 DTO 주석). 화면이 이 값을 쓰는 곳도 상세의 신청 버튼 하나다.
+   *
+   * `receiptStatus`가 `ACCEPTING`이어도 이 값이 없으면 버튼을 열지 않는다 — 신청 화면이
+   * 곧바로 "폼을 찾을 수 없습니다"로 끝나는 길을 만들지 않기 위해서다.
+   */
+  formId: number | null;
   /** 본문_내용 (Markdown) — 원시 HTML은 렌더러가 해석하지 않는다 (D12) */
   mtxtCn: string;
   /** 참가_제한_수 — 정원 없음이면 null */
