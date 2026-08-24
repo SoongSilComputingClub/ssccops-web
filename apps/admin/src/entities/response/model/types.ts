@@ -46,9 +46,23 @@ export interface ResponseMemberDetail extends ResponseMember {
   telno: string | null;
 }
 
+/*
+ * ── 응답 순번(rspnsSeq)과 제출 회차(sbmsnSeq)는 다른 값이다 (ssccops-server #143) ──
+ *
+ * **순번은 새 응답이 생길 때 오르고 회차는 같은 응답을 다시 낼 때 오른다.** 한 사람이 제안을
+ * 두 개 내면 순번 1·2인 두 건이 되고, 그중 하나가 수정요청을 받아 다시 제출되면 그 건의
+ * 회차만 2가 된다(순번은 그대로다). 세는 대상이 '응답'과 '제출'로 달라서, 두 값을 한 자리에
+ * 섞으면 "2회차"가 두 번째 제안인지 첫 제안의 재제출인지 갈린다.
+ *
+ * 둘 다 서버가 언제나 채워 보내지만(NOT NULL) 모르는 배포에서 1이라고 **지어내지 않는다** —
+ * 없으면 화면이 그 표기를 빼고 나머지를 그대로 그린다.
+ */
+
 /** GET /v1/forms/{formId}/responses 항목 — 목록 표가 쓰는 것만 */
 export interface FormResponseItem {
   formRspnsId: number;
+  /** 응답 순번 — 다중 응답 폼에서 같은 회원의 두 행을 가르는 값 (위 주석 참고) */
+  rspnsSeq: number | null;
   rspnsSttsCd: RspnsSttsCd;
   /** 작성 중(DRAFT)은 아직 제출 전이라 값이 없다 */
   sbmsnDt: string | null;
@@ -86,6 +100,8 @@ export interface FormResponseReviewHistory {
 /** GET /v1/forms/{formId}/responses/{formRspnsId} */
 export interface FormResponseDetail {
   formRspnsId: number;
+  /** 응답 순번 — 이 응답자의 몇 번째 응답인가 (제출 회차와 다른 값이다 · 위 주석 참고) */
+  rspnsSeq: number | null;
   rspnsSttsCd: RspnsSttsCd;
   sbmsnDt: string | null;
   /** 제출 회차 — 이력의 각 줄이 몇 회차에 대한 처리였는지 읽는 기준점이다 */
