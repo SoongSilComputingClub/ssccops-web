@@ -62,4 +62,6 @@ export {
   toggleOption,
   validatePageAnswers,
 } from "./model/public-form-answers";
+export { useMyResponses } from "./model/use-my-responses";
+export type { MyResponseList, MyResponseListStatus } from "./model/use-my-responses";
 export { FORM_NOT_ACCEPTING_MESSAGE } from "./model/public-form-error";

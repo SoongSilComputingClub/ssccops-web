@@ -107,6 +107,14 @@ export interface FormEditor {
   inUseQitemIds: string[];
   /** 시스템 폼인가 (ssccops-server #140) — 편집 화면이 무엇이 잠겼는지 안내하는 근거 */
   sysYn: boolean;
+  /**
+   * 이미 응답이 들어온 폼인가 (제출 이상만 센다 · 작성 중은 빠진다).
+   *
+   * **잠그기 위한 값이 아니라 알리기 위한 값이다.** 다중 응답 허용은 접수 중에도 바꿀 수
+   * 있고(서버 FormEntity.update) 끄더라도 이미 들어온 응답은 지워지지 않는데, 그 사실을
+   * 말해 주지 않으면 운영자는 끄는 것이 지난 응답까지 무르는 조작인 줄 안다.
+   */
+  hasResponses: boolean;
   /** 지금 저장돼 있는 문항 구성 버전. 서버가 주지 않으면 null */
   qitemVer: number | null;
   /**
@@ -618,6 +626,7 @@ export function useFormEditor(formId?: number): FormEditor {
     issues,
     inUseQitemIds,
     sysYn: current?.sysYn ?? false,
+    hasResponses: current?.hasResponses ?? false,
     qitemVer: current?.qitemVer ?? null,
     systemRequiredQitemIds,
     save,

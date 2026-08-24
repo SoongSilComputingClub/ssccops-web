@@ -2,6 +2,7 @@ export type {
   FormResponseDetail,
   FormResponseItem,
   FormResponseReviewHistory,
+  MyFormResponse,
   ResponseMember,
   ResponseMemberDetail,
   RspnsCn,
@@ -22,6 +23,7 @@ export type {
   FormResponseListFilter,
   FormResponseReviewInput,
 } from "./api/responses";
+export { fetchMyFormResponses } from "./api/my-responses";
 export {
   fetchMyResponseDraft,
   saveMyResponseDraft,

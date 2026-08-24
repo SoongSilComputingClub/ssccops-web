@@ -104,6 +104,16 @@ export interface FormSummary {
    * 말하지 않는다(0이나 1로 채우면 "아직 한 번도 안 바꿨다"를 지어내는 것이 된다).
    */
   qitemVer: number | null;
+  /**
+   * 한 사람이 이 폼에 여러 건을 낼 수 있는가 (ssccops-server #143 · `mltpl_rspns_yn`).
+   *
+   * 지원서·설문은 꺼 둔 상태가 정상이고, 스터디 제안처럼 한 사람이 여러 개를 내는 것이
+   * 정상인 폼만 켠다. 제목·라벨로 유추할 수 없는 값이라 폼이 직접 들고 있다.
+   *
+   * **끄는 것은 "지금부터 새로 낼 수 없다"는 뜻이다** — 이미 들어온 응답은 지워지지 않는다.
+   * 그래서 꺼져 있는 폼에 한 회원의 응답이 여러 건 남아 있는 상태가 정상적으로 존재한다.
+   */
+  mltplRspnsYn: boolean;
   labels: FormLabelRef[];
   /**
    * 서버 집계 응답 수. 제출 이상(SUBMITTED·ACCEPTED·REJECTED)만 세고 작성 중(DRAFT)은 빠진다

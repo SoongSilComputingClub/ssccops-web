@@ -53,6 +53,14 @@ function ResponseDetailContent({
   const badge = RSPNS_STTS_BADGE[response.rspnsSttsCd];
 
   /*
+   * 재제출 표시 (ssccops-server #141 · #143).
+   *
+   * 기준은 **제출 회차**다 — 수정요청을 받아 같은 응답을 다시 낸 것이 재제출이고, 응답 순번은
+   * 그 사이에도 움직이지 않는다. 순번으로 판정하면 "두 번째로 낸 다른 건"이 재제출로 보인다.
+   */
+  const resubmitted = response.sbmsnSeq !== null && response.sbmsnSeq >= 2;
+
+  /*
    * 이전/다음은 서버가 준 인접 ID로만 움직인다.
    *
    * 예전에는 목 스토어의 목록 배열을 `rows[idx ± 1]`로 훑었는데, 서버 연동 후에는 상세 화면이
@@ -81,6 +89,7 @@ function ResponseDetailContent({
             <div className="flex items-center gap-2">
               <div className="text-[23px] font-medium">{member.mbrNm || "-"}</div>
               <div className="flex-1" />
+              {resubmitted && <Badge tone="outline">재제출</Badge>}
               <Badge tone={badge.tone}>{badge.label}</Badge>
             </div>
             <div className="mt-1 text-[13px] text-n500">
@@ -100,12 +109,22 @@ function ResponseDetailContent({
                 // 작성 중 응답은 아직 제출되지 않아 일시가 없다
                 { k: FIELD_LABEL.submittedAt, v: formatDt(response.sbmsnDt) || "-" },
                 /*
+                 * 응답 순번과 제출 회차는 **다른 값이라 칸도 따로 둔다** (ssccops-server #143).
+                 * 앞은 이 응답자가 낸 여러 건 중 몇 번째인가이고, 뒤는 그 한 건을 몇 번 냈는가다.
+                 * 한 칸에 합치면 "2회차"가 두 번째 제안인지 첫 제안의 재제출인지 갈리므로,
+                 * 숫자 뒤에 세는 대상까지 적어(번째 응답 · 회차 제출) 읽는 자리에서도 가른다.
+                 */
+                {
+                  k: "응답 순번",
+                  v: response.rspnsSeq === null ? "-" : `${response.rspnsSeq}번째 응답`,
+                },
+                /*
                  * 제출 회차 — 수정요청을 받아 고쳐 낸 응답은 2회차부터다. 이 값이 없으면
                  * 처리 이력의 "3회차" 같은 표기가 무엇을 기준으로 한 숫자인지 알 수 없다.
                  */
                 {
                   k: "제출 회차",
-                  v: response.sbmsnSeq === null ? "-" : `${response.sbmsnSeq}회차`,
+                  v: response.sbmsnSeq === null ? "-" : `${response.sbmsnSeq}회차 제출`,
                 },
               ]}
             />

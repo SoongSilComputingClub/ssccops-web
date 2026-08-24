@@ -45,6 +45,7 @@ interface ResponseMemberDetailResponse extends ResponseMemberResponse {
 
 interface FormResponseSummaryResponse {
   formRspnsId: number;
+  rspnsSeq: number | null;
   rspnsSttsCd: RspnsSttsCd;
   sbmsnDt: string | null;
   member: ResponseMemberResponse | null;
@@ -106,6 +107,8 @@ function toMemberDetail(
 function toFormResponseItem(res: FormResponseSummaryResponse): FormResponseItem {
   return {
     formRspnsId: res.formRspnsId,
+    // 순번을 모르는 배포에서 1이라고 지어내지 않는다 — 없으면 화면이 표기를 뺀다
+    rspnsSeq: res.rspnsSeq ?? null,
     rspnsSttsCd: res.rspnsSttsCd,
     sbmsnDt: res.sbmsnDt,
     member: toMember(res.member),
@@ -137,6 +140,7 @@ function toReviewHistory(
 function toFormResponseDetail(res: FormResponseDetailResponse): FormResponseDetail {
   return {
     formRspnsId: res.formRspnsId,
+    rspnsSeq: res.rspnsSeq ?? null,
     rspnsSttsCd: res.rspnsSttsCd,
     sbmsnDt: res.sbmsnDt,
     sbmsnSeq: res.sbmsnSeq ?? null,

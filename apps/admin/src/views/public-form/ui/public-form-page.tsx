@@ -18,6 +18,7 @@ import { ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
 import { formatDt } from "@/shared/lib/date";
 import { EmptyState, flash } from "@/shared/ui";
+import { MyResponsesPanel } from "./my-responses-panel";
 import { PublicFormNotice } from "./public-form-notice";
 
 /*
@@ -191,6 +192,18 @@ export function PublicFormPage({ formId }: { formId: number }) {
        * 알게 된다. 편집기와 같은 표시줄을 쓴다.
        */}
       <FormSaveStatusBar save={publicForm.save} onRetry={publicForm.retrySave} />
+
+      {/*
+        다중 응답 폼의 제출 내역 (ssccops-server #143).
+
+        낸 것이 있어도 같은 주소를 다시 열면 빈 작성 화면이 뜨는데, 그것만으로는 지난 제출이
+        사라진 것인지 원래 여러 건을 받는 폼인지 알 수 없다 — 1건 폼이라면 이 자리에 '이미
+        제출한 폼입니다'가 떴을 것이므로, 그와 갈리는 이유를 낸 건수·상태와 함께 밝힌다.
+
+        건수는 공개 폼 조회의 myResponseCount가 아니라 이 목록이 말한다. 두 값이 같은 집계라도
+        화면에서 두 출처를 섞으면 한쪽만 다시 불렀을 때 숫자와 목록이 어긋난다.
+      */}
+      {form.mltplRspnsYn && <MyResponsesPanel formId={form.formId} />}
 
       {publicForm.restored && (
         <div className="rounded-[12px] border border-accent/30 bg-accent/8 px-3 py-[10px] text-[13.5px] text-accent">

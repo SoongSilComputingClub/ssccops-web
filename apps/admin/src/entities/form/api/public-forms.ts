@@ -22,7 +22,9 @@ interface PublicFormApiResponse {
   rcptBgngDt: string | null;
   rcptEndDt: string | null;
   qitemCpstCn: QitemCpstCn | null;
+  mltplRspnsYn: boolean | null;
   alreadySubmitted: boolean | null;
+  myResponseCount: number | null;
   submittedAt: string | null;
 }
 
@@ -50,8 +52,26 @@ export const PUBLIC_FORM_ERROR = {
    * 200을 받는 경로는 없다 — 이 코드를 받으면 화면은 문항을 그리지 않는다.
    */
   FORM_NOT_ACCEPTING: "FORM_NOT_ACCEPTING",
-  /** 409 — 이미 제출한 폼. 자동 저장·제출 양쪽에서 온다 */
+  /**
+   * 409 — 더 낼 수 없는 폼. 자동 저장·제출 양쪽에서 온다.
+   *
+   * 뜻이 좁아졌다 (ssccops-server #141 · #143). 심사를 기다리는 중이거나 이미 승인된 응답에만
+   * 붙으며, 수정요청받은 응답은 재제출이 열려 있고 반려는 아래 코드로 갈렸다. 다중 응답 폼은
+   * 이미 몇 건을 냈어도 여기 걸리지 않는다 — 그 폼에서 이 코드가 오는 것은 이어 쓸 응답이
+   * 심사 중일 때뿐이다.
+   */
   RESPONSE_ALREADY_SUBMITTED: "RESPONSE_ALREADY_SUBMITTED",
+  /**
+   * 409 — 반려된 응답을 다시 내려 했다 (ssccops-server #141).
+   *
+   * `RESPONSE_ALREADY_SUBMITTED`와 코드가 갈린 것은 **응답자가 할 수 있는 일이 다르기**
+   * 때문이다. "이미 제출했다"는 기다리면 결과가 나온다는 뜻이지만 반려는 그 응답에 대해
+   * 끝났다는 뜻이라, 같은 문구를 돌려주면 응답자는 오지 않을 통보를 기다린다.
+   *
+   * 이 코드가 실제로 보이는 것은 1건 폼이다 — 다중 응답 폼에서는 반려된 응답만 남아 있어도
+   * 새 응답이 만들어지므로 여기까지 오지 않는다.
+   */
+  RESPONSE_ALREADY_REJECTED: "RESPONSE_ALREADY_REJECTED",
   /** 409 — 첫 자동 저장이 동시에 도착해 부딪혔다. **서버가 재시도를 요구하는 유일한 409다** */
   RESPONSE_SAVE_CONFLICT: "RESPONSE_SAVE_CONFLICT",
   /** 413 — 답 전체가 10만 자를 넘었다. 자동 저장·제출 모두에 걸린다 */
@@ -84,9 +104,29 @@ export interface PublicForm {
   rcptBgngDt: string | null;
   rcptEndDt: string | null;
   qitemCpstCn: QitemCpstCn;
-  /** 이미 제출을 마쳤는가. 임시저장(DRAFT)은 제출로 치지 않는다 */
+  /**
+   * 이 폼이 한 사람의 여러 건을 받는가 (ssccops-server #143).
+   *
+   * 켜져 있으면 이미 낸 뒤에도 또 내는 것이 정상이라, 화면은 제출 내역이 아니라 작성 폼을
+   * 계속 보여준다. 건별 상태는 이 응답이 아니라 GET .../responses/mine이 준다.
+   */
+  mltplRspnsYn: boolean;
+  /**
+   * **"냈는가"가 아니라 "더 낼 수 없는가"다** (ssccops-server #143에서 뜻이 좁아졌다).
+   *
+   * 1건 폼에서는 두 뜻이 완전히 같아 서버가 필드 이름을 바꾸지 않았고, 다중 응답 폼에서만
+   * 갈린다 — 그쪽은 이미 두 건을 냈어도 false다. 임시저장(DRAFT)은 어느 쪽에서도 제출로
+   * 치지 않는다.
+   */
   alreadySubmitted: boolean;
-  /** 제출 일시 (Asia/Seoul 오프셋 포함). 미제출이면 null */
+  /** 내가 이 폼에 **낸** 건수 (임시저장은 빠진다). 1건 폼에서는 0 아니면 1이다 */
+  myResponseCount: number;
+  /**
+   * **마지막** 제출 일시 (Asia/Seoul 오프셋 포함). 한 건도 내지 않았으면 null.
+   *
+   * 다중 응답 폼에서는 `alreadySubmitted`가 false인데도 값이 있을 수 있다 — 두 필드가 묻는
+   * 것이 다르다(하나는 지금 낼 수 있는가, 다른 하나는 마지막으로 언제 냈는가).
+   */
   submittedAt: string | null;
 }
 
@@ -118,7 +158,14 @@ export async function fetchPublicForm(formId: number): Promise<PublicForm> {
     rcptBgngDt: res.rcptBgngDt,
     rcptEndDt: res.rcptEndDt,
     qitemCpstCn: res.qitemCpstCn,
+    /*
+     * **서버가 true라고 말할 때만 여러 건을 받는 폼이다.** 이 필드를 모르는 배포의 응답을
+     * true로 읽으면, 1건 폼에서 제출을 마친 응답자에게 작성 화면이 계속 보이고 다시 낼 수
+     * 있는 것처럼 굴다 제출에서 409를 받는다.
+     */
+    mltplRspnsYn: res.mltplRspnsYn === true,
     alreadySubmitted: res.alreadySubmitted === true,
+    myResponseCount: res.myResponseCount ?? 0,
     submittedAt: res.submittedAt,
   };
 }

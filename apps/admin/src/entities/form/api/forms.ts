@@ -47,6 +47,13 @@ interface FormSummaryResponse {
   sysFormCd?: string | null;
   sysYn?: boolean | null;
   qitemVer?: number | null;
+  /*
+   * 다중 응답 허용 여부 (ssccops-server #143). 목록·상세 양쪽에 실린다.
+   *
+   * 같은 이유로 옵셔널이다 — 이 필드를 모르는 배포에서 `undefined`를 boolean으로 읽으면
+   * 편집기가 "켜져 있다"고 그리고, 그 값이 그대로 저장돼 폼의 설정이 조용히 뒤집힌다.
+   */
+  mltplRspnsYn?: boolean | null;
   labels: FormLabelRefResponse[] | null;
   responseCount: number | null;
   mdfcnDt: string;
@@ -111,6 +118,12 @@ function toFormSummary(res: FormSummaryResponse): FormSummary {
     sysYn: res.sysYn === true,
     // 없으면 없는 대로 둔다 — 0이나 1로 채우면 "아직 안 바뀐 폼"을 지어내게 된다
     qitemVer: res.qitemVer ?? null,
+    /*
+     * **서버가 true라고 말할 때만 여러 건을 받는 폼이다.** sysYn과 같은 판단이며 여기서는
+     * 대가가 더 크다 — 편집기는 이 값을 초안으로 받아 저장에 그대로 실어 보내므로, 빠진
+     * 응답을 true로 읽으면 아무도 누르지 않은 설정이 저장 한 번에 켜진다.
+     */
+    mltplRspnsYn: res.mltplRspnsYn === true,
     labels: toLabelRefs(res.labels),
     responseCount: res.responseCount ?? 0,
     mdfcnDt: res.mdfcnDt,
@@ -247,6 +260,14 @@ export interface FormSaveInput {
   rcptBgngDt: string | null;
   rcptEndDt: string | null;
   qitemCpstCn: QitemCpstCn;
+  /**
+   * 다중 응답 허용 (ssccops-server #143).
+   *
+   * `formSttsCd`와 같은 이유로 옵셔널이 아니다. 서버는 생략을 false로 읽으므로, 자동 저장이
+   * 값을 빠뜨리면 **켜 둔 폼이 타이핑 한 번에 꺼진다.** 화면이 들고 있는 현재 값을 언제나
+   * 실어 보내도록 타입으로 강제한다.
+   */
+  mltplRspnsYn: boolean;
   labelIds: number[];
 }
 
@@ -325,6 +346,7 @@ function toFormSaveBody(input: FormSaveInput) {
     rcptBgngDt: withServiceOffset(input.rcptBgngDt),
     rcptEndDt: withServiceOffset(input.rcptEndDt),
     qitemCpstCn: toQitemCpstBody(input.qitemCpstCn),
+    mltplRspnsYn: input.mltplRspnsYn,
     labelIds: input.labelIds,
   };
 }
