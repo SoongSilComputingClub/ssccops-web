@@ -10,9 +10,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENTS.md
 
-SSCC(숭실컴퓨팅클럽) 운영관리 어드민 웹 — Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4 / pnpm.
-백엔드는 별도 저장소 **`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth),
-배포는 Cloudflare Workers(OpenNext).
+SSCC(숭실컴퓨팅클럽) 운영관리 웹 — **pnpm workspace + Turborepo 모노레포**.
+운영관리 어드민 앱은 `apps/admin`에 있다(Next.js 16 App Router / React 19 / TypeScript 5 /
+Tailwind v4). `packages/*`는 공유 패키지 자리(아직 비어 있다), 공개 행사 앱은 후속 이슈로
+`apps/`에 추가될 예정이다. 백엔드는 별도 저장소 **`ssccops-server`**(Spring Boot), 인증은
+Supabase Auth(Google OAuth), 배포는 Cloudflare Workers(OpenNext).
 
 > 위의 `nextjs-agent-rules` 블록은 `next dev`가 스스로 써넣는다. 지우면 uncommitted 변경으로
 > 되살아나므로 **그대로 두고 그 바깥에** 쓴다. 개인 로컬 메모(포트·`.env.local`·증상별 원인
@@ -21,19 +23,26 @@ SSCC(숭실컴퓨팅클럽) 운영관리 어드민 웹 — Next.js 16 App Router
 ## 검증 — CI와 같은 순서로 돌린다
 
 ```bash
-pnpm install --frozen-lockfile
-pnpm exec next typegen     # ← 빠뜨리기 쉬운 단계
+pnpm install --frozen-lockfile   # 반드시 워크스페이스 루트에서 (락파일은 루트 하나)
+cd apps/admin
+pnpm exec next typegen           # ← 빠뜨리기 쉬운 단계
 pnpm exec tsc --noEmit
 pnpm lint
-pnpm build
+cd ../.. && pnpm build           # 루트 build = turbo run build
 ```
+
+루트에서 `pnpm typecheck`·`pnpm lint`·`pnpm build`(전부 `turbo run …` 위임)로 돌려도 같다 —
+turbo의 `typecheck`는 `typegen`을 선행 태스크로 물고 있다. CI(`integrate.yml`)는 앱 단위
+명령을 `working-directory: apps/admin`에서, build를 루트 turbo로 돌린다.
 
 - **`pnpm lint`만 돌리면 타입 오류를 CI에서 처음 만난다.** ESLint는 타입 검사를 하지 않는다.
 - `next typegen`이 먼저인 이유: `PageProps`·`LayoutProps` 같은 전역 타입은 Next가 `.next/types`
   아래에 생성하고 `next-env.d.ts`가 그것을 참조한다. 새로 체크아웃한 트리에는 `.next`가 없어
   `tsc`가 `Cannot find name 'PageProps'`로 죽는다(`integrate.yml`의 lint job과 같은 순서다).
-- **테스트 러너는 아직 없다.** CI의 test job은 `src` 아래에 `*.test.*`·`*.spec.*`가 있을 때만
-  돈다. 테스트를 처음 추가하는 사람이 러너와 `test:coverage` 스크립트를 함께 붙인다.
+- Turborepo 기본 env 모드는 strict다 — 빌드가 새 환경변수를 읽게 되면 `turbo.json`의
+  `build.env`(현재 `NEXT_PUBLIC_*`)에 선언해야 태스크에 전달되고 캐시 키에도 반영된다.
+- **테스트 러너는 아직 없다.** CI의 test job은 `apps/admin/src` 아래에 `*.test.*`·`*.spec.*`가
+  있을 때만 돈다. 테스트를 처음 추가하는 사람이 러너와 `test:coverage` 스크립트를 함께 붙인다.
 - SonarQube 분석은 토큰이 있을 때만 돌고 build를 막지 않는다. Prettier 단계는 없다(의존성도
   설정 파일도 없다 — 도입하려면 둘을 먼저 추가하고 워크플로에 단계를 되살린다).
 
@@ -183,8 +192,9 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
 
 - **`CLAUDE.md`와 `AGENTS.md`의 자동 생성 블록은 `next dev`가 다시 써넣는다.** diff에서 지워도
   되살아나므로 그대로 두고 커밋한다.
-- **`.env*`는 통째로 ignore되고 `.env.example`만 예외다.** `NEXT_PUBLIC_*`은 빌드 타임에
-  인라인되므로 **값을 바꾸면 `pnpm dev`를 재시작해야** 반영된다.
+- **`.env*`는 통째로 ignore되고 `.env.example`만 예외다.** env 파일은 앱 디렉터리
+  기준이다 — `apps/admin/.env.local`처럼 앱 안에 둔다(루트에 두면 Next가 읽지 않는다).
+  `NEXT_PUBLIC_*`은 빌드 타임에 인라인되므로 **값을 바꾸면 `pnpm dev`를 재시작해야** 반영된다.
 - **`README.md`에는 PoC 시절 서술이 남아 있다**("API 미연동 PoC", zustand 시드). 지금은 대부분의
   도메인이 서버 연동이고 목 스토어는 `features/approval/model/use-approval-actions.ts`(어디서도
   쓰지 않는다)에만 잔재로 남아 있다 — 승인함은 `useApprovalDecisions`를 쓴다.
