@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { EventDetail, EventSaveInput } from "@/entities/event";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { fromInput, toInput } from "@/shared/lib/date";
 import { Button, Card, Field, SectionLabel, SelectField, TextArea, TextField } from "@/shared/ui";
 import { useEventCategoryOptions } from "../model/use-event-category-options";
+import { useEventImageUpload } from "../model/use-event-image-upload";
 import { useFormLinkOptions } from "../model/use-form-link-options";
 
 /*
@@ -28,6 +29,19 @@ import { useFormLinkOptions } from "../model/use-form-link-options";
 /** 본문 상한 — 서버 413 EVENT_CONTENT_TOO_LARGE와 같은 값. 왕복 없이 먼저 알린다 */
 const MTXT_CN_MAX_LENGTH = 100_000;
 
+/*
+ * 파일 선택 창이 이미지만 보이게 하는 힌트다 — **검증이 아니다.**
+ *
+ * 허용 형식의 판정은 서버에만 있다(ssccops-server#161). 웹이 목록을 복제하면 서버가 형식을
+ * 늘린 날에도 화면만 계속 막고, 사용자는 왜 막혔는지 알 길이 없다. 여기 값은 고를 때의
+ * 편의일 뿐이고 최종 판정은 업로드 응답 코드로 안내한다.
+ */
+const IMAGE_ACCEPT = "image/*";
+
+/** 등록 화면에서 첨부가 잠기는 사유 — 발급 주소가 /v1/events/{eventId}/images 라 행사가 먼저 있어야 한다 */
+const NEED_SAVED_EVENT =
+  "행사를 먼저 등록한 뒤 수정 화면에서 이미지를 올릴 수 있습니다";
+
 /** 화면이 입력란과 오류를 묶는 데 쓰는 칸 이름 */
 type EventFormField =
   | "eventTtl"
@@ -36,8 +50,57 @@ type EventFormField =
   | "eventPeriod"
   | "ptcpLmtCnt";
 
+/**
+ * 파일 하나를 고르는 버튼.
+ *
+ * `input[type=file]`을 그대로 두지 않고 감춰 버튼으로 감싼 것은, 브라우저 기본 파일 입력이
+ * 폼의 다른 입력란과 생김새·크기가 전혀 달라 좁은 화면에서 줄을 깨기 때문이다. 고른 뒤
+ * 값을 비우는 것(`e.target.value = ""`)은 **같은 파일을 다시 고를 수 있게** 하기 위함이다 —
+ * 비우지 않으면 업로드가 실패한 뒤 같은 파일로 재시도할 때 change 이벤트가 오지 않는다.
+ */
+function ImagePickButton({
+  label,
+  disabled,
+  hint,
+  onPick,
+}: {
+  label: string;
+  disabled: boolean;
+  /** 잠겼을 때의 사유 — 버튼을 감추지 않고 이유를 붙인다(AGENTS.md) */
+  hint?: string;
+  onPick: (file: File) => void;
+}) {
+  const pickerRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <>
+      <input
+        ref={pickerRef}
+        type="file"
+        accept={IMAGE_ACCEPT}
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (file) onPick(file);
+        }}
+      />
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={disabled}
+        title={hint}
+        onClick={() => pickerRef.current?.click()}
+      >
+        {label}
+      </Button>
+    </>
+  );
+}
+
 export function EventForm({
   initial,
+  eventId,
   busy,
   canManage,
   lockedHint,
@@ -46,6 +109,12 @@ export function EventForm({
 }: {
   /** 수정이면 현재 값 전부(전체 교체 폼) · 등록이면 null */
   initial: EventDetail | null;
+  /**
+   * 이미지 업로드 주소가 걸리는 행사. **등록 화면은 null이다** — 발급 경로가
+   * `/v1/events/{eventId}/images`라 아직 저장되지 않은 행사에는 올릴 수 없다.
+   * `initial`에서 꺼내지 않고 따로 받는 것은 두 값이 뜻하는 바가 다르기 때문이다(초깃값 vs 대상).
+   */
+  eventId: number | null;
   /** 저장 요청이 진행 중 — 버튼을 잠근다 */
   busy: boolean;
   /** EVENT_MANAGE 보유 여부 — 저장을 잠글지 정한다 */
@@ -57,6 +126,7 @@ export function EventForm({
 }) {
   const { categories, errorMessage: categoryError } = useEventCategoryOptions();
   const { forms, errorMessage: formError } = useFormLinkOptions();
+  const imageUpload = useEventImageUpload();
 
   const [eventTtl, setEventTtl] = useState(initial?.eventTtl ?? "");
   const [eventClsfCd, setEventClsfCd] = useState(initial?.eventClsfCd ?? "");
@@ -71,6 +141,72 @@ export function EventForm({
   const [formId, setFormId] = useState(initial?.formId != null ? String(initial.formId) : "");
 
   const [errors, setErrors] = useState<Partial<Record<EventFormField, string>>>({});
+
+  /*
+   * 업로드 상태는 본문과 대표 이미지를 **가려서** 쥔다. 훅의 pending 하나만 보면 대표
+   * 이미지를 올리는 동안 본문 영역에도 "올리는 중"이 뜬다 — 어느 자리에 들어갈 파일인지가
+   * 사용자에게는 서로 다른 일이라, 진행 표시가 엉뚱한 자리에 서면 방금 무엇을 눌렀는지
+   * 헷갈린다.
+   */
+  const [uploadingAt, setUploadingAt] = useState<"body" | "thumbnail" | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const mtxtRef = useRef<HTMLTextAreaElement>(null);
+
+  /** 첨부를 잠글 사유 — 없으면 undefined(잠기지 않았다) */
+  const attachLock = !canManage ? lockedHint : eventId == null ? NEED_SAVED_EVENT : undefined;
+
+  const runUpload = async (at: "body" | "thumbnail", file: File, place: (url: string) => void) => {
+    if (eventId == null) return;
+
+    setUploadError(null);
+    setUploadingAt(at);
+    const { publicUrl, message } = await imageUpload.upload(eventId, file);
+    setUploadingAt(null);
+
+    // 중복 클릭이면 둘 다 비어 온다 — 아무것도 보내지 않았으므로 화면도 그대로 둔다
+    if (message) setUploadError(message);
+    if (publicUrl) place(publicUrl);
+  };
+
+  /**
+   * 올린 이미지를 본문 Markdown에 넣는다.
+   *
+   * 커서 위치에 넣는 것은, 긴 본문을 쓰다가 중간에 그림을 끼우는 것이 실제 작성 순서이기
+   * 때문이다(끝에만 붙이면 사용자가 매번 잘라내 옮겨야 한다). 앞뒤로 줄바꿈을 채워 문단
+   * 사이에 놓는 것은 Markdown에서 문장 한가운데 낀 이미지가 그 문단에 흡수되기 때문이다.
+   *
+   * textarea를 잡지 못했을 때만 본문 끝에 붙인다 — 넣을 자리를 모르는 것이지 넣지 못하는
+   * 것은 아니므로, 올려 둔 파일을 버리지 않는다.
+   */
+  const insertImageMarkdown = (url: string) => {
+    const snippet = `![](${url})`;
+    const el = mtxtRef.current;
+
+    if (!el) {
+      setMtxtCn((prev) => (prev && !prev.endsWith("\n") ? `${prev}\n\n${snippet}\n` : `${prev}${snippet}\n`));
+      return;
+    }
+
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const before = mtxtCn.slice(0, start);
+    const after = mtxtCn.slice(end);
+    const lead = before && !before.endsWith("\n") ? "\n" : "";
+    const trail = after && !after.startsWith("\n") ? "\n" : "";
+    const inserted = `${lead}${snippet}${trail}`;
+
+    setMtxtCn(`${before}${inserted}${after}`);
+
+    /*
+     * 값이 DOM에 반영된 뒤에 커서를 옮긴다 — 지금 옮기면 다음 렌더가 되돌린다. 그림을 넣은
+     * 자리에서 글을 이어 쓰는 것이 자연스러운 다음 동작이라 포커스도 함께 돌려준다.
+     */
+    const caret = start + inserted.length;
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(caret, caret);
+    });
+  };
 
   /*
    * 후보 목록에 지금 값이 없어도 선택 상태가 비어 보이지 않게 한 줄을 보탠다 — 분류가 방금
@@ -195,17 +331,56 @@ export function EventForm({
           <SectionLabel className="mb-3">대표 이미지 · 폼 연결</SectionLabel>
           <div className="grid grid-cols-1 gap-[14px]">
             <Field label={FIELD_LABEL.thumbnailUrl}>
+              {/*
+                주소 입력란을 파일 업로드로 대체하지 않고 나란히 둔다 — 이미 다른 곳에 올려
+                둔 이미지를 주소로 붙여 넣는 것도 정상적인 쓰임이고, 올린 결과 역시 결국
+                같은 칸(thmb_url_addr)에 담기는 주소 하나다.
+              */}
               <TextField
                 type="url"
                 value={thmbUrlAddr}
                 onChange={(e) => setThmbUrlAddr(e.target.value)}
                 placeholder="https:// 로 시작하는 이미지 주소 · 비워도 됩니다"
               />
-              {/* 파일 업로드는 별도 이슈(ssccops#141)의 몫이다 — 지금은 주소만 받는다 */}
-              <div className="mt-[5px] text-[12.5px] text-n500">
-                목록 카드와 공개 화면의 대표 이미지로 쓰입니다 — 이미지 파일 업로드는 추후
-                지원됩니다
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <ImagePickButton
+                  label={uploadingAt === "thumbnail" ? "올리는 중…" : "이미지 파일 올리기"}
+                  disabled={busy || imageUpload.pending || Boolean(attachLock)}
+                  hint={attachLock}
+                  onPick={(file) => void runUpload("thumbnail", file, setThmbUrlAddr)}
+                />
+                {thmbUrlAddr.trim() && (
+                  <Button variant="ghost-danger" size="sm" onClick={() => setThmbUrlAddr("")}>
+                    대표 이미지 제거
+                  </Button>
+                )}
               </div>
+              {thmbUrlAddr.trim() && (
+                /*
+                  next/image가 아니라 img인 것은 이미지가 R2 공개 도메인에서 오고 그 도메인이
+                  서버 설정(DEV/PROD_R2_PUBLIC_BASE_URL)에만 있기 때문이다 — remotePatterns에
+                  미리 적을 수 없다(공개 앱 shared/ui/markdown.tsx와 같은 판단).
+                  주소가 잘못됐을 때 깨진 그림 대신 아무것도 그리지 않는 편이 낫다.
+                */
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  // 주소가 바뀌면 요소를 새로 만든다 — 위 onError가 숨긴 상태가 남지 않게 한다
+                  key={thmbUrlAddr.trim()}
+                  src={thmbUrlAddr.trim()}
+                  alt=""
+                  className="mt-2 h-[120px] w-full rounded-[12px] border border-line object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              )}
+              <div className="mt-[5px] text-[12.5px] text-n500">
+                목록 카드와 공개 화면의 대표 이미지로 쓰입니다 — 공유 링크 미리보기에도 이
+                이미지가 나옵니다
+              </div>
+              {attachLock && (
+                <div className="mt-[5px] text-[12.5px] text-n500">{attachLock}</div>
+              )}
             </Field>
             <Field label={FIELD_LABEL.linkedForm}>
               <SelectField value={formId} onChange={(e) => setFormId(e.target.value)}>
@@ -235,18 +410,36 @@ export function EventForm({
       </div>
 
       <Card className="mt-4">
-        <SectionLabel className="mb-3">{FIELD_LABEL.eventContent} (Markdown)</SectionLabel>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <SectionLabel>{FIELD_LABEL.eventContent} (Markdown)</SectionLabel>
+          <div className="flex-1" />
+          <ImagePickButton
+            label={uploadingAt === "body" ? "올리는 중…" : "이미지 첨부"}
+            disabled={busy || imageUpload.pending || Boolean(attachLock)}
+            hint={attachLock}
+            onPick={(file) => void runUpload("body", file, insertImageMarkdown)}
+          />
+        </div>
         <Field label={null} error={errors.mtxtCn}>
           <TextArea
+            ref={mtxtRef}
             value={mtxtCn}
             onChange={(e) => setMtxtCn(e.target.value)}
             className="min-h-[260px] font-mono text-[16px] leading-[1.8] lg:text-[13.5px]"
             placeholder={"# 행사 안내\n\nMarkdown으로 작성합니다. 회원에게 보이는 본문입니다."}
           />
         </Field>
+        {/*
+          업로드 실패는 토스트가 아니라 이 자리에 남긴다 — 본문과 대표 이미지가 같은 훅을
+          쓰므로 무엇이 왜 막혔는지 다시 볼 수 있어야 하고, 사라지는 알림이면 파일을 다시
+          고르는 사이에 문구가 없어진다.
+        */}
+        {uploadError && <div className="mt-2 text-[12.5px] text-danger">{uploadError}</div>}
         <div className="mt-2 text-[12.5px] text-n500">
-          {mtxtCn.length.toLocaleString()} / {MTXT_CN_MAX_LENGTH.toLocaleString()}자 — 이미지
-          첨부는 추후 지원되며 지금은 이미지 주소를 Markdown 문법으로 넣습니다
+          {mtxtCn.length.toLocaleString()} / {MTXT_CN_MAX_LENGTH.toLocaleString()}자 —
+          {attachLock
+            ? ` ${attachLock}`
+            : " 이미지를 첨부하면 커서 자리에 이미지 문법이 들어갑니다"}
         </div>
       </Card>
 

@@ -1,6 +1,7 @@
 import {
   EVENT_CATEGORY_ERROR,
   EVENT_ERROR,
+  EVENT_IMAGE_ERROR,
   EVENT_PARTICIPANT_ERROR,
 } from "@/entities/event";
 import { API_ERROR, ApiError } from "@/shared/lib/api/client";
@@ -54,6 +55,33 @@ export function toEventSaveErrorMessage(error: unknown): string {
       return "없는 행사 분류입니다 — 분류가 방금 삭제됐을 수 있으니 다시 골라주세요";
     case EVENT_ERROR.EVENT_CONTENT_TOO_LARGE:
       return "본문이 100,000자를 넘어 저장할 수 없습니다 — 내용을 줄여주세요";
+    default:
+      return toEventErrorMessage(error);
+  }
+}
+
+/**
+ * 이미지 업로드 실패 (ssccops#141 — 발급 · R2 PUT 두 구간).
+ *
+ * **허용 형식과 용량 상한을 문구에 숫자로 적지 않는다.** 그 값은 서버에만 있어서(웹은
+ * 사전 검증을 하지 않는다) 여기 적으면 서버가 상한을 바꾼 날 화면만 옛 숫자를 말한다 —
+ * 사용자는 화면 말을 믿고 줄였는데도 계속 막히게 된다. 대신 다음 행동을 담는다.
+ *
+ * R2 구간의 실패(PUT_FAILED)는 우리 서버가 준 코드가 아니다 — 발급까지는 됐고 바이트만
+ * 넘어가지 못한 것이라, 재시도가 곧 다음 행동이다(허가증은 다시 발급받는다).
+ */
+export function toEventImageUploadErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "이미지를 올리지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case EVENT_IMAGE_ERROR.UNSUPPORTED_IMAGE_TYPE:
+      return "올릴 수 없는 형식의 파일입니다 — 이미지 파일을 골라주세요";
+    case EVENT_IMAGE_ERROR.IMAGE_TOO_LARGE:
+      return "이미지 용량이 허용 범위를 넘습니다 — 크기를 줄여 다시 올려주세요";
+    case EVENT_IMAGE_ERROR.PUT_FAILED:
+      return "이미지를 저장소에 올리지 못했습니다 — 잠시 후 다시 시도해주세요";
     default:
       return toEventErrorMessage(error);
   }

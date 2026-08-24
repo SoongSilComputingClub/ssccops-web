@@ -198,6 +198,7 @@ function EventEditView({
 
         <EventForm
           initial={event}
+          eventId={event.eventId}
           busy={busy}
           canManage={canManage}
           lockedHint={NO_MANAGE}

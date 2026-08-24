@@ -3,6 +3,7 @@ export {
   toEventCategoryErrorMessage,
   toEventDeleteErrorMessage,
   toEventErrorMessage,
+  toEventImageUploadErrorMessage,
   toEventParticipantErrorMessage,
   toEventParticipantRegisterErrorMessage,
   toEventParticipantStatusErrorMessage,
@@ -47,6 +48,11 @@ export type {
   ParticipantActionResult,
   ParticipantActions,
 } from "./model/use-participant-actions";
+export { useEventImageUpload } from "./model/use-event-image-upload";
+export type {
+  EventImageUpload,
+  EventImageUploadControl,
+} from "./model/use-event-image-upload";
 export { useFormLinkOptions } from "./model/use-form-link-options";
 export type { FormLinkOptions } from "./model/use-form-link-options";
 export { EventForm } from "./ui/event-form";
