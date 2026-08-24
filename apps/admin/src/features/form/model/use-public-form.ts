@@ -471,6 +471,12 @@ export function usePublicForm(formId: number): PublicFormController {
           sealedRef.current = true;
           return "submitted";
 
+        /*
+         * 반려된 응답을 다시 내려 한 경우 (ssccops-server #141)는 **완료로 다루지 않는다.**
+         * 위쪽과 달리 응답자가 도달하려던 상태에 도달하지 못했고, 완료 화면으로 보내면
+         * 접수되지 않은 답을 접수됐다고 말하게 된다. default로 떨어뜨려 사유를 화면에 남긴다.
+         */
+
         case PUBLIC_FORM_ERROR.FORM_NOT_ACCEPTING:
           sealedRef.current = true;
           if (aliveRef.current) {

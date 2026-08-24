@@ -46,6 +46,8 @@ export function toDraftSaveErrorMessage(error: unknown): string {
       return "접수가 끝나 더 이상 저장되지 않습니다";
     case PUBLIC_FORM_ERROR.RESPONSE_ALREADY_SUBMITTED:
       return "이미 제출한 폼입니다. 다른 창에서 제출했는지 확인해주세요";
+    case PUBLIC_FORM_ERROR.RESPONSE_ALREADY_REJECTED:
+      return "반려된 응답이라 더 저장되지 않습니다 — 결과는 안내받은 채널에서 확인해주세요";
     case PUBLIC_FORM_ERROR.RESPONSE_SAVE_CONFLICT:
       return "저장이 동시에 겹쳤습니다";
     case PUBLIC_FORM_ERROR.UNKNOWN_QUESTION_ITEM:
@@ -83,6 +85,12 @@ export function toSubmitErrorMessage(error: unknown): string {
       return "폼의 문항이 바뀌었습니다. 새로고침한 뒤 다시 제출해주세요";
     case PUBLIC_FORM_ERROR.RESPONSE_CONTENT_TOO_LARGE:
       return "작성한 내용이 너무 깁니다(전체 10만 자). 내용을 줄여 다시 제출해주세요";
+    /*
+     * 반려는 그 응답에 대해 **끝났다**는 뜻이다 (ssccops-server #141). "이미 제출했습니다"로
+     * 뭉개면 응답자는 오지 않을 심사 결과를 기다리므로, 다시 낼 수 없다는 것을 그대로 말한다.
+     */
+    case PUBLIC_FORM_ERROR.RESPONSE_ALREADY_REJECTED:
+      return "반려된 응답은 다시 제출할 수 없습니다 — 결과는 안내받은 채널에서 확인해주세요";
     case PUBLIC_FORM_ERROR.FORM_NOT_FOUND:
       return "폼을 찾을 수 없습니다";
     default:
