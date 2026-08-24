@@ -192,6 +192,20 @@ export function PublicFormPage({ formId }: { formId: number }) {
        */}
       <FormSaveStatusBar save={publicForm.save} onRetry={publicForm.retrySave} />
 
+      {/*
+        다중 응답 폼에서 이미 낸 것이 있을 때 (ssccops-server #143).
+
+        같은 주소를 다시 열면 빈 작성 화면이 뜨는데, 그것만으로는 지난 제출이 사라진 것인지
+        원래 여러 건을 받는 폼인지 알 수 없다 — 1건 폼이라면 이 자리에 '이미 제출한 폼입니다'가
+        떴을 것이므로, 그와 갈리는 이유를 여기서 밝힌다.
+      */}
+      {form.mltplRspnsYn && form.myResponseCount > 0 && (
+        <div className="rounded-[12px] border border-line bg-surface px-3 py-[10px] text-[13.5px] text-n400">
+          이미 {form.myResponseCount}건을 제출했습니다 — 이 폼은 여러 건을 받으므로 계속
+          작성할 수 있습니다.
+        </div>
+      )}
+
       {publicForm.restored && (
         <div className="rounded-[12px] border border-accent/30 bg-accent/8 px-3 py-[10px] text-[13.5px] text-accent">
           이어서 작성 중입니다 — 지난번에 쓰던 답변을 불러왔어요

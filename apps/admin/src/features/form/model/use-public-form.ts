@@ -46,6 +46,15 @@ import type { FormSaveStatus } from "./use-form-editor";
  * ── 화면이 갈리는 지점 ──────────────────────────────────────
  * 접수 불가는 문항을 뺀 200이 아니라 **409 FORM_NOT_ACCEPTING**으로 온다. 그래서 이 훅은
  * '문항은 있는데 못 쓰는 상태'를 만들지 않는다 — 폼 객체가 있으면 곧 답을 낼 수 있다는 뜻이다.
+ *
+ * ── 다중 응답 폼 (ssccops-server #143) ──────────────────────
+ * **여기에 분기를 더하지 않았다.** 서버가 alreadySubmitted의 뜻을 "냈는가"에서 "더 낼 수
+ * 없는가"로 좁혀, 다중 응답 폼은 이미 낸 뒤에도 false로 온다 — 이 훅은 그대로 ready를
+ * 유지하고 작성 화면이 계속 뜬다. 웹이 `mltplRspnsYn && ...` 같은 판정을 따로 두면 같은
+ * 규칙이 두 벌이 되고, 서버가 "낼 수 있는가"를 다시 정할 때 한쪽만 바뀐다.
+ *
+ * 초안은 폼 종류와 무관하게 언제나 1건이라 자동 저장 경로(GET·PUT .../responses/draft)는
+ * 그대로다 — 다중 응답 폼에서는 제출로 그 자리가 빈 뒤에 다음 초안이 시작된다.
  */
 
 /** 마지막 변경 이후 이 시간만큼 조용하면 저장한다 (이슈 권장 500~1000ms) */
@@ -60,7 +69,12 @@ export type PublicFormStatus =
   | "ready"
   /** 409 FORM_NOT_ACCEPTING — DRAFT·마감·기간 밖. **문항을 그리면 안 된다** */
   | "not-accepting"
-  /** 이 회원이 이미 제출을 마쳤다 */
+  /**
+   * 이 회원이 **더 낼 수 없다** (ssccops-server #143에서 뜻이 좁아졌다).
+   *
+   * 1건 폼에서 제출을 마친 경우다. 다중 응답 폼은 이미 낸 뒤에도 또 내는 것이 정상이라
+   * 이 상태로 오지 않고 계속 `ready`다 — 서버의 alreadySubmitted가 그렇게 판정한다.
+   */
   | "already-submitted"
   | "not-found"
   | "error";
@@ -163,8 +177,11 @@ async function loadPublicForm(
   const form = await fetchPublicForm(formId);
 
   /*
-   * 이미 제출한 경우 초안을 묻지 않는다. 서버는 그 경우에도 "작성 중인 것 없음"(data: null)을
+   * 더 낼 수 없는 경우 초안을 묻지 않는다. 서버는 그 경우에도 "작성 중인 것 없음"(data: null)을
    * 돌려주므로 물어도 되지만, 물을 이유가 없는 왕복을 하나 줄인다.
+   *
+   * 다중 응답 폼은 이미 몇 건을 냈어도 여기 걸리지 않는다(alreadySubmitted가 false다) —
+   * 초안을 물어 이어 쓰던 답을 복원하는 것이 그 폼에서는 정상적인 진입이다.
    */
   if (form.alreadySubmitted) {
     return {
