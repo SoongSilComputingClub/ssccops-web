@@ -21,6 +21,11 @@ import {
   useFormStatus,
   type FormStatusChange,
 } from "@/features/form";
+import {
+  NO_TEMPLATE_WRITE,
+  SaveAsTemplateSheet,
+  useTemplateFromForm,
+} from "@/features/form-template";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { isChoiceQitemType, QITEM_TYPE_NM } from "@/shared/config/codes";
 import { publicFormUrl, ROUTES } from "@/shared/config/routes";
@@ -139,7 +144,9 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
    */
   const canWrite = useCan(CAPABILITY.FORM_WRITE);
   const canChangeStatus = useCan(CAPABILITY.FORM_STATUS_CHANGE);
+  const templateSave = useTemplateFromForm();
   const [closeSheetOpen, setCloseSheetOpen] = useState(false);
+  const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [page, setPage] = useState(0);
   const [sel, setSel] = useState<Record<string, string[]>>({});
 
@@ -217,6 +224,21 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
 
     flash(message);
     if (copyFormId) router.push(ROUTES.formEdit(copyFormId));
+  };
+
+  /*
+   * '템플릿으로 저장' — 복제와 다른 조작이라 버튼도 따로 둔다 (#134).
+   *
+   * 서버가 저장하는 것은 **이 폼에 지금 저장돼 있는 문항 구성**이다. 상세 화면은 서버에서 받은
+   * 값을 그대로 보고 있으므로 화면과 저장되는 내용이 어긋날 여지가 없다 — 편집 화면에서는
+   * 초안이 아직 안 나갔을 수 있어 먼저 저장을 끝낸다.
+   */
+  const saveAsTemplate = async (input: { tmplNm: string; tmplExpln: string }) => {
+    const { formTmplId, message } = await templateSave.save(form.formId, input);
+    if (!message) return;
+
+    flash(message);
+    if (formTmplId) setTemplateSheetOpen(false);
   };
 
   const publicUrl = publicFormUrl(form.formId);
@@ -322,6 +344,19 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                   {duplication.pending ? "복제하는 중…" : "복제"}
                 </Button>
               </div>
+              {/*
+                템플릿 저장은 템플릿 API라 요구 권한이 폼 편집과 같은 FORM_WRITE지만, 서버가
+                거는 곳이 다르므로(FormTemplateController) 사유 문구도 그쪽 것을 쓴다.
+              */}
+              <Button
+                variant="ghost"
+                className="mt-2 w-full"
+                disabled={!canWrite || templateSave.pending}
+                title={canWrite ? undefined : NO_TEMPLATE_WRITE}
+                onClick={() => setTemplateSheetOpen(true)}
+              >
+                템플릿으로 저장
+              </Button>
               <div className="mt-3 flex items-center rounded-[12px] border border-line p-3">
                 <div className="text-[14.5px]">접수 상태 변경</div>
                 <div className="flex-1" />
@@ -451,6 +486,14 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
         pending={status.pending}
         onClose={() => setCloseSheetOpen(false)}
         onConfirm={confirmClose}
+      />
+
+      <SaveAsTemplateSheet
+        open={templateSheetOpen}
+        formTtlNm={form.formTtlNm}
+        pending={templateSave.pending}
+        onClose={() => setTemplateSheetOpen(false)}
+        onSave={(input) => void saveAsTemplate(input)}
       />
     </>
   );

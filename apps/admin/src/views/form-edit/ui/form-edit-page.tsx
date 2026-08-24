@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   QITEM_VERSION_NOTE,
@@ -18,6 +19,7 @@ import {
   useFormStatus,
   type FormEditor,
 } from "@/features/form";
+import { SaveAsTemplateSheet, useTemplateFromForm } from "@/features/form-template";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { fromInput, toInput, withServiceOffset } from "@/shared/lib/date";
 import { ROUTES } from "@/shared/config/routes";
@@ -104,6 +106,8 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
   const { draft, labelIds, assignedLabels, setDraft, setLabelIds, issues } = editor;
   const labelOptions = useFormLabelOptions();
   const formStatus = useFormStatus();
+  const templateSave = useTemplateFromForm();
+  const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
 
   /*
    * 지정돼 있지만 후보에는 없는 라벨 = **비활성화된 뒤에도 이 폼에 남아 있는 라벨**이다.
@@ -152,6 +156,28 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
     const savedFormId = await editor.saveNow();
     flash(savedFormId ? "저장했습니다" : "저장하지 못했습니다. 저장 상태를 확인해주세요");
     return savedFormId;
+  };
+
+  /*
+   * '템플릿으로 저장' — **저장을 먼저 끝낸다** (#134).
+   *
+   * 서버는 요청 본문의 문항을 받지 않고 경로가 가리키는 폼의 **현재 저장된** 구성을 복사한다.
+   * 그래서 자동 저장이 아직 나가지 않은 상태에서 부르면, 방금 고친 문항이 빠진 템플릿이 남고
+   * 사용자는 그 사실을 다음 회차에야 알게 된다. 신규 폼은 첫 저장 전까지 폼 번호가 없어
+   * 경로 자체를 만들 수 없으므로 같은 저장이 그 문제도 함께 푼다.
+   */
+  const saveAsTemplate = async (input: { tmplNm: string; tmplExpln: string }) => {
+    const savedFormId = await editor.saveNow();
+    if (!savedFormId) {
+      flash("저장하지 못해 템플릿으로 남기지 않았습니다. 저장 상태를 확인해주세요");
+      return;
+    }
+
+    const { formTmplId, message } = await templateSave.save(savedFormId, input);
+    if (!message) return;
+
+    flash(message);
+    if (formTmplId) setTemplateSheetOpen(false);
   };
 
   /* 상세로 넘어가기 전에 저장을 끝낸다 — 화면 내 이동은 beforeunload가 잡아 주지 않는다 */
@@ -349,6 +375,19 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
               >
                 {formStatus.pending ? "접수를 시작하는 중…" : "저장하고 바로 접수 시작"}
               </Button>
+              {/*
+                '템플릿으로 저장'은 복제와 다른 조작이라 버튼도 따로 둔다 (#134).
+                누르면 먼저 저장이 나간다 — 서버가 복사하는 것은 화면의 초안이 아니라
+                **폼에 저장돼 있는 문항 구성**이기 때문이다.
+              */}
+              <Button
+                variant="ghost"
+                className="py-[13px]"
+                disabled={templateSave.pending}
+                onClick={() => setTemplateSheetOpen(true)}
+              >
+                템플릿으로 저장
+              </Button>
               <div className="text-[13px] text-n500">
                 접수를 시작하면 공개 링크로 응답을 받습니다. 문항이 없거나 접수 일시가
                 올바르지 않으면 시작되지 않습니다.
@@ -365,6 +404,14 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
           />
         </div>
       </PageBody>
+
+      <SaveAsTemplateSheet
+        open={templateSheetOpen}
+        formTtlNm={draft.formTtlNm}
+        pending={templateSave.pending}
+        onClose={() => setTemplateSheetOpen(false)}
+        onSave={(input) => void saveAsTemplate(input)}
+      />
     </>
   );
 }
