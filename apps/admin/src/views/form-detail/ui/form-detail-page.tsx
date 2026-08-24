@@ -367,9 +367,11 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
             <Card>
               <SectionLabel className="mb-3">응답 요약</SectionLabel>
               {/* 서버 집계값 — 작성 중(DRAFT) 응답은 어느 칸에도 들어가지 않는다 */}
-              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
                 <StatBox label="전체" value={summary.total} />
                 <StatBox label="제출" value={summary.submitted} />
+                {/* 수정요청은 응답자의 차례로 넘어간 것이라 결론 둘과 칸을 나눈다 (#133) */}
+                <StatBox label="수정요청" value={summary.changesRequested} />
                 <StatBox label="승인" value={summary.accepted} tone="accent" />
                 <StatBox label="반려" value={summary.rejected} tone="danger" />
               </div>

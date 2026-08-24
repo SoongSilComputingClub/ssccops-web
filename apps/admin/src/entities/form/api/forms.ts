@@ -122,12 +122,14 @@ function toResponseSummary(
   responseCount: number,
 ): FormResponseSummary {
   const submitted = summary?.submitted ?? 0;
+  const changesRequested = summary?.changesRequested ?? 0;
   const accepted = summary?.accepted ?? 0;
   const rejected = summary?.rejected ?? 0;
   return {
     // 전체를 별도로 안 주면 목록과 같은 집계값(responseCount)으로 채운다
     total: summary?.total ?? responseCount,
     submitted,
+    changesRequested,
     accepted,
     rejected,
   };
