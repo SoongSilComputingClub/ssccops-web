@@ -96,6 +96,14 @@ export const CAPABILITY = {
   ROLE_MANAGE: "ROLE_MANAGE",
   MEMBER_MANAGE: "MEMBER_MANAGE",
   /**
+   * 행사 관리 (ssccops#139 · #140 — 서버는 병렬 구현 중).
+   *
+   * 행사·행사 분류 관리 API 전체(조회 포함)가 이 코드 하나로 잠긴다 — ROLE_MANAGE·
+   * MEMBER_MANAGE와 같은 자리다. 조회부터 막혀 있으므로 화면은 이 코드가 없으면 메뉴를
+   * 아예 감춘다(열어 봐야 첫 조회부터 403이다).
+   */
+  EVENT_MANAGE: "EVENT_MANAGE",
+  /**
    * 하위 업무 찬반 투표 자격 (서버 #123). 직위 코드(role_pstn_cd)로 갈리던 투표 자격이 권한으로
    * 통합되면서 capabilities에 실리게 됐다 — 상세 화면이 투표 버튼을 서버 판정 없이 잠글 수 있다.
    * 승인·반려 자격(SUB_WORK_APPROVE_*)은 여기 없다: 유형(건)마다 요구 코드가 달라 화면은

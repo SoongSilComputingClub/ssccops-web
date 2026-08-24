@@ -290,3 +290,26 @@ export const QITEM_TYPE_CDS = codesOf(QITEM_TYPE_NM);
 export function isChoiceQitemType(cd: QitemTypeCd): boolean {
   return cd === "SINGLE_CHOICE" || cd === "MULTI_CHOICE";
 }
+
+/* ── 행사_상태 (event.event_stts_cd) · ssccops#139 D9 ───────── */
+
+/**
+ * 저장 상태 세 값뿐이다 — 예정·진행 중·종료 같은 진행 단계(eventPhase)는 행사 일시에서
+ * 서버가 파생하는 값이라 여기(기준 코드 사전)가 아니라 entities/event/model에 둔다
+ * (폼의 FormReceiptStatus와 같은 자리).
+ */
+export type EventSttsCd = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
+export const EVENT_STTS_NM: Record<EventSttsCd, string> = {
+  DRAFT: "작성 중",
+  PUBLISHED: "게시",
+  ARCHIVED: "보관",
+};
+
+export const EVENT_STTS_CDS = codesOf(EVENT_STTS_NM);
+
+/*
+ * 행사_분류(event_clsf)는 화면에서 추가·수정·삭제하는 사용자 관리 코드테이블이라(D13)
+ * 고정 유니온으로 두지 않는다 — 코드값은 서버가 준다(entities/event/api/event-categories.ts).
+ * 역할_분류(role_clsf)와 같은 판단이다.
+ */

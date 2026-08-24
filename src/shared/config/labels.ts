@@ -151,4 +151,30 @@ export const FIELD_LABEL = {
   responseStatus: "응답 상태",
   /** rspns_cn (응답_내용) */
   responseContent: "응답 내용",
+
+  /* ── 행사 (event · event_clsf) ──────────────────────────── */
+  /** event_ttl (행사_제목) */
+  eventTitle: "행사 제목",
+  /** event_clsf_cd 가 가리키는 분류 자체 (행사_분류) — 목록·편집의 칸 이름 */
+  eventClassification: "행사 분류",
+  /** event_clsf_cd (행사_분류_코드) */
+  eventClassificationCode: "분류 코드",
+  /** event_clsf_nm (행사_분류_명) */
+  eventClassificationName: "분류명",
+  /** event_stts_cd (행사_상태) */
+  eventStatus: "행사 상태",
+  /** mtxt_cn (본문_내용) */
+  eventContent: "본문",
+  /** thmb_url_addr (썸네일_URL_주소) */
+  thumbnailUrl: "대표 이미지 URL",
+  /** event_bgng_dt (행사_시작_일시) */
+  eventStartAt: "행사 시작 일시",
+  /** event_end_dt (행사_종료_일시) */
+  eventEndAt: "행사 종료 일시",
+  /** plc_nm (장소_명) */
+  placeName: "장소",
+  /** ptcp_lmt_cnt (참가_제한_수) */
+  participantLimit: "정원",
+  /** form_id 가 가리키는 전속 연결 폼 (연결_폼) */
+  linkedForm: "연결 폼",
 } as const;
