@@ -1,5 +1,6 @@
+import { isTextQitemType } from "@ssccops/form-renderer";
 import { SYSTEM_FORM_QITEM_LOCKED, type QitemCpstCn } from "@/entities/form";
-import { isChoiceQitemType, type QitemTypeCd } from "@/shared/config/codes";
+import { isChoiceQitemType } from "@/shared/config/codes";
 import type { FormDraft } from "./form-draft";
 
 /*
@@ -15,10 +16,10 @@ import type { FormDraft } from "./form-draft";
  * 사용자는 서버 장애로 오해한다 — 대신 "무엇을 고치면 저장되는지"를 문구로 남긴다.
  */
 
-/** 문항 유형 중 정규식(ptrnCn)을 가질 수 있는 것 */
-export function isTextQitemType(cd: QitemTypeCd): boolean {
-  return cd === "SHORT_TEXT" || cd === "LONG_TEXT";
-}
+/*
+ * 정규식을 가질 수 있는 문항 유형 판정(`isTextQitemType`)은 `@ssccops/form-renderer`에서 온다
+ * (#152) — 응답자 화면의 검증도 같은 판정을 쓰므로 여기서 다시 정의하지 않는다.
+ */
 
 export interface FormDraftIssues {
   /** 기본정보 인라인 오류 (빈 문자열이면 정상) */

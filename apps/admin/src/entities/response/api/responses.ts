@@ -1,3 +1,4 @@
+import type { RspnsCn } from "@ssccops/form-renderer";
 import type {
   MbrGrdCd,
   MbrSttsCd,
@@ -11,7 +12,6 @@ import type {
   FormResponseReviewHistory,
   ResponseMember,
   ResponseMemberDetail,
-  RspnsCn,
 } from "../model/types";
 
 /*

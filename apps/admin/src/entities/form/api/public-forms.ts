@@ -1,5 +1,5 @@
+import type { QitemCpstCn } from "@ssccops/form-renderer";
 import { ApiError, apiFetch } from "@/shared/lib/api/client";
-import type { QitemCpstCn } from "../model/types";
 import { FORM_ERROR } from "./forms";
 
 /*

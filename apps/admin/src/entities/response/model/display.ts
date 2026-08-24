@@ -4,8 +4,8 @@ import {
   type RspnsPrcsSeCd,
   type RspnsSttsCd,
 } from "@/shared/config/codes";
+import type { RspnsCn } from "@ssccops/form-renderer";
 import type { BadgeTone } from "@/shared/ui";
-import type { RspnsCn } from "./types";
 
 /*
  * 응답 표시 헬퍼.

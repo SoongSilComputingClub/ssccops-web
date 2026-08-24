@@ -10,13 +10,13 @@ import {
 import { PATTERN_PRESETS } from "@/shared/config/constants";
 import {
   isChoiceQitemType,
+  isTextQitemType,
   QITEM_TYPE_CDS,
   QITEM_TYPE_NM,
   type QitemTypeCd,
 } from "@/shared/config/codes";
 import { Badge, Card, Chip, SectionLabel, TextField, Toggle, flash } from "@/shared/ui";
 import { nextQitemId, parseMaxSlctCnt } from "../model/form-draft";
-import { isTextQitemType } from "../model/form-validation";
 
 /*
  * 문항 구성 편집기 — 페이지와 문항을 고치는 화면 조각.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { reachedPageSeqs, toRspnsCn, validateAnswers } from "@ssccops/form-renderer";
 import { fetchPublicForm, PUBLIC_FORM_ERROR, type PublicForm } from "@/entities/form";
 import {
   fetchMyResponseDraft,
@@ -10,11 +11,6 @@ import {
 } from "@/entities/response";
 import { API_ERROR, ApiError } from "@/shared/lib/api/client";
 import {
-  reachedPageSeqs,
-  toRspnsCn,
-  validateAnswers,
-} from "./public-form-answers";
-import {
   toDraftSaveErrorMessage,
   toPublicFormLoadErrorMessage,
   toSubmitErrorMessage,
@@ -23,6 +19,13 @@ import type { FormSaveStatus } from "./use-form-editor";
 
 /*
  * 응답자 화면의 상태 — 폼 조회 · 초안 복원 · 자동 저장 · 제출.
+ *
+ * ── 이 훅은 패키지로 가지 않았다 (#152) ────────────────────────
+ * 답의 모양·분기·검증은 `@ssccops/form-renderer`가 갖지만, 이 훅은 **어드민의 `apiFetch` 위에
+ * 서 있다** — 401에 로그인으로, 403 SIGNUP_REQUIRED에 가입 화면으로 리다이렉트까지 끝내는
+ * 클라이언트다. 공개 앱은 그 리다이렉트를 일부러 걸지 않으므로(돌아올 화면이 없다) 훅을 그대로
+ * 옮기면 두 앱 중 한쪽에서 반드시 틀린다. 공개 앱의 신청 흐름은 같은 렌더러 위에 자기 전송
+ * 계층을 얹는다(후속 · EV-006).
  *
  * ── 자동 저장의 뼈대는 폼 편집기(use-form-editor)와 같다 ────────
  * 같은 구조를 두 번 만들 것이 아니라 **같은 이유로 같은 구조**를 쓴다.

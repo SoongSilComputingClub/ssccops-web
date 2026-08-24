@@ -330,27 +330,21 @@ export const RPT_CYCLE_CDS = codesOf(RPT_CYCLE_NM);
 
 /* ── 문항 유형 (form.qitem_cpst_cn JSONB 내부) ──────────────── */
 
-export type QitemTypeCd =
-  | "SHORT_TEXT"
-  | "LONG_TEXT"
-  | "SINGLE_CHOICE"
-  | "MULTI_CHOICE"
-  | "DATE";
-
-export const QITEM_TYPE_NM: Record<QitemTypeCd, string> = {
-  SHORT_TEXT: "단답형",
-  LONG_TEXT: "장문형",
-  SINGLE_CHOICE: "단일선택",
-  MULTI_CHOICE: "다중선택",
-  DATE: "날짜",
-};
-
-export const QITEM_TYPE_CDS = codesOf(QITEM_TYPE_NM);
-
-/** 선택지를 갖는 문항 유형인지 */
-export function isChoiceQitemType(cd: QitemTypeCd): boolean {
-  return cd === "SINGLE_CHOICE" || cd === "MULTI_CHOICE";
-}
+/*
+ * **정의는 여기 없다 — `@ssccops/form-renderer`에 있다**(#152).
+ *
+ * 문항 유형은 폼을 그리는 쪽이 반드시 아는 값이고 `isTextQitemType`(정규식 검사 대상 판정)은
+ * 서버 `ResponseAnswerValidator.TEXT_TYPES`와 맞춰 둔 규칙이라, 어드민과 공개 앱이 각자 적으면
+ * 한쪽만 고쳐졌을 때 조용히 갈린다. 이 사전은 그것을 다시 정의하지 않고 그대로 통과시킨다 —
+ * 문항 유형도 다른 코드값과 같은 자리에서 찾을 수 있게 하려는 것이고, 정의는 패키지 한 곳뿐이다.
+ */
+export type { QitemTypeCd } from "@ssccops/form-renderer";
+export {
+  QITEM_TYPE_CDS,
+  QITEM_TYPE_NM,
+  isChoiceQitemType,
+  isTextQitemType,
+} from "@ssccops/form-renderer";
 
 /* ── 행사_상태 (event.event_stts_cd) · ssccops#139 D9 ───────── */
 

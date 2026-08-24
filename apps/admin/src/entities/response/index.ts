@@ -5,8 +5,9 @@ export type {
   MyFormResponse,
   ResponseMember,
   ResponseMemberDetail,
-  RspnsCn,
 } from "./model/types";
+/* 응답 내용의 저장 형태는 `@ssccops/form-renderer`가 정의한다(#152) */
+export type { RspnsCn } from "@ssccops/form-renderer";
 export {
   RSPNS_PRCS_SE_BADGE,
   RSPNS_STTS_BADGE,
