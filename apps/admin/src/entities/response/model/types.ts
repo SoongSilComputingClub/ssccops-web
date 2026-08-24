@@ -1,4 +1,9 @@
-import type { MbrGrdCd, MbrSttsCd, RspnsSttsCd } from "@/shared/config/codes";
+import type {
+  MbrGrdCd,
+  MbrSttsCd,
+  RspnsPrcsSeCd,
+  RspnsSttsCd,
+} from "@/shared/config/codes";
 
 /**
  * 응답_내용(내용J) — 문항 ID(qitemId)를 key로 저장한다.
@@ -50,14 +55,50 @@ export interface FormResponseItem {
   member: ResponseMember;
 }
 
+/**
+ * table: form_rspns_rvw_hstry — 처리 이력 한 줄 (ssccops-server #141).
+ *
+ * 제출도 한 줄로 들어간다(`prcsSeCd === "SUBMIT"`) — 검토만 쌓으면 타임라인이 "무엇에 대한
+ * 검토였는가"의 출발점을 잃는다. 재제출이 있으면 SUBMIT 줄이 여러 번 나타나고 `sbmsnSeq`로
+ * 갈린다.
+ *
+ * 서버가 처리 일시 오름차순으로 내려주고 처리가 없으면 빈 배열이다 — 화면이 다시 정렬하지
+ * 않는다(정렬 규칙이 두 벌이 되면 갈린다).
+ */
+export interface FormResponseReviewHistory {
+  formRspnsRvwHstryId: number;
+  /**
+   * 몇 회차 제출에 대한 처리였는가 — 재제출이 있으면 회차가 늘어난다.
+   *
+   * 서버는 언제나 채워 보내지만(NOT NULL), 회차를 모르는 배포를 만났을 때 1회차라고 **지어내지
+   * 않는다** — 없으면 화면이 회차 표기를 빼고 나머지를 그대로 그린다.
+   */
+  sbmsnSeq: number | null;
+  prcsSeCd: RspnsPrcsSeCd;
+  /** 처리자 — 이름은 이력 행이 아니라 mbr에서 오므로 개명하면 함께 바뀐다 */
+  prcsMbrId: number;
+  prcsMbrNm: string;
+  /** 승인은 의견이 선택이라 비어 있을 수 있다. 제출 줄에는 없다 */
+  rvwOpnnCn: string | null;
+  prcsDt: string | null;
+}
+
 /** GET /v1/forms/{formId}/responses/{formRspnsId} */
 export interface FormResponseDetail {
   formRspnsId: number;
   rspnsSttsCd: RspnsSttsCd;
   sbmsnDt: string | null;
+  /** 제출 회차 — 이력의 각 줄이 몇 회차에 대한 처리였는지 읽는 기준점이다 */
+  sbmsnSeq: number | null;
   member: ResponseMemberDetail;
   /** 문항 라벨은 여기 없다 — 폼 상세 API의 qitemCpstCn과 맞춰 그린다 */
   rspnsCn: RspnsCn;
+  /**
+   * 처리 이력. 별도 엔드포인트가 없고 상세가 통째로 싣는다 — 나누면 상세를 여는 화면이 두 번
+   * 요청하고, 두 응답 사이에 다른 검토자의 처리가 끼어들면 배지와 타임라인이 서로 다른 시점을
+   * 가리킨다.
+   */
+  reviewHistories: FormResponseReviewHistory[];
   /**
    * 목록 정렬 기준의 인접 응답. 없으면(목록의 처음·끝) null.
    *

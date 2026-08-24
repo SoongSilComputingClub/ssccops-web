@@ -1,4 +1,9 @@
-import { RSPNS_STTS_NM, type RspnsSttsCd } from "@/shared/config/codes";
+import {
+  RSPNS_PRCS_SE_NM,
+  RSPNS_STTS_NM,
+  type RspnsPrcsSeCd,
+  type RspnsSttsCd,
+} from "@/shared/config/codes";
 import type { BadgeTone } from "@/shared/ui";
 import type { RspnsCn } from "./types";
 
@@ -14,8 +19,26 @@ export const RSPNS_STTS_BADGE: Record<RspnsSttsCd, { label: string; tone: BadgeT
   // 작성 중은 심사 대상이 아니라는 것이 한눈에 보여야 해서 무채색으로 둔다
   DRAFT: { label: RSPNS_STTS_NM.DRAFT, tone: "outline" },
   SUBMITTED: { label: RSPNS_STTS_NM.SUBMITTED, tone: "blue" },
+  /*
+   * 수정요청은 응답자의 차례로 넘어간 상태다 — 결론(승인·반려)도 아니고 검토를 기다리는
+   * 중도 아니라, 앞뒤 어느 쪽과도 같은 색이면 목록에서 구별되지 않는다. 회의 상태의
+   * '진행 중' 계열과 같은 amber를 쓴다.
+   */
+  CHANGES_REQUESTED: { label: RSPNS_STTS_NM.CHANGES_REQUESTED, tone: "amber" },
   ACCEPTED: { label: RSPNS_STTS_NM.ACCEPTED, tone: "blue" },
   REJECTED: { label: RSPNS_STTS_NM.REJECTED, tone: "red" },
+};
+
+/** 처리 이력 줄의 처리 구분 배지 — 상태 배지와 색 어휘를 맞춘다(같은 일을 같은 색으로) */
+export const RSPNS_PRCS_SE_BADGE: Record<
+  RspnsPrcsSeCd,
+  { label: string; tone: BadgeTone }
+> = {
+  // 제출은 응답자가 한 일이라 검토자의 처리 셋과 색으로 갈라 둔다
+  SUBMIT: { label: RSPNS_PRCS_SE_NM.SUBMIT, tone: "outline" },
+  ACCEPT: { label: RSPNS_PRCS_SE_NM.ACCEPT, tone: "blue" },
+  REQUEST_CHANGES: { label: RSPNS_PRCS_SE_NM.REQUEST_CHANGES, tone: "amber" },
+  REJECT: { label: RSPNS_PRCS_SE_NM.REJECT, tone: "red" },
 };
 
 /** 응답값 표시 문자열 — 다중선택은 ", "로 잇는다 */

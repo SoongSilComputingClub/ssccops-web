@@ -1,8 +1,14 @@
-import type { MbrGrdCd, MbrSttsCd, RspnsSttsCd } from "@/shared/config/codes";
+import type {
+  MbrGrdCd,
+  MbrSttsCd,
+  RspnsPrcsSeCd,
+  RspnsSttsCd,
+} from "@/shared/config/codes";
 import { apiFetch } from "@/shared/lib/api/client";
 import type {
   FormResponseDetail,
   FormResponseItem,
+  FormResponseReviewHistory,
   ResponseMember,
   ResponseMemberDetail,
   RspnsCn,
@@ -44,10 +50,22 @@ interface FormResponseSummaryResponse {
   member: ResponseMemberResponse | null;
 }
 
+interface FormResponseReviewHistoryResponse {
+  formRspnsRvwHstryId: number;
+  sbmsnSeq: number | null;
+  prcsSeCd: RspnsPrcsSeCd;
+  prcsMbrId: number;
+  prcsMbrNm: string | null;
+  rvwOpnnCn: string | null;
+  prcsDt: string | null;
+}
+
 interface FormResponseDetailResponse
   extends Omit<FormResponseSummaryResponse, "member"> {
   member: ResponseMemberDetailResponse | null;
+  sbmsnSeq: number | null;
   rspnsCn: RspnsCn | null;
+  reviewHistories: FormResponseReviewHistoryResponse[] | null;
   prevFormRspnsId: number | null;
   nextFormRspnsId: number | null;
 }
@@ -94,13 +112,42 @@ function toFormResponseItem(res: FormResponseSummaryResponse): FormResponseItem 
   };
 }
 
+/**
+ * 처리 이력 한 줄.
+ *
+ * **비어 있는 값을 채우지 않는다.** 검토 의견은 승인에서 선택이고 제출 줄에는 아예 없으므로
+ * 빈 것이 정상이며, 처리자 이름이 비는 것은 조인이 빠진 배포에서만 일어난다 — 어느 쪽도
+ * 여기서 "-"로 메우면 "값이 없다"와 "서버가 -를 줬다"를 구별할 수 없게 된다. 표시 규칙은
+ * 그리는 쪽이 정한다.
+ */
+function toReviewHistory(
+  res: FormResponseReviewHistoryResponse,
+): FormResponseReviewHistory {
+  return {
+    formRspnsRvwHstryId: res.formRspnsRvwHstryId,
+    sbmsnSeq: res.sbmsnSeq ?? null,
+    prcsSeCd: res.prcsSeCd,
+    prcsMbrId: res.prcsMbrId,
+    prcsMbrNm: res.prcsMbrNm ?? "",
+    rvwOpnnCn: res.rvwOpnnCn ?? null,
+    prcsDt: res.prcsDt ?? null,
+  };
+}
+
 function toFormResponseDetail(res: FormResponseDetailResponse): FormResponseDetail {
   return {
     formRspnsId: res.formRspnsId,
     rspnsSttsCd: res.rspnsSttsCd,
     sbmsnDt: res.sbmsnDt,
+    sbmsnSeq: res.sbmsnSeq ?? null,
     member: toMemberDetail(res.member),
     rspnsCn: res.rspnsCn ?? {},
+    /*
+     * 계약상 이력은 처리가 없어도 빈 배열이지 null이 아니다. 그래도 `?? []`를 두는 것은
+     * 이력을 내려주지 않는 옛 서버에서 화면이 통째로 죽는 대신 **타임라인만 비게** 하려는
+     * 것이다 — 없는 줄을 만들어 내는 것이 아니라 없다는 사실을 그대로 옮긴다.
+     */
+    reviewHistories: (res.reviewHistories ?? []).map(toReviewHistory),
     prevFormRspnsId: res.prevFormRspnsId ?? null,
     nextFormRspnsId: res.nextFormRspnsId ?? null,
   };
@@ -108,12 +155,17 @@ function toFormResponseDetail(res: FormResponseDetailResponse): FormResponseDeta
 
 /* ── 오류 코드 ─────────────────────────────────────────────── */
 
-/** 응답 조회·상태 변경이 돌려주는 오류 코드 (ssccops-server #37) */
+/** 응답 조회·검토 처리가 돌려주는 오류 코드 (ssccops-server #37 · #141) */
 export const RESPONSE_ERROR = {
   /** 없는 응답 · **다른 폼의 응답 ID**도 같은 코드로 온다 */
   FORM_RESPONSE_NOT_FOUND: "FORM_RESPONSE_NOT_FOUND",
-  /** DRAFT를 대상으로 했거나 DRAFT로 되돌리려 함 */
+  /**
+   * 결론이 난 응답을 다시 심사했거나(승인·반려는 되돌릴 수 없다), DRAFT가 얽힌 전이,
+   * 같은 상태로의 재지정, 미심사(SUBMITTED)로 되돌리기 (#141에서 좁아졌다)
+   */
   INVALID_RESPONSE_STATUS_TRANSITION: "INVALID_RESPONSE_STATUS_TRANSITION",
+  /** 수정요청·반려인데 검토 의견이 비었다 — 공백만 있는 문자열도 같다 (#141) */
+  REVIEW_OPINION_REQUIRED: "REVIEW_OPINION_REQUIRED",
   /** 기준 코드 밖의 상태값 */
   INVALID_CODE_VALUE: "INVALID_CODE_VALUE",
 } as const;
@@ -170,25 +222,44 @@ export async function fetchFormResponse(
   return toFormResponseDetail(res);
 }
 
-/* ── 상태 변경 ─────────────────────────────────────────────── */
+/* ── 검토 처리 ─────────────────────────────────────────────── */
+
+/** 검토 처리 요청 — 결론과 의견을 함께 보낸다 */
+export interface FormResponseReviewInput {
+  /** 고를 수 있는 것은 ACCEPTED · CHANGES_REQUESTED · REJECTED 셋뿐이다 */
+  rspnsSttsCd: RspnsSttsCd;
+  /** 수정요청·반려는 필수, 승인은 선택 */
+  rvwOpnnCn: string;
+}
 
 /**
- * PATCH /v1/forms/{formId}/responses/{formRspnsId}/status — 심사 결과 반영.
+ * POST /v1/forms/{formId}/responses/{formRspnsId}/reviews — 검토 처리 (ssccops-server #141).
  *
- * SUBMITTED ↔ ACCEPTED ↔ REJECTED 는 자유롭게 오갈 수 있다(심사 번복 허용). DRAFT가 얽힌
- * 전이는 서버가 400 `INVALID_RESPONSE_STATUS_TRANSITION`으로 거절한다.
+ * **`PATCH .../status`를 대체한다.** 상태와 검토 의견을 한 요청으로 보낸다 — 두 경로로 나누면
+ * 상태는 바뀌었는데 사유가 없는 응답이 남을 수 있고, 이력 행은 잠겨 있어 나중에 채워 넣을
+ * 방법도 없다. 화면에서도 이것은 결론과 의견을 적고 한 번 누르는 조작이다.
  *
- * 응답 본문을 쓰지 않는다 — 변경 후 화면 값은 **재조회로 맞춘다**. 서버가 돌려준 한 건을
- * 목록 배열에 끼워 넣는 방식은 정렬·필터가 걸린 목록에서 어긋나기 쉽고, 폼 상세의 응답
- * 요약 집계는 어차피 여기서 알 수 없다.
+ * 처리자는 보내지 않는다 — 서버가 인증 주체에서 가져간다. 요청이 실어 보내게 두면 "누가
+ * 했는가"를 스스로 적어 넣을 수 있어 이력이 증거가 되지 못한다.
+ *
+ * 의견은 **빈 문자열이면 아예 넣지 않는다.** 승인에서 선택이라 빈 값을 그대로 보내면 서버가
+ * 공백 문자열을 저장할 자리가 생기고, 이력에 "적었지만 비어 있는 의견"이 남는다.
+ *
+ * 응답 본문(요약 한 건)을 쓰지 않는다 — 변경 후 화면 값은 **재조회로 맞춘다**. 결론 하나가
+ * 상태·처리 이력·폼 상세의 응답 요약 집계를 함께 움직이는데 그 파생값을 화면이 다시 셀 수
+ * 없고, 전이 응답으로 부분 갱신하면 반려 직후 화면에 이전 사유가 그대로 남는다.
  */
-export async function updateFormResponseStatus(
+export async function reviewFormResponse(
   formId: number,
   formRspnsId: number,
-  rspnsSttsCd: RspnsSttsCd,
+  input: FormResponseReviewInput,
 ): Promise<void> {
-  await apiFetch<unknown>(`/v1/forms/${formId}/responses/${formRspnsId}/status`, {
-    method: "PATCH",
-    body: JSON.stringify({ rspnsSttsCd }),
+  const opinion = input.rvwOpnnCn.trim();
+  await apiFetch<unknown>(`/v1/forms/${formId}/responses/${formRspnsId}/reviews`, {
+    method: "POST",
+    body: JSON.stringify({
+      rspnsSttsCd: input.rspnsSttsCd,
+      ...(opinion ? { rvwOpnnCn: opinion } : {}),
+    }),
   });
 }

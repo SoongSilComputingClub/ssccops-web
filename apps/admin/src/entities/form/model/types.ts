@@ -116,9 +116,16 @@ export interface FormSummary {
 
 /** 상세의 응답 요약 — 목록의 responseCount와 같은 집계 규칙(DRAFT 제외)을 따른다 */
 export interface FormResponseSummary {
-  /** 전체 = submitted + accepted + rejected */
+  /** 전체 = submitted + changesRequested + accepted + rejected */
   total: number;
   submitted: number;
+  /**
+   * 수정요청 — 서버 #141에서 더해졌다.
+   *
+   * 빼면 수정요청을 누르는 순간 그 응답이 요약 숫자에서 사라져, 운영자가 자기 조작으로
+   * 응답을 잃어버린 것처럼 보인다(전체와 나머지 칸의 합도 어긋난다).
+   */
+  changesRequested: number;
   accepted: number;
   rejected: number;
 }
