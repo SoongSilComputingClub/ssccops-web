@@ -56,6 +56,15 @@ export const ROUTES = {
     `/forms/${formId}/responses/${formRspnsId}`,
   formLabels: "/forms/labels",
 
+  /*
+   * 행사 관리 (#136). 상세 화면이 따로 없다 — 목록에서 제목을 누르면 곧장 수정 화면이다.
+   * 게시·보관 전이와 삭제도 수정 화면에서 한다(행사 정보와 전이 버튼이 같은 것을 보게).
+   */
+  events: "/events",
+  eventNew: "/events/new",
+  eventEdit: (eventId: number) => `/events/${eventId}/edit`,
+  eventCategories: "/events/categories",
+
   my: "/my",
 
   publicForm: (formId: number) => `/f/${formId}`,

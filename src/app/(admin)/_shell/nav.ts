@@ -177,6 +177,29 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "라벨 관리", href: ROUTES.formLabels, isActive: starts("/forms/labels") },
     ],
   },
+  {
+    label: "행사",
+    mono: "행",
+    items: [
+      /*
+       * 행사 관리 (#136). 폼과 달리 두 메뉴 모두 requires 를 둔다 — 행사·분류 관리 API는
+       * **조회까지 전부 EVENT_MANAGE**라(서버 판정) 권한 없이 들어가면 첫 조회부터 403이다.
+       * 등록·수정·분류 편집은 목록에서 들어가므로 목차에 따로 올리지 않는다.
+       */
+      {
+        label: "행사 목록",
+        href: ROUTES.events,
+        isActive: (p) => p.startsWith("/events") && !p.startsWith("/events/categories"),
+        requires: CAPABILITY.EVENT_MANAGE,
+      },
+      {
+        label: "분류 관리",
+        href: ROUTES.eventCategories,
+        isActive: starts("/events/categories"),
+        requires: CAPABILITY.EVENT_MANAGE,
+      },
+    ],
+  },
 ];
 
 export const NAV_FOOT: NavGroup = {
