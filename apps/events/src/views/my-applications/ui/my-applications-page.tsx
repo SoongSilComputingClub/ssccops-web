@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   fetchMyApplications,
   myApplicationsErrorMessage,
@@ -11,9 +12,8 @@ import {
 } from "@/shared/api/authed-client";
 import { SignInButton } from "@/features/auth";
 import { ROUTES, signupUrl } from "@/shared/config/routes";
-import { EmptyState } from "@/shared/ui";
+import { EmptyState, Notice } from "@/shared/ui";
 import { ApplicationCard } from "./application-card";
-import { Notice } from "./notice";
 
 /*
  * 내 신청 현황 (SSR · wave2 D10).
@@ -72,9 +72,9 @@ function SignedOutNotice() {
 /**
  * 인증은 됐지만 아직 회원이 아니다.
  *
- * **가입 화면으로 보내지 않는다** — 이 앱에는 가입 폼이 없다(#150 범위 밖). 어드민 오리진이
- * 설정돼 있으면 그쪽 가입 화면을 링크로 열어 주고, 없으면 문구만 남긴다. 없는 화면으로 보내
- * 404를 만들거나, 가입할 곳이 없는 앱 안에서 리다이렉트를 돌리지 않기 위해서다.
+ * **이 화면에서는 가입 폼을 열지 않는다.** 간편 가입은 신청 흐름 안에 있고(#154) 그 흐름은
+ * 행사 하나를 전제로 선다 — 여기에는 태울 행사가 없다. 그래서 신청할 행사를 고르러 목록으로
+ * 보내거나, 어드민 오리진이 설정돼 있으면 그쪽 가입 화면을 링크로 열어 준다.
  */
 function SignupRequiredNotice() {
   const signup = signupUrl();
@@ -82,16 +82,21 @@ function SignupRequiredNotice() {
   return (
     <Notice
       title="회원 가입을 마쳐야 신청 현황을 볼 수 있습니다"
-      description="로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다. 가입을 마친 뒤 이 화면을 다시 열어 주세요."
+      description="로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다. 모집 중인 행사에 신청하면 그 화면에서 가입까지 함께 마칠 수 있습니다."
     >
-      {signup && (
-        <a
-          href={signup}
+      <div className="flex flex-wrap items-center justify-center gap-[8px]">
+        <Link
+          href={ROUTES.events}
           className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
         >
-          가입하러 가기
-        </a>
-      )}
+          모집 중인 행사 보기
+        </Link>
+        {signup && (
+          <a href={signup} className="px-[14px] py-[12px] text-[14.5px] text-n300 hover:text-ink">
+            가입 화면에서 먼저 가입하기
+          </a>
+        )}
+      </div>
     </Notice>
   );
 }

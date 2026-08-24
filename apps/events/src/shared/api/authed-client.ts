@@ -1,4 +1,5 @@
 import { createClient } from "@/shared/lib/supabase/server";
+import { AUTH_ERROR } from "./auth-error";
 import { ApiError, apiFetch } from "./client";
 
 /*
@@ -9,20 +10,16 @@ import { ApiError, apiFetch } from "./client";
  * 그래서 **더하기만** 했다: 여기서 하는 일은 access token을 헤더에 싣는 것 하나이고, 봉투 벗기기·
  * `ApiError` 변환은 `apiFetch`를 그대로 통과한다(오류 모양이 두 벌이 되지 않게).
  *
- * 어드민의 `apiFetch`와 달리 **리다이렉트를 하지 않는다.** 이 앱에는 로그인 화면도 가입 화면도
- * 없어 보낼 곳이 없고, 서버 컴포넌트에서 `window.location`을 만질 수도 없다. 401·403은 오류로
- * 올려 보내고 화면이 안내로 그린다 — 갈 곳 없는 리다이렉트를 만들지 않기 위한 규칙이다.
+ * 어드민의 `apiFetch`와 달리 **리다이렉트를 하지 않는다.** 이 앱에는 밀어낼 로그인 화면이 없고
+ * (로그인은 지금 보고 있는 화면 위에서 시작한다) 서버 컴포넌트에서 `window.location`을 만질
+ * 수도 없다. 401·403은 오류로 올려 보내고 화면이 안내로 그린다 — 갈 곳 없는 리다이렉트를
+ * 만들지 않기 위한 규칙이다.
+ *
+ * 브라우저에서 같은 호출을 해야 하는 화면(신청서 작성)은 옆의 `browser-client.ts`를 쓴다 —
+ * 토큰을 꺼내는 통로만 다르고 나머지는 같다. 오류 코드·판정은 `auth-error.ts` 한 벌이다.
  */
 
-/** 화면이 분기에 쓰는 인증 관련 코드 */
-export const AUTH_ERROR = {
-  /** 쿠키에 세션 자체가 없다 — 아직 로그인하지 않았다(서버에 요청을 보내지도 않은 상태) */
-  UNAUTHENTICATED: "CLIENT_UNAUTHENTICATED",
-  /** 토큰이 무효하거나 만료됐다 — 다시 로그인해야 한다 */
-  UNAUTHORIZED: "COMMON401",
-  /** 인증은 됐지만 아직 회원이 아니다 — 재로그인이 아니라 가입 안내다 */
-  SIGNUP_REQUIRED: "SIGNUP_REQUIRED",
-} as const;
+export { AUTH_ERROR, isSignupRequired, isUnauthenticated } from "./auth-error";
 
 /**
  * 쿠키에 들어 있는 Supabase access token.
@@ -50,24 +47,4 @@ export async function apiFetchAuthed<T>(path: string, init?: RequestInit): Promi
   const headers = new Headers(init?.headers);
   headers.set("Authorization", `Bearer ${token}`);
   return apiFetch<T>(path, { ...init, headers });
-}
-
-/**
- * "다시 로그인해야 하는 실패"인가 — 아직 로그인하지 않은 경우와 토큰이 죽은 경우를 함께 본다.
- *
- * 화면이 두 경우에 하는 일이 같기 때문이다(로그인 버튼을 내준다). 상태 코드까지 함께 보는 것은
- * 서버 앞의 프록시가 봉투 없이 401로 끊는 경우가 있어서다.
- */
-export function isUnauthenticated(error: unknown): boolean {
-  return (
-    error instanceof ApiError &&
-    (error.code === AUTH_ERROR.UNAUTHENTICATED ||
-      error.code === AUTH_ERROR.UNAUTHORIZED ||
-      error.status === 401)
-  );
-}
-
-/** 인증은 됐지만 아직 가입하지 않은 사용자인가 — 화면은 가입 안내를 그린다 */
-export function isSignupRequired(error: unknown): boolean {
-  return error instanceof ApiError && error.code === AUTH_ERROR.SIGNUP_REQUIRED;
 }
