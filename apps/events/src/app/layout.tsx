@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { AuthNav } from "@/features/auth";
 import { ROUTES } from "@/shared/config/routes";
 import "./globals.css";
 
@@ -46,8 +47,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="antialiased">
         {/*
          * 공개 앱의 셸은 상단 바 하나뿐이다 — 어드민의 사이드바·권한 게이트는 로그인이 있는
-         * 화면의 것이고, 여기에는 아직 갈 곳이 행사 목록밖에 없다. 로그인·내 신청 메뉴는
-         * 신청 흐름이 붙는 후속 이슈에서 함께 세운다(갈 수 없는 곳을 목차에 먼저 두지 않는다).
+         * 화면의 것이다. 여기에 붙는 것은 행사 목록과, 로그인한 사람에게만 서는 '내 신청'뿐이다
+         * (#150). 로그인 여부에 따라 갈리는 부분만 클라이언트 컴포넌트(AuthNav)로 두어, 익명
+         * 공개인 목록·상세 렌더에 세션 조회가 끼어들지 않게 한다.
          */}
         <header className="border-b border-line bg-surface">
           <div className="mx-auto flex max-w-[1000px] items-center gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
@@ -60,6 +62,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href={ROUTES.events} className="ml-[6px] text-[14.5px] text-n300">
               행사
             </Link>
+            <AuthNav />
           </div>
         </header>
         <main className="mx-auto max-w-[1000px] px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">
