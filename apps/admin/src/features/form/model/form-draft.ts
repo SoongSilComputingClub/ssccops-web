@@ -26,6 +26,13 @@ export interface FormDraft {
   rcptBgngDt: string | null;
   rcptEndDt: string | null;
   qitemCpstCn: QitemCpstCn;
+  /**
+   * 다중 응답 허용 (ssccops-server #143). **접수 상태와 달리 편집기가 직접 바꾸는 값이다.**
+   *
+   * `formSttsCd`가 초안에 있으면서도 잠겨 있는 것과 갈리는 자리다. 접수 상태는 별도 API의
+   * 몫이라 되돌려 보내기만 하지만, 이쪽은 폼의 설정이라 제목·문항과 같은 축에 있다.
+   */
+  mltplRspnsYn: boolean;
 }
 
 /** 새 폼의 초기 초안 — 페이지 1개 + 빈 단답형 문항 1개 */
@@ -35,6 +42,8 @@ export function emptyFormDraft(): FormDraft {
     formSttsCd: "DRAFT",
     rcptBgngDt: null,
     rcptEndDt: null,
+    // 새 폼은 언제나 1건 폼에서 시작한다 — 여러 건을 받는 것은 명시적인 선택이다 (서버와 같다)
+    mltplRspnsYn: false,
     qitemCpstCn: {
       pages: [{ pageTtl: "페이지 1", pageDescCn: "" }],
       qitems: [
@@ -67,6 +76,7 @@ export function toFormDraft(form: FormDetail): FormDraft {
     formSttsCd: form.formSttsCd,
     rcptBgngDt: form.rcptBgngDt,
     rcptEndDt: form.rcptEndDt,
+    mltplRspnsYn: form.mltplRspnsYn,
     qitemCpstCn: {
       pages: pages.length > 0 ? pages : [{ pageTtl: "페이지 1", pageDescCn: "" }],
       qitems: form.qitemCpstCn.qitems.map((q) => ({ ...q })),
@@ -82,6 +92,7 @@ export function toFormSaveInput(draft: FormDraft, labelIds: number[]): FormSaveI
     rcptBgngDt: draft.rcptBgngDt,
     rcptEndDt: draft.rcptEndDt,
     qitemCpstCn: draft.qitemCpstCn,
+    mltplRspnsYn: draft.mltplRspnsYn,
     labelIds,
   };
 }

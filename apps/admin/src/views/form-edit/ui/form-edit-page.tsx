@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  MULTIPLE_RESPONSE_CHANGE_NOTE,
+  MULTIPLE_RESPONSE_NOTE,
   QITEM_VERSION_NOTE,
   SYSTEM_FORM_BADGE,
   SYSTEM_FORM_DELETE_LOCKED,
@@ -34,6 +36,7 @@ import {
   PageHeader,
   SectionLabel,
   TextField,
+  Toggle,
   flash,
 } from "@/shared/ui";
 
@@ -304,6 +307,33 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                       }
                     />
                   </Field>
+                </div>
+
+                {/*
+                  다중 응답 허용 (ssccops-server #143).
+
+                  **응답이 있어도 잠그지 않는다.** 서버가 접수 중에도 이 값을 바꾸게 두고, 껐다고
+                  이미 들어온 응답을 지우지도 않는다(FormEntity.update). 화면이 잠그면 서버가
+                  허용하는 일을 막는 셈이라, 대신 응답이 있을 때만 끄는 것의 뜻을 한 줄 덧붙인다.
+                */}
+                <div className="flex items-start gap-[10px]">
+                  <Toggle
+                    size="sm"
+                    className="mt-[3px] flex-none"
+                    on={draft.mltplRspnsYn}
+                    onChange={(on) => setDraft((d) => ({ ...d, mltplRspnsYn: on }))}
+                  />
+                  <div className="min-w-0">
+                    <div className="text-[14px]">{FIELD_LABEL.multipleResponse}</div>
+                    <div className="mt-[2px] text-[13px] leading-[1.6] text-n500">
+                      {MULTIPLE_RESPONSE_NOTE}
+                    </div>
+                    {editor.hasResponses && (
+                      <div className="mt-[2px] text-[13px] leading-[1.6] text-n500">
+                        {MULTIPLE_RESPONSE_CHANGE_NOTE}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </Card>
