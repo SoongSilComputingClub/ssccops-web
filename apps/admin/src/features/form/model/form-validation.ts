@@ -1,3 +1,4 @@
+import { SYSTEM_FORM_QITEM_LOCKED } from "@/entities/form";
 import { isChoiceQitemType, type QitemTypeCd } from "@/shared/config/codes";
 import type { FormDraft } from "./form-draft";
 
@@ -31,6 +32,13 @@ export interface FormDraftIssues {
    */
   removedInUseQitemIds: string[];
   /**
+   * 시스템이 요구해 지울 수 없는데 초안에서 사라진 문항 ID (ssccops-server #140).
+   *
+   * `removedInUseQitemIds`와 기준이 다르다 — 그쪽은 "이미 받은 답이 끊긴다"라 응답이 없으면
+   * 지울 수 있지만, 이쪽은 응답이 없어도 지울 수 없고 되돌리면 그대로 저장된다.
+   */
+  removedSystemQitemIds: string[];
+  /**
    * 자동 저장을 보류시키는 사유 한 줄. 비어 있으면 저장해도 된다.
    * 여러 개가 걸려도 하나만 보여 준다 — 상태 표시줄은 한 줄이고, 하나를 고치면 다음 것이 뜬다.
    */
@@ -42,6 +50,11 @@ export interface FormDraftContext {
   savedQitemIds: string[];
   /** 이 폼에 제출된 응답이 있는가 */
   hasResponses: boolean;
+  /**
+   * 시스템이 요구해 지울 수 없는 문항 ID들 (서버가 400으로 가르쳐 준 것만 · #140).
+   * 무엇이 여기 담기는지는 use-form-editor.ts의 `systemRequiredQitemIds` 주석에 있다.
+   */
+  systemRequiredQitemIds: string[];
 }
 
 /** 문항 카드에 붙일 이름 — 제목이 비어 있으면 순번으로 부른다 */
@@ -152,6 +165,12 @@ export function validateFormDraft(
     ? context.savedQitemIds.filter((qitemId) => !seen.has(qitemId))
     : [];
 
+  /* ── 시스템이 요구하는 문항의 삭제 ────────────────────────── */
+
+  const removedSystemQitemIds = context.systemRequiredQitemIds.filter(
+    (qitemId) => !seen.has(qitemId),
+  );
+
   /* ── 저장 보류 사유 ───────────────────────────────────────── */
 
   const firstQitemIssue = Object.values(issues).flat()[0] ?? "";
@@ -166,9 +185,22 @@ export function validateFormDraft(
   } else if (removedInUseQitemIds.length > 0) {
     // 서버가 409로 거절할 요청이다. 보내서 실패를 보여 주는 대신 원인을 그대로 말한다
     blockingMessage = `이미 응답이 있어 삭제할 수 없는 문항입니다 (${removedInUseQitemIds.join(", ")}). 되돌리면 저장이 재개됩니다`;
+  } else if (removedSystemQitemIds.length > 0) {
+    /*
+     * 서버가 이미 한 번 400으로 거절한 삭제다. 같은 본문을 다시 보내면 같은 답이 오므로
+     * 보류하고, 거절 문구와 **같은 문장**으로 무엇이 막혔는지 말한다.
+     */
+    blockingMessage = `${SYSTEM_FORM_QITEM_LOCKED}. 지운 문항(${removedSystemQitemIds.join(", ")})을 되돌리면 저장이 재개됩니다`;
   } else if (firstQitemIssue) {
     blockingMessage = firstQitemIssue;
   }
 
-  return { formTtlNm, rcptDt, qitems: issues, removedInUseQitemIds, blockingMessage };
+  return {
+    formTtlNm,
+    rcptDt,
+    qitems: issues,
+    removedInUseQitemIds,
+    removedSystemQitemIds,
+    blockingMessage,
+  };
 }
