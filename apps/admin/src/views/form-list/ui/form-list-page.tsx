@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   FORM_RECEIPT_BADGE,
@@ -11,11 +12,13 @@ import {
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useDuplicateForm, useFormLabelOptions, useFormList } from "@/features/form";
+import { TemplateStartSheet, useFormFromTemplate } from "@/features/form-template";
 import { FORM_STTS_CDS, FORM_STTS_NM, type FormSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
 import {
   Badge,
+  Button,
   Card,
   Chip,
   EmptyState,
@@ -159,7 +162,12 @@ export function FormListPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const duplication = useDuplicateForm();
-  /* 새 폼·복제·수정은 모두 FORM_WRITE 한 가지다 — 서버 FormController의 @RequireAuthority와 같다 */
+  const templateStart = useFormFromTemplate();
+  const [startSheetOpen, setStartSheetOpen] = useState(false);
+  /*
+   * 새 폼·복제·수정은 모두 FORM_WRITE 한 가지다 — 서버 FormController의 @RequireAuthority와 같다.
+   * '템플릿에서 시작'도 같은 권한이다(서버 FormTemplateController가 클래스 레벨로 건다).
+   */
   const canWrite = useCan(CAPABILITY.FORM_WRITE);
 
   const formSttsCd = parseFormSttsCd(searchParams.get(QUERY_STATUS));
@@ -181,6 +189,24 @@ export function FormListPage() {
 
     flash(message);
     if (copyFormId) router.push(ROUTES.formEdit(copyFormId));
+  };
+
+  /*
+   * '템플릿에서 시작' — 복제와 다른 조작이라 버튼도 따로 둔다 (#134).
+   *
+   * 복제는 "이 폼과 똑같은 것 하나 더"라 원본이 있어야 하고, 템플릿은 지난 회차 폼을 지운
+   * 뒤에도 남는 출발점이다. 만들어진 폼은 작성 중이고 접수 기간·라벨이 비어 있어 손볼 것이
+   * 반드시 남으므로 곧장 편집 화면으로 보낸다 — 복제와 같은 이동이다.
+   */
+  const startFromTemplate = async (formTmplId: number, formTtlNm: string) => {
+    const { formId, message } = await templateStart.create(formTmplId, formTtlNm);
+    if (!message) return;
+
+    flash(message);
+    if (formId) {
+      setStartSheetOpen(false);
+      router.push(ROUTES.formEdit(formId));
+    }
   };
 
   /** 누른 축만 바꾸고 나머지 필터는 URL에 남겨 둔다 (상태·라벨은 AND로 함께 걸린다) */
@@ -207,6 +233,25 @@ export function FormListPage() {
         }}
       />
       <PageBody>
+        {/*
+          '+ 새 폼'과 나란히 두지 않고 본문 첫 줄에 두는 것은 헤더 액션이 한 자리뿐이기도 하지만,
+          이 조작이 폼을 곧바로 만들어 버리는 것이 아니라 **어느 템플릿에서 시작할지 먼저
+          고르는** 단계이기 때문이다.
+        */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <Button
+            variant="ghost"
+            disabled={!canWrite}
+            title={canWrite ? undefined : NO_WRITE}
+            onClick={() => setStartSheetOpen(true)}
+          >
+            템플릿에서 시작
+          </Button>
+          <div className="text-[13px] text-n500">
+            템플릿의 문항 구성을 복사해 작성 중 폼을 만듭니다
+          </div>
+        </div>
+
         <div className="mb-4 flex flex-wrap items-center gap-[7px]">
           <Chip
             active={formSttsCd === null}
@@ -300,6 +345,16 @@ export function FormListPage() {
             </div>
           ))}
       </PageBody>
+
+      {/* 선택지에는 켜진 템플릿만 실린다 — 거르는 것은 서버다 (features/form-template) */}
+      <TemplateStartSheet
+        open={startSheetOpen}
+        pending={templateStart.pending}
+        onClose={() => setStartSheetOpen(false)}
+        onStart={(formTmplId, formTtlNm) =>
+          void startFromTemplate(formTmplId, formTtlNm)
+        }
+      />
     </>
   );
 }
