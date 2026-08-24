@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // 공개 행사 앱(sscc.club)입니다 — 운영관리 어드민(apps/admin)과는 별개의 Worker 로 배포합니다.
+  // 최상위 name 은 "환경을 지정하지 않았을 때"의 이름입니다.
+  // 실제 배포는 항상 `-e dev` / `-e prod` 로 하세요 (package.json 스크립트 참고).
+  // 환경 블록 안에서 name 을 명시하면 wrangler 가 `-<env>` 접미사를 붙이지 않고 그대로 씁니다.
+  "name": "ssccops-events",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // main / assets / compatibility_* 는 각 환경으로 상속됩니다.
+  // vars 와 바인딩(kv_namespaces, d1_databases, services ...)은 상속되지 않으므로
+  // 추가할 때는 반드시 각 env 블록 안에 따로 써야 합니다.
+  //
+  // 실제 Cloudflare 리소스 생성과 Workers Builds 연결은 후속 작업입니다 — 이 파일은
+  // 어드민과 같은 방식(OpenNext + Workers)으로 배포할 준비만 해 둔 것입니다.
+  "env": {
+    "dev": {
+      "name": "dev-ssccops-events"
+    },
+    "prod": {
+      "name": "ssccops-events"
+    }
+  }
+}
