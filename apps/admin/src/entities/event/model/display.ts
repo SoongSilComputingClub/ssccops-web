@@ -1,4 +1,9 @@
-import { EVENT_STTS_NM, type EventSttsCd } from "@/shared/config/codes";
+import {
+  EVENT_STTS_NM,
+  PTCP_STTS_NM,
+  type EventSttsCd,
+  type PtcpSttsCd,
+} from "@/shared/config/codes";
 import type { BadgeTone } from "@/shared/ui";
 import type { EventPhase, EventReceiptStatus } from "./types";
 
@@ -58,4 +63,18 @@ export const EVENT_RECEIPT_BADGE: Record<
   ACCEPTING: { label: "접수중", tone: "blue" },
   EXPIRED: { label: "기간 종료", tone: "amber" },
   CLOSED: { label: "마감", tone: "grey" },
+};
+
+/**
+ * 참가자 상태 배지 (#145 · D5·D16). 표시명은 기준 코드 사전(PTCP_STTS_NM)에서 온다.
+ *
+ * '확정'만 blue인 것은 행사에 실제로 오는 사람을 가리키는 유일한 상태이기 때문이다(게시
+ * 상태 배지와 같은 어휘). 대기는 운영자의 결정이 아직 남은 칸이라 접수 배지의 '기간 종료'와
+ * 같은 amber이고, 취소는 지나간 줄이라 무채색이다 — 명단에서 행이 사라지지 않으므로(D16)
+ * 남은 줄과 눈으로 갈려야 한다.
+ */
+export const PTCP_STTS_BADGE: Record<PtcpSttsCd, { label: string; tone: BadgeTone }> = {
+  CONFIRMED: { label: PTCP_STTS_NM.CONFIRMED, tone: "blue" },
+  WAITLISTED: { label: PTCP_STTS_NM.WAITLISTED, tone: "amber" },
+  CANCELLED: { label: PTCP_STTS_NM.CANCELLED, tone: "grey" },
 };

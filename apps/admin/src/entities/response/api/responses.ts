@@ -206,6 +206,36 @@ export async function fetchFormResponses(
 }
 
 /**
+ * GET /v1/events/{eventId}/applications — 행사에 들어온 신청 (#145 · 서버 #158).
+ *
+ * **행사 API인데 이 파일에 있는 이유**는 돌려주는 것이 참가자가 아니라 폼 응답이기 때문이다.
+ * 서버도 새 규칙을 만들지 않고 폼 응답 조회에 위임할 뿐이라 응답 DTO가 위의 것과 같다 —
+ * `entities/event` 쪽에 같은 모양을 한 번 더 옮겨 적으면 계약이 바뀌는 날 한쪽만 고쳐진다.
+ * (엔티티 슬라이스끼리는 서로 참조하지 않으므로, 모양을 아는 파일에 호출을 둔다.)
+ *
+ * 다른 점은 **권한이 `EVENT_MANAGE`라는 것**뿐이다(D8). 폼 전체 권한(`RESPONSE_REVIEW`)이
+ * 없는 행사 운영자도 자기 행사의 신청은 볼 수 있어야 한다.
+ *
+ * 폼이 연결되지 않은 행사는 빈 배열이 아니라 409 `EVENT_HAS_NO_FORM`으로 온다 — 빈 목록은
+ * "아직 신청이 없다"로 읽히지만 실제로는 신청을 받을 수단 자체가 없는 상태라, 운영자가 해야
+ * 할 일이 전혀 다르다. 문구는 features/event의 오류 매핑이 맡는다.
+ */
+export async function fetchEventApplications(
+  eventId: number,
+  filter: FormResponseListFilter = {},
+): Promise<FormResponseItem[]> {
+  const query = new URLSearchParams();
+  if (filter.rspnsSttsCd) query.set("statusCode", filter.rspnsSttsCd);
+
+  const qs = query.toString();
+  const base = `/v1/events/${eventId}/applications`;
+  const items = await apiFetch<FormResponseSummaryResponse[] | null>(
+    qs ? `${base}?${qs}` : base,
+  );
+  return (items ?? []).map(toFormResponseItem);
+}
+
+/**
  * GET /v1/forms/{formId}/responses/{formRspnsId} — 단건 상세.
  *
  * 경로에 formId가 함께 들어가는 것이 핵심이다. 서버가 응답 ID만 보고 조회하면 폼 간 데이터가

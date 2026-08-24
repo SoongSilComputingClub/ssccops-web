@@ -13,6 +13,7 @@ export {
 } from "./model/display";
 export {
   RESPONSE_ERROR,
+  fetchEventApplications,
   fetchFormResponse,
   fetchFormResponses,
   reviewFormResponse,
