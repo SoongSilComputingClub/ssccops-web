@@ -70,6 +70,31 @@ export interface FormResponseItem {
 }
 
 /**
+ * GET /v1/forms/{formId}/responses/mine 항목 — 응답자 본인이 이 폼에 낸 응답 한 건 (#143).
+ *
+ * **운영자용 목록(`FormResponseItem`)과 타입을 나눈다.** 저쪽은 남의 응답을 심사하는 화면이라
+ * 응답자 정보(`member`)를 싣지만, 여기서는 그 회원이 요청 주체 본인이라 실을 값이 없다.
+ * 응답 내용(`rspnsCn`)도 없다 — 서버가 계약에서 뺐고, 이 화면이 묻는 것은 "몇 건을 냈고 각각
+ * 어떤 상태인가"다.
+ *
+ * 작성 중(DRAFT) 응답도 이 목록에 들어온다(그때 `sbmsnDt`가 null이다). 운영자 목록이 DRAFT를
+ * 빼는 것과 갈리는데, 그 규칙은 남의 제출 전 답안을 심사 목록에서 빼기 위한 것이라 내 것을
+ * 나에게 숨길 이유는 없다.
+ */
+export interface MyFormResponse {
+  formRspnsId: number;
+  /** 응답 순번 — 몇 번째로 낸 건인가 */
+  rspnsSeq: number | null;
+  rspnsSttsCd: RspnsSttsCd;
+  /** 제출 회차 — 그 한 건을 몇 번 냈는가 (수정요청 뒤 재제출에서 오른다) */
+  sbmsnSeq: number | null;
+  /** 아직 내지 않은 작성 중 응답은 null */
+  sbmsnDt: string | null;
+  /** 마지막 수정 일시 — 작성 중 응답이 언제 저장됐는지의 유일한 단서다 */
+  mdfcnDt: string | null;
+}
+
+/**
  * table: form_rspns_rvw_hstry — 처리 이력 한 줄 (ssccops-server #141).
  *
  * 제출도 한 줄로 들어간다(`prcsSeCd === "SUBMIT"`) — 검토만 쌓으면 타임라인이 "무엇에 대한
