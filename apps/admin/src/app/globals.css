@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/*
+ * 공유 폼 렌더러(#152)의 클래스도 함께 훑는다. 패키지는 pnpm 심링크를 통해 node_modules 아래로
+ * 보이는데 Tailwind의 자동 탐색은 거기를 건너뛰므로, 이 줄이 없으면 문항 카드가 클래스 이름만
+ * 있고 스타일이 없는 채로 그려진다.
+ */
+@source "../../../../packages/form-renderer/src";
+
 /* SSCC Admin 디자인 토큰 — 원본 디자인(Toss 라이트 테마)의 값 그대로 */
 @theme {
   --color-*: initial;

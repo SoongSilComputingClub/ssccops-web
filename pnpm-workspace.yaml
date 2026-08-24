@@ -1,5 +1,5 @@
-# 모노레포 워크스페이스 — apps/* 는 배포 단위 앱, packages/* 는 공유 패키지 자리
-# (폼 렌더러 등 공유 패키지는 후속 이슈에서 추가한다).
+# 모노레포 워크스페이스 — apps/* 는 배포 단위 앱, packages/* 는 두 앱이 함께 쓰는 공유 패키지
+# (packages/form-renderer = 폼 렌더러 · #152).
 packages:
   - apps/*
   - packages/*

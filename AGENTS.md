@@ -18,8 +18,9 @@ SSCC(숭실컴퓨팅클럽) 웹 — **pnpm workspace + Turborepo 모노레포**.
 | `apps/events` | `@ssccops/events` | 공개 행사 앱 — **로그인 없이** 보는 행사 목록·상세 (#141) + 본인만 보는 '내 신청' (#150) |
 
 둘 다 Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4이고 같은 디자인 토큰
-(Toss 라이트 · Pretendard)을 쓴다. `packages/*`는 공유 패키지 자리(아직 비어 있다 — 토큰·
-`apiFetch`·행사 타입이 지금은 두 앱에 각각 있고, 추출은 후속 이슈다). 백엔드는 별도 저장소
+(Toss 라이트 · Pretendard)을 쓴다. `packages/*`에는 공유 패키지가 하나 있다 —
+**`packages/form-renderer`**(`@ssccops/form-renderer` · #152). 토큰·`apiFetch`·행사 타입은
+아직 두 앱에 각각 있고, 추출은 후속 이슈다. 백엔드는 별도 저장소
 **`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth · 두 앱이 **같은
 프로젝트**를 쓴다 — 공개 앱은 '내 신청' 한 화면에만 붙어 있다), 배포는
 Cloudflare Workers(OpenNext).
@@ -71,7 +72,34 @@ app → views → features → entities → shared     (단방향)
 
 두 앱이 같은 레이어 이름을 쓰지만 **소스를 공유하지 않는다** — 각자 `src/` 아래에 자기
 `shared`·`entities`를 갖는다. 한쪽에서 고친 것이 다른 쪽에 저절로 반영되지 않으므로, 토큰·
-행사 타입처럼 겹치는 것을 고칠 때는 두 곳을 함께 본다(공유 패키지 추출은 후속 이슈다).
+행사 타입처럼 겹치는 것을 고칠 때는 두 곳을 함께 본다. 예외는 아래 공유 패키지뿐이다.
+
+## 공유 패키지 (`packages/*`) — #152
+
+**`packages/form-renderer` (`@ssccops/form-renderer`)** 하나가 있다. 두 앱이 `workspace:*`로
+소비하고, 어드민의 응답자 화면(`/f/{formId}`)에서 뽑아 왔다.
+
+- **왜 뽑았나.** 공개 앱에 신청 흐름(EV-006)이 붙으면 같은 폼을 그려야 하는데, 렌더러를
+  복사하면 **클라이언트 검증 규칙이 두 벌이 된다.** 필수 판정·정규식·최대 선택 수·분기
+  (`branchMap`) 계산은 서버 `ResponseAnswerValidator`와 한 벌로 맞춰 둔 규칙이라, 한쪽만
+  고쳐지면 "웹은 통과시키는데 서버가 거절하는" 폼이 생긴다.
+- **무엇이 들어 있나.** 폼/응답 도메인 타입(`Qitem`·`QitemCpstCn`·`FormPage`·`RspnsCn`) ·
+  문항 유형 코드(`QitemTypeCd`·`isChoiceQitemType`·`isTextQitemType`) · 답 다루기
+  (`toggleOption`·`toRspnsCn`) · 분기 경로(`nextPageSeq`·`reachedPageSeqs`) · 검증
+  (`validateAnswers`·`validatePageAnswers`) · 문항 유형별 렌더링(`QitemCard`).
+- **무엇이 안 들어 있나.** HTTP 호출과 자동 저장·제출 훅(`usePublicForm`), 화면 셸, 권한
+  게이트. 어드민 `apiFetch`는 401·403에 리다이렉트까지 걸지만 공개 앱은 일부러 걸지 않아
+  (돌아올 화면이 없다), 전송 계층을 함께 옮기면 두 앱 중 한쪽에서 반드시 틀린다.
+- **빌드 단계가 없다 — 소스를 그대로 export 한다.** 앱이 `transpilePackages`로 컴파일한다
+  (`next.config.ts`). 패키지에 번들 단계를 두면 앱을 고칠 때마다 패키지를 먼저 빌드해야 하고,
+  그 순서를 잊으면 옛 산출물이 조용히 쓰인다.
+- **Tailwind는 이 패키지를 자동으로 훑지 않는다.** 각 앱 `globals.css`의
+  `@source "../../../../packages/form-renderer/src";`가 그것을 시킨다 — 패키지는 pnpm 심링크로
+  `node_modules` 아래에 보이고 자동 탐색은 거기를 건너뛴다. 지우면 문항 카드가 클래스 이름만
+  있고 스타일이 없는 채로 뜬다.
+- **검증 규칙을 앱에 다시 적지 않는다.** 어드민 `shared/config/codes.ts`의 문항 유형 블록과
+  `entities/form`·`entities/response`의 타입 export는 **재export일 뿐** 정의가 아니다
+  (임포트 경로를 지키려고 남긴 것이다).
 
 ## 공개 행사 앱 (`apps/events`) — #141 · #150
 
