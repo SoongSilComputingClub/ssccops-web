@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { mbrGrdNm, mbrSttsNm } from "@/entities/member";
 import { RSPNS_STTS_BADGE, type FormResponseItem } from "@/entities/response";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useFormDetail } from "@/features/form";
-import { ResponseStatusSheet, useResponseList } from "@/features/response";
+import { useResponseList } from "@/features/response";
 import {
   RSPNS_RVW_STTS_CDS,
   RSPNS_STTS_CDS,
@@ -29,8 +28,9 @@ import {
 
 const ALL = "전체";
 
-/** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
-const NO_REVIEW = "응답을 심사할 권한이 없습니다";
+/** 잠긴 조작에 붙는 사유 — 요구 권한을 이름으로 밝힌다 (#117) */
+const NO_REVIEW =
+  "응답을 심사할 권한이 없습니다 — 응답 심사(RESPONSE_REVIEW) 권한이 필요합니다";
 
 /*
  * 상태 필터를 컴포넌트 state가 아니라 URL 쿼리스트링에 둔다 (#7의 폼 목록과 같은 방식).
@@ -67,7 +67,6 @@ export function ResponseListPage({ formId }: { formId: number }) {
     rspnsSttsCd,
   );
 
-  const [sheetTarget, setSheetTarget] = useState<FormResponseItem | null>(null);
   const canReview = useCan(CAPABILITY.RESPONSE_REVIEW);
 
   const applyFilter = (value: RspnsSttsCd | null) => {
@@ -120,27 +119,17 @@ export function ResponseListPage({ formId }: { formId: number }) {
       key: "rspnsSttsCd",
       header: FIELD_LABEL.responseStatus,
       width: "150px",
+      /*
+       * 배지를 눌러 바로 심사하던 경로는 없앴다 (#133).
+       *
+       * 검토는 결론과 **검토 의견**을 함께 남기는 한 번의 조작이 됐는데(서버 #141), 목록에는
+       * 응답 내용이 실려 있지 않다 — 무엇을 고치라고 적을지 볼 수 없는 자리에서 사유를 쓰게
+       * 하면 "확인 바랍니다" 같은 빈 문장이 이력에 남는다. 상세로 들어가면 응답 내용 옆에
+       * 검토 처리 패널이 있고, 이름 열이 이미 그 화면으로 데려간다.
+       */
       render: (r) => {
         const badge = RSPNS_STTS_BADGE[r.rspnsSttsCd];
-        /*
-         * 작성 중(미제출) 응답은 배지를 눌러도 시트가 열리지 않는다. 제출 전 답안을 운영자가
-         * 승인하면 응답자가 아직 쓰고 있던 내용이 그대로 확정돼 버린다 — 심사 대상이 아니다.
-         */
-        /*
-         * 권한이 없으면 배지를 눌러도 시트가 열리지 않는다 (#29). 여기서는 버튼이 아니라
-         * 배지라 잠금 표시를 붙일 자리가 없으므로 사유를 title로 단다 — 표 위의 안내 한
-         * 줄이 같은 말을 다시 해 준다.
-         */
-        const reviewable = r.rspnsSttsCd !== "DRAFT" && canReview;
-        return (
-          <span
-            onClick={reviewable ? () => setSheetTarget(r) : undefined}
-            title={canReview ? undefined : NO_REVIEW}
-            className={reviewable ? "cursor-pointer" : undefined}
-          >
-            <Badge tone={badge.tone}>{badge.label}</Badge>
-          </span>
-        );
+        return <Badge tone={badge.tone}>{badge.label}</Badge>;
       },
     },
   ];
@@ -153,7 +142,8 @@ export function ResponseListPage({ formId }: { formId: number }) {
         showBack
       />
       <PageBody>
-        <div className="mb-[6px] flex items-center gap-[7px]">
+        {/* 상태가 넷으로 늘어 375px에서는 한 줄에 서지 않는다 — 접히게 두고 건수는 끝에 붙인다 */}
+        <div className="mb-[6px] flex flex-wrap items-center gap-[7px]">
           <Chip active={rspnsSttsCd === null} onClick={() => applyFilter(null)}>
             {ALL}
           </Chip>
@@ -184,13 +174,13 @@ export function ResponseListPage({ formId }: { formId: number }) {
           </div>
         </div>
 
-        <div className="mb-[14px] text-[13px] text-n500">
-          {/* 권한 없음이 먼저다 — 그 경우 어느 필터에서도 상태를 바꿀 수 없다 */}
+        <div className="mb-[14px] text-[13px] leading-[1.7] text-n500">
+          {/* 권한 없음이 먼저다 — 그 경우 어느 응답도 심사할 수 없다 */}
           {!canReview
-            ? `${NO_REVIEW} — 조회만 할 수 있습니다.`
+            ? `${NO_REVIEW}. 조회만 할 수 있습니다.`
             : rspnsSttsCd === "DRAFT"
-              ? "아직 제출되지 않은 응답입니다. 상태를 변경할 수 없습니다."
-              : "작성 중(미제출) 응답은 전체에 포함되지 않습니다."}
+              ? "아직 제출되지 않은 응답입니다. 심사할 수 없습니다."
+              : "심사는 응답 상세에서 합니다. 작성 중(미제출) 응답은 전체에 포함되지 않습니다."}
         </div>
 
         {status === "error" ? (
@@ -220,14 +210,6 @@ export function ResponseListPage({ formId }: { formId: number }) {
             />
           </Card>
         )}
-
-        <ResponseStatusSheet
-          formId={formId}
-          formRspnsId={sheetTarget?.formRspnsId ?? null}
-          current={sheetTarget?.rspnsSttsCd}
-          onClose={() => setSheetTarget(null)}
-          onChanged={reload}
-        />
       </PageBody>
     </>
   );

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FormDetail } from "@/entities/form";
 import { mbrGrdNm, mbrSttsNm } from "@/entities/member";
@@ -9,10 +8,12 @@ import {
   rspnsValueText,
   type FormResponseDetail,
 } from "@/entities/response";
-import { CAPABILITY } from "@/entities/session";
-import { useCan } from "@/features/auth";
 import { useFormDetail } from "@/features/form";
-import { ResponseStatusSheet, useResponseDetail } from "@/features/response";
+import {
+  ResponseReviewPanel,
+  ResponseReviewTimeline,
+  useResponseDetail,
+} from "@/features/response";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
@@ -26,9 +27,6 @@ import {
   PageHeader,
   SectionLabel,
 } from "@/shared/ui";
-
-/** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
-const NO_REVIEW = "응답을 심사할 권한이 없습니다";
 
 /**
  * 응답 한 건을 그린다.
@@ -50,17 +48,9 @@ function ResponseDetailContent({
   reload: () => void;
 }) {
   const router = useRouter();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const canReview = useCan(CAPABILITY.RESPONSE_REVIEW);
 
   const { member } = response;
   const badge = RSPNS_STTS_BADGE[response.rspnsSttsCd];
-  /*
-   * 심사할 수 없는 이유가 둘이고 사용자에게는 서로 다른 말이 필요하다 — "아직 제출 전"은
-   * 기다리면 풀리고 "권한 없음"은 역할을 받아야 풀린다. 버튼은 둘 다 잠그되 문구는 나눈다.
-   */
-  const submitted = response.rspnsSttsCd !== "DRAFT";
-  const reviewable = submitted && canReview;
 
   /*
    * 이전/다음은 서버가 준 인접 ID로만 움직인다.
@@ -109,6 +99,14 @@ function ResponseDetailContent({
                 { k: FIELD_LABEL.membershipStatus, v: mbrSttsNm(member.mbrSttsCd) },
                 // 작성 중 응답은 아직 제출되지 않아 일시가 없다
                 { k: FIELD_LABEL.submittedAt, v: formatDt(response.sbmsnDt) || "-" },
+                /*
+                 * 제출 회차 — 수정요청을 받아 고쳐 낸 응답은 2회차부터다. 이 값이 없으면
+                 * 처리 이력의 "3회차" 같은 표기가 무엇을 기준으로 한 숫자인지 알 수 없다.
+                 */
+                {
+                  k: "제출 회차",
+                  v: response.sbmsnSeq === null ? "-" : `${response.sbmsnSeq}회차`,
+                },
               ]}
             />
             <button
@@ -145,9 +143,28 @@ function ResponseDetailContent({
         </div>
 
         {/*
+          검토 처리와 처리 이력은 나란히 둔다 — 무엇을 적을지는 앞선 처리를 보고 정하는 일이고
+          (수정요청을 이미 한 번 보냈는지, 무엇을 고치라고 했는지), 둘을 위아래로 멀리 떨어뜨리면
+          의견을 쓰는 동안 지난 이력이 화면에서 사라진다. 375px에서는 한 줄씩 쌓인다.
+        */}
+        <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.2fr]">
+          <ResponseReviewPanel
+            formId={formId}
+            formRspnsId={response.formRspnsId}
+            current={response.rspnsSttsCd}
+            /*
+             * 처리 후에는 **통째로 다시 부른다.** 부분 갱신하면 반려 직후 화면에 이전 사유가
+             * 그대로 남는다 (AGENTS.md — "부분 갱신과 재조회를 가른다").
+             */
+            onReviewed={reload}
+          />
+          <ResponseReviewTimeline histories={response.reviewHistories} />
+        </div>
+
+        {/*
           Button은 whitespace-nowrap이라 자리가 모자라면 접히는 대신 글자가 테두리 밖으로
-          밀려 나간다 — 잠긴 사유 문구까지 같은 줄에 서는 자리라 좁은 화면에서는 조각
-          단위로 접히게 한다. lg:flex-nowrap으로 1024px 이상은 지금까지처럼 한 줄이다.
+          밀려 나간다 — 좁은 화면에서는 조각 단위로 접히게 하고, lg:flex-nowrap으로 1024px
+          이상은 지금까지처럼 한 줄이다.
         */}
         <div className="mt-4 flex flex-wrap items-center gap-2 lg:flex-nowrap">
           <Button
@@ -158,35 +175,13 @@ function ResponseDetailContent({
             이전
           </Button>
           <Button
-            disabled={!reviewable}
-            title={canReview ? undefined : NO_REVIEW}
-            onClick={() => setSheetOpen(true)}
-          >
-            응답 상태 변경
-          </Button>
-          <Button
             variant="ghost"
             disabled={response.nextFormRspnsId === null}
             onClick={() => go(response.nextFormRspnsId)}
           >
             다음
           </Button>
-          {!submitted ? (
-            <div className="text-[13.5px] text-n500">
-              아직 제출되지 않은 응답이라 심사할 수 없습니다.
-            </div>
-          ) : (
-            !canReview && <div className="text-[13.5px] text-n500">{NO_REVIEW}</div>
-          )}
         </div>
-
-        <ResponseStatusSheet
-          formId={formId}
-          formRspnsId={sheetOpen ? response.formRspnsId : null}
-          current={response.rspnsSttsCd}
-          onClose={() => setSheetOpen(false)}
-          onChanged={reload}
-        />
       </PageBody>
     </>
   );
