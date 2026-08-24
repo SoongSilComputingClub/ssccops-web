@@ -374,3 +374,32 @@ export const EVENT_STTS_CDS = codesOf(EVENT_STTS_NM);
  * 고정 유니온으로 두지 않는다 — 코드값은 서버가 준다(entities/event/api/event-categories.ts).
  * 역할_분류(role_clsf)와 같은 판단이다.
  */
+
+/* ── 참가_상태 (event_ptcp.ptcp_stts_cd) · ssccops#146 D5·D14·D16 ── */
+
+/**
+ * 참가자 명단의 상태 세 값.
+ *
+ * **거절(REJECTED)이 없다.** 거절은 신청(폼 응답)에 대한 심사 결과라 `form_rspns_hstry`에
+ * 남고, 명단에는 애초에 오르지 않는다 — 여기에 값을 하나 더 두면 "거절된 참가자"라는 없는
+ * 상태가 생긴다.
+ *
+ * 취소(CANCELLED)도 행을 지우는 대신 남기는 상태다(D16 — 명단은 활동 이력으로 영구 보존).
+ */
+export type PtcpSttsCd = "CONFIRMED" | "WAITLISTED" | "CANCELLED";
+
+export const PTCP_STTS_NM: Record<PtcpSttsCd, string> = {
+  CONFIRMED: "확정",
+  WAITLISTED: "대기",
+  CANCELLED: "취소",
+};
+
+export const PTCP_STTS_CDS = codesOf(PTCP_STTS_NM);
+
+/**
+ * 등록 시점에 고를 수 있는 상태 — 확정·대기뿐이다.
+ *
+ * 취소로 시작하는 등록은 계약에 없다(서버가 400으로 거절한다). 전체 목록에서 화면이 매번
+ * filter로 빼면 그 규칙이 화면마다 흩어지므로 여기에 한 번만 적는다.
+ */
+export const PTCP_RGST_STTS_CDS: readonly PtcpSttsCd[] = ["CONFIRMED", "WAITLISTED"];

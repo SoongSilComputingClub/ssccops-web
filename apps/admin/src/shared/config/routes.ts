@@ -74,6 +74,15 @@ export const ROUTES = {
   events: "/events",
   eventNew: "/events/new",
   eventEdit: (eventId: number) => `/events/${eventId}/edit`,
+  /**
+   * 신청 심사·참가자 명단 (#145).
+   *
+   * 수정 화면 안의 탭이 아니라 **별도 주소**다. 수정은 저장하지 않은 입력을 쥔 폼이고
+   * 이쪽은 목록을 오가며 심사·등록을 반복하는 화면이라, 한 화면에 두면 탭을 옮길 때마다
+   * 작성 중인 행사 정보가 사라지거나 반대로 심사가 편집 상태에 갇힌다. 주소가 갈려 있으면
+   * "이 행사 신청자 좀 봐줘"를 링크 하나로 넘길 수도 있다(응답 목록과 같은 판단).
+   */
+  eventParticipants: (eventId: number) => `/events/${eventId}/participants`,
   eventCategories: "/events/categories",
 
   my: "/my",
