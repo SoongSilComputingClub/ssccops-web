@@ -76,6 +76,14 @@ interface FormDetailResponse extends FormSummaryResponse {
   creatrMbrNm: string;
   responseSummary: Partial<FormResponseSummary> | null;
   crtDt: string | null;
+  /**
+   * 코드가 요구하는 문항 ID들 (ssccops-server #155).
+   *
+   * **옵셔널로 잡지 않는다.** 서버는 시스템 폼이 아니면 빈 배열을 주고 `null`을 주지 않는다고
+   * 계약으로 못 박았다 — 여기서 `?? []`를 덧대면 "서버가 빈 배열을 줬다"와 "이 필드를 모르는
+   * 서버다"를 구별할 수 없게 되고, 잠금의 출처가 응답 하나라는 사실이 흐려진다.
+   */
+  systemRequiredQitemIds: string[];
 }
 
 /* ── 응답 → 도메인 ─────────────────────────────────────────── */
@@ -156,6 +164,8 @@ function toFormDetail(res: FormDetailResponse): FormDetail {
     creatr: { mbrId: res.creatrMbrId, mbrNm: res.creatrMbrNm },
     responseSummary: toResponseSummary(res.responseSummary, summary.responseCount),
     crtDt: res.crtDt ?? res.mdfcnDt,
+    // 서버가 선언한 잠금을 그대로 옮긴다 — 웹이 손댈 여지가 없는 값이다
+    systemRequiredQitemIds: res.systemRequiredQitemIds,
   };
 }
 
@@ -204,8 +214,10 @@ export const FORM_ERROR = {
    * `QUESTION_ITEM_IN_USE`(409)와 기준이 다르다. 그쪽은 "이미 받은 답이 끊긴다"라 응답이 없으면
    * 지울 수 있지만, 이쪽은 응답이 한 건도 없어도 지울 수 없다 — 대신 되돌리면 그대로 저장된다.
    *
-   * **어느 문항이 요구 대상인지는 응답에 실리지 않는다.** 서버의 요구 목록(SystemFormContract)은
-   * 코드 안에만 있어, 웹은 이 오류를 받고 나서야 방금 지운 문항이 그것이었음을 안다.
+   * **어느 문항이 요구 대상인지는 상세 응답의 `systemRequiredQitemIds`가 알려준다**
+   * (ssccops-server #155). 그래서 화면은 첫 로드부터 그 문항의 삭제를 잠근다 — 이 코드가
+   * 여기 남아 있는 것은 잠금이 편의이고 **거절이 방어선**이기 때문이다. 화면을 우회한 요청과
+   * 잠금 목록을 받은 뒤 배포로 계약이 바뀐 경우는 여전히 이 400으로 온다.
    */
   SYSTEM_FORM_CONTRACT_VIOLATION: "SYSTEM_FORM_CONTRACT_VIOLATION",
 } as const;

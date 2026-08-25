@@ -51,7 +51,7 @@ export function QitemComposer({
    */
   inUseQitemIds?: string[];
   /**
-   * 시스템이 요구해 지울 수 없는 문항 ID들 (ssccops-server #140 · 서버가 400으로 가르쳐 준 것만).
+   * 시스템이 요구해 지울 수 없는 문항 ID들 (ssccops-server #155 · 폼 상세가 준 값 그대로).
    *
    * `inUseQitemIds`와 기준이 다르다 — 그쪽은 "이미 받은 답이 끊긴다"라 응답이 없으면 지울 수
    * 있지만, 이쪽은 응답이 한 건도 없어도 지울 수 없다. 템플릿에는 시스템 계약이 걸리지 않으므로
@@ -329,7 +329,7 @@ export function QitemComposer({
              * 어느 문항이 문제인지 서버 응답만으로는 알 수 없다.
              */
             const qIssues = issues[q.qitemId] ?? [];
-            /* 서버가 400으로 가르쳐 준 잠금 — 목록은 use-form-editor.ts가 만든다 (#140) */
+            /* 서버가 상세 응답으로 선언한 잠금 — 첫 로드부터 걸린다 (#155) */
             const systemLocked = systemRequired.includes(q.qitemId);
             return (
               <div key={q.qitemId} className={cardBorder(qIssues.length > 0)}>

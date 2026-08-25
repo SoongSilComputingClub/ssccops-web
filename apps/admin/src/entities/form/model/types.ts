@@ -126,6 +126,17 @@ export interface FormDetail extends FormSummary {
   creatr: FormCreator;
   responseSummary: FormResponseSummary;
   crtDt: string;
+  /**
+   * 코드가 요구해 지울 수 없는 문항 ID들 (ssccops-server #155 · `SystemFormContract`).
+   *
+   * **시스템 폼이 아니면 빈 배열이다.** 시스템 폼이라도 계약에 없는 문항은 자유롭게 지울 수
+   * 있으므로 `sysYn`만 보고 전부 잠그면 서버가 허용하는 일을 화면이 막는다 — 무엇이 잠기는지는
+   * 이 목록만이 답한다.
+   *
+   * **목록에는 실리지 않아 `FormSummary`가 아니라 여기에 있다** — 문항을 지우는 자리는 편집
+   * 화면뿐이라 목록 카드가 이 값을 쓸 일이 없다.
+   */
+  systemRequiredQitemIds: string[];
 }
 
 /** table: form_lbl — 폼_라벨 */
