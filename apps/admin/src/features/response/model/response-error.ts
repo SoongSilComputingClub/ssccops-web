@@ -47,6 +47,17 @@ export function toResponseErrorMessage(error: unknown): string {
       return "검토 의견이 비어 있습니다 — 수정요청·반려는 무엇을 고쳐야 하는지 적어주세요";
     case RESPONSE_ERROR.INVALID_CODE_VALUE:
       return "선택한 결론이 올바르지 않습니다. 다시 선택해주세요";
+    /*
+     * 기획안 승인이 학술 활동 이관에서 막혔다 (서버 #150). **서버 문장을 지우지 않는다** —
+     * 이 코드는 하나이고 무엇이 어긋났는지(몇 번째 커리큘럼 줄인지, 어느 필수 항목이 비었는지)는
+     * `message`가 값으로 나르므로, 다른 코드처럼 문구를 갈아 끼우면 검토자가 수정요청에 옮겨
+     * 적을 유일한 단서가 사라진다.
+     *
+     * 뒤에 붙이는 것은 다음 행동뿐이다. 승인은 종결이라 여기서 재시도할 것이 없고 — 같은
+     * 응답을 다시 승인해도 같은 사유로 막힌다 — 고칠 수 있는 사람은 제출자다.
+     */
+    case RESPONSE_ERROR.PROPOSAL_MIGRATION_FAILED:
+      return `${error.message} — 다시 눌러도 같은 사유로 막히므로, 승인 대신 이 사유를 적어 수정요청으로 돌려주세요`;
     default:
       return error.message;
   }

@@ -7,6 +7,8 @@ import type {
 } from "@/shared/config/codes";
 import { apiFetch } from "@/shared/lib/api/client";
 import type {
+  AcademicProgramPreview,
+  CurriculumItemPreview,
   FormResponseDetail,
   FormResponseItem,
   FormResponseReviewHistory,
@@ -61,6 +63,19 @@ interface FormResponseReviewHistoryResponse {
   prcsDt: string | null;
 }
 
+interface CurriculumItemPreviewResponse {
+  seqno: number | null;
+  ttl: string | null;
+  planDt: string | null;
+}
+
+interface AcademicProgramPreviewResponse {
+  typeCd: string | null;
+  curriculumItems: CurriculumItemPreviewResponse[] | null;
+  migratable: boolean | null;
+  failureReason: string | null;
+}
+
 interface FormResponseDetailResponse
   extends Omit<FormResponseSummaryResponse, "member"> {
   member: ResponseMemberDetailResponse | null;
@@ -69,6 +84,8 @@ interface FormResponseDetailResponse
   reviewHistories: FormResponseReviewHistoryResponse[] | null;
   prevFormRspnsId: number | null;
   nextFormRspnsId: number | null;
+  /** 기획안 폼의 응답에만 실린다 — 그 밖의 응답에서는 필드 자체가 null이다 (서버 #150) */
+  academicProgramPreview: AcademicProgramPreviewResponse | null;
 }
 
 /* ── 응답 → 도메인 ─────────────────────────────────────────── */
@@ -137,6 +154,44 @@ function toReviewHistory(
   };
 }
 
+/**
+ * 승인 미리보기 (서버 #150).
+ *
+ * **여기서 커리큘럼을 파싱하지 않는다.** 서버가 준 회차 목록을 그대로 옮길 뿐이다 — 응답
+ * 원문을 화면이 다시 쪼개면 검토자가 승인한 것과 실제로 만들어지는 것이 갈린다.
+ *
+ * `migratable`을 `=== true`가 아니라 **`!== false`로 읽는다.** 이 값은 승인 버튼을 잠그는
+ * 근거인데, 필드를 내려주지 않는 서버를 만났을 때 "모른다"를 "못 한다"로 바꾸면 멀쩡한 기획안의
+ * 승인 경로가 화면에서 사라진다. 화면의 잠금은 어디까지나 왕복을 아끼는 편의이고 실제 방어선은
+ * 서버의 400 PROPOSAL_MIGRATION_FAILED다 — 못 막은 승인은 그 400이 사유와 함께 되돌려준다.
+ */
+function toAcademicProgramPreview(
+  res: AcademicProgramPreviewResponse | null,
+): AcademicProgramPreview | null {
+  if (res === null || res === undefined) return null;
+  return {
+    typeCd: res.typeCd ?? null,
+    curriculumItems: (res.curriculumItems ?? []).map(toCurriculumItemPreview),
+    migratable: res.migratable !== false,
+    failureReason: res.failureReason ?? null,
+  };
+}
+
+/*
+ * 회차 한 줄. 없는 값을 메우지 않는다 — 회차 번호를 줄 순서로 지어내면 제출자가 3회차를
+ * 빼먹은 기획안이 그대로 묻히고(서버 `ProposalCurriculumParser`가 같은 이유로 번호를 부여하지
+ * 않는다), 표시 규칙은 그리는 쪽이 정한다.
+ */
+function toCurriculumItemPreview(
+  res: CurriculumItemPreviewResponse,
+): CurriculumItemPreview {
+  return {
+    seqno: res.seqno ?? null,
+    ttl: res.ttl ?? "",
+    planDt: res.planDt ?? null,
+  };
+}
+
 function toFormResponseDetail(res: FormResponseDetailResponse): FormResponseDetail {
   return {
     formRspnsId: res.formRspnsId,
@@ -154,6 +209,7 @@ function toFormResponseDetail(res: FormResponseDetailResponse): FormResponseDeta
     reviewHistories: (res.reviewHistories ?? []).map(toReviewHistory),
     prevFormRspnsId: res.prevFormRspnsId ?? null,
     nextFormRspnsId: res.nextFormRspnsId ?? null,
+    academicProgramPreview: toAcademicProgramPreview(res.academicProgramPreview),
   };
 }
 
@@ -172,6 +228,18 @@ export const RESPONSE_ERROR = {
   REVIEW_OPINION_REQUIRED: "REVIEW_OPINION_REQUIRED",
   /** 기준 코드 밖의 상태값 */
   INVALID_CODE_VALUE: "INVALID_CODE_VALUE",
+  /**
+   * 기획안 승인이 학술 활동 이관에 실패해 통째로 롤백됐다 (ssccops-server #150).
+   *
+   * **폼 응답 검토가 돌려주는 코드라 여기 둔다.** 사유를 만드는 것은 학술 도메인이지만 화면이
+   * 그것을 만나는 자리는 `POST .../reviews` 하나뿐이고, 응답 검토 오류를 한 곳에서 문구로
+   * 바꾸는 규칙(features/response/model/response-error.ts)을 이 코드만 벗어날 이유가 없다.
+   *
+   * **사유마다 코드가 갈리지 않는다** — 코드는 하나이고 무엇이 어긋났는지는 `message`가
+   * 값으로 나른다(몇 번째 커리큘럼 줄인지까지 담긴다). 그래서 이 코드만은 화면이 서버 문장을
+   * 지우지 않고 그대로 실어 보여 준다.
+   */
+  PROPOSAL_MIGRATION_FAILED: "PROPOSAL_MIGRATION_FAILED",
 } as const;
 
 /* ── 조회 ──────────────────────────────────────────────────── */

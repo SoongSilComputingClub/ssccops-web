@@ -123,6 +123,57 @@ export interface FormResponseReviewHistory {
   prcsDt: string | null;
 }
 
+/**
+ * 승인하면 만들어질 커리큘럼 회차 한 줄 (ssccops-server #150 · `CurriculumItemDraft`).
+ *
+ * **이 값은 화면이 만든 것이 아니라 서버가 파싱한 결과다.** 커리큘럼은 자유 텍스트로 접수되고
+ * (정규식을 걸지 않는다) 승인 시점에 회차로 쪼개지는데, 그 파싱은 서버에 한 곳뿐이다
+ * (`ProposalResponseParser`). 화면이 답변 원문을 다시 쪼개 표를 그리면 검토자가 승인한 것과
+ * 실제로 만들어지는 것이 갈린다 — 자유 텍스트라 그 갈림은 실제로 일어난다.
+ *
+ * 필드 이름이 컬럼(`seqno` · `ttl` · `plan_dt`)과 같은 것은 이 값이 그 컬럼으로 그대로
+ * 들어가기 때문이다.
+ */
+export interface CurriculumItemPreview {
+  /** 제출자가 적은 회차 번호 — 서버가 줄 순서로 지어내지 않는다 */
+  seqno: number | null;
+  /** 회차 주제 */
+  ttl: string;
+  /** 계획일. 커리큘럼 줄 포맷이 날짜를 생략할 수 있게 두어 비어 있을 수 있다 */
+  planDt: string | null;
+}
+
+/**
+ * 승인 시 만들어질 학술 활동의 미리보기 (ssccops-server #150).
+ *
+ * **기획안 폼(`sys_form_cd = 'PROPOSAL'`)의 응답에서만 채워지고 그 밖의 응답에서는 `null`이다.**
+ * 실제 이관과 **같은 파서**가 만든 값이라, 여기 보이는 것이 승인 버튼을 눌렀을 때 만들어지는
+ * 것 그 자체다.
+ *
+ * 파싱 실패를 오류가 아니라 값으로 싣는 것이 이 필드의 요점이다 — 형식이 어긋난 기획안이야말로
+ * 검토자가 열어 봐야 하는 기획안인데, 상세 조회가 통째로 실패하면 그 화면을 열 수조차 없다.
+ */
+export interface AcademicProgramPreview {
+  /**
+   * 매핑된 학술 활동 유형 코드. 매핑에 실패했으면 `null`이다.
+   *
+   * **화면에 그대로 노출하지 않는다** — `STUDY`는 사람이 읽는 값이 아니고, 제출자가 고른 유형
+   * 문자열("스터디")은 이미 응답 내용에 그대로 실려 있다. 매핑이 끊겼다는 사실은
+   * `migratable`·`failureReason`이 말한다.
+   */
+  typeCd: string | null;
+  /** 파싱된 회차 목록. 파싱에 실패했으면 빈 배열이다(절반만 채워 내리지 않는다) */
+  curriculumItems: CurriculumItemPreview[];
+  /** 지금 승인할 수 있는가. false면 승인은 400 `PROPOSAL_MIGRATION_FAILED`로 거절된다 */
+  migratable: boolean;
+  /**
+   * `migratable`이 false일 때의 사유. 승인을 눌렀을 때 서버가 돌려줄 400의 문장과 **같다** —
+   * 몇 번째 커리큘럼 줄이 어떻게 어긋났는지까지 담겨 있어 검토자가 수정요청에 그대로 옮겨
+   * 적을 수 있다.
+   */
+  failureReason: string | null;
+}
+
 /** GET /v1/forms/{formId}/responses/{formRspnsId} */
 export interface FormResponseDetail {
   formRspnsId: number;
@@ -148,4 +199,12 @@ export interface FormResponseDetail {
    */
   prevFormRspnsId: number | null;
   nextFormRspnsId: number | null;
+  /**
+   * 승인 시 만들어질 학술 활동의 미리보기 (ssccops-server #150).
+   *
+   * **기획안이 아닌 응답에서는 `null`이다.** 폼 응답 API 하나가 지원서·설문·모집 신청서를 함께
+   * 나르므로, 이 필드가 있는지 자체가 "이 응답이 기획안인가"의 답이다 — 응답 상세를 그리는
+   * 화면은 값이 없으면 그 자리를 통째로 비운다.
+   */
+  academicProgramPreview: AcademicProgramPreview | null;
 }

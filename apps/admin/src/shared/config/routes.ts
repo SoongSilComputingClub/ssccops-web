@@ -102,6 +102,21 @@ export const ROUTES = {
    */
   proposalNew: "/proposals/new",
   proposals: "/proposals",
+
+  /*
+   * 기획안 검토 (#164) — 학술국장이 남이 낸 기획안을 승인·수정요청·반려하는 화면.
+   *
+   * **위의 `/proposals`와 주소는 이웃이지만 화면의 성격은 반대다.** 저쪽은 회원이 자기 기획안을
+   * 내고 상태를 보는 곳이라 관리자 셸을 두르지 않지만, 이쪽은 운영 화면이라 사이드바 아래
+   * (`app/(admin)`)에 산다 — 검토자는 목록과 다른 운영 화면을 오가며 일한다.
+   *
+   * 여기에도 폼 번호가 없다. 기획안 폼은 코드(`sys_form_cd = 'PROPOSAL'`)가 가리키는 시스템
+   * 폼이고 번호는 환경마다 다르다 — 주소에 실으면 그 링크는 한 환경에서만 산다. 대신 상세는
+   * **응답 번호**를 싣는다. 그것은 IDENTITY지만 환경을 넘겨 공유할 값이 아니라 같은 환경 안에서
+   * "이 기획안 좀 봐줘"를 링크로 넘기는 값이다(응답 상세와 같은 판단).
+   */
+  proposalReviews: "/proposals/review",
+  proposalReviewDetail: (formRspnsId: number) => `/proposals/review/${formRspnsId}`,
 } as const;
 
 /**
