@@ -15,7 +15,7 @@ SSCC(숭실컴퓨팅클럽) 웹 — **pnpm workspace + Turborepo 모노레포**.
 | 앱 | 워크스페이스 | 무엇 |
 | --- | --- | --- |
 | `apps/admin` | `@ssccops/admin` | 운영관리 어드민 — 로그인·권한이 있는 내부 화면 |
-| `apps/events` | `@ssccops/events` | 공개 행사 앱 — **로그인 없이** 보는 행사 목록·상세 (#141) + 본인만 보는 '내 신청' (#150) + 참가 신청 (#154) |
+| `apps/www` | `@ssccops/www` | 공개 웹사이트 — **로그인 없이** 보는 행사 목록·상세 (#141) + 본인만 보는 '내 신청' (#150) + 참가 신청 (#154). 동아리 소개 등 공식 홈페이지 역할을 함께 맡는다(#160에서 `apps/events`에서 개명) |
 
 둘 다 Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4이고 같은 디자인 토큰
 (Toss 라이트 · Pretendard)을 쓴다. `packages/*`에는 공유 패키지가 하나 있다 —
@@ -26,7 +26,7 @@ SSCC(숭실컴퓨팅클럽) 웹 — **pnpm workspace + Turborepo 모노레포**.
 Cloudflare Workers(OpenNext).
 
 **아래 문서는 별도로 밝히지 않는 한 `apps/admin` 이야기다.** 공개 앱만의 규약은
-「공개 행사 앱(`apps/events`)」 절에 모아 두었다.
+「공개 웹사이트(`apps/www`)」 절에 모아 두었다.
 
 > 위의 `nextjs-agent-rules` 블록은 `next dev`가 스스로 써넣는다. 지우면 uncommitted 변경으로
 > 되살아나므로 **그대로 두고 그 바깥에** 쓴다. 개인 로컬 메모(포트·`.env.local`·증상별 원인
@@ -101,7 +101,7 @@ app → views → features → entities → shared     (단방향)
   `entities/form`·`entities/response`의 타입 export는 **재export일 뿐** 정의가 아니다
   (임포트 경로를 지키려고 남긴 것이다).
 
-## 공개 행사 앱 (`apps/events`) — #141 · #150 · #154
+## 공개 웹사이트 (`apps/www`) — #141 · #150 · #154
 
 로그인 없이 누구나 보는 행사 목록(`/`)·상세(`/events/{eventId}`)와, 로그인한 본인만 보는
 참가 신청(`/events/{eventId}/apply`)·'내 신청'(`/my-applications`)이다. wave2 결정
@@ -316,7 +316,7 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
 - **`CLAUDE.md`와 `AGENTS.md`의 자동 생성 블록은 `next dev`가 다시 써넣는다.** diff에서 지워도
   되살아나므로 그대로 두고 커밋한다.
 - **`.env*`는 통째로 ignore되고 `.env.example`만 예외다.** env 파일은 앱 디렉터리
-  기준이다 — `apps/admin/.env.local`·`apps/events/.env.local`처럼 앱 안에 각각 둔다
+  기준이다 — `apps/admin/.env.local`·`apps/www/.env.local`처럼 앱 안에 각각 둔다
   (루트에 하나 두면 Next가 읽지 않는다 — 두 앱을 함께 띄울 때 빠뜨리기 쉽다).
   `NEXT_PUBLIC_*`은 빌드 타임에 인라인되므로 **값을 바꾸면 `pnpm dev`를 재시작해야** 반영된다.
 - **`README.md`에는 PoC 시절 서술이 남아 있다**("API 미연동 PoC", zustand 시드). 지금은 대부분의

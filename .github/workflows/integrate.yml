@@ -28,7 +28,7 @@
 #
 # 주의:
 #   - 이 저장소는 pnpm workspace + Turborepo 모노레포다. 앱은 apps/* 아래에 있고
-#     (apps/admin = 운영관리 어드민, apps/events = 공개 행사 앱), 공유 패키지는
+#     (apps/admin = 운영관리 어드민, apps/www = 공개 웹사이트), 공유 패키지는
 #     packages/* 아래에 있다(packages/form-renderer = 폼 렌더러 · #152).
 #     pnpm install은 반드시 워크스페이스 루트에서 한다(락파일도 루트 하나뿐이다).
 #     검증 명령은 전부 **루트 turbo**로 돌린다 — `pnpm typecheck`(typegen을 선행 태스크로
@@ -201,9 +201,9 @@ jobs:
         with:
           args: >
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT }}
-            -Dsonar.sources=apps/admin/src,apps/events/src,packages/form-renderer/src
+            -Dsonar.sources=apps/admin/src,apps/www/src,packages/form-renderer/src
             -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/*.test.ts,**/*.test.tsx
-            -Dsonar.typescript.tsconfigPath=apps/admin/tsconfig.json,apps/events/tsconfig.json,packages/form-renderer/tsconfig.json
+            -Dsonar.typescript.tsconfigPath=apps/admin/tsconfig.json,apps/www/tsconfig.json,packages/form-renderer/tsconfig.json
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
       - name: SonarQube Quality Gate + PR Comment (Community)
