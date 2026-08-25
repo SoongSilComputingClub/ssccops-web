@@ -202,8 +202,29 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         label: "기획안",
         href: ROUTES.proposals,
-        isActive: starts("/proposals"),
+        /*
+         * 검토 화면(/proposals/review)은 뺀다 (#164). 주소는 이웃이지만 하는 일이 반대라
+         * (내가 내는 곳 · 남의 것을 심사하는 곳), 검토 화면에서 '기획안'까지 함께 켜지면
+         * 목차가 지금 어디에 있는지를 알려주지 못한다 — 폼 목록이 라벨·템플릿을 빼는 것과 같다.
+         */
+        isActive: (p) => p.startsWith("/proposals") && !p.startsWith("/proposals/review"),
         requires: CAPABILITY.FORM_READ,
+      },
+      /*
+       * 기획안 검토 (#164). 학술국장이 제출된 기획안을 승인·수정요청·반려하는 화면이다.
+       *
+       * requires 가 RESPONSE_REVIEW 인 것은 **이 화면이 실제로 여는 것이 응답 목록**이기
+       * 때문이다. 첫 요청은 폼을 코드로 찾는 GET /v1/forms(FORM_READ)지만 그것은 번호를
+       * 알아내는 준비 단계일 뿐이고, 화면의 본문인 GET /v1/forms/{formId}/responses 는
+       * RESPONSE_REVIEW 없이는 통째로 403이다 — 그 권한이 없는 회원에게 이 메뉴를 남기면
+       * 눌러 봐야 빈 화면뿐인 곳이 목차에 남는다. 반대로 폼 조회 권한만 없는 경우는 화면
+       * 안에서 요구 권한을 이름으로 밝힌다(features/form 의 PROPOSAL_FORM_READ_DENIED).
+       */
+      {
+        label: "기획안 검토",
+        href: ROUTES.proposalReviews,
+        isActive: starts("/proposals/review"),
+        requires: CAPABILITY.RESPONSE_REVIEW,
       },
     ],
   },
