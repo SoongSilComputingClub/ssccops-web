@@ -62,8 +62,8 @@ export interface QitemCpstContext {
 
 export interface FormDraftContext extends QitemCpstContext {
   /**
-   * 시스템이 요구해 지울 수 없는 문항 ID들 (서버가 400으로 가르쳐 준 것만 · #140).
-   * 무엇이 여기 담기는지는 use-form-editor.ts의 `systemRequiredQitemIds` 주석에 있다.
+   * 시스템이 요구해 지울 수 없는 문항 ID들 — 폼 상세가 준 서버의 계약 그대로다
+   * (ssccops-server #155). 시스템 폼이 아니면 빈 배열이다.
    */
   systemRequiredQitemIds: string[];
 }

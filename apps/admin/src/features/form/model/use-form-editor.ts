@@ -118,15 +118,15 @@ export interface FormEditor {
   /** 지금 저장돼 있는 문항 구성 버전. 서버가 주지 않으면 null */
   qitemVer: number | null;
   /**
-   * 시스템이 요구해 지울 수 없는 문항 ID들.
+   * 시스템이 요구해 지울 수 없는 문항 ID들 — **폼 상세가 실어 준 서버의 계약 그대로다**
+   * (ssccops-server #155).
    *
-   * **이 목록은 서버가 가르쳐 준 것만 담는다.** 어떤 문항을 코드가 요구하는지는 서버 안에만
-   * 있고(SystemFormContract) 폼 응답에 실리지 않아, 웹은 지워서 저장해 보기 전에는 알 수 없다.
-   * 그래서 400 `SYSTEM_FORM_CONTRACT_VIOLATION`을 받은 저장에서 사라졌던 문항을 여기 담고,
-   * 화면은 그 문항의 삭제 버튼을 잠근다 — 같은 벽에 두 번 부딪히지 않게 된다.
+   * 예전에는 400 `SYSTEM_FORM_CONTRACT_VIOLATION`을 받은 저장에서 사라진 문항을 역산했다.
+   * 그때는 서버가 계약을 응답에 싣지 않아 그 방법밖에 없었지만, 결과적으로 **잠금이 사후에만
+   * 걸렸다** — 운영자는 계약 문항을 지우고 저장이 거절된 뒤에야 못 지운다는 것을 알았다.
+   * 지금은 첫 로드부터 잠긴다.
    *
-   * 반대로 **미리 전부 잠그지는 않는다.** 시스템 폼이라도 요구 목록에 없는 문항은 서버가
-   * 자유롭게 지우게 두므로, 저장된 문항을 모두 잠그면 서버가 허용하는 일을 화면이 막는다.
+   * 시스템 폼이 아니면 빈 배열이고, 시스템 폼이라도 계약에 없는 문항은 잠기지 않는다.
    */
   systemRequiredQitemIds: string[];
   save: FormSaveStatus;
@@ -152,7 +152,7 @@ interface LoadedEditor {
   hasResponses: boolean;
   sysYn: boolean;
   qitemVer: number | null;
-  /** 서버가 400으로 가르쳐 준 '지울 수 없는 문항' — 편집 중 늘어난다 (FormEditor 주석 참고) */
+  /** 상세 응답이 준 '지울 수 없는 문항' — 로드 시점 그대로다 (FormEditor 주석 참고) */
   systemRequiredQitemIds: string[];
 }
 
@@ -352,11 +352,7 @@ export function useFormEditor(formId?: number): FormEditor {
           hasResponses: form.responseCount > 0,
           sysYn: form.sysYn,
           qitemVer: form.qitemVer,
-          /*
-           * 다시 불러오면 비운다. 이 목록은 이번 편집에서 서버가 가르쳐 준 것이고, 계약은
-           * 배포로 바뀌므로 옛 세션의 판단을 물려받게 두면 이미 풀린 잠금이 남는다.
-           */
-          systemRequiredQitemIds: [],
+          systemRequiredQitemIds: form.systemRequiredQitemIds,
         });
       })
       .catch((error: unknown) => {
@@ -436,46 +432,6 @@ export function useFormEditor(formId?: number): FormEditor {
 
   /* ── 저장 ─────────────────────────────────────────────────── */
 
-  /**
-   * 400 `SYSTEM_FORM_CONTRACT_VIOLATION`에서 **어느 문항이 잠긴 것인지**를 알아낸다.
-   *
-   * 서버는 어느 qitemId가 요구 대상인지 응답에 담지 않는다(SystemFormContract는 서버 코드
-   * 안에만 있다). 대신 이 오류는 "방금 보낸 구성에서 요구 문항이 사라졌다"는 뜻이므로, 서버에
-   * 저장돼 있던 문항 중 이번 본문에 없는 것들이 곧 그 후보다.
-   *
-   * 여러 개를 한 번에 지웠다면 그중 하나만 요구 문항일 수도 있다. 그래도 전부 담는 것은
-   * 여기서 좁힐 방법이 없기 때문이고, 되돌리면 저장이 재개되므로 잘못 담긴 문항도 다음 저장의
-   * 성공으로 자연히 풀린다 — 반대로 좁히려고 한 개씩 지워 보내면 사용자가 누른 적 없는 저장이
-   * 나간다.
-   */
-  const learnSystemRequiredQitems = useCallback(
-    (error: unknown, sent: FormSaveInput) => {
-      if (
-        !(error instanceof ApiError) ||
-        error.code !== FORM_ERROR.SYSTEM_FORM_CONTRACT_VIOLATION
-      ) {
-        return;
-      }
-
-      const sentQitemIds = new Set(sent.qitemCpstCn.qitems.map((q) => q.qitemId));
-      setLoaded((prev) => {
-        if (prev?.outcome !== "ready") return prev;
-
-        const learned = prev.savedQitemIds.filter(
-          (qitemId) =>
-            !sentQitemIds.has(qitemId) && !prev.systemRequiredQitemIds.includes(qitemId),
-        );
-        if (learned.length === 0) return prev;
-
-        return {
-          ...prev,
-          systemRequiredQitemIds: [...prev.systemRequiredQitemIds, ...learned],
-        };
-      });
-    },
-    [],
-  );
-
   const sendLatest = useCallback(async (): Promise<number | null> => {
     const { payloadKey: key, saveInput: input, blockingMessage: blocked } =
       contextRef.current;
@@ -525,7 +481,6 @@ export function useFormEditor(formId?: number): FormEditor {
        * 계속 다시 보내면 실패 배너만 깜빡이고 서버에는 403이 쌓인다.
        */
       syncSessionOnForbidden(error);
-      learnSystemRequiredQitems(error, input);
       const count = attemptsRef.current.key === key ? attemptsRef.current.count + 1 : 1;
       attemptsRef.current = { key, count };
       if (aliveRef.current) {
@@ -540,7 +495,7 @@ export function useFormEditor(formId?: number): FormEditor {
     } finally {
       if (aliveRef.current) setSaving(false);
     }
-  }, [learnSystemRequiredQitems]);
+  }, []);
 
   /** 저장 요청을 한 줄로 세운다 — 동시에 두 개가 나가지 않으므로 응답 순서가 뒤집히지 않는다 */
   const saveNow = useCallback((): Promise<number | null> => {
