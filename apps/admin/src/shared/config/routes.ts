@@ -89,6 +89,19 @@ export const ROUTES = {
 
   publicForm: (formId: number) => `/f/${formId}`,
   publicFormDone: (formId: number) => `/f/${formId}/done`,
+
+  /*
+   * 기획안 작성·제출과 제출 현황 (#163).
+   *
+   * **주소에 폼 번호가 없다.** 기획안 폼은 코드(`sys_form_cd = 'PROPOSAL'`)가 가리키는 시스템
+   * 폼이고 번호는 환경마다 다르므로, 주소에 번호를 실으면 그 링크는 한 환경에서만 산다.
+   * 화면이 진입할 때 코드로 폼을 찾는다(entities/form/api/proposal-form.ts).
+   *
+   * `(public)` 라우트 그룹 아래에 둔다 — 운영 화면이 아니라 회원이 스스로 여는 화면이고,
+   * 공개 앱(apps/www) 분리는 이번 범위가 아니다.
+   */
+  proposalNew: "/proposals/new",
+  proposals: "/proposals",
 } as const;
 
 /**
