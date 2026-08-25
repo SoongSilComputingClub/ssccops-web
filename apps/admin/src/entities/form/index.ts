@@ -44,6 +44,7 @@ export type {
 } from "./api/forms";
 export { PUBLIC_FORM_ERROR, fetchPublicForm } from "./api/public-forms";
 export type { PublicForm } from "./api/public-forms";
+export { PROPOSAL_SYS_FORM_CD, findProposalForm } from "./api/proposal-form";
 export {
   FORM_LABEL_ERROR,
   LBL_NM_MAX_LENGTH,
