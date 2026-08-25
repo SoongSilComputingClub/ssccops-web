@@ -1,7 +1,7 @@
 /*
  * @ssccops/form-renderer — 폼 문항 렌더링과 응답 검증.
  *
- * 어드민(`apps/admin`)의 응답자 화면에서 뽑아 왔다. 공개 행사 앱(`apps/events`)이 신청 흐름을
+ * 어드민(`apps/admin`)의 응답자 화면에서 뽑아 왔다. 공개 웹사이트(`apps/www`)가 신청 흐름을
  * 붙일 때 렌더러를 복사하지 않게 하려는 것이다 — 복사하면 클라이언트 검증 규칙이 두 벌이 되고,
  * 그중 한 벌만 고쳐지는 순간 서버 검증과 어긋난다(SoongSilComputingClub/ssccops#136 · wave2 D15).
  *

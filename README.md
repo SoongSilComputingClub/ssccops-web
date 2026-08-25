@@ -14,7 +14,7 @@ pnpm workspace + Turborepo 모노레포입니다. `packages/*`는 공유 패키�
 | 앱 | 워크스페이스 | 개발 서버 | 무엇 |
 | --- | --- | --- | --- |
 | `apps/admin` | `@ssccops/admin` | http://localhost:3000 | 운영관리 어드민 (로그인·권한) |
-| `apps/events` | `@ssccops/events` | http://localhost:3001 | 공개 행사 앱 (비로그인 · 행사 목록·상세) |
+| `apps/www` | `@ssccops/www` | http://localhost:3001 | 공개 웹사이트 (비로그인 · 행사 목록·상세 · 동아리 소개) |
 
 ```bash
 pnpm install    # 워크스페이스 루트에서
@@ -24,7 +24,7 @@ pnpm lint
 pnpm typecheck
 ```
 
-앱 하나만 다루려면 `pnpm --filter @ssccops/events dev` 처럼 워크스페이스를 지정합니다.
+앱 하나만 다루려면 `pnpm --filter @ssccops/www dev` 처럼 워크스페이스를 지정합니다.
 `.env.local`은 앱 디렉터리 안에 각각 둡니다(`apps/*/.env.example` 참고).
 
 ## 기술 스택
