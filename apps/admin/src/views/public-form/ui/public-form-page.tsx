@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   QitemCard,
@@ -31,8 +31,33 @@ import { PublicFormNotice } from "./public-form-notice";
  *
  * 로그인·가입 여부는 신경 쓰지 않는다. /f/* 는 미들웨어와 AuthGate가 이미 걸러 두므로(#11)
  * 이 화면이 열렸다면 응답자는 이미 회원이다.
+ *
+ * ── 밖에서 받는 것 세 가지 (#163) ────────────────────────────
+ * 기획안 화면(`/proposals/new`)이 이 컴포넌트를 그대로 쓴다. 기획안 전용 렌더러를 새로 만들면
+ * 운영진이 문항을 하나 더할 때마다 그 화면만 따라오지 못하는데, 그것이 기획안을 별도 도메인이
+ * 아니라 폼으로 받기로 한 이유(ssccops#131)를 정면으로 깨뜨린다.
+ *
+ * 그래서 **문항·검증·자동 저장·제출은 한 벌 그대로 두고, 폼마다 갈리는 세 자리만** 밖에서
+ * 받는다. 셋 다 선택이고 주지 않으면 지금까지와 똑같이 동작한다:
+ * - `intro` — 머리말 아래 한 칸. 그 폼을 여는 경로가 따로 말해야 하는 것이 있을 때만 쓴다.
+ * - `notAccepting` — 접수 불가 안내. 링크만 받은 응답자와 스스로 찾아 들어온 회원은 다음에
+ *   무엇을 해야 하는지가 다르다(전자는 안내 채널, 후자는 이 화면이 열리기를 기다리는 것이다).
+ * - `doneHref` — 제출 뒤 갈 곳. 기획안은 완료 화면 대신 제출 현황으로 간다.
+ *
+ * 셋을 한 객체로 묶지 않은 것은 셋이 서로 다른 이유로 붙기 때문이다 — 묶으면 하나만 필요한
+ * 화면도 나머지 둘을 어떻게 할지 정해야 한다.
  */
-export function PublicFormPage({ formId }: { formId: number }) {
+export function PublicFormPage({
+  formId,
+  intro,
+  notAccepting,
+  doneHref,
+}: {
+  formId: number;
+  intro?: ReactNode;
+  notAccepting?: { title: string; description: ReactNode };
+  doneHref?: string;
+}) {
   const router = useRouter();
   const publicForm = usePublicForm(formId);
   const [page, setPage] = useState(0);
@@ -75,8 +100,11 @@ export function PublicFormPage({ formId }: { formId: number }) {
     return (
       <PublicFormNotice
         icon="🔒"
-        title={FORM_NOT_ACCEPTING_MESSAGE}
-        description="접수 기간이 아니거나 아직 공개되지 않은 폼입니다. 접수 일정은 안내받은 채널에서 확인해주세요."
+        title={notAccepting?.title ?? FORM_NOT_ACCEPTING_MESSAGE}
+        description={
+          notAccepting?.description ??
+          "접수 기간이 아니거나 아직 공개되지 않은 폼입니다. 접수 일정은 안내받은 채널에서 확인해주세요."
+        }
         action={{ label: "다시 확인", onClick: publicForm.reload }}
       />
     );
@@ -141,7 +169,7 @@ export function PublicFormPage({ formId }: { formId: number }) {
 
     const outcome = await publicForm.submit();
     if (outcome === "submitted") {
-      router.push(ROUTES.publicFormDone(form.formId));
+      router.push(doneHref ?? ROUTES.publicFormDone(form.formId));
       return;
     }
     if (outcome === "invalid") {
@@ -183,6 +211,9 @@ export function PublicFormPage({ formId }: { formId: number }) {
           {currentPage + 1} / {pages.length} 페이지
         </div>
       </div>
+
+      {/* 이 폼을 여는 경로가 따로 말해야 하는 것 — 없으면 자리도 없다 (#163) */}
+      {intro}
 
       {/*
        * 자동 저장 상태는 화면에 **항상** 보여야 한다. 버튼을 누르지 않았는데 값이 서버로 나가는
