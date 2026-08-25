@@ -59,3 +59,27 @@ export type {
 export { useMyResponses } from "./model/use-my-responses";
 export type { MyResponseList, MyResponseListStatus } from "./model/use-my-responses";
 export { FORM_NOT_ACCEPTING_MESSAGE } from "./model/public-form-error";
+/*
+ * 기획안(#163)은 공개 폼 응답자 화면 그 자체라 이 슬라이스에 함께 산다 — 슬라이스를 따로 파면
+ * `usePublicForm`·`useMyResponses`를 같은 레이어의 다른 슬라이스에서 참조하게 된다(FSD가 막는다).
+ * 근거는 model/proposal-copy.ts 머리말.
+ */
+export { useProposalForm } from "./model/use-proposal-form";
+export type { ProposalFormQuery, ProposalFormStatus } from "./model/use-proposal-form";
+export { useProposalReview } from "./model/use-proposal-review";
+export type {
+  ProposalReviewQuery,
+  ProposalReviewStatus,
+} from "./model/use-proposal-review";
+export { continuableResponse } from "./model/proposal-continuation";
+export {
+  PROPOSAL_FORM_MISSING,
+  PROPOSAL_FORM_READ_DENIED,
+  PROPOSAL_NOT_ACCEPTING_DESCRIPTION,
+  PROPOSAL_NOT_ACCEPTING_TITLE,
+  PROPOSAL_REJECTED_LOCKED,
+  PROPOSAL_RESUBMIT_NOTE,
+  PROPOSAL_REVIEW_READ_DENIED,
+  toProposalFormErrorMessage,
+  toProposalReviewErrorMessage,
+} from "./model/proposal-copy";
