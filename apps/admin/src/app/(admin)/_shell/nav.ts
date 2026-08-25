@@ -190,6 +190,21 @@ export const NAV_GROUPS: NavGroup[] = [
         isActive: starts("/forms/templates"),
         requires: CAPABILITY.FORM_WRITE,
       },
+      /*
+       * 기획안 (#163). 주소는 /forms 아래가 아니지만 묶음은 폼이다 — 기획안 접수는 시스템 폼
+       * 한 건(`sys_form_cd = 'PROPOSAL'`)으로 이뤄지고, 화면이 하는 일도 그 폼을 찾아 여는 것이다.
+       *
+       * requires 가 FORM_READ 인 것은 규칙 그대로다 — **화면이 첫 조회에 부르는 API가 요구하는
+       * 권한**을 적는다. 기획안 화면은 번호를 하드코딩하지 않으려고 폼 목록에서 코드로 폼을
+       * 찾으므로(entities/form/api/proposal-form.ts) 첫 요청이 GET /v1/forms 다. 제출·자동 저장은
+       * 권한을 묻지 않지만 그 앞의 조회가 막히면 화면이 서지 않는다.
+       */
+      {
+        label: "기획안",
+        href: ROUTES.proposals,
+        isActive: starts("/proposals"),
+        requires: CAPABILITY.FORM_READ,
+      },
     ],
   },
   {
