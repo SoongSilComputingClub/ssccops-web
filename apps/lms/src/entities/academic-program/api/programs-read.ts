@@ -71,6 +71,10 @@ function toSummary(res: AcademicProgramSummaryResponse): AcademicProgramSummary 
  * 커서 페이징이라 `page` 봉투가 필요해 `apiFetchAuthedList`를 쓴다. 스터디장이 맡는 활동은
  * 대개 한두 건이라 마지막 페이지까지 이어 받아 배열 하나로 돌려준다. 정렬은 서버 기본
  * (등록 최신순 -createdAt)을 쓴다 — 대시보드는 그중 진행 중 활동 하나를 골라 그린다.
+ *
+ * **`academicProgramId`로 중복을 제거한다.** 서버가 조인(스터디장 + 팀원 참가)에서 같은
+ * 활동을 두 행으로 내려주는 경우가 있어(#192에서 활동 선택 드롭다운이 1건인데도 떴다),
+ * 첫 행만 남긴다. 서버 정렬 순서는 유지된다.
  */
 export async function fetchMyAcademicPrograms(): Promise<AcademicProgramSummary[]> {
   const rows: AcademicProgramSummaryResponse[] = [];
@@ -86,5 +90,12 @@ export async function fetchMyAcademicPrograms(): Promise<AcademicProgramSummary[
     cursor = page.page.nextCursor;
   }
 
-  return rows.map(toSummary);
+  const seen = new Set<number>();
+  const unique: AcademicProgramSummary[] = [];
+  for (const row of rows) {
+    if (seen.has(row.academicProgramId)) continue;
+    seen.add(row.academicProgramId);
+    unique.push(toSummary(row));
+  }
+  return unique;
 }

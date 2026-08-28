@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import type { AcademicProgramSummary } from "@/entities/academic-program";
 
 /*
@@ -16,8 +15,15 @@ import type { AcademicProgramSummary } from "@/entities/academic-program";
  * `<select>`의 onChange로 라우팅한다 — 서버 컴포넌트만으로는 값 변경에 반응할 수 없다.
  * 목록·선택값은 SSR 셸(`selectProgram`)이 넘겨 주므로 이 컴포넌트는 조회하지 않는다.
  *
+ * ── 상태를 두지 않는다 ────────────────────────────────────
+ * 예전에는 `pending` 상태로 `<select>`를 잠갔는데, App Router의 soft navigation은 이 컴포넌트를
+ * 재마운트하지 않고 리렌더만 한다 — `useState`가 유지돼 `pending`이 `true`로 굳으면 드롭다운이
+ * 영영 비활성화된다. 잠글 이유도 없어(전환은 순식간이고 중간에 또 골라도 마지막 것만 반영된다)
+ * 상태 자체를 없앤다.
+ *
  * ── 활동이 하나뿐이면 ─────────────────────────────────────
- * 고를 것이 없으므로 드롭다운 대신 이름만 보여 준다.
+ * 고를 것이 없으므로 드롭다운 대신 이름만 보여 준다. 중복 제거는 `fetchMyAcademicPrograms`가
+ * 한다(서버가 같은 활동을 여러 번 내려주는 경우 대비).
  *
  * ── iOS 확대 방지 (#105) ──────────────────────────────────
  * `<select>` 글자를 좁은 화면에서 16px 아래로 내리지 않는다 — iOS Safari가 포커스에서 화면을
@@ -34,8 +40,6 @@ export function ProgramSwitcher({
   basePath: string;
 }) {
   const router = useRouter();
-  const [pending, setPending] = useState(false);
-
   const selected = programs.find((p) => p.academicProgramId === selectedId);
 
   if (programs.length <= 1) {
@@ -54,15 +58,13 @@ export function ProgramSwitcher({
       <span className="text-[12px] text-n500">활동 선택</span>
       <select
         value={selectedId}
-        disabled={pending}
         onChange={(e) => {
           const next = Number(e.target.value);
           if (!Number.isInteger(next) || next === selectedId) return;
-          setPending(true);
           router.push(`${basePath}?programId=${next}`);
           router.refresh();
         }}
-        className="w-full rounded-[10px] border border-line bg-surface px-[10px] py-[9px] text-[16px] text-ink outline-none focus:border-accent disabled:opacity-50 lg:text-[15px]"
+        className="w-full rounded-[10px] border border-line bg-surface px-[10px] py-[9px] text-[16px] text-ink outline-none focus:border-accent lg:text-[15px]"
       >
         {programs.map((program) => (
           <option key={program.academicProgramId} value={program.academicProgramId}>
