@@ -15,3 +15,15 @@ export function formatYmd(value: string | null | undefined): string {
   const [, y, m, d] = matched;
   return `${Number(y)}. ${Number(m)}. ${Number(d)}.`;
 }
+
+/**
+ * 오늘 날짜(Asia/Seoul) — "YYYY-MM-DD".
+ *
+ * 회차 기록 작성 화면의 '실제 진행일' 입력 기본값으로 쓴다 — 브라우저의 로컬 시간대가 아니라
+ * 서비스 시간대로 센다(어드민 `todayInSeoul`과 같은 판단). 해외에서 접속한 스터디장에게 하루가
+ * 어긋나면 안 된다.
+ */
+export function todayInSeoul(): string {
+  // sv-SE 로케일이 ISO와 같은 YYYY-MM-DD 표기를 준다
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(new Date());
+}
