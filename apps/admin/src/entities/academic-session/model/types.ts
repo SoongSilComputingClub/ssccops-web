@@ -89,3 +89,77 @@ export interface AcademicSessionDetail {
    */
   latestOpinion: string | null;
 }
+
+/* ── 회차·출석 승인 (활동 횡단) · #129 · ssccops-server #136 ──── */
+
+/**
+ * 활동 횡단 회차 한 줄 (SessionCrossListResponse).
+ *
+ * `GET /v1/academic-programs/reviews/sessions`(승인 대기 — SUBMITTED 만)와
+ * `GET /v1/academic-programs/sessions`(회차 이력 — 후속 이슈)가 **같은 DTO** 를 공유한다.
+ * 활동 상세의 `AcademicSessionSummary` 와 달리 이 줄은 활동명·유형을 함께 실어 활동 경계 없이
+ * 목록에 세울 수 있다. 인증사진은 참조 유무만(`hasFileReference`) 온다 — 실제 이미지는 선택
+ * 항목 상세(`AcademicSessionDetail.fileReference`)에서 본다.
+ */
+export interface SessionCrossListItem {
+  /** sesn_id · PK */
+  sessionId: number;
+  /** 이 회차가 속한 활동 */
+  academicProgramId: number;
+  academicProgramTitle: string;
+  /** acdm_actv_type_cd — 표시명은 이 응답에 없다(목록 응답은 코드 문자열뿐) */
+  typeCd: string;
+  /** 커리큘럼 항목의 회차 순번 */
+  seqno: number | null;
+  /** 커리큘럼 항목 제목 (curriculumTtl) */
+  curriculumTitle: string;
+  /** 실제 진행일 (actlYmd — 옛 realDt). YYYY-MM-DD */
+  actualYmd: string | null;
+  sesnSttsCd: SesnSttsCd;
+  /** 출석 집계 — 저장하지 않는 파생값. 출석부가 빈 회차는 0/0 */
+  presentCount: number;
+  totalCount: number;
+  /** 인증사진 참조가 있는가 (오브젝트 실제 존재는 보장하지 않는다) */
+  hasFileReference: boolean;
+}
+
+/** 승인 대기 목록 필터 — 커서 페이징이라 페이지 번호가 없다 */
+export interface SessionReviewFilter {
+  /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
+  cursor?: string | null;
+  /** 1~100 · 서버 기본값 있음 */
+  size?: number | null;
+  /** 정렬 표기 — 서버 기본은 계획일 오름차순. 오타는 서버가 400 으로 끊는다 */
+  sort?: string | null;
+}
+
+/** 승인 대기 목록 한 페이지 */
+export interface SessionReviewListPage {
+  sessions: SessionCrossListItem[];
+  /** 다음 페이지 커서 — 마지막 페이지면 null */
+  nextCursor: string | null;
+  hasNext: boolean;
+  totalCount: number;
+}
+
+/**
+ * 학술국장이 부르는 회차 전이 두 종 (SessionTransition).
+ *
+ * 다음 상태가 아니라 "무엇을 하겠다"를 보낸다 — APPROVE 는 SUBMITTED → APPROVED,
+ * REQUEST_REVISION 은 SUBMITTED → REVISION_REQUESTED(사유 필수). APPROVED 는 되돌리지 않는다.
+ */
+export type SessionTransition = "APPROVE" | "REQUEST_REVISION";
+
+/** 전이 입력 — REQUEST_REVISION 은 reason 이 필수다(빈 값이면 서버가 거절) */
+export interface SessionTransitionInput {
+  transition: SessionTransition;
+  /** 수정요청 사유. APPROVE 에는 없다 */
+  reason?: string | null;
+}
+
+/** 전이 결과 (SessionTransitionResponse) */
+export interface SessionTransitionResult {
+  sessionId: number;
+  beforeSttsCd: SesnSttsCd;
+  afterSttsCd: SesnSttsCd;
+}
