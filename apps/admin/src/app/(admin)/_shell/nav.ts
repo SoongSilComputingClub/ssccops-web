@@ -233,6 +233,20 @@ export const NAV_GROUPS: NavGroup[] = [
     mono: "학",
     items: [
       /*
+       * 학술 대시보드 (#126 · 서버 #131·#136).
+       *
+       * 학술 그룹의 첫 화면이다 — 전체 활동 현황·이번 주 회차·승인 대기·최근 활동. 이슈가
+       * 최상단 배치와 `requires: ACADEMIC_PROGRAM_MANAGE`를 명시했다. 첫 조회 셋이 모두 그
+       * 권한을 요구하므로(활동 목록·회차 이력·승인 대기), 권한이 없으면 감춘다 — 회차 이력·
+       * 승인 화면과 같은 판단이다.
+       */
+      {
+        label: "학술 대시보드",
+        href: ROUTES.academicProgramDashboard,
+        isActive: starts("/academic-programs/dashboard"),
+        requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+      },
+      /*
        * 스터디·프로젝트 (#125 · 서버 #131·#134).
        *
        * 조회 API(목록·상세·커리큘럼)에는 권한이 없지만(가입한 회원 누구나 본다) 이 메뉴는
@@ -249,6 +263,7 @@ export const NAV_GROUPS: NavGroup[] = [
         href: ROUTES.academicPrograms,
         isActive: (p) =>
           p.startsWith("/academic-programs") &&
+          !p.startsWith("/academic-programs/dashboard") &&
           !p.startsWith("/academic-programs/reviews") &&
           !p.startsWith("/academic-programs/sessions") &&
           !p.startsWith("/academic-programs/attendance"),

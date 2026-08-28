@@ -39,3 +39,13 @@ export const ACADEMIC_ATTENDANCE_ERROR = {
   /** 스터디장 본인이 아님 (403) */
   FORBIDDEN: "FORBIDDEN",
 } as const;
+
+/** 승인 이력 조회(#126 · GET .../approvals)가 돌려주는 오류 코드. */
+export const ACADEMIC_APPROVAL_ERROR = {
+  /** 없는 활동 (404) */
+  ACADEMIC_PROGRAM_NOT_FOUND: "ACADEMIC_PROGRAM_NOT_FOUND",
+  /** aprvPntCd 파라미터가 SESSION·COMPLETION이 아님 (400) */
+  VALIDATION_FAILED: "VALIDATION_FAILED",
+  /** 스터디장 본인도 국장도 아님 (403) */
+  FORBIDDEN: "FORBIDDEN",
+} as const;

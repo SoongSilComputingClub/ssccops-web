@@ -9,3 +9,9 @@ export type {
   AcademicProgramDetailQuery,
   AcademicProgramDetailStatus,
 } from "./model/use-academic-program-detail";
+export { useAcademicProgramDashboard } from "./model/use-academic-program-dashboard";
+export type {
+  AcademicProgramDashboard,
+  AcademicProgramDashboardData,
+  AcademicProgramDashboardStatus,
+} from "./model/use-academic-program-dashboard";

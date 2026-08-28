@@ -133,6 +133,13 @@ export const ROUTES = {
   academicPrograms: "/academic-programs",
   academicProgramDetail: (academicProgramId: number) =>
     `/academic-programs/${academicProgramId}`,
+  /**
+   * 학술국장 대시보드 (#126). 학술 그룹의 첫 화면 — 전체 활동 현황·이번 주 회차·승인 대기.
+   *
+   * 공개 앱(apps/lms)의 `/studio`와 이름은 "학술 대시보드"로 같지만 앱도 데이터도 다르다
+   * (국장은 전체 감독, 스터디장은 본인 활동 1건). 두 앱은 소스를 공유하지 않는다.
+   */
+  academicProgramDashboard: "/academic-programs/dashboard",
   academicProgramRecruitment: "/academic-programs/recruitment",
   academicProgramSessionReviews: "/academic-programs/reviews/sessions",
   academicProgramSessions: "/academic-programs/sessions",

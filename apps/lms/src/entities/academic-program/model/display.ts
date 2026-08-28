@@ -1,5 +1,5 @@
 import type { BadgeTone } from "@/shared/ui";
-import type { PtcpSttsCd } from "./types";
+import type { AcdmActvSttsCd, PtcpSttsCd } from "./types";
 
 /*
  * 팀원 상태·역할 표기 (#131).
@@ -31,4 +31,21 @@ export function memberRoleBadge(isLeader: boolean): { label: string; tone: Badge
   return isLeader
     ? { label: "스터디장", tone: "outline-accent" }
     : { label: "팀원", tone: "outline" };
+}
+
+/**
+ * 활동_상태 배지 (#126). 어드민 `acdmActvSttsTone`·`ACDM_ACTV_STTS_NM`과 같은 어휘
+ * (승인·진행 중·수료). lms에는 `red` 톤이 없어 승인 대기 느낌은 `amber`로 둔다.
+ */
+export const ACDM_ACTV_STTS_BADGE: Record<
+  AcdmActvSttsCd,
+  { label: string; tone: BadgeTone }
+> = {
+  APPROVED: { label: "승인", tone: "amber" },
+  ONGOING: { label: "진행 중", tone: "blue" },
+  COMPLETED: { label: "수료", tone: "grey" },
+};
+
+export function acdmActvSttsBadge(code: AcdmActvSttsCd) {
+  return ACDM_ACTV_STTS_BADGE[code];
 }

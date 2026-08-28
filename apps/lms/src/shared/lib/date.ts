@@ -41,3 +41,36 @@ export function todayInSeoul(): string {
   // sv-SE 로케일이 ISO와 같은 YYYY-MM-DD 표기를 준다
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(new Date());
 }
+
+/**
+ * `today`(YYYY-MM-DD)가 속한 주(월요일 시작)의 [시작, 끝] 일자.
+ *
+ * "이번 주" 판정을 서버가 내려주지 않으므로(스터디장 대시보드 #126) 회차 목록을 이 범위로
+ * 거른다 — 기준일은 `todayInSeoul()`이다. 프로토타입의 고정 기준일(2026-08-21)을 쓰면 이미
+ * 지난 회차가 미래로 보인다. 어드민 `shared/lib/date.ts`의 `weekBounds`와 같은 정의다(월요일
+ * 시작 = ISO-8601 주). 두 앱은 소스를 공유하지 않으므로 한쪽을 고치면 다른 쪽도 함께 본다.
+ */
+export function weekBounds(today: string = todayInSeoul()): {
+  start: string;
+  end: string;
+} {
+  const base = new Date(`${today}T00:00:00Z`);
+  const backToMonday = (base.getUTCDay() + 6) % 7;
+  const start = new Date(base.getTime() - backToMonday * 86_400_000);
+  const end = new Date(start.getTime() + 6 * 86_400_000);
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10),
+  };
+}
+
+/** `date`(YYYY-MM-DD)가 `today` 기준 이번 주(월~일) 안에 드는가. 값이 없으면 false */
+export function isWithinThisWeek(
+  date: string | null | undefined,
+  today: string = todayInSeoul(),
+): boolean {
+  if (!date) return false;
+  const ymd = date.slice(0, 10);
+  const { start, end } = weekBounds(today);
+  return ymd >= start && ymd <= end;
+}
