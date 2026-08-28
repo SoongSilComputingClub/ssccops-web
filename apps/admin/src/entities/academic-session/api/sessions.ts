@@ -1,10 +1,14 @@
 import type { SesnSttsCd } from "@/shared/config/codes";
 import { ApiError, apiFetch, apiFetchList } from "@/shared/lib/api/client";
 import type {
+  AcademicProgramApproval,
+  AcademicProgramApprovalFilter,
   AcademicSessionAttendance,
   AcademicSessionDetail,
   AcademicSessionFileReference,
   SessionCrossListItem,
+  SessionHistoryFilter,
+  SessionHistoryPage,
   SessionReviewFilter,
   SessionReviewListPage,
   SessionTransitionInput,
@@ -119,6 +123,27 @@ interface SessionTransitionResponse {
   afterSttsCd: SesnSttsCd | null;
 }
 
+/** 출석부 한 줄 (AttendanceResponse) — 서버 #137. 회차 상세 안의 출석부와 같은 값이다 */
+interface StandaloneAttendanceResponse {
+  attendanceId: number | null;
+  eventPtcpId: number;
+  mbrNm: string | null;
+  /** 출석 여부 (atndYn — 리네임 이전 presentYn). 서버 배포에 따라 옛 이름으로 올 수 있어 둘 다 읽는다 */
+  atndYn?: boolean;
+  presentYn?: boolean;
+}
+
+/** 승인 이력 한 줄 (AcademicProgramApprovalResponse) — 서버 #139 */
+interface AcademicProgramApprovalResponse {
+  approvalId: number;
+  aprvPntCd: string;
+  aprvSttsCd: string;
+  sessionId: number | null;
+  aprvrMbrNm: string | null;
+  opnnCn: string | null;
+  aprvDt: string | null;
+}
+
 /* ── 응답 → 도메인 ─────────────────────────────────────────── */
 
 function toCrossListItem(res: SessionCrossListResponse): SessionCrossListItem {
@@ -143,6 +168,31 @@ function toAttendance(res: SessionAttendanceResponse): AcademicSessionAttendance
     eventParticipantId: res.eventPtcpId,
     memberName: res.mbrNm ?? "",
     atndYn: res.atndYn,
+  };
+}
+
+function toStandaloneAttendance(
+  res: StandaloneAttendanceResponse,
+): AcademicSessionAttendance {
+  return {
+    eventParticipantId: res.eventPtcpId,
+    memberName: res.mbrNm ?? "",
+    // 리네임 전후 배포를 모두 견딘다 — 둘 다 없으면 불참으로 굳힌다(값을 지어내지 않되 표시가 깨지지 않게)
+    atndYn: res.atndYn ?? res.presentYn ?? false,
+  };
+}
+
+function toApproval(
+  res: AcademicProgramApprovalResponse,
+): AcademicProgramApproval {
+  return {
+    approvalId: res.approvalId,
+    aprvPntCd: res.aprvPntCd,
+    aprvSttsCd: res.aprvSttsCd,
+    sessionId: res.sessionId,
+    approverMemberName: res.aprvrMbrNm ?? "",
+    opinionContent: res.opnnCn,
+    approvedAt: res.aprvDt,
   };
 }
 
@@ -269,4 +319,90 @@ export async function transitionSession(
     beforeSttsCd: res.beforeSttsCd ?? res.afterSttsCd,
     afterSttsCd: res.afterSttsCd,
   };
+}
+
+/* ── 회차 이력 (활동 횡단, 전 상태) · #130 ─────────────────────── */
+
+/**
+ * GET /v1/academic-programs/sessions — 회차 이력 (#130 · #136).
+ *
+ * `reviews/sessions`(승인 대기)와 **같은 DTO** 를 쓰되 상태를 가리지 않는다 — 후자는
+ * 이 조회에 `sttsCd=SUBMITTED` 를 고정한 특수형이다(서버 #136 설계 결정 2). 학술국장이
+ * 전체 활동의 회차 진행을 한 화면에서 훑는다. 커서 페이징이라 `page` 봉투가 필요해
+ * `apiFetchList` 를 쓴다. `keyword` 는 활동명·회차 주제를 함께 검색한다.
+ *
+ * 권한은 `ACADEMIC_PROGRAM_MANAGE` 다(승인 대기 목록과 같다).
+ */
+export async function fetchAcademicProgramSessions(
+  filter: SessionHistoryFilter = {},
+): Promise<SessionHistoryPage> {
+  const query = new URLSearchParams();
+  if (filter.sesnSttsCd) query.set("sttsCd", filter.sesnSttsCd);
+  if (filter.keyword) query.set("keyword", filter.keyword);
+  if (filter.academicProgramId != null)
+    query.set("academicProgramId", String(filter.academicProgramId));
+  if (filter.cursor) query.set("cursor", filter.cursor);
+  if (filter.size != null) query.set("size", String(filter.size));
+  if (filter.sort) query.set("sort", filter.sort);
+
+  const qs = query.toString();
+  const { data, page } = await apiFetchList<SessionCrossListResponse>(
+    qs
+      ? `/v1/academic-programs/sessions?${qs}`
+      : "/v1/academic-programs/sessions",
+  );
+
+  return {
+    sessions: data.map(toCrossListItem),
+    nextCursor: page?.nextCursor ?? null,
+    hasNext: page?.hasNext ?? false,
+    totalCount: page?.totalCount ?? data.length,
+  };
+}
+
+/* ── 출석부 (회차 단건) · #130 ────────────────────────────────── */
+
+/**
+ * GET /v1/academic-programs/{academicProgramId}/sessions/{sessionId}/attendances (#137).
+ *
+ * 회차 상세 응답(`fetchAcademicSession`)도 출석부를 함께 싣지만, 출석 통계 훅
+ * (`use-attendance-stats`)은 회원별 출석률을 세려고 여러 회차의 출석부만 따로 모아야 한다
+ * — 이력 목록(SessionCrossListItem)은 회차별 합계(presentCount/totalCount)만 주고 회원별
+ * 내역이 없다. 인증만 요구한다.
+ */
+export async function fetchSessionAttendances(
+  academicProgramId: number,
+  sessionId: number,
+): Promise<AcademicSessionAttendance[]> {
+  const rows = await apiFetch<StandaloneAttendanceResponse[] | null>(
+    `/v1/academic-programs/${academicProgramId}/sessions/${sessionId}/attendances`,
+  );
+  return (rows ?? []).map(toStandaloneAttendance);
+}
+
+/* ── 승인 이력 · #130 ─────────────────────────────────────────── */
+
+/**
+ * GET /v1/academic-programs/{academicProgramId}/approvals — 승인 이력 (#139).
+ *
+ * 회차 상세(#130)의 "승인 이력" 블록이 부른다. `aprvPntCd` 는 `SESSION`·`COMPLETION`
+ * 만 받고(그 밖은 400), 회차 상세는 `sessionId` 로 좁혀 그 회차의 SESSION 이력만 받는다.
+ * 열람 범위가 스터디장 본인 + 학술국장으로 제한되지만(서버 #139) 이 화면은 국장 전용이다.
+ * 페이징이 붙지만(활동당 이력이 적다) 회차 하나로 좁히면 몇 줄뿐이라 첫 페이지만 받는다.
+ */
+export async function fetchAcademicProgramApprovals(
+  academicProgramId: number,
+  filter: AcademicProgramApprovalFilter = {},
+): Promise<AcademicProgramApproval[]> {
+  const query = new URLSearchParams();
+  if (filter.aprvPntCd) query.set("aprvPntCd", filter.aprvPntCd);
+  if (filter.sessionId != null) query.set("sessionId", String(filter.sessionId));
+
+  const qs = query.toString();
+  const { data } = await apiFetchList<AcademicProgramApprovalResponse>(
+    qs
+      ? `/v1/academic-programs/${academicProgramId}/approvals?${qs}`
+      : `/v1/academic-programs/${academicProgramId}/approvals`,
+  );
+  return data.map(toApproval);
 }

@@ -249,7 +249,9 @@ export const NAV_GROUPS: NavGroup[] = [
         href: ROUTES.academicPrograms,
         isActive: (p) =>
           p.startsWith("/academic-programs") &&
-          !p.startsWith("/academic-programs/reviews"),
+          !p.startsWith("/academic-programs/reviews") &&
+          !p.startsWith("/academic-programs/sessions") &&
+          !p.startsWith("/academic-programs/attendance"),
         requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
       },
       /*
@@ -263,6 +265,38 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "회차·출석 승인",
         href: ROUTES.academicProgramSessionReviews,
         isActive: starts("/academic-programs/reviews/sessions"),
+        requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+      },
+      /*
+       * 회차 이력 (#130 · 서버 #136).
+       *
+       * 학술국장이 전체 활동의 회차 진행을 한 화면에서 훑는다(활동 횡단 조회 —
+       * GET /v1/academic-programs/sessions). 승인 대기 목록과 달리 상태를 가리지 않는다.
+       * 목록·조회 모두 ACADEMIC_PROGRAM_MANAGE 를 요구한다 — 권한이 없으면 첫 조회부터
+       * 403이라 감추지 않으면 갈 수 없는 곳이 목차에 남는다. 회차 상세는 이력에서
+       * 들어가므로 목차에 따로 올리지 않는다.
+       *
+       * isActive 는 `/academic-programs/reviews/sessions`(승인 대기)를 뺀다 — 주소는
+       * 비슷하지만 다른 화면이다.
+       */
+      {
+        label: "회차 이력",
+        href: ROUTES.academicProgramSessions,
+        isActive: (p) =>
+          p.startsWith("/academic-programs/sessions"),
+        requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+      },
+      /*
+       * 출석 통계 (#130).
+       *
+       * 출석 통계 전용 엔드포인트가 없어 회차 이력·출석부 응답을 웹에서 집계한다
+       * (features/academic-session/model/use-attendance-stats). 이력 조회가
+       * ACADEMIC_PROGRAM_MANAGE 를 요구하므로 이 메뉴도 같은 권한으로 잠근다.
+       */
+      {
+        label: "출석 통계",
+        href: ROUTES.academicProgramAttendance,
+        isActive: starts("/academic-programs/attendance"),
         requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
       },
     ],

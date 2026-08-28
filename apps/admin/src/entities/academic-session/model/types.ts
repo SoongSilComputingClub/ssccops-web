@@ -142,6 +142,41 @@ export interface SessionReviewListPage {
   totalCount: number;
 }
 
+/* ── 회차 이력 (활동 횡단, 전체 상태) · #130 · ssccops-server #136 ── */
+
+/**
+ * `GET /v1/academic-programs/sessions` 필터 (SessionCondition).
+ *
+ * 승인 대기 목록(`reviews/sessions`)이 `sttsCd=SUBMITTED` 를 고정한 특수형인 데 반해,
+ * 이력 조회는 상태를 가리지 않는다(필터가 없으면 전 상태). `keyword` 는 활동명·회차 주제를
+ * 함께 LIKE 검색한다. `academicProgramId` 로 한 활동만 좁힐 수도 있지만 이 화면(#130)은
+ * 쓰지 않는다 — 활동별 회차는 활동 상세가 커리큘럼 표로 이미 보여 준다.
+ */
+export interface SessionHistoryFilter {
+  /** null 이면 전 상태 */
+  sesnSttsCd?: SesnSttsCd | null;
+  /** 활동명·회차 주제 부분 일치 */
+  keyword?: string | null;
+  /** 한 활동으로 좁히기 — #130 화면은 쓰지 않는다 */
+  academicProgramId?: number | null;
+  /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
+  cursor?: string | null;
+  /** 1~100 · 서버 기본값 있음 */
+  size?: number | null;
+  /** 정렬 표기 — 서버 기본은 진행일(actlYmd). 오타는 서버가 400 으로 끊는다 */
+  sort?: string | null;
+}
+
+/** 회차 이력 한 페이지 — 승인 대기 목록과 같은 DTO(SessionCrossListItem)를 쓴다 */
+export interface SessionHistoryPage {
+  sessions: SessionCrossListItem[];
+  /** 다음 페이지 커서 — 마지막 페이지면 null */
+  nextCursor: string | null;
+  hasNext: boolean;
+  /** 필터를 적용한 건수 */
+  totalCount: number;
+}
+
 /**
  * 학술국장이 부르는 회차 전이 두 종 (SessionTransition).
  *
@@ -162,4 +197,42 @@ export interface SessionTransitionResult {
   sessionId: number;
   beforeSttsCd: SesnSttsCd;
   afterSttsCd: SesnSttsCd;
+}
+
+/* ── 승인 이력 (acdm_actv_aprv) · #130 · ssccops-server #139 ──── */
+
+/**
+ * 승인 이력 한 줄 (AcademicProgramApprovalResponse).
+ *
+ * `GET /v1/academic-programs/{id}/approvals` 가 준다 — 회차 상세(#130)의 "승인 이력"
+ * 블록이 이 배열을 그대로 그린다. 열람 범위가 **스터디장 본인 + 학술국장**으로 제한된다
+ * (서버 #139 설계 결정 1) — `opnnCn`(수정요청 사유)이 활동 운영진 개인에게 민감할 수
+ * 있어서다. 이 화면은 국장 전용이라 문제되지 않는다.
+ *
+ * `aprvPntCd` 는 `SESSION`·`COMPLETION` 두 값만 온다(서버가 필터). 회차 상세는
+ * `sessionId` 로 좁혀 SESSION 이력만 받는다.
+ */
+export interface AcademicProgramApproval {
+  /** acdm_actv_aprv_id · PK */
+  approvalId: number;
+  /** 승인 지점 — SESSION(회차) · COMPLETION(종료). 코드로 비교한다 */
+  aprvPntCd: string;
+  /** 승인 상태 — APPROVED · REVISION_REQUESTED 등. 코드로 비교한다 */
+  aprvSttsCd: string;
+  /** SESSION 지점이면 대상 회차. COMPLETION 이면 null */
+  sessionId: number | null;
+  /** 처리한 사람 이름 (운영 데이터). 없으면 "" */
+  approverMemberName: string;
+  /** 수정요청 사유. 승인(APPROVED)에는 없다 */
+  opinionContent: string | null;
+  /** 처리 일시 (ISO-8601, Asia/Seoul 오프셋). 값이 없으면 null */
+  approvedAt: string | null;
+}
+
+/** 승인 이력 조회 필터 — 회차 상세는 sessionId 로 좁힌다 */
+export interface AcademicProgramApprovalFilter {
+  /** SESSION · COMPLETION 만. 그 밖의 값은 서버가 400 으로 끊는다 */
+  aprvPntCd?: "SESSION" | "COMPLETION" | null;
+  /** 특정 회차의 이력만 */
+  sessionId?: number | null;
 }
