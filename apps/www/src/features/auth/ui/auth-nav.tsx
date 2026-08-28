@@ -71,19 +71,19 @@ export function AuthNav() {
 
   if (signedIn === null) {
     // 판정 전 — 높이만 잡아 두어 로그인 버튼이 나타날 때 헤더가 흔들리지 않게 한다
-    return <div className="ml-auto h-[30px]" aria-hidden />;
+    return <div className="h-[30px]" aria-hidden />;
   }
 
   if (!signedIn) {
     return (
-      <div className="ml-auto">
+      <div>
         <SignInButton variant="ghost" />
       </div>
     );
   }
 
   return (
-    <div className="ml-auto flex items-center gap-[4px]">
+    <div className="flex items-center gap-[4px]">
       <Link
         href={ROUTES.myApplications}
         className="rounded-lg px-[10px] py-[6px] text-[14.5px] text-n300 hover:text-ink"
