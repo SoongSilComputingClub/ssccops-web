@@ -34,8 +34,9 @@ export const ROUTES = {
    * 회차 기록 — 스터디장이 진행한 회차를 적는다 (#128).
    *
    * 대상은 주소의 `?programId=`(활동)와 `?curriculumItemId=`(그 활동의 커리큘럼 항목)로 받는다
-   * — 스터디장이 여러 활동·여러 회차를 맡으므로 주소에 실린다. 대시보드·활동 상세(후속)가
-   * 회차별로 이 링크를 건다. 값이 없으면 화면이 대시보드로 안내한다(임의로 고르지 않는다).
+   * — 스터디장이 여러 활동·여러 회차를 맡으므로 주소에 실린다. 대시보드·활동 상세가 회차별로
+   * 이 링크를 건다. 값 없이(상단 바 메뉴) 들어오면 화면이 활동 → 회차 선택으로 안내한다
+   * (활동을 하나만 맡았으면 자동, 여럿이면 고르게 · #190 · 임의로 하나를 고르지 않는다).
    */
   studioRecord: "/studio/record",
   /** 출석부 — 스터디장이 회차별 출석을 확인·기록한다 */
@@ -80,6 +81,16 @@ export function studioRecordUrl(academicProgramId: number, curriculumItemId: num
 }
 
 /**
+ * 회차 기록 화면 링크 — 활동만 정하고 회차는 화면에서 고르게 한다 (#190).
+ *
+ * 활동을 여러 개 맡은 스터디장이 활동을 먼저 고른 뒤, 그 활동의 커리큘럼 항목 목록에서
+ * 회차를 고른다. `curriculumItemId`는 그 목록이 붙인다.
+ */
+export function studioRecordProgramUrl(academicProgramId: number): string {
+  return `${ROUTES.studioRecord}?programId=${academicProgramId}`;
+}
+
+/**
  * 기획안 상세 링크 — `/my/applications/{formRspnsId}` (#171).
  *
  * 경로 문자열을 화면에 직접 조립하지 않는다. 제출 현황의 카드가 이 빌더를 쓴다.
@@ -107,6 +118,15 @@ export function studioProgramDetailUrl(academicProgramId: number): string {
  */
 export function studioRosterUrl(academicProgramId: number): string {
   return `${ROUTES.studioRoster}?programId=${academicProgramId}`;
+}
+
+/**
+ * 팀원 관리 화면 링크 — `?programId=`를 붙인다 (#131 · #190).
+ *
+ * 경로 문자열을 화면에 직접 조립하지 않는다. 내 활동 상세·활동 선택 목록이 이 빌더를 쓴다.
+ */
+export function studioMembersUrl(academicProgramId: number): string {
+  return `${ROUTES.studioMembers}?programId=${academicProgramId}`;
 }
 
 /**

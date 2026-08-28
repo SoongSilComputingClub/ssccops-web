@@ -19,3 +19,13 @@ export {
   type MyProgramDetailReady,
   type MyProgramStats,
 } from "./model/load-my-program-detail";
+export {
+  resolveProgram,
+  type ProgramResolution,
+} from "./model/resolve-program";
+export {
+  BackToProgramsNotice,
+  NoProgramNotice,
+  ProgramChooser,
+  ProgramSignupNotice,
+} from "./ui/program-chooser";

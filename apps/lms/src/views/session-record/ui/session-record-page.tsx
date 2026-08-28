@@ -1,8 +1,20 @@
 import Link from "next/link";
-import { loadSessionRecord } from "@/features/academic-session";
+import {
+  BackToProgramsNotice,
+  NoProgramNotice,
+  ProgramChooser,
+  ProgramSignupNotice,
+  resolveProgram,
+} from "@/features/academic-program";
+import { loadRecordTargets, loadSessionRecord } from "@/features/academic-session";
+import { sesnSttsBadge } from "@/entities/academic-session";
 import { LoginGate } from "@/features/auth";
-import { ROUTES, signupUrl } from "@/shared/config/routes";
-import { EmptyState, Notice } from "@/shared/ui";
+import {
+  signupUrl,
+  studioRecordProgramUrl,
+  studioRecordUrl,
+} from "@/shared/config/routes";
+import { Badge, EmptyState } from "@/shared/ui";
 import { SessionRecordForm } from "./session-record-form";
 
 /*
@@ -18,10 +30,13 @@ import { SessionRecordForm } from "./session-record-form";
  * 클라이언트다. 상세 조회가 `ready`가 되기 전에는 `SessionRecordForm`을 마운트하지 않는다 —
  * 그러면 `useState` 초깃값이 곧 폼 초깃값이라 동기화용 `useEffect`가 필요 없다(이슈 · AGENTS.md).
  *
- * ── 대상을 어떻게 받는가 ────────────────────────────────────
- * 활동(`?programId=`)과 커리큘럼 항목(`?curriculumItemId=`)을 주소로 받는다. 하나라도 없으면
- * 대시보드에서 회차를 골라 들어오라고 안내한다 — lms에는 아직 '내 활동' 목록이 없어(후속) 여기서
- * 기본값을 임의로 고르지 않는다("없는 값을 만들어 내지 않는다").
+ * ── 대상을 어떻게 받는가 (#190) ─────────────────────────────
+ * 활동(`?programId=`)과 커리큘럼 항목(`?curriculumItemId=`)을 주소로 받는다. 내 활동 상세·
+ * 대시보드가 회차별로 그 둘을 붙여 이으므로 대개 둘 다 있다.
+ *   - 둘 다 없이(상단 바 메뉴) 들어오면 `resolveProgram`이 활동을 정하고(하나면 자동, 여럿이면
+ *     선택), 이어서 그 활동의 커리큘럼 항목을 고르게 한다.
+ *   - 활동만 있고 항목이 없으면 곧바로 커리큘럼 선택으로 간다.
+ * **활동이 여럿일 때는 임의로 하나를 고르지 않는다.**
  */
 
 export async function SessionRecordPage({
@@ -40,24 +55,142 @@ export async function SessionRecordPage({
         </p>
       </header>
 
-      {academicProgramId === null || curriculumItemId === null ? (
-        <Notice
-          title="어느 회차를 기록할지 정해야 합니다"
-          description="학술 대시보드에서 기록할 회차를 고르면 이 화면이 그 회차로 열립니다."
-        >
-          <Link
-            href={ROUTES.studio}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
-          >
-            학술 대시보드로
-          </Link>
-        </Notice>
-      ) : (
+      {academicProgramId !== null && curriculumItemId !== null ? (
         <RecordBody
           academicProgramId={academicProgramId}
           curriculumItemId={curriculumItemId}
         />
+      ) : academicProgramId !== null ? (
+        <CurriculumPicker academicProgramId={academicProgramId} />
+      ) : (
+        <UnresolvedBody />
       )}
+    </div>
+  );
+}
+
+/*
+ * 활동조차 정해지지 않은 채(상단 바 메뉴) 들어왔다. 맡은 활동이 하나면 그 활동의 커리큘럼
+ * 선택으로 바로 가고, 여러 개면 활동을 먼저 고르게 한다(#190 · `resolveProgram`).
+ */
+async function UnresolvedBody() {
+  const resolution = await resolveProgram();
+
+  if (resolution.outcome === "unauthenticated") {
+    return (
+      <LoginGate
+        title="로그인이 필요합니다"
+        description="회차 기록은 활동의 스터디장만 작성할 수 있습니다 — 구글 계정으로 로그인해 주세요"
+      />
+    );
+  }
+  if (resolution.outcome === "signup-required") {
+    return <ProgramSignupNotice signupHref={signupUrl()} />;
+  }
+  if (resolution.outcome === "none") return <NoProgramNotice />;
+  if (resolution.outcome === "error") {
+    return (
+      <BackToProgramsNotice
+        title="어느 회차를 기록할지 정해야 합니다"
+        description={resolution.message}
+      />
+    );
+  }
+  if (resolution.outcome === "choose") {
+    return (
+      <ProgramChooser
+        programs={resolution.programs}
+        // 활동만 고른 상태 — 커리큘럼 선택은 그 다음 화면이 붙인다
+        hrefFor={studioRecordProgramUrl}
+        prompt="어느 활동의 회차를 기록할지 고르세요."
+      />
+    );
+  }
+  return <CurriculumPicker academicProgramId={resolution.program.academicProgramId} />;
+}
+
+/*
+ * 활동은 정해졌고 어느 회차인지만 남았다. 그 활동의 커리큘럼 항목을 회차 순으로 그려 하나를
+ * 고르게 한다 — 지금 기록할 수 있는(isEditable) 항목을 위에 세운다.
+ */
+async function CurriculumPicker({
+  academicProgramId,
+}: {
+  academicProgramId: number;
+}) {
+  const result = await loadRecordTargets(academicProgramId);
+
+  if (result.outcome === "unauthenticated") {
+    return (
+      <LoginGate
+        title="로그인이 필요합니다"
+        description="회차 기록은 활동의 스터디장만 작성할 수 있습니다 — 구글 계정으로 로그인해 주세요"
+      />
+    );
+  }
+  if (result.outcome === "signup-required") {
+    return <ProgramSignupNotice signupHref={signupUrl()} />;
+  }
+  if (result.outcome === "error") {
+    return (
+      <EmptyState title="커리큘럼을 불러오지 못했습니다" description={result.message} />
+    );
+  }
+  if (result.items.length === 0) {
+    return (
+      <EmptyState
+        title="등록된 커리큘럼이 없습니다"
+        description="기획안이 승인되면 커리큘럼이 함께 만들어집니다."
+      />
+    );
+  }
+
+  // 지금 쓸 수 있는 항목을 위로 — 나머지는 회차 순서 그대로
+  const editable = result.items.filter((item) => item.isEditable);
+  const rest = result.items.filter((item) => !item.isEditable);
+  const ordered = [...editable, ...rest];
+
+  return (
+    <div className="flex flex-col gap-[12px]">
+      <p className="text-[14px] text-n400">어느 회차를 기록할지 고르세요.</p>
+      <div className="flex flex-col gap-[8px]">
+        {ordered.map((item) => {
+          const badge = sesnSttsBadge(item.sesnSttsCd);
+          const inner = (
+            <>
+              <span className="w-[56px] flex-none text-[13px] text-n500">
+                {item.seqno != null ? `${item.seqno}회차` : "·"}
+              </span>
+              <Badge tone={badge.tone}>{badge.label}</Badge>
+              <span className="min-w-0 flex-1 text-[14.5px]">
+                {item.title || "커리큘럼 항목"}
+              </span>
+              {item.isEditable ? (
+                <span className="flex-none text-[13px] text-accent">기록 →</span>
+              ) : (
+                <span className="flex-none text-[13px] text-n500">잠김</span>
+              )}
+            </>
+          );
+          return item.isEditable ? (
+            <Link
+              key={item.curriculumItemId}
+              href={studioRecordUrl(academicProgramId, item.curriculumItemId)}
+              className="flex items-center gap-[10px] rounded-2xl bg-surface p-[14px] shadow-[0_0_0_1px_#e5e8eb] transition-shadow hover:shadow-[0_0_0_1px_#3182f6]"
+            >
+              {inner}
+            </Link>
+          ) : (
+            <div
+              key={item.curriculumItemId}
+              className="flex items-center gap-[10px] rounded-2xl bg-surface p-[14px] opacity-60 shadow-[0_0_0_1px_#e5e8eb]"
+              title="제출·승인된 회차는 이 화면에서 다시 쓸 수 없습니다"
+            >
+              {inner}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -81,22 +214,7 @@ async function RecordBody({
   }
 
   if (result.outcome === "signup-required") {
-    const signup = signupUrl();
-    return (
-      <Notice
-        title="회원 가입을 마쳐야 회차를 기록할 수 있습니다"
-        description="로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다."
-      >
-        {signup && (
-          <a
-            href={signup}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
-          >
-            회원 가입하기
-          </a>
-        )}
-      </Notice>
-    );
+    return <ProgramSignupNotice signupHref={signupUrl()} />;
   }
 
   if (result.outcome === "not-leader") {

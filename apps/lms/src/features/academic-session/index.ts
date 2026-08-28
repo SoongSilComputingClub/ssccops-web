@@ -16,6 +16,11 @@ export {
 } from "./model/load-session-record";
 
 export {
+  loadRecordTargets,
+  type RecordTargetsLoad,
+} from "./model/load-record-targets";
+
+export {
   loadSessionRecordErrorMessage,
   sessionPhotoErrorMessage,
   submitSessionErrorMessage,

@@ -1,8 +1,14 @@
-import Link from "next/link";
-import { loadAcademicProgramMembers } from "@/features/academic-program";
+import {
+  BackToProgramsNotice,
+  loadAcademicProgramMembers,
+  NoProgramNotice,
+  ProgramChooser,
+  ProgramSignupNotice,
+  resolveProgram,
+} from "@/features/academic-program";
 import { LoginGate } from "@/features/auth";
-import { ROUTES, signupUrl } from "@/shared/config/routes";
-import { EmptyState, Notice } from "@/shared/ui";
+import { signupUrl, studioMembersUrl } from "@/shared/config/routes";
+import { EmptyState } from "@/shared/ui";
 import { MemberCardMobile, MemberRowDesktop } from "./member-row";
 
 /*
@@ -20,12 +26,11 @@ import { MemberCardMobile, MemberRowDesktop } from "./member-row";
  * 화면에 데이터 페칭 상태 기계를 들이지 않는다. 로그인 상태로 갈리는 부분(`LoginGate`)만
  * 클라이언트다.
  *
- * ── 활동을 어떻게 고르는가 ──────────────────────────────────────
- * 이 화면은 활동 하나(`academicProgramId`)의 명단이다. 스터디장이 여러 활동을 맡을 수 있으므로
- * 주소의 `?programId=`로 대상을 받는다. 값이 없으면 대시보드에서 활동을 골라 들어오라고
- * 안내한다 — lms에는 아직 '내 활동' 목록 조회가 없어(후속 이슈) 여기서 기본 활동을 임의로
- * 고르지 않는다("없는 값을 만들어 내지 않는다" 규칙의 한 자리다). 대시보드(#129 예정)가
- * 활동별로 이 링크를 건다.
+ * ── 활동을 어떻게 고르는가 (#190) ──────────────────────────────
+ * 이 화면은 활동 하나(`academicProgramId`)의 명단이다. 내 활동 상세·대시보드가 활동별로
+ * `?programId=`를 붙여 이 화면으로 이으므로 대개 값이 있다. 상단 바 메뉴로 값 없이 들어온
+ * 경우 `resolveProgram`이 `mine=true` 목록을 본다 — 맡은 활동이 하나면 그 활동으로 바로
+ * 열고, 여러 개면 고르게 한다. **여러 건일 때는 임의로 하나를 고르지 않는다.**
  *
  * ── 학번·출석률 열이 없다 (#131 결정) ────────────────────────────
  * 서버 응답에 학번·출석률이 없다. 없는 값을 만들어 내지 않는다 — 필요하면 서버에 필드 추가를
@@ -49,22 +54,52 @@ export async function ProgramMembersPage({
       </header>
 
       {academicProgramId === null ? (
-        <Notice
-          title="어느 활동의 팀원을 볼지 정해야 합니다"
-          description="학술 대시보드에서 활동을 고르면 그 활동의 팀원 명단이 열립니다."
-        >
-          <Link
-            href={ROUTES.studio}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
-          >
-            학술 대시보드로
-          </Link>
-        </Notice>
+        <UnresolvedBody />
       ) : (
         <MembersBody academicProgramId={academicProgramId} />
       )}
     </div>
   );
+}
+
+/*
+ * 주소에 `?programId=`가 없이 들어왔다 — 상단 바 메뉴로 온 경우다. 맡은 활동이 하나면 그
+ * 활동으로 바로 본문을 그리고, 여러 개면 고르게 한다(#190 · `resolveProgram`). 임의로 하나를
+ * 고르지 않는다는 규칙은 여러 건일 때 지킨다.
+ */
+async function UnresolvedBody() {
+  const resolution = await resolveProgram();
+
+  if (resolution.outcome === "unauthenticated") {
+    return (
+      <LoginGate
+        title="로그인이 필요합니다"
+        description="팀원 명단은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+      />
+    );
+  }
+  if (resolution.outcome === "signup-required") {
+    return <ProgramSignupNotice signupHref={signupUrl()} />;
+  }
+  if (resolution.outcome === "none") return <NoProgramNotice />;
+  if (resolution.outcome === "error") {
+    return (
+      <BackToProgramsNotice
+        title="어느 활동의 팀원을 볼지 정해야 합니다"
+        description={resolution.message}
+      />
+    );
+  }
+  if (resolution.outcome === "choose") {
+    return (
+      <ProgramChooser
+        programs={resolution.programs}
+        hrefFor={studioMembersUrl}
+        prompt="어느 활동의 팀원을 볼지 고르세요."
+      />
+    );
+  }
+  return <MembersBody academicProgramId={resolution.program.academicProgramId} />;
 }
 
 async function MembersBody({ academicProgramId }: { academicProgramId: number }) {
@@ -80,22 +115,7 @@ async function MembersBody({ academicProgramId }: { academicProgramId: number })
   }
 
   if (result.outcome === "signup-required") {
-    const signup = signupUrl();
-    return (
-      <Notice
-        title="회원 가입을 마쳐야 팀원 명단을 볼 수 있습니다"
-        description="로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다."
-      >
-        {signup && (
-          <a
-            href={signup}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
-          >
-            회원 가입하기
-          </a>
-        )}
-      </Notice>
-    );
+    return <ProgramSignupNotice signupHref={signupUrl()} />;
   }
 
   if (result.outcome === "error") {
