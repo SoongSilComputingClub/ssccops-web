@@ -117,6 +117,26 @@ export const ROUTES = {
    */
   proposalReviews: "/proposals/review",
   proposalReviewDetail: (formRspnsId: number) => `/proposals/review/${formRspnsId}`,
+
+  /*
+   * 학술 활동 (#122 · 서버 #130·#131·#133·#134·#136·#150).
+   *
+   * 화면은 후속 이슈가 붙인다 — 이 이슈는 entities `api`/`model` 계층과 라우트 상수만
+   * 만든다. 활동은 기획안(PROPOSAL 시스템 폼) 승인 시 서버가 이관해 만들므로 '활동 등록'
+   * 주소가 없다(#122 — 프로토타입 헤더의 `+ 활동 등록`은 이 결정 이전 시안이라 따르지 않는다).
+   *
+   * 상세만 IDENTITY(활동 번호)를 싣는다. 나머지는 활동 횡단 운영 화면이다 — 모집 감독
+   * (recruitment), 회차 승인 대기 목록(reviews/sessions), 회차 이력(sessions), 출석 관리
+   * (attendance). 공개 앱(apps/lms)의 `/studio` 계열 주소는 그 앱이 생긴 뒤 후속 이슈가
+   * 그쪽 routes.ts에 붙인다 — 두 앱은 소스를 공유하지 않는다.
+   */
+  academicPrograms: "/academic-programs",
+  academicProgramDetail: (academicProgramId: number) =>
+    `/academic-programs/${academicProgramId}`,
+  academicProgramRecruitment: "/academic-programs/recruitment",
+  academicProgramSessionReviews: "/academic-programs/reviews/sessions",
+  academicProgramSessions: "/academic-programs/sessions",
+  academicProgramAttendance: "/academic-programs/attendance",
 } as const;
 
 /**

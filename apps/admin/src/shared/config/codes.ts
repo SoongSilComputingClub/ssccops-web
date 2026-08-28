@@ -397,3 +397,93 @@ export const PTCP_STTS_CDS = codesOf(PTCP_STTS_NM);
  * filter로 빼면 그 규칙이 화면마다 흩어지므로 여기에 한 번만 적는다.
  */
 export const PTCP_RGST_STTS_CDS: readonly PtcpSttsCd[] = ["CONFIRMED", "WAITLISTED"];
+
+/* ── 학술 활동 상태 (acdm_actv.acdm_actv_stts_cd) · #122 ─────── */
+
+/*
+ * **DB 시드가 없는 고정 enum이다** — form_stts_cd·work_stts_cd와 같은 성격이다
+ * (서버 data.sql L500 "enum이 코드값을 갖는 고정코드라 여기 시드할 것이 없다").
+ * #122 이슈 본문은 data.sql 시드와 글자를 맞추라고 하지만, 2026-08-24 재설계로
+ * 이 상태들은 표준코드 테이블이 아니라 서버 enum(AcademicProgramStatus)이 됐고
+ * 응답도 코드+명칭이 아니라 raw enum만 내려온다. 표시명은 화면이 갖는 어휘다.
+ *
+ * 세 값뿐이다 — RECRUITING은 없다. 모집 시작(START_RECRUITMENT)은 APPROVED → ONGOING
+ * 전이라 "모집 중"을 별도 상태로 그리지 않는다(#122). 진행 단계(예정·진행·종료)는
+ * 행사 일시에서 파생하는 값이라 여기 두지 않는다(EventSttsCd와 같은 자리).
+ */
+export type AcdmActvSttsCd = "APPROVED" | "ONGOING" | "COMPLETED";
+
+export const ACDM_ACTV_STTS_NM: Record<AcdmActvSttsCd, string> = {
+  APPROVED: "승인",
+  ONGOING: "진행 중",
+  COMPLETED: "수료",
+};
+
+export const ACDM_ACTV_STTS_CDS = codesOf(ACDM_ACTV_STTS_NM);
+
+/* ── 회차 실적 상태 (sesn.sesn_stts_cd) · #122 ──────────────── */
+
+/*
+ * 고정 enum(SessionStatus). 위와 같은 이유로 화면이 표시명을 갖는다.
+ *
+ * NOT_SUBMITTED는 **회차 행이 아직 없다는 뜻**이다 — 서버가 커리큘럼 항목마다 합성해
+ * 내려주는 파생 상태다(CurriculumItemWithSessionResponse.withoutSession). 화면은
+ * null 분기를 두지 않고 이 값을 그대로 받는다.
+ */
+export type SesnSttsCd =
+  | "NOT_SUBMITTED"
+  | "SUBMITTED"
+  | "APPROVED"
+  | "REVISION_REQUESTED";
+
+export const SESN_STTS_NM: Record<SesnSttsCd, string> = {
+  NOT_SUBMITTED: "미제출",
+  SUBMITTED: "제출",
+  APPROVED: "승인",
+  REVISION_REQUESTED: "수정요청",
+};
+
+export const SESN_STTS_CDS = codesOf(SESN_STTS_NM);
+
+/* ── 학술 승인 지점 (acdm_actv_aprv.acdm_actv_aprv_se_cd) · #122 ─ */
+
+/*
+ * 고정 enum(AcademicProgramApprovalPoint). "무엇에 대한 승인인지"를 가른다.
+ *
+ * `se_cd`(구분 코드)이지 `aprv_pnt_cd`가 아닌 이유는 #122 본문에 있다 — 표준코드 그룹 ID가
+ * 유일해야 하는데 `aprv_stts_cd` 그룹이 이미 하위 업무용으로 있고 값 집합이 다르다.
+ * PROPOSAL은 없다 — 기획안 승인은 폼 응답 검토(form_rspns_rvw_hstry)가 정본이다.
+ */
+export type AcdmActvAprvSeCd = "SESSION" | "COMPLETION";
+
+export const ACDM_ACTV_APRV_SE_NM: Record<AcdmActvAprvSeCd, string> = {
+  SESSION: "회차 승인",
+  COMPLETION: "종료·수료 승인",
+};
+
+export const ACDM_ACTV_APRV_SE_CDS = codesOf(ACDM_ACTV_APRV_SE_NM);
+
+/* ── 학술 승인 처리 상태 (acdm_actv_aprv.aprv_stts_cd) · #122 ── */
+
+/*
+ * 고정 enum(AcademicProgramApprovalStatus).
+ *
+ * **위의 sub_work용 AprvSttsCd와 값 집합이 다르다** — 이쪽엔 NOT_REQUIRED가 없고
+ * REVISION_REQUESTED가 있다. 그래서 코드 그룹을 나눠 둔 것이고(위 se_cd 주석 참고),
+ * 타입도 별개다. PENDING(aprv_dt가 NULL인 대기 행)은 현재 이 값을 쓰는 경로가 없지만
+ * 서버 enum에 있어 함께 싣는다.
+ */
+export type AcdmActvAprvSttsCd =
+  | "PENDING"
+  | "APPROVED"
+  | "REVISION_REQUESTED"
+  | "REJECTED";
+
+export const ACDM_ACTV_APRV_STTS_NM: Record<AcdmActvAprvSttsCd, string> = {
+  PENDING: "대기",
+  APPROVED: "승인",
+  REVISION_REQUESTED: "수정요청",
+  REJECTED: "반려",
+};
+
+export const ACDM_ACTV_APRV_STTS_CDS = codesOf(ACDM_ACTV_APRV_STTS_NM);
