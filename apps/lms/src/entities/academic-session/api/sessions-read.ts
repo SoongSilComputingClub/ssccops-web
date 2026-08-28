@@ -1,13 +1,18 @@
-import { apiFetchAuthed } from "@/shared/api/authed-client";
+import { apiFetchAuthed, apiFetchAuthedList } from "@/shared/api/authed-client";
+import { toQuery } from "@/shared/api/client";
 import type {
   AcademicSessionDetail,
+  AcademicSessionSummary,
+  AcademicSessionSummaryFilter,
   CurriculumItemWithSession,
 } from "../model/types";
 import {
   toCurriculumItem,
   toSessionDetail,
+  toSessionSummary,
   type CurriculumItemWithSessionResponse,
   type SessionDetailResponse,
+  type SessionSummaryResponse,
 } from "./response-mapping";
 
 /*
@@ -37,6 +42,43 @@ export async function fetchCurriculumItems(
     `/v1/academic-programs/${academicProgramId}/curriculum-items`,
   );
   return (res ?? []).map(toCurriculumItem);
+}
+
+/**
+ * GET /v1/academic-programs/{id}/sessions — 그 활동의 회차 목록 (#135) — 커서 페이징.
+ *
+ * 출석부 화면(#172)이 표의 **열**로 쓴다. 서버가 `size`·`cursor`로 잘라 주므로, 화면이
+ * "1~N회차 전체"를 한 표로 그리려면 마지막 페이지까지 이어 받아야 한다 — 그 순회를 여기서
+ * 끝내고 화면에는 회차 배열 하나만 넘긴다(활동당 회차 수는 한 학기치라 상한이 낮다).
+ *
+ * `size`를 100으로 크게 잡아 대개 한 번에 끝나게 하고, 그래도 남으면 `nextCursor`로 잇는다.
+ * 회차 수만큼 출석부를 따로 조회하는 것은 로더(`load-attendance-roster`)의 몫이다 — 이
+ * 함수는 회차 목록만 책임진다.
+ */
+export async function fetchAcademicSessions(
+  academicProgramId: number,
+  filter: AcademicSessionSummaryFilter = {},
+): Promise<AcademicSessionSummary[]> {
+  const rows: SessionSummaryResponse[] = [];
+  let cursor: string | null = null;
+
+  // 커서 페이징 — 마지막 페이지(hasNext=false)까지 이어 받는다
+  do {
+    const query = toQuery({
+      sesnSttsCd: filter.sesnSttsCd ?? undefined,
+      size: 100,
+      cursor: cursor ?? undefined,
+      // 표는 회차 순번대로 왼쪽→오른쪽으로 읽힌다 — 진행일 오름차순으로 받는다
+      sort: "actlYmd,asc",
+    });
+    const page = await apiFetchAuthedList<SessionSummaryResponse>(
+      `/v1/academic-programs/${academicProgramId}/sessions${query}`,
+    );
+    rows.push(...page.data);
+    cursor = page.page?.hasNext ? page.page.nextCursor : null;
+  } while (cursor !== null);
+
+  return rows.map(toSessionSummary);
 }
 
 /**

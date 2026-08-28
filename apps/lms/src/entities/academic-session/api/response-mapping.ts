@@ -3,6 +3,7 @@ import type {
   AcademicSessionAttendance,
   AcademicSessionDetail,
   AcademicSessionFileReference,
+  AcademicSessionSummary,
   CurriculumItemWithSession,
   SesnSttsCd,
 } from "../model/types";
@@ -44,6 +45,20 @@ interface SessionFileReferenceResponse {
   fileUrlAddr: string;
 }
 
+export interface SessionSummaryResponse {
+  sessionId: number;
+  curriculumItemId: number;
+  seqno: number | null;
+  curriculumTtl: string | null;
+  planYmd: string | null;
+  actlYmd: string | null;
+  sesnSttsCd: SesnSttsCd;
+  rgtrMbrId: number | null;
+  rgtrMbrNm: string | null;
+  presentCount: number;
+  totalCount: number;
+}
+
 export interface SessionDetailResponse {
   sessionId: number;
   curriculumItemId: number;
@@ -79,6 +94,25 @@ export function toCurriculumItem(
     actualYmd: res.actlYmd,
     progressContent: res.prgrsCn,
     isEditable: res.isEditable,
+  };
+}
+
+export function toSessionSummary(
+  res: SessionSummaryResponse,
+): AcademicSessionSummary {
+  return {
+    sessionId: res.sessionId,
+    curriculumItemId: res.curriculumItemId,
+    seqno: res.seqno,
+    // 빈 제목을 "-"로 채우는 것은 표시 규칙이라 뷰가 정한다 — 변환기는 "값이 없다"만 남긴다
+    curriculumTitle: res.curriculumTtl ?? "",
+    planYmd: res.planYmd,
+    actualYmd: res.actlYmd,
+    sesnSttsCd: res.sesnSttsCd,
+    registrantMemberId: res.rgtrMbrId,
+    registrantMemberName: res.rgtrMbrNm ?? "",
+    presentCount: res.presentCount,
+    totalCount: res.totalCount,
   };
 }
 

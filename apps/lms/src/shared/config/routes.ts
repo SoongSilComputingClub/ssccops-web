@@ -58,6 +58,17 @@ export function studioRecordUrl(academicProgramId: number, curriculumItemId: num
 }
 
 /**
+ * 출석부 화면 링크 — `?programId=`를 붙인다 (#172).
+ *
+ * 경로 문자열을 화면에 직접 조립하지 않는다. 대시보드·활동 상세가 활동별로 이 빌더를 쓴다.
+ * 상단 바 메뉴(`_shell/nav-links.ts`)는 활동을 특정하지 못하므로 `ROUTES.studioRoster`만
+ * 걸고, 화면이 `programId` 없이 열리면 대시보드로 안내한다(#131·#128과 같은 태도).
+ */
+export function studioRosterUrl(academicProgramId: number): string {
+  return `${ROUTES.studioRoster}?programId=${academicProgramId}`;
+}
+
+/**
  * 어드민(가입 화면이 있는 앱)의 오리진.
  *
  * 학술 공개 앱에는 **신청(참여) 흐름이 없다** — 참여 신청은 시스템 폼으로 처리하기로 2026-08-28
