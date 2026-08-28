@@ -49,4 +49,9 @@ export const RESPONSE_ERROR = {
   ANSWER_PATTERN_MISMATCH: "ANSWER_PATTERN_MISMATCH",
   /** 다중선택 최대 선택 수 초과 */
   ANSWER_SELECTION_LIMIT_EXCEEDED: "ANSWER_SELECTION_LIMIT_EXCEEDED",
+  /**
+   * 초안 저장이 동시에 도착해 부딪혔다 (409) — 서버가 명시적으로 재시도를 요구하는 유일한
+   * 409다(첫 저장이 겹친 경우). 다른 409(`RESPONSE_ALREADY_*`)와 달리 다시 보내면 풀린다.
+   */
+  RESPONSE_SAVE_CONFLICT: "RESPONSE_SAVE_CONFLICT",
 } as const;

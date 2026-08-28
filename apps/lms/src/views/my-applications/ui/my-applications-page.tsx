@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { loadMyApplications } from "@/features/proposal";
 import { LoginGate } from "@/features/auth";
-import { signupUrl } from "@/shared/config/routes";
+import { ROUTES, signupUrl } from "@/shared/config/routes";
 import { EmptyState, Notice } from "@/shared/ui";
 import { SubmissionCard } from "./submission-card";
 
@@ -26,13 +27,28 @@ export async function MyApplicationsPage() {
 
   return (
     <div className="flex flex-col gap-[16px]">
-      <header className="flex flex-col gap-[2px]">
-        <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">
-          기획안 제출 현황
-        </h1>
-        <p className="text-[13.5px] text-n500">
-          낸 기획안과 학술국장 검토 상태를 이 화면에서 확인할 수 있습니다
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-[8px]">
+        <div className="flex flex-col gap-[2px]">
+          <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">
+            기획안 제출 현황
+          </h1>
+          <p className="text-[13.5px] text-n500">
+            낸 기획안과 학술국장 검토 상태를 이 화면에서 확인할 수 있습니다
+          </p>
+        </div>
+        {/*
+         * 기획안 폼은 `mltplRspnsYn = true`라 이미 낸 뒤에도 새로 낼 수 있다. 접수 중이 아닐
+         * 때는 버튼을 숨긴다 — 눌러 봐야 작성 화면이 "지금은 받지 않습니다"로 끝난다
+         * (#185 · loader가 `acceptingYn`을 함께 준다).
+         */}
+        {result.outcome === "ready" && result.acceptingYn && (
+          <Link
+            href={ROUTES.proposalNew}
+            className="rounded-xl bg-accent px-[14px] py-[10px] text-[13.5px] font-semibold text-white hover:bg-accent-strong"
+          >
+            새 기획안 작성하기
+          </Link>
+        )}
       </header>
 
       <Body result={result} />
