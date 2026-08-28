@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   acdmActvSttsBadge,
@@ -12,11 +13,14 @@ import {
   loadLeaderDashboard,
   type LeaderDashboardReady,
 } from "@/features/academic-program";
+import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher";
 import { LoginGate } from "@/features/auth";
 import {
   ROUTES,
   signupUrl,
+  studioMembersUrl,
   studioProgramDetailUrl,
+  studioRecordProgramUrl,
   studioRecordUrl,
   studioRosterUrl,
 } from "@/shared/config/routes";
@@ -72,6 +76,18 @@ function deriveStats(
   );
 
   return { total, approved, progress, pendingReview, unrecorded };
+}
+
+/** 활동 카드 우상단의 바로가기 링크 — 회차 기록·내 활동·출석부·팀원 관리가 같은 모양이다 */
+function DashLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="whitespace-nowrap rounded-[12px] border border-line px-[12px] py-[6px] text-[13.5px] text-n400 hover:border-accent hover:text-accent"
+    >
+      {children}
+    </Link>
+  );
 }
 
 function StatBox({
@@ -233,13 +249,21 @@ function ApprovalFeed({ approvals }: { approvals: AcademicProgramApproval[] }) {
 }
 
 function DashboardBody({ data }: { data: LeaderDashboardReady }) {
-  const { program, curriculum, approvals, otherPrograms, thisWeekItems } = data;
+  const { program, allPrograms, curriculum, approvals, otherPrograms, thisWeekItems } =
+    data;
   const today = todayInSeoul();
   const stats = deriveStats(program, curriculum, today);
   const statusBadge = acdmActvSttsBadge(program.sttsCd);
 
   return (
     <div className="flex flex-col gap-[16px]">
+      {/* 활동 선택 드롭다운 — 대시보드가 볼 활동을 바꾼다 (#192) */}
+      <ProgramSwitcher
+        programs={allPrograms}
+        selectedId={program.academicProgramId}
+        basePath={ROUTES.studio}
+      />
+
       {/* 통계 4칸 */}
       <div className="grid grid-cols-2 gap-[12px] lg:grid-cols-4">
         <StatBox
@@ -278,24 +302,18 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
           )}
           <Badge tone="grey">{program.typeCd}</Badge>
           <div className="flex-1" />
-          <Link
-            href={studioProgramDetailUrl(program.academicProgramId)}
-            className="whitespace-nowrap rounded-[12px] border border-line px-[12px] py-[6px] text-[13.5px] text-n400 hover:border-accent hover:text-accent"
-          >
-            활동 상세
-          </Link>
-          <Link
-            href={studioRosterUrl(program.academicProgramId)}
-            className="whitespace-nowrap rounded-[12px] border border-line px-[12px] py-[6px] text-[13.5px] text-n400 hover:border-accent hover:text-accent"
-          >
+          <DashLink href={studioRecordProgramUrl(program.academicProgramId)}>
+            회차 기록
+          </DashLink>
+          <DashLink href={studioProgramDetailUrl(program.academicProgramId)}>
+            내 활동
+          </DashLink>
+          <DashLink href={studioRosterUrl(program.academicProgramId)}>
             출석부
-          </Link>
-          <Link
-            href={ROUTES.studioMembers + `?programId=${program.academicProgramId}`}
-            className="whitespace-nowrap rounded-[12px] border border-line px-[12px] py-[6px] text-[13.5px] text-n400 hover:border-accent hover:text-accent"
-          >
+          </DashLink>
+          <DashLink href={studioMembersUrl(program.academicProgramId)}>
             팀원 관리
-          </Link>
+          </DashLink>
         </div>
         <div className="mt-[10px] text-[22px] font-semibold">{program.title || "-"}</div>
         <div className="mt-[4px] text-[14px] text-n400">
@@ -406,8 +424,8 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
             })}
           </div>
           <div className="mt-[10px] text-[12.5px] text-n500">
-            대시보드는 진행 중 활동 하나를 보여 줍니다 — 다른 활동은 카드를 눌러 상세에서
-            이어서 봅니다.
+            대시보드는 활동 하나를 보여 줍니다 — 위 드롭다운으로 바꾸거나 카드를 눌러
+            상세에서 봅니다.
           </div>
         </Card>
       )}
@@ -415,8 +433,13 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
   );
 }
 
-export async function StudioDashboardPage() {
-  const result = await loadLeaderDashboard();
+export async function StudioDashboardPage({
+  academicProgramId = null,
+}: {
+  /** 주소의 ?programId= — 드롭다운이 고른 활동. 없으면 로더가 기본값을 고른다 */
+  academicProgramId?: number | null;
+}) {
+  const result = await loadLeaderDashboard(academicProgramId);
 
   return (
     <div className="flex flex-col gap-[16px]">
