@@ -14,13 +14,23 @@ export type {
   AcademicSessionAttendance,
   AcademicSessionDetail,
   AcademicSessionFileReference,
+  AcademicSessionSummary,
+  AcademicSessionSummaryFilter,
   AttendanceCorrection,
   CurriculumItemWithSession,
+  RosterSessionColumn,
   SesnSttsCd,
 } from "./model/types";
 export { allowsRecording } from "./model/types";
 
 export { SESN_STTS_BADGE, sesnSttsBadge } from "./model/display";
+
+export {
+  attendanceRatePercent,
+  formatAttendanceRate,
+  isLowAttendanceRate,
+  LOW_ATTENDANCE_RATE,
+} from "./model/attendance-rate";
 
 // 오류 코드는 전송 계층에 의존하지 않는 순수 모듈에 있다 (조회 함수는 재export 하지 않는다)
 export { ACADEMIC_ATTENDANCE_ERROR, ACADEMIC_SESSION_ERROR } from "./api/error-codes";

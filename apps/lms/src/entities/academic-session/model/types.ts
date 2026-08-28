@@ -71,6 +71,55 @@ export interface CurriculumItemWithSession {
   isEditable: boolean;
 }
 
+/**
+ * table: sesn — 회차 목록(GET .../sessions) 한 줄 (`SessionSummaryResponse` · 서버 #135).
+ *
+ * 출석부 화면(#172)이 **열**로 쓴다 — 회차 하나가 표의 한 열이고, `presentCount`·`totalCount`가
+ * 그 열의 합계다(웹에서 다시 세지 않는다 · 이슈). 실적이 없는 커리큘럼 항목은 이 목록에 오지
+ * 않는다(커리큘럼 조회 #134가 합성하는 `NOT_SUBMITTED`와 달리, 이쪽은 실제 `sesn` 행만).
+ *
+ * 날짜는 서버가 `LocalDate`("2026-03-01")로 준다. 필드명은 리네임(ssccops-server#178) 이후가
+ * 기준이다(`actlYmd` — 옛 `realDt`).
+ */
+export interface AcademicSessionSummary {
+  /** sesn_id · PK */
+  sessionId: number;
+  /** 이 회차가 붙은 커리큘럼 항목 */
+  curriculumItemId: number;
+  /** 커리큘럼 항목의 회차 순번 (1부터). 없으면 null */
+  seqno: number | null;
+  /** 커리큘럼 항목 제목 (curriculumTtl) */
+  curriculumTitle: string;
+  /** 계획일 (planYmd). YYYY-MM-DD. 없으면 null */
+  planYmd: string | null;
+  /** 실제 진행일 (actlYmd — 옛 realDt). YYYY-MM-DD. 없으면 null */
+  actualYmd: string | null;
+  sesnSttsCd: SesnSttsCd;
+  /** 회차 기록 등록자 */
+  registrantMemberId: number | null;
+  registrantMemberName: string | null;
+  /** 출석 집계 — 저장하지 않는 파생값. 출석부가 빈 회차는 0/0 */
+  presentCount: number;
+  totalCount: number;
+}
+
+/** 회차 목록 필터 — 값이 없으면(null) 상태로 거르지 않고 전체를 받는다 */
+export interface AcademicSessionSummaryFilter {
+  sesnSttsCd?: SesnSttsCd | null;
+}
+
+/**
+ * 출석부 화면(#172)이 다루는 회차 한 열 — 회차 요약 + 그 회차 출석부 원본 줄.
+ *
+ * SSR 로더가 조립해 클라이언트 훅으로 넘긴다. 순수 도메인 조합이라 여기 둔다(로더에 두면
+ * 클라이언트 훅이 서버 전용 모듈에서 타입을 가져오는 모양이 된다).
+ */
+export interface RosterSessionColumn {
+  session: AcademicSessionSummary;
+  /** 이 회차 출석부의 원본 줄들 — 정정 결과를 줄 단위로 되짚을 때 쓴다 */
+  attendances: AcademicAttendanceRow[];
+}
+
 /** 회차 상세(GET .../sessions/{id})의 출석부 한 줄 (`SessionAttendanceResponse`) */
 export interface AcademicSessionAttendance {
   /** event_ptcp_id — 참가자 식별자(회원 PK 아님). 회원명은 event_ptcp → mbr 조인이라 개명이 반영된다 */
