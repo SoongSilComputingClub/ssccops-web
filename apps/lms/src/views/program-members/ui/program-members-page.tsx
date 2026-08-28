@@ -1,8 +1,14 @@
-import Link from "next/link";
-import { loadAcademicProgramMembers } from "@/features/academic-program";
+import {
+  BackToProgramsNotice,
+  loadAcademicProgramMembers,
+  NoProgramNotice,
+  ProgramSignupNotice,
+  selectProgram,
+} from "@/features/academic-program";
+import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher";
 import { LoginGate } from "@/features/auth";
 import { ROUTES, signupUrl } from "@/shared/config/routes";
-import { EmptyState, Notice } from "@/shared/ui";
+import { EmptyState } from "@/shared/ui";
 import { MemberCardMobile, MemberRowDesktop } from "./member-row";
 
 /*
@@ -20,12 +26,10 @@ import { MemberCardMobile, MemberRowDesktop } from "./member-row";
  * 화면에 데이터 페칭 상태 기계를 들이지 않는다. 로그인 상태로 갈리는 부분(`LoginGate`)만
  * 클라이언트다.
  *
- * ── 활동을 어떻게 고르는가 ──────────────────────────────────────
- * 이 화면은 활동 하나(`academicProgramId`)의 명단이다. 스터디장이 여러 활동을 맡을 수 있으므로
- * 주소의 `?programId=`로 대상을 받는다. 값이 없으면 대시보드에서 활동을 골라 들어오라고
- * 안내한다 — lms에는 아직 '내 활동' 목록 조회가 없어(후속 이슈) 여기서 기본 활동을 임의로
- * 고르지 않는다("없는 값을 만들어 내지 않는다" 규칙의 한 자리다). 대시보드(#129 예정)가
- * 활동별로 이 링크를 건다.
+ * ── 활동을 어떻게 고르는가 (#192) ──────────────────────────────
+ * 상단 활동 선택 드롭다운(`ProgramSwitcher`)으로 고른다. `?programId=`가 있으면 그 활동,
+ * 없으면 목록 맨 위 — 드롭다운으로 언제든 바꾼다. SSR 셸이 `mine=true` 목록 전체와 선택
+ * 활동을 함께 받는다(`selectProgram`).
  *
  * ── 학번·출석률 열이 없다 (#131 결정) ────────────────────────────
  * 서버 응답에 학번·출석률이 없다. 없는 값을 만들어 내지 않는다 — 필요하면 서버에 필드 추가를
@@ -36,9 +40,11 @@ import { MemberCardMobile, MemberRowDesktop } from "./member-row";
 export async function ProgramMembersPage({
   academicProgramId,
 }: {
-  /** 주소의 ?programId= 값. 숫자가 아니거나 없으면 null */
+  /** 주소의 ?programId= 값. 숫자가 아니거나 없으면 null → 목록 맨 위 */
   academicProgramId: number | null;
 }) {
+  const selection = await selectProgram(academicProgramId);
+
   return (
     <div className="flex flex-col gap-[16px]">
       <header className="flex flex-col gap-[2px]">
@@ -48,20 +54,31 @@ export async function ProgramMembersPage({
         </p>
       </header>
 
-      {academicProgramId === null ? (
-        <Notice
-          title="어느 활동의 팀원을 볼지 정해야 합니다"
-          description="학술 대시보드에서 활동을 고르면 그 활동의 팀원 명단이 열립니다."
-        >
-          <Link
-            href={ROUTES.studio}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
-          >
-            학술 대시보드로
-          </Link>
-        </Notice>
-      ) : (
-        <MembersBody academicProgramId={academicProgramId} />
+      {selection.outcome === "unauthenticated" && (
+        <LoginGate
+          title="로그인이 필요합니다"
+          description="팀원 명단은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+        />
+      )}
+      {selection.outcome === "signup-required" && (
+        <ProgramSignupNotice signupHref={signupUrl()} />
+      )}
+      {selection.outcome === "none" && <NoProgramNotice />}
+      {selection.outcome === "error" && (
+        <BackToProgramsNotice
+          title="팀원 명단을 불러오지 못했습니다"
+          description={selection.message}
+        />
+      )}
+      {selection.outcome === "ready" && (
+        <>
+          <ProgramSwitcher
+            programs={selection.programs}
+            selectedId={selection.selected.academicProgramId}
+            basePath={ROUTES.studioMembers}
+          />
+          <MembersBody academicProgramId={selection.selected.academicProgramId} />
+        </>
       )}
     </div>
   );
@@ -80,22 +97,7 @@ async function MembersBody({ academicProgramId }: { academicProgramId: number })
   }
 
   if (result.outcome === "signup-required") {
-    const signup = signupUrl();
-    return (
-      <Notice
-        title="회원 가입을 마쳐야 팀원 명단을 볼 수 있습니다"
-        description="로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다."
-      >
-        {signup && (
-          <a
-            href={signup}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
-          >
-            회원 가입하기
-          </a>
-        )}
-      </Notice>
-    );
+    return <ProgramSignupNotice signupHref={signupUrl()} />;
   }
 
   if (result.outcome === "error") {

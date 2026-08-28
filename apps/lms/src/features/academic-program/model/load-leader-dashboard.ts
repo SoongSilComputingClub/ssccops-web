@@ -46,6 +46,8 @@ export interface LeaderDashboardReady {
   outcome: "ready";
   /** 대시보드가 지금 보여 주는 대상 활동 */
   program: AcademicProgramSummary;
+  /** 내가 맡은 활동 전부 — 상단 활동 선택 드롭다운의 항목 (#192) */
+  allPrograms: AcademicProgramSummary[];
   /** 그 활동의 커리큘럼(계획 + 실적 조인) — 회차 스트립·미기록·진행률의 재료 */
   curriculum: CurriculumItemWithSession[];
   /** 회차 승인 이력(최근순, SESSION 지점) — "내 기록 처리 현황" */
@@ -67,10 +69,20 @@ export type LeaderDashboardLoad =
   /** 그 밖의 실패(네트워크 등) — 페이지가 문구를 그린다 */
   | { outcome: "error"; message: string };
 
-/** 대시보드가 볼 대상 활동 하나를 고른다 — 진행 중 > 승인 > 첫 번째 */
+/**
+ * 대시보드가 볼 대상 활동 하나를 고른다 (#192).
+ *
+ * `programId`(주소의 `?programId=`)가 목록에 있으면 그것, 없으면 기본값 — 진행 중 > 승인 >
+ * 첫 번째. 상단 드롭다운으로 언제든 바꾸고 URL에 `?programId=`로 남는다.
+ */
 function pickPrimary(
   programs: AcademicProgramSummary[],
+  programId: number | null,
 ): AcademicProgramSummary | null {
+  if (programId != null) {
+    const chosen = programs.find((p) => p.academicProgramId === programId);
+    if (chosen) return chosen;
+  }
   return (
     programs.find((p) => p.sttsCd === "ONGOING") ??
     programs.find((p) => p.sttsCd === "APPROVED") ??
@@ -79,10 +91,12 @@ function pickPrimary(
   );
 }
 
-export async function loadLeaderDashboard(): Promise<LeaderDashboardLoad> {
+export async function loadLeaderDashboard(
+  programId: number | null = null,
+): Promise<LeaderDashboardLoad> {
   try {
     const programs = await fetchMyAcademicPrograms();
-    const program = pickPrimary(programs);
+    const program = pickPrimary(programs, programId);
     if (!program) return { outcome: "no-program" };
 
     // 커리큘럼과 승인 이력은 서로 독립이라 함께 부른다
@@ -100,6 +114,7 @@ export async function loadLeaderDashboard(): Promise<LeaderDashboardLoad> {
     return {
       outcome: "ready",
       program,
+      allPrograms: programs,
       curriculum,
       approvals,
       otherPrograms: programs.filter(

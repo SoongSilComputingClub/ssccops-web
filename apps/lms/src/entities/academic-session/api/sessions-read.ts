@@ -68,8 +68,14 @@ export async function fetchAcademicSessions(
       sesnSttsCd: filter.sesnSttsCd ?? undefined,
       size: 100,
       cursor: cursor ?? undefined,
-      // 표는 회차 순번대로 왼쪽→오른쪽으로 읽힌다 — 진행일 오름차순으로 받는다
-      sort: "actlYmd,asc",
+      /*
+       * 진행일 오름차순 — 표는 회차 순번대로 왼쪽→오른쪽으로 읽힌다.
+       *
+       * ⚠️ 표기는 서버 `SessionSortOrder`의 enum 값 그대로다(`actlYmd` / `-actlYmd` /
+       * `seqno` / `-seqno`) — Spring Pageable 스타일 `필드,방향`이 아니다. `"actlYmd,asc"`로
+       * 보내면 서버가 `INVALID_CODE_VALUE`("기준 코드에 없는 값입니다")로 끊는다.
+       */
+      sort: "actlYmd",
     });
     const page = await apiFetchAuthedList<SessionSummaryResponse>(
       `/v1/academic-programs/${academicProgramId}/sessions${query}`,
