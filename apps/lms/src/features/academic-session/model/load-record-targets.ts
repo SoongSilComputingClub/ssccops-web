@@ -8,8 +8,8 @@ import { loadSessionRecordErrorMessage } from "./session-record-error";
  * 회차 기록 대상 후보 조회 (#190).
  *
  * 회차 기록 화면(`/studio/record`)을 활동만 정한 채(커리큘럼 항목 없이) 열었을 때, 그 활동의
- * 커리큘럼 항목 목록을 그려 하나를 고르게 한다. 상단 바 메뉴로 들어와 활동이 하나로
- * 정해졌거나(`resolveProgram`), 활동 선택 목록에서 활동만 고른 경우다.
+ * 커리큘럼 항목 목록을 그려 하나를 고르게 한다. 상단 활동 드롭다운(#192)으로 활동만 정하고
+ * 아직 회차를 안 고른 상태다.
  *
  * `fetchCurriculumItems`(#134)가 `next/headers`를 타므로 서버 전용이다 — SSR 셸이 부른다.
  */

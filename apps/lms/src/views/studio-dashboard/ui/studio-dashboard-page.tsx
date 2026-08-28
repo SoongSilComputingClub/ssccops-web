@@ -273,7 +273,9 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
       {/* 활동 카드 + 회차 스트립 */}
       <Card>
         <div className="flex flex-wrap items-center gap-[8px]">
-          <Badge tone={statusBadge.tone}>{statusBadge.label}</Badge>
+          {statusBadge && (
+            <Badge tone={statusBadge.tone}>{statusBadge.label}</Badge>
+          )}
           <Badge tone="grey">{program.typeCd}</Badge>
           <div className="flex-1" />
           <Link
@@ -393,7 +395,7 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
                   href={studioProgramDetailUrl(other.academicProgramId)}
                   className="flex items-center gap-[10px] rounded-[12px] px-[4px] py-[4px] hover:bg-bg"
                 >
-                  <Badge tone={badge.tone}>{badge.label}</Badge>
+                  {badge && <Badge tone={badge.tone}>{badge.label}</Badge>}
                   <Badge tone="grey">{other.typeCd}</Badge>
                   <div className="min-w-0 flex-1 text-[14px] text-n400">
                     {other.title || "-"}

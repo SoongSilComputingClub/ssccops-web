@@ -39,13 +39,20 @@ import { Badge, Card, EmptyState, Notice } from "@/shared/ui";
 
 export async function MyProgramDetailPage({
   academicProgramId,
+  /**
+   * `/studio/programs`의 드롭다운 셸 안에 끼워질 때 true — "← 내 활동" 링크를 숨긴다
+   * (드롭다운이 이미 그 자리다 · #192). 직접 링크(`/studio/programs/{id}`)로 들어온
+   * 경우에는 뒤로 갈 곳이 필요해 링크를 남긴다.
+   */
+  embedded = false,
 }: {
   academicProgramId: number | null;
+  embedded?: boolean;
 }) {
   if (academicProgramId === null) {
     return (
       <div className="flex flex-col gap-[16px]">
-        <BackLink />
+        {!embedded && <BackLink />}
         <EmptyState
           title="활동을 찾을 수 없습니다"
           description="내 활동 목록에서 활동을 골라 들어와주세요."
@@ -58,7 +65,7 @@ export async function MyProgramDetailPage({
 
   return (
     <div className="flex flex-col gap-[16px]">
-      <BackLink />
+      {!embedded && <BackLink />}
       <Body result={result} />
     </div>
   );
@@ -135,7 +142,7 @@ function DetailBody({ data }: { data: MyProgramDetailReady }) {
       {/* 헤더 카드 */}
       <Card>
         <div className="flex flex-wrap items-center gap-[8px]">
-          <Badge tone={badge.tone}>{badge.label}</Badge>
+          {badge && <Badge tone={badge.tone}>{badge.label}</Badge>}
           <Badge tone="grey">{program.typeCd}</Badge>
           <div className="flex-1" />
           <Link

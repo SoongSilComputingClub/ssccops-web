@@ -2,18 +2,14 @@ import Link from "next/link";
 import {
   BackToProgramsNotice,
   NoProgramNotice,
-  ProgramChooser,
   ProgramSignupNotice,
-  resolveProgram,
+  selectProgram,
 } from "@/features/academic-program";
+import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher";
 import { loadRecordTargets, loadSessionRecord } from "@/features/academic-session";
 import { sesnSttsBadge } from "@/entities/academic-session";
 import { LoginGate } from "@/features/auth";
-import {
-  signupUrl,
-  studioRecordProgramUrl,
-  studioRecordUrl,
-} from "@/shared/config/routes";
+import { ROUTES, signupUrl, studioRecordUrl } from "@/shared/config/routes";
 import { Badge, EmptyState } from "@/shared/ui";
 import { SessionRecordForm } from "./session-record-form";
 
@@ -30,13 +26,13 @@ import { SessionRecordForm } from "./session-record-form";
  * 클라이언트다. 상세 조회가 `ready`가 되기 전에는 `SessionRecordForm`을 마운트하지 않는다 —
  * 그러면 `useState` 초깃값이 곧 폼 초깃값이라 동기화용 `useEffect`가 필요 없다(이슈 · AGENTS.md).
  *
- * ── 대상을 어떻게 받는가 (#190) ─────────────────────────────
- * 활동(`?programId=`)과 커리큘럼 항목(`?curriculumItemId=`)을 주소로 받는다. 내 활동 상세·
- * 대시보드가 회차별로 그 둘을 붙여 이으므로 대개 둘 다 있다.
- *   - 둘 다 없이(상단 바 메뉴) 들어오면 `resolveProgram`이 활동을 정하고(하나면 자동, 여럿이면
- *     선택), 이어서 그 활동의 커리큘럼 항목을 고르게 한다.
- *   - 활동만 있고 항목이 없으면 곧바로 커리큘럼 선택으로 간다.
- * **활동이 여럿일 때는 임의로 하나를 고르지 않는다.**
+ * ── 대상을 어떻게 받는가 (#192) ─────────────────────────────
+ * 두 단계다: 상단 활동 선택 드롭다운(`ProgramSwitcher`)으로 활동을, 그 아래 커리큘럼 목록에서
+ * 회차를 고른다.
+ *   - `?programId=`가 없으면 목록 맨 위 활동이 디폴트. `?curriculumItemId=`가 없으면 커리큘럼
+ *     선택 목록을 그린다.
+ *   - 내 활동 상세·대시보드는 회차별로 그 둘을 다 붙여 이으므로 곧바로 폼이 열린다.
+ *   - 활동 드롭다운으로 활동을 바꾸면 `?curriculumItemId=`는 떨어진다(다른 활동의 회차다).
  */
 
 export async function SessionRecordPage({
@@ -46,6 +42,8 @@ export async function SessionRecordPage({
   academicProgramId: number | null;
   curriculumItemId: number | null;
 }) {
+  const selection = await selectProgram(academicProgramId);
+
   return (
     <div className="flex flex-col gap-[16px]">
       <header className="flex flex-col gap-[2px]">
@@ -55,58 +53,44 @@ export async function SessionRecordPage({
         </p>
       </header>
 
-      {academicProgramId !== null && curriculumItemId !== null ? (
-        <RecordBody
-          academicProgramId={academicProgramId}
-          curriculumItemId={curriculumItemId}
+      {selection.outcome === "unauthenticated" && (
+        <LoginGate
+          title="로그인이 필요합니다"
+          description="회차 기록은 활동의 스터디장만 작성할 수 있습니다 — 구글 계정으로 로그인해 주세요"
         />
-      ) : academicProgramId !== null ? (
-        <CurriculumPicker academicProgramId={academicProgramId} />
-      ) : (
-        <UnresolvedBody />
+      )}
+      {selection.outcome === "signup-required" && (
+        <ProgramSignupNotice signupHref={signupUrl()} />
+      )}
+      {selection.outcome === "none" && <NoProgramNotice />}
+      {selection.outcome === "error" && (
+        <BackToProgramsNotice
+          title="회차 기록을 열지 못했습니다"
+          description={selection.message}
+        />
+      )}
+      {selection.outcome === "ready" && (
+        <>
+          <ProgramSwitcher
+            programs={selection.programs}
+            selectedId={selection.selected.academicProgramId}
+            basePath={ROUTES.studioRecord}
+          />
+          {curriculumItemId !== null &&
+          selection.selected.academicProgramId === academicProgramId ? (
+            <RecordBody
+              academicProgramId={selection.selected.academicProgramId}
+              curriculumItemId={curriculumItemId}
+            />
+          ) : (
+            <CurriculumPicker
+              academicProgramId={selection.selected.academicProgramId}
+            />
+          )}
+        </>
       )}
     </div>
   );
-}
-
-/*
- * 활동조차 정해지지 않은 채(상단 바 메뉴) 들어왔다. 맡은 활동이 하나면 그 활동의 커리큘럼
- * 선택으로 바로 가고, 여러 개면 활동을 먼저 고르게 한다(#190 · `resolveProgram`).
- */
-async function UnresolvedBody() {
-  const resolution = await resolveProgram();
-
-  if (resolution.outcome === "unauthenticated") {
-    return (
-      <LoginGate
-        title="로그인이 필요합니다"
-        description="회차 기록은 활동의 스터디장만 작성할 수 있습니다 — 구글 계정으로 로그인해 주세요"
-      />
-    );
-  }
-  if (resolution.outcome === "signup-required") {
-    return <ProgramSignupNotice signupHref={signupUrl()} />;
-  }
-  if (resolution.outcome === "none") return <NoProgramNotice />;
-  if (resolution.outcome === "error") {
-    return (
-      <BackToProgramsNotice
-        title="어느 회차를 기록할지 정해야 합니다"
-        description={resolution.message}
-      />
-    );
-  }
-  if (resolution.outcome === "choose") {
-    return (
-      <ProgramChooser
-        programs={resolution.programs}
-        // 활동만 고른 상태 — 커리큘럼 선택은 그 다음 화면이 붙인다
-        hrefFor={studioRecordProgramUrl}
-        prompt="어느 활동의 회차를 기록할지 고르세요."
-      />
-    );
-  }
-  return <CurriculumPicker academicProgramId={resolution.program.academicProgramId} />;
 }
 
 /*

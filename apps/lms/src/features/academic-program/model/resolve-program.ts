@@ -5,25 +5,30 @@ import { isSignupRequired, isUnauthenticated } from "@/shared/api/auth-error";
 import { toLeaderDashboardErrorMessage } from "./leader-dashboard-error";
 
 /*
- * 활동을 특정하지 않고 들어온 화면(회차 기록·출석부·팀원 관리)의 활동 결정 (#190).
+ * 학술 화면(내 활동·회차 기록·출석부·팀원 관리)의 활동 선택 (#190 · #192).
  *
  * ── 왜 필요한가 ────────────────────────────────────────────
- * 세 화면은 주소에 `?programId=`가 필요한데, 상단 바 메뉴는 활동을 특정할 수 없어 파라미터
- * 없이 열린다. 그전까지는 "대시보드에서 골라 오세요"로만 끝냈지만, 스터디장이 활동을 하나만
- * 맡은 경우가 대부분이라 그 한 건을 자동으로 골라 준다. 여러 건일 때만 고르게 한다 —
- * "임의로 활동 하나를 고르지 않는다"(routes.ts·#128·#131·#172)는 규칙은 **여러 건일 때**
- * 지킨다.
+ * 네 화면 모두 활동 하나를 대상으로 그린다. 상단에 활동 선택 드롭다운을 두므로 SSR 셸은
+ * **언제나 `mine=true` 목록 전체**를 알아야 하고(드롭다운 항목), 그중 지금 볼 활동
+ * (`?programId=` 또는 목록 맨 위)을 골라 하단을 그린다.
+ *
+ * "임의로 활동 하나를 고르지 않는다"(routes.ts·#128·#131·#172)는 규칙은 **목록 맨 위를
+ * 디폴트로** 쓰는 것으로 완화됐다(#192 결정) — 드롭다운으로 언제든 바꿀 수 있고 URL에
+ * `?programId=`로 남으므로, 사용자가 무엇을 보고 있는지 모호하지 않다.
  *
  * ── 서버 전용 ────────────────────────────────────────────────
  * `fetchMyAcademicPrograms`가 `next/headers`(쿠키)를 타므로 이 모듈은 서버 컴포넌트에서만
- * 부를 수 있다. 세 화면의 SSR 셸이 직접 임포트한다.
+ * 부를 수 있다. 네 화면의 SSR 셸이 직접 임포트한다.
  */
 
-export type ProgramResolution =
-  /** 활동 하나로 정해졌다 — 화면이 그 id로 본문을 그린다 */
-  | { outcome: "resolved"; program: AcademicProgramSummary }
-  /** 여러 건 — 화면이 고르는 목록을 그린다 */
-  | { outcome: "choose"; programs: AcademicProgramSummary[] }
+export type ProgramSelection =
+  | {
+      outcome: "ready";
+      /** 드롭다운 항목 — 서버 정렬(등록 최신순) 그대로 */
+      programs: AcademicProgramSummary[];
+      /** 지금 볼 활동 — `?programId=`가 유효하면 그것, 아니면 목록 맨 위 */
+      selected: AcademicProgramSummary;
+    }
   /** 맡은 활동이 없다 */
   | { outcome: "none" }
   | { outcome: "unauthenticated" }
@@ -31,18 +36,23 @@ export type ProgramResolution =
   | { outcome: "error"; message: string };
 
 /**
- * `?programId=`가 없을 때 `mine=true` 목록에서 활동을 결정한다.
+ * `mine=true` 목록을 받아 지금 볼 활동을 정한다.
  *
- * - 0건 → `none`
- * - 1건 → `resolved`(자동 선택)
- * - 2건+ → `choose`(화면이 목록을 그린다)
+ * @param programId 주소의 `?programId=` (없거나 목록에 없으면 무시 → 맨 위)
  */
-export async function resolveProgram(): Promise<ProgramResolution> {
+export async function selectProgram(
+  programId: number | null,
+): Promise<ProgramSelection> {
   try {
     const programs = await fetchMyAcademicPrograms();
     if (programs.length === 0) return { outcome: "none" };
-    if (programs.length === 1) return { outcome: "resolved", program: programs[0] };
-    return { outcome: "choose", programs };
+
+    const selected =
+      (programId != null &&
+        programs.find((p) => p.academicProgramId === programId)) ||
+      programs[0];
+
+    return { outcome: "ready", programs, selected };
   } catch (error: unknown) {
     if (isUnauthenticated(error)) return { outcome: "unauthenticated" };
     if (isSignupRequired(error)) return { outcome: "signup-required" };

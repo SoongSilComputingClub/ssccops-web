@@ -14,7 +14,6 @@ export type {
 } from "./model/types";
 
 export {
-  ACDM_ACTV_STTS_BADGE,
   PTCP_STTS_BADGE,
   acdmActvSttsBadge,
   memberRoleBadge,
