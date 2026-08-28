@@ -66,7 +66,7 @@ interface FormResponseReviewHistoryResponse {
 interface CurriculumItemPreviewResponse {
   seqno: number | null;
   ttl: string | null;
-  planDt: string | null;
+  planYmd: string | null;
 }
 
 interface AcademicProgramPreviewResponse {
@@ -188,7 +188,7 @@ function toCurriculumItemPreview(
   return {
     seqno: res.seqno ?? null,
     ttl: res.ttl ?? "",
-    planDt: res.planDt ?? null,
+    planDt: res.planYmd ?? null,
   };
 }
 

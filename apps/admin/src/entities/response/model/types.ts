@@ -131,7 +131,7 @@ export interface FormResponseReviewHistory {
  * (`ProposalResponseParser`). 화면이 답변 원문을 다시 쪼개 표를 그리면 검토자가 승인한 것과
  * 실제로 만들어지는 것이 갈린다 — 자유 텍스트라 그 갈림은 실제로 일어난다.
  *
- * 필드 이름이 컬럼(`seqno` · `ttl` · `plan_dt`)과 같은 것은 이 값이 그 컬럼으로 그대로
+ * 필드 이름이 컬럼(`seqno` · `ttl` · `plan_ymd`)과 같은 것은 이 값이 그 컬럼으로 그대로
  * 들어가기 때문이다.
  */
 export interface CurriculumItemPreview {
@@ -139,7 +139,7 @@ export interface CurriculumItemPreview {
   seqno: number | null;
   /** 회차 주제 */
   ttl: string;
-  /** 계획일. 커리큘럼 줄 포맷이 날짜를 생략할 수 있게 두어 비어 있을 수 있다 */
+  /** 계획일(서버 컬럼 `plan_ymd`). 커리큘럼 줄 포맷이 날짜를 생략할 수 있게 두어 비어 있을 수 있다 */
   planDt: string | null;
 }
 
