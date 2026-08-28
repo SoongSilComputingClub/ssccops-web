@@ -17,6 +17,20 @@ export function formatYmd(value: string | null | undefined): string {
 }
 
 /**
+ * 일시TS → "2026-08-28 19:00" — 서버가 준 `OffsetDateTime` 문자열의 앞 16자를 잘라 쓴다.
+ *
+ * `formatYmd`와 같은 판단이다 — `new Date(...)`로 파싱해 로컬 시간대로 그리면 서울 밖에서
+ * 열었을 때 다른 시각이 보인다. 검토 이력의 처리 일시가 서버 응답에서 Asia/Seoul 오프셋을
+ * 달고 오므로(`FormResponseReviewHistoryResponse`) 앞 16자가 곧 서비스 시간대의 값이다.
+ * 값이 없거나 모양이 어긋나면 빈 문자열(추측하지 않는다).
+ */
+export function formatDt(value: string | null | undefined): string {
+  if (!value) return "";
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) return "";
+  return value.slice(0, 16).replace("T", " ");
+}
+
+/**
  * 오늘 날짜(Asia/Seoul) — "YYYY-MM-DD".
  *
  * 회차 기록 작성 화면의 '실제 진행일' 입력 기본값으로 쓴다 — 브라우저의 로컬 시간대가 아니라

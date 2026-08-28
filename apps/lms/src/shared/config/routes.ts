@@ -38,6 +38,13 @@ export const ROUTES = {
   /** 기획안 제출 현황 — 회원이 자기가 낸 기획안의 상태를 본다 */
   myApplications: "/my/applications",
   /**
+   * 기획안 한 건의 상세 — 검토 이력·수정요청 사유와, 수정요청받은 건이면 재제출 폼 (#171).
+   *
+   * 카드에서 이 주소로 들어온다. 응답 식별자(`formRspnsId`)만 경로에 싣는다 — 폼 번호는 화면이
+   * 진입할 때 코드(`sys_form_cd = 'PROPOSAL'`)로 찾으므로 주소에 없다.
+   */
+  myApplicationDetail: "/my/applications/[formRspnsId]",
+  /**
    * OAuth 콜백 라우트 핸들러. Supabase 대시보드의 Redirect URLs에 `<오리진>${authCallback}`을
    * 등록해야 로그인이 이 앱으로 돌아온다 — 등록이 없으면 Site URL(어드민)로 조용히 넘어간다
    * (어드민이 ssccops#84로 실제로 밟은 함정이고, 오리진이 셋으로 늘어 다시 밟기 쉽다).
@@ -55,6 +62,15 @@ export const LOGIN_ERROR_QUERY = "login_error";
  */
 export function studioRecordUrl(academicProgramId: number, curriculumItemId: number): string {
   return `${ROUTES.studioRecord}?programId=${academicProgramId}&curriculumItemId=${curriculumItemId}`;
+}
+
+/**
+ * 기획안 상세 링크 — `/my/applications/{formRspnsId}` (#171).
+ *
+ * 경로 문자열을 화면에 직접 조립하지 않는다. 제출 현황의 카드가 이 빌더를 쓴다.
+ */
+export function myApplicationDetailUrl(formRspnsId: number): string {
+  return `${ROUTES.myApplications}/${formRspnsId}`;
 }
 
 /**
