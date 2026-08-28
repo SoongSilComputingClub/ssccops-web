@@ -49,6 +49,10 @@ export interface AuthUser {
  *  - RESPONSE_REVIEW      FormResponseController 전체
  *  - ROLE_MANAGE         AuthorityController · RoleAuthorityController 전체 (#32 · 서버 #65)
  *  - MEMBER_MANAGE        MemberController 조회·수정·등급·상태 (#52 · 서버 #76)
+ *  - ACADEMIC_PROGRAM_MANAGE  학술 활동 유형 쓰기 · 상태 전이(모집 시작·종료 승인) ·
+ *                             회차 승인 (#122 · 서버 #130·#133·#136). 조회 셋(목록·상세·
+ *                             커리큘럼)은 인증만 요구하므로 이 코드로 잠그지 않는다 —
+ *                             SUB_WORK_TYPE와 같은 자리다(핸들러마다 인가가 갈린다)
  *
  * WORK_MANAGE·MEETING_MANAGE는 원래 조회까지 포함한 컨트롤러 전체였으나(#83), 국원에게
  * 조회만 열어 주기 위해 조회 전용 잎(WORK_READ·MEETING_READ)이 각각의 자식으로 새로
@@ -103,6 +107,17 @@ export const CAPABILITY = {
    * 아예 감춘다(열어 봐야 첫 조회부터 403이다).
    */
   EVENT_MANAGE: "EVENT_MANAGE",
+  /**
+   * 학술 활동 관리 (#122 · 서버 #130·#133·#136 — authrt 시드에서 OPERATOR의 자식,
+   * 학술국장이 OPERATOR를 통해 닿는다).
+   *
+   * 학술 활동 유형 코드테이블 쓰기(POST·PATCH /v1/academic-program-types…), 활동 상태
+   * 전이(모집 시작·종료 승인), 회차 승인·수정요청이 이 코드로 잠긴다. 목록·상세·커리큘럼
+   * 조회는 인증만 요구한다 — ROLE_MANAGE·MEMBER_MANAGE처럼 "조회부터 막힌" 코드가 아니라
+   * SUB_WORK_TYPE_READ/_MANAGE처럼 조회와 쓰기가 갈린 자리라, 메뉴를 이 코드로 감추면
+   * 조회만 하면 되는 화면까지 함께 사라진다.
+   */
+  ACADEMIC_PROGRAM_MANAGE: "ACADEMIC_PROGRAM_MANAGE",
   /**
    * 하위 업무 찬반 투표 자격 (서버 #123). 직위 코드(role_pstn_cd)로 갈리던 투표 자격이 권한으로
    * 통합되면서 capabilities에 실리게 됐다 — 상세 화면이 투표 버튼을 서버 판정 없이 잠글 수 있다.
