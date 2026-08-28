@@ -38,14 +38,15 @@ export const NAV_LINKS: readonly NavLink[] = [
     href: ROUTES.studio,
     label: "학술 대시보드",
     role: "STUDY_LEAD",
+    // 대시보드는 `/studio` 하나다 — `/studio/programs` 등 하위 경로는 각자의 항목이 켠다
     isActive: (p) => p === ROUTES.studio,
   },
   {
-    href: ROUTES.studio,
+    href: ROUTES.studioPrograms,
     label: "내 활동",
     role: "STUDY_LEAD",
-    // 내 활동은 대시보드와 같은 홈에서 시작한다 — 별도 주소는 화면 이슈가 필요해지면 붙인다
-    isActive: (p) => p === ROUTES.studio,
+    // 목록(`/studio/programs`)과 상세(`/studio/programs/{id}`) 모두에서 켜진다 (#188)
+    isActive: starts(ROUTES.studioPrograms),
   },
   {
     href: ROUTES.studioRecord,

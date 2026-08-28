@@ -16,6 +16,21 @@ export const ROUTES = {
    */
   studio: "/studio",
   /**
+   * 내 활동 목록 — 내가 스터디장/팀장인 활동들 (#188).
+   *
+   * 대시보드(`/studio`)가 "지금 굴러가는 활동 하나"라면 이 화면은 "내가 맡은 활동 전부"다.
+   * 상단 바의 "내 활동"이 이 주소를 가리킨다(그전에는 `/studio`로 걸려 대시보드와 같은
+   * 화면이 떴다). 여러 활동을 맡지 않은 회원에게는 빈 상태를 그린다.
+   */
+  studioPrograms: "/studio/programs",
+  /**
+   * 활동 하나의 상세 — 커리큘럼 대비 진행·회차 이력·출석 요약 (#188).
+   *
+   * 활동 식별자(`programId`)만 경로에 싣는다. `/studio/programs`의 카드에서 들어오고,
+   * 대시보드의 활동 카드도 이 주소로 이을 수 있다.
+   */
+  studioProgramDetail: "/studio/programs/[programId]",
+  /**
    * 회차 기록 — 스터디장이 진행한 회차를 적는다 (#128).
    *
    * 대상은 주소의 `?programId=`(활동)와 `?curriculumItemId=`(그 활동의 커리큘럼 항목)로 받는다
@@ -71,6 +86,16 @@ export function studioRecordUrl(academicProgramId: number, curriculumItemId: num
  */
 export function myApplicationDetailUrl(formRspnsId: number): string {
   return `${ROUTES.myApplications}/${formRspnsId}`;
+}
+
+/**
+ * 활동 상세 링크 — `/studio/programs/{programId}` (#188).
+ *
+ * 경로 문자열을 화면에 직접 조립하지 않는다. 내 활동 목록의 카드·대시보드의 활동 카드가
+ * 이 빌더를 쓴다.
+ */
+export function studioProgramDetailUrl(academicProgramId: number): string {
+  return `${ROUTES.studioPrograms}/${academicProgramId}`;
 }
 
 /**
