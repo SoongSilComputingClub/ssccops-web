@@ -16,6 +16,7 @@ import { LoginGate } from "@/features/auth";
 import {
   ROUTES,
   signupUrl,
+  studioProgramDetailUrl,
   studioRecordUrl,
   studioRosterUrl,
 } from "@/shared/config/routes";
@@ -276,6 +277,12 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
           <Badge tone="grey">{program.typeCd}</Badge>
           <div className="flex-1" />
           <Link
+            href={studioProgramDetailUrl(program.academicProgramId)}
+            className="whitespace-nowrap rounded-[12px] border border-line px-[12px] py-[6px] text-[13.5px] text-n400 hover:border-accent hover:text-accent"
+          >
+            활동 상세
+          </Link>
+          <Link
             href={studioRosterUrl(program.academicProgramId)}
             className="whitespace-nowrap rounded-[12px] border border-line px-[12px] py-[6px] text-[13.5px] text-n400 hover:border-accent hover:text-accent"
           >
@@ -381,24 +388,23 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
             {otherPrograms.map((other) => {
               const badge = acdmActvSttsBadge(other.sttsCd);
               return (
-                <div key={other.academicProgramId} className="flex items-center gap-[10px]">
+                <Link
+                  key={other.academicProgramId}
+                  href={studioProgramDetailUrl(other.academicProgramId)}
+                  className="flex items-center gap-[10px] rounded-[12px] px-[4px] py-[4px] hover:bg-bg"
+                >
                   <Badge tone={badge.tone}>{badge.label}</Badge>
                   <Badge tone="grey">{other.typeCd}</Badge>
                   <div className="min-w-0 flex-1 text-[14px] text-n400">
                     {other.title || "-"}
                   </div>
-                  <Link
-                    href={studioRosterUrl(other.academicProgramId)}
-                    className="flex-none whitespace-nowrap rounded-[12px] border border-line px-[10px] py-[5px] text-[13px] text-n400 hover:border-accent hover:text-accent"
-                  >
-                    출석부
-                  </Link>
-                </div>
+                  <span className="flex-none text-[13px] text-n500">보기 →</span>
+                </Link>
               );
             })}
           </div>
           <div className="mt-[10px] text-[12.5px] text-n500">
-            대시보드는 진행 중 활동 하나를 보여 줍니다 — 다른 활동은 출석부·팀원 관리에서
+            대시보드는 진행 중 활동 하나를 보여 줍니다 — 다른 활동은 카드를 눌러 상세에서
             이어서 봅니다.
           </div>
         </Card>
