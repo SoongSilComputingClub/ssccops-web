@@ -11,6 +11,7 @@
 
 export type {
   AcademicAttendanceRow,
+  AcademicProgramApproval,
   AcademicSessionAttendance,
   AcademicSessionDetail,
   AcademicSessionFileReference,
@@ -33,7 +34,11 @@ export {
 } from "./model/attendance-rate";
 
 // 오류 코드는 전송 계층에 의존하지 않는 순수 모듈에 있다 (조회 함수는 재export 하지 않는다)
-export { ACADEMIC_ATTENDANCE_ERROR, ACADEMIC_SESSION_ERROR } from "./api/error-codes";
+export {
+  ACADEMIC_APPROVAL_ERROR,
+  ACADEMIC_ATTENDANCE_ERROR,
+  ACADEMIC_SESSION_ERROR,
+} from "./api/error-codes";
 
 export {
   resubmitAcademicSession,

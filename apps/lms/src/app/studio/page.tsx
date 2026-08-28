@@ -1,15 +1,23 @@
+import type { Metadata } from "next";
 import { Notice } from "@/shared/ui";
-import { LoginGate } from "@/features/auth";
+import { StudioDashboardPage } from "@/views/studio-dashboard";
 import { loginErrorMessage } from "@/shared/lib/login-error";
 import { LOGIN_ERROR_QUERY } from "@/shared/config/routes";
 
 /**
- * 학술 대시보드 (#169) — **셸·인프라 확인용 플레이스홀더**다.
+ * /studio — 학술 대시보드 · 스터디장 홈 (#126).
  *
- * 실제 대시보드 화면은 후속 이슈가 만든다. 이 이슈는 워크스페이스·셸·전송 계층까지만 세우므로,
- * 지금은 로그인 게이트만 그려 "비로그인 → 화면 안 로그인 유도"(#169 결정)가 동작하는지
- * 확인할 수 있게 한다. 로그인한 사용자에게는 게이트가 "준비 중" 안내로 바뀐다.
+ * 이 앱의 **첫 화면**이다(`app/page.tsx`가 여기로 넘긴다). `app/`은 라우팅 전용이라
+ * 뷰(`views/studio-dashboard`)를 얇게 감싼다 — 대상 활동은 주소가 아니라 로더가 고른다
+ * (스터디장이 여러 활동을 맡아도 대시보드는 지금 굴러가는 하나를 보여 준다).
+ *
+ * OAuth 콜백이 로그인 실패 사유를 `?login_error=`로 실어 이 화면으로 돌려보내므로, 그 배너를
+ * 대시보드 위에 함께 그린다(#169가 세운 규약).
  */
+export const metadata: Metadata = {
+  title: "학술 대시보드",
+};
+
 export default async function Page({ searchParams }: PageProps<"/studio">) {
   const params = await searchParams;
   const raw = params[LOGIN_ERROR_QUERY];
@@ -20,7 +28,7 @@ export default async function Page({ searchParams }: PageProps<"/studio">) {
       {loginError && (
         <Notice title="로그인하지 못했습니다" description={loginErrorMessage(loginError)} />
       )}
-      <LoginGate />
+      <StudioDashboardPage />
     </div>
   );
 }

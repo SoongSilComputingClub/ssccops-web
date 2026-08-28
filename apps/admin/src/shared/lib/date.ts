@@ -127,6 +127,40 @@ export function todayInSeoul(): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(new Date());
 }
 
+/**
+ * `today`(YYYY-MM-DD)가 속한 주(월요일 시작)의 [시작, 끝] 일자를 돌려준다.
+ *
+ * "이번 주" 판정을 서버가 내려주지 않으므로(학술 대시보드 #126) 회차 목록을 받아 이 범위로
+ * 거른다 — 기준일은 `todayInSeoul()`이다. 프로토타입의 고정 기준일(2026-08-21)을 쓰면 이미
+ * 지난 회차가 미래로 보인다. 월요일 시작으로 잡는 것은 학술 회차가 대개 주 단위 커리큘럼이라
+ * 주말을 한 주의 끝으로 두는 편이 읽기 자연스러워서다(ISO-8601 주 정의와도 같다).
+ */
+export function weekBounds(today: string = todayInSeoul()): {
+  start: string;
+  end: string;
+} {
+  const base = new Date(`${today}T00:00:00Z`);
+  // getUTCDay(): 일=0…토=6 → 월요일까지 되돌릴 일수
+  const backToMonday = (base.getUTCDay() + 6) % 7;
+  const start = new Date(base.getTime() - backToMonday * 86_400_000);
+  const end = new Date(start.getTime() + 6 * 86_400_000);
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10),
+  };
+}
+
+/** `date`(YYYY-MM-DD)가 `today` 기준 이번 주(월~일) 안에 드는가. 값이 없으면 false */
+export function isWithinThisWeek(
+  date: string | null,
+  today: string = todayInSeoul(),
+): boolean {
+  if (!date) return false;
+  const ymd = date.slice(0, 10);
+  const { start, end } = weekBounds(today);
+  return ymd >= start && ymd <= end;
+}
+
 /** 기준일(TODAY)로부터 남은 일수. 값이 없으면 null */
 export function daysUntil(value: string | null, today: string = TODAY): number | null {
   if (!value) return null;

@@ -193,3 +193,33 @@ export interface AttendanceCorrection {
   presentCount: number;
   totalCount: number;
 }
+
+/* ── 승인 이력 (acdm_actv_aprv) · #126 · ssccops-server#139 ──── */
+
+/**
+ * 승인 이력 한 줄 (`AcademicProgramApprovalResponse`).
+ *
+ * `GET /v1/academic-programs/{id}/approvals`가 준다 — 스터디장 대시보드(#126)의 "내 기록 처리
+ * 현황"이 이 배열을 그린다. **권한 애노테이션이 없다**(인증만) — 다만 서버가 열람 범위를
+ * 스터디장 본인 + 학술국장으로 제한한다(서버 #139 결정 1). 이 앱은 스터디장이 자기 활동을
+ * 보는 화면이라 문제되지 않는다.
+ *
+ * `aprvPntCd`는 `SESSION`·`COMPLETION` 두 값만 온다(서버가 필터). 대시보드는 SESSION만 그린다
+ * — 회차 기록에 대한 국장의 승인·수정요청이 스터디장이 확인해야 할 것이다.
+ */
+export interface AcademicProgramApproval {
+  /** acdm_actv_aprv_id · PK */
+  approvalId: number;
+  /** 승인 지점 — SESSION(회차) · COMPLETION(종료). 코드로 비교한다 */
+  aprvPntCd: string;
+  /** 승인 상태 — APPROVED · REVISION_REQUESTED 등. 코드로 비교한다 */
+  aprvSttsCd: string;
+  /** SESSION 지점이면 대상 회차. COMPLETION 이면 null */
+  sessionId: number | null;
+  /** 처리한 사람 이름 (운영 데이터). 없으면 "" */
+  approverMemberName: string;
+  /** 수정요청 사유. 승인(APPROVED)에는 없다 */
+  opinionContent: string | null;
+  /** 처리 일시 (ISO-8601, Asia/Seoul 오프셋). 값이 없으면 null */
+  approvedAt: string | null;
+}
