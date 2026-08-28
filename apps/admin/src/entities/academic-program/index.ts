@@ -9,6 +9,10 @@ export type {
   AcademicProgramTransitionResult,
   AcademicProgramType,
   AcademicProgramTypeSaveInput,
+  RecruitmentApplication,
+  RecruitmentApplicationFilter,
+  RecruitmentSelection,
+  RecruitmentTeamMember,
 } from "./model/types";
 
 export {
@@ -18,6 +22,12 @@ export {
   fetchCurriculumItems,
   transitionAcademicProgram,
 } from "./api/academic-programs";
+
+export {
+  RECRUITMENT_ERROR,
+  fetchRecruitmentApplications,
+  selectRecruitmentApplicants,
+} from "./api/recruitment";
 
 export { acdmActvSttsTone, sesnSttsTone } from "./model/display";
 

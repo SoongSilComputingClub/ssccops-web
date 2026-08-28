@@ -247,6 +247,23 @@ export const NAV_GROUPS: NavGroup[] = [
         requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
       },
       /*
+       * 모집 관리 (#127 · 서버 #133·#138).
+       *
+       * 학술국장이 승인된 활동의 모집을 시작하고 신청자를 선발한다. 모집 시작(전이)·선발
+       * 확정 모두 ACADEMIC_PROGRAM_MANAGE 다. 신청자 목록 조회만 소유권 또는 이 권한으로
+       * 열리지만, 이 화면은 국장 전용이라(스터디장은 선발에 관여하지 않는다) 회차·출석 승인과
+       * 같은 판단으로 감춘다.
+       *
+       * `isActive`에서 다른 학술 화면 경로를 뺀다 — 회차 승인·이력·출석과 같은 이유로,
+       * 그 화면에서 이 메뉴까지 켜지면 목차가 지금 어디인지 알려주지 못한다.
+       */
+      {
+        label: "모집 관리",
+        href: ROUTES.academicProgramRecruitment,
+        isActive: starts("/academic-programs/recruitment"),
+        requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+      },
+      /*
        * 스터디·프로젝트 (#125 · 서버 #131·#134).
        *
        * 조회 API(목록·상세·커리큘럼)에는 권한이 없지만(가입한 회원 누구나 본다) 이 메뉴는
@@ -264,6 +281,7 @@ export const NAV_GROUPS: NavGroup[] = [
         isActive: (p) =>
           p.startsWith("/academic-programs") &&
           !p.startsWith("/academic-programs/dashboard") &&
+          !p.startsWith("/academic-programs/recruitment") &&
           !p.startsWith("/academic-programs/reviews") &&
           !p.startsWith("/academic-programs/sessions") &&
           !p.startsWith("/academic-programs/attendance"),

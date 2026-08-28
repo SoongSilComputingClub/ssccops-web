@@ -1,4 +1,8 @@
-import type { AcdmActvSttsCd } from "@/shared/config/codes";
+import type {
+  AcdmActvSttsCd,
+  PtcpSttsCd,
+  RspnsSttsCd,
+} from "@/shared/config/codes";
 
 /**
  * table: acdm_actv — 학술 활동 (스터디/프로젝트) · #122
@@ -158,6 +162,69 @@ export interface AcademicProgramTransitionResult {
   afterSttsCd: AcdmActvSttsCd;
   /** START_RECRUITMENT 직후의 파생 접수 상태(FormReceiptStatus 문자열). APPROVE_COMPLETION 은 null */
   formReceiptStatus: string | null;
+}
+
+/* ── 모집 신청자·선발 (GET·POST /v1/academic-programs/{id}/recruitment/...) · #127 ─ */
+
+/**
+ * 모집 신청자 한 줄 (FormResponseSummaryResponse 재사용 · 서버 #138).
+ *
+ * 모집 신청은 시스템 폼으로 처리되므로 신청자는 곧 폼 응답이다 — 이 타입은 그 응답 요약을
+ * 화면이 쓰는 모양으로 옮긴 것이다. 응답 내용(지원 동기 등 답 본문)은 목록에 실리지 않는다
+ * (필요하면 폼 응답 상세를 따로 조회 · 이 화면 범위 밖).
+ */
+export interface RecruitmentApplication {
+  /** form_rspns_hstry PK — 선발 요청이 신청자를 가리키는 값 */
+  formRspnsId: number;
+  /** 응답 순번 — 같은 회원의 두 응답을 가르는 값. 모르는 배포면 null */
+  rspnsSeq: number | null;
+  /** 응답 심사 상태 — 선발하면 서버가 ACCEPTED 로 바꾼다 */
+  rspnsSttsCd: RspnsSttsCd;
+  /** 제출 일시. 작성 중(DRAFT)이면 null */
+  sbmsnDt: string | null;
+  /** 응답자 회원 PK. 조인이 빠진 배포면 null */
+  memberId: number | null;
+  /** 응답자 이름. 빈 값이면 뷰가 "-"로 표시한다(변환기는 채우지 않는다) */
+  memberName: string;
+  studentNo: string | null;
+  /** 학과명 */
+  subjectName: string | null;
+}
+
+/** 신청자 목록 필터 — 값이 없으면(null) 서버 기본(= 작성 중 제외)으로 조회한다 */
+export interface RecruitmentApplicationFilter {
+  /** ResponseStatus 로 거른다 */
+  rspnsSttsCd?: RspnsSttsCd | null;
+  /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
+  cursor?: string | null;
+  /** 1~100 · 서버 기본 20 */
+  size?: number | null;
+}
+
+/**
+ * 선발 확정 한 건 (SelectionRequest 항목).
+ *
+ * `ptcpSttsCd` 는 CONFIRMED · WAITLISTED 만 받는다(`PTCP_RGST_STTS_CDS` — 취소로 시작하는
+ * 선발은 계약에 없다).
+ */
+export interface RecruitmentSelection {
+  formRspnsId: number;
+  ptcpSttsCd: PtcpSttsCd;
+}
+
+/**
+ * 선발 뒤 갱신된 팀원 한 줄 (AcademicProgramMemberResponse · GET .../members 와 같은 모양).
+ */
+export interface RecruitmentTeamMember {
+  /** event_ptcp PK */
+  eventParticipantId: number;
+  memberId: number | null;
+  memberName: string;
+  ptcpSttsCd: PtcpSttsCd;
+  /** 스터디장/팀장 여부 — 서버 판정 */
+  isLeader: boolean;
+  /** 명단에 오른 일시 */
+  joinedAt: string | null;
 }
 
 /* ── 유형 코드테이블 (GET·POST·PATCH /v1/academic-program-types) ─ */
