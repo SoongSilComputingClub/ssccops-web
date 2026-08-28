@@ -136,6 +136,17 @@ export const ROUTES = {
   academicProgramRecruitment: "/academic-programs/recruitment",
   academicProgramSessionReviews: "/academic-programs/reviews/sessions",
   academicProgramSessions: "/academic-programs/sessions",
+  /**
+   * 회차 상세 (#130). 회차 이력에서 회차 한 줄을 열면 온다.
+   *
+   * 활동 번호를 함께 싣는다 — 회차 상세·출석부·승인 이력 조회가 모두
+   * `/v1/academic-programs/{academicProgramId}/...` 경로라 활동 번호 없이는 부를 수 없다
+   * (회차 이력 응답 SessionCrossListItem 이 두 값을 함께 준다).
+   */
+  academicProgramSessionDetail: (
+    academicProgramId: number,
+    sessionId: number,
+  ) => `/academic-programs/sessions/${academicProgramId}/${sessionId}`,
   academicProgramAttendance: "/academic-programs/attendance",
 } as const;
 
