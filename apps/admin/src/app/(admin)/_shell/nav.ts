@@ -239,11 +239,30 @@ export const NAV_GROUPS: NavGroup[] = [
        * 학술국장이 전체 활동을 감독하는 화면이다 — nav.ts의 규칙은 "화면 진입에 필요한
        * 권한"을 적는 것이고, 이 화면을 실제로 쓰는 사람은 ACADEMIC_PROGRAM_MANAGE 보유자다.
        * 상세는 목록에서 들어가므로 목차에 따로 올리지 않는다.
+       *
+       * `isActive`에서 `/academic-programs/reviews`를 뺀다 — 회차·출석 승인은 아래 별도
+       * 항목이라, 그 화면에서 이 메뉴까지 켜지면 목차가 지금 어디인지 알려주지 못한다
+       * (폼 목록이 라벨·템플릿을, 기획안이 검토를 빼는 것과 같은 판단).
        */
       {
         label: "스터디·프로젝트",
         href: ROUTES.academicPrograms,
-        isActive: starts("/academic-programs"),
+        isActive: (p) =>
+          p.startsWith("/academic-programs") &&
+          !p.startsWith("/academic-programs/reviews"),
+        requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+      },
+      /*
+       * 회차·출석 승인 (#129 · 서버 #136).
+       *
+       * 학술국장이 여러 활동의 제출된 회차 기록을 한 화면에서 승인·수정요청한다. 목록·전이
+       * 모두 서버가 ACADEMIC_PROGRAM_MANAGE 로 가드하므로(선택 항목 상세만 인증), 권한이
+       * 없으면 첫 조회부터 403이다 — 감추지 않으면 갈 수 없는 곳이 목차에 남는다.
+       */
+      {
+        label: "회차·출석 승인",
+        href: ROUTES.academicProgramSessionReviews,
+        isActive: starts("/academic-programs/reviews/sessions"),
         requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
       },
     ],
