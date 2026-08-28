@@ -15,7 +15,13 @@ export const ROUTES = {
    * 것도 그래서다.
    */
   studio: "/studio",
-  /** 회차 기록 — 스터디장이 진행한 회차를 적는다 */
+  /**
+   * 회차 기록 — 스터디장이 진행한 회차를 적는다 (#128).
+   *
+   * 대상은 주소의 `?programId=`(활동)와 `?curriculumItemId=`(그 활동의 커리큘럼 항목)로 받는다
+   * — 스터디장이 여러 활동·여러 회차를 맡으므로 주소에 실린다. 대시보드·활동 상세(후속)가
+   * 회차별로 이 링크를 건다. 값이 없으면 화면이 대시보드로 안내한다(임의로 고르지 않는다).
+   */
   studioRecord: "/studio/record",
   /** 출석부 — 스터디장이 회차별 출석을 확인·기록한다 */
   studioRoster: "/studio/roster",
@@ -41,6 +47,15 @@ export const ROUTES = {
 
 /** 로그인 실패 사유를 화면까지 나르는 쿼리 키 (app/auth/callback/route.ts 참고) */
 export const LOGIN_ERROR_QUERY = "login_error";
+
+/**
+ * 회차 기록 화면 링크 — `?programId=&curriculumItemId=`를 붙인다 (#128).
+ *
+ * 경로 문자열을 화면에 직접 조립하지 않는다. 대시보드·활동 상세가 회차별로 이 빌더를 쓴다.
+ */
+export function studioRecordUrl(academicProgramId: number, curriculumItemId: number): string {
+  return `${ROUTES.studioRecord}?programId=${academicProgramId}&curriculumItemId=${curriculumItemId}`;
+}
 
 /**
  * 어드민(가입 화면이 있는 앱)의 오리진.
