@@ -229,6 +229,26 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: "학술",
+    mono: "학",
+    items: [
+      /*
+       * 스터디·프로젝트 (#125 · 서버 #131·#134).
+       *
+       * 조회 API(목록·상세·커리큘럼)에는 권한이 없지만(가입한 회원 누구나 본다) 이 메뉴는
+       * 학술국장이 전체 활동을 감독하는 화면이다 — nav.ts의 규칙은 "화면 진입에 필요한
+       * 권한"을 적는 것이고, 이 화면을 실제로 쓰는 사람은 ACADEMIC_PROGRAM_MANAGE 보유자다.
+       * 상세는 목록에서 들어가므로 목차에 따로 올리지 않는다.
+       */
+      {
+        label: "스터디·프로젝트",
+        href: ROUTES.academicPrograms,
+        isActive: starts("/academic-programs"),
+        requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+      },
+    ],
+  },
+  {
     label: "행사",
     mono: "행",
     items: [

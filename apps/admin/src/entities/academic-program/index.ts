@@ -19,6 +19,8 @@ export {
   transitionAcademicProgram,
 } from "./api/academic-programs";
 
+export { acdmActvSttsTone, sesnSttsTone } from "./model/display";
+
 export {
   ACADEMIC_PROGRAM_TYPE_ERROR,
   TYPE_CODE_MAX_LENGTH,
