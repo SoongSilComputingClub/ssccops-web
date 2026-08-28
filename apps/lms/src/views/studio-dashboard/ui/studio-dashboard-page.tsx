@@ -302,11 +302,12 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
           )}
           <Badge tone="grey">{program.typeCd}</Badge>
           <div className="flex-1" />
-          <DashLink href={studioRecordProgramUrl(program.academicProgramId)}>
-            회차 기록
-          </DashLink>
+          {/* 탑바(`_shell/nav-links.ts`)와 같은 순서 — 내 활동 · 회차 기록 · 출석부 · 팀원 관리 */}
           <DashLink href={studioProgramDetailUrl(program.academicProgramId)}>
             내 활동
+          </DashLink>
+          <DashLink href={studioRecordProgramUrl(program.academicProgramId)}>
+            회차 기록
           </DashLink>
           <DashLink href={studioRosterUrl(program.academicProgramId)}>
             출석부
