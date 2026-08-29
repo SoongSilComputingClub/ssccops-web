@@ -1,7 +1,7 @@
 "use client";
 
 import type { RspnsCn } from "@ssccops/form-renderer";
-import { apiFetchAuthedFromBrowser } from "@/shared/api/browser-client";
+import { apiFetchAuthedNullableFromBrowser } from "@/shared/api/browser-client";
 
 /*
  * 작성 중 응답(임시저장) 복원·저장 (서버 `GET`·`PUT /v1/forms/{formId}/responses/draft` ·
@@ -59,7 +59,7 @@ function toResponseDraft(res: FormResponseDraftApiResponse): ResponseDraft {
 export async function fetchMyResponseDraft(
   formId: number,
 ): Promise<ResponseDraft | null> {
-  const res = await apiFetchAuthedFromBrowser<FormResponseDraftApiResponse | null>(
+  const res = await apiFetchAuthedNullableFromBrowser<FormResponseDraftApiResponse>(
     `/v1/forms/${formId}/responses/draft`,
   );
   return res === null ? null : toResponseDraft(res);
@@ -78,7 +78,7 @@ export async function saveMyResponseDraft(
   formId: number,
   rspnsCn: RspnsCn,
 ): Promise<ResponseDraft> {
-  const res = await apiFetchAuthedFromBrowser<FormResponseDraftApiResponse | null>(
+  const res = await apiFetchAuthedNullableFromBrowser<FormResponseDraftApiResponse>(
     `/v1/forms/${formId}/responses/draft`,
     { method: "PUT", body: JSON.stringify({ rspnsCn }) },
   );

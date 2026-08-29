@@ -1,4 +1,4 @@
-import { apiFetchAuthed } from "@/shared/api/authed-client";
+import { apiFetchAuthedNullable } from "@/shared/api/authed-client";
 import { toQuery } from "@/shared/api/client";
 import type {
   AcademicProgramMember,
@@ -88,7 +88,7 @@ export async function fetchAcademicProgramMembers(
   filter: AcademicProgramMemberFilter = {},
 ): Promise<AcademicProgramMember[]> {
   const query = toQuery({ ptcpSttsCd: filter.ptcpSttsCd ?? undefined });
-  const res = await apiFetchAuthed<AcademicProgramMemberResponse[] | null>(
+  const res = await apiFetchAuthedNullable<AcademicProgramMemberResponse[]>(
     `/v1/academic-programs/${academicProgramId}/members${query}`,
   );
   return (res ?? []).map(toMember);

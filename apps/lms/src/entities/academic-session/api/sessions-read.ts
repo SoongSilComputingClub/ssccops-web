@@ -1,4 +1,8 @@
-import { apiFetchAuthed, apiFetchAuthedList } from "@/shared/api/authed-client";
+import {
+  apiFetchAuthed,
+  apiFetchAuthedList,
+  apiFetchAuthedNullable,
+} from "@/shared/api/authed-client";
 import { toQuery } from "@/shared/api/client";
 import type {
   AcademicSessionDetail,
@@ -38,7 +42,7 @@ import {
 export async function fetchCurriculumItems(
   academicProgramId: number,
 ): Promise<CurriculumItemWithSession[]> {
-  const res = await apiFetchAuthed<CurriculumItemWithSessionResponse[] | null>(
+  const res = await apiFetchAuthedNullable<CurriculumItemWithSessionResponse[]>(
     `/v1/academic-programs/${academicProgramId}/curriculum-items`,
   );
   return (res ?? []).map(toCurriculumItem);

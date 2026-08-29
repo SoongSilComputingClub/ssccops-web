@@ -67,13 +67,16 @@ async function readEnvelope<T>(response: Response): Promise<ApiResponse<T> | nul
 }
 
 /**
- * 공개 API 호출 — 봉투를 벗겨 `data`만 돌려주고, 실패는 전부 {@link ApiError}로 통일한다.
+ * 봉투를 벗기고 `data`와 응답 상태를 함께 돌려준다 — 상태는 아래 두 공개 함수만 쓴다.
  *
  * **캐시하지 않는다.** Next 16의 `fetch`는 기본이 no-store지만 여기서 명시해 둔다 — 게시 철회한
  * 행사가 캐시에 남아 계속 보이는 것이 이 앱에서 가장 곤란한 종류의 어긋남이고, 그 판단을
  * 프레임워크 기본값에 맡기고 싶지 않기 때문이다.
  */
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<{ data: T | null; status: number }> {
   if (!API_BASE_URL) {
     /*
      * 값이 없으면 `undefined/public/v1/...`로 요청이 나가 404로 둔갑한다. 설정 누락은 런타임
@@ -102,15 +105,36 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     );
   }
 
-  /*
-   * 성공 응답의 data가 null인 계약은 공개 API에 없다 — 그래도 null이 오면 화면이 `undefined`를
-   * 그리다 엉뚱한 자리에서 죽으므로 여기서 오류로 세운다.
-   */
-  if (envelope.data === null) {
-    throw new ApiError(API_ERROR.UNKNOWN, "서버 응답이 비어 있습니다", response.status);
-  }
+  return { data: envelope.data, status: response.status };
+}
 
-  return envelope.data;
+/**
+ * 공개 API 호출 — 봉투를 벗겨 `data`만 돌려주고, 실패는 전부 {@link ApiError}로 통일한다.
+ *
+ * 대부분의 조회가 이것을 쓴다. 성공 응답의 `data`가 null인 계약은 이 앱의 조회 대부분에 없고,
+ * 그래도 null이 오면 화면이 `undefined`를 그리다 엉뚱한 자리에서 죽으므로 여기서 오류로 세운다.
+ *
+ * **"없음"을 `data: null` 200으로 주는 조회는 이 함수를 쓰면 안 된다** — 정상 상태가 매번
+ * `CLIENT_UNKNOWN_ERROR`로 둔갑한다(#197이 실제로 그것이었다). 그런 조회는
+ * {@link apiFetchNullable}을 쓰고 "없음"을 화면까지 null로 올린다.
+ */
+export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const { data, status } = await request<T>(path, init);
+  if (data === null) {
+    throw new ApiError(API_ERROR.UNKNOWN, "서버 응답이 비어 있습니다", status);
+  }
+  return data;
+}
+
+/**
+ * 공개 API 호출 — 봉투를 벗겨 `data`를 돌려준다. **`data`가 null인 성공 응답도 그대로 null이다.**
+ *
+ * "작성 중인 것이 없으면 204가 아니라 `data`가 null인 200"처럼 **없음을 null로 표현하는 계약**이
+ * 서버에 실제로 있다(초안 조회 · #197). 그런 조회만 이 함수를 부르고 "없음"을 화면까지 null로
+ * 올린다 — 어느 쪽이 계약인지 호출부에서 한눈에 보이게 {@link apiFetch}와 나눠 둔 것이다.
+ */
+export async function apiFetchNullable<T>(path: string, init?: RequestInit): Promise<T | null> {
+  return (await request<T>(path, init)).data;
 }
 
 /** 쿼리 문자열 조립 — 값이 없는 항목은 아예 싣지 않는다(빈 값도 필터로 읽히는 서버가 있다) */

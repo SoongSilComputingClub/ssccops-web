@@ -1,6 +1,12 @@
 import { createClient } from "@/shared/lib/supabase/server";
 import { AUTH_ERROR } from "./auth-error";
-import { ApiError, apiFetch, apiFetchList, type ApiListResult } from "./client";
+import {
+  ApiError,
+  apiFetch,
+  apiFetchList,
+  apiFetchNullable,
+  type ApiListResult,
+} from "./client";
 
 /*
  * 인증이 필요한 API 호출 (서버 컴포넌트 전용).
@@ -52,6 +58,20 @@ async function authedInit(init?: RequestInit): Promise<RequestInit> {
 /** 인증 단건 호출 — 봉투를 벗겨 `data`만 돌려준다 */
 export async function apiFetchAuthed<T>(path: string, init?: RequestInit): Promise<T> {
   return apiFetch<T>(path, await authedInit(init));
+}
+
+/**
+ * 인증 단건 호출 — **`data`가 null인 성공 응답을 그대로 null로 돌려준다**.
+ *
+ * 서버가 "없음"을 `data: null` 200으로 주는 조회 전용이다. 그런 조회에 {@link apiFetchAuthed}를
+ * 쓰면 없음이라는 **정상** 상태가 매번 `CLIENT_UNKNOWN_ERROR`로 둔갑한다(ssccops-web#197).
+ * 페이징 없는 목록 조회들이 `?? []`로 빈 목록을 다루려는 것도 이 통로라야 실제로 닿는다.
+ */
+export async function apiFetchAuthedNullable<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T | null> {
+  return apiFetchNullable<T>(path, await authedInit(init));
 }
 
 /**

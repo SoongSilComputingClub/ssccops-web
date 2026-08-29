@@ -1,4 +1,4 @@
-import { apiFetchAuthed } from "@/shared/api/authed-client";
+import { apiFetchAuthedNullable } from "@/shared/api/authed-client";
 import type { MyFormResponse } from "../model/types";
 
 /*
@@ -23,7 +23,7 @@ interface MyFormResponseApiResponse {
 
 /** GET /v1/forms/{formId}/responses/mine — 내가 이 폼에 낸 응답들(서버가 준 순번 오름차순) */
 export async function fetchMyFormResponses(formId: number): Promise<MyFormResponse[]> {
-  const items = await apiFetchAuthed<MyFormResponseApiResponse[] | null>(
+  const items = await apiFetchAuthedNullable<MyFormResponseApiResponse[]>(
     `/v1/forms/${formId}/responses/mine`,
   );
 

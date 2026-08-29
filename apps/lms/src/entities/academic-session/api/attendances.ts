@@ -1,4 +1,4 @@
-import { apiFetchAuthed } from "@/shared/api/authed-client";
+import { apiFetchAuthedNullable } from "@/shared/api/authed-client";
 import type { AcademicAttendanceRow } from "../model/types";
 import { toAttendanceRow, type AttendanceRowResponse } from "./response-mapping";
 
@@ -22,7 +22,7 @@ export async function fetchSessionAttendances(
   academicProgramId: number,
   sessionId: number,
 ): Promise<AcademicAttendanceRow[]> {
-  const res = await apiFetchAuthed<AttendanceRowResponse[] | null>(
+  const res = await apiFetchAuthedNullable<AttendanceRowResponse[]>(
     `/v1/academic-programs/${academicProgramId}/sessions/${sessionId}/attendances`,
   );
   return (res ?? []).map(toAttendanceRow);

@@ -151,8 +151,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse
 /**
  * 단건 호출 — 봉투를 벗겨 `data`만 돌려준다.
  *
- * 성공 응답의 `data`가 null인 계약은 이 앱에 없다 — 그래도 null이 오면 화면이 `undefined`를
- * 그리다 엉뚱한 자리에서 죽으므로 여기서 오류로 세운다.
+ * 대부분의 조회가 이것을 쓴다. 성공 응답의 `data`가 null인 계약은 이 앱의 조회 대부분에 없고,
+ * 그래도 null이 오면 화면이 `undefined`를 그리다 엉뚱한 자리에서 죽으므로 여기서 오류로 세운다.
+ *
+ * **"없음"을 `data: null` 200으로 주는 조회는 이 함수를 쓰면 안 된다** — 정상 상태가 매번
+ * `CLIENT_UNKNOWN_ERROR`로 둔갑한다. 그런 조회는 {@link apiFetchNullable}을 쓴다
+ * (공개 앱 `apps/www`에서 초안 조회가 실제로 그렇게 막혔다 · ssccops-web#197).
  */
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const envelope = await request<T>(path, init);
@@ -160,6 +164,17 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     throw new ApiError(API_ERROR.UNKNOWN, "서버 응답이 비어 있습니다");
   }
   return envelope.data;
+}
+
+/**
+ * 단건 호출 — 봉투를 벗겨 `data`를 돌려주되 **null인 성공 응답도 그대로 null이다**.
+ *
+ * "작성 중인 것이 없으면 204가 아니라 `data`가 null인 200"처럼 **없음을 null로 표현하는 계약**이
+ * 서버에 실제로 있다(초안 조회). 그런 조회만 이것을 부르고 "없음"을 화면까지 null로 올린다 —
+ * 어느 쪽이 계약인지 호출부에서 한눈에 보이게 {@link apiFetch}와 나눠 둔 것이다.
+ */
+export async function apiFetchNullable<T>(path: string, init?: RequestInit): Promise<T | null> {
+  return (await request<T>(path, init)).data;
 }
 
 /**
