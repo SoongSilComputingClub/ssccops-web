@@ -278,36 +278,56 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                     placeholder="예: 2026-1 신규 부원 모집"
                   />
                 </Field>
-                <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
-                  <Field label={FIELD_LABEL.receiptStartAt}>
-                    <TextField
-                      type="datetime-local"
-                      value={toInput(draft.rcptBgngDt, true)}
-                      invalid={Boolean(issues.rcptDt)}
-                      onChange={(e) =>
-                        setDraft((d) => ({
-                          ...d,
-                          // 오프셋을 여기서 붙인다 — 서버에서 받아 온 값(+09:00)과 방금 친 값이
-                          // 같은 모양이어야 아래 접수 기간 비교(문자열 대소)가 어긋나지 않는다
-                          rcptBgngDt: withServiceOffset(fromInput(e.target.value, true)),
-                        }))
-                      }
-                    />
-                  </Field>
-                  <Field label={FIELD_LABEL.receiptEndAt} error={issues.rcptDt || null}>
-                    <TextField
-                      type="datetime-local"
-                      value={toInput(draft.rcptEndDt, true)}
-                      invalid={Boolean(issues.rcptDt)}
-                      onChange={(e) =>
-                        setDraft((d) => ({
-                          ...d,
-                          rcptEndDt: withServiceOffset(fromInput(e.target.value, true)),
-                        }))
-                      }
-                    />
-                  </Field>
-                </div>
+                {/*
+                  학술 활동에 연결된 폼(academicProgramId != null)의 접수 기간은 "모집 관리"
+                  화면(START_RECRUITMENT 전이)에서만 설정한다 (#194 · A안). 저장소는 폼 하나인데
+                  입력 화면이 둘이면 모집 시작 뒤 여기서 그 값을 덮어써 두 화면이 경쟁한다.
+                  라벨이 아니라 서버가 주는 academicProgramId 로만 판정한다(AGENTS.md).
+                */}
+                {editor.academicProgramId != null ? (
+                  <div className="rounded-[12px] border border-line bg-bg px-[14px] py-[10px] text-[13px] leading-[1.6] text-n400">
+                    모집 접수 기간은 모집 관리 화면에서 설정합니다.{" "}
+                    <a
+                      href={ROUTES.academicProgramRecruitment}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center font-medium text-accent"
+                    >
+                      모집 관리로 이동 ↗
+                    </a>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+                    <Field label={FIELD_LABEL.receiptStartAt}>
+                      <TextField
+                        type="datetime-local"
+                        value={toInput(draft.rcptBgngDt, true)}
+                        invalid={Boolean(issues.rcptDt)}
+                        onChange={(e) =>
+                          setDraft((d) => ({
+                            ...d,
+                            // 오프셋을 여기서 붙인다 — 서버에서 받아 온 값(+09:00)과 방금 친 값이
+                            // 같은 모양이어야 아래 접수 기간 비교(문자열 대소)가 어긋나지 않는다
+                            rcptBgngDt: withServiceOffset(fromInput(e.target.value, true)),
+                          }))
+                        }
+                      />
+                    </Field>
+                    <Field label={FIELD_LABEL.receiptEndAt} error={issues.rcptDt || null}>
+                      <TextField
+                        type="datetime-local"
+                        value={toInput(draft.rcptEndDt, true)}
+                        invalid={Boolean(issues.rcptDt)}
+                        onChange={(e) =>
+                          setDraft((d) => ({
+                            ...d,
+                            rcptEndDt: withServiceOffset(fromInput(e.target.value, true)),
+                          }))
+                        }
+                      />
+                    </Field>
+                  </div>
+                )}
 
                 {/*
                   다중 응답 허용 (ssccops-server #143).
@@ -396,15 +416,24 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                   저장하고 상세로
                 </Button>
               </div>
-              {/* 접수 상태를 바꾸는 유일한 버튼 — 자동 저장은 상태를 건드리지 않는다 */}
-              <Button
-                variant="ghost"
-                className="py-[13px]"
-                disabled={formStatus.pending}
-                onClick={() => void saveAndOpenReceipt()}
-              >
-                {formStatus.pending ? "접수를 시작하는 중…" : "저장하고 바로 접수 시작"}
-              </Button>
+              {/*
+                접수 상태를 바꾸는 유일한 버튼 — 자동 저장은 상태를 건드리지 않는다.
+
+                학술 폼(academicProgramId != null)에서는 감춘다 (#194). 학술 폼의 접수 시작은
+                "모집 관리"의 START_RECRUITMENT 이 담당하므로, 여기서 이 버튼을 누르는 것은
+                잘못된 경로다 (AGENTS.md: "버튼은 '지금 할 수 있는 전이' 하나만").
+                `지금 저장` · `저장하고 상세로` · `템플릿으로 저장` 은 학술 폼에서도 그대로 둔다.
+              */}
+              {editor.academicProgramId == null && (
+                <Button
+                  variant="ghost"
+                  className="py-[13px]"
+                  disabled={formStatus.pending}
+                  onClick={() => void saveAndOpenReceipt()}
+                >
+                  {formStatus.pending ? "접수를 시작하는 중…" : "저장하고 바로 접수 시작"}
+                </Button>
+              )}
               {/*
                 '템플릿으로 저장'은 복제와 다른 조작이라 버튼도 따로 둔다 (#134).
                 누르면 먼저 저장이 나간다 — 서버가 복사하는 것은 화면의 초안이 아니라
@@ -419,8 +448,9 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
                 템플릿으로 저장
               </Button>
               <div className="text-[13px] text-n500">
-                접수를 시작하면 공개 링크로 응답을 받습니다. 문항이 없거나 접수 일시가
-                올바르지 않으면 시작되지 않습니다.
+                {editor.academicProgramId != null
+                  ? "이 폼은 학술 활동에 연결돼 있습니다. 접수 시작·접수 기간은 모집 관리 화면에서 설정합니다."
+                  : "접수를 시작하면 공개 링크로 응답을 받습니다. 문항이 없거나 접수 일시가 올바르지 않으면 시작되지 않습니다."}
               </div>
             </div>
           </div>

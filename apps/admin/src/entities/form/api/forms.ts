@@ -81,6 +81,14 @@ interface FormDetailResponse extends FormSummaryResponse {
   responseSummary: Partial<FormResponseSummary> | null;
   crtDt: string | null;
   /**
+   * 이 폼이 학술 활동에 연결돼 있으면 그 활동 id, 아니면 null (ssccops-server #190).
+   *
+   * **옵셔널로 잡는다.** 이 필드를 모르는 서버 배포에서는 통째로 빠지는데(AGENTS.md의 함정
+   * 절), `toFormDetail`이 `?? null`로 굳혀 "연결 없음"과 "옛 서버"를 같은 값으로 흘려보낸다 —
+   * 그때는 접수 기간 입력란이 지금처럼 그대로 보인다(없는 연결을 지어내지 않는다).
+   */
+  academicProgramId?: number | null;
+  /**
    * 코드가 요구하는 문항 ID들 (ssccops-server #155).
    *
    * **옵셔널로 잡지 않는다.** 서버는 시스템 폼이 아니면 빈 배열을 주고 `null`을 주지 않는다고
@@ -189,6 +197,8 @@ function toFormDetail(res: FormDetailResponse): FormDetail {
     crtDt: res.crtDt ?? res.mdfcnDt,
     // 서버가 선언한 잠금을 그대로 옮긴다 — 웹이 손댈 여지가 없는 값이다
     systemRequiredQitemIds: res.systemRequiredQitemIds,
+    // 없으면(일반 폼 또는 옛 서버) null로 굳힌다 — 없는 학술 연결을 지어내지 않는다
+    academicProgramId: res.academicProgramId ?? null,
   };
 }
 

@@ -137,6 +137,17 @@ export interface FormDetail extends FormSummary {
    * 화면뿐이라 목록 카드가 이 값을 쓸 일이 없다.
    */
   systemRequiredQitemIds: string[];
+  /**
+   * 이 폼이 연결된 학술 활동 id — 일반 폼이면 `null` (ssccops-server #190 · #194).
+   *
+   * 학술 활동에 연결된 폼의 접수 기간은 "모집 관리" 화면(`START_RECRUITMENT` 전이)에서만
+   * 설정한다. 그래서 편집 화면은 이 값이 `null`이 아니면 접수 기간 입력란·`저장하고 바로
+   * 접수 시작` 버튼을 감추고 모집 관리로 안내한다 — 문항·제목 편집은 그대로다.
+   *
+   * **라벨("기획안")이 아니라 이 값으로만 학술 폼을 판정한다**(AGENTS.md 인가·판정 규칙).
+   * 서버가 이 필드를 모르는 배포에서는 `null`로 굳어 기존 동작 그대로다.
+   */
+  academicProgramId: number | null;
 }
 
 /** table: form_lbl — 폼_라벨 */
