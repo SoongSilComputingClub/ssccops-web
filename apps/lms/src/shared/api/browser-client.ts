@@ -2,7 +2,13 @@
 
 import { createClient } from "@/shared/lib/supabase/client";
 import { AUTH_ERROR } from "./auth-error";
-import { ApiError, apiFetch, apiFetchList, type ApiListResult } from "./client";
+import {
+  ApiError,
+  apiFetch,
+  apiFetchList,
+  apiFetchNullable,
+  type ApiListResult,
+} from "./client";
 
 /*
  * 인증이 필요한 API 호출 (브라우저 전용).
@@ -59,6 +65,20 @@ export async function apiFetchAuthedFromBrowser<T>(
   init?: RequestInit,
 ): Promise<T> {
   return apiFetch<T>(path, await authedInit(init));
+}
+
+/**
+ * 인증 API 호출 — **`data`가 null인 성공 응답을 그대로 null로 돌려준다**.
+ *
+ * "작성 중인 것이 없으면 `data`가 null인 200"이 서버 계약인 초안 조회 전용이다. 그 조회에
+ * `apiFetchAuthedFromBrowser`를 쓰면 초안이 없는 **정상** 상태가 매번 오류로 둔갑해, 폼을 한
+ * 번도 쓰지 않은 사람이 첫 진입에서 막힌다 — 공개 앱에서 실제로 그랬다(ssccops-web#197).
+ */
+export async function apiFetchAuthedNullableFromBrowser<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T | null> {
+  return apiFetchNullable<T>(path, await authedInit(init));
 }
 
 /** 인증 커서 목록 호출 (브라우저) — `data` 배열과 `page` 봉투를 함께 돌려준다 */

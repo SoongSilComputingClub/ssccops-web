@@ -2,7 +2,7 @@
 
 import { createClient } from "@/shared/lib/supabase/client";
 import { AUTH_ERROR } from "./auth-error";
-import { ApiError, apiFetch } from "./client";
+import { ApiError, apiFetch, apiFetchNullable } from "./client";
 
 /*
  * 인증이 필요한 API 호출 (브라우저 전용).
@@ -37,16 +37,35 @@ async function browserAccessToken(): Promise<string | null> {
   return session?.access_token ?? null;
 }
 
-/**
- * 인증 API 호출 — 토큰이 없으면 서버에 보내지 않고 `CLIENT_UNAUTHENTICATED`로 끊는다.
- *
- * 본문이 있으면 `Content-Type: application/json`을 붙인다. 익명 조회만 하던 `apiFetch`에는
- * 이 처리가 없었는데(GET뿐이었다), 헤더 없이 JSON을 보내면 서버가 415로 끊는다.
- */
+/** 인증 API 호출 — 봉투의 `data`만 돌려주고, 비어 있으면(`null`) 오류로 세운다 */
 export async function apiFetchAuthedFromBrowser<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
+  return apiFetch<T>(path, await authedInit(init));
+}
+
+/**
+ * 인증 API 호출 — **`data`가 null인 성공 응답을 그대로 null로 돌려준다**(#197).
+ *
+ * "작성 중인 것이 없으면 `data`가 null인 200"이 서버 계약인 초안 조회 전용이다. 이 조회에
+ * `apiFetchAuthedFromBrowser`를 쓰면 초안이 없는 **정상** 상태가 매번 오류로 둔갑해, 신청서를
+ * 한 번도 쓰지 않은 사람이 첫 진입에서 막힌다 — #197이 실제로 그것이었다.
+ */
+export async function apiFetchAuthedNullableFromBrowser<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T | null> {
+  return apiFetchNullable<T>(path, await authedInit(init));
+}
+
+/**
+ * 토큰을 헤더에 실은 요청 옵션. 토큰이 없으면 서버에 보내지 않고 `CLIENT_UNAUTHENTICATED`로 끊는다.
+ *
+ * 본문이 있으면 `Content-Type: application/json`을 붙인다. 익명 조회만 하던 `apiFetch`에는
+ * 이 처리가 없었는데(GET뿐이었다), 헤더 없이 JSON을 보내면 서버가 415로 끊는다.
+ */
+async function authedInit(init?: RequestInit): Promise<RequestInit> {
   const token = await browserAccessToken();
   if (!token) {
     throw new ApiError(AUTH_ERROR.UNAUTHENTICATED, "로그인이 필요합니다", 401);
@@ -58,5 +77,5 @@ export async function apiFetchAuthedFromBrowser<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  return apiFetch<T>(path, { ...init, headers });
+  return { ...init, headers };
 }

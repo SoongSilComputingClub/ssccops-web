@@ -1,7 +1,7 @@
 "use client";
 
 import type { RspnsCn } from "@ssccops/form-renderer";
-import { apiFetchAuthedFromBrowser } from "@/shared/api/browser-client";
+import { apiFetchAuthedNullableFromBrowser } from "@/shared/api/browser-client";
 
 /*
  * 폼 응답 제출·재제출 (서버 · `POST /v1/forms/{formId}/responses` · 브라우저 전용).
@@ -35,7 +35,7 @@ export async function submitFormResponse(
   formId: number,
   rspnsCn: RspnsCn,
 ): Promise<ResponseSubmitResult> {
-  const res = await apiFetchAuthedFromBrowser<FormResponseSubmitApiResponse | null>(
+  const res = await apiFetchAuthedNullableFromBrowser<FormResponseSubmitApiResponse>(
     `/v1/forms/${formId}/responses`,
     { method: "POST", body: JSON.stringify({ rspnsCn }) },
   );

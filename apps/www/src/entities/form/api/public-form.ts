@@ -1,5 +1,8 @@
 import type { QitemCpstCn, RspnsCn } from "@ssccops/form-renderer";
-import { apiFetchAuthedFromBrowser } from "@/shared/api/browser-client";
+import {
+  apiFetchAuthedFromBrowser,
+  apiFetchAuthedNullableFromBrowser,
+} from "@/shared/api/browser-client";
 import { ApiError } from "@/shared/api/client";
 import type { PublicForm, ResponseDraft } from "../model/types";
 
@@ -89,7 +92,7 @@ interface PublicFormResponse {
  * 아무것도 입력할 수 없는데 '제출하기'만 보인다는 뜻이다.
  */
 export async function fetchPublicForm(formId: number): Promise<PublicForm> {
-  const res = await apiFetchAuthedFromBrowser<PublicFormResponse | null>(
+  const res = await apiFetchAuthedNullableFromBrowser<PublicFormResponse>(
     `/v1/forms/${formId}/public`,
   );
 
@@ -129,10 +132,12 @@ interface ResponseDraftResponse {
  * 되살리지 않는다.
  *
  * **작성 중인 것이 없으면 204가 아니라 `data`가 null인 200이다.** 그래서 "없음"을 오류가 아니라
- * null로 돌려준다.
+ * null로 돌려준다 — 그 null이 여기까지 오려면 `apiFetchAuthedNullableFromBrowser`를 써야 한다.
+ * 오류로 세우는 쪽(`apiFetchAuthedFromBrowser`)을 쓰면 초안이 없는 **정상** 상태가 매번
+ * `CLIENT_UNKNOWN_ERROR`가 되어, 한 번도 신청하지 않은 사람이 첫 진입에서 막힌다(#197).
  */
 export async function fetchMyResponseDraft(formId: number): Promise<ResponseDraft | null> {
-  const res = await apiFetchAuthedFromBrowser<ResponseDraftResponse | null>(
+  const res = await apiFetchAuthedNullableFromBrowser<ResponseDraftResponse>(
     `/v1/forms/${formId}/responses/draft`,
   );
   return res === null ? null : { rspnsCn: res.rspnsCn ?? {}, mdfcnDt: res.mdfcnDt };
@@ -151,7 +156,7 @@ export async function saveMyResponseDraft(
   formId: number,
   rspnsCn: RspnsCn,
 ): Promise<ResponseDraft> {
-  const res = await apiFetchAuthedFromBrowser<ResponseDraftResponse | null>(
+  const res = await apiFetchAuthedNullableFromBrowser<ResponseDraftResponse>(
     `/v1/forms/${formId}/responses/draft`,
     { method: "PUT", body: JSON.stringify({ rspnsCn }) },
   );

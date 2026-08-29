@@ -91,8 +91,12 @@ export function FormStep({ formId, eventId }: { formId: number; eventId: number 
   /*
    * 이미 낸 신청이 있다 — 다시 쓰게 하지 않고 '내 신청'으로 보낸다(D10 — 결과는 거기서 본다).
    * 서버의 판정을 그대로 따른다. 여러 건을 받는 신청서에서는 여기 오지 않고 계속 작성 화면이다.
+   *
+   * **`form === null`을 여기 얹지 않는다**(#197). 조회에 실패하면 훅이 `form: null`을 넣는데,
+   * 그것까지 이 안내로 흡수하면 신청한 적 없는 사람에게 "이미 신청하셨습니다"가 뜨고 아래
+   * 오류 분기는 영원히 도달하지 못한다 — 실패 원인이 화면에 드러나지 않아 진단도 막힌다.
    */
-  if (status === "already-submitted" || form === null) {
+  if (status === "already-submitted") {
     return (
       <Notice
         title="이미 신청하셨습니다"
@@ -103,10 +107,15 @@ export function FormStep({ formId, eventId }: { formId: number; eventId: number 
     );
   }
 
-  if (status === "error") {
+  /*
+   * 문항을 그릴 수 없는 나머지는 전부 오류로 안내한다. `status === "error"`가 아닌데도 폼이
+   * 비어 있는 경우(앞 분기가 늘어나며 생길 수 있다)까지 여기서 함께 받는다 — 아래 본문은
+   * 폼이 있다는 전제로 쓰여 있고, 말없이 빈 화면을 그리는 것보다 사유와 재시도를 주는 편이 낫다.
+   */
+  if (status === "error" || form === null) {
     return (
       <div className="flex flex-col items-center gap-[10px]">
-        <EmptyState title={apply.errorMessage} />
+        <EmptyState title={apply.errorMessage || "신청서를 불러오지 못했습니다"} />
         <button
           type="button"
           onClick={apply.reload}
