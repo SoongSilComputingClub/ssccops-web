@@ -129,6 +129,14 @@ export interface FormEditor {
    * 시스템 폼이 아니면 빈 배열이고, 시스템 폼이라도 계약에 없는 문항은 잠기지 않는다.
    */
   systemRequiredQitemIds: string[];
+  /**
+   * 이 폼이 연결된 학술 활동 id — 일반 폼이면 `null` (ssccops-server #190 · #194).
+   *
+   * 학술 폼의 접수 기간은 "모집 관리" 화면에서만 설정하므로, 편집 화면은 이 값이 `null`이
+   * 아니면 접수 기간 입력란·`저장하고 바로 접수 시작` 버튼을 감춘다. 신규 폼은 언제나 `null`
+   * (코드가 폼을 가리키는 자리는 서버 안에만 있다).
+   */
+  academicProgramId: number | null;
   save: FormSaveStatus;
   /** 디바운스를 건너뛰고 지금 저장한다 — 저장된 formId, 보류·실패면 null */
   saveNow: () => Promise<number | null>;
@@ -154,6 +162,8 @@ interface LoadedEditor {
   qitemVer: number | null;
   /** 상세 응답이 준 '지울 수 없는 문항' — 로드 시점 그대로다 (FormEditor 주석 참고) */
   systemRequiredQitemIds: string[];
+  /** 연결된 학술 활동 id — 일반 폼이면 null (FormEditor 주석 참고) */
+  academicProgramId: number | null;
 }
 
 interface SavedMark {
@@ -188,6 +198,7 @@ function placeholderEditor(
     sysYn: false,
     qitemVer: null,
     systemRequiredQitemIds: [],
+    academicProgramId: null,
   };
 }
 
@@ -205,6 +216,8 @@ function newFormEditor(key: string): LoadedEditor {
     sysYn: false,
     qitemVer: null,
     systemRequiredQitemIds: [],
+    // 신규 폼은 학술 활동에 연결될 수 없다 — 연결은 기획안 승인 이관이 서버에서 만든다
+    academicProgramId: null,
   };
 }
 
@@ -353,6 +366,7 @@ export function useFormEditor(formId?: number): FormEditor {
           sysYn: form.sysYn,
           qitemVer: form.qitemVer,
           systemRequiredQitemIds: form.systemRequiredQitemIds,
+          academicProgramId: form.academicProgramId,
         });
       })
       .catch((error: unknown) => {
@@ -584,6 +598,7 @@ export function useFormEditor(formId?: number): FormEditor {
     hasResponses: current?.hasResponses ?? false,
     qitemVer: current?.qitemVer ?? null,
     systemRequiredQitemIds,
+    academicProgramId: current?.academicProgramId ?? null,
     save,
     saveNow,
     retry,
