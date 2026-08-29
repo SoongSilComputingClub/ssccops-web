@@ -24,6 +24,7 @@ import {
   PTCP_STTS_NM,
   type PtcpSttsCd,
 } from "@/shared/config/codes";
+import { ROUTES } from "@/shared/config/routes";
 import { formatInstant, formatYmd } from "@/shared/lib/date";
 import {
   Badge,
@@ -57,6 +58,46 @@ import {
  * 서버가 정원 초과를 차단하지 않는다(참고치 원칙 · 서버 #138 결정 2). 화면은 확정 인원이
  * 정원 상한을 넘으면 경고 문구를 띄우되 '선발 확정'을 잠그지 않는다.
  */
+
+/**
+ * 연결된 신청서(폼) 편집으로 가는 링크 (#193).
+ *
+ * 지원자에게서 응답을 받을 문항은 이 폼에 담긴다 — 기획안 승인 이관이 붙여 주는 폼은
+ * 껍데기라 문항이 0개이고, 그대로 모집을 열면 서버가 `FORM_HAS_NO_QUESTION`(400)으로 막는다.
+ * 편집기는 새로 만들지 않고 `/forms/{formId}/edit`(views/form-edit)를 그대로 재사용한다.
+ *
+ * 새 탭으로 연다 — 문항을 손보는 동안 모집 관리 화면을 잃지 않게 한다. 권한(FORM_WRITE)
+ * 판정은 편집 화면의 몫이라 여기서 링크를 감추지 않는다(편집 화면이 목적지이므로 "이동은
+ * 감춘다"의 예외 — 권한이 없으면 그 화면이 안내한다).
+ *
+ * `formId` 가 없으면(승인 전 활동이거나 서버 옛 배포) 링크 대신 안내 문구 — 없는 값을
+ * 지어내지 않는다(AGENTS.md).
+ */
+function FormEditLink({
+  formId,
+  label,
+}: {
+  formId: number | null;
+  label: string;
+}) {
+  if (formId == null) {
+    return (
+      <div className="text-[13px] text-n500">
+        이 활동에 연결된 신청서가 없습니다 — 학술 담당자에게 문의해주세요
+      </div>
+    );
+  }
+  return (
+    <a
+      href={ROUTES.formEdit(formId)}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center text-[14px] font-medium text-accent"
+    >
+      {label} ↗
+    </a>
+  );
+}
 
 /** 신청자 한 명에게 지금 매길 선발 값 — 미선택은 "none" */
 type SelectionChoice = PtcpSttsCd | "none";
@@ -104,9 +145,11 @@ function DetailSkeleton() {
 
 /** 모집 시작 카드 — APPROVED 활동에서 모집 기간을 정한다 */
 function StartRecruitmentCard({
+  formId,
   starting,
   onStart,
 }: {
+  formId: number | null;
   starting: boolean;
   onStart: (input: { recruitmentStartAt: string; recruitmentEndAt: string }) => void;
 }) {
@@ -124,6 +167,24 @@ function StartRecruitmentCard({
         모집을 시작하면 이 활동이 진행 중으로 바뀌고 연결된 신청서가 접수를
         시작합니다. 모집 기간은 비워 두면 즉시 시작해 수동으로 마감할 때까지
         열립니다.
+      </div>
+
+      {/*
+       * 문항이 없는 신청서로는 모집을 시작할 수 없다(서버 FORM_HAS_NO_QUESTION). 이 화면은
+       * 문항 수를 미리 알 수 없으므로 버튼을 잠그지는 않고, 먼저 신청서를 손보도록 링크를
+       * 눈에 띄게 둔다.
+       */}
+      <div className="mt-3 rounded-[12px] bg-bg px-[12px] py-[10px]">
+        <div className="text-[13px] font-semibold text-n300">
+          지원자에게서 받을 응답
+        </div>
+        <div className="mt-1 text-[13px] text-n500">
+          모집을 시작하기 전에 신청서에 물어볼 문항을 등록해주세요. 문항이
+          없으면 모집을 시작할 수 없습니다.
+        </div>
+        <div className="mt-2">
+          <FormEditLink formId={formId} label="신청서 문항 편집" />
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -212,6 +273,14 @@ function RecruitmentNoticeCard({
           label="신청서"
           value={program.formId != null ? `#${program.formId}` : "-"}
         />
+      </div>
+
+      {/*
+       * 접수 중에도 문항을 고칠 수 있다(서버가 허용 — 삭제·변경만 QUESTION_ITEM_IN_USE 로 막는다).
+       * 모집을 열고 나서 빠뜨린 문항을 발견하는 경우가 있어 여기에도 편집 링크를 둔다.
+       */}
+      <div className="mt-3">
+        <FormEditLink formId={program.formId} label="신청서 문항 편집" />
       </div>
 
       {overCapacity && (
@@ -486,7 +555,11 @@ export function RecruitmentDetail({
   return (
     <div className="flex flex-col gap-4">
       {needsStart ? (
-        <StartRecruitmentCard starting={start.starting} onStart={onStart} />
+        <StartRecruitmentCard
+          formId={program.formId}
+          starting={start.starting}
+          onStart={onStart}
+        />
       ) : (
         <>
           <RecruitmentNoticeCard
