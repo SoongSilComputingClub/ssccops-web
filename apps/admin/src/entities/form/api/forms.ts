@@ -71,7 +71,11 @@ interface FormSummaryResponse {
  * 틀린 값을 보여주는 종류라 폴백을 두지 않는다. 값이 없으면 없는 대로 드러나야 한다.
  */
 interface FormDetailResponse extends FormSummaryResponse {
-  qitemCpstCn: QitemCpstCn | null;
+  /**
+   * 문항 구성(JSONB). **빈 폼은 `pages` 키가 빠진 `{ qitems: [] }`로 온다** — 두 배열이 다
+   * 채워진다고 가정하지 않는다(서버 이슈 ssccops-server#186). `toQitemComposition`이 굳힌다.
+   */
+  qitemCpstCn: Partial<QitemCpstCn> | null;
   creatrMbrId: number;
   creatrMbrNm: string;
   responseSummary: Partial<FormResponseSummary> | null;
@@ -155,12 +159,31 @@ function toResponseSummary(
   };
 }
 
+/**
+ * 문항 구성을 `{ pages, qitems }` 두 배열이 **항상 있는** 모양으로 굳힌다.
+ *
+ * 서버는 빈 폼(문항 0개)의 `qitemCpstCn`을 `{ "qitems": [] }`로 내려준다 — `pages` 키가
+ * 통째로 빠진다(formId 3·4에서 확인 · 서버 이슈 ssccops-server#186). `qitemCpstCn` 객체
+ * 자체는 있으므로 위쪽 `?? { pages: [], qitems: [] }` 폴백이 걸리지 않고, 그대로 통과하면
+ * `toFormDraft`의 `qitemCpstCn.pages.map(...)`이 `undefined.map`으로 터진다(그 오류는
+ * ApiError가 아니라 화면이 "폼 정보를 불러오지 못했습니다"만 띄운다).
+ *
+ * 두 필드를 각각 폴백해 어느 쪽이 빠져 와도 편집기가 마운트되게 한다. `toFormDraft`가
+ * 페이지 0개면 페이지 1개를 채우므로 여기서는 빈 배열이면 충분하다.
+ */
+function toQitemComposition(raw: Partial<QitemCpstCn> | null): QitemCpstCn {
+  return {
+    pages: raw?.pages ?? [],
+    qitems: raw?.qitems ?? [],
+  };
+}
+
 function toFormDetail(res: FormDetailResponse): FormDetail {
   const summary = toFormSummary(res);
   return {
     ...summary,
-    // 문항 구성이 비어 있어도 미리보기가 죽지 않도록 최소 형태를 보장한다
-    qitemCpstCn: res.qitemCpstCn ?? { pages: [], qitems: [] },
+    // 문항 구성이 비어 있어도(또는 pages 키가 빠져 와도) 미리보기가 죽지 않도록 최소 형태를 보장한다
+    qitemCpstCn: toQitemComposition(res.qitemCpstCn),
     creatr: { mbrId: res.creatrMbrId, mbrNm: res.creatrMbrNm },
     responseSummary: toResponseSummary(res.responseSummary, summary.responseCount),
     crtDt: res.crtDt ?? res.mdfcnDt,
