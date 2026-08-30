@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   acdmActvSttsTone,
   type AcademicProgramDetail,
@@ -60,26 +61,30 @@ import {
  */
 
 /**
- * 연결된 신청서(폼) 편집으로 가는 링크 (#193).
+ * 연결된 신청서(폼) 편집으로 가는 링크 (#193 · 같은 탭으로 바꾼 것은 #207).
  *
  * 지원자에게서 응답을 받을 문항은 이 폼에 담긴다 — 기획안 승인 이관이 붙여 주는 폼은
  * 껍데기라 문항이 0개이고, 그대로 모집을 열면 서버가 `FORM_HAS_NO_QUESTION`(400)으로 막는다.
  * 편집기는 새로 만들지 않고 `/forms/{formId}/edit`(views/form-edit)를 그대로 재사용한다.
  *
- * 새 탭으로 연다 — 문항을 손보는 동안 모집 관리 화면을 잃지 않게 한다. 권한(FORM_WRITE)
- * 판정은 편집 화면의 몫이라 여기서 링크를 감추지 않는다(편집 화면이 목적지이므로 "이동은
- * 감춘다"의 예외 — 권한이 없으면 그 화면이 안내한다).
+ * ── 같은 탭으로 연다 ──────────────────────────────────────────
+ * #193은 새 탭(`target="_blank"`)으로 열었다 — 문항을 손보는 동안 모집 관리 화면을 잃지
+ * 않게 하려던 것이다. 그런데 새 탭의 히스토리에는 편집 화면 한 장뿐이라 그 화면의
+ * 뒤로가기가 되짚을 곳이 없었다. 눌러도 아무 일이 없어 **죽은 버튼**으로 보고됐다.
+ *
+ * 새 탭을 유지한 채 돌아올 주소를 실어 보내는 방법도 있었지만, 그러면 이 링크 하나 때문에
+ * 헤더에 대비 속성이 생기고 그 주소를 검증하는 규칙(open redirect 차단)까지 따라붙는다.
+ * 폼 편집은 자동 저장이라 두 화면을 나란히 놓고 참조하는 작업이 아니고, 편집 화면에는
+ * 이미 '모집 관리로 이동' 링크가 있다 — 새 탭이 벌어 주는 것이 그 복잡함만큼 크지 않다.
+ * 그래서 평범한 앱 내 이동으로 되돌리고, 뒤로가기는 브라우저가 하던 대로 하게 둔다.
+ *
+ * 권한(FORM_WRITE) 판정은 편집 화면의 몫이라 여기서 링크를 감추지 않는다(편집 화면이
+ * 목적지이므로 "이동은 감춘다"의 예외 — 권한이 없으면 그 화면이 안내한다).
  *
  * `formId` 가 없으면(승인 전 활동이거나 서버 옛 배포) 링크 대신 안내 문구 — 없는 값을
  * 지어내지 않는다(AGENTS.md).
  */
-function FormEditLink({
-  formId,
-  label,
-}: {
-  formId: number | null;
-  label: string;
-}) {
+function FormEditLink({ formId, label }: { formId: number | null; label: string }) {
   if (formId == null) {
     return (
       <div className="text-[13px] text-n500">
@@ -88,14 +93,12 @@ function FormEditLink({
     );
   }
   return (
-    <a
+    <Link
       href={ROUTES.formEdit(formId)}
-      target="_blank"
-      rel="noreferrer"
       className="inline-flex items-center text-[14px] font-medium text-accent"
     >
-      {label} ↗
-    </a>
+      {label}
+    </Link>
   );
 }
 
