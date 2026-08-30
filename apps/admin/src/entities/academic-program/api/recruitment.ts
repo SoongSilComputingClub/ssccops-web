@@ -59,17 +59,25 @@ interface RecruitmentApplicantResponse {
 }
 
 /**
- * 신청자 한 줄 (FormResponseSummaryResponse — 기존 폼 응답 요약 DTO 재사용).
+ * 신청자 한 줄 (RecruitmentApplicationResponse · 서버 #198).
  *
- * `rspnsCn`(응답 내용)은 목록에 실리지 않는다 — 지원 동기 같은 답 본문은 이 요약에 없고,
- * 필요하면 폼 응답 상세를 따로 조회해야 한다(이 화면 범위 밖 · #127 결정).
+ * 폼 응답 요약에 **참가 상태**(`eventPtcpId`·`ptcpSttsCd`)를 얹은 모집 전용 응답이다.
+ * #127까지는 `FormResponseSummaryResponse`를 그대로 받았는데, 그 DTO로는 확정과 대기를
+ * 가를 수 없었다(#209 — 선발이 심사와 등록을 함께 해서 둘 다 응답이 `ACCEPTED`가 된다).
+ *
+ * `rspnsCn`(응답 내용)은 여전히 목록에 실리지 않는다 — 지원 동기 같은 답 본문은 이 요약에
+ * 없고, 필요하면 폼 응답 상세를 따로 조회해야 한다(이 화면 범위 밖 · #127 결정).
  */
 interface RecruitmentApplicationResponse {
   formRspnsId: number;
   rspnsSeq: number | null;
+  responseTitle: string | null;
   rspnsSttsCd: RspnsSttsCd;
   sbmsnDt: string | null;
   member: RecruitmentApplicantResponse | null;
+  /** 선발 전이면 null (서버가 대체값을 만들지 않는다) */
+  eventPtcpId: number | null;
+  ptcpSttsCd: PtcpSttsCd | null;
 }
 
 /**
@@ -104,6 +112,12 @@ function toApplication(
     memberName: res.member?.mbrNm ?? "",
     studentNo: res.member?.stdntNo ?? null,
     subjectName: res.member?.scsbjtNm ?? null,
+    /*
+     * 선발 전이면 null이고 그것이 정상이다(서버 #198). 이 필드를 아직 안 싣는 배포에서도
+     * 같은 자리로 떨어져 화면이 "미선발"로 그린다 — 없는 값을 지어내지 않는다.
+     */
+    ptcpSttsCd: res.ptcpSttsCd ?? null,
+    eventParticipantId: res.eventPtcpId ?? null,
   };
 }
 

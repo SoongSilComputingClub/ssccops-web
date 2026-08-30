@@ -45,8 +45,9 @@ import {
  * ── 세 국면이 있다 ──────────────────────────────────────────
  *  1. APPROVED (모집 시작 전)     → 모집 기간을 정해 모집을 시작한다.
  *  2. ONGOING · 신청자 조회 409   → 방어적. 1과 같은 카드를 그린다(경합 상황).
- *  3. ONGOING · 신청자 조회 정상  → 모집 공고 카드 + 신청자 표. 신청자별로 확정/대기/보류를
- *     고르고 '선발 확정'을 한 번 누른다.
+ *  3. ONGOING · 신청자 조회 정상  → 모집 공고 카드 + 신청자 표. 신청자별로 확정·대기를
+ *     고르고 '선발 저장'을 누른다. **한 번으로 끝나는 확정이 아니라 언제든 다시 저장한다**
+ *     (#209 · 서버 #198) — 결원·정원 조정이 반복되는 것이 모집 운영의 정상 흐름이다.
  *
  * `RECRUITING` 상태는 없다 — 모집 여부는 연결된 폼의 접수 상태(formReceiptStatus)로 읽는다.
  *
@@ -57,7 +58,7 @@ import {
  *
  * ── 정원 초과는 막지 않고 표시만 한다 ───────────────────────
  * 서버가 정원 초과를 차단하지 않는다(참고치 원칙 · 서버 #138 결정 2). 화면은 확정 인원이
- * 정원 상한을 넘으면 경고 문구를 띄우되 '선발 확정'을 잠그지 않는다.
+ * 정원 상한을 넘으면 경고 문구를 띄우되 '선발 저장'을 잠그지 않는다.
  */
 
 /**
@@ -102,14 +103,38 @@ function FormEditLink({ formId, label }: { formId: number | null; label: string 
   );
 }
 
-/** 신청자 한 명에게 지금 매길 선발 값 — 미선택은 "none" */
+/** 신청자 한 명에게 지금 매길 선발 값 — 아직 아무것도 아닌 상태가 "none" */
 type SelectionChoice = PtcpSttsCd | "none";
 
+/*
+ * 고를 수 있는 값 셋 (#209).
+ *
+ * **취소(CANCELLED)는 여기 없다.** 서버가 선발 저장 요청에 CANCELLED가 실리면 400으로
+ * 끊는다 — 없으면 선발 저장이 취소 API가 되기 때문이다(서버 #198). 취소는 참가자 단건 경로가
+ * 하는 일이고 이 화면의 일이 아니다. `PTCP_RGST_STTS_CDS`가 같은 규칙을 이미 담고 있다.
+ *
+ * "미선택"은 선발에서 빼는 것이 아니라 **아직 아무 값도 매기지 않았다**는 뜻이다. 이미 선발된
+ * 신청자를 미선택으로 되돌리는 길은 없다(명단에서 지우는 것은 취소이고, 취소는 위 이유로 이
+ * 화면 밖이다) — 그래서 선발된 신청자에게는 이 칩을 그리지 않는다.
+ */
 const CHOICE_OPTIONS: { value: SelectionChoice; label: string }[] = [
   { value: "none", label: "미선택" },
   { value: "CONFIRMED", label: PTCP_STTS_NM.CONFIRMED },
   { value: "WAITLISTED", label: PTCP_STTS_NM.WAITLISTED },
 ];
+
+/**
+ * 이 신청자에게 지금 고를 수 있는 값.
+ *
+ * 아직 선발 전이면 셋 다("미선택"을 포함해) 고를 수 있고, 이미 명단에 오른 신청자에게는
+ * 확정·대기 둘만 남긴다 — 되돌아갈 수 없는 "미선택"을 남기면 누를 수 있는데 저장되지 않는
+ * 칩이 생긴다.
+ */
+function choiceOptionsFor(current: PtcpSttsCd | null) {
+  return current === null
+    ? CHOICE_OPTIONS
+    : CHOICE_OPTIONS.filter((opt) => opt.value !== "none");
+}
 
 interface RecruitmentDetailProps {
   /** 좌측에서 고른 활동. 없으면 안내만 */
@@ -338,22 +363,46 @@ function ApplicantsCard({
 }) {
   const canManage = useCan(CAPABILITY.ACADEMIC_PROGRAM_MANAGE);
 
-  /** formRspnsId → 지금 매긴 선발 값 */
-  const [choices, setChoices] = useState<Record<number, SelectionChoice>>({});
+  /*
+   * formRspnsId → 담당자가 **손으로 바꾼** 값 (#209).
+   *
+   * 서버가 준 현재 상태를 여기에 미리 채워 두지 않는다. 비어 있으면 "이 신청자는 안 건드렸다"는
+   * 뜻이고, 그때 칩에 켜지는 값은 서버가 준 `ptcpSttsCd`다(아래 `choiceOf`). 미리 채우면 목록이
+   * 다시 올 때마다 그 복사본을 서버 값과 맞춰 주는 동기화가 필요해지고, 저장 직후처럼 두 값이
+   * 잠깐 어긋나는 구간에서 화면이 옛 값을 보여준다.
+   */
+  const [edits, setEdits] = useState<Record<number, SelectionChoice>>({});
 
   const setChoice = (formRspnsId: number, value: SelectionChoice) => {
-    setChoices((prev) => ({ ...prev, [formRspnsId]: value }));
+    setEdits((prev) => ({ ...prev, [formRspnsId]: value }));
   };
 
+  /** 이 신청자에게 지금 켜져 있어야 하는 값 — 손댄 것이 있으면 그것, 없으면 서버가 준 현재 상태 */
+  const choiceOf = (app: RecruitmentApplication): SelectionChoice =>
+    edits[app.formRspnsId] ?? app.ptcpSttsCd ?? "none";
+
+  /*
+   * 보낼 것은 **바뀐 것뿐이다.**
+   *
+   * 서버의 선발 저장은 멱등해서 같은 값을 다시 보내도 아무 일이 없지만(#198), 그렇다고 전부
+   * 실어 보내면 한 명을 고친 요청이 명단 전체를 훑는 요청이 된다 — 실패했을 때 되돌아가는
+   * 범위도 그만큼 넓어진다. 그리고 **취소된 참가자는 아예 제외한다**: 서버 전이표에 CANCELLED
+   * 에서 나가는 길이 없어(취소 복원은 새로 확정하는 것과 결과가 같다) 400으로 끊긴다.
+   */
   const selections: RecruitmentSelection[] = useMemo(
     () =>
-      Object.entries(choices)
-        .filter(([, v]) => v !== "none")
-        .map(([id, v]) => ({
-          formRspnsId: Number(id),
-          ptcpSttsCd: v as PtcpSttsCd,
+      applications
+        .filter((app) => app.ptcpSttsCd !== "CANCELLED")
+        .map((app) => ({ app, choice: edits[app.formRspnsId] }))
+        .filter(
+          ({ app, choice }) =>
+            choice !== undefined && choice !== "none" && choice !== app.ptcpSttsCd,
+        )
+        .map(({ app, choice }) => ({
+          formRspnsId: app.formRspnsId,
+          ptcpSttsCd: choice as PtcpSttsCd,
         })),
-    [choices],
+    [applications, edits],
   );
 
   const runSelect = async () => {
@@ -362,9 +411,13 @@ function ApplicantsCard({
       flash(message);
       return;
     }
-    // 재조회로 목록이 새로 오면 선택은 초기화한다 — 서버가 ACCEPTED 로 굳힌 값을 다시 고르지 않게
-    setChoices({});
-    flash("선발을 확정했습니다.");
+    /*
+     * 손댄 값을 비운다 — 목록을 다시 조회하므로 이제 서버가 준 상태가 곧 화면의 값이다.
+     * 비우지 않으면 저장된 값과 같은 내용을 굳이 두 곳에 들고 있게 되고, 다음 저장에서
+     * "바뀐 것"을 셀 때 이미 반영된 값이 섞인다.
+     */
+    setEdits({});
+    flash("선발을 저장했습니다.");
   };
 
   if (status === "error") {
@@ -384,8 +437,9 @@ function ApplicantsCard({
     <Card>
       <div className="mb-3 flex items-center justify-between">
         <SectionLabel>신청자 {totalCount > 0 ? `(${totalCount})` : ""}</SectionLabel>
+        {/* 저장하면 몇 명이 바뀌는지 — "선택됨"은 이미 저장된 것까지 센 것처럼 읽힌다 */}
         {selections.length > 0 && (
-          <span className="text-[13px] text-n500">{selections.length}명 선택됨</span>
+          <span className="text-[13px] text-n500">{selections.length}명 변경됨</span>
         )}
       </div>
 
@@ -397,9 +451,15 @@ function ApplicantsCard({
       ) : (
         <div className="flex flex-col divide-y divide-black/6">
           {applications.map((app) => {
-            const decided = app.rspnsSttsCd === "ACCEPTED";
-            const choice = choices[app.formRspnsId] ?? "none";
+            const choice = choiceOf(app);
             const badge = RSPNS_STTS_BADGE[app.rspnsSttsCd];
+            /*
+             * 배지는 **참가 상태**로 그린다 (#209). 예전에는 응답 상태(ACCEPTED)로 "선발 완료"를
+             * 띄웠는데, 선발이 심사와 등록을 함께 해서 확정과 대기가 똑같이 그 배지를 달았다.
+             */
+            const decided = app.ptcpSttsCd !== null;
+            /* 취소된 참가자는 되돌릴 길이 없다(서버 전이표) — 칩 대신 상태만 남긴다 */
+            const cancelled = app.ptcpSttsCd === "CANCELLED";
             return (
               <div
                 key={app.formRspnsId}
@@ -424,11 +484,22 @@ function ApplicantsCard({
                   </div>
                 </div>
 
-                <div className="flex flex-none flex-wrap gap-[6px]">
-                  {decided ? (
-                    <Badge tone="blue">선발 완료</Badge>
+                <div className="flex flex-none flex-wrap items-center gap-[6px]">
+                  {/*
+                    지금 저장돼 있는 값을 먼저 보여 준다 — 칩은 "고를 값"이라 무엇이 이미
+                    저장된 상태인지를 칩만으로는 알 수 없다(손대는 순간 켜진 칩이 옮겨간다).
+                  */}
+                  {decided && (
+                    <Badge tone={app.ptcpSttsCd === "CONFIRMED" ? "blue" : "grey"}>
+                      {PTCP_STTS_NM[app.ptcpSttsCd as PtcpSttsCd]}
+                    </Badge>
+                  )}
+                  {cancelled ? (
+                    <span className="text-[12px] text-n500">
+                      취소된 참가자는 이 화면에서 되돌릴 수 없습니다
+                    </span>
                   ) : (
-                    CHOICE_OPTIONS.map((opt) => (
+                    choiceOptionsFor(app.ptcpSttsCd).map((opt) => (
                       <Chip
                         key={opt.value}
                         active={choice === opt.value}
@@ -457,21 +528,27 @@ function ApplicantsCard({
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-black/6 pt-4">
+        {/*
+          '확정'이 아니라 '저장'이다 (#209). 서버의 선발이 멱등해져(서버 #198) 언제든 다시
+          눌러 값을 고칠 수 있는데, 문구가 "확정"이면 되돌릴 수 없는 조작으로 읽힌다 —
+          실제로 그렇게 읽고 한 번 누른 뒤 못 바꾼다는 보고가 이 이슈의 출발점이었다.
+        */}
         <Button
           disabled={!canManage || selecting || selections.length === 0}
           title={
             !canManage
-              ? "선발을 확정할 권한이 없습니다 — 스터디·프로젝트 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다"
+              ? "선발을 저장할 권한이 없습니다 — 스터디·프로젝트 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다"
               : selections.length === 0
-                ? "확정 또는 대기로 표시할 신청자를 먼저 선택해주세요"
+                ? "바뀐 내용이 없습니다 — 신청자의 확정·대기를 고친 뒤 저장해주세요"
                 : undefined
           }
           onClick={() => void runSelect()}
         >
-          {selecting ? "확정하는 중…" : "선발 확정"}
+          {selecting ? "저장하는 중…" : "선발 저장"}
         </Button>
         <span className="text-[13px] text-n500">
-          확정·대기로 표시한 신청자가 팀원 명단에 등록되고 신청서가 승인됩니다.
+          확정·대기로 표시한 신청자가 팀원 명단에 등록되고 신청서가 승인됩니다. 저장한 뒤에도
+          확정과 대기를 다시 바꿀 수 있습니다.
         </span>
       </div>
 
