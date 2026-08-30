@@ -189,6 +189,28 @@ export interface RecruitmentApplication {
   studentNo: string | null;
   /** 학과명 */
   subjectName: string | null;
+  /**
+   * 이 신청자의 **참가 상태** — 확정(CONFIRMED)·대기(WAITLISTED)·취소(CANCELLED) (서버 #198).
+   *
+   * **선발 전이면 `null`이다.** 서버가 대체값을 만들지 않으므로 화면이 "미선발"로 읽는다.
+   *
+   * ── 왜 `rspnsSttsCd`로는 안 되는가 ────────────────────────────
+   * 선발은 응답 심사와 참가 등록을 **함께** 하므로 확정이든 대기든 응답은 똑같이 `ACCEPTED`가
+   * 된다. 응답 상태로 그리면 대기로 뽑은 신청자가 확정자와 구별되지 않는다(#209가 그 버그다).
+   *
+   * 서버는 이 값을 응답이 아니라 **회원**으로 잇는다 — 명단의 열쇠가 (event_id, mbr_id)
+   * UNIQUE라 한 사람의 참가 상태는 하나다. 같은 회원이 낸 응답이 여러 줄이면 그 줄들에 같은
+   * 상태가 함께 실린다.
+   */
+  ptcpSttsCd: PtcpSttsCd | null;
+  /**
+   * event_ptcp PK — 명단에 오른 뒤에만 있다(선발 전이면 `null`).
+   *
+   * 이 화면은 선발을 `POST .../recruitment/select`로 저장하므로 이 값을 요청에 쓰지 않는다.
+   * 그래도 받아 두는 것은 "명단 행이 있는가"가 곧 선발 여부이고, 참가자 단건을 고치는 경로
+   * (`PATCH /v1/events/{eventId}/participants/{eventPtcpId}`)가 이 값을 요구하기 때문이다.
+   */
+  eventParticipantId: number | null;
 }
 
 /** 신청자 목록 필터 — 값이 없으면(null) 서버 기본(= 작성 중 제외)으로 조회한다 */
