@@ -210,22 +210,6 @@ export const NAV_GROUPS: NavGroup[] = [
         isActive: (p) => p.startsWith("/proposals") && !p.startsWith("/proposals/review"),
         requires: CAPABILITY.FORM_READ,
       },
-      /*
-       * 기획안 검토 (#164). 학술국장이 제출된 기획안을 승인·수정요청·반려하는 화면이다.
-       *
-       * requires 가 RESPONSE_REVIEW 인 것은 **이 화면이 실제로 여는 것이 응답 목록**이기
-       * 때문이다. 첫 요청은 폼을 코드로 찾는 GET /v1/forms(FORM_READ)지만 그것은 번호를
-       * 알아내는 준비 단계일 뿐이고, 화면의 본문인 GET /v1/forms/{formId}/responses 는
-       * RESPONSE_REVIEW 없이는 통째로 403이다 — 그 권한이 없는 회원에게 이 메뉴를 남기면
-       * 눌러 봐야 빈 화면뿐인 곳이 목차에 남는다. 반대로 폼 조회 권한만 없는 경우는 화면
-       * 안에서 요구 권한을 이름으로 밝힌다(features/form 의 PROPOSAL_FORM_READ_DENIED).
-       */
-      {
-        label: "기획안 검토",
-        href: ROUTES.proposalReviews,
-        isActive: starts("/proposals/review"),
-        requires: CAPABILITY.RESPONSE_REVIEW,
-      },
     ],
   },
   {
@@ -245,6 +229,44 @@ export const NAV_GROUPS: NavGroup[] = [
         href: ROUTES.academicProgramDashboard,
         isActive: starts("/academic-programs/dashboard"),
         requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+      },
+      /*
+       * 기획안 검토 (#164 · 자리 이동은 #201). 학술국장이 제출된 기획안을 승인·수정요청·반려한다.
+       *
+       * ── 왜 폼이 아니라 학술 묶음인가 ──────────────────────────────
+       * #164는 이 항목을 폼 묶음에 두었고 그때는 그것이 맞았다 — 기획안은 시스템 폼
+       * (`sys_form_cd = 'PROPOSAL'`) 한 벌의 응답이고 화면이 부르는 API도 전부 폼·응답
+       * 계열이라, "구현이 폼 위에 서 있으니 묶음도 폼"이었다. 그 판단을 뒤집는 것이 아니라
+       * **전제가 달라졌다**: 그 뒤 #127·#129·#130으로 학술 화면이 여섯으로 늘면서, 목차의
+       * 기준이 '무슨 API를 부르는가'에서 '누가 무슨 일을 하러 오는가'로 옮겨갔다. 학술국장이
+       * 쓰는 화면 한 벌 중 다섯이 학술에 모여 있는데 이것만 폼에 남으면 목차가 두 군데로
+       * 갈린다. 승인이 곧 학술 활동의 생성이므로(서버 #150) 소속은 학술이다.
+       *
+       * ── 왜 학술 묶음인데 ACADEMIC_PROGRAM_MANAGE 가 아닌가 ────────
+       * 이 묶음의 나머지 다섯과 달리 requires 가 RESPONSE_REVIEW 다. 통일 누락이 아니다 —
+       * nav.ts의 규칙은 **화면이 첫 조회에 부르는 API가 요구하는 권한**을 적는 것이고, 이
+       * 화면의 본문은 여전히 GET /v1/forms/{formId}/responses 라 RESPONSE_REVIEW 없이는
+       * 통째로 403이다. ACADEMIC_PROGRAM_MANAGE 로 바꾸면 그 권한만 있고 RESPONSE_REVIEW 가
+       * 없는 회원에게 **메뉴는 보이는데 눌러 봐야 403인** 자리가 생긴다. 시드상 학술국장은
+       * 두 권한을 다 가지므로 실제 노출은 달라지지 않는다.
+       * (첫 요청은 폼을 코드로 찾는 GET /v1/forms(FORM_READ)지만 그것은 번호를 알아내는 준비
+       * 단계일 뿐이다. 폼 조회 권한만 없는 경우는 화면 안에서 요구 권한을 이름으로 밝힌다 —
+       * features/form 의 PROPOSAL_FORM_READ_DENIED.)
+       *
+       * 주소는 /proposals/review 그대로다 — 화면이 실제로 다루는 것은 폼 응답이고 식별자도
+       * formRspnsId 라, 목차에서의 자리가 바뀐다고 주소까지 옮길 이유는 없다.
+       *
+       * ── 왜 모집 관리보다 위인가 ───────────────────────────────────
+       * 학술 묶음은 활동이 거쳐 가는 순서대로 선다: 기획안 검토(개설 판단) → 모집 관리(사람
+       * 모으기) → 스터디·프로젝트(운영) → 회차·출석 승인 → 회차 이력·출석 통계. 기획안 승인이
+       * 곧 활동 생성이고(서버 #150) 모집 시작은 그 뒤에야 가능한 전이라(APPROVED → ONGOING),
+       * 목차 순서가 실제 일 순서와 같아야 국장이 지금 어느 단계를 보는지 목차에서 읽힌다.
+       */
+      {
+        label: "기획안 검토",
+        href: ROUTES.proposalReviews,
+        isActive: starts("/proposals/review"),
+        requires: CAPABILITY.RESPONSE_REVIEW,
       },
       /*
        * 모집 관리 (#127 · 서버 #133·#138).
