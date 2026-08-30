@@ -178,17 +178,39 @@ export function ddayText(ddlnDt: string | null, today: string = TODAY): string {
   return d > 0 ? `D-${d}` : `D+${-d}`;
 }
 
-/** 마감 임박/지연 배지 문구 — 지연_여부(dlyYn)가 우선한다 */
+/**
+ * 마감 임박/지연 배지 문구.
+ *
+ * **지연은 서버 판정(`isDelayed`) 하나만 본다 — 마감일을 보고 여기서 다시 세지 않는다.**
+ * 예전에는 `d < 0`이면 지연으로 뒤집었는데, 그것이 목 데이터 시절(서버 판정이 없던 때)의
+ * 폴백으로 남아 **완료한 하위 업무가 마감일이 지나면 '지연'으로 뜨는 버그**를 냈다(#199).
+ * 서버 `SubWorkEntity.isDelayedBefore`는 `dueAt != null && workStatus != DONE &&
+ * dueAt < overdueBefore`로 판정해 완료 건에는 `isDelayed=false`를 내려주는데, 화면이 그 값을
+ * 받고도 마감일만 보고 뒤집었던 것이다 — `AGENTS.md`가 금지하는 "판정 규칙 두 벌"이다.
+ *
+ * **마감임박(`d <= 3`)만 화면 몫이다.** 서버가 임박의 기준을 정하지 않고 `dueBefore`만 받기
+ * 때문이다(설계 결정 6 · `dueWithinDays` 주석 참고).
+ *
+ * **완료 건은 어느 배지도 달지 않는다** — 끝난 일에 "3일 남음"도 의미가 없다.
+ *
+ * 케이스:
+ * - 완료 + 마감 지남 → `""` (배지 없음)
+ * - 완료 + 마감 3일 이내 → `""` (배지 없음)
+ * - 미완료 + 서버가 지연 판정 → `"지연"`
+ * - 미완료 + 마감 3일 이내(당일 포함) → `"마감임박"`
+ * - 마감일이 없거나 4일 이상 남음 → `""`
+ */
 export function deadlineFlag(
-  ddlnDt: string | null,
-  dlyYn: boolean,
+  dueAt: string | null,
+  isDelayed: boolean,
+  isDone: boolean,
   today: string = TODAY,
 ): "" | "마감임박" | "지연" {
-  if (dlyYn) return "지연";
-  const d = daysUntil(ddlnDt, today);
+  if (isDone) return "";
+  if (isDelayed) return "지연";
+  const d = daysUntil(dueAt, today);
   if (d === null) return "";
-  if (d < 0) return "지연";
-  return d <= 3 ? "마감임박" : "";
+  return d >= 0 && d <= 3 ? "마감임박" : "";
 }
 
 /**

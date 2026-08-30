@@ -10,7 +10,7 @@ import { useDashboard } from "@/features/dashboard";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { WORK_STTS_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
-import { daysUntil, ddayText, deadlineFlag, formatMd, todayInSeoul } from "@/shared/lib/date";
+import { ddayText, deadlineFlag, formatMd, todayInSeoul } from "@/shared/lib/date";
 import {
   Badge,
   Card,
@@ -37,7 +37,12 @@ import {
  * 스크롤·강조한다(승인함 쪽 구현은 features/approval의 useApprovalHighlight).
  */
 
-const MY_FILTERS = ["전체", "마감임박", "지연"] as const;
+/*
+ * 내 업무 목록의 필터 칩. 어휘·순서는 하위 업무 목록의 칩
+ * (features/sub-work/model/use-sub-work-list.ts의 SUB_WORK_LIST_TABS)을 따른다 —
+ * 같은 자원을 보는 두 화면이 다른 말로 같은 것을 가리키면 목차를 믿을 수 없다.
+ */
+const MY_FILTERS = ["전체", "마감임박", "지연", "완료"] as const;
 
 function DashboardSkeleton() {
   return (
@@ -65,9 +70,24 @@ export function DashboardPage() {
   const goToSubWorkApproval = (subWorkId: number) =>
     router.push(`${ROUTES.approvals}?subWorkId=${subWorkId}`);
 
-  const myTasks = data.myTasks.filter(
-    (sw) => myFilter === "전체" || deadlineFlag(sw.dueAt, sw.isDelayed, today) === myFilter,
-  );
+  /*
+   * 배지 판정은 이 한 줄을 거쳐서만 한다 — 이 화면의 세 자리(내 업무 필터·내 업무 표의
+   * 마감 열·다가오는 마감 카드)가 같은 규칙을 타게 하려는 것이다. 완료 여부는 서버가 주는
+   * workStatus로 가르고, 지연 판정은 서버의 isDelayed 하나만 본다(deadlineFlag 주석 · #199).
+   */
+  const flagOf = (sw: SubWorkListItem) =>
+    deadlineFlag(sw.dueAt, sw.isDelayed, sw.workStatus === "DONE", today);
+
+  /*
+   * 필터는 서버 재요청 없이 화면에서 거른다 — my-sub-works가 완료 건 포함 전량을 이미
+   * 내려준다(entities/dashboard/model/types.ts). "전체"는 이름 그대로 완료 건도 포함하고,
+   * 완료만 따로 보려는 사람은 "완료" 칩을 쓴다.
+   */
+  const myTasks = data.myTasks.filter((sw) => {
+    if (myFilter === "전체") return true;
+    if (myFilter === "완료") return sw.workStatus === "DONE";
+    return flagOf(sw) === myFilter;
+  });
 
   const approvalColumns: GridColumn<ApprovalInboxItem>[] = [
     {
@@ -132,7 +152,7 @@ export function DashboardPage() {
       header: FIELD_LABEL.dueAt,
       width: ".9fr",
       render: (sw) => {
-        const flag = deadlineFlag(sw.dueAt, sw.isDelayed, today);
+        const flag = flagOf(sw);
         return (
           <span className="flex items-center gap-2">
             <span className={flag === "지연" ? "text-danger" : undefined}>
@@ -230,8 +250,7 @@ export function DashboardPage() {
                     <div className="text-[14.5px] text-n500">예정된 마감이 없습니다.</div>
                   ) : (
                     data.upcomingDeadlines.map((sw) => {
-                      const flag = deadlineFlag(sw.dueAt, sw.isDelayed, today);
-                      const d = daysUntil(sw.dueAt, today);
+                      const flag = flagOf(sw);
                       return (
                         <div
                           key={sw.subWorkId}
@@ -246,7 +265,7 @@ export function DashboardPage() {
                               tone={
                                 flag === "지연"
                                   ? "outline-red"
-                                  : d !== null && d <= 3
+                                  : flag === "마감임박"
                                     ? "outline-accent"
                                     : "outline"
                               }
