@@ -17,6 +17,15 @@ export const SESN_STTS_BADGE: Record<SesnSttsCd, { label: string; tone: BadgeTon
   REVISION_REQUESTED: { label: "수정요청", tone: "outline-accent" },
 };
 
-export function sesnSttsBadge(code: SesnSttsCd) {
-  return SESN_STTS_BADGE[code];
+/**
+ * 상태 코드 → 배지. **없는 코드에도 반드시 배지를 돌려준다.**
+ *
+ * 이 함수는 목록을 그리는 `map` 안에서 불리므로, `undefined`를 돌려주면 호출부의
+ * `badge.tone`이 화면 전체를 런타임 오류로 무너뜨린다(서버가 필드명을 바꾸거나 상태를 새로
+ * 추가하면 타입은 통과한 채 값만 비는데, 그때 회차 한 줄이 아니라 활동 상세가 통째로 죽었다).
+ * 코드값을 그대로 노출하지 않는 규칙은 지키되(라벨은 빈 값 표기로 둔다), 한 줄의 결손이 페이지를
+ * 끌어내리지는 않게 한다.
+ */
+export function sesnSttsBadge(code: SesnSttsCd): { label: string; tone: BadgeTone } {
+  return SESN_STTS_BADGE[code] ?? { label: "-", tone: "grey" };
 }

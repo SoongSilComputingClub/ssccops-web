@@ -52,7 +52,13 @@ export interface SessionSummaryResponse {
   curriculumTtl: string | null;
   planYmd: string | null;
   actlYmd: string | null;
-  sesnSttsCd: SesnSttsCd;
+  /**
+   * 회차 실적 상태. **서버 필드명은 `sttsCd`다** — `sesn` 행의 상태라 접두사가 붙지 않는다.
+   * 커리큘럼 조회(#134)의 `CurriculumItemWithSessionResponse`만 `sesnSttsCd`로 오는데(그쪽은
+   * 커리큘럼 항목 줄에 회차 상태를 얹은 것이라 구별이 필요하다), 그 이름을 이 DTO에 옮겨
+   * 적으면 값이 조용히 `undefined`가 된다(타입은 통과한다).
+   */
+  sttsCd: SesnSttsCd;
   rgtrMbrId: number | null;
   rgtrMbrNm: string | null;
   presentCount: number;
@@ -108,7 +114,7 @@ export function toSessionSummary(
     curriculumTitle: res.curriculumTtl ?? "",
     planYmd: res.planYmd,
     actualYmd: res.actlYmd,
-    sesnSttsCd: res.sesnSttsCd,
+    sesnSttsCd: res.sttsCd,
     registrantMemberId: res.rgtrMbrId,
     registrantMemberName: res.rgtrMbrNm ?? "",
     presentCount: res.presentCount,
