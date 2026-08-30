@@ -18,6 +18,24 @@ import { ProposalFormNotice, ProposalNav } from "./proposal-form-notice";
 import { ProposalSubmissionDetail } from "./proposal-submission-detail";
 
 /*
+ * 본문 가로 상한은 공개 폼 계열이 **같은 값(860px)을 쓴다** — 한 곳만 고치지 말 것
+ * (ssccops#153 · ssccops-web#203). 대상: admin의 public-form-page·proposal-list-page·
+ * proposal-form-notice, www의 event-apply-page.
+ *
+ * lms의 proposal-new-page는 아직 720px이다 — 그 앱이 개발 중이라 이번 변경에서 뺐다.
+ * 같은 성격의 화면이므로 개발이 끝나면 함께 860px로 맞출 것.
+ *
+ * 860px인 근거는 읽기 편한 줄 길이(한 줄 45~75자)다. 본문 글자가 15~16px이라 860px에서
+ * 한 줄이 대략 60~70자로 그 범위에 든다. 더 넓히면 장문형 답변(textarea)에서 줄이 길어져
+ * 시선이 되돌아오기 어렵고, 좁히면 선택지 많은 문항이 세로로만 늘어난다.
+ *
+ * **폭 제한을 푸는 것은 답이 아니다** — 문항은 단일 컬럼 세로 나열이라(QitemCard가 2단
+ * 배치를 하지 않는다) 폭만 넓히면 짧은 입력칸이 화면 끝까지 늘어나 오히려 읽기 나빠진다.
+ *
+ * max-w는 상한이라 좁은 화면에서는 px-4가 그대로 지배한다 — 이 값은 PC에서만 효과가 있다.
+ */
+
+/*
  * 기획안 제출 현황 (/proposals · ssccops-web #163).
  *
  * 지금까지 무엇이 접수됐고 왜 안 됐는지는 카카오톡·구두에만 남아 아무도 되짚을 수 없었다.
@@ -63,7 +81,7 @@ function ProposalListContent({ formId }: { formId: number }) {
   const continuing = continuableResponse(mine.responses);
 
   return (
-    <div className="mx-auto flex max-w-[720px] flex-col gap-3 px-4 pt-3 pb-10 lg:px-6">
+    <div className="mx-auto flex max-w-[860px] flex-col gap-3 px-4 pt-3 pb-10 lg:px-6">
       <div className="rounded-2xl bg-surface px-[18px] py-[22px] shadow-[0_0_0_1px_#e5e8eb] lg:px-6">
         <div className="text-[24px] leading-[1.3] font-bold">기획안 제출 현황</div>
         <div className="mt-1 text-[13.5px] leading-[1.7] text-n500">
