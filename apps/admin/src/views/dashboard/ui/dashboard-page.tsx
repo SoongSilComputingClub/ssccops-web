@@ -37,7 +37,12 @@ import {
  * 스크롤·강조한다(승인함 쪽 구현은 features/approval의 useApprovalHighlight).
  */
 
-const MY_FILTERS = ["전체", "마감임박", "지연"] as const;
+/*
+ * 내 업무 목록의 필터 칩. 어휘·순서는 하위 업무 목록의 칩
+ * (features/sub-work/model/use-sub-work-list.ts의 SUB_WORK_LIST_TABS)을 따른다 —
+ * 같은 자원을 보는 두 화면이 다른 말로 같은 것을 가리키면 목차를 믿을 수 없다.
+ */
+const MY_FILTERS = ["전체", "마감임박", "지연", "완료"] as const;
 
 function DashboardSkeleton() {
   return (
@@ -73,9 +78,16 @@ export function DashboardPage() {
   const flagOf = (sw: SubWorkListItem) =>
     deadlineFlag(sw.dueAt, sw.isDelayed, sw.workStatus === "DONE", today);
 
-  const myTasks = data.myTasks.filter(
-    (sw) => myFilter === "전체" || flagOf(sw) === myFilter,
-  );
+  /*
+   * 필터는 서버 재요청 없이 화면에서 거른다 — my-sub-works가 완료 건 포함 전량을 이미
+   * 내려준다(entities/dashboard/model/types.ts). "전체"는 이름 그대로 완료 건도 포함하고,
+   * 완료만 따로 보려는 사람은 "완료" 칩을 쓴다.
+   */
+  const myTasks = data.myTasks.filter((sw) => {
+    if (myFilter === "전체") return true;
+    if (myFilter === "완료") return sw.workStatus === "DONE";
+    return flagOf(sw) === myFilter;
+  });
 
   const approvalColumns: GridColumn<ApprovalInboxItem>[] = [
     {
