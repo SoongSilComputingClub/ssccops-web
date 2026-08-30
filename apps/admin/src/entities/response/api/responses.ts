@@ -48,6 +48,8 @@ interface ResponseMemberDetailResponse extends ResponseMemberResponse {
 interface FormResponseSummaryResponse {
   formRspnsId: number;
   rspnsSeq: number | null;
+  /** 대표 문항의 답 (서버 #196). 선언이 없는 폼·지워진 문항·빈 답은 전부 null이다 */
+  responseTitle: string | null;
   rspnsSttsCd: RspnsSttsCd;
   sbmsnDt: string | null;
   member: ResponseMemberResponse | null;
@@ -126,6 +128,12 @@ function toFormResponseItem(res: FormResponseSummaryResponse): FormResponseItem 
     formRspnsId: res.formRspnsId,
     // 순번을 모르는 배포에서 1이라고 지어내지 않는다 — 없으면 화면이 표기를 뺀다
     rspnsSeq: res.rspnsSeq ?? null,
+    /*
+     * 대표 문항의 답이 없는 것은 정상이다(서버 #196) — 선언이 없는 폼, 문항이 지워진 폼,
+     * 제출자가 비워 둔 답. 빈 문자열도 null로 굳혀 "값이 없다"를 한 가지로 만든다.
+     * 서버가 이 필드를 아직 안 싣는 배포에서도 같은 자리로 떨어진다.
+     */
+    responseTitle: res.responseTitle?.trim() || null,
     rspnsSttsCd: res.rspnsSttsCd,
     sbmsnDt: res.sbmsnDt,
     member: toMember(res.member),

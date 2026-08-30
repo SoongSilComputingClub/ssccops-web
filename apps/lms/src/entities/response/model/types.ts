@@ -43,6 +43,16 @@ export interface MyFormResponse {
   formRspnsId: number;
   /** 응답 순번 — 몇 번째로 낸 건인가. 모르는 배포에서 1이라고 지어내지 않는다 */
   rspnsSeq: number | null;
+  /**
+   * 대표 문항의 답 — 이 응답 한 건을 목록에서 알아보는 값 (서버 #196).
+   *
+   * 어느 문항이 대표값인지는 **서버의 선언**이고(`SystemFormContract` · 기획안은 활동명)
+   * 목록은 그 한 줄만 받는다 — 응답 내용(`rspnsCn`)은 여전히 실리지 않는다.
+   *
+   * **`null`이 정상이다.** 대표 문항 선언이 없는 폼·지워진 문항·비워 둔 답이 전부 null이며
+   * 서버가 대체값을 만들지 않는다. 화면도 만들지 않고 순번 표기로 떨어진다.
+   */
+  responseTitle: string | null;
   rspnsSttsCd: RspnsSttsCd;
   /** 제출 회차 — 그 한 건을 몇 번 냈는가 (수정요청 뒤 재제출에서 오른다) */
   sbmsnSeq: number | null;

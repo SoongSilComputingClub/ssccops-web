@@ -15,6 +15,13 @@ import { myApplicationDetailUrl } from "@/shared/config/routes";
  * ── 카드 전체가 상세로 가는 링크다 ────────────────────────────
  * 작성 중(DRAFT)인 건은 아직 낸 적이 없어 검토 이력도 재제출도 없다 — 상세에서 보여 줄 것이
  * "낸 내용"뿐이라 링크는 두되, 수정요청받은 건처럼 눈에 띄게 표시하지는 않는다.
+ *
+ * ── 제목은 활동명이다 (#204 · 서버 #196) ──────────────────────
+ * 예전에는 "1번째 기획안 · 2번째 기획안"으로만 떠서 제출자가 자기가 낸 것을 목록에서
+ * 구별할 수 없었다. 활동명(대표 문항의 답)이 오면 그것을 제목으로 세우고 순번은 옆에
+ * 곁들인다 — 같은 이름으로 두 번 낼 수 있어 둘을 가르는 것은 여전히 순번이다.
+ * 값이 없으면(대표 문항 선언이 없는 폼·지워진 문항·비워 둔 답·서버가 아직 안 싣는 배포)
+ * 종전 문구 그대로다. 없는 값을 지어내지 않는다.
  */
 export function SubmissionCard({ response }: { response: MyFormResponse }) {
   const badge = RSPNS_STTS_BADGE[response.rspnsSttsCd];
@@ -28,10 +35,13 @@ export function SubmissionCard({ response }: { response: MyFormResponse }) {
     >
       <div className="flex flex-wrap items-center gap-x-[8px] gap-y-[4px]">
         <span className="text-[15px] font-semibold">
-          {response.rspnsSeq === null
-            ? "기획안"
-            : `${response.rspnsSeq}번째 기획안`}
+          {response.responseTitle ??
+            (response.rspnsSeq === null ? "기획안" : `${response.rspnsSeq}번째 기획안`)}
         </span>
+        {/* 활동명이 있을 때만 순번을 곁들인다 — 없으면 위 제목이 이미 순번을 말한다 */}
+        {response.responseTitle !== null && response.rspnsSeq !== null && (
+          <span className="text-[13px] text-n500">{response.rspnsSeq}번째</span>
+        )}
         <Badge tone={badge.tone}>{badge.label}</Badge>
         {response.sbmsnSeq !== null && response.sbmsnSeq >= 2 && (
           <span className="text-[13px] text-n500">{response.sbmsnSeq}회차 제출</span>

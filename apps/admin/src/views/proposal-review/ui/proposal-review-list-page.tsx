@@ -89,28 +89,43 @@ function ProposalReviewList({ formId }: { formId: number }) {
   };
 
   const columns: GridColumn<FormResponseItem>[] = [
+    /*
+     * 활동명이 이 표의 첫 열이자 카드의 제목이다 (#204 · 서버 #196).
+     *
+     * 예전에는 회원명이 그 자리였는데, 기획안 폼은 한 사람이 여러 건을 낼 수 있어
+     * (`mltpl_rspns_yn`) 같은 이름 두 줄을 순번으로만 갈랐다 — 학술국장이 어느 것이 어느
+     * 기획안인지 열어 보기 전에는 알 수 없었다. 행을 가리키는 이름은 제출자가 아니라
+     * **무엇을 하겠다는 기획안인가**이므로 그것을 앞에 세우고 누르는 자리로 삼는다.
+     *
+     * 활동명이 없으면(서버가 아직 안 싣는 배포 · 대표 문항이 지워진 폼 · 제출자가 비워 둔
+     * 답) 종전 문구인 `{순번}번째 기획안`으로 떨어진다 — 없는 값을 지어내지 않는다.
+     * 순번은 활동명이 있어도 함께 남긴다: 같은 사람이 같은 이름으로 두 번 낼 수 있어 그
+     * 둘을 가르는 것은 여전히 순번뿐이다.
+     */
     {
-      key: "mbrNm",
-      header: FIELD_LABEL.memberName,
-      width: "1fr",
+      key: "responseTitle",
+      header: "활동명",
+      width: "1.6fr",
       render: (r) => (
         <span
           onClick={() => router.push(ROUTES.proposalReviewDetail(r.formRspnsId))}
           className="cursor-pointer font-semibold hover:text-accent"
         >
-          {r.member.mbrNm || "-"}
-          {/*
-            기획안 폼은 한 사람이 여러 건을 낼 수 있다(`mltpl_rspns_yn`). 순번이 없으면 같은
-            이름 두 줄이 어느 것이 어느 기획안인지 알려주지 못한다 — 열을 늘리는 대신 이름
-            옆에 붙여 좁은 화면의 카드에서도 제목 줄에 함께 선다.
-          */}
-          {r.rspnsSeq !== null && (
+          {r.responseTitle ?? (r.rspnsSeq === null ? "기획안" : `${r.rspnsSeq}번째 기획안`)}
+          {/* 활동명이 있을 때만 순번을 곁들인다 — 없으면 위 문구가 이미 순번을 말한다 */}
+          {r.responseTitle !== null && r.rspnsSeq !== null && (
             <span className="ml-[6px] text-[13px] font-normal text-n500">
               {r.rspnsSeq}번째
             </span>
           )}
         </span>
       ),
+    },
+    {
+      key: "mbrNm",
+      header: FIELD_LABEL.memberName,
+      width: "1fr",
+      render: (r) => r.member.mbrNm || "-",
     },
     {
       key: "stdntNo",
@@ -164,11 +179,12 @@ function ProposalReviewList({ formId }: { formId: number }) {
 
         <div className="mb-[14px] text-[13px] leading-[1.7] text-n500">
           {/*
-            목록에는 기획안 내용이 실리지 않는다(서버 계약 — 응답 수백 건 × 문항 수십 개면 목록이
-            비대해진다). 활동명이 왜 안 보이는지를 적지 않으면 검토자는 화면이 덜 만들어진 줄 안다.
+            활동명은 이제 목록에 실린다(서버 #196) — 그 문장을 걷어냈다. 커리큘럼은 여전히
+            싣지 않는다(응답 수백 건 × 문항 수십 개면 목록이 비대해진다는 서버 계약 그대로다).
+            왜 커리큘럼이 안 보이는지를 적지 않으면 검토자는 화면이 덜 만들어진 줄 안다.
           */}
-          활동명과 커리큘럼은 목록에 실리지 않습니다. 이름을 눌러 기획안 내용을 확인한 뒤
-          처리합니다. 작성 중(미제출) 기획안은 목록에 나오지 않습니다.
+          커리큘럼은 목록에 실리지 않습니다. 활동명을 눌러 기획안 내용을 확인한 뒤 처리합니다.
+          작성 중(미제출) 기획안은 목록에 나오지 않습니다.
         </div>
 
         {status === "error" ? (

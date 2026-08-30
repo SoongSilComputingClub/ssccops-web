@@ -64,6 +64,21 @@ export interface FormResponseItem {
   formRspnsId: number;
   /** 응답 순번 — 다중 응답 폼에서 같은 회원의 두 행을 가르는 값 (위 주석 참고) */
   rspnsSeq: number | null;
+  /**
+   * 대표 문항의 답 — 이 응답 한 건을 목록에서 알아보는 값 (ssccops-server #196).
+   *
+   * 어느 문항이 대표값인지는 **서버의 선언**이다(`SystemFormContract` · 기획안은 활동명).
+   * 웹이 문항 코드를 골라 응답 내용에서 꺼내는 것이 아니라 서버가 뽑아 준 한 줄을 그린다 —
+   * 목록 응답은 여전히 응답 내용(`rspnsCn`)을 싣지 않는다.
+   *
+   * **`null`이 정상이다.** 대표 문항 선언이 없는 평범한 폼, 그 문항이 지워진 폼, 제출자가
+   * 비워 둔 답이 전부 null이며 서버가 "제목 없음" 같은 대체값을 만들지 않는다. 화면도 만들지
+   * 않는다 — 값이 없으면 순번 표기로 떨어진다.
+   *
+   * **`rspnsSeq`를 대체하지 않는다.** 같은 사람이 같은 이름으로 두 번 낼 수 있어 그 둘을
+   * 가르는 것은 여전히 순번뿐이다.
+   */
+  responseTitle: string | null;
   rspnsSttsCd: RspnsSttsCd;
   /** 작성 중(DRAFT)은 아직 제출 전이라 값이 없다 */
   sbmsnDt: string | null;
