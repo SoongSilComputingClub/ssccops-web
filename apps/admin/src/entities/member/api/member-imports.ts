@@ -31,6 +31,11 @@ import { apiUpload } from "@/shared/lib/api/client";
  * **졸업연도·역할은 여기 없다** (BR-M42 · BR-M44). `mbr`에 대응 컬럼이 없어 매핑해도 담을 곳이
  * 없다. 선택 상자에 자리를 만들어 두면 운영자가 매핑한 뒤 그 값이 사라졌다는 것을 이관이 끝난
  * 뒤에야 알게 된다.
+ *
+ * **전산 가입일도 여기 없다.** 컬럼(`sys_join_ymd`)은 있지만 이관 대상은 아직 전산 시스템에
+ * 가입한 적이 없는 사람이라, 그 값은 언제나 이관을 실행한 날이고 명부에서 받을 값이 아니다.
+ * 명부의 '가입일' 칸에 적힌 것은 운영진이 기록한 **동아리 입부일**이므로 `clbJoinYm`으로 간다
+ * (#215).
  */
 export type MemberImportFieldKey =
   | "mbrNm"
@@ -40,7 +45,7 @@ export type MemberImportFieldKey =
   | "scyrNo"
   | "telno"
   | "eml"
-  | "joinYmd"
+  | "clbJoinYm"
   | "mbrGrdCd"
   | "mbrSttsCd";
 
@@ -73,7 +78,7 @@ export const MEMBER_IMPORT_FIELDS: readonly MemberImportFieldOption[] = [
   { key: "scyrNo", label: "학년", mappingRequired: false },
   { key: "telno", label: "연락처", mappingRequired: false },
   { key: "eml", label: "이메일", mappingRequired: false },
-  { key: "joinYmd", label: "가입일", mappingRequired: false },
+  { key: "clbJoinYm", label: "동아리 가입 시기", mappingRequired: false },
   { key: "mbrGrdCd", label: "회원등급", mappingRequired: true },
   { key: "mbrSttsCd", label: "회원상태", mappingRequired: true },
 ] as const;
