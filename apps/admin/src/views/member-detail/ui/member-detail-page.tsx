@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  clubJoinPeriodText,
   generationText,
   mbrGrdTone,
   mbrSttsTone,
@@ -207,6 +208,13 @@ function MemberDetailView({ mbrId }: { mbrId: number }) {
                 <div>{member.phoneNumber || "미입력"}</div>
                 <div className="text-[14px] text-n500">이메일</div>
                 <div>{member.email || "미입력"}</div>
+                {/*
+                  전산 가입일(머리글에 있다)과 다른 값이다 — 이쪽이 동아리에 들어온 시기이고,
+                  기수의 근거다. 이관 명부에 없던 값이라 비어 있는 회원이 많고, 채우는 곳은
+                  회원 수정 화면이다(#214).
+                */}
+                <div className="text-[14px] text-n500">동아리 가입</div>
+                <div>{clubJoinPeriodText(member.clubJoinYear, member.clubJoinMonth)}</div>
               </div>
             </Card>
 

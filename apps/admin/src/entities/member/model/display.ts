@@ -59,3 +59,20 @@ export function mbrSttsTone(cd: MbrSttsCd): "red" | "grey" {
 export function generationText(generationNumber: number | null): string {
   return generationNumber ? `${generationNumber}기` : "미배정";
 }
+
+/**
+ * 동아리 가입 시기 표기 — "2020년 3월" · 월을 모르면 "2020년" · 아무것도 없으면 `-`.
+ *
+ * **월이 비어 있는 것은 정상이다.** 모르는 달을 비워 두라고 만든 값이라, 없는 달을 1월로
+ * 굳히거나 "미상"처럼 사실이 아닌 낱말을 붙이지 않는다.
+ *
+ * `-`를 여기서 정하는 것은 이것이 **표시 규칙**이기 때문이다. 서버 응답을 옮기는 변환 함수
+ * (`to*`)에서 채우면 "값이 없다"와 "서버가 `-`를 줬다"가 구별되지 않는다.
+ */
+export function clubJoinPeriodText(
+  clubJoinYear: number | null,
+  clubJoinMonth: number | null,
+): string {
+  if (clubJoinYear == null) return "-";
+  return clubJoinMonth == null ? `${clubJoinYear}년` : `${clubJoinYear}년 ${clubJoinMonth}월`;
+}

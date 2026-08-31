@@ -13,6 +13,7 @@ export {
   mbrGrdTone,
   mbrSttsTone,
   generationText,
+  clubJoinPeriodText,
 } from "./model/display";
 /* 서버 계약 (ssccops-server #76) */
 export {
