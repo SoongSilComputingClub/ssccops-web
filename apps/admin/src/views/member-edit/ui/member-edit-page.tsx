@@ -27,11 +27,16 @@ import {
  * 예전 화면은 학번·가입일·등급·상태까지 편집란으로 열어 두고 목 스토어를 고쳤다. 서버는 그
  * 넷을 받지 않으므로(요청 본문에 필드 자체가 없다) 그대로 두면 사용자가 고친 값이 저장된 것처럼
  * 화면만 바뀐다 — **저장되지 않는 입력창을 열어 두지 않는다**는 판단은 views/my-account 가 먼저
- * 했다. 지금 이 화면이 보내는 것은 기수·이름·학과·학년·연락처·이메일 여섯 개다.
+ * 했다. 지금 이 화면이 보내는 것은 기수·동아리 가입 연·월·이름·학과·학년·연락처·이메일
+ * 여덟 개다.
  *
  *  - 학번(stdnt_no)  가입 후 변경 불가로 확정됐다(데이터사전 ssccops#74 · updatable = false).
  *                    오타 정정 경로가 정해지면 별도 이슈로 열린다. 여기서는 읽기만 한다.
- *  - 가입일(join_ymd) 가입 시점의 사실이다. 이관 데이터 정정은 CSV 이관 기능과 함께 다룬다.
+ *  - 전산 가입일     시스템이 계정을 만든 날이라 사람이 정하는 값이 아니다. 읽기만 한다.
+ *    (sys_join_ymd)
+ *  - 동아리 가입 연·월 **여기는 반대로 연다.** 이관 명부에 없던 값이라 처음부터 비어 있고,
+ *    (clb_join_yr_no)  운영진이 확인되는 대로 뒤늦게 채워야 한다 — 채울 곳이 없으면 그 값은
+ *    (clb_join_mm_no)  영원히 비어 있다. 연도는 기수의 근거라 기수 자동 채움도 여기서 돈다.
  *  - 등급·상태       변경 이력(mbr_grd_hstry · mbr_stts_hstry)을 함께 남겨야 해 전용 API가
  *                    따로 있다(서버 #78 · 웹 #48). 그래서 칩이 아니라 **상세 화면으로 보내는
  *                    링크**다 — 이 화면에서 고르게 두면 저장 버튼 하나가 이력 있는 변경과 없는
@@ -138,6 +143,43 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
                   placeholder="비우면 미배정"
                 />
               </Field>
+              {/*
+                연도를 다 치고 다음 칸으로 넘어가는 순간(blur) 기수를 채운다. 타이핑마다 묻지
+                않는 이유와 이미 배정된 기수를 건드리지 않는 이유는 features/member 의
+                useMemberEdit 주석에 있다.
+              */}
+              <Field label={FIELD_LABEL.clubJoinYear} error={errors.clubJoinYear}>
+                <TextField
+                  value={values.clubJoinYear}
+                  onChange={(e) => editor.set({ clubJoinYear: e.target.value })}
+                  onBlur={editor.suggestGeneration}
+                  invalid={!!errors.clubJoinYear}
+                  inputMode="numeric"
+                  placeholder="예: 2020"
+                />
+              </Field>
+              <Field label={FIELD_LABEL.clubJoinMonth} error={errors.clubJoinMonth}>
+                <TextField
+                  value={values.clubJoinMonth}
+                  onChange={(e) => editor.set({ clubJoinMonth: e.target.value })}
+                  invalid={!!errors.clubJoinMonth}
+                  inputMode="numeric"
+                  placeholder="모르면 비워 둡니다"
+                />
+              </Field>
+              {/*
+                안내는 두 칸 아래 한 줄로 둔다 — 연도·월·기수가 한 덩어리로 읽혀야 "연도를
+                넣으면 기수가 찬다"가 전달된다. lg 미만에서는 세 칸이 세로로 쌓여 그대로 이어진다.
+              */}
+              <div className="text-[13px] leading-[1.6] text-n500 lg:col-span-2">
+                {editor.generationSuggestError ? (
+                  <span className="text-danger">{editor.generationSuggestError}</span>
+                ) : editor.generationAutoFilled ? (
+                  "가입 연도에 맞춰 기수를 채웠습니다. 실제 기수가 다르면 직접 고쳐주세요."
+                ) : (
+                  "동아리 가입 연도를 넣으면 기수가 자동으로 채워집니다. 이미 배정된 기수는 그대로 둡니다."
+                )}
+              </div>
               <Field
                 label={FIELD_LABEL.departmentName}
                 required={academicRequired}
@@ -185,7 +227,8 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
               {academicRequired
                 ? "재학 회원은 학과 · 학년이 필수입니다. "
                 : "학과 · 학년은 선택입니다. "}
-              비워 둔 칸은 저장할 때 <b>지워집니다</b> — 이 화면은 여섯 항목을 통째로 저장합니다.
+              동아리 가입 월은 모르면 비워 두어도 됩니다. 비워 둔 칸은 저장할 때{" "}
+              <b>지워집니다</b> — 이 화면은 여덟 항목을 통째로 저장합니다.
             </div>
 
             {editor.saveErrorMessage && (
@@ -207,8 +250,8 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
                 <div>{generationText(member.generationNumber)}</div>
               </div>
               <div className="mt-3 text-[13px] leading-[1.6] text-n500">
-                학번과 전산 가입일은 시스템이 기록한 값이라 수정할 수 없습니다. 학번이 잘못 적혔다면
-                운영진에게 문의해주세요.
+                학번과 전산 가입일은 시스템이 기록한 값이라 수정할 수 없습니다. 동아리 가입
+                시기는 확인되는 대로 채워주세요.
               </div>
             </Card>
 

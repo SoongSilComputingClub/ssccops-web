@@ -23,6 +23,8 @@ export {
   fetchMemberStatuses,
   MEMBER_ERROR,
 } from "./api/members";
+/* 동아리 가입 연도 → 기수 (#214) — 계산식은 서버에만 있다 */
+export { fetchGenerationNumber } from "./api/members";
 /* 회원 정보 수정 (#47 · 서버 #77) */
 export {
   updateMember,
@@ -30,6 +32,8 @@ export {
   MEMBER_FIELD_MAX,
   ACADEMIC_YEAR_MIN,
   ACADEMIC_YEAR_MAX,
+  CLUB_JOIN_MONTH_MIN,
+  CLUB_JOIN_MONTH_MAX,
 } from "./api/members";
 export type { MemberUpdateInput, MemberSelfUpdateInput } from "./api/members";
 /* 등급·상태 변경 (#48 · 서버 #78) — 이력을 남기는 전용 경로다 */

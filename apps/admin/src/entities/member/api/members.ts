@@ -308,6 +308,33 @@ export async function fetchAssignableMembers(authority?: string): Promise<Assign
   return members ?? [];
 }
 
+/* ── 기수 계산 ─────────────────────────────────────────────── */
+
+/** GET /v1/members/generation 응답 (서버 `MemberGenerationResponse`) */
+interface GenerationNumberResponse {
+  generationNumber: number;
+}
+
+/**
+ * GET /v1/members/generation?year=2024 — 동아리 가입 연도에 해당하는 기수.
+ *
+ * ── 왜 화면에서 빼기 한 번으로 끝내지 않는가 ────────────────────
+ * `기수 = 연도 − 1982`는 한 줄이라 여기에 적고 싶지만, **판정 규칙이 두 벌이 되는 것**이 이
+ * 저장소가 실제로 겪은 버그의 모양이다(권한 판정 · 지연 배지 #112). 기준 연도가 바뀌거나
+ * 계산이 달력 기준을 타게 되면 고칠 자리는 서버 하나여야 한다.
+ *
+ * 돌려주는 값은 **제안**이지 저장값이 아니다. 저장되는 기수는 언제나 운영진이 확인한 값이며,
+ * 화면은 비어 있는 칸을 채워 줄 뿐 이미 배정된 기수를 건드리지 않는다(BR-M43).
+ *
+ * 인증만 요구한다(회원 조회 권한이 아니다) — 값이 회원과 무관한 순수 계산이다.
+ */
+export async function fetchGenerationNumber(year: number): Promise<number> {
+  const { generationNumber } = await apiFetch<GenerationNumberResponse>(
+    `/v1/members/generation?year=${encodeURIComponent(year)}`,
+  );
+  return generationNumber;
+}
+
 /* ── 수정 ──────────────────────────────────────────────────── */
 
 /**
@@ -332,6 +359,15 @@ export const ACADEMIC_YEAR_MIN = 1;
 export const ACADEMIC_YEAR_MAX = 4;
 
 /**
+ * 동아리_가입_월_번호는 1~12다 (서버 @Min(1) @Max(12)).
+ *
+ * 연도에는 짝이 되는 상한이 없다 — 기준 연도(기수 계산의 출발점)는 서버가 쥔 값이라
+ * 화면이 같은 숫자를 적어 두면 판정 규칙이 두 벌이 된다. 네 자리인지만 본다.
+ */
+export const CLUB_JOIN_MONTH_MIN = 1;
+export const CLUB_JOIN_MONTH_MAX = 12;
+
+/**
  * PATCH /v1/members/{memberId} 요청 본문 (서버 `MemberUpdateRequest` · #77).
  *
  * ── PATCH이지만 부분 수정이 아니라 **전체 교체**다 ──────────────
@@ -341,14 +377,22 @@ export const ACADEMIC_YEAR_MAX = 4;
  * 둔 것이 그 사고를 막는 장치다. 화면은 폼을 서버 응답으로 채우고 통째로 되돌려 보낸다.
  *
  * ── 여기 없는 필드가 곧 계약이다 ────────────────────────────────
- * 등급·상태는 변경 이력을 함께 남겨야 해 전용 API가 따로 있고(#48), 학번·가입일은 가입 후
- * 변경 불가로 확정됐다(ssccops#74). 요청 본문에 자리가 없으므로 넣어도 무시된다.
+ * 등급·상태는 변경 이력을 함께 남겨야 해 전용 API가 따로 있고(#48), 학번·전산 가입일은 가입
+ * 후 변경 불가로 확정됐다(ssccops#74). 요청 본문에 자리가 없으므로 넣어도 무시된다.
+ *
+ * **동아리 가입 연/월은 반대로 고칠 수 있다.** 이관 명부에 없던 값이라 운영진이 뒤늦게
+ * 확인해 채워야 하고, 그러라고 만든 컬럼이다(#214).
  *
  * `generationNumber`의 null은 '지움'이 아니라 **미배정**이다 — `gen_no`가 NOT NULL이라 지울
  * 자리가 없고, 서버가 null을 0(미배정 센티널)으로 바꿔 저장한다(가입 경로와 같다).
+ * 반면 `clubJoinYear`·`clubJoinMonth`의 null은 진짜 '모른다'이다(컬럼이 NULL을 받는다).
  */
 export interface MemberUpdateInput {
   generationNumber: number | null;
+  /** 동아리 가입 연도 — 기수의 근거. 모르면 null이며 그것이 정상이다 */
+  clubJoinYear: number | null;
+  /** 동아리 가입 월 (1~12) — 모르면 null. 연도만 있어도 된다 */
+  clubJoinMonth: number | null;
   name: string;
   departmentName: string | null;
   academicYear: number | null;
@@ -359,15 +403,16 @@ export interface MemberUpdateInput {
 /**
  * PATCH /v1/members/me 요청 본문 (서버 `MemberSelfUpdateRequest` · #77).
  *
- * 운영진 경로에서 **기수와 이메일이 빠진** 모양이다. 서버가 DTO를 나눈 것 자체가 권한 차이의
- * 표현이므로 화면도 같은 경계를 그린다 — 기수는 운영진이 배정하는 값이고, 이메일은 Supabase
- * 인증 계정에서 오는 값이라 본인이 바꾸면 로그인 계정과 갈린다.
+ * 운영진 경로에서 **기수·동아리 가입 연/월과 이메일이 빠진** 모양이다. 서버가 DTO를 나눈 것
+ * 자체가 권한 차이의 표현이므로 화면도 같은 경계를 그린다 — 기수는 운영진이 배정하는 값이고,
+ * 동아리 가입 연도는 그 기수의 근거라 본인이 고칠 수 있으면 기수를 우회해 정하는 셈이 된다.
+ * 이메일은 Supabase 인증 계정에서 오는 값이라 본인이 바꾸면 로그인 계정과 갈린다.
  *
  * 전체 교체 의미는 운영진 경로와 같다.
  */
 export type MemberSelfUpdateInput = Omit<
   MemberUpdateInput,
-  "generationNumber" | "email"
+  "generationNumber" | "clubJoinYear" | "clubJoinMonth" | "email"
 >;
 
 /**
