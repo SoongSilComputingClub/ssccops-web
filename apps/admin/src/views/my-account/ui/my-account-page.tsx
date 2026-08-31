@@ -265,7 +265,7 @@ export function MyAccountPage() {
                       </div>
                     ),
                 },
-                { k: FIELD_LABEL.joinDate, v: member.joinDate },
+                { k: FIELD_LABEL.systemJoinDate, v: member.systemJoinDate },
               ]}
             />
           </Card>

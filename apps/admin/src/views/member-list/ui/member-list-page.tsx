@@ -59,7 +59,7 @@ const NO_MEMBER_MANAGE =
 const SORTS: readonly { label: string; param: MemberSortParam }[] = [
   { label: "이름순", param: "mbrNm" },
   { label: "기수순", param: "-genNo" },
-  { label: "가입일순", param: "-joinYmd" },
+  { label: "전산가입순", param: "-sysJoinYmd" },
   { label: "최근 수정순", param: "-mdfcnDt" },
 ];
 

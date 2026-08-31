@@ -78,8 +78,24 @@ export interface MemberSummary {
   membershipGradeName: string;
   membershipStatusCode: MbrSttsCd;
   membershipStatusName: string;
-  /** 일자D — yyyy-MM-dd */
-  joinDate: string;
+  /**
+   * 전산 가입일 (일자D — yyyy-MM-dd) — **시스템에 계정이 생긴 날**이다.
+   *
+   * 동아리에 들어온 날이 아니다. 이관 회원은 이 값이 이관을 실행한 날이라, 동아리 입부
+   * 시기를 알고 싶으면 {@link MemberSummary.clubJoinYear}를 본다. 이름에 '전산'을 박아 둔
+   * 것은 한 컬럼에 두 뜻이 섞여 있던 것을 서버가 둘로 가른 결과다(서버 `sys_join_ymd`).
+   */
+  systemJoinDate: string;
+  /**
+   * 동아리 가입 연도 — **기수의 근거**다. 아직 확인되지 않았으면 null이다.
+   *
+   * 이관 명부에 없던 값이라 운영진이 회원 수정 화면에서 뒤늦게 채운다. 기수를 이 값에서
+   * 다시 계산하지 않는다 — 계산은 서버 한 곳({@link fetchGenerationNumber})이 하고, 저장된
+   * 기수는 운영진이 확정한 값이다.
+   */
+  clubJoinYear: number | null;
+  /** 동아리 가입 월 (1~12) — **모르면 null이다.** 비어 있는 것이 정상이며 오류가 아니다 */
+  clubJoinMonth: number | null;
   /**
    * 계정과 연결된 회원인가 — 즉 한 번이라도 로그인한 적이 있는가 (서버 `auth_user_id` 유무).
    *
@@ -143,7 +159,7 @@ export const MEMBER_ERROR = {
  * 정렬 파라미터 (서버 `MemberSortOrder`) — 앞의 `-`가 내림차순이다.
  *
  * 화면의 정렬 토글 4종과 **1:1**로 대응한다. 서버는 여덟 표기(오름/내림 각 4)를 받지만 화면이
- * 쓰는 것은 각 축에서 사람이 기대하는 한 방향뿐이다 — 이름은 가나다순(오름), 기수·가입일·수정은
+ * 쓰는 것은 각 축에서 사람이 기대하는 한 방향뿐이다 — 이름은 가나다순(오름), 기수·전산 가입일·수정은
  * 최근 것이 위(내림). 서버가 모르는 표기는 조용히 기본값으로 떨어지지 않고 400
  * `INVALID_CODE_VALUE`이므로 문자열을 화면에서 만들지 않고 이 유니온으로 못 박는다.
  */
@@ -152,8 +168,8 @@ export type MemberSortParam =
   | "-mbrNm"
   | "genNo"
   | "-genNo"
-  | "joinYmd"
-  | "-joinYmd"
+  | "sysJoinYmd"
+  | "-sysJoinYmd"
   | "mdfcnDt"
   | "-mdfcnDt";
 
@@ -245,7 +261,7 @@ export async function fetchMember(memberId: number): Promise<MemberDetail> {
  *
  * ── 왜 `MemberSummary`를 재사용하지 않는가 ─────────────────────
  * **응답이 다르기 때문이다.** 이 목록은 `MEMBER_MANAGE` 없이 인증만으로 열리므로 서버가
- * 연락처·이메일·학번·부서·가입일을 아예 내리지 않는다. `MemberSummary`로 받으면 타입상
+ * 연락처·이메일·학번·부서·전산 가입일을 아예 내리지 않는다. `MemberSummary`로 받으면 타입상
  * 있어야 할 값이 런타임에 `undefined`로 비고, 화면이 그것을 "값이 없는 회원"으로 그린다 —
  * 명부에는 있는 값이 담당자 선택 화면에서만 사라진 것처럼 보인다.
  *

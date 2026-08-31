@@ -201,13 +201,13 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
               <div className="grid grid-cols-[84px_1fr] gap-y-[9px] text-[15px]">
                 <div className="text-[14px] text-n500">학생번호</div>
                 <div>{member.studentNumber || "학번 미확인"}</div>
-                <div className="text-[14px] text-n500">가입일</div>
-                <div>{member.joinDate}</div>
+                <div className="text-[14px] text-n500">전산 가입일</div>
+                <div>{member.systemJoinDate}</div>
                 <div className="text-[14px] text-n500">현재 기수</div>
                 <div>{generationText(member.generationNumber)}</div>
               </div>
               <div className="mt-3 text-[13px] leading-[1.6] text-n500">
-                학번과 가입일은 가입 시점의 사실이라 수정할 수 없습니다. 학번이 잘못 적혔다면
+                학번과 전산 가입일은 시스템이 기록한 값이라 수정할 수 없습니다. 학번이 잘못 적혔다면
                 운영진에게 문의해주세요.
               </div>
             </Card>

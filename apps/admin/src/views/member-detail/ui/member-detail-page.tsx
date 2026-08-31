@@ -184,7 +184,7 @@ function MemberDetailView({ mbrId }: { mbrId: number }) {
                 {!member.linkedAccount && <Pill tone="outline">이관</Pill>}
               </div>
               <div className="mt-1 text-[13.5px] text-n500">
-                회원 #{member.memberId} · 가입 {member.joinDate}
+                회원 #{member.memberId} · 전산 가입 {member.systemJoinDate}
               </div>
               <div className="my-4 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
               {/*
