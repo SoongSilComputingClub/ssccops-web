@@ -4,7 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ACADEMIC_YEAR_MAX,
   ACADEMIC_YEAR_MIN,
+  CLUB_JOIN_MONTH_MAX,
+  CLUB_JOIN_MONTH_MIN,
   MEMBER_FIELD_MAX,
+  fetchGenerationNumber,
   updateMember,
   updateMyProfile,
   type MemberDetail,
@@ -31,9 +34,10 @@ import { toMemberSaveErrorMessage, toMyProfileSaveErrorMessage } from "./member-
  *
  * ── 전체 교체를 화면이 어떻게 다루는가 ──────────────────────────
  * 서버의 PATCH는 메서드만 PATCH이고 본문은 한 벌 전체다. 생략한 선택 필드는 '건드리지 마라'가
- * 아니라 **'지워라'** 로 읽히므로, 폼을 서버 응답으로 채우고(`toValues`) 저장할 때 여섯 필드를
+ * 아니라 **'지워라'** 로 읽히므로, 폼을 서버 응답으로 채우고(`toValues`) 저장할 때 여덟 필드를
  * 언제나 모두 싣는다(`toUpdateInput`). '바뀐 것만 보내기'(features/role의 역할 수정이 하는 일)를
- * 여기서 따라 하면 손대지 않은 학과·연락처가 조용히 비워진다.
+ * 여기서 따라 하면 손대지 않은 학과·연락처가 조용히 비워진다. 동아리 가입 연/월도 같다 —
+ * 비워 두는 것이 정상인 값이라, 안 보내는 것과 지우는 것이 겉으로 구별되지 않는다.
  *
  * ── 화면 검증은 예고이고 판정은 서버다 ──────────────────────────
  * 아래 `validate`는 서버가 400으로 거절할 값을 왕복 한 번 없이 입력칸 옆에서 알려 주려는 것이다.
@@ -51,6 +55,10 @@ import { toMemberSaveErrorMessage, toMyProfileSaveErrorMessage } from "./member-
  */
 export interface MemberEditValues {
   generationNumber: string;
+  /** 동아리 가입 연도 — 기수 자동 채움의 입력이다. 비어 있을 수 있다 */
+  clubJoinYear: string;
+  /** 동아리 가입 월 — **모르면 비운다.** 비어 있는 것이 오류가 아니다 */
+  clubJoinMonth: string;
   name: string;
   departmentName: string;
   academicYear: string;
@@ -63,17 +71,33 @@ export type MemberEditField = keyof MemberEditValues;
 export type MemberEditFieldErrors = Partial<Record<MemberEditField, string>>;
 
 const DIGITS_ONLY = /^\d+$/;
+/** 연도는 네 자리다 — 상한(기준 연도)은 서버가 쥐고 있어 화면이 숫자로 적지 않는다 */
+const FOUR_DIGIT_YEAR = /^\d{4}$/;
+/** 기수가 아직 정해지지 않았다 — 빈 칸과 0(미배정 센티널)이 같은 뜻이다 */
+function generationUnassigned(value: string): boolean {
+  const trimmed = value.trim();
+  return trimmed === "" || Number(trimmed) === 0;
+}
 
 /** 서버가 준 회원(운영진 경로의 상세 · 본인 경로의 프로필)을 폼 값으로 편다 */
 function toValues(
   member: Pick<
     MemberDetail,
     "generationNumber" | "name" | "departmentName" | "academicYear" | "phoneNumber" | "email"
-  >,
+  > &
+    /*
+     * 본인 경로가 넘기는 `MemberProfile`에는 동아리 가입 연/월이 아예 없다(서버 응답에도
+     * 자리가 없다 · #214). 없으면 빈 칸으로 편다 — 본인 화면은 이 두 칸을 그리지도, 보내지도
+     * 않으므로 값이 비어 있는 것이 옳다.
+     */
+    Partial<Pick<MemberDetail, "clubJoinYear" | "clubJoinMonth">>,
 ): MemberEditValues {
   return {
     // 0은 미배정 센티널이라 빈 칸으로 보여 준다 — "0기"라고 적힌 회원은 없다
     generationNumber: member.generationNumber ? String(member.generationNumber) : "",
+    // null은 '아직 모른다'다 — 0으로 굳히지 않는다
+    clubJoinYear: member.clubJoinYear == null ? "" : String(member.clubJoinYear),
+    clubJoinMonth: member.clubJoinMonth == null ? "" : String(member.clubJoinMonth),
     name: member.name,
     departmentName: member.departmentName ?? "",
     academicYear: member.academicYear === null ? "" : String(member.academicYear),
@@ -93,10 +117,12 @@ function toNumberOrNull(value: string): number | null {
   return trimmed === "" ? null : Number(trimmed);
 }
 
-/** 폼 값 → 운영진 경로 요청 본문. 여섯 필드를 언제나 모두 싣는다(전체 교체) */
+/** 폼 값 → 운영진 경로 요청 본문. 여덟 필드를 언제나 모두 싣는다(전체 교체) */
 function toUpdateInput(values: MemberEditValues): MemberUpdateInput {
   return {
     generationNumber: toNumberOrNull(values.generationNumber),
+    clubJoinYear: toNumberOrNull(values.clubJoinYear),
+    clubJoinMonth: toNumberOrNull(values.clubJoinMonth),
     name: values.name.trim(),
     departmentName: trimToNull(values.departmentName),
     academicYear: toNumberOrNull(values.academicYear),
@@ -105,7 +131,7 @@ function toUpdateInput(values: MemberEditValues): MemberUpdateInput {
   };
 }
 
-/** 폼 값 → 본인 경로 요청 본문. 기수·이메일은 자리 자체가 없다 */
+/** 폼 값 → 본인 경로 요청 본문. 기수·동아리 가입 연/월·이메일은 자리 자체가 없다 */
 function toSelfUpdateInput(values: MemberEditValues): MemberSelfUpdateInput {
   const input = toUpdateInput(values);
   return {
@@ -153,6 +179,22 @@ export function validateMemberEdit(
     errors.generationNumber = "기수는 0 이상의 숫자입니다";
   }
 
+  const clubJoinYear = values.clubJoinYear.trim();
+  if (clubJoinYear && !FOUR_DIGIT_YEAR.test(clubJoinYear)) {
+    errors.clubJoinYear = "가입 연도는 2020처럼 네 자리 숫자로 입력하세요";
+  }
+
+  const clubJoinMonth = values.clubJoinMonth.trim();
+  if (
+    clubJoinMonth &&
+    (!DIGITS_ONLY.test(clubJoinMonth) ||
+      Number(clubJoinMonth) < CLUB_JOIN_MONTH_MIN ||
+      Number(clubJoinMonth) > CLUB_JOIN_MONTH_MAX)
+  ) {
+    // 비어 있는 것은 오류가 아니다 — 모르는 달을 비워 두라고 만든 칸이다
+    errors.clubJoinMonth = `가입 월은 ${CLUB_JOIN_MONTH_MIN}~${CLUB_JOIN_MONTH_MAX} 사이의 숫자입니다`;
+  }
+
   const departmentName = values.departmentName.trim();
   if (!departmentName) {
     if (academicRequired) errors.departmentName = "재학 회원은 학과가 필요합니다";
@@ -191,6 +233,8 @@ function hasErrors(errors: MemberEditFieldErrors): boolean {
 function sameValues(a: MemberEditValues, b: MemberEditValues): boolean {
   return (
     a.generationNumber.trim() === b.generationNumber.trim() &&
+    a.clubJoinYear.trim() === b.clubJoinYear.trim() &&
+    a.clubJoinMonth.trim() === b.clubJoinMonth.trim() &&
     a.name.trim() === b.name.trim() &&
     a.departmentName.trim() === b.departmentName.trim() &&
     a.academicYear.trim() === b.academicYear.trim() &&
@@ -199,8 +243,18 @@ function sameValues(a: MemberEditValues, b: MemberEditValues): boolean {
   );
 }
 
+/**
+ * 연도 입력이 멎었다고 볼 때까지 기다리는 시간.
+ *
+ * 네 자리를 마저 치는 사이에 부르지 않을 만큼은 길고, 다음 칸으로 넘어가기 전에 값이 차 있을
+ * 만큼은 짧다. blur가 나면 기다리지 않고 곧바로 부른다.
+ */
+const GENERATION_SUGGEST_DELAY_MS = 500;
+
 const EMPTY_VALUES: MemberEditValues = {
   generationNumber: "",
+  clubJoinYear: "",
+  clubJoinMonth: "",
   name: "",
   departmentName: "",
   academicYear: "",
@@ -216,7 +270,11 @@ export interface MemberEdit {
   /** status === "error"일 때 채워진다 */
   errorMessage: string;
   reload: () => void;
-  /** 서버가 준 원본. 학번·가입일·등급·상태처럼 **고칠 수 없는 값**을 읽기 전용으로 보여 준다 */
+  /**
+   * 서버가 준 원본. 학번·전산 가입일·등급·상태처럼 **고칠 수 없는 값**을 읽기 전용으로
+   * 보여 준다. 동아리 가입 연/월은 여기 들어 있지만 읽기 전용이 아니다 — 이관 명부에 없던
+   * 값이라 운영진이 뒤늦게 채우라고 연 입력란이다(#214).
+   */
   member: MemberDetail | null;
 
   values: MemberEditValues;
@@ -225,6 +283,18 @@ export interface MemberEdit {
   errors: MemberEditFieldErrors;
   /** 재학 회원이라 학과·학년이 필수인가 */
   academicRequired: boolean;
+
+  /**
+   * 연도 입력이 끝났을 때 기수 자동 채움을 시도한다 — 입력란의 blur에 건다.
+   *
+   * 타이핑마다 부르지 않는다(디바운스가 같은 일을 이미 한다). 이미 배정된 기수는 건드리지
+   * 않으므로 여러 번 불려도 안전하다.
+   */
+  suggestGeneration: () => void;
+  /** 방금 기수를 연도로 채웠는가 — 화면이 "자동으로 채웠다"를 알리는 근거다 */
+  generationAutoFilled: boolean;
+  /** 기수 자동 채움이 실패한 사유. 비어 있으면 정상 — 저장을 막지는 않는다 */
+  generationSuggestError: string;
 
   dirty: boolean;
   saving: boolean;
@@ -255,6 +325,12 @@ export function useMemberEdit(memberId: number): MemberEdit {
   const [saving, setSaving] = useState(false);
   const [saveErrorMessage, setSaveErrorMessage] = useState("");
 
+  /* 기수를 연도로 채웠음을 화면이 알릴 근거 — 무심코 지나치는 것을 줄인다 */
+  const [generationAutoFilled, setGenerationAutoFilled] = useState(false);
+  const [generationSuggestError, setGenerationSuggestError] = useState("");
+  /* 연도를 사람이 손댄 뒤에만 자동 채움이 돈다 — 화면을 열자마자 값이 움직이면 안 된다 */
+  const [yearTouched, setYearTouched] = useState(false);
+
   const saved = member ? toValues(member) : null;
   const current = values ?? saved ?? EMPTY_VALUES;
 
@@ -271,6 +347,9 @@ export function useMemberEdit(memberId: number): MemberEdit {
       aliveRef.current = false;
     };
   }, []);
+
+  /** 이미 기수를 물어본 연도. 디바운스와 blur가 같은 값을 두 번 묻는 것을 막는다 */
+  const suggestedYearRef = useRef("");
 
   /*
    * 저장·입력이 **실행되는 시점**에 읽을 최신값. 콜백 자체는 의존성 없이 한 번만 만들어 둔다
@@ -289,13 +368,83 @@ export function useMemberEdit(memberId: number): MemberEdit {
     setValues((v) => ({ ...(v ?? contextRef.current.current), ...patch }));
     /* 서버가 거절한 사유는 값을 고치는 순간 낡은 문장이 된다 */
     setSaveErrorMessage("");
+
+    if (patch.clubJoinYear !== undefined) {
+      setYearTouched(true);
+      setGenerationSuggestError("");
+    }
+    if (patch.generationNumber !== undefined) {
+      /*
+       * 사람이 기수를 직접 적었다 — '자동으로 채웠다'는 안내는 더 이상 사실이 아니고, 다시
+       * 비웠다면 같은 연도로 한 번 더 물어볼 수 있어야 하므로 물어본 기록도 지운다.
+       */
+      setGenerationAutoFilled(false);
+      suggestedYearRef.current = "";
+    }
   }, []);
+
+  /**
+   * 동아리 가입 연도로 기수를 채운다 — **제안이지 결정이 아니다.**
+   *
+   * `연도 − 1982`를 여기서 계산하지 않는다. 판정 규칙이 두 벌이 되는 것이 이 저장소가 실제로
+   * 겪은 버그의 모양이라(#112), 기준은 서버 하나로 둔다(`fetchGenerationNumber`).
+   *
+   * **이미 배정된 기수는 덮어쓰지 않는다.** 운영진이 넣어 둔 기수는 사실이고, 이관 회원 중에는
+   * 계산식과 맞지 않는 기수를 가진 사람이 있다(명부의 기수가 정본이다). 연도를 뒤늦게 채우다
+   * 그 값이 조용히 바뀌면 무엇이 사실인지 알 수 없게 된다(BR-M43).
+   */
+  const suggestGeneration = useCallback(() => {
+    const { current: form } = contextRef.current;
+    const year = form.clubJoinYear.trim();
+    if (!FOUR_DIGIT_YEAR.test(year)) return;
+    if (!generationUnassigned(form.generationNumber)) return;
+    /* 디바운스와 blur가 잇달아 불러도 같은 연도를 두 번 묻지 않는다 */
+    if (suggestedYearRef.current === year) return;
+    suggestedYearRef.current = year;
+
+    void (async () => {
+      try {
+        const generationNumber = await fetchGenerationNumber(Number(year));
+        if (!aliveRef.current) return;
+        /* 응답을 기다리는 사이에 사람이 기수를 적었다면 그쪽이 사실이다 */
+        if (!generationUnassigned(contextRef.current.current.generationNumber)) return;
+        setValues((v) => ({
+          ...(v ?? contextRef.current.current),
+          generationNumber: String(generationNumber),
+        }));
+        setGenerationAutoFilled(true);
+        setGenerationSuggestError("");
+      } catch {
+        if (!aliveRef.current) return;
+        /* 같은 연도로 다시 시도할 수 있어야 한다 */
+        suggestedYearRef.current = "";
+        setGenerationSuggestError(
+          "기수를 자동으로 채우지 못했습니다 — 기수를 직접 입력해주세요",
+        );
+      }
+    })();
+  }, []);
+
+  /*
+   * 타이핑이 멎으면 채운다. 글자마다 부르면 "2"·"20"·"202"까지 서버에 묻게 되고, 그중 앞선
+   * 응답이 늦게 도착해 엉뚱한 기수가 남을 수 있다.
+   */
+  const yearInput = current.clubJoinYear;
+  useEffect(() => {
+    if (!yearTouched) return;
+    const timer = setTimeout(suggestGeneration, GENERATION_SUGGEST_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [yearInput, yearTouched, suggestGeneration]);
 
   /* 다시 불러오면 초안을 버린다 — 새로 받은 서버 값이 폼의 초기값이어야 한다 */
   const reload = useCallback(() => {
     setValues(null);
     setAttempted(false);
     setSaveErrorMessage("");
+    setGenerationAutoFilled(false);
+    setGenerationSuggestError("");
+    setYearTouched(false);
+    suggestedYearRef.current = "";
     reloadDetail();
   }, [reloadDetail]);
 
@@ -320,9 +469,12 @@ export function useMemberEdit(memberId: number): MemberEdit {
     setSaveErrorMessage("");
 
     try {
-      /* 여섯 필드를 통째로 보낸다 — 빠뜨린 필드는 서버에서 비워진다 (파일 첫 주석) */
+      /* 여덟 필드를 통째로 보낸다 — 빠뜨린 필드는 서버에서 비워진다 (파일 첫 주석) */
       const next = await updateMember(context.memberId, toUpdateInput(context.current));
-      if (aliveRef.current) setValues(toValues(next));
+      if (aliveRef.current) {
+        setValues(toValues(next));
+        setGenerationAutoFilled(false);
+      }
       return next;
     } catch (error: unknown) {
       /* 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다 */
@@ -344,6 +496,9 @@ export function useMemberEdit(memberId: number): MemberEdit {
     set,
     errors,
     academicRequired,
+    suggestGeneration,
+    generationAutoFilled,
+    generationSuggestError,
     dirty,
     saving,
     saveErrorMessage,

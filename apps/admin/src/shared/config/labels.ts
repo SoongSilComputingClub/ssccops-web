@@ -55,8 +55,12 @@ export const FIELD_LABEL = {
   membershipStatus: "회원 상태",
   /** mbr_role 이 이어 준 지금 유효한 역할들 (현재_역할) */
   currentRoles: "현재 역할",
-  /** join_ymd (가입_일자) */
-  joinDate: "가입 일자",
+  /** sys_join_ymd (전산_가입_일자) — 시스템에 계정이 생긴 날. 동아리 입부일이 아니다 */
+  systemJoinDate: "전산 가입 일자",
+  /** clb_join_yr_no (동아리_가입_연도_번호) — 기수의 근거. 모르면 비어 있다 */
+  clubJoinYear: "동아리 가입 연도",
+  /** clb_join_mm_no (동아리_가입_월_번호) — 모르면 비워 둔다 */
+  clubJoinMonth: "동아리 가입 월",
 
   /* ── 역할 분류 (role_clsf) ──────────────────────────────── */
   /** indct_seqno (표시_순번) */

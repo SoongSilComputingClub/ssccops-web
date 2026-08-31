@@ -21,7 +21,7 @@ import { apiFetch } from "@/shared/lib/api/client";
  * 재임까지 남고, 지금 유효한 것은 {@link MemberRoleAssignment.current}가 가른다.
  *
  * 필드명이 데이터사전 표기(mbrRoleId·roleBgngYmd …)인 것은 서버 DTO가 그렇게 내려주기
- * 때문이다 — 회원 API가 서버 스키마(memberId·joinDate …)를 그대로 옮긴 것과 같은 원칙이고,
+ * 때문이다 — 회원 API가 서버 스키마(memberId·systemJoinDate …)를 그대로 옮긴 것과 같은 원칙이고,
  * 두 API의 표기가 갈리는 것은 서버가 갈라 놓은 그대로다.
  */
 

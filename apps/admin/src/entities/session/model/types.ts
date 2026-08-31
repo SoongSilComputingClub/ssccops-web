@@ -156,8 +156,14 @@ export interface MemberProfile {
   membershipGradeName: string;
   membershipStatusCode: MbrSttsCd;
   membershipStatusName: string;
-  /** yyyy-MM-dd */
-  joinDate: string;
+  /**
+   * 전산 가입일 (yyyy-MM-dd) — 시스템에 계정이 생긴 날이다.
+   *
+   * 동아리 가입 연/월은 여기 없다. 본인이 고칠 수 있는 값이 아니고(연도가 기수의 근거라
+   * 본인이 바꾸면 기수를 우회해 정하는 셈이 된다) 서버 `MemberProfileResponse`에도 자리가
+   * 없다 — 그 두 값은 운영진 경로의 `MemberSummary`에만 실린다.
+   */
+  systemJoinDate: string;
   roles: MemberRole[];
   /**
    * 이 회원이 실제로 행사할 수 있는 권한 코드 전부 — **서버가 트리를 이미 펼친 평평한 배열**이다.
