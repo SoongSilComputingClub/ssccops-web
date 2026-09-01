@@ -6,7 +6,7 @@ import { ROUTES, signupUrl } from "@/shared/config/routes";
 import { Card, Notice } from "@/shared/ui";
 
 /*
- * 첫 화면 — 무엇을 하러 왔는지 고르는 자리 (#226).
+ * 첫 화면 — 무엇을 하러 왔는지 고르는 자리 (#228).
  *
  * ── 왜 생겼나 ──────────────────────────────────────────────
  * 전에는 `/`가 `/studio`(학술 대시보드)로 곧장 넘겼다. 상단 바가 역할별로 갈리고 나니(#224)
@@ -25,6 +25,13 @@ import { Card, Notice } from "@/shared/ui";
  * ── 미가입자에게는 카드를 내밀지 않는다 ────────────────────────
  * 기획안 제출도 회원이어야 하므로 두 카드가 다 막힌다. 가입 안내가 먼저다(대시보드의
  * `SignupNotice`와 같은 문구 구조).
+ *
+ * ── 대시보드 카드를 두지 않는다 ───────────────────────────────
+ * 스터디장은 이 화면에 닿기 전에 `/studio`로 넘어가므로, **여기 있는 사람은 정의상 스터디장이
+ * 아니다** — 대시보드 카드를 눌러 봐야 "맡고 있는 스터디·프로젝트가 없습니다"만 나온다.
+ * 갈 수 없는 곳을 크게 세워 두지 않는다(#224가 상단 바에서 한 것과 같은 판단). 그래서 두 카드는
+ * 상단 바의 `MEMBER` 항목 둘과 정확히 같다 — 이 사람이 지금 할 수 있는 일이 그 둘이다.
+ * 활동을 맡게 되면 이 화면 자체를 지나치게 되므로 카드를 다시 세울 일도 없다.
  */
 export function LandingPage({ result }: { result: LandingLoad }) {
   if (result.outcome === "unauthenticated") {
@@ -50,16 +57,16 @@ export function LandingPage({ result }: { result: LandingLoad }) {
     <Shell>
       <div className="grid gap-[14px] lg:grid-cols-2">
         <ActionCard
-          href={ROUTES.studio}
-          title="학술 대시보드"
-          description="맡은 스터디·프로젝트의 진행 현황과 회차·출석을 봅니다."
-          cta="대시보드 열기"
-        />
-        <ActionCard
           href={ROUTES.proposalNew}
           title="기획안 제출"
-          description="새 스터디·프로젝트를 제안합니다. 낸 기획안의 처리 상태는 '기획안 제출 현황'에서 봅니다."
+          description="새 스터디·프로젝트를 제안합니다."
           cta="기획안 쓰기"
+        />
+        <ActionCard
+          href={ROUTES.myApplications}
+          title="기획안 제출 현황"
+          description="내가 낸 기획안과 처리 상태를 확인합니다."
+          cta="현황 보기"
         />
       </div>
     </Shell>

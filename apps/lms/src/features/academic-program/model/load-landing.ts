@@ -3,7 +3,7 @@ import { fetchMyAcademicPrograms } from "@/entities/academic-program/api/program
 import { isSignupRequired, isUnauthenticated } from "@/shared/api/auth-error";
 
 /*
- * 첫 화면(`/`)의 SSR 로더 (#226).
+ * 첫 화면(`/`)의 SSR 로더 (#228).
  *
  * ── 왜 불리언 하나로 안 되는가 ──────────────────────────────
  * 상단 바 판정(`fetchIsAcademicLeader` · #224)은 실패를 전부 `false`로 삼킨다 — 헤더 하나
