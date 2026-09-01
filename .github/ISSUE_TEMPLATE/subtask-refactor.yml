@@ -1,23 +1,92 @@
 name: "🛠 Refactor"
-description: "코드 / 구조 리팩토링"
+description: "동작을 바꾸지 않는 구조 개선"
+title: "[REFACTOR] "
 labels: ["refactor"]
 type: SubTask
 body:
+  - type: markdown
+    attributes:
+      value: |
+        제목 앞 `[REFACTOR]`를 **지우지 마세요.** 이 접두사로 브랜치와 라벨이 자동 생성됩니다.
+
+        **화면 동작이 바뀌면 리팩토링이 아닙니다** — `[FEAT]` 또는 `[FIX]`로 등록하세요.
+
+  - type: dropdown
+    id: target
+    attributes:
+      label: 📦 대상
+      description: 모노레포라 어느 앱인지가 경로를 정합니다. 앱 사이로 코드를 옮기는 작업이면 `여러 곳`.
+      options:
+        - "apps/admin — 운영관리 어드민"
+        - "apps/www — 공개 행사"
+        - "apps/lms"
+        - "packages/* — 앱 사이 공유"
+        - "루트 설정 — turbo · pnpm workspace · tsconfig"
+        - "여러 곳"
+    validations:
+      required: true
+
   - type: textarea
+    id: description
     attributes:
       label: 📄 설명
-      description: 리팩토링이 필요한 이유를 설명해주세요.
-      placeholder: 자세히 적을수록 좋습니다!
+      description: |
+        **지금 구조가 무엇을 못 하게 하고 있는지.** "더 깔끔해서"는 이유가 아닙니다 —
+        이 구조 때문에 실제로 무엇이 어려웠는지, 어떤 버그가 났는지를 적습니다.
+      placeholder: |
+        폼 편집기와 템플릿 편집기가 문항 구성 UI를 각자 갖고 있다. 한쪽에만 검증을 더하면
+        다른 쪽으로 들어온 사용자는 그 검증을 지나지 않는다.
     validations:
       required: true
+
   - type: textarea
+    id: work
     attributes:
       label: ✅ 리팩토링 항목
-      description: 할 일을 체크박스 형태로 작성해주세요.
-      placeholder: 최대한 세분화 해서 적어주세요!
+      description: |
+        체크박스로 씁니다. FSD 계층 방향(`app → views → features → entities → shared`)이
+        바뀌는 이동이면 어느 계층으로 가는지 명시하세요.
+      value: |
+        - [ ]
+        - [ ]
+      placeholder: |
+        - [ ] 문항 편집 UI를 `features/form/ui`로 꺼내 두 화면이 같은 것을 쓰게 한다
+        - [ ] 시스템 폼 잠금은 옵션으로 받는다 — 템플릿에는 계약이 없어 아무것도 넘기지 않는다
+        - [ ] 기존 화면 동작이 그대로인지 확인 (문항 추가·삭제·순서 변경·저장)
     validations:
       required: true
+
   - type: textarea
+    id: rejected
     attributes:
-      label: 🙋🏻 고려 사항
-      description: 리팩토링 시 주의해야 할 점이 있다면 작성해주세요
+      label: 🚫 검토했으나 택하지 않은 길
+      description: 다른 구조를 왜 안 골랐는지. 비워 둬도 됩니다.
+      placeholder: |
+        | 후보 | 왜 안 되는가 |
+        |---|---|
+        | 템플릿 편집기를 폼 편집기로 흡수 | 템플릿은 응답도 상태도 없어 폼의 절반이 늘 비활성으로 남는다 |
+    validations:
+      required: false
+
+  - type: textarea
+    id: precheck
+    attributes:
+      label: 🔍 먼저 확인할 것
+      description: |
+        **동작이 안 바뀌는 것을 무엇으로 보장하는가.** 옮기는 코드를 쓰는 곳을 먼저 세어 보세요.
+      placeholder: |
+        - [ ] 이 컴포넌트를 쓰는 화면이 몇 개인가 (`grep`)
+        - [ ] 이 브랜치의 베이스가 모노레포 전환 이후인가 (`apps/` 가 있는가)
+    validations:
+      required: false
+
+  - type: textarea
+    id: refs
+    attributes:
+      label: 🙋🏻 참고 자료
+      description: 상위 이슈, 이 구조를 만든 원래 이슈, 관련 코드 경로.
+      placeholder: |
+        - 이 구조를 만든 이슈: #132
+        - `apps/admin/src/features/form/ui/qitem-composer.tsx`
+    validations:
+      required: false

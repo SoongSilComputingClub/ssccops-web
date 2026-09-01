@@ -10,23 +10,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENTS.md
 
-SSCC(숭실컴퓨팅클럽) 웹 — **pnpm workspace + Turborepo 모노레포**. 앱은 둘이다.
-
-| 앱 | 워크스페이스 | 무엇 |
-| --- | --- | --- |
-| `apps/admin` | `@ssccops/admin` | 운영관리 어드민 — 로그인·권한이 있는 내부 화면 |
-| `apps/www` | `@ssccops/www` | 공개 웹사이트 — **로그인 없이** 보는 행사 목록·상세 (#141) + 본인만 보는 '내 신청' (#150) + 참가 신청 (#154). 동아리 소개 등 공식 홈페이지 역할을 함께 맡는다(#160에서 `apps/events`에서 개명) |
-
-둘 다 Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4이고 같은 디자인 토큰
-(Toss 라이트 · Pretendard)을 쓴다. `packages/*`에는 공유 패키지가 하나 있다 —
-**`packages/form-renderer`**(`@ssccops/form-renderer` · #152). 토큰·`apiFetch`·행사 타입은
-아직 두 앱에 각각 있고, 추출은 후속 이슈다. 백엔드는 별도 저장소
-**`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth · 두 앱이 **같은
-프로젝트**를 쓴다 — 공개 앱은 '내 신청' 한 화면에만 붙어 있다), 배포는
-Cloudflare Workers(OpenNext).
-
-**아래 문서는 별도로 밝히지 않는 한 `apps/admin` 이야기다.** 공개 앱만의 규약은
-「공개 웹사이트(`apps/www`)」 절에 모아 두었다.
+SSCC(숭실컴퓨팅클럽) 운영관리 어드민 웹 — Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4 / pnpm.
+백엔드는 별도 저장소 **`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth),
+배포는 Cloudflare Workers(OpenNext).
 
 > 위의 `nextjs-agent-rules` 블록은 `next dev`가 스스로 써넣는다. 지우면 uncommitted 변경으로
 > 되살아나므로 **그대로 두고 그 바깥에** 쓴다. 개인 로컬 메모(포트·`.env.local`·증상별 원인
@@ -35,25 +21,19 @@ Cloudflare Workers(OpenNext).
 ## 검증 — CI와 같은 순서로 돌린다
 
 ```bash
-pnpm install --frozen-lockfile   # 반드시 워크스페이스 루트에서 (락파일은 루트 하나)
-pnpm typecheck                   # turbo run typecheck — typegen 을 선행 태스크로 물고 있다
+pnpm install --frozen-lockfile
+pnpm exec next typegen     # ← 빠뜨리기 쉬운 단계
+pnpm exec tsc --noEmit
 pnpm lint
 pnpm build
 ```
-
-셋 다 `turbo run …` 위임이라 **앱 전부**를 돈다. 한 앱만 돌리려면 그 앱 디렉터리에서
-`pnpm exec next typegen && pnpm exec tsc --noEmit && pnpm lint` 순서를 지킨다(typegen 이 먼저다).
-CI(`integrate.yml`)도 같은 루트 명령을 쓴다 — 앱을 새로 추가해도 워크플로를 고칠 일이 없게
-한 것이므로, 검증 단계에 앱 이름을 다시 적어 넣지 말 것.
 
 - **`pnpm lint`만 돌리면 타입 오류를 CI에서 처음 만난다.** ESLint는 타입 검사를 하지 않는다.
 - `next typegen`이 먼저인 이유: `PageProps`·`LayoutProps` 같은 전역 타입은 Next가 `.next/types`
   아래에 생성하고 `next-env.d.ts`가 그것을 참조한다. 새로 체크아웃한 트리에는 `.next`가 없어
   `tsc`가 `Cannot find name 'PageProps'`로 죽는다(`integrate.yml`의 lint job과 같은 순서다).
-- Turborepo 기본 env 모드는 strict다 — 빌드가 새 환경변수를 읽게 되면 `turbo.json`의
-  `build.env`(현재 `NEXT_PUBLIC_*`)에 선언해야 태스크에 전달되고 캐시 키에도 반영된다.
-- **테스트 러너는 아직 없다.** CI의 test job은 `apps/*/src` 아래에 `*.test.*`·`*.spec.*`가
-  있을 때만 돈다. 테스트를 처음 추가하는 사람이 러너와 `test:coverage` 스크립트를 함께 붙인다.
+- **테스트 러너는 아직 없다.** CI의 test job은 `src` 아래에 `*.test.*`·`*.spec.*`가 있을 때만
+  돈다. 테스트를 처음 추가하는 사람이 러너와 `test:coverage` 스크립트를 함께 붙인다.
 - SonarQube 분석은 토큰이 있을 때만 돌고 build를 막지 않는다. Prettier 단계는 없다(의존성도
   설정 파일도 없다 — 도입하려면 둘을 먼저 추가하고 워크플로에 단계를 되살린다).
 
@@ -66,135 +46,9 @@ app → views → features → entities → shared     (단방향)
 - 같은 레이어의 슬라이스끼리 참조하지 않는다. 여러 엔티티를 함께 바꾸는 로직은 `features`에 둔다.
 - `views`가 FSD의 pages 레이어다(Next.js 예약어 충돌 회피). widgets 레이어는 생략했다.
 - `app/`은 라우팅 전용 — 각 `page.tsx`는 `views`를 얇게 감싼다. 라우트 그룹은 `(admin)`(운영
-  화면) · `(auth)`(로그인·가입) · `(public)`(공개 폼과 기획안 접수 — 관리자 셸을 두르지 않는
-  회원용 화면) · `auth/`(OAuth 콜백 라우트 핸들러)다.
+  화면) · `(auth)`(로그인·가입) · `(public)`(공개 폼) · `auth/`(OAuth 콜백 라우트 핸들러)다.
 - 슬라이스 내부: `entities/<slice>/{api,model}` · `features/<slice>/{model,ui}` · `views/<slice>/ui`.
 - 화면 경로를 문자열로 적지 않고 `shared/config/routes.ts`의 `ROUTES`를 쓴다.
-
-두 앱이 같은 레이어 이름을 쓰지만 **소스를 공유하지 않는다** — 각자 `src/` 아래에 자기
-`shared`·`entities`를 갖는다. 한쪽에서 고친 것이 다른 쪽에 저절로 반영되지 않으므로, 토큰·
-행사 타입처럼 겹치는 것을 고칠 때는 두 곳을 함께 본다. 예외는 아래 공유 패키지뿐이다.
-
-## 공유 패키지 (`packages/*`) — #152
-
-**`packages/form-renderer` (`@ssccops/form-renderer`)** 하나가 있다. 두 앱이 `workspace:*`로
-소비하고, 어드민의 응답자 화면(`/f/{formId}`)에서 뽑아 왔다.
-
-- **왜 뽑았나.** 공개 앱에 신청 흐름(EV-006)이 붙으면 같은 폼을 그려야 하는데, 렌더러를
-  복사하면 **클라이언트 검증 규칙이 두 벌이 된다.** 필수 판정·정규식·최대 선택 수·분기
-  (`branchMap`) 계산은 서버 `ResponseAnswerValidator`와 한 벌로 맞춰 둔 규칙이라, 한쪽만
-  고쳐지면 "웹은 통과시키는데 서버가 거절하는" 폼이 생긴다.
-- **무엇이 들어 있나.** 폼/응답 도메인 타입(`Qitem`·`QitemCpstCn`·`FormPage`·`RspnsCn`) ·
-  문항 유형 코드(`QitemTypeCd`·`isChoiceQitemType`·`isTextQitemType`) · 답 다루기
-  (`toggleOption`·`toRspnsCn`) · 분기 경로(`nextPageSeq`·`reachedPageSeqs`) · 검증
-  (`validateAnswers`·`validatePageAnswers`) · 문항 유형별 렌더링(`QitemCard`).
-- **무엇이 안 들어 있나.** HTTP 호출과 자동 저장·제출 훅(`usePublicForm`), 화면 셸, 권한
-  게이트. 어드민 `apiFetch`는 401·403에 리다이렉트까지 걸지만 공개 앱은 일부러 걸지 않아
-  (돌아올 화면이 없다), 전송 계층을 함께 옮기면 두 앱 중 한쪽에서 반드시 틀린다.
-- **빌드 단계가 없다 — 소스를 그대로 export 한다.** 앱이 `transpilePackages`로 컴파일한다
-  (`next.config.ts`). 패키지에 번들 단계를 두면 앱을 고칠 때마다 패키지를 먼저 빌드해야 하고,
-  그 순서를 잊으면 옛 산출물이 조용히 쓰인다.
-- **Tailwind는 이 패키지를 자동으로 훑지 않는다.** 각 앱 `globals.css`의
-  `@source "../../../../packages/form-renderer/src";`가 그것을 시킨다 — 패키지는 pnpm 심링크로
-  `node_modules` 아래에 보이고 자동 탐색은 거기를 건너뛴다. 지우면 문항 카드가 클래스 이름만
-  있고 스타일이 없는 채로 뜬다.
-- **검증 규칙을 앱에 다시 적지 않는다.** 어드민 `shared/config/codes.ts`의 문항 유형 블록과
-  `entities/form`·`entities/response`의 타입 export는 **재export일 뿐** 정의가 아니다
-  (임포트 경로를 지키려고 남긴 것이다).
-
-## 공개 웹사이트 (`apps/www`) — #141 · #150 · #154
-
-로그인 없이 누구나 보는 행사 목록(`/`)·상세(`/events/{eventId}`)와, 로그인한 본인만 보는
-참가 신청(`/events/{eventId}/apply`)·'내 신청'(`/my-applications`)이다. wave2 결정
-D1(비로그인 완전 공개) · D7(SSR/OG) · D12(md 안전 렌더링) · D2(회원만 신청) · D3(폼이
-접수 중일 때만) · D15(공개 앱 안에서 작성) · D10(능동 통보 없이 '내 신청'에서 결과 확인)을
-그대로 구현한 것이라, 아래는 취향이 아니라 결정 사항이다.
-
-- **셸은 상단 바 하나이고, 로고(왼쪽)와 메뉴·로그인 상태(오른쪽) 두 덩어리다**(#167).
-  이 앱은 행사 앱으로 출발했지만 동아리 공식 홈페이지를 겸하기로 했으므로(#160), 기본 제목은
-  행사가 아니라 동아리 이름이고 상단 바는 메뉴가 늘어날 것을 전제로 짜여 있다. **메뉴 목차는
-  `app/_shell/nav-links.ts` 한 벌**이며 데스크톱 메뉴(`desktop-nav.tsx`)와 모바일 드로어
-  (`mobile-nav.tsx`, `lg` 미만)가 함께 쓴다 — 어드민 `use-shell-nav`와 같은 이유로, 소개·활동
-  같은 항목을 붙일 때 그 파일 한 줄만 늘린다. 로그인 여부로 갈리는 항목('내 신청'·로그아웃)은
-  목차에 없고 `AuthNav`가 따로 그린다(아래 참고). 드로어는 지금 메뉴 하나에는 과해 보이지만
-  항목이 늘면 좁은 화면에서 상단 바가 넘치므로 처음부터 접히는 구조로 뒀다.
-- **PWA는 아이콘·manifest만 있고 설치 유도는 없다**(#167 · 결정 ssccops#150의 B안). 방문자
-  대부분이 카톡·에타 링크로 한 번 들어와 행사를 보고 나가므로 설치를 권할 대상이 뚜렷하지
-  않다 — 대신 재학생이 스스로 홈 화면에 추가했을 때 아이콘 자리에 스크린샷이 박히는 일만
-  막는다. 아이콘은 어드민과 **같은 파일**(임시 S 마크)이라 정식 로고가 나오면 두 앱을 함께
-  교체한다. 서비스워커·푸시·설치 프롬프트는 재방문 수요가 확인된 뒤의 일이다.
-- **본체는 여전히 익명이고, 로그인은 신청·'내 신청' 두 화면에만 붙어 있다**(#150 · #154).
-  목록·상세는 토큰 없이 그리고, `shared/api/client.ts`는 **봉투 벗기기와 `ApiError`만** 남긴
-  익명 전용 구현 그대로다. 인증 호출은 옆에 **더한** 두 파일이 맡는다 —
-  서버 컴포넌트용 `shared/api/authed-client.ts`와 브라우저용 `shared/api/browser-client.ts`.
-  둘의 차이는 **토큰을 어디서 꺼내는가** 하나뿐이고(쿠키 vs Supabase 브라우저 세션), 봉투·오류
-  변환은 둘 다 `apiFetch`를 통과하며 오류 코드·판정은 `shared/api/auth-error.ts` 한 벌을 본다.
-  `authed-client`가 `next/headers`를 타므로 **클라이언트 컴포넌트에서 임포트하면 빌드가 깨진다**
-  — 그래서 코드값만 따로 뽑아 둔 것이다.
-- **인증 실패에 리다이렉트를 걸지 않는다.** 이 앱에는 로그인 화면이 없다(로그인은 지금 보고
-  있는 화면 위에서 시작한다). 401은 화면 안의 로그인 유도로, 미가입은 **신청 흐름 안의 간편
-  가입 폼**으로 그린다 — 어드민의 `apiFetch`처럼 리다이렉트를 옮겨 오면 되돌아올 곳이 없어
-  왕복만 도는 길이 생긴다.
-- **신청 흐름은 한 주소 안에서 끝난다**(#154 · §8-4). 로그인 → (미가입이면) 간편 가입 → 폼
-  작성 → 제출이 `/events/{id}/apply` 하나에서 일어난다. 네 단계로 화면을 나누면 리다이렉트
-  왕복마다 이탈이 생기고 돌아올 곳을 단계 수만큼 관리해야 한다 — 이 구간의 이탈이 가장 크다는
-  것이 §8-4의 판단이다. 가입 폼은 **최소 필드**다(어드민 가입 화면에서 기수를 뺐다). 조건부
-  필수 규칙(재학이면 학번·학과·학년)은 서버 `MemberSignupRequest`·`AcademicProfilePolicy`와
-  같은 것을 보고, **등급은 서버가 TEMP로 고정**하므로 요청에 싣지 않는다.
-- **미들웨어 매처는 `/my-applications`와 `/events/:eventId/apply` 둘이다.** 하는 일도 세션
-  쿠키 갱신뿐이고 가드가 아니다(`shared/lib/supabase/proxy.ts`). **행사 상세는 매처에 없다** —
-  `/events/:path*`로 넓히면 공유 링크로 들어오는 익명 조회마다 Supabase 왕복이 붙는다.
-- **전 화면이 서버 컴포넌트다** — 예외는 로그인 상태를 쥐어야 하는 `features/auth`의 두
-  컴포넌트(`AuthNav`·`SignInButton`)와 **신청 흐름의 작성 화면**이다(`features/signup` ·
-  `features/apply` · `views/event-apply`의 클라이언트 부분). 뒤쪽이 예외인 이유는 답을 고칠
-  때마다 초안을 저장하고 제출까지 해야 해서 서버 렌더만으로는 그릴 수 없기 때문이다 — 대신
-  **행사가 신청을 받는가·이 사람이 회원인가는 서버에서** 판정하고 결과만 넘긴다.
-  상세를 SSR로 그리는 이유가 OG 메타태그이고
-  (카카오톡·에타 크롤러는 자바스크립트를 돌리지 않는다), '내 신청'도 같은 규약을 따라 SSR로
-  그린다 — 쿠키의 Supabase 세션을 서버에서 읽으면 토큰이 브라우저 코드에 실리지 않고 이 앱에
-  데이터 페칭 상태 기계를 들이지 않아도 된다. 헤더의 로그인 상태만 클라이언트에서 보는 것은,
-  거기서 쿠키를 읽으면 익명 공개인 목록·상세 렌더에까지 세션 조회가 끼어들기 때문이다.
-- **본문 Markdown은 원시 HTML을 해석하지 않는다**(D12). `react-markdown`의 기본 동작이 그것이고,
-  안전장치는 **`rehype-raw`를 쓰지 않는 것** 하나다. 표·체크박스가 필요해 플러그인을 더할 일이
-  생기면 sanitize를 함께 걸 것.
-- **공개 분류 목록 엔드포인트가 없다.** 필터 칩은 게시된 행사들이 실제로 쓰는 분류에서 뽑는다
-  (`toClassifications`) — 그래서 목록을 두 번 조회한다(필터 건 것 + 칩용 전체). 행사가 없는
-  분류는 칩에도 서지 않는데, 눌러도 빈 목록만 나올 칩을 세울 이유가 없다.
-- **없는 행사와 아직 공개하지 않은 행사를 화면이 가르지 않는다.** 둘 다 404(`not-found.tsx`)로
-  보낸다 — 문구로 가르면 게시 전 행사의 존재가 주소만으로 새어 나간다.
-- 코드값 표시명은 `entities/<slice>/model/display.ts` 한 곳에서 만든다(행사 배지는
-  `entities/event`, 신청 상태 배지는 `entities/application`). 어드민과 어휘가 갈리는 자리가
-  있다(`ACCEPTING` → 어드민 '접수중' · 공개 '모집 중'). 화면이 보는 사람이 다르므로 일부러
-  다르게 둔 것이고, 코드값 자체는 어느 쪽에도 노출하지 않는다.
-- **대기 순번을 말하지 않는다**(D5 — 비공개). 서버가 순번을 내려주지 않기도 하지만, 없는 값을
-  "곧 차례가 옵니다" 식으로 짐작해 쓰면 그것대로 약속이 된다. 신청 상태 문장(`display.ts`의
-  `note`)이 D10의 전부이므로 여기에 순번을 암시하는 말을 넣지 말 것.
-- 일시는 서버가 준 문자열을 **잘라 쓴다**(`shared/lib/date.ts`). `new Date(...)`로 파싱해 로컬
-  시간대로 그리면 서울 밖에서 연 사람에게 다른 시각이 보인다.
-- **신청 버튼이 열리는 조건은 둘이다**(D3 · #154): 연결된 폼이 모집 중(`ACCEPTING`)이고
-  상세 응답에 `formId`가 있어야 한다. 접수 상태만 보고 열면 폼을 가리키지 못하는 행사에서
-  신청 화면이 "신청서를 찾을 수 없습니다"로 끝난다. **모집 중이 아니어도 버튼 자리를 감추지
-  않는다** — 감추면 신청 방법이 없는 공지형 행사와 구별되지 않으므로 잠근 채로 사유를 적는다.
-  - **`formId`는 상세에만 오고 목록에는 오지 않는다.** 공개 목록 DTO가 일부러 뺐다.
-  - 서버가 아직 상세 응답에 `formId`를 싣지 않는 배포에서는 값이 비고, 그때 화면은 버튼을
-    열지 않는다(옵셔널로 받아 null로 굳힌다) — 없는 값을 만들어 내지 않는 규칙의 한 자리다.
-- **신청서 문항은 `@ssccops/form-renderer`가 그린다.** `features/apply`의 훅에 있는 것은
-  전송 계층(조회·자동 저장·제출)뿐이고, 필수 판정·형식·최대 선택 수·페이지 분기는 전부 패키지
-  함수를 부른다 — 한 줄이라도 여기서 다시 판정하면 서버 `ResponseAnswerValidator`와 맞춰 둔
-  규칙이 두 벌이 된다. **자동 저장 디바운스(700ms)와 재시도는 웹 책임**이고 훅이 갖는다.
-  자동 저장 경로에는 검증을 걸지 않는다(작성 중에 필수가 비어 있는 것이 정상이다).
-- '내 신청'은 이미 낸 신청을 **보여 주기만** 한다. 제출 완료 화면도 결과 통보를 약속하지 않고
-  그 화면을 가리킬 뿐이다(D10).
-- **본인 철회(응답 철회·대기 이탈)는 일부러 만들지 않았다.** 허용 범위 결정이
-  SoongSilComputingClub/ssccops#138 에서 미결이다 — 결정 전에 버튼을 세우면 되돌릴 화면을
-  먼저 짓는 셈이다. 결정이 나면 '내 신청' 카드에 붙인다.
-- Supabase Redirect URLs 에 **공개 앱 오리진을 따로 등록**해야 한다(`.env.example` 참고).
-  어드민 오리진만 등록돼 있으면 여기서 시작한 로그인이 어드민 도메인에서 끝나고 조용히
-  실패한다 — 어드민이 ssccops#84 로 실제로 밟은 함정이고, 오리진이 늘어난 지금 다시 밟기 쉽다.
-- 배포 설정 파일(`open-next.config.ts`·`wrangler.jsonc`)은 어드민과 같은 방식으로 준비만 해 뒀다.
-  **Cloudflare 리소스 생성과 Workers Builds 연결은 아직 안 돼 있다**(후속).
-- 개발 서버 포트는 **3001**로 박아 뒀다(`next dev -p 3001`). 루트 `pnpm dev`는 두 앱을 함께
-  띄우는데, 둘 다 기본 포트를 쓰면 나중에 뜬 쪽이 매번 다른 포트로 밀려 주소가 흔들린다.
 
 ## 서버 연동 규약
 
@@ -276,6 +130,18 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
 - **`shared/config/codes.ts`의 표시명은 문구가 아니라 계약이다** — 서버 `data.sql` 시드와 글자까지 맞춰져 있어 여기서 다듬으면 화면이 조용히 빈 라벨로 깨진다. 바꾸려면 서버 시드와 함께 바꾼다. `FIELD_LABEL`의 데이터사전 표기(`유형_명`)도 같다.
 - 서버가 내려주는 문구(권한명·경고)는 서버 소관이라 화면에서 고치지 않는다.
 
+## 결정 기록 (ADR)
+
+되돌리기 어려운 결정 — 여러 컴포넌트에 걸치거나 운영·보안에 영향을 주는 것 — 은 기획 저장소의
+**[`ssccops/docs/decisions/`](https://github.com/SoongSilComputingClub/ssccops/tree/main/docs/decisions)**
+에 한 장씩 남긴다. 목차와 쓰는 법은 그 저장소의 `AGENTS.md`에 있다.
+
+**논의는 `[DECISION]` 이슈에서, 확정은 ADR 파일로.** 이슈는 ADR 링크 없이 닫지 않는다.
+
+이 저장소의 판단 중 ADR로 올라갈 것과 여기 남을 것을 가른다 — **ADR은 '왜', 코드 주석은
+'어떻게'**다. 주석에서 ADR을 가리키면(`ADR-0003 참고`) 둘이 갈라지지 않는다. 아래 절들은
+여전히 이 저장소의 규칙이며 ADR로 옮기지 않는다.
+
 ## 주요 결정 (왜 그렇게 돼 있는가)
 
 - **버튼은 '지금 할 수 있는 전이' 하나만 그린다.** 두 단계를 건너뛰려고 요청을 이어 보내면
@@ -329,10 +195,8 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
 
 - **`CLAUDE.md`와 `AGENTS.md`의 자동 생성 블록은 `next dev`가 다시 써넣는다.** diff에서 지워도
   되살아나므로 그대로 두고 커밋한다.
-- **`.env*`는 통째로 ignore되고 `.env.example`만 예외다.** env 파일은 앱 디렉터리
-  기준이다 — `apps/admin/.env.local`·`apps/www/.env.local`처럼 앱 안에 각각 둔다
-  (루트에 하나 두면 Next가 읽지 않는다 — 두 앱을 함께 띄울 때 빠뜨리기 쉽다).
-  `NEXT_PUBLIC_*`은 빌드 타임에 인라인되므로 **값을 바꾸면 `pnpm dev`를 재시작해야** 반영된다.
+- **`.env*`는 통째로 ignore되고 `.env.example`만 예외다.** `NEXT_PUBLIC_*`은 빌드 타임에
+  인라인되므로 **값을 바꾸면 `pnpm dev`를 재시작해야** 반영된다.
 - **`README.md`에는 PoC 시절 서술이 남아 있다**("API 미연동 PoC", zustand 시드). 지금은 대부분의
   도메인이 서버 연동이고 목 스토어는 `features/approval/model/use-approval-actions.ts`(어디서도
   쓰지 않는다)에만 잔재로 남아 있다 — 승인함은 `useApprovalDecisions`를 쓴다.
@@ -346,14 +210,18 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
 `.github/workflows/`가 강제하는 것과 사람이 지켜야 하는 규칙이 나뉜다.
 
 - **base 브랜치는 `develop`이다** — `main`은 릴리스 전용이고 직접 커밋하지 않는다.
-  **서버 레포(`ssccops-server`)는 base가 `main`이라 다르다.** 두 레포를 오갈 때 주의할 것.
-- 브랜치: 이슈를 열면 `issue-branch-creator.yml`이 제목 앞 태그(`[Feat]`/`[Fix]`/`[Refactor]`/
-  `[Docs]`/`[Chore]`/`[Test]`)를 읽어 `{type}/#{이슈번호}-{영문 슬러그}`로 만들어 준다.
+  **서버 레포(`ssccops-server`)도 같다.** 두 저장소 모두 기본 브랜치가 `develop`이고,
+  `main`으로 가는 것은 릴리스 PR뿐이다.
+- 브랜치: 이슈를 열면 `issue-branch-creator.yml`이 제목 앞 태그(`[FEAT]`/`[FIX]`/`[REFACTOR]`/
+  `[CHORE]`)를 읽어 `{type}/#{이슈번호}-{영문 슬러그}`로 만들어 준다. 문서·테스트·CI 작업은
+  `[CHORE]`로 열고 세부 종류는 라벨(`docs`·`test`·`cicd`)로 가른다.
   직접 만들어야 한다면 같은 형식을 따른다.
 - 커밋 메시지: 이슈가 있으면 `#{이슈번호} {type}({scope}): 설명`, 없으면 `{type}({scope}): 설명`.
-  `pr-labeler.yml`이 커밋 첫 줄에서 타입을 파싱해 PR 라벨을 붙이므로 표기를 벗어나면 라벨이
-  붙지 않는다 — `feat`/`fix`/`refactor`/`design`/`style`/`docs`/`test`/`chore`/`init`/`rename`/
-  `remove`/`cicd`. (`/commit-message` 스킬이 이 형식을 만들어 준다.)
+  타입은 `feat`/`fix`/`refactor`/`design`/`style`/`docs`/`test`/`chore`/`init`/`rename`/
+  `remove`/`cicd`. **PR의 타입 라벨은 연결된 이슈의 라벨에서만 온다**(`pr-labeler.yml`) —
+  커밋 표기는 라벨에 아무 영향을 주지 않으므로, 표기를 지키는 이유는 `git log`가 읽히기
+  때문이다. 이슈를 연결하지 않은 PR에는 타입 라벨이 붙지 않는다.
+  (`/commit-message` 스킬이 이 형식을 만들어 준다.)
 - PR 제목은 `[#이슈번호] 총 작업 내용` — **Squash merge 시 그대로 커밋 제목이 되므로** 형식을
   지킨다. 이 레포는 Squash and merge만 쓴다. (`/create-pr` 스킬)
 - `main`·`develop`으로 향하는 PR은 `integrate.yml`(Lint → Test → Analyze/Build)과

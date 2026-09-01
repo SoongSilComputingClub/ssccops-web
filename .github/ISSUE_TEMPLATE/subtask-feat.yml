@@ -1,23 +1,100 @@
 name: "✨ Feat"
 description: "새로운 기능 추가"
+title: "[FEAT] "
 labels: ["feat"]
 type: SubTask
 body:
+  - type: markdown
+    attributes:
+      value: |
+        제목 앞 `[FEAT]`을 **지우지 마세요.** 이 접두사로 브랜치(`feat/#번호-...`)와 라벨이 자동 생성됩니다.
+        생성 후 상단 **Parent issue**에서 `ssccops`의 Story·Task를 연결하세요 (cross-repo 가능).
+
+  - type: dropdown
+    id: target
+    attributes:
+      label: 📦 대상
+      description: |
+        모노레포라 **어느 앱인지가 경로를 정합니다.** 이것이 빠지면 옛 평면 구조 경로로 작업하다
+        머지 단계에서 엉킵니다.
+      options:
+        - "apps/admin — 운영관리 어드민"
+        - "apps/www — 공개 행사"
+        - "apps/lms"
+        - "packages/* — 앱 사이 공유"
+        - "루트 설정 — turbo · pnpm workspace · tsconfig"
+        - "여러 곳"
+    validations:
+      required: true
+
   - type: textarea
+    id: description
     attributes:
       label: 📄 설명
-      description: 새로운 기능에 대한 설명을 작성해 주세요.
-      placeholder: 자세히 적을수록 좋습니다!
+      description: |
+        **무엇을 만드는가**보다 **왜 필요한가**를 먼저 적습니다.
+        사용자가 지금 무엇을 못 하고 있는지, 이것이 생기면 무엇이 달라지는지.
+      placeholder: |
+        기획안을 낸 회원이 검토가 어디까지 왔는지 확인할 화면이 없다. 지금은 카카오톡으로
+        물어봐야만 알고, 수정요청을 받아도 무엇을 고쳐야 하는지 화면에 남지 않는다.
     validations:
       required: true
+
   - type: textarea
+    id: work
     attributes:
       label: ✅ 작업할 내용
-      description: 할 일을 체크박스 형태로 작성해주세요.
-      placeholder: 최대한 세분화 해서 적어주세요!
+      description: |
+        체크박스로 씁니다. **각 항목에 "왜 이렇게"를 한 줄 붙이면** 구현할 때 판단이 흔들리지 않습니다.
+        FSD 계층(`app → views → features → entities → shared`)을 거스르는 항목이 없는지 함께 보세요.
+      value: |
+        - [ ]
+        - [ ]
+      placeholder: |
+        - [ ] `entities/form/api`에 `sys_form_cd`로 폼을 찾는 함수를 둔다 — `formId`는 IDENTITY라
+              환경마다 달라 하드코딩할 수 없다
+        - [ ] 잠긴 문항은 서버가 준 계약을 그대로 쓴다 — 저장 실패로 역추론하지 않는다
+              (같은 사실이 두 벌이 되면 갈린다)
+        - [ ] 파싱 실패 응답은 `migratable: false`와 사유를 그대로 보여준다
     validations:
       required: true
+
   - type: textarea
+    id: rejected
+    attributes:
+      label: 🚫 검토했으나 택하지 않은 길
+      description: |
+        **이 저장소에서 가장 값나가는 칸입니다.** 구현하는 사람이 "그냥 이렇게 하면 되지 않나"에
+        다시 부딪히지 않게 합니다. 아직 대안을 안 따져봤으면 비워 두세요.
+      placeholder: |
+        | 후보 | 왜 안 되는가 |
+        |---|---|
+        | 잠긴 문항 목록을 프런트 상수로 둔다 | 서버 계약과 두 벌이 된다 — 서버가 문항을 더하면 화면만 모르는 상태가 된다 |
+        | 커리큘럼을 프런트에서 파싱한다 | 검토자가 본 표와 서버가 만드는 회차가 달라질 수 있다 |
+    validations:
+      required: false
+
+  - type: textarea
+    id: precheck
+    attributes:
+      label: 🔍 먼저 확인할 것
+      description: |
+        착수 전에 확인이 필요한 것. **서버 API가 선행이면 그 이슈 번호와 응답 모양**을 여기 적으세요 —
+        추측으로 만든 타입은 배포 뒤에야 어긋난 것이 드러납니다.
+      placeholder: |
+        - [ ] `GET /v1/forms/system/PROPOSAL` 응답 모양 확정 — ssccops-server#181
+        - [ ] 이 브랜치의 베이스가 모노레포 전환 이후인가 (`apps/` 가 있는가)
+    validations:
+      required: false
+
+  - type: textarea
+    id: refs
     attributes:
       label: 🙋🏻 참고 자료
-      description: 참고 자료가 있다면 작성해 주세요.
+      description: 상위 이슈, 선행 서버 이슈, 화면 정의서, 관련 코드 경로.
+      placeholder: |
+        - 상위: SoongSilComputingClub/ssccops#131
+        - 선행: ssccops-server#181 (조회 API)
+        - `apps/admin/src/entities/form/api/proposal-form.ts`
+    validations:
+      required: false
