@@ -24,7 +24,7 @@ import type {
 interface FormResponseReviewHistoryApiResponse {
   formRspnsRvwHstryId: number;
   sbmsnSeq: number | null;
-  prcsSeCd: FormResponseReviewHistory["prcsSeCd"];
+  rvwPrcsSeCd: FormResponseReviewHistory["rvwPrcsSeCd"];
   prcsMbrId: number;
   prcsMbrNm: string | null;
   rvwOpnnCn: string | null;
@@ -53,7 +53,7 @@ function toReviewHistory(
   return {
     formRspnsRvwHstryId: res.formRspnsRvwHstryId,
     sbmsnSeq: res.sbmsnSeq ?? null,
-    prcsSeCd: res.prcsSeCd,
+    rvwPrcsSeCd: res.rvwPrcsSeCd,
     prcsMbrId: res.prcsMbrId,
     prcsMbrNm: res.prcsMbrNm ?? "",
     rvwOpnnCn: res.rvwOpnnCn ?? null,

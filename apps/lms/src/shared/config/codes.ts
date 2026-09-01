@@ -58,14 +58,20 @@ export function isRspnsSttsTerminal(cd: RspnsSttsCd): boolean {
  *
  * **응답_상태와 1:1이 아니다** — 제출(SUBMIT)은 결과 상태가 SUBMITTED로 같지만 검토자가 아니라
  * 응답자가 한 일이고, 재제출까지 세면 한 응답에 여러 번 나타난다.
+ *
+ * **이름의 `RVW_`는 검토(rvw)다** — 서버 컬럼 `form_rspns_rvw_hstry.rvw_prcs_se_cd`에서 왔다.
+ * 예전 이름은 `RspnsPrcsSeCd`(`RSPNS_` 접두사)였는데 그것은 명명 규칙이 아니라 **서버의 이름
+ * 충돌을 피하려던 우회**였다 — `prcs_se_cd`라는 일반명을 회의 안건이 먼저 가져가 폼 검토 쪽이
+ * 접두사를 붙였다. 서버가 양쪽에 각자 이름을 주면서(ssccops#159) 그 우회가 필요 없어졌으므로
+ * 되돌리지 말 것.
  */
-export type RspnsPrcsSeCd = "SUBMIT" | "ACCEPT" | "REQUEST_CHANGES" | "REJECT";
+export type RvwPrcsSeCd = "SUBMIT" | "ACCEPT" | "REQUEST_CHANGES" | "REJECT";
 
-export const RSPNS_PRCS_SE_NM: Record<RspnsPrcsSeCd, string> = {
+export const RVW_PRCS_SE_NM: Record<RvwPrcsSeCd, string> = {
   SUBMIT: "제출",
   ACCEPT: "승인",
   REQUEST_CHANGES: "수정요청",
   REJECT: "반려",
 };
 
-export const RSPNS_PRCS_SE_CDS = codesOf(RSPNS_PRCS_SE_NM);
+export const RVW_PRCS_SE_CDS = codesOf(RVW_PRCS_SE_NM);

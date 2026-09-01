@@ -22,7 +22,7 @@ export type {
 /* 응답 내용·문항 구성의 타입은 `@ssccops/form-renderer`가 정의한다(#152) */
 export type { QitemCpstCn, RspnsCn } from "@ssccops/form-renderer";
 export {
-  RSPNS_PRCS_SE_BADGE,
+  RVW_PRCS_SE_BADGE,
   RSPNS_STTS_BADGE,
   rspnsValueText,
 } from "./model/display";
