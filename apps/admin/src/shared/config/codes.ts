@@ -292,28 +292,30 @@ export function isRspnsSttsTerminal(cd: RspnsSttsCd): boolean {
   return (RSPNS_STTS_TERMINAL_CDS as readonly RspnsSttsCd[]).includes(cd);
 }
 
-/* ── 응답_처리_구분 (form_rspns_rvw_hstry.prcs_se_cd) · DB 명시 ─ */
+/* ── 검토_처리_구분 (form_rspns_rvw_hstry.rvw_prcs_se_cd) · DB 명시 ─ */
 
 /**
- * 처리 이력 한 줄이 "그때 무슨 일이 있었는가"를 말하는 어휘 (ssccops-server #141).
+ * 검토자가 그때 무엇을 했는가를 말하는 어휘 (ssccops-server #141).
  *
- * 이름에 `RSPNS_` 접두사를 붙인 것은 회의_상세의 처리_구분(`mtg_dtl.prcs_se_cd` — 미처리 ·
- * 보류 · 종료)이 같은 컬럼ID를 이미 쓰고 있기 때문이다. 두 코드는 어휘도 뜻도 겹치지 않는다.
+ * 예전 이름은 `RspnsPrcsSeCd`(`RSPNS_` 접두사)였다. 그것은 명명 규칙이 아니라 **서버의 이름
+ * 충돌을 화면이 떠안은 우회**였다 — 회의 안건이 `prcs_se_cd`라는 일반명을 먼저 차지해서,
+ * 뒤에 온 이쪽이 접두사를 붙여 피할 수밖에 없었다. 서버가 두 컬럼에 각자 한정어를 붙이며
+ * (`agnd_` · `rvw_`) 그 우회를 걷어냈으므로 여기도 서버 이름을 그대로 쓴다 (ssccops#159).
  *
  * **응답_상태와 1:1이 아니다.** 제출(SUBMIT)은 결과 상태가 SUBMITTED로 같지만 검토자가 아니라
  * 응답자가 한 일이고, 재제출까지 세면 한 응답에 여러 번 나타난다 — 상태는 "지금 어디에 있는가",
  * 처리 구분은 "그때 무슨 일이 있었는가"다.
  */
-export type RspnsPrcsSeCd = "SUBMIT" | "ACCEPT" | "REQUEST_CHANGES" | "REJECT";
+export type RvwPrcsSeCd = "SUBMIT" | "ACCEPT" | "REQUEST_CHANGES" | "REJECT";
 
-export const RSPNS_PRCS_SE_NM: Record<RspnsPrcsSeCd, string> = {
+export const RVW_PRCS_SE_NM: Record<RvwPrcsSeCd, string> = {
   SUBMIT: "제출",
   ACCEPT: "승인",
   REQUEST_CHANGES: "수정요청",
   REJECT: "반려",
 };
 
-export const RSPNS_PRCS_SE_CDS = codesOf(RSPNS_PRCS_SE_NM);
+export const RVW_PRCS_SE_CDS = codesOf(RVW_PRCS_SE_NM);
 
 /* ── 허용_행위 (dlgt.prm_act_cd) ────────────────────────────── */
 

@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  RSPNS_PRCS_SE_BADGE,
+  RVW_PRCS_SE_BADGE,
   type FormResponseReviewHistory,
 } from "@/entities/response";
 import { formatDt } from "@/shared/lib/date";
@@ -49,7 +49,7 @@ export function ResponseReviewTimeline({
       ) : (
         <ol className="mt-4 flex flex-col gap-4">
           {histories.map((h) => {
-            const badge = RSPNS_PRCS_SE_BADGE[h.prcsSeCd];
+            const badge = RVW_PRCS_SE_BADGE[h.rvwPrcsSeCd];
             return (
               <li
                 key={h.formRspnsRvwHstryId}

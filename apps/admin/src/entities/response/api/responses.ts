@@ -2,8 +2,8 @@ import type { RspnsCn } from "@ssccops/form-renderer";
 import type {
   MbrGrdCd,
   MbrSttsCd,
-  RspnsPrcsSeCd,
   RspnsSttsCd,
+  RvwPrcsSeCd,
 } from "@/shared/config/codes";
 import { apiFetch } from "@/shared/lib/api/client";
 import type {
@@ -58,7 +58,7 @@ interface FormResponseSummaryResponse {
 interface FormResponseReviewHistoryResponse {
   formRspnsRvwHstryId: number;
   sbmsnSeq: number | null;
-  prcsSeCd: RspnsPrcsSeCd;
+  rvwPrcsSeCd: RvwPrcsSeCd;
   prcsMbrId: number;
   prcsMbrNm: string | null;
   rvwOpnnCn: string | null;
@@ -154,7 +154,7 @@ function toReviewHistory(
   return {
     formRspnsRvwHstryId: res.formRspnsRvwHstryId,
     sbmsnSeq: res.sbmsnSeq ?? null,
-    prcsSeCd: res.prcsSeCd,
+    rvwPrcsSeCd: res.rvwPrcsSeCd,
     prcsMbrId: res.prcsMbrId,
     prcsMbrNm: res.prcsMbrNm ?? "",
     rvwOpnnCn: res.rvwOpnnCn ?? null,
