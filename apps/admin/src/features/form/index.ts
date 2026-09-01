@@ -71,7 +71,6 @@ export type {
   ProposalReviewQuery,
   ProposalReviewStatus,
 } from "./model/use-proposal-review";
-export { continuableResponse } from "./model/proposal-continuation";
 export {
   PROPOSAL_FORM_MISSING,
   PROPOSAL_FORM_READ_DENIED,
