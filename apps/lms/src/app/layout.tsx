@@ -86,7 +86,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
          */}
         <header className="border-b border-line bg-surface">
           <div className="mx-auto flex max-w-[1000px] items-center justify-between gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
-            <Link href={ROUTES.studio} className="flex items-center gap-[8px]">
+            {/* 로고는 첫 화면(`/`)으로 — 스터디장은 거기서 대시보드로 곧장 넘어간다 (#228) */}
+            <Link href={ROUTES.home} className="flex items-center gap-[8px]">
               <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[7px] border border-accent text-[13px] text-accent">
                 S
               </span>
