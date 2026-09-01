@@ -18,6 +18,14 @@ SSCC(숭실컴퓨팅클럽) 운영관리 어드민 웹 — Next.js 16 App Router
 > 되살아나므로 **그대로 두고 그 바깥에** 쓴다. 개인 로컬 메모(포트·`.env.local`·증상별 원인
 > 판별 등)는 git에 올리지 않는 `CLAUDE.local.md`에 둔다 — 이 파일은 팀이 공유하는 규약만 담는다.
 
+**커밋하지 않는 작업 파일은 `private-workspace/`에 둔다** — 화면정의서·시안 원본, 공유 전
+초안, 개인 스크립트 같은 것들이다. `.gitignore`의 `### Private files & Artifacts ###` 절이
+디렉터리째 막고 있으며, 이름과 위치는 `ssccops`·`ssccops-server`와 같다. 저장소를 오가며
+"여기선 어디였더라"를 기억할 일이 없어야 한다.
+
+`CLAUDE.local.md`와 나누는 기준은 단순하다 — **읽는 메모는 `CLAUDE.local.md`, 파일은
+`private-workspace/`.**
+
 ## 검증 — CI와 같은 순서로 돌린다
 
 ```bash
