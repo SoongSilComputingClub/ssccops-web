@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { MtgSttsCd, PrcsSeCd } from "@/shared/config/codes";
+import type { AgndPrcsSeCd, MtgSttsCd } from "@/shared/config/codes";
 import { nextId } from "@/shared/lib/id";
 import mtgSeed from "../api/get-mtg.json";
 import mtgDtlSeed from "../api/get-mtg-dtl.json";
@@ -63,7 +63,7 @@ export function mtgSttsTone(cd: MtgSttsCd | null): "blue" | "grey" | "red" {
 }
 
 /** 안건 처리 구분 배지 톤 */
-export function prcsSeTone(cd: PrcsSeCd | null): "amber" | "grey" | "blue" {
+export function prcsSeTone(cd: AgndPrcsSeCd | null): "amber" | "grey" | "blue" {
   if (cd === "HOLD") return "amber";
   if (cd === "CLOSED") return "blue";
   return "grey";

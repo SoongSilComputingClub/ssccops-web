@@ -189,17 +189,28 @@ export const ATND_TRGT_NM: Record<AtndTrgtCd, string> = {
 
 export const ATND_TRGT_CDS = codesOf(ATND_TRGT_NM);
 
-/* ── 처리_구분 (mtg_dtl.prcs_se_cd) ─────────────────────────── */
+/* ── 안건_처리_구분 (mtg_dtl.agnd_prcs_se_cd) ───────────────── */
 
-export type PrcsSeCd = "PENDING" | "HOLD" | "CLOSED";
+/**
+ * 안건이 지금 어떤 상태인가 — 미처리 · 보류 · 종료.
+ *
+ * 예전 이름은 `PrcsSeCd`였다. 컬럼도 `prcs_se_cd`라는 일반명이었고, 먼저 온 회의가 그
+ * 이름을 차지한 탓에 뒤에 온 폼 검토 쪽이 `RSPNS_` 접두사를 억지로 달아야 했다 — 어느
+ * 쪽이 무엇인지가 아니라 순서가 만든 이름이었다. 서버가 양쪽에 각자 한정어를 붙이면서
+ * (`agnd_` · `rvw_`) 그 비대칭을 걷어냈다 (ssccops#159 · ssccops-server#224).
+ *
+ * 응답 필드는 원래부터 컬럼과 무관한 `processStatus`라 **JSON은 바뀌지 않는다** — 여기서
+ * 달라지는 것은 타입 별칭 이름뿐이다.
+ */
+export type AgndPrcsSeCd = "PENDING" | "HOLD" | "CLOSED";
 
-export const PRCS_SE_NM: Record<PrcsSeCd, string> = {
+export const AGND_PRCS_SE_NM: Record<AgndPrcsSeCd, string> = {
   PENDING: "미처리",
   HOLD: "보류",
   CLOSED: "종료",
 };
 
-export const PRCS_SE_CDS = codesOf(PRCS_SE_NM);
+export const AGND_PRCS_SE_CDS = codesOf(AGND_PRCS_SE_NM);
 
 /* ── 폼_상태 (form.form_stts_cd) · DB 명시 ──────────────────── */
 

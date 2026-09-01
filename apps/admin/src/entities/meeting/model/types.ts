@@ -1,9 +1,9 @@
 import type {
+  AgndPrcsSeCd,
   AtndTrgtCd,
   MtgSeCd,
   MtgSttsCd,
   OperTypeCd,
-  PrcsSeCd,
   PrrtyRnkCd,
 } from "@/shared/config/codes";
 
@@ -44,7 +44,7 @@ export interface MtgDtl {
   /** 명V100 — 운영 건과 연결되지 않은 안건의 제목 */
   agndNm: string | null;
   /** 미처리 / 보류 / 종료 */
-  prcsSeCd: PrcsSeCd | null;
+  prcsSeCd: AgndPrcsSeCd | null;
   /** 순서N5 */
   agndSeq: number | null;
   /**
@@ -119,7 +119,7 @@ export interface MeetingAgenda {
   meetingId: number;
   /** 운영 건에 연결된 안건은 NULL — targetOperation.title이 제목이다 */
   agendaName: string | null;
-  processStatus: PrcsSeCd | null;
+  processStatus: AgndPrcsSeCd | null;
   agendaOrder: number | null;
   targetOperation: MeetingAgendaTarget | null;
   content: string | null;

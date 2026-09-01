@@ -12,16 +12,16 @@ import { useMeetingActions, useMeetingDetail } from "@/features/meeting";
 import { useSubWorkList } from "@/features/sub-work";
 import { useWorkList } from "@/features/work";
 import {
+  AGND_PRCS_SE_CDS,
+  AGND_PRCS_SE_NM,
   ATND_TRGT_NM,
   MTG_SE_NM,
   MTG_STTS_NM,
   OPER_TYPE_NM,
-  PRCS_SE_CDS,
-  PRCS_SE_NM,
   PRRTY_RNK_NM,
   WORK_STTS_NM,
   WORK_TYPE_NM,
-  type PrcsSeCd,
+  type AgndPrcsSeCd,
 } from "@/shared/config/codes";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
@@ -138,7 +138,7 @@ function AgendaCard({
   agenda: MeetingAgenda;
   editable: boolean;
   pending: boolean;
-  onUpdate: (content: string, resultContent: string, processStatus: PrcsSeCd) => void;
+  onUpdate: (content: string, resultContent: string, processStatus: AgndPrcsSeCd) => void;
   onWithdraw: () => void;
   withdrawable: boolean;
 }) {
@@ -192,18 +192,18 @@ function AgendaCard({
         </div>
       )}
       <div className="mt-3 flex flex-wrap gap-[7px] lg:flex-nowrap">
-        {PRCS_SE_CDS.map((cd) => (
+        {AGND_PRCS_SE_CDS.map((cd) => (
           <Chip
             key={cd}
             active={agenda.processStatus === cd}
             onClick={() => editable && onUpdate(content, resultContent, cd)}
           >
-            {PRCS_SE_NM[cd]}
+            {AGND_PRCS_SE_NM[cd]}
           </Chip>
         ))}
         <div className="flex-1" />
         <Badge tone={prcsSeTone(agenda.processStatus)}>
-          {agenda.processStatus ? PRCS_SE_NM[agenda.processStatus] : "-"}
+          {agenda.processStatus ? AGND_PRCS_SE_NM[agenda.processStatus] : "-"}
         </Badge>
       </div>
       <div className="mt-3">
@@ -272,7 +272,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
   const subWorkList = useSubWorkList("전체");
   const [selectedTarget, setSelectedTarget] = useState<AgendaTargetOption | null>(null);
   const [resolvingTarget, setResolvingTarget] = useState(false);
-  const [newProcessStatus, setNewProcessStatus] = useState<PrcsSeCd>("PENDING");
+  const [newProcessStatus, setNewProcessStatus] = useState<AgndPrcsSeCd>("PENDING");
   const [newContent, setNewContent] = useState("");
 
   if (status !== "ready" || !meeting) {
@@ -362,7 +362,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
     agendaId: number,
     content: string,
     resultContent: string,
-    processStatus: PrcsSeCd,
+    processStatus: AgndPrcsSeCd,
   ) => {
     const { result, message } = await updateAgenda(agendaId, {
       content: content || null,
@@ -602,13 +602,13 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                 )}
 
                 <div className="mt-3 flex gap-[7px]">
-                  {PRCS_SE_CDS.map((cd) => (
+                  {AGND_PRCS_SE_CDS.map((cd) => (
                     <Chip
                       key={cd}
                       active={newProcessStatus === cd}
                       onClick={() => setNewProcessStatus(cd)}
                     >
-                      {PRCS_SE_NM[cd]}
+                      {AGND_PRCS_SE_NM[cd]}
                     </Chip>
                   ))}
                 </div>
