@@ -20,17 +20,17 @@ import { Badge, Card, Chip, EmptyState, PageBody, PageHeader } from "@/shared/ui
 /*
  * 회원 변경 이력 (#51 · 서버 #82 · GET /v1/members/{memberId}/histories).
  *
- * 회원 상세의 '최근 변경이력' 카드는 3건에서 끊기고 역할은 아예 들어 있지 않다. 이 화면이
- * 그 뒤를 펼쳐 "이 회원의 등급이 언제, 누구에 의해, 왜 바뀌었는가"에 답한다.
+ * 회원 상세의 '최근 변경이력' 카드는 3건에서 끊기고 역할·회원 정보는 아예 들어 있지 않다.
+ * 이 화면이 그 뒤를 펼쳐 "이 회원의 무엇이 언제, 누구에 의해, 왜 바뀌었는가"에 답한다.
  *
  * ── 이름을 '전체 변경 이력'이라고 붙이지 않는다 ─────────────────
- * 담기는 것은 세 출처뿐이다 — 등급(`mbr_grd_hstry`) · 상태(`mbr_stts_hstry`) · 역할 부여·종료
- * (`mbr_role_rel`). 데이터사전에 감사 로그 테이블이 없어 **회원 정보(이름·연락처·학과) 수정은
- * 어디에도 쌓이지 않는다.** '전체'라고 부르면 화면이 없는 것을 있다고 말하게 되고, 그러면
- * 여기가 비어 있다는 사실이 "고친 적이 없다"로 읽힌다 — 실제로는 기록이 없을 뿐이다.
- * 그래서 범위를 헤더와 본문 첫 줄에 밝힌다({@link SCOPE_NOTE}).
+ * 담기는 것은 네 출처다 — 등급(`mbr_grd_hstry`) · 상태(`mbr_stts_hstry`) · 역할 부여·종료
+ * (`mbr_role_rel`) · 회원 정보(`mbr_chg_hstry` · #237에서 늘었다). '전체'라고 부르면 화면이
+ * 없는 것을 있다고 말하게 되고, 그러면 여기가 비어 있다는 사실이 "고친 적이 없다"로 읽힌다.
+ * **회원 정보 이력은 서버 #226 배포 시점부터 쌓인다** — 그전에 고친 값은 어디에도 남아 있지
+ * 않으므로, 화면이 그 사실도 함께 밝힌다({@link SCOPE_NOTE} · 본문 첫 줄).
  *
- * ── 세 출처를 한 타임라인으로 본다 ──────────────────────────────
+ * ── 네 출처를 한 타임라인으로 본다 ──────────────────────────────
  * 합치고 정렬하는 일은 **서버가 끝냈다**(발생 시각 역순 · 같은 시각은 종류로 끊는다). 받은
  * 배열을 그대로 그린다 — 화면이 다시 정렬하면 그 규칙이 두 곳에서 정해지고, 상세 카드의
  * 최근 3건과 이 화면이 조용히 갈린다.
@@ -48,7 +48,7 @@ const NO_MEMBER_MANAGE =
   "회원 관리(MEMBER_MANAGE) 권한이 없어 변경 이력을 볼 수 없습니다 — 운영진에게 요청해주세요";
 
 /** 이 화면에 담기는 것이 무엇인지 — 한 줄로 밝힌다 (위 주석) */
-const SCOPE_NOTE = "등급 · 상태 · 역할 변경이 기록됩니다";
+const SCOPE_NOTE = "등급 · 상태 · 역할 · 회원 정보 변경이 기록됩니다";
 
 /**
  * 역할 줄의 변경자·사유가 비어 있는 이유.
@@ -62,11 +62,24 @@ const SCOPE_NOTE = "등급 · 상태 · 역할 변경이 기록됩니다";
 const ROLE_BLANK_NOTE =
   "역할 부여·종료에는 변경자와 변경 사유가 남지 않습니다 — 기록할 자리가 없어 서버가 알려줄 수 없는 값이라 '-'로 둡니다. 적지 않은 것이 아닙니다.";
 
+/**
+ * 회원 정보 줄에 적용일·사유 자리가 없는 이유 (#237).
+ *
+ * 등급·상태는 "언제부터 적용할 것인가"와 "왜 바꾸는가"를 받아 두는 사건이지만, 이름·학번·
+ * 연락처는 **고친 순간이 곧 적용**이고 사유를 물을 자리도 없다(서버 `mbr_chg_hstry`에 그
+ * 컬럼 자체가 없다). 그래서 화면은 역할 줄처럼 '-'를 두는 것이 아니라 **그 자리를 아예
+ * 그리지 않는다** — 빈칸을 그리면 "적을 수 있었는데 비워 뒀다"로 읽힌다.
+ */
+const PROFILE_BLANK_NOTE =
+  "회원 정보 변경에는 적용일과 변경 사유가 없습니다 — 고친 순간이 곧 적용이라 그 자리를 비워 둡니다.";
+
 /** 필터 칩 이름 — 서버 `type` 어휘와 1:1이다 */
 const TYPE_LABEL: Record<MemberHistoryType, string> = {
   GRADE: "등급",
   STATUS: "상태",
   ROLE: "역할",
+  /* 아홉 항목을 한 칩으로 묶는다 — 어느 항목이 바뀌었는지는 줄마다 이름으로 적힌다 */
+  PROFILE: "회원 정보",
 };
 
 /**
@@ -80,6 +93,11 @@ const CHANGE_LABEL: Record<MemberHistoryChangeType, string> = {
   STATUS: "상태",
   ROLE_ASSIGNED: "역할 부여",
   ROLE_ENDED: "역할 종료",
+  /*
+   * 배지에는 '회원 정보'라고만 적는다. 항목 이름(학번·연락처 …)은 배지 옆에 따로 서므로
+   * 여기에 붙이면 좁은 화면에서 배지가 길어져 줄이 접힌다.
+   */
+  PROFILE: "회원 정보",
 };
 
 const CHANGE_TONE: Record<MemberHistoryChangeType, BadgeTone> = {
@@ -87,6 +105,7 @@ const CHANGE_TONE: Record<MemberHistoryChangeType, BadgeTone> = {
   STATUS: "amber",
   ROLE_ASSIGNED: "outline-accent",
   ROLE_ENDED: "outline",
+  PROFILE: "grey",
 };
 
 /**
@@ -104,6 +123,8 @@ const NONE_LABEL: Record<MemberHistoryChangeType, string> = {
   STATUS: "신규",
   ROLE_ASSIGNED: "없음",
   ROLE_ENDED: "없음",
+  /* 그 항목이 그때 비어 있었다는 뜻이다 — 학과가 없다가 채워졌거나, 학번을 비웠거나 */
+  PROFILE: "없음",
 };
 
 export function MemberHistoryPage({ mbrId }: { mbrId: number }) {
@@ -145,6 +166,7 @@ function MemberHistoryView({ mbrId }: { mbrId: number }) {
    * 편이 낫다. 받은 줄로 정하면 안내가 데이터에 따라 나타났다 사라져 규칙을 짐작하게 된다.
    */
   const roleIncluded = types.length === 0 || types.includes("ROLE");
+  const profileIncluded = types.length === 0 || types.includes("PROFILE");
   const filtered = types.length > 0;
 
   return (
@@ -165,9 +187,11 @@ function MemberHistoryView({ mbrId }: { mbrId: number }) {
           "고친 적이 없다"로 읽히는 것을 막는 문장이라 목록보다 위에 있어야 한다.
         */}
         <div className="mb-4 rounded-[12px] border border-line bg-white/60 px-[14px] py-[11px] text-[13.5px] leading-[1.7] text-n400">
-          이 화면에는 <b>등급 · 상태 · 역할 변경</b>이 기록됩니다. 회원 정보(이름 · 연락처 ·
-          학과) 수정은 <b>기록이 남지 않아</b> 여기에 나타나지 않습니다.
+          이 화면에는 <b>등급 · 상태 · 역할 · 회원 정보 변경</b>이 기록됩니다. 회원 정보(학번 ·
+          이름 · 연락처 · 학과 등) 수정은 <b>기록이 시작된 뒤부터</b> 쌓이므로, 그전에 고친
+          값은 여기에 나타나지 않습니다.
           {roleIncluded && <div className="mt-[6px]">{ROLE_BLANK_NOTE}</div>}
+          {profileIncluded && <div className="mt-[6px]">{PROFILE_BLANK_NOTE}</div>}
         </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-[7px]">
@@ -273,11 +297,18 @@ function HistorySkeleton() {
  * 변경자·사유가 빈 자리는 둘이다. 역할 줄은 **언제나** 비고({@link ROLE_BLANK_NOTE}),
  * 등급·상태 줄은 배치·이관으로 생긴 이력에 사람이 없을 때 빈다. 어느 쪽이든 '시스템'이나
  * '알 수 없음' 같은 말을 채우면 화면이 데이터에 없는 것을 말하게 된다.
+ *
+ * ── 회원 정보 줄은 '적용' 칸을 아예 그리지 않는다 ───────────────
+ * 값이 없어서 '-'인 역할 줄과 다르다. 이름·학번은 **적용일이라는 개념 자체가 없어**
+ * (고친 순간이 곧 적용이다) 그 칸을 '-'로 그리면 "적을 수 있었는데 비어 있다"로 읽힌다 —
+ * 없는 값을 만들어 내지 않는다는 규칙이 여기서는 칸을 지우는 모양이 된다
+ * ({@link PROFILE_BLANK_NOTE}). 대신 **무슨 항목이 바뀌었는지**를 그 자리에 세운다.
  */
 function HistoryRow({ entry, last }: { entry: MemberHistoryEntry; last: boolean }) {
   const from = entry.previousName ?? NONE_LABEL[entry.changeType];
   const to = entry.newName ?? NONE_LABEL[entry.changeType];
   const isRole = historyTypeOf(entry.changeType) === "ROLE";
+  const isProfile = entry.changeType === "PROFILE";
 
   return (
     <div className="flex gap-3">
@@ -290,6 +321,13 @@ function HistoryRow({ entry, last }: { entry: MemberHistoryEntry; last: boolean 
       <div className={last ? "min-w-0 flex-1 pb-[18px]" : "min-w-0 flex-1 pb-5"}>
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={CHANGE_TONE[entry.changeType]}>{CHANGE_LABEL[entry.changeType]}</Badge>
+          {/*
+            항목 이름은 **서버가 준 값을 그대로** 쓴다(`changeFieldName`). 코드 → 이름 사전을
+            화면에 두면 서버가 말을 다듬는 날 여기만 옛 이름을 그린다.
+          */}
+          {entry.changeFieldName && (
+            <span className="text-[14px] font-medium text-n300">{entry.changeFieldName}</span>
+          )}
           <span className="text-[15.5px]">
             {/* 표시 명칭은 서버가 준 값 그대로다 — 기준정보에서 이름을 바꾸면 이력도 따라온다 */}
             <span className="text-n400">{from}</span>
@@ -300,7 +338,8 @@ function HistoryRow({ entry, last }: { entry: MemberHistoryEntry; last: boolean 
 
         <div className="mt-[5px] flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-n500">
           <span>발생 {formatInstant(entry.createdAt) || "-"}</span>
-          <span>적용 {entry.appliedDate ?? "-"}</span>
+          {/* 회원 정보 줄에는 적용일이 없다 — 칸을 '-'로 채우지 않고 지운다 (위 주석) */}
+          {!isProfile && <span>적용 {entry.appliedDate ?? "-"}</span>}
           <span>
             변경자 {entry.changedByName ?? "-"}
             {isRole && <span className="ml-1 text-n500">(기록 없음)</span>}

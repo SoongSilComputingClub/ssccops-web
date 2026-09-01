@@ -43,9 +43,19 @@ export function toMemberErrorMessage(error: unknown): string {
  * "불러오지 못했습니다"가 저장 실패에는 거짓이기 때문이다.
  *
  * **400 `VALIDATION_FAILED`는 서버 메시지를 그대로 보여 준다.** 이 코드가 오는 대표적인 경우가
- * 재학 회원의 학과·학년 누락인데(서버 `AcademicProfilePolicy`), 화면이 같은 규칙을 먼저 거르므로
- * 여기까지 왔다는 것은 화면의 판정과 서버의 판정이 갈렸다는 뜻이다 — 그때 화면이 지어낸 문장을
- * 보여 주면 실제 거절 사유가 사라진다. 길이·범위 위반(@Size·@Min)도 이 자리로 온다.
+ * 재학 회원의 학번·학과·학년 누락인데(서버 `AcademicProfilePolicy`), 화면이 같은 규칙을 먼저
+ * 거르므로 여기까지 왔다는 것은 화면의 판정과 서버의 판정이 갈렸다는 뜻이다 — 그때 화면이 지어낸
+ * 문장을 보여 주면 실제 거절 사유가 사라진다. 길이·범위 위반(@Size·@Min)도 이 자리로 온다.
+ *
+ * **재학 회원의 학번 비우기(400)는 폼이 먼저 막는다**(#237 · `validateMemberEdit`). 서버까지
+ * 가면 거절되기는 하지만 그 문장은 학과·학년만 말하므로(서버 `ACADEMIC_PROFILE_REQUIRED`),
+ * 어느 칸을 되돌려야 하는지는 입력칸 옆의 화면 검증이 짚어 준다. 여기서 코드로 가려내 다른
+ * 문장을 만들지 않는 것은 같은 `VALIDATION_FAILED`에 여러 사유가 실려 오기 때문이다 —
+ * 학번 때문이라고 단정하면 실제로는 학과가 빈 요청에 엉뚱한 안내가 뜬다.
+ *
+ * **409 `STUDENT_NUMBER_DUPLICATED`만 서버 문장을 바꾼다**(#237). 서버 문장은 가입하는 사람에게
+ * 계정 연결을 안내하는 말이라("명부에 등록된 본인이라면…") 남의 정보를 고치는 운영자에게는
+ * 다음 행동을 알려주지 못한다.
  *
  * 404는 저장 직전에 회원이 사라진 경우다. 다시 시도해도 결과가 같으므로 목록으로 보낸다.
  */
@@ -57,6 +67,9 @@ export function toMemberSaveErrorMessage(error: unknown): string {
   switch (error.code) {
     case MEMBER_ERROR.MEMBER_NOT_FOUND:
       return "회원을 찾을 수 없습니다 — 이미 삭제되었거나 잘못된 주소입니다";
+    case MEMBER_ERROR.STUDENT_NUMBER_DUPLICATED:
+      // 서버 문장은 가입하는 사람에게 하는 말이라 여기서 바꾼다 (위 주석)
+      return "이미 다른 회원이 쓰는 학번입니다 — 학번을 다시 확인해주세요";
     case MEMBER_ERROR.VALIDATION_FAILED:
       // 서버 문장을 그대로 옮긴다 (위 주석)
       return error.message;

@@ -27,17 +27,19 @@ import { toMemberSaveErrorMessage, toMyProfileSaveErrorMessage } from "./member-
  * 회원 정보 수정 (#47 · 서버 #77) — 운영진 경로와 본인 경로.
  *
  * ── 왜 두 훅이 한 파일에 있는가 ─────────────────────────────────
- * 고칠 수 있는 필드는 다르지만 **규칙은 하나다** — 전체 교체 의미, 재학 회원의 학과·학년 필수,
+ * 고칠 수 있는 필드는 다르지만 **규칙은 하나다** — 전체 교체 의미, 재학 회원의 필수 항목,
  * 길이·범위 상한, 빈 칸을 null로 굳히는 방식이 모두 같다. 파일을 나누면 그 규칙이 두 벌이 되고,
  * 한쪽만 고친 규칙이 다른 화면에 남는다(서버가 검증 정책을 `AcademicProfilePolicy` 하나로
  * 모아 둔 것과 같은 이유다).
  *
  * ── 전체 교체를 화면이 어떻게 다루는가 ──────────────────────────
  * 서버의 PATCH는 메서드만 PATCH이고 본문은 한 벌 전체다. 생략한 선택 필드는 '건드리지 마라'가
- * 아니라 **'지워라'** 로 읽히므로, 폼을 서버 응답으로 채우고(`toValues`) 저장할 때 여덟 필드를
+ * 아니라 **'지워라'** 로 읽히므로, 폼을 서버 응답으로 채우고(`toValues`) 저장할 때 아홉 필드를
  * 언제나 모두 싣는다(`toUpdateInput`). '바뀐 것만 보내기'(features/role의 역할 수정이 하는 일)를
  * 여기서 따라 하면 손대지 않은 학과·연락처가 조용히 비워진다. 동아리 가입 연/월도 같다 —
  * 비워 두는 것이 정상인 값이라, 안 보내는 것과 지우는 것이 겉으로 구별되지 않는다.
+ * **학번도 매번 실려 간다**(#237). 값이 그대로면 서버가 이력을 남기지 않으므로 이름만 고친
+ * 저장이 학번 변경 이력을 만들지 않는다 — 같은 값을 거절하지 않는 것이 그래서다.
  *
  * ── 화면 검증은 예고이고 판정은 서버다 ──────────────────────────
  * 아래 `validate`는 서버가 400으로 거절할 값을 왕복 한 번 없이 입력칸 옆에서 알려 주려는 것이다.
@@ -54,6 +56,13 @@ import { toMemberSaveErrorMessage, toMyProfileSaveErrorMessage } from "./member-
  * (가입 폼이 같은 판단을 했다 · features/auth/model/signup-form.ts).
  */
 export interface MemberEditValues {
+  /**
+   * 학번 — **운영진 경로에서만 고칠 수 있다**(#237 · 서버 #226).
+   *
+   * 본인 경로에도 값이 채워지지만 그쪽은 읽기 전용이고 요청에도 싣지 않는다
+   * (`toSelfUpdateInput`) — 검증·비교 규칙을 한 벌로 쓰기 위해 폼 값에만 자리를 둔다.
+   */
+  studentNumber: string;
   generationNumber: string;
   /** 동아리 가입 연도 — 기수 자동 채움의 입력이다. 비어 있을 수 있다 */
   clubJoinYear: string;
@@ -83,7 +92,13 @@ function generationUnassigned(value: string): boolean {
 function toValues(
   member: Pick<
     MemberDetail,
-    "generationNumber" | "name" | "departmentName" | "academicYear" | "phoneNumber" | "email"
+    | "studentNumber"
+    | "generationNumber"
+    | "name"
+    | "departmentName"
+    | "academicYear"
+    | "phoneNumber"
+    | "email"
   > &
     /*
      * 본인 경로가 넘기는 `MemberProfile`에는 동아리 가입 연/월이 아예 없다(서버 응답에도
@@ -93,6 +108,7 @@ function toValues(
     Partial<Pick<MemberDetail, "clubJoinYear" | "clubJoinMonth">>,
 ): MemberEditValues {
   return {
+    studentNumber: member.studentNumber ?? "",
     // 0은 미배정 센티널이라 빈 칸으로 보여 준다 — "0기"라고 적힌 회원은 없다
     generationNumber: member.generationNumber ? String(member.generationNumber) : "",
     // null은 '아직 모른다'다 — 0으로 굳히지 않는다
@@ -117,9 +133,11 @@ function toNumberOrNull(value: string): number | null {
   return trimmed === "" ? null : Number(trimmed);
 }
 
-/** 폼 값 → 운영진 경로 요청 본문. 여덟 필드를 언제나 모두 싣는다(전체 교체) */
+/** 폼 값 → 운영진 경로 요청 본문. 아홉 필드를 언제나 모두 싣는다(전체 교체) */
 function toUpdateInput(values: MemberEditValues): MemberUpdateInput {
   return {
+    /* 빈 칸은 빈 문자열이 아니라 null이다 — 근거는 MemberUpdateInput.studentNumber 주석 */
+    studentNumber: trimToNull(values.studentNumber),
     generationNumber: toNumberOrNull(values.generationNumber),
     clubJoinYear: toNumberOrNull(values.clubJoinYear),
     clubJoinMonth: toNumberOrNull(values.clubJoinMonth),
@@ -131,7 +149,7 @@ function toUpdateInput(values: MemberEditValues): MemberUpdateInput {
   };
 }
 
-/** 폼 값 → 본인 경로 요청 본문. 기수·동아리 가입 연/월·이메일은 자리 자체가 없다 */
+/** 폼 값 → 본인 경로 요청 본문. 학번·기수·동아리 가입 연/월·이메일은 자리 자체가 없다 */
 function toSelfUpdateInput(values: MemberEditValues): MemberSelfUpdateInput {
   const input = toUpdateInput(values);
   return {
@@ -143,7 +161,7 @@ function toSelfUpdateInput(values: MemberEditValues): MemberSelfUpdateInput {
 }
 
 /**
- * 재학(`ENROLLED`) 회원인가 — 학과·학년이 필수인 상태인가.
+ * 재학(`ENROLLED`) 회원인가 — 학번·학과·학년이 필수인 상태인가.
  *
  * **판정 근거는 서버다.** 서버는 `MemberStatusCode.requiresAcademicProfile()`이 참인 상태에
  * 대해 `AcademicProfilePolicy`로 학과·학년을 요구하고, 어기면 400 `VALIDATION_FAILED`
@@ -159,12 +177,30 @@ export function requiresAcademicProfile(statusCode: MbrSttsCd): boolean {
  * 저장 전 화면 검증. 길이·범위 상한은 데이터사전(`MEMBER_FIELD_MAX`)을 그대로 쓴다.
  *
  * `academicRequired`가 참이면 학과·학년이 필수다(위 `requiresAcademicProfile` 주석).
+ *
+ * ── 학번은 '고칠 수 있는 경로'에서만 필수로 본다 ────────────────
+ * `studentNumberEditable`은 서버 `validateAcademicProfile`의 같은 이름 인자를 그대로 옮긴
+ * 것이다(운영진 경로 true · 본인 경로 false). **고칠 수 없는 항목 때문에 저장을 막지 않는다**
+ * — 학번 없이 이관된 재학 회원의 본인 프로필 화면에서 학번을 요구하면, 채울 입력란도 없이
+ * 자기 연락처조차 고칠 수 없게 된다. 반대로 학번이 열린 운영진 경로에서는 반드시 본다:
+ * 재학 회원의 학번을 비우는 요청은 서버가 400으로 거절하므로 왕복 전에 여기서 알린다.
  */
 export function validateMemberEdit(
   values: MemberEditValues,
   academicRequired: boolean,
+  studentNumberEditable: boolean,
 ): MemberEditFieldErrors {
   const errors: MemberEditFieldErrors = {};
+
+  const studentNumber = values.studentNumber.trim();
+  if (!studentNumber) {
+    if (academicRequired && studentNumberEditable) {
+      errors.studentNumber = "재학 회원은 학번을 비울 수 없습니다 — 학번을 입력해주세요";
+    }
+  } else if (studentNumber.length > MEMBER_FIELD_MAX.studentNumber) {
+    // 자릿수·숫자 여부는 보지 않는다 — 근거는 MEMBER_FIELD_MAX.studentNumber 주석
+    errors.studentNumber = `학번은 ${MEMBER_FIELD_MAX.studentNumber}자를 넘을 수 없습니다`;
+  }
 
   const name = values.name.trim();
   if (!name) {
@@ -232,6 +268,7 @@ function hasErrors(errors: MemberEditFieldErrors): boolean {
 
 function sameValues(a: MemberEditValues, b: MemberEditValues): boolean {
   return (
+    a.studentNumber.trim() === b.studentNumber.trim() &&
     a.generationNumber.trim() === b.generationNumber.trim() &&
     a.clubJoinYear.trim() === b.clubJoinYear.trim() &&
     a.clubJoinMonth.trim() === b.clubJoinMonth.trim() &&
@@ -252,6 +289,7 @@ function sameValues(a: MemberEditValues, b: MemberEditValues): boolean {
 const GENERATION_SUGGEST_DELAY_MS = 500;
 
 const EMPTY_VALUES: MemberEditValues = {
+  studentNumber: "",
   generationNumber: "",
   clubJoinYear: "",
   clubJoinMonth: "",
@@ -271,9 +309,10 @@ export interface MemberEdit {
   errorMessage: string;
   reload: () => void;
   /**
-   * 서버가 준 원본. 학번·전산 가입일·등급·상태처럼 **고칠 수 없는 값**을 읽기 전용으로
-   * 보여 준다. 동아리 가입 연/월은 여기 들어 있지만 읽기 전용이 아니다 — 이관 명부에 없던
-   * 값이라 운영진이 뒤늦게 채우라고 연 입력란이다(#214).
+   * 서버가 준 원본. 전산 가입일·등급·상태처럼 **고칠 수 없는 값**을 읽기 전용으로 보여 주고,
+   * 계정 연결 여부(`linkedAccount`)처럼 화면이 안내를 띄울지 정하는 값도 여기서 읽는다(#237).
+   * 동아리 가입 연/월은 여기 들어 있지만 읽기 전용이 아니다 — 이관 명부에 없던 값이라 운영진이
+   * 뒤늦게 채우라고 연 입력란이다(#214). 학번도 #237부터 그렇다.
    */
   member: MemberDetail | null;
 
@@ -281,7 +320,7 @@ export interface MemberEdit {
   set: (patch: Partial<MemberEditValues>) => void;
   /** 저장을 한 번 누른 뒤부터 채워진다 — 아직 손대지 않은 칸을 미리 나무라지 않는다 */
   errors: MemberEditFieldErrors;
-  /** 재학 회원이라 학과·학년이 필수인가 */
+  /** 재학 회원이라 학번·학과·학년이 필수인가 (본인 경로에는 학번 입력란이 없다) */
   academicRequired: boolean;
 
   /**
@@ -337,7 +376,7 @@ export function useMemberEdit(memberId: number): MemberEdit {
   const academicRequired = member
     ? requiresAcademicProfile(member.membershipStatusCode)
     : false;
-  const errors = attempted ? validateMemberEdit(current, academicRequired) : {};
+  const errors = attempted ? validateMemberEdit(current, academicRequired, true) : {};
   const dirty = saved !== null && !sameValues(current, saved);
 
   const aliveRef = useRef(true);
@@ -456,7 +495,7 @@ export function useMemberEdit(memberId: number): MemberEdit {
     if (busyRef.current) return null;
 
     setAttempted(true);
-    if (hasErrors(validateMemberEdit(context.current, context.academicRequired))) {
+    if (hasErrors(validateMemberEdit(context.current, context.academicRequired, true))) {
       return null;
     }
     if (!context.dirty) {
@@ -561,7 +600,7 @@ export function useMyProfileEdit(): MyProfileEdit {
   const academicRequired = member
     ? requiresAcademicProfile(member.membershipStatusCode)
     : false;
-  const errors = attempted ? validateMemberEdit(current, academicRequired) : {};
+  const errors = attempted ? validateMemberEdit(current, academicRequired, false) : {};
   const dirty = saved !== null && !sameValues(current, saved);
 
   const start = useCallback(() => {
@@ -604,7 +643,7 @@ export function useMyProfileEdit(): MyProfileEdit {
     if (busyRef.current) return null;
 
     setAttempted(true);
-    if (hasErrors(validateMemberEdit(context.current, context.academicRequired))) {
+    if (hasErrors(validateMemberEdit(context.current, context.academicRequired, false))) {
       return null;
     }
     if (!context.dirty) {

@@ -37,6 +37,11 @@ export interface MemberRoleRef {
  *
  * 등급 이력(mbr_grd_hstry)과 상태 이력(mbr_stts_hstry)이 한 목록에 섞여 오므로 각 줄이 어느
  * 쪽에서 왔는지를 이 값이 가른다.
+ *
+ * **회원 정보 변경(`PROFILE`)은 여기 오지 않는다.** 이력 표는 생겼지만(#237 · 서버 #226)
+ * 상세의 '최근 변경'에는 싣지 않기로 서버가 정했다 — 한 번의 폼 저장이 최대 아홉 줄을 만들
+ * 수 있어 세 칸짜리 카드가 연락처 수정 한 번으로 가득 찬다. 항목별 변경은 통합 이력 화면에서
+ * 본다(api/member-histories.ts).
  */
 export type MemberChangeType = "GRADE" | "STATUS";
 
@@ -149,6 +154,15 @@ export const MEMBER_ERROR = {
    * 값이면 저장 버튼을 잠가 여기까지 오지 않게 한다.
    */
   NO_CHANGE: "NO_CHANGE",
+  /**
+   * 다른 회원이 이미 쓰고 있는 학번 (409 · #237 · 서버 `MemberErrorCode.STUDENT_NUMBER_DUPLICATED`).
+   *
+   * 학번이 수정 대상이 되면서(ssccops#161) 저장 경로에 새로 생긴 코드다. 가입에서 쓰던 것과
+   * 같은 코드지만 **서버 문장은 가입하는 사람에게 하는 말**이라("명부에 등록된 본인이라면 계정
+   * 연결을 진행하십시오") 남의 정보를 고치는 운영자에게는 맞지 않는다 — 화면이 다른 문장으로
+   * 바꾸는 이유가 그것이고, 그러려면 코드로 가려낼 수 있어야 한다.
+   */
+  STUDENT_NUMBER_DUPLICATED: "STUDENT_NUMBER_DUPLICATED",
   /** MEMBER_MANAGE 권한 없음 (403) */
   FORBIDDEN: "FORBIDDEN",
 } as const;
@@ -344,6 +358,14 @@ export async function fetchGenerationNumber(year: number): Promise<number> {
  * 숫자가 낡으면 화면이 통과시킨 값이 서버에서 막힐 뿐 그 반대는 없다.
  */
 export const MEMBER_FIELD_MAX = {
+  /**
+   * 학생_번호V20 — **자릿수·숫자 여부는 검사하지 않는다.**
+   *
+   * 서버도 길이만 본다(`@Size(max = 20)`). 옛 명부에서 이관된 회원 중에는 자릿수가 다른 학번을
+   * 가진 사람이 실제로 있어, 가입 폼이 쓰는 "숫자 8~10자리" 규칙을 여기에 그대로 옮기면
+   * 그 회원들의 학과·연락처를 고치는 일까지 막힌다.
+   */
+  studentNumber: 20,
   /** 회원_명V50 — 유일한 필수 항목이다 */
   name: 50,
   /** 학과_명V100 */
@@ -377,8 +399,14 @@ export const CLUB_JOIN_MONTH_MAX = 12;
  * 둔 것이 그 사고를 막는 장치다. 화면은 폼을 서버 응답으로 채우고 통째로 되돌려 보낸다.
  *
  * ── 여기 없는 필드가 곧 계약이다 ────────────────────────────────
- * 등급·상태는 변경 이력을 함께 남겨야 해 전용 API가 따로 있고(#48), 학번·전산 가입일은 가입
- * 후 변경 불가로 확정됐다(ssccops#74). 요청 본문에 자리가 없으므로 넣어도 무시된다.
+ * 등급·상태는 변경 이력을 함께 남겨야 해 전용 API가 따로 있고(#48), 전산 가입일은 시스템이
+ * 계정을 만든 날이라 사람이 고쳐 쓰는 값이 아니다. 요청 본문에 자리가 없으므로 넣어도 무시된다.
+ *
+ * **학번은 #237에서 이 목록을 떠났다.** 가입 후 변경 불가로 잠겨 있었지만(ssccops#74) 오타가
+ * 실제로 들어오는데 고칠 경로가 없었고, 잠금이 지키던 것은 **변경 이력을 남기는 것**으로도
+ * 달성된다는 것이 뒤집은 근거다(ssccops#161 · 서버 #226 · mbr_chg_hstry). 전산 가입일과 한
+ * 문장으로 묶여 있던 둘이 여기서 갈린다 — 학번은 사람이 적어 넣은 값이고 전산 가입일은
+ * 시스템이 기록한 시각이다. **본인 경로에는 여전히 없다**({@link MemberSelfUpdateInput}).
  *
  * **동아리 가입 연/월은 반대로 고칠 수 있다.** 이관 명부에 없던 값이라 운영진이 뒤늦게
  * 확인해 채워야 하고, 그러라고 만든 컬럼이다(#214).
@@ -388,6 +416,14 @@ export const CLUB_JOIN_MONTH_MAX = 12;
  * 반면 `clubJoinYear`·`clubJoinMonth`의 null은 진짜 '모른다'이다(컬럼이 NULL을 받는다).
  */
 export interface MemberUpdateInput {
+  /**
+   * 학번 — null이 곧 '비운다'이며 전체 교체 규칙 그대로다 (#237 · 서버 #226).
+   *
+   * 빈 문자열이 아니라 null로 보낸다. 서버가 빈 문자열을 그대로 저장하면 학번이 없는 두 번째
+   * 졸업 회원부터 UNIQUE(`uk_mbr_student_number`)에 걸린다 — 화면도 같은 판단으로 굳힌다.
+   * **재학 회원의 학번은 비울 수 없다**(400) — 화면이 저장 전에 먼저 거른다.
+   */
+  studentNumber: string | null;
   generationNumber: number | null;
   /** 동아리 가입 연도 — 기수의 근거. 모르면 null이며 그것이 정상이다 */
   clubJoinYear: number | null;
@@ -403,23 +439,31 @@ export interface MemberUpdateInput {
 /**
  * PATCH /v1/members/me 요청 본문 (서버 `MemberSelfUpdateRequest` · #77).
  *
- * 운영진 경로에서 **기수·동아리 가입 연/월과 이메일이 빠진** 모양이다. 서버가 DTO를 나눈 것
- * 자체가 권한 차이의 표현이므로 화면도 같은 경계를 그린다 — 기수는 운영진이 배정하는 값이고,
+ * 운영진 경로에서 **학번·기수·동아리 가입 연/월과 이메일이 빠진** 모양이다. 서버가 DTO를 나눈
+ * 것 자체가 권한 차이의 표현이므로 화면도 같은 경계를 그린다 — 기수는 운영진이 배정하는 값이고,
  * 동아리 가입 연도는 그 기수의 근거라 본인이 고칠 수 있으면 기수를 우회해 정하는 셈이 된다.
  * 이메일은 Supabase 인증 계정에서 오는 값이라 본인이 바꾸면 로그인 계정과 갈린다.
+ *
+ * **학번은 운영진 경로에서만 열렸다**(#237). 자기소개가 아니라 신원 식별자이고, 계정 연결
+ * 판정(학번·회원명·연락처 3종 일치)의 재료이기도 하다 — 본인이 고칠 수 있으면 그 판정이
+ * 스스로 바꿀 수 있는 값 위에 서게 된다.
  *
  * 전체 교체 의미는 운영진 경로와 같다.
  */
 export type MemberSelfUpdateInput = Omit<
   MemberUpdateInput,
-  "generationNumber" | "clubJoinYear" | "clubJoinMonth" | "email"
+  "studentNumber" | "generationNumber" | "clubJoinYear" | "clubJoinMonth" | "email"
 >;
 
 /**
  * PATCH /v1/members/{memberId} — 운영진이 남의 회원 정보를 고친다 (`MEMBER_MANAGE`).
  *
  * 응답은 조회와 같은 `MemberDetailResponse`라 저장 직후의 화면을 다시 조회 없이 그릴 수 있다.
- * 오류는 404 `NOT_FOUND` · 400 `VALIDATION_FAILED`(재학 회원이 학과·학년을 비움) · 403이다.
+ * 오류는 404 `NOT_FOUND` · 400 `VALIDATION_FAILED`(재학 회원이 학번·학과·학년을 비움) ·
+ * 409 `STUDENT_NUMBER_DUPLICATED`(남이 쓰는 학번 · #237) · 403이다.
+ *
+ * **바뀐 항목마다 변경 이력이 한 줄씩 남는다**(mbr_chg_hstry · 서버 #226). 값이 그대로면
+ * 남지 않으므로, 전체 교체라 매번 실려 가는 현재 값들이 이력을 더럽히지 않는다.
  */
 export async function updateMember(
   memberId: number,
