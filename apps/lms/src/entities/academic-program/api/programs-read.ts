@@ -99,3 +99,47 @@ export async function fetchMyAcademicPrograms(): Promise<AcademicProgramSummary[
   }
   return unique;
 }
+
+/**
+ * 지금 로그인한 사람이 **스터디장/팀장으로 지정된 활동이 하나라도 있는가** (#224).
+ *
+ * 상단 바 목차를 역할별로 가르는 판정 하나에만 쓴다(`app/layout.tsx`).
+ *
+ * ── `isLeader`로 거른다 — 목록이 비었는지가 아니다 ──────────────
+ * 서버의 `mine` 필터는 `(l.id = :mineId or a.proposer.id = :mineId)`다
+ * (`AcademicProgramRepositoryImpl`) — **스터디장 OR 기획안 제출자**를 함께 준다. 반면
+ * `isLeader`는 리더 본인일 때만 참이다(`AcademicProgramSummaryResponse.of`). 그래서
+ * **기획안을 내서 활동이 만들어졌지만 스터디장으로는 지정되지 않은 회원**은 이 목록이
+ * 비어 있지 않으면서 `isLeader`는 전부 false다 — 목록 길이로 판정하면 그 사람에게
+ * 스터디장 메뉴가 통째로 열려 #224가 고치려는 증상이 그대로 남는다.
+ *
+ * 같은 이유로 `size=1`로 한 장만 받아 판정하지 않는다. 정렬이 등록 최신순이라 첫 장이
+ * `isLeader=false`인 제출자 행일 수 있다 — 참인 행을 만날 때까지 페이지를 넘기고, 만나면
+ * 즉시 멈춘다(맡는 활동이 한두 건이라 대개 첫 페이지에서 끝난다).
+ *
+ * ── 실패를 던지지 않는다 ────────────────────────────────────
+ * 이 판정은 루트 레이아웃의 상단 바 하나를 위한 것이다. 미로그인(`CLIENT_UNAUTHENTICATED`)·
+ * 토큰 만료·네트워크 오류에 예외를 올리면 **헤더 하나 때문에 전 화면이 못 뜬다.** 스터디장에게
+ * 메뉴가 덜 보이는 것은 새로고침으로 회복되지만 레이아웃이 던지면 회복할 화면이 없다 —
+ * 그래서 어느 실패든 `false`(일반 회원 목차)로 떨어뜨린다.
+ */
+export async function fetchIsAcademicLeader(): Promise<boolean> {
+  let cursor: string | null = null;
+
+  try {
+    for (let guard = 0; guard < 20; guard += 1) {
+      const query = toQuery({ mine: "true", size: 100, cursor: cursor ?? undefined });
+      const page = await apiFetchAuthedList<AcademicProgramSummaryResponse>(
+        `/v1/academic-programs${query}`,
+      );
+      if (page.data.some((row) => row.isLeader)) return true;
+      if (!page.page?.hasNext || !page.page.nextCursor) break;
+      cursor = page.page.nextCursor;
+    }
+  } catch {
+    // 위 주석 참고 — 헤더 판정 하나가 화면 전체를 막지 않게 한다
+    return false;
+  }
+
+  return false;
+}

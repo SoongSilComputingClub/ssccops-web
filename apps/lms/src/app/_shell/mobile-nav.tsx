@@ -3,18 +3,21 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { NAV_LINKS } from "./nav-links";
+import { visibleNavLinks } from "./nav-links";
 
 /**
  * 모바일 상단 바 드로어 (lg 미만, #169).
  *
  * 학술 공개 앱은 역할별로 대여섯 개 메뉴가 있어 좁은 화면에서 상단 바가 넘친다 — 처음부터
- * 접히는 구조로 둔다. apps/www·어드민 드로어와 같은 뼈대이되 권한 게이트가 없어 그만큼
- * 단순하다(역할별 필터링은 화면 이슈가 붙인다 — 지금은 `NAV_LINKS` 전부를 그린다).
+ * 접히는 구조로 둔다. apps/www·어드민 드로어와 같은 뼈대다.
+ *
+ * **목차는 데스크톱 메뉴와 같은 필터를 탄다**(`visibleNavLinks` · #224) — 한쪽에만 필터를
+ * 걸면 좁은 화면에서 스터디장 메뉴가 그대로 보인다. 판정(`isLeader`)은 루트 레이아웃이
+ * 서버에서 한 번 해 두 컴포넌트에 같은 값으로 내려보낸다.
  *
  * 열렸을 때 본문 스크롤을 잠그고, ESC·바깥 클릭·항목 이동으로 닫는 규약도 어드민과 같다.
  */
-export function MobileNav() {
+export function MobileNav({ isLeader }: { isLeader: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -77,7 +80,7 @@ export function MobileNav() {
               </button>
             </div>
             <nav aria-label="주 메뉴" className="flex flex-col px-[10px]">
-              {NAV_LINKS.map((link) => {
+              {visibleNavLinks(isLeader).map((link) => {
                 const active = link.isActive(pathname);
                 return (
                   <Link
