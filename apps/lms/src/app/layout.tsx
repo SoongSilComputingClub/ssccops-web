@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { AuthNav } from "@/features/auth";
+// 서버 전용 조회는 배럴이 재export 하지 않는다(클라이언트 번들 오염 방지) — 직접 임포트한다
+import { fetchIsAcademicLeader } from "@/entities/academic-program/api/programs-read";
 import { ROUTES } from "@/shared/config/routes";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
@@ -53,7 +55,20 @@ export const viewport: Viewport = {
   themeColor: "#ffffff",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+/*
+ * 상단 바 목차를 역할별로 가르는 판정은 여기서 한 번 한다 (#224).
+ *
+ * 헤더는 루트 레이아웃에 있어 모든 화면에 함께 렌더된다 — `DesktopNav`·`MobileNav`가 각자
+ * 조회하면 같은 요청이 두 번 나가고, 그 둘은 클라이언트 컴포넌트라 `authed-client`
+ * (`next/headers`)를 임포트하는 순간 빌드가 깨진다. 그래서 서버인 이 자리에서 한 번 묻고
+ * 불리언 하나만 prop으로 내린다.
+ *
+ * 미로그인·조회 실패는 `fetchIsAcademicLeader`가 `false`로 삼킨다 — 헤더 하나 때문에 전
+ * 화면이 오류로 죽지 않게 한다(그 함수 주석 참고).
+ */
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const isLeader = await fetchIsAcademicLeader();
+
   return (
     <html lang="ko">
       <head>
@@ -78,9 +93,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <b className="text-[15px]">SSCC 학술</b>
             </Link>
             <div className="flex items-center gap-[6px]">
-              <DesktopNav />
+              <DesktopNav isLeader={isLeader} />
               <AuthNav />
-              <MobileNav />
+              <MobileNav isLeader={isLeader} />
             </div>
           </div>
         </header>
