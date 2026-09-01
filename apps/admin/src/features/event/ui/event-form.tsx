@@ -160,12 +160,12 @@ export function EventForm({
 
     setUploadError(null);
     setUploadingAt(at);
-    const { publicUrl, message } = await imageUpload.upload(eventId, file);
+    const { imageUrl, message } = await imageUpload.upload(eventId, file);
     setUploadingAt(null);
 
     // 중복 클릭이면 둘 다 비어 온다 — 아무것도 보내지 않았으므로 화면도 그대로 둔다
     if (message) setUploadError(message);
-    if (publicUrl) place(publicUrl);
+    if (imageUrl) place(imageUrl);
   };
 
   /**

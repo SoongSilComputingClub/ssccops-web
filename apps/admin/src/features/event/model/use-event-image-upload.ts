@@ -20,19 +20,23 @@ import { toEventImageUploadErrorMessage } from "./event-error";
  */
 
 export interface EventImageUpload {
-  /** 성공했을 때 본문·대표 이미지에 넣을 공개 주소. 실패·중복 클릭이면 null */
-  publicUrl: string | null;
+  /**
+   * 성공했을 때 본문·대표 이미지에 넣을 읽기 주소. 실패·중복 클릭이면 null.
+   *
+   * 서버가 준 값을 그대로 옮긴다 — 만료가 없는 영구 주소라 본문에 굳혀도 된다.
+   */
+  imageUrl: string | null;
   /** 실패했을 때 보여줄 한 줄. 성공했거나 중복 클릭으로 아무것도 보내지 않았으면 빈 문자열 */
   message: string;
 }
 
 export interface EventImageUploadControl {
   pending: boolean;
-  /** 발급 → R2 PUT → 공개 주소. 실패해도 던지지 않고 문구로 돌려준다 */
+  /** 발급 → R2 PUT → 이미지 주소. 실패해도 던지지 않고 문구로 돌려준다 */
   upload: (eventId: number, file: File) => Promise<EventImageUpload>;
 }
 
-const BUSY: EventImageUpload = { publicUrl: null, message: "" };
+const BUSY: EventImageUpload = { imageUrl: null, message: "" };
 
 export function useEventImageUpload(): EventImageUploadControl {
   const [pending, setPending] = useState(false);
@@ -70,11 +74,11 @@ export function useEventImageUpload(): EventImageUploadControl {
         });
 
         await putEventImage(ticket.uploadUrl, file, contentType);
-        return { publicUrl: ticket.publicUrl, message: "" };
+        return { imageUrl: ticket.imageUrl, message: "" };
       } catch (error: unknown) {
         // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다
         syncSessionOnForbidden(error);
-        return { publicUrl: null, message: toEventImageUploadErrorMessage(error) };
+        return { imageUrl: null, message: toEventImageUploadErrorMessage(error) };
       } finally {
         inFlightRef.current = false;
         if (aliveRef.current) setPending(false);
