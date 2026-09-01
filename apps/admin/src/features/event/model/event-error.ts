@@ -69,6 +69,10 @@ export function toEventSaveErrorMessage(error: unknown): string {
  *
  * R2 구간의 실패(PUT_FAILED)는 우리 서버가 준 코드가 아니다 — 발급까지는 됐고 바이트만
  * 넘어가지 못한 것이라, 재시도가 곧 다음 행동이다(허가증은 다시 발급받는다).
+ *
+ * 형식 판정의 근거가 확장자로 바뀌었으므로(ssccops#157) 문구도 확장자를 짚는다 — 확장자가
+ * 없는 파일이 실제로 여기 걸리는데, "이미지 파일을 고르라"고만 하면 이미 이미지를 고른
+ * 사용자는 무엇을 바꿔야 할지 알 수 없다. 허용 목록은 여전히 적지 않는다(서버가 쥔다).
  */
 export function toEventImageUploadErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
@@ -77,7 +81,7 @@ export function toEventImageUploadErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case EVENT_IMAGE_ERROR.UNSUPPORTED_IMAGE_TYPE:
-      return "올릴 수 없는 형식의 파일입니다 — 이미지 파일을 골라주세요";
+      return "올릴 수 없는 형식의 파일입니다 — 확장자가 붙은 이미지 파일로 다시 골라주세요";
     case EVENT_IMAGE_ERROR.IMAGE_TOO_LARGE:
       return "이미지 용량이 허용 범위를 넘습니다 — 크기를 줄여 다시 올려주세요";
     case EVENT_IMAGE_ERROR.PUT_FAILED:

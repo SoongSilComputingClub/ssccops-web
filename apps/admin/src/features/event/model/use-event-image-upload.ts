@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { issueEventImageTicket, putEventImage } from "@/entities/event";
+import { fileExtOf, issueEventImageTicket, putEventImage } from "@/entities/event";
 import { syncSessionOnForbidden } from "@/entities/session";
 import { toEventImageUploadErrorMessage } from "./event-error";
 
@@ -62,18 +62,20 @@ export function useEventImageUpload(): EventImageUploadControl {
          * (AGENTS.md의 "규칙을 두 벌로 만들지 않는다"), 웹이 복제하면 서버가 규칙을 넓힌
          * 날에도 화면만 계속 막는다. 최종 판정은 서버 응답 코드로 안내한다.
          *
-         * contentType은 발급과 PUT에 **같은 값**을 쓴다 — 서명에 포함된 헤더라 어긋나면
-         * R2가 거절한다. 브라우저가 형식을 못 읽은 파일은 빈 문자열이 되는데, 그것도
-         * 그대로 보내 서버가 UNSUPPORTED_IMAGE_TYPE으로 판정하게 둔다.
+         * 보내는 것은 확장자다 — `file.type`이 아니다(ssccops#157). 그 값은 브라우저·OS·
+         * 파일에 따라 비거나(`""`) 비표준(`image/jpg`)이라, 멀쩡한 이미지를 골라도 형식
+         * 판정에서 튕기던 원인이었다. 확장자를 못 뽑으면 빈 문자열이 가고 서버가
+         * UNSUPPORTED_IMAGE_TYPE으로 판정한다 — 판정은 한 곳에서만 한다.
+         *
+         * PUT 헤더에는 **발급 응답의 contentType**을 그대로 싣는다 — 서명에 포함된 값이라
+         * 파일에서 다시 읽어 만들면 어긋나는 순간 R2가 거절한다.
          */
-        const contentType = file.type;
         const ticket = await issueEventImageTicket(eventId, {
-          fileName: file.name,
-          contentType,
+          fileExt: fileExtOf(file),
           fileSize: file.size,
         });
 
-        await putEventImage(ticket.uploadUrl, file, contentType);
+        await putEventImage(ticket.uploadUrl, file, ticket.contentType);
         return { imageUrl: ticket.imageUrl, message: "" };
       } catch (error: unknown) {
         // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다

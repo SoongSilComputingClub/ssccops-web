@@ -25,6 +25,7 @@ export {
 export type { EventListFilter, EventSaveInput, EventStatusAction } from "./api/events";
 export {
   EVENT_IMAGE_ERROR,
+  fileExtOf,
   issueEventImageTicket,
   putEventImage,
 } from "./api/event-images";

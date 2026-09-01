@@ -40,6 +40,8 @@ interface EventImageTicketResponse {
   imageUrl: string;
   objectKey: string;
   expiresInSeconds: number;
+  /** 이 PUT에 **반드시 실어야 하는** Content-Type 헤더 값 — 서명에 포함돼 있다 */
+  contentType: string;
 }
 
 /**
@@ -69,6 +71,13 @@ export interface EventImageTicket {
    * `imageUrl`의 수명과는 무관하다(그쪽은 만료가 없다).
    */
   expiresInSeconds: number;
+  /**
+   * 서버가 확장자를 보고 정한 형식 — PUT 헤더에 **이 값 그대로** 실어야 한다.
+   *
+   * 브라우저의 `File.type`이 아니라 이 값을 쓰는 것이 이 계약의 요점이다(ssccops#157).
+   * 형식을 정하는 주체가 서명을 만드는 주체와 같아야 헤더와 서명이 어긋날 수 없다.
+   */
+  contentType: string;
 }
 
 /**
@@ -80,10 +89,17 @@ export interface EventImageTicket {
  * 응답의 `imageUrl`을 그대로 쓴다. 주소의 도메인도 경로 규칙도 환경(dev·prod)마다 다르고
  * 서버만 알고 있다 — 웹이 `objectKey`로 주소를 조립하면 주소 사전이 두 벌이 되어 한쪽만
  * 바뀌는 날 본문의 이미지가 통째로 깨진다.
+ *
+ * **보내는 것은 확장자와 크기뿐이다**(ssccops-server#210). 형식은 서버가 확장자로 정해
+ * 응답에 실어 준다 — 브라우저가 정하는 값(`File.type`)을 계약에 넣지 않는 것이 이 변경의
+ * 요점이다. `.JPG`로 보내든 `jpg`로 보내든 서버가 정규화한다.
+ *
+ * `fileSize`는 남는다 — 용량 상한은 형식 판정과 무관하고, 바이트를 올리기 전에 서버가
+ * 거절할 수 있게 해 주는 값이다.
  */
 export async function issueEventImageTicket(
   eventId: number,
-  request: { fileName: string; contentType: string; fileSize: number },
+  request: { fileExt: string; fileSize: number },
 ): Promise<EventImageTicket> {
   const res = await apiFetch<EventImageTicketResponse>(`/v1/events/${eventId}/images`, {
     method: "POST",
@@ -95,7 +111,14 @@ export async function issueEventImageTicket(
     imageUrl: res.imageUrl,
     objectKey: res.objectKey,
     expiresInSeconds: res.expiresInSeconds,
+    contentType: res.contentType,
   };
+}
+
+/** 파일명에서 확장자만 뽑는다(점 뒤, 소문자). 못 뽑으면 빈 문자열 — 서버가 형식 오류로 판정하게 둔다 */
+export function fileExtOf(file: File): string {
+  const dot = file.name.lastIndexOf(".");
+  return dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : "";
 }
 
 /* ── R2 직접 업로드 ────────────────────────────────────────── */
@@ -103,8 +126,8 @@ export async function issueEventImageTicket(
 /**
  * 발급받은 주소로 R2에 파일을 올린다 (PUT 한 번).
  *
- * `Content-Type`은 **발급 요청에 실었던 값과 같아야 한다** — 서명에 포함된 헤더라 다른 값을
- * 보내면 R2가 서명 불일치로 거절한다. 그래서 파일에서 다시 읽지 않고 인자로 받는다.
+ * `Content-Type`은 **발급 응답의 `contentType`과 같아야 한다** — 서명에 포함된 헤더라 다른
+ * 값을 보내면 R2가 서명 불일치로 거절한다. 그래서 파일에서 다시 읽지 않고 인자로 받는다.
  *
  * 실패는 `ApiError`로 통일한다 — 화면은 발급 실패와 업로드 실패를 같은 자리에서 문구로
  * 옮기고, 코드로만 원인을 가른다(응답 본문은 R2의 XML이라 사용자에게 보일 것이 없다).
