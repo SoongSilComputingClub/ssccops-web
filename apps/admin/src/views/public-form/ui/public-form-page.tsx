@@ -21,10 +21,10 @@ import { PublicFormNotice } from "./public-form-notice";
 
 /*
  * 본문 가로 상한은 공개 폼 계열이 **같은 값(860px)을 쓴다** — 한 곳만 고치지 말 것
- * (ssccops#153 · ssccops-web#203). 대상: admin의 public-form-page·proposal-list-page·
- * proposal-form-notice, www의 event-apply-page.
+ * (ssccops#153 · ssccops-web#203). 대상: admin의 public-form-page, www의 event-apply-page.
+ * (당시 함께 넓혔던 admin의 기획안 화면들은 lms로 옮겨 가며 #231에서 지워졌다.)
  *
- * lms의 proposal-new-page는 아직 720px이다 — 그 앱이 개발 중이라 이번 변경에서 뺐다.
+ * lms의 proposal-new-page는 아직 720px이다 — 그 앱은 그때 개발 중이라 뺐다.
  * 같은 성격의 화면이므로 개발이 끝나면 함께 860px로 맞출 것.
  *
  * 860px인 근거는 읽기 편한 줄 길이(한 줄 45~75자)다. 본문 글자가 15~16px이라 860px에서
