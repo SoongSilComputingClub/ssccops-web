@@ -1,8 +1,8 @@
 import {
-  RSPNS_PRCS_SE_NM,
   RSPNS_STTS_NM,
-  type RspnsPrcsSeCd,
+  RVW_PRCS_SE_NM,
   type RspnsSttsCd,
+  type RvwPrcsSeCd,
 } from "@/shared/config/codes";
 import type { RspnsCn } from "@ssccops/form-renderer";
 import type { BadgeTone } from "@/shared/ui";
@@ -30,15 +30,15 @@ export const RSPNS_STTS_BADGE: Record<RspnsSttsCd, { label: string; tone: BadgeT
 };
 
 /** 처리 이력 줄의 처리 구분 배지 — 상태 배지와 색 어휘를 맞춘다(같은 일을 같은 색으로) */
-export const RSPNS_PRCS_SE_BADGE: Record<
-  RspnsPrcsSeCd,
+export const RVW_PRCS_SE_BADGE: Record<
+  RvwPrcsSeCd,
   { label: string; tone: BadgeTone }
 > = {
   // 제출은 응답자가 한 일이라 검토자의 처리 셋과 색으로 갈라 둔다
-  SUBMIT: { label: RSPNS_PRCS_SE_NM.SUBMIT, tone: "outline" },
-  ACCEPT: { label: RSPNS_PRCS_SE_NM.ACCEPT, tone: "blue" },
-  REQUEST_CHANGES: { label: RSPNS_PRCS_SE_NM.REQUEST_CHANGES, tone: "amber" },
-  REJECT: { label: RSPNS_PRCS_SE_NM.REJECT, tone: "red" },
+  SUBMIT: { label: RVW_PRCS_SE_NM.SUBMIT, tone: "outline" },
+  ACCEPT: { label: RVW_PRCS_SE_NM.ACCEPT, tone: "blue" },
+  REQUEST_CHANGES: { label: RVW_PRCS_SE_NM.REQUEST_CHANGES, tone: "amber" },
+  REJECT: { label: RVW_PRCS_SE_NM.REJECT, tone: "red" },
 };
 
 /** 응답값 표시 문자열 — 다중선택은 ", "로 잇는다 */

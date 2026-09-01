@@ -2,8 +2,8 @@ import type { RspnsCn } from "@ssccops/form-renderer";
 import type {
   MbrGrdCd,
   MbrSttsCd,
-  RspnsPrcsSeCd,
   RspnsSttsCd,
+  RvwPrcsSeCd,
 } from "@/shared/config/codes";
 
 /*
@@ -113,7 +113,7 @@ export interface MyFormResponse {
 /**
  * table: form_rspns_rvw_hstry — 처리 이력 한 줄 (ssccops-server #141).
  *
- * 제출도 한 줄로 들어간다(`prcsSeCd === "SUBMIT"`) — 검토만 쌓으면 타임라인이 "무엇에 대한
+ * 제출도 한 줄로 들어간다(`rvwPrcsSeCd === "SUBMIT"`) — 검토만 쌓으면 타임라인이 "무엇에 대한
  * 검토였는가"의 출발점을 잃는다. 재제출이 있으면 SUBMIT 줄이 여러 번 나타나고 `sbmsnSeq`로
  * 갈린다.
  *
@@ -129,7 +129,7 @@ export interface FormResponseReviewHistory {
    * 않는다** — 없으면 화면이 회차 표기를 빼고 나머지를 그대로 그린다.
    */
   sbmsnSeq: number | null;
-  prcsSeCd: RspnsPrcsSeCd;
+  rvwPrcsSeCd: RvwPrcsSeCd;
   /** 처리자 — 이름은 이력 행이 아니라 mbr에서 오므로 개명하면 함께 바뀐다 */
   prcsMbrId: number;
   prcsMbrNm: string;

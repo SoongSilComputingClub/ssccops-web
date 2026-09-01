@@ -11,8 +11,8 @@ export type {
 /* 응답 내용의 저장 형태는 `@ssccops/form-renderer`가 정의한다(#152) */
 export type { RspnsCn } from "@ssccops/form-renderer";
 export {
-  RSPNS_PRCS_SE_BADGE,
   RSPNS_STTS_BADGE,
+  RVW_PRCS_SE_BADGE,
   rspnsValueText,
 } from "./model/display";
 export {

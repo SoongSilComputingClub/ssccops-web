@@ -1,9 +1,9 @@
 import type {
+  AgndPrcsSeCd,
   AtndTrgtCd,
   MtgSeCd,
   MtgSttsCd,
   OperTypeCd,
-  PrcsSeCd,
   PrrtyRnkCd,
 } from "@/shared/config/codes";
 import { ApiError, apiFetch } from "@/shared/lib/api/client";
@@ -46,7 +46,7 @@ interface MeetingAgendaResponse {
   agendaId: number;
   meetingId: number;
   agendaName: string | null;
-  processStatus: PrcsSeCd | null;
+  processStatus: AgndPrcsSeCd | null;
   agendaOrder: number | null;
   targetOperation: AgendaTargetOperationResponse | null;
   content: string | null;
@@ -232,7 +232,7 @@ export interface MeetingAgendaInput {
   targetOperationId: number | null;
   /** 독립 안건 제목. targetOperationId와 상호 배타적이다 */
   agendaName: string | null;
-  processStatus: PrcsSeCd | null;
+  processStatus: AgndPrcsSeCd | null;
   content: string | null;
 }
 
@@ -356,7 +356,7 @@ export async function addMeetingAgenda(
 export interface MeetingAgendaUpdateInput {
   content: string | null;
   resultContent: string | null;
-  processStatus: PrcsSeCd;
+  processStatus: AgndPrcsSeCd;
 }
 
 /**
