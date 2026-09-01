@@ -1,5 +1,5 @@
 import type { QitemCpstCn, RspnsCn } from "@ssccops/form-renderer";
-import type { RspnsPrcsSeCd, RspnsSttsCd } from "@/shared/config/codes";
+import type { RvwPrcsSeCd, RspnsSttsCd } from "@/shared/config/codes";
 
 /*
  * 기획안(PROPOSAL 시스템 폼) 재제출 화면이 쓰는 응답 조회 모델 (#171).
@@ -65,7 +65,7 @@ export interface MyFormResponse {
 /**
  * 처리 이력 한 줄 — `form_rspns_rvw_hstry` (서버 #141 · #177).
  *
- * 제출도 한 줄로 들어간다(`prcsSeCd === "SUBMIT"`). 서버가 처리 일시 오름차순으로 내려주고
+ * 제출도 한 줄로 들어간다(`rvwPrcsSeCd === "SUBMIT"`). 서버가 처리 일시 오름차순으로 내려주고
  * 처리가 없으면 빈 배열이다 — 화면이 다시 정렬하지 않는다. **처리자_명(`prcsMbrNm`)이
  * 제출자에게도 보인다**(서버 #177 결정 1 — 동아리 내부 결재).
  */
@@ -73,7 +73,7 @@ export interface FormResponseReviewHistory {
   formRspnsRvwHstryId: number;
   /** 몇 회차 제출에 대한 처리였는가. 모르는 배포에서 지어내지 않는다 */
   sbmsnSeq: number | null;
-  prcsSeCd: RspnsPrcsSeCd;
+  rvwPrcsSeCd: RvwPrcsSeCd;
   prcsMbrId: number;
   prcsMbrNm: string;
   /** 승인은 의견이 선택이라 비어 있을 수 있다. 제출 줄에는 없다 */
