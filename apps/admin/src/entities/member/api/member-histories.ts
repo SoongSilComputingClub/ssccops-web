@@ -1,14 +1,19 @@
+import type { ChgArtclCd } from "@/shared/config/codes";
 import { apiFetch } from "@/shared/lib/api/client";
 
 /*
- * 회원 변경 이력 통합 조회 (ssccops-server #82 · MemberHistoryController).
+ * 회원 변경 이력 통합 조회 (ssccops-server #82 · #226 · MemberHistoryController).
  *
  * ── 이 목록에 담기는 것이 전부다 ────────────────────────────────
- * 데이터사전에서 회원의 변화를 남기는 테이블은 셋뿐이다 — `mbr_grd_hstry`(등급) ·
- * `mbr_stts_hstry`(상태) · `mbr_role_rel`(역할 부여·종료). **감사 로그 테이블이 사전에 없어서**
- * 회원 정보(이름·연락처·학과) 수정은 어디에도 쌓이지 않는다. 그래서 이 응답을 "전체 변경
- * 이력"이라고 부르면 없는 것을 있다고 말하게 된다 — 화면도 담기는 범위를 문장으로 밝힌다
- * (views/member-history).
+ * 회원의 변화를 남기는 표는 넷이다 — `mbr_grd_hstry`(등급) · `mbr_stts_hstry`(상태) ·
+ * `mbr_role_rel`(역할 부여·종료) · `mbr_chg_hstry`(회원 정보 · #237에서 합류했다).
+ * 마지막 하나가 늘어난 것이 학번 잠금을 푼 대가다 — "누가 언제 무엇을 무엇으로"를 남기지
+ * 못하면 잠금이 지키던 것이 그냥 사라진다(ssccops#161). **여기에도 없는 것이 있다**:
+ * 등급·상태·역할·회원 정보 밖의 조작(예: 폼 상태 전이)은 감사 로그 테이블이 없어 쌓이지
+ * 않는다. 그래서 화면은 담기는 범위를 문장으로 밝힌다(views/member-history).
+ *
+ * **이력이 생기기 전의 수정은 없다.** 회원 정보 변경 표는 서버 #226 배포와 함께 생겼으므로
+ * 그전에 고친 값은 어디에도 남아 있지 않다 — 비어 있는 것이 "고친 적이 없다"는 뜻은 아니다.
  *
  * ── 왜 `MemberChange`(api/members.ts)를 재사용하지 않는가 ─────────
  * 서버는 상세의 '최근 변경'과 이 목록에 **같은 record**를 쓰지만, 두 응답에서 실제로 채워지는
@@ -33,21 +38,36 @@ import { apiFetch } from "@/shared/lib/api/client";
  * 것인가"를 칩 하나로 묻는다 — `ROLE_ASSIGNED`만 거는 필터를 만들면 임기 시작만 보이고 종료는
  * 사라지는 목록이 되는데, 그것은 이력을 보는 사람이 원한 것이 아니다.
  */
-export type MemberHistoryType = "GRADE" | "STATUS" | "ROLE";
+export type MemberHistoryType = "GRADE" | "STATUS" | "ROLE" | "PROFILE";
 
 /** 필터 칩이 그리는 순서 — 서버 enum 선언 순서와 같다 */
-export const MEMBER_HISTORY_TYPES: readonly MemberHistoryType[] = ["GRADE", "STATUS", "ROLE"];
+export const MEMBER_HISTORY_TYPES: readonly MemberHistoryType[] = [
+  "GRADE",
+  "STATUS",
+  "ROLE",
+  "PROFILE",
+];
 
 /**
  * 응답 한 줄의 종류 (서버 `MemberChangeType`) — **무슨 일이 있었는가**다.
  *
  * 역할이 둘로 갈리는 이유는 {@link MemberHistoryType} 주석에 있다.
+ *
+ * `PROFILE`은 회원 정보 한 항목이 바뀐 것이다(#237). 학번·이름·연락처처럼 서로 다른 아홉
+ * 항목이 이 한 값을 쓰고, 그중 무엇이 바뀌었는지는 {@link MemberHistoryEntry.changeField}가
+ * 답한다 — 항목마다 종류를 두면 필터가 아홉 칸이 된다는 것이 서버의 판단이다.
  */
-export type MemberHistoryChangeType = "GRADE" | "STATUS" | "ROLE_ASSIGNED" | "ROLE_ENDED";
+export type MemberHistoryChangeType =
+  | "GRADE"
+  | "STATUS"
+  | "ROLE_ASSIGNED"
+  | "ROLE_ENDED"
+  | "PROFILE";
 
 /** 응답의 종류 → 필터의 출처. 화면이 칩 상태와 받은 줄을 잇는 자리다 */
 export function historyTypeOf(changeType: MemberHistoryChangeType): MemberHistoryType {
-  return changeType === "GRADE" || changeType === "STATUS" ? changeType : "ROLE";
+  if (changeType === "ROLE_ASSIGNED" || changeType === "ROLE_ENDED") return "ROLE";
+  return changeType;
 }
 
 /* ── 응답 ──────────────────────────────────────────────────── */
@@ -59,6 +79,14 @@ export function historyTypeOf(changeType: MemberHistoryChangeType): MemberHistor
  * `previous*`는 가입 시점의 최초 부여와 **역할 부여**에서 null이고(그때는 아무것도 아니었다),
  * `new*`는 **역할 종료**에서 null이다(그 뒤로는 아무것도 아니다). 화면은 빈 쪽에 값을 지어
  * 넣지 않고 "그 자리에 값이 없었다"는 뜻의 말로 그린다(views/member-history의 `NONE_LABEL`).
+ *
+ * ── 회원 정보 줄은 이름 두 칸만 쓴다 ────────────────────────────
+ * `PROFILE` 줄의 값은 `previousName`·`newName`에 담기고 **`previousCode`·`newCode`·
+ * `appliedDate`·`changeReason`은 모두 null이다.** 항목마다 타입이 다른 값(학번은 문자열,
+ * 기수·학년은 숫자)을 한 자리에 담으므로 코드값이 성립하지 않고, 이름·연락처는 **고친 순간이
+ * 곧 적용**이라 적용일이 없으며 사유를 물을 자리도 없다(서버 `mbr_chg_hstry`에 그 컬럼 자체가
+ * 없다). 화면은 그 자리를 '-'로도 채우지 않고 아예 비운다 — 없는 값을 만들어 내지 않는다.
+ * 비운 쪽 이름은 그 항목이 그때 비어 있었다는 뜻이다(예: 학과가 없다가 채워졌다).
  *
  * ── 역할 줄은 변경자·사유가 언제나 null이다 ─────────────────────
  * `mbr_role_rel`에 변경자(`chnrg_mbr_id`)·사유 컬럼이 **없어서** 서버가 답할 근거를 갖고 있지
@@ -72,6 +100,20 @@ export function historyTypeOf(changeType: MemberHistoryChangeType): MemberHistor
  */
 export interface MemberHistoryEntry {
   changeType: MemberHistoryChangeType;
+  /**
+   * 무엇이 바뀌었는가 — **회원 정보 줄에만 값이 있고** 등급·상태·역할 줄에서는 null이다
+   * (#237 · 서버 `MemberChangeField`).
+   */
+  changeField: ChgArtclCd | null;
+  /**
+   * 그 항목의 표시명 — **서버가 준 값을 그대로 쓴다.**
+   *
+   * 코드 → 이름 사전을 웹에 만들지 않는다. 서버가 이 값을 함께 내리는데도 대응표를 한 벌 더
+   * 두면 서버가 말을 다듬는 날 화면만 옛 이름을 그린다(`shared/config/codes.ts`의
+   * `ChgArtclCd` 주석 · 승인자 권한명이 같은 판단을 했다). `changeField`와 짝이라 등급·상태·
+   * 역할 줄에서는 함께 null이다.
+   */
+  changeFieldName: string | null;
   /**
    * 등급·상태는 기준 코드값이고, **역할은 `role_id`를 문자열로 담은 값**이다(역할은 코드가
    * 아니라 IDENTITY라 환경마다 다른 숫자다). 화면이 이 값으로 이름을 만들지 않는 이유는
@@ -88,9 +130,9 @@ export interface MemberHistoryEntry {
    * 목록·상세가 같은 자리에서 같은 판단을 했다(api/members.ts 첫 주석).
    */
   newName: string | null;
-  /** 일자D — 언제부터 적용되는가. 역할은 시작일·종료일이다 */
+  /** 일자D — 언제부터 적용되는가. 역할은 시작일·종료일이고, 회원 정보 줄은 언제나 null이다 */
   appliedDate: string | null;
-  /** 역할 줄에서는 언제나 null이다 (위 주석) */
+  /** 역할·회원 정보 줄에서는 언제나 null이다 (위 주석) */
   changeReason: string | null;
   changedByMemberId: number | null;
   /** 역할 줄에서는 언제나 null이다. 배치·이관으로 생긴 등급·상태 이력에도 사람이 없다 */

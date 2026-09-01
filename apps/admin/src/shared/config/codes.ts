@@ -45,6 +45,34 @@ export const MBR_STTS_NM: Record<MbrSttsCd, string> = {
 
 export const MBR_STTS_CDS = codesOf(MBR_STTS_NM);
 
+/* ── 변경_항목 (mbr_chg_hstry.chg_artcl_cd) ─────────────────── */
+
+/**
+ * 회원 정보 변경 이력의 **변경 항목** (서버 `MemberChangeField` · ssccops#162).
+ *
+ * **표시명 사전(`*_NM`)을 여기 두지 않는다.** 이 파일의 다른 코드와 갈리는 유일한 자리이며,
+ * 서버가 이력 한 줄에 `changeFieldName`(한글 표시명)을 함께 내려주기 때문이다 — 코드 → 이름
+ * 대응표를 웹에 한 벌 더 만들면 서버가 말을 다듬는 날 화면만 옛 이름을 그린다. 승인자 권한명이
+ * 같은 이유로 서버가 준 값을 쓴다(서버 #123 · AGENTS.md 「인증 · 권한」).
+ *
+ * 그래도 타입은 둔다 — 이력 응답의 `changeField`를 `string`으로 받으면 항목별로 갈리는 화면
+ * 분기가 오타를 잡아 주지 못한다. 선언 순서는 서버 enum과 같고, 그것이 곧 한 번의 저장이
+ * 여러 항목을 바꿨을 때 이력이 쌓이는 순서다.
+ *
+ * 등급·상태는 여기 없다 — 전용 이력(mbr_grd_hstry · mbr_stts_hstry)이 적용일·사유와 함께
+ * 이미 담고 있다.
+ */
+export type ChgArtclCd =
+  | "STUDENT_NUMBER"
+  | "GENERATION_NUMBER"
+  | "CLUB_JOIN_YEAR"
+  | "CLUB_JOIN_MONTH"
+  | "MEMBER_NAME"
+  | "DEPARTMENT_NAME"
+  | "ACADEMIC_YEAR"
+  | "PHONE_NUMBER"
+  | "EMAIL";
+
 /*
  * 역할_분류(role_clsf)는 화면에서 추가·수정·삭제하는 사용자 관리 코드테이블이라
  * 고정 유니온으로 두지 않는다 — 코드값은 서버가 준다(entities/role/api/role-classifications.ts).
