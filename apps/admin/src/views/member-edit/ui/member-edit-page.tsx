@@ -25,13 +25,15 @@ import {
  *
  * ── 입력란은 서버가 고칠 수 있는 필드까지다 ─────────────────────
  * 예전 화면은 학번·가입일·등급·상태까지 편집란으로 열어 두고 목 스토어를 고쳤다. 서버는 그
- * 넷을 받지 않으므로(요청 본문에 필드 자체가 없다) 그대로 두면 사용자가 고친 값이 저장된 것처럼
- * 화면만 바뀐다 — **저장되지 않는 입력창을 열어 두지 않는다**는 판단은 views/my-account 가 먼저
- * 했다. 지금 이 화면이 보내는 것은 기수·동아리 가입 연·월·이름·학과·학년·연락처·이메일
- * 여덟 개다.
+ * 값들을 받지 않으므로(요청 본문에 필드 자체가 없다) 그대로 두면 사용자가 고친 값이 저장된
+ * 것처럼 화면만 바뀐다 — **저장되지 않는 입력창을 열어 두지 않는다**는 판단은 views/my-account 가
+ * 먼저 했다. 지금 이 화면이 보내는 것은 학번·기수·동아리 가입 연·월·이름·학과·학년·연락처·
+ * 이메일 아홉 개다.
  *
- *  - 학번(stdnt_no)  가입 후 변경 불가로 확정됐다(데이터사전 ssccops#74 · updatable = false).
- *                    오타 정정 경로가 정해지면 별도 이슈로 열린다. 여기서는 읽기만 한다.
+ *  - 학번(stdnt_no)  **#237에서 열렸다.** 사람이 손으로 적어 넣는 값이라 오타가 실제로 들어오는데
+ *                    고칠 경로가 없었다(ssccops#161 · 서버 #226). 잠금이 지키던 것은 변경 이력이
+ *                    대신 지킨다 — 바뀌면 누가 언제 무엇을 무엇으로 고쳤는지가 이력에 남는다.
+ *                    전산 가입일과 한 문장으로 묶여 있던 둘이 여기서 갈린다.
  *  - 전산 가입일     시스템이 계정을 만든 날이라 사람이 정하는 값이 아니다. 읽기만 한다.
  *    (sys_join_ymd)
  *  - 동아리 가입 연·월 **여기는 반대로 연다.** 이관 명부에 없던 값이라 처음부터 비어 있고,
@@ -54,6 +56,20 @@ import {
  */
 const NO_MEMBER_MANAGE =
   "회원 관리(MEMBER_MANAGE) 권한이 없어 회원 정보를 수정할 수 없습니다 — 운영진에게 요청해주세요";
+
+/**
+ * 계정을 아직 연결하지 않은 회원의 학번을 고칠 때만 띄우는 안내 (#237 · ssccops#161).
+ *
+ * 이관 회원이 계정을 붙이는 유일한 경로는 **학번·회원명·연락처 3종 일치**다(서버
+ * `MemberLinkPolicy`). 그래서 학번을 고치면 그 회원은 옛 학번으로 더는 연결되지 않는다 —
+ * 오타 정정이면 그것이 바로 목적이지만, 잘못 고치면 연결할 길을 잃는다. **서버는 막지
+ * 않으므로**(운영자의 판단이다) 알리는 일은 화면 몫이다.
+ *
+ * **이미 연결된 회원에게는 띄우지 않는다.** 그쪽 연결은 `auth_user_id`로 굳어 있어 학번을
+ * 다시 보지 않으므로 해당 없는 경고이고, 모든 회원에게 띄우면 곧 읽히지 않는 문장이 된다.
+ */
+const UNLINKED_STUDENT_NUMBER_NOTE =
+  "이 회원은 아직 계정을 연결하지 않았습니다. 학번을 바꾸면 예전 학번으로는 계정을 연결할 수 없습니다 — 계정 연결은 학번 · 회원명 · 연락처가 모두 맞아야 합니다.";
 
 export function MemberEditPage({ mbrId }: { mbrId: number }) {
   const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
@@ -126,6 +142,31 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
           <Card>
             <SectionLabel className="mb-3">기본정보</SectionLabel>
             <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+              {/*
+                안내를 입력란 바로 아래에 붙인다 — 카드 맨 아래 한 줄로 모아 두면 학번을 고치는
+                손과 문장이 멀어져 읽히지 않는다. 좁은 화면에서도 학번 칸에 붙어 따라온다.
+              */}
+              <Field
+                label={FIELD_LABEL.studentNumber}
+                required={academicRequired}
+                error={errors.studentNumber}
+              >
+                <TextField
+                  value={values.studentNumber}
+                  onChange={(e) => editor.set({ studentNumber: e.target.value })}
+                  invalid={!!errors.studentNumber}
+                  /*
+                    자릿수·숫자 여부를 검사하지 않으므로(서버도 길이만 본다) 숫자 키패드를
+                    강제하지 않는다 — 옛 명부에서 이관된 학번은 모양이 제각각이다.
+                  */
+                  placeholder={academicRequired ? "필수" : "비우면 학번 없음"}
+                />
+                {!member.linkedAccount && (
+                  <div className="mt-[6px] rounded-[10px] border border-amber/35 bg-amber-soft px-[10px] py-[7px] text-[13px] leading-[1.7] text-amber">
+                    {UNLINKED_STUDENT_NUMBER_NOTE}
+                  </div>
+                )}
+              </Field>
               <Field label={FIELD_LABEL.memberName} required error={errors.name}>
                 <TextField
                   value={values.name}
@@ -225,10 +266,10 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
 
             <div className="mt-4 text-[13px] leading-[1.6] text-n500">
               {academicRequired
-                ? "재학 회원은 학과 · 학년이 필수입니다. "
-                : "학과 · 학년은 선택입니다. "}
+                ? "재학 회원은 학번 · 학과 · 학년이 필수입니다. "
+                : "학번 · 학과 · 학년은 선택입니다. "}
               동아리 가입 월은 모르면 비워 두어도 됩니다. 비워 둔 칸은 저장할 때{" "}
-              <b>지워집니다</b> — 이 화면은 여덟 항목을 통째로 저장합니다.
+              <b>지워집니다</b> — 이 화면은 아홉 항목을 통째로 저장합니다.
             </div>
 
             {editor.saveErrorMessage && (
@@ -242,16 +283,18 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
             <Card>
               <SectionLabel className="mb-3">이 화면에서 바꿀 수 없는 항목</SectionLabel>
               <div className="grid grid-cols-[84px_1fr] gap-y-[9px] text-[15px]">
-                <div className="text-[14px] text-n500">학생번호</div>
-                <div>{member.studentNumber || "학번 미확인"}</div>
                 <div className="text-[14px] text-n500">전산 가입일</div>
                 <div>{member.systemJoinDate}</div>
                 <div className="text-[14px] text-n500">현재 기수</div>
                 <div>{generationText(member.generationNumber)}</div>
               </div>
+              {/*
+                학번은 이 목록을 떠났다(#237). 남은 전산 가입일은 시스템이 기록한 시각이라
+                성격이 다르므로, 둘을 묶어 설명하던 한 문장도 함께 갈랐다.
+              */}
               <div className="mt-3 text-[13px] leading-[1.6] text-n500">
-                학번과 전산 가입일은 시스템이 기록한 값이라 수정할 수 없습니다. 동아리 가입
-                시기는 확인되는 대로 채워주세요.
+                전산 가입일은 시스템이 계정을 만든 날이라 수정할 수 없습니다. 동아리 가입 시기는
+                확인되는 대로 채워주세요.
               </div>
             </Card>
 
