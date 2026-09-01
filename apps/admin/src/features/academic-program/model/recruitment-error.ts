@@ -16,6 +16,12 @@ import { API_ERROR, ApiError } from "@/shared/lib/api/client";
  * "모집을 먼저 시작하세요"를 안내한다. `FORM_HAS_NO_QUESTION`(문항 0개 폼으로 모집 시작)은
  * 이슈가 지정한 문구 그대로 — 폼 편집 화면에서 문항을 먼저 등록하라고 밝힌다.
  *
+ * **모집 시작은 폼 도메인 오류를 그대로 전파하므로 그 코드를 여기서 받아야 한다.** 빠뜨리면
+ * default 로 떨어져 서버 원문이 화면에 그대로 뜬다 — `INVALID_FORM_STATUS_TRANSITION` 이
+ * 실제로 그렇게 새어 "허용되지 않는 폼 상태 전이입니다"가 토스트에 찍혔다(개발 용어 노출 ·
+ * 다음 행동 없음 — AGENTS.md 화면 문구 규칙 위반). 그 상태는 활동이 승인인데 폼만 열려 있는
+ * 정합성 붕괴라 사용자가 화면에서 풀 수 없어, 새로고침이 아니라 담당자 문의로 안내한다.
+ *
  * 알 수 없는 코드는 서버 메시지를 그대로 보여 준다 — 임의로 뭉개면 원인을 알려주려고 서버가
  * 내려보낸 문장이 사라진다.
  */
@@ -34,6 +40,8 @@ export function toRecruitmentErrorMessage(error: unknown): string {
       return "아직 모집이 시작되지 않았습니다 — 모집 기간을 정해 먼저 모집을 시작해주세요";
     case RECRUITMENT_ERROR.FORM_HAS_NO_QUESTION:
       return "신청서에 문항이 없어 모집을 시작할 수 없습니다 — 폼 편집 화면에서 문항을 먼저 등록하세요";
+    case RECRUITMENT_ERROR.INVALID_FORM_STATUS_TRANSITION:
+      return "신청서가 이미 접수 중이라 모집을 시작할 수 없습니다 — 학술 담당자에게 문의해주세요";
     case ACADEMIC_PROGRAM_ERROR.INVALID_ACADEMIC_PROGRAM_TRANSITION:
       return "이미 모집이 시작됐거나 처리된 활동입니다 — 화면을 새로고침해주세요";
     case ACADEMIC_PROGRAM_ERROR.FORM_NOT_LINKED:

@@ -49,6 +49,19 @@ import {
 /** 잠긴 버튼에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
 const NO_WRITE = "폼을 고치거나 복제할 권한이 없습니다";
 const NO_STATUS_CHANGE = "접수 상태를 바꿀 권한이 없습니다";
+/*
+ * 학술 활동에 연결된 폼의 접수 **시작** 잠금 (#194와 같은 판단 · 폼 편집 화면은 그 이슈가 이미 막았다).
+ *
+ * 여기서 접수를 열면 폼만 OPEN이 되고 활동은 승인 상태에 남는다 — 그 뒤 "모집 시작"은 이미 열린
+ * 폼을 또 열려다 INVALID_FORM_STATUS_TRANSITION 으로 막히고, 활동을 진행 중으로 만들 길이 사라진다.
+ * 모집 시작(START_RECRUITMENT)은 폼을 여는 것 말고도 접수 기간 반영·활동 전이·행사 공개를 한
+ * 트랜잭션으로 묶으므로, 그 셋을 건너뛴 폼만 열린 상태는 되돌릴 화면이 없다.
+ *
+ * **마감은 잠그지 않는다.** 모집을 닫는 화면이 여기뿐이라(모집 관리에는 마감 버튼이 없다) 함께
+ * 잠그면 접수 중인 학술 폼을 닫을 방법이 사라진다 — 잠가야 하는 것은 활동과 어긋나는 방향뿐이다.
+ */
+const ACADEMIC_FORM_RECEIPT_LOCKED =
+  "이 폼은 학술 활동에 연결돼 있어 여기서 접수를 시작할 수 없습니다 — 모집 관리 화면에서 시작하세요";
 
 function QitemPreview({
   qitem,
@@ -202,6 +215,13 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
   };
 
   const startReceipt = () => void applyStatusChange(() => status.open(form.formId));
+
+  /*
+   * 학술 폼의 접수 시작만 잠근다 (ACADEMIC_FORM_RECEIPT_LOCKED 주석 참고). 라벨이 아니라 서버가
+   * 주는 academicProgramId 로만 판정한다 — 라벨은 운영진이 손댈 수 있어 잠금의 근거가 못 된다.
+   */
+  const receiptStartLocked =
+    form.academicProgramId != null && form.formSttsCd !== "OPEN";
 
   const confirmClose = () =>
     void applyStatusChange(async () => {
@@ -367,8 +387,14 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 */}
                 <button
                   type="button"
-                  disabled={status.pending || !canChangeStatus}
-                  title={canChangeStatus ? undefined : NO_STATUS_CHANGE}
+                  disabled={status.pending || !canChangeStatus || receiptStartLocked}
+                  title={
+                    !canChangeStatus
+                      ? NO_STATUS_CHANGE
+                      : receiptStartLocked
+                        ? ACADEMIC_FORM_RECEIPT_LOCKED
+                        : undefined
+                  }
                   onClick={
                     form.formSttsCd === "OPEN"
                       ? () => setCloseSheetOpen(true)

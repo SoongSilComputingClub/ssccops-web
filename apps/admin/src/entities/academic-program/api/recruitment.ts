@@ -46,6 +46,18 @@ export const RECRUITMENT_ERROR = {
   RECRUITMENT_NOT_STARTED: "RECRUITMENT_NOT_STARTED",
   /** START_RECRUITMENT 인데 연결된 폼에 문항이 하나도 없다 (400 · 폼 도메인 코드를 그대로 전파) */
   FORM_HAS_NO_QUESTION: "FORM_HAS_NO_QUESTION",
+  /**
+   * START_RECRUITMENT 인데 연결된 폼이 이미 접수 중이다 (400 · 폼 도메인 코드를 그대로 전파).
+   *
+   * 모집 시작은 폼을 DRAFT → OPEN 으로 전이하는데, 폼이 이미 OPEN 이면 그 전이가 표 밖이라
+   * 서버가 거절한다. **폼 도메인 코드가 이 화면까지 새어 나오는 두 번째 자리다** —
+   * FORM_HAS_NO_QUESTION 만 옮겨 두고 이 코드를 빠뜨려, 실제로 서버 원문("허용되지 않는 폼
+   * 상태 전이입니다")이 그대로 토스트에 뜬 적이 있다.
+   *
+   * 활동은 승인 상태인데 폼만 열려 있는 정합성 붕괴이므로 사용자가 화면에서 풀 수 있는 길이
+   * 없다 — 새로고침을 권하지 않고 담당자 문의로 안내한다.
+   */
+  INVALID_FORM_STATUS_TRANSITION: "INVALID_FORM_STATUS_TRANSITION",
 } as const;
 
 /* ── 서버 응답(Response DTO) ────────────────────────────────── */
