@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+/*
+ * 공유 폼 렌더러(#152)의 클래스도 함께 훑는다. 패키지는 pnpm 심링크를 통해 node_modules 아래로
+ * 보이는데 Tailwind의 자동 탐색은 거기를 건너뛰므로, 이 줄이 없으면 문항 카드가 클래스 이름만
+ * 있고 스타일이 없는 채로 그려진다.
+ */
+@source "../../../../packages/form-renderer/src";
+
+/* SSCC Admin 디자인 토큰 — 원본 디자인(Toss 라이트 테마)의 값 그대로 */
+@theme {
+  --color-*: initial;
+  --color-bg: #f2f4f6;
+  --color-surface: #ffffff;
+  --color-ink: #191f28;
+  --color-accent: #3182f6;
+  --color-accent-strong: #1b64da;
+  --color-accent-soft: #e8f2fe;
+  --color-amber: #c2620a;
+  --color-amber-soft: #fff4e6;
+  --color-n300: #4e5968;
+  --color-n400: #6b7684;
+  --color-n500: #8b95a1;
+  --color-line: #e5e8eb;
+  --color-line-strong: #d1d6db;
+  --color-danger: #f04452;
+  --color-danger-strong: #d63a46;
+  --color-success: #00b25f;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system,
+    BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --animate-fade-in: fade-in 0.16s ease both;
+  --animate-pop-in: pop-in 0.18s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d6db;
+  border-radius: 12px;
+}

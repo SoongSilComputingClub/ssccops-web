@@ -6,14 +6,26 @@ Claude Design 산출물 `SSCC Admin Desktop v2`를 기반으로 구현한 Next.j
 현재 단계는 **API 미연동 PoC**로, 모든 데이터는 더미 JSON(`src/entities/*/api/*.json`)을
 시드로 하는 클라이언트 상태(zustand)로 동작합니다. 새로고침 시 시드 상태로 초기화됩니다.
 
-## 실행
+## 구조 · 실행
+
+pnpm workspace + Turborepo 모노레포입니다. `packages/*`는 공유 패키지 자리입니다
+(후속 이슈에서 추가 예정).
+
+| 앱 | 워크스페이스 | 개발 서버 | 무엇 |
+| --- | --- | --- | --- |
+| `apps/admin` | `@ssccops/admin` | http://localhost:3000 | 운영관리 어드민 (로그인·권한) |
+| `apps/www` | `@ssccops/www` | http://localhost:3001 | 공개 웹사이트 (비로그인 · 행사 목록·상세 · 동아리 소개) |
 
 ```bash
-pnpm install
-pnpm dev        # http://localhost:3000
-pnpm build      # 프로덕션 빌드
+pnpm install    # 워크스페이스 루트에서
+pnpm dev        # turbo run dev — 두 앱을 함께 띄웁니다
+pnpm build      # turbo run build (프로덕션 빌드)
 pnpm lint
+pnpm typecheck
 ```
+
+앱 하나만 다루려면 `pnpm --filter @ssccops/www dev` 처럼 워크스페이스를 지정합니다.
+`.env.local`은 앱 디렉터리 안에 각각 둡니다(`apps/*/.env.example` 참고).
 
 ## 기술 스택
 

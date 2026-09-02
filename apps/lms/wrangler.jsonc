@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // 학술 공개 앱입니다(#169) — 운영관리 어드민(apps/admin)·공개 행사 앱(apps/www)과는 별개의
+  // Worker로 배포합니다. 이 앱은 별도 도메인(lms.sscc.co.kr)을 씁니다 — 전 화면이 로그인
+  // 필수라 apps/www에 얹지 않고 도메인부터 갈랐습니다(#169 본문 참고).
+  //
+  // name과 env 블록을 일부러 두지 않는 것은 apps/www·apps/admin과 같은 이유입니다. Worker
+  // 이름은 여기 하드코딩하는 대신 package.json의 deploy 스크립트가 --name 플래그로 넘깁니다
+  // (dev-lms-ssccops / lms-ssccops). 앱이 늘어날 때마다 env.dev.name·env.prod.name을
+  // 반복해서 박아 넣지 않기 위해서입니다. env 블록이 없으므로 -e/--env 플래그도 쓰지
+  // 않습니다(빈 env를 참조하면 wrangler가 "No environment found" 경고를 냅니다).
+  //
+  // 실제 Cloudflare 리소스 생성과 Workers Builds 연결은 후속 작업입니다(#169) — 이 파일은
+  // 어드민·www와 같은 방식(OpenNext + Workers)으로 배포할 준비만 해 둔 것입니다.
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  }
+}

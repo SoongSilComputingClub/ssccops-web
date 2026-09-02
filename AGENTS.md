@@ -18,6 +18,14 @@ SSCC(숭실컴퓨팅클럽) 운영관리 어드민 웹 — Next.js 16 App Router
 > 되살아나므로 **그대로 두고 그 바깥에** 쓴다. 개인 로컬 메모(포트·`.env.local`·증상별 원인
 > 판별 등)는 git에 올리지 않는 `CLAUDE.local.md`에 둔다 — 이 파일은 팀이 공유하는 규약만 담는다.
 
+**커밋하지 않는 작업 파일은 `private-workspace/`에 둔다** — 화면정의서·시안 원본, 공유 전
+초안, 개인 스크립트 같은 것들이다. `.gitignore`의 `### Private files & Artifacts ###` 절이
+디렉터리째 막고 있으며, 이름과 위치는 `ssccops`·`ssccops-server`와 같다. 저장소를 오가며
+"여기선 어디였더라"를 기억할 일이 없어야 한다.
+
+`CLAUDE.local.md`와 나누는 기준은 단순하다 — **읽는 메모는 `CLAUDE.local.md`, 파일은
+`private-workspace/`.**
+
 ## 검증 — CI와 같은 순서로 돌린다
 
 ```bash
@@ -130,6 +138,18 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
 - **`shared/config/codes.ts`의 표시명은 문구가 아니라 계약이다** — 서버 `data.sql` 시드와 글자까지 맞춰져 있어 여기서 다듬으면 화면이 조용히 빈 라벨로 깨진다. 바꾸려면 서버 시드와 함께 바꾼다. `FIELD_LABEL`의 데이터사전 표기(`유형_명`)도 같다.
 - 서버가 내려주는 문구(권한명·경고)는 서버 소관이라 화면에서 고치지 않는다.
 
+## 결정 기록 (ADR)
+
+되돌리기 어려운 결정 — 여러 컴포넌트에 걸치거나 운영·보안에 영향을 주는 것 — 은 기획 저장소의
+**[`ssccops/docs/decisions/`](https://github.com/SoongSilComputingClub/ssccops/tree/main/docs/decisions)**
+에 한 장씩 남긴다. 목차와 쓰는 법은 그 저장소의 `AGENTS.md`에 있다.
+
+**논의는 `[DECISION]` 이슈에서, 확정은 ADR 파일로.** 이슈는 ADR 링크 없이 닫지 않는다.
+
+이 저장소의 판단 중 ADR로 올라갈 것과 여기 남을 것을 가른다 — **ADR은 '왜', 코드 주석은
+'어떻게'**다. 주석에서 ADR을 가리키면(`ADR-0003 참고`) 둘이 갈라지지 않는다. 아래 절들은
+여전히 이 저장소의 규칙이며 ADR로 옮기지 않는다.
+
 ## 주요 결정 (왜 그렇게 돼 있는가)
 
 - **버튼은 '지금 할 수 있는 전이' 하나만 그린다.** 두 단계를 건너뛰려고 요청을 이어 보내면
@@ -198,14 +218,18 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
 `.github/workflows/`가 강제하는 것과 사람이 지켜야 하는 규칙이 나뉜다.
 
 - **base 브랜치는 `develop`이다** — `main`은 릴리스 전용이고 직접 커밋하지 않는다.
-  **서버 레포(`ssccops-server`)는 base가 `main`이라 다르다.** 두 레포를 오갈 때 주의할 것.
-- 브랜치: 이슈를 열면 `issue-branch-creator.yml`이 제목 앞 태그(`[Feat]`/`[Fix]`/`[Refactor]`/
-  `[Docs]`/`[Chore]`/`[Test]`)를 읽어 `{type}/#{이슈번호}-{영문 슬러그}`로 만들어 준다.
+  **서버 레포(`ssccops-server`)도 같다.** 두 저장소 모두 기본 브랜치가 `develop`이고,
+  `main`으로 가는 것은 릴리스 PR뿐이다.
+- 브랜치: 이슈를 열면 `issue-branch-creator.yml`이 제목 앞 태그(`[FEAT]`/`[FIX]`/`[REFACTOR]`/
+  `[CHORE]`)를 읽어 `{type}/#{이슈번호}-{영문 슬러그}`로 만들어 준다. 문서·테스트·CI 작업은
+  `[CHORE]`로 열고 세부 종류는 라벨(`docs`·`test`·`cicd`)로 가른다.
   직접 만들어야 한다면 같은 형식을 따른다.
 - 커밋 메시지: 이슈가 있으면 `#{이슈번호} {type}({scope}): 설명`, 없으면 `{type}({scope}): 설명`.
-  `pr-labeler.yml`이 커밋 첫 줄에서 타입을 파싱해 PR 라벨을 붙이므로 표기를 벗어나면 라벨이
-  붙지 않는다 — `feat`/`fix`/`refactor`/`design`/`style`/`docs`/`test`/`chore`/`init`/`rename`/
-  `remove`/`cicd`. (`/commit-message` 스킬이 이 형식을 만들어 준다.)
+  타입은 `feat`/`fix`/`refactor`/`design`/`style`/`docs`/`test`/`chore`/`init`/`rename`/
+  `remove`/`cicd`. **PR의 타입 라벨은 연결된 이슈의 라벨에서만 온다**(`pr-labeler.yml`) —
+  커밋 표기는 라벨에 아무 영향을 주지 않으므로, 표기를 지키는 이유는 `git log`가 읽히기
+  때문이다. 이슈를 연결하지 않은 PR에는 타입 라벨이 붙지 않는다.
+  (`/commit-message` 스킬이 이 형식을 만들어 준다.)
 - PR 제목은 `[#이슈번호] 총 작업 내용` — **Squash merge 시 그대로 커밋 제목이 되므로** 형식을
   지킨다. 이 레포는 Squash and merge만 쓴다. (`/create-pr` 스킬)
 - `main`·`develop`으로 향하는 PR은 `integrate.yml`(Lint → Test → Analyze/Build)과

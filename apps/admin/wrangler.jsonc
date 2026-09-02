@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // name과 env 블록을 일부러 두지 않는다. Worker 이름은 앱 diff마다 여기 하드코딩하는 대신
+  // package.json의 deploy 스크립트가 --name 플래그로 넘긴다(wrangler 4.122 기준 실측 확인 —
+  // name 없이도 --name만으로 정상 동작한다). 이유는 앱이 늘어날 때마다(admin/www/향후 lms)
+  // 여기에 env.dev.name·env.prod.name을 반복해서 박아 넣지 않기 위해서다 — 이름 규칙(접두사
+  // dev- + 슬러그)은 각 앱 package.json 스크립트 한 줄로 끝난다.
+  //
+  // env 블록이 없으므로 -e/--env 플래그도 쓰지 않는다(빈 env를 참조하면 wrangler가
+  // "No environment found" 경고를 낸다 — 실측 확인). dev/prod 차이는 --name 값 자체가 진다.
+  //
+  // 나중에 이 앱이 Cloudflare 리소스(KV·R2·D1 등)를 직접 바인딩해야 하면 그때 env 블록을
+  // 되살인다 — 바인딩은 CLI 플래그로 못 넘기고 설정 파일에만 선언할 수 있기 때문이다.
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  }
+}

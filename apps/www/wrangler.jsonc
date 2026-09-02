@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // 공개 웹사이트입니다 — 운영관리 어드민(apps/admin)과는 별개의 Worker로 배포합니다.
+  // 이 앱은 루트 도메인(sscc.club)을 그대로 씁니다(어드민처럼 서브도메인이 아니라 www 계열
+  // Worker 이름 www-ssccops로 배포 — 실제 도메인·라우트 바인딩은 Cloudflare 대시보드에서).
+  //
+  // name과 env 블록을 일부러 두지 않는다. Worker 이름은 여기 하드코딩하는 대신 package.json의
+  // deploy 스크립트가 --name 플래그로 넘긴다(wrangler 4.122 기준 실측 확인 — name 없이도
+  // --name만으로 정상 동작한다). 이유는 앱이 늘어날 때마다(admin/www/향후 lms) 여기에
+  // env.dev.name·env.prod.name을 반복해서 박아 넣지 않기 위해서다.
+  //
+  // env 블록이 없으므로 -e/--env 플래그도 쓰지 않는다(빈 env를 참조하면 wrangler가
+  // "No environment found" 경고를 낸다 — 실측 확인). dev/prod 차이는 --name 값 자체가 진다.
+  //
+  // 실제 Cloudflare 리소스 생성과 Workers Builds 연결은 후속 작업입니다 — 이 파일은
+  // 어드민과 같은 방식(OpenNext + Workers)으로 배포할 준비만 해 둔 것입니다.
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  }
+}
