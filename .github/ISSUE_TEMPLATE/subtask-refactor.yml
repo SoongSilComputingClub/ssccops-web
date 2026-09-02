@@ -9,6 +9,9 @@ body:
       value: |
         제목 앞 `[REFACTOR]`를 **지우지 마세요.** 이 접두사로 브랜치와 라벨이 자동 생성됩니다.
 
+        생성 후 상단 **Parent issue**에서 `ssccops`의 Story·Task를 연결하세요 —
+        Epic에 닿지 않는 이슈는 어디에도 잡히지 않습니다(ssccops ADR 0002).
+
         **화면 동작이 바뀌면 리팩토링이 아닙니다** — `[FEAT]` 또는 `[FIX]`로 등록하세요.
 
   - type: dropdown

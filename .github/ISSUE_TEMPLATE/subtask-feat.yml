@@ -8,7 +8,9 @@ body:
     attributes:
       value: |
         제목 앞 `[FEAT]`을 **지우지 마세요.** 이 접두사로 브랜치(`feat/#번호-...`)와 라벨이 자동 생성됩니다.
-        생성 후 상단 **Parent issue**에서 `ssccops`의 Story·Task를 연결하세요 (cross-repo 가능).
+        생성 후 상단 **Parent issue**에서 `ssccops`의 Story·Task를 **반드시** 연결하세요 (cross-repo 가능).
+        마일스톤을 걷어내고 Epic만으로 추적하므로(ssccops ADR 0002), Epic에 닿지 않는 이슈는
+        어디에도 잡히지 않습니다.
 
   - type: dropdown
     id: target
