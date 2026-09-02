@@ -28,7 +28,7 @@ import { MemberCardMobile, MemberRowDesktop } from "./member-row";
  *
  * ── 활동을 어떻게 고르는가 (#192) ──────────────────────────────
  * 상단 활동 선택 드롭다운(`ProgramSwitcher`)으로 고른다. `?programId=`가 있으면 그 활동,
- * 없으면 목록 맨 위 — 드롭다운으로 언제든 바꾼다. SSR 셸이 `mine=true` 목록 전체와 선택
+ * 없으면 목록 맨 위 — 드롭다운으로 언제든 바꾼다. SSR 셸이 `mine=leader` 목록 전체와 선택
  * 활동을 함께 받는다(`selectProgram`).
  *
  * ── 학번·출석률 열이 없다 (#131 결정) ────────────────────────────

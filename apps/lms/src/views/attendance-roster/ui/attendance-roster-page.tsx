@@ -26,7 +26,7 @@ import { AttendanceRosterMatrix } from "./attendance-roster-matrix";
  * ── 활동을 어떻게 고르는가 (#192) ──────────────────────────────────
  * 상단 활동 선택 드롭다운(`ProgramSwitcher`)으로 고른다. 첫 진입은 목록 맨 위 활동이 디폴트.
  * `?programId=`가 있으면 그 활동, 없으면 맨 위 — 어느 쪽이든 드롭다운으로 언제든 바꾼다.
- * SSR 셸이 `mine=true` 목록 전체(드롭다운 항목)와 선택 활동을 함께 받는다(`selectProgram`).
+ * SSR 셸이 `mine=leader` 목록 전체(드롭다운 항목)와 선택 활동을 함께 받는다(`selectProgram`).
  */
 
 export async function AttendanceRosterPage({

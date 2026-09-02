@@ -21,7 +21,7 @@ import { toLeaderDashboardErrorMessage } from "./leader-dashboard-error";
  * ── 활동 단건을 어디서 얻는가 ──────────────────────────────
  * `GET /v1/academic-programs/{id}` 상세 엔드포인트가 있지만 **그 응답의 `progress`는 아직
  * 0으로 고정돼 있다**(서버 `AcademicProgramDetailResponse.of`가 `zero()`를 넣는다 — #135
- * 이전 시안). 진행률이 실제로 계산돼 오는 곳은 `?mine=true` **목록**의 `progressRatio`
+ * 이전 시안). 진행률이 실제로 계산돼 오는 곳은 `?mine=leader` **목록**의 `progressRatio`
  * 하나뿐이라, 대시보드가 목록에서 대상 활동을 고르는 것과 같은 방식으로 여기서도 목록에서
  * `academicProgramId`로 찾는다. 목록에 없으면 **내 활동이 아니거나 없는 활동**이므로
  * `not-found`로 가른다(어드민 `useAcademicProgramDetail`의 "없는 활동" 판단과 같다).

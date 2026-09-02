@@ -11,9 +11,11 @@ import { ROUTES } from "@/shared/config/routes";
  * 회원은 기획안을 내고 상태를 보는 화면을 본다.
  *
  * **역할별 필터링은 `visibleNavLinks`가 한다** (#224 — #169가 잡아 둔 자리를 채웠다).
- * 판정 근거는 `GET /v1/academic-programs?mine=true`에 `isLeader === true`인 활동이 있는가이고
+ * 판정 근거는 `GET /v1/academic-programs?mine=leader`가 활동을 한 건이라도 주는가이고
  * (`fetchIsAcademicLeader`), 그 조회는 루트 레이아웃이 서버에서 한 번 해 두 컴포넌트에 같은
- * 값으로 내려보낸다. 로그인 여부로 갈리는 항목(로그아웃 등)은 목차에 없고 `AuthNav`가
+ * 값으로 내려보낸다. `mine=leader`는 스터디장/팀장 본인인 활동만 주므로(ssccops-server#215)
+ * 한 장(`size=1`)이면 판정이 끝난다 — 기획안만 낸 회원의 행은 애초에 오지 않는다(#241).
+ * 로그인 여부로 갈리는 항목(로그아웃 등)은 목차에 없고 `AuthNav`가
  * 클라이언트에서 판정해 그린다(apps/www와 같은 이유 — 세션 조회를 SSR에 끼워 넣지 않으려고,
  * 다만 이 앱은 전 화면이 로그인 필수라 그 부담이 www만큼 크지는 않다).
  *

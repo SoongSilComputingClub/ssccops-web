@@ -37,7 +37,7 @@ export function memberRoleBadge(isLeader: boolean): { label: string; tone: Badge
  * 활동_상태 배지 (#126 · #192).
  *
  * **`APPROVED`("승인")는 배지를 그리지 않는다.** lms의 학술 화면은 이미 승인된 활동만
- * 다루므로(스터디장/팀장으로 지정된 활동 = `mine=true`) "승인" 라벨은 아무것도 구별해 주지
+ * 다루므로(스터디장/팀장으로 지정된 활동 = `mine=leader`) "승인" 라벨은 아무것도 구별해 주지
  * 않는다. 진행 중·수료만 상태로 표시한다 — 그 둘은 "지금 굴러가는가"를 가른다.
  *
  * 어휘는 어드민 `ACDM_ACTV_STTS_NM`과 맞춘다(진행 중·수료).
