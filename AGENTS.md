@@ -222,15 +222,38 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
   `main`으로 가는 것은 릴리스 PR뿐이다.
 - 브랜치: 이슈를 열면 `issue-branch-creator.yml`이 제목 앞 태그(`[FEAT]`/`[FIX]`/`[REFACTOR]`/
   `[CHORE]`)를 읽어 `{type}/#{이슈번호}-{영문 슬러그}`로 만들어 준다. 문서·테스트·CI 작업은
-  `[CHORE]`로 열고 세부 종류는 라벨(`docs`·`test`·`cicd`)로 가른다.
-  직접 만들어야 한다면 같은 형식을 따른다.
+  `[CHORE]`로 연다 — **세부 종류를 라벨로 가르지 않는다**(#244, 아래). 직접 만들어야 한다면
+  같은 형식을 따르며, **남의 작업 브랜치가 아니라 `develop`에서 딴다** — 서버 레포에서
+  작업 중이던 다른 브랜치 위에서 갈라져 나온 PR이 문서 한 줄을 고치면서 남의 61개 파일을
+  함께 머지한 적이 있다(`ssccops-server#235`).
 - 커밋 메시지: 이슈가 있으면 `#{이슈번호} {type}({scope}): 설명`, 없으면 `{type}({scope}): 설명`.
   타입은 `feat`/`fix`/`refactor`/`design`/`style`/`docs`/`test`/`chore`/`init`/`rename`/
-  `remove`/`cicd`. **PR의 타입 라벨은 연결된 이슈의 라벨에서만 온다**(`pr-labeler.yml`) —
+  `remove`/`cicd`. **커밋 타입과 이슈 유형은 다른 어휘다**(#244) — 커밋 타입은 위 열둘
+  그대로이고, **이슈 유형은 `feat`·`fix`·`refactor`·`chore` 네 가지가 전부다**(아래).
+  커밋에는 `docs(agents):`라고 적으면서 그 작업의 이슈는 `[CHORE]`인 것이 정상이다.
+  **PR의 타입 라벨은 연결된 이슈의 라벨에서만 온다**(`pr-labeler.yml`) —
   커밋 표기는 라벨에 아무 영향을 주지 않으므로, 표기를 지키는 이유는 `git log`가 읽히기
   때문이다. 이슈를 연결하지 않은 PR에는 타입 라벨이 붙지 않는다.
   (`/commit-message` 스킬이 이 형식을 만들어 준다.)
+- **이슈 유형은 `feat`·`fix`·`refactor`·`chore` 네 가지뿐이다**(#244). 이슈 템플릿이 주는 것이
+  정본이며 라벨과 브랜치 접두어가 여기서 나온다. 문서·테스트·스타일·CI 작업의 이슈는 전부
+  `[CHORE]`다 — `[DOCS]`·`[CICD]` 같은 옛 태그로 열어도 `issue-labeler`·`issue-branch-creator`가
+  `chore`로 받는다. 예전에 쓰던 `docs`·`test`·`style`·`cicd`·`design`·`remove` 라벨은
+  **저장소에서 지웠다**(남겨 두면 화면 목록에서 고를 수 있어 다시 붙는다). 넷으로 못 박는
+  이유는 이 표가 `issue-labeler`·`issue-branch-creator`·`pr-labeler`·`pr-guard` 네 워크플로에
+  흩어져 있어 한 곳만 고치면 갈라지기 때문이다.
 - PR 제목은 `[#이슈번호] 총 작업 내용` — **Squash merge 시 그대로 커밋 제목이 되므로** 형식을
-  지킨다. 이 레포는 Squash and merge만 쓴다. (`/create-pr` 스킬)
-- `main`·`develop`으로 향하는 PR은 `integrate.yml`(Lint → Test → Analyze/Build)과
-  `pr-approval-check.yml`(리뷰 승인)이 함께 돈다.
+  지킨다. (`/create-pr` 스킬) **저장소 설정이 `squash_merge_commit_title = PR_TITLE`이라
+  커밋이 하나뿐인 PR에서도 PR 제목이 이긴다**(#244) — 기본값(`COMMIT_OR_PR_TITLE`)이던 동안에는
+  단일 커밋 PR에서 커밋 메시지가 제목이 되어, PR 제목을 통제해도 `git log`에는 다른 것이 박혔다.
+  **`pr-guard.yml`이 제목·브랜치명·두 번호의 일치·그 이슈의 실재를 검사해 어기면 실패시킨다**(#244)
+  — `develop → main` 릴리스 PR과 dependabot만 면제다.
+- **머지 전략은 둘이다.** 기능·수정 PR은 **Squash and merge**로 develop에 한 커밋으로 들어가고,
+  **`develop → main` 릴리스 PR은 일반 merge commit**이다 — 그쪽을 squash 하면 develop 전체가
+  main에서 커밋 하나로 뭉개져 릴리스에 무엇이 들어갔는지 사라진다. 그래서 `allow_merge_commit`은
+  켜 둔 것이며 끄지 말 것. `allow_rebase_merge`는 두 전략 어디에도 쓰이지 않아 껐다.
+- `main`·`develop`으로 향하는 PR은 `integrate.yml`(Lint → Test → Analyze/Build)이 돌고,
+  `pr-guard.yml`(컨벤션)과 `pr-labeler.yml`(크기·타입 라벨)이 함께 돈다.
+  **`pr-approval-check.yml`은 없다** — 예전에 이 자리에 적혀 있었으나 `.github/workflows/`에
+  그런 파일이 존재한 적이 없다(#244에서 확인). 리뷰 승인을 강제하려면 워크플로가 아니라
+  브랜치 보호 규칙이 필요하다.
