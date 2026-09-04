@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { MeetingListItem } from "@/entities/meeting";
 import { mtgSttsTone } from "@/entities/meeting";
 import type { SubWorkListItem } from "@/entities/sub-work";
@@ -19,16 +19,19 @@ import {
 } from "@/shared/config/codes";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
-import { formatDt, formatMd } from "@/shared/lib/date";
+import { formatDt, formatMd, todayInSeoul } from "@/shared/lib/date";
 import {
   Badge,
   type BadgeTone,
   Card,
   Chip,
   EmptyState,
+  MonthCalendar,
+  type MonthCalendarEvent,
   PageBody,
   PageHeader,
   SectionLabel,
+  Segmented,
 } from "@/shared/ui";
 
 /*
@@ -44,15 +47,38 @@ import {
 
 const KIND_TABS: ("전체" | OperTypeCd)[] = ["전체", "WORK", "SUB_WORK", "MEETING"];
 
+const VIEWS = ["리스트", "달력"] as const;
+type ViewMode = (typeof VIEWS)[number];
+
+/*
+ * 달력에 놓는 날짜는 유형마다 뜻이 다르다.
+ *
+ *   업무      종료일(endAt)   — 기간을 가진 단위라 "언제 끝나는가"로 놓는다
+ *   하위 업무  마감일(dueAt)
+ *   회의      시작 일시(startAt) — 마감이 아니라 열리는 날이다
+ *
+ * 하나로 뭉뚱그리지 않고 화면에 적는 이유는, 셋이 같은 칸에 나란히 놓이면 보는 사람이
+ * 전부 마감일이라고 읽기 때문이다. 업무를 시작일에 놓지 않는 것은 요구가 "어느 날짜에
+ * 마감되는지"였기 때문이고, 기간 막대로 그리지 않는 것은 월 그리드에서 여러 날에 걸친
+ * 막대가 칸 계산을 통째로 다르게 만들기 때문이다(범위 밖).
+ */
+const CALENDAR_DATE_NOTE = "업무는 종료일 · 하위 업무는 마감일 · 회의는 시작 일시에 놓입니다";
+
 interface OperRow {
   operTypeCd: OperTypeCd;
   key: string;
   ttl: string;
   date: string;
+  /** 달력이 쓰는 원본 날짜 "YYYY-MM-DD". 값이 없으면 달력에 놓지 않는다 */
+  ymd: string | null;
   pic: string;
   ext: string;
   href: string;
 }
+
+/** 서버가 주는 일시 문자열에서 날짜만 잘라 쓴다 — 시각은 달력 칸에 필요 없다 */
+const ymdOf = (value: string | null): string | null =>
+  value ? value.slice(0, 10) : null;
 
 const kindTone = (cd: OperTypeCd) =>
   cd === "WORK" ? "blue" : cd === "MEETING" ? "amber" : "grey";
@@ -72,6 +98,7 @@ function workRow(w: WorkListItem): OperRow {
     key: `WORK-${w.workId}`,
     ttl: w.title,
     date: `${formatMd(w.startAt)} ~`,
+    ymd: ymdOf(w.endAt),
     pic: w.owner?.name || "-",
     ext: `업무 유형 ${WORK_TYPE_NM[w.workType]} · 업무 상태 ${WORK_STTS_NM[w.workStatus]} · 하위 ${w.subWorkCount}건`,
     href: ROUTES.workDetail(w.workId),
@@ -84,6 +111,7 @@ function subWorkRow(sw: SubWorkListItem): OperRow {
     key: `SUB_WORK-${sw.subWorkId}`,
     ttl: sw.title,
     date: formatMd(sw.dueAt) || "-",
+    ymd: ymdOf(sw.dueAt),
     pic: sw.owner?.name || "-",
     ext: `업무 상태 ${WORK_STTS_NM[sw.workStatus]} · 승인 ${APRV_STTS_NM[sw.approvalStatus]} · 진행 ${sw.progressRate}%`,
     href: ROUTES.subWorkDetail(sw.subWorkId),
@@ -96,6 +124,7 @@ function meetingRow(m: MeetingListItem): OperRow {
     key: `MEETING-${m.meetingId}`,
     ttl: m.title,
     date: formatDt(m.startAt),
+    ymd: ymdOf(m.startAt),
     pic: m.personInCharge?.name || "-",
     ext: `회의 구분 ${m.meetingCategory ? MTG_SE_NM[m.meetingCategory] : "-"} · 회의 상태 ${
       m.meetingStatus ? MTG_STTS_NM[m.meetingStatus] : "-"
@@ -119,8 +148,45 @@ function OperationsHubSkeleton() {
 
 export function OperationsHubPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data, status, errorMessage, reload } = useOperationsHub();
   const [tab, setTab] = useState<"전체" | OperTypeCd>("전체");
+
+  /*
+   * 고른 보기는 URL 쿼리에 둔다(`?view=달력`).
+   *
+   * localStorage를 쓰지 않는 것은 이 앱에 그 관행이 아직 없기도 하고, 무엇보다 URL에 있으면
+   * **그 화면을 그대로 링크로 건넬 수 있기** 때문이다 — "이번 달 달력 좀 보세요"가 링크
+   * 하나로 끝난다. 새로고침·뒤로가기에도 살아남는 것은 덤이다.
+   */
+  const view: ViewMode = searchParams.get("view") === "달력" ? "달력" : "리스트";
+  const setView = (next: ViewMode) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "리스트") params.delete("view");
+    else params.set("view", next);
+    const qs = params.toString();
+    // replace인 것은 보기 전환이 뒤로가기 기록을 쌓을 만한 이동이 아니기 때문이다
+    router.replace(qs ? `?${qs}` : "?", { scroll: false });
+  };
+
+  /*
+   * 기준일은 `todayInSeoul()`이다. `TODAY`(2026-08-09)는 목 데이터용 고정 상수라 서버에서
+   * 받아 온 값에 쓰면 조용히 틀린다(`shared/lib/date.ts`).
+   */
+  const today = todayInSeoul();
+  const [ym, setYm] = useState(() => ({
+    year: Number(today.slice(0, 4)),
+    month: Number(today.slice(5, 7)) - 1, // 0-based
+  }));
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
+  const shiftMonth = (delta: number) => {
+    setSelectedDay(null);
+    setYm((cur) => {
+      const d = new Date(cur.year, cur.month + delta, 1);
+      return { year: d.getFullYear(), month: d.getMonth() };
+    });
+  };
 
   const rows: OperRow[] = [
     ...data.works.map(workRow),
@@ -128,6 +194,29 @@ export function OperationsHubPage() {
     ...data.meetings.map(meetingRow),
   ];
   const filtered = rows.filter((r) => tab === "전체" || r.operTypeCd === tab);
+
+  /*
+   * 달력에 놓을 것과 놓지 못할 것을 가른다. 유형 탭이 그대로 걸리므로 두 보기가 같은 것을 본다.
+   *
+   * 날짜가 없는 건을 오늘 칸에 몰아넣지 않는다 — 없는 날짜를 지어내는 것이 되고, 그러면
+   * 달력이 거짓말을 한다. 대신 몇 건이 빠졌는지를 적어 사람이 알게 한다.
+   */
+  const monthPrefix = `${ym.year}-${String(ym.month + 1).padStart(2, "0")}`;
+  const undated = filtered.filter((r) => !r.ymd).length;
+  const monthRows = filtered.filter(
+    // 타입 술어로 걸러 아래에서 ymd에 non-null 단언(!)을 쓰지 않는다
+    (r): r is OperRow & { ymd: string } => r.ymd?.startsWith(monthPrefix) ?? false,
+  );
+  const dayOf = (r: OperRow & { ymd: string }) => Number(r.ymd.slice(8, 10));
+  const calendarEvents: MonthCalendarEvent[] = monthRows.map((r) => ({
+    day: dayOf(r),
+    title: r.ttl,
+    tone: kindTone(r.operTypeCd),
+    onClick: () => router.push(r.href),
+  }));
+  const todayDay = today.startsWith(monthPrefix) ? Number(today.slice(8, 10)) : null;
+  const selectedRows = selectedDay ? monthRows.filter((r) => dayOf(r) === selectedDay) : [];
+  const isCurrentMonth = today.startsWith(monthPrefix);
 
   const kindCards = [
     {
@@ -196,8 +285,101 @@ export function OperationsHubPage() {
                   <div className="text-[13.5px] text-n500">
                     {filtered.length}건 · 전체 {rows.length}건
                   </div>
+                  {/* 유형 탭과 나란히 둔다 — 탭은 무엇을 볼지, 이쪽은 어떻게 볼지다 */}
+                  <Segmented
+                    options={VIEWS}
+                    value={view}
+                    onChange={setView}
+                    className="w-full lg:w-[160px]"
+                  />
                 </div>
-                {filtered.length === 0 ? (
+                {view === "달력" ? (
+                  <>
+                    <div className="mb-3 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => shiftMonth(-1)}
+                        className="cursor-pointer rounded-[9px] border border-line px-[10px] py-1 text-[14px] text-n400 hover:text-n300"
+                      >
+                        ‹
+                      </button>
+                      <div className="text-[15px] font-semibold">
+                        {ym.year}년 {ym.month + 1}월
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => shiftMonth(1)}
+                        className="cursor-pointer rounded-[9px] border border-line px-[10px] py-1 text-[14px] text-n400 hover:text-n300"
+                      >
+                        ›
+                      </button>
+                      {!isCurrentMonth && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedDay(null);
+                            setYm({
+                              year: Number(today.slice(0, 4)),
+                              month: Number(today.slice(5, 7)) - 1,
+                            });
+                          }}
+                          className="cursor-pointer rounded-[9px] border border-line px-[10px] py-1 text-[13.5px] text-n400 hover:text-n300"
+                        >
+                          오늘
+                        </button>
+                      )}
+                      <div className="flex-1" />
+                      <div className="text-[13.5px] text-n500">이 달 {monthRows.length}건</div>
+                    </div>
+
+                    <MonthCalendar
+                      year={ym.year}
+                      month={ym.month}
+                      events={calendarEvents}
+                      selectedDay={selectedDay}
+                      onSelectDay={(d) => setSelectedDay(d === selectedDay ? null : d)}
+                      todayDay={todayDay}
+                    />
+
+                    <div className="mt-[10px] text-[13px] text-n500">{CALENDAR_DATE_NOTE}</div>
+                    {undated > 0 && (
+                      /* 날짜가 없는 건은 달력에 놓지 않는다 — 있다는 사실만 알린다 */
+                      <div className="mt-[2px] text-[13px] text-n500">
+                        일시가 없어 달력에 놓이지 않은 건 {undated}건 — 리스트에서 볼 수 있습니다
+                      </div>
+                    )}
+
+                    {selectedDay !== null && (
+                      /* 칸이 "+N건"으로 접히므로, 고른 날의 전부를 여기서 펼친다 */
+                      <div className="mt-4">
+                        <SectionLabel className="mb-2">
+                          {ym.month + 1}월 {selectedDay}일 · {selectedRows.length}건
+                        </SectionLabel>
+                        {selectedRows.length === 0 ? (
+                          <div className="text-[13.5px] text-n500">이 날에는 운영 건이 없습니다</div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            {selectedRows.map((r) => (
+                              <div
+                                key={r.key}
+                                onClick={() => router.push(r.href)}
+                                className="flex cursor-pointer items-center gap-2"
+                              >
+                                <Badge tone={kindTone(r.operTypeCd)}>
+                                  {OPER_TYPE_NM[r.operTypeCd]}
+                                </Badge>
+                                <div className="min-w-0 truncate text-[14px] hover:text-accent">
+                                  {r.ttl}
+                                </div>
+                                <div className="flex-none text-[12.5px] text-n500">{r.pic}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : filtered.length === 0 ? (
                   <EmptyState message="표시할 운영 건이 없습니다" />
                 ) : (
                   /*
