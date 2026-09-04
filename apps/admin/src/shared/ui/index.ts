@@ -14,5 +14,5 @@ export { KeyValueGrid, type KeyValueItem } from "./key-value";
 export { StatBox } from "./stat-box";
 export { useToastStore, flash, ToastViewport } from "./toast";
 export { Sheet } from "./sheet";
-export { MonthCalendar, type MonthCalendarEvent } from "./month-calendar";
+export { Calendar, visibleRange, type CalendarItem, type CalendarMode } from "./calendar";
 export { PageHeader, PageBody } from "./page-header";
