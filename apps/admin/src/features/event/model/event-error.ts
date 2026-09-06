@@ -106,18 +106,6 @@ export function toEventStatusErrorMessage(error: unknown): string {
   }
 }
 
-/** 삭제 실패 */
-export function toEventDeleteErrorMessage(error: unknown): string {
-  if (!(error instanceof ApiError)) {
-    return "행사를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요";
-  }
-
-  if (error.code === EVENT_ERROR.EVENT_HAS_PARTICIPANT) {
-    return "참가자가 있는 행사는 삭제할 수 없습니다 — 삭제 대신 보관으로 전환해주세요";
-  }
-  return toEventErrorMessage(error);
-}
-
 /**
  * 신청(연결 폼의 응답) 목록 조회 실패 (#145 · GET /v1/events/{eventId}/applications).
  *

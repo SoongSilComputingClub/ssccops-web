@@ -1,7 +1,6 @@
 export {
   toEventApplicationErrorMessage,
   toEventCategoryErrorMessage,
-  toEventDeleteErrorMessage,
   toEventErrorMessage,
   toEventImageUploadErrorMessage,
   toEventParticipantErrorMessage,
@@ -22,8 +21,6 @@ export type {
   EventStatusControl,
   EventStatusOutcome,
 } from "./model/use-event-status";
-export { useDeleteEvent } from "./model/use-delete-event";
-export type { EventDelete, EventDeleteControl } from "./model/use-delete-event";
 export { useEventCategories } from "./model/use-event-categories";
 export type {
   EventCategoryAdmin,

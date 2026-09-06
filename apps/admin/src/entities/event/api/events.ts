@@ -95,8 +95,6 @@ export const EVENT_ERROR = {
   EVENT_FORM_IN_USE: "EVENT_FORM_IN_USE",
   /** 409 — 이미 다른 행사에 전속 연결된 폼 (D11) */
   FORM_ALREADY_LINKED: "FORM_ALREADY_LINKED",
-  /** 409 — 참가자가 있어 삭제할 수 없다 */
-  EVENT_HAS_PARTICIPANT: "EVENT_HAS_PARTICIPANT",
   /** 413 — 본문 10만 자 상한 초과 */
   EVENT_CONTENT_TOO_LARGE: "EVENT_CONTENT_TOO_LARGE",
 } as const;
@@ -237,14 +235,3 @@ export async function changeEventStatus(
 }
 
 /* ── 삭제 ──────────────────────────────────────────────────── */
-
-/**
- * DELETE /v1/events/{eventId} — 행사 삭제.
- *
- * 참가자가 있으면 409 EVENT_HAS_PARTICIPANT로 거절된다 — 그때의 안내(보관으로 전환)는
- * features/event의 오류 매핑이 맡는다. 화면이 참가자 수로 먼저 잠그지 않는 것은 확정 수가
- * 0이어도 대기자가 있을 수 있고, 판정 근거는 어차피 서버이기 때문이다.
- */
-export async function deleteEvent(eventId: number): Promise<void> {
-  await apiFetch<unknown>(`/v1/events/${eventId}`, { method: "DELETE" });
-}
