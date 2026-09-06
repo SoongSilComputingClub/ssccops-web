@@ -35,6 +35,11 @@ export const SESSION_PHOTO_ERROR = {
   /** 403 — 스터디장 본인이 아님 */
   FORBIDDEN: "FORBIDDEN",
   /**
+   * 413 — 서버 상한을 넘긴 크기. **숫자는 서버가 정하므로 여기에도 문구에도 박지 않는다**
+   * (서버 FilePresigner의 상수 하나가 두 도메인의 강제와 안내를 함께 정한다).
+   */
+  IMAGE_TOO_LARGE: "IMAGE_TOO_LARGE",
+  /**
    * R2 구간의 실패 — 서버가 준 코드가 아니라 클라이언트가 붙인다(`CLIENT_*` 관례는
    * `shared/api/client.ts`의 `API_ERROR`와 같다). 발급은 됐는데 바이트가 넘어가지 못한
    * 경우라, 원인이 우리 서버가 아님을 코드 이름이 남긴다.
@@ -65,17 +70,27 @@ export interface SessionPhotoTicket {
  * POST /v1/academic-programs/{id}/sessions/{sessionId}/file-reference — presigned PUT 주소 발급
  * (소유권 · 201, 재발급도 201 · UPSERT).
  *
- * 받는 것은 확장자 하나뿐이다(계약). `.JPG`로 보내든 `jpg`로 보내든 서버가 정규화한다 —
+ * 보내는 것은 확장자와 크기 둘이다. `.JPG`로 보내든 `jpg`로 보내든 서버가 정규화하므로
  * 파일에서 뽑은 확장자를 그대로 넘긴다.
+ *
+ * **`fileSize`는 필수다** (서버 ssccops-server#233). 빠지면 값과 무관하게 400이다. 서버가
+ * 이 값을 받는 이유는 둘 — 올리기 전에 413으로 안내할 수 있고, **그 값이 그대로 서명의
+ * `Content-Length`가 되어 실제 강제가 된다**(신고한 크기와 실제 파일이 다르면 R2가 PUT을
+ * 거절한다). 그래서 여기 넘기는 값은 반드시 **실제로 PUT 할 그 파일의 크기**여야 한다.
+ *
+ * **상한을 웹에서 먼저 검사하지 않는다** — 그 숫자가 두 벌이 되면 서버가 바꾸는 날 갈린다.
+ * 판정 근거는 서버이고 화면이 하는 일은 413을 문구로 옮기는 것이다(`contentType`을 서버가
+ * 정하는 것과 같은 태도다 · ssccops#157).
  */
 export async function issueSessionPhotoTicket(
   academicProgramId: number,
   sessionId: number,
   fileExt: string,
+  fileSize: number,
 ): Promise<SessionPhotoTicket> {
   const res = await apiFetchAuthedFromBrowser<FileReferenceUploadResponse>(
     `/v1/academic-programs/${academicProgramId}/sessions/${sessionId}/file-reference`,
-    { method: "POST", body: JSON.stringify({ fileExt }) },
+    { method: "POST", body: JSON.stringify({ fileExt, fileSize }) },
   );
   return {
     fileReferenceId: res.fileReferenceId,

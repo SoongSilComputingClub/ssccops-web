@@ -118,6 +118,8 @@ export function useSubmitSession(academicProgramId: number): SubmitSessionContro
             academicProgramId,
             sessionId,
             fileExtOf(input.photo),
+            // 서명에 들어갈 값이라 **PUT 할 그 파일의 크기**여야 한다 (서버 ssccops-server#233)
+            input.photo.size,
           );
           await putSessionPhoto(ticket.uploadUrl, input.photo, ticket.contentType);
           return { result: "submitted" };
