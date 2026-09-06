@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { fetchPublicEvent, toShareDescription } from "@/entities/event";
+import { toShareDescription } from "@ssccops/share-meta";
+import { fetchPublicEvent } from "@/entities/event";
 import { formatEventPeriod } from "@/shared/lib/date";
 import { EventDetailPage } from "@/views/event-detail";
 

@@ -11,7 +11,6 @@ export {
   eventPhaseBadge,
   eventReceiptBadge,
   formatCapacity,
-  toShareDescription,
 } from "./model/display";
 export { eventLoadErrorMessage } from "./model/event-error";
 export {

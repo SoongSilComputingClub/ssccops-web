@@ -24,6 +24,8 @@ export {
   SYSTEM_FORM_OPEN_PARTS,
   SYSTEM_FORM_QITEM_LOCKED,
 } from "./model/display";
+export type { PublicFormMeta } from "./api/public-form-meta";
+export { fetchPublicFormMeta } from "./api/public-form-meta";
 export {
   FORM_ERROR,
   changeFormStatus,
