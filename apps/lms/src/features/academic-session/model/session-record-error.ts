@@ -91,6 +91,9 @@ export function sessionPhotoErrorMessage(error: unknown): string {
   switch (error.code) {
     case SESSION_PHOTO_ERROR.UNSUPPORTED_IMAGE_TYPE:
       return "회차 기록은 저장됐습니다 — 인증사진 형식이 지원되지 않습니다. JPG·PNG 파일로 다시 올려주세요";
+    // 상한 숫자를 적지 않는다 — 서버가 정하는 값이라 여기 박으면 바뀌는 날 갈린다
+    case SESSION_PHOTO_ERROR.IMAGE_TOO_LARGE:
+      return "회차 기록은 저장됐습니다 — 인증사진 용량이 너무 큽니다. 더 작은 파일로 다시 올려주세요";
     case SESSION_PHOTO_ERROR.SESSION_NOT_EDITABLE:
       return "회차 기록은 저장됐지만 이미 승인된 회차라 인증사진은 바꿀 수 없습니다";
     case SESSION_PHOTO_ERROR.PUT_FAILED:
