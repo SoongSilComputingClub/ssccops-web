@@ -195,9 +195,11 @@ jobs:
           name: test-results
           path: coverage/
 
+      # v6부터 args를 Bash가 아니라 액션이 직접 토큰으로 나눈다(GHSA-5xq9-5g24-4g6f, #254).
+      # 값에 공백이 있는 인자는 "-Dsonar.x=a b"처럼 토큰째 감싼다 — 값만 감싸면 갈라진다.
       - name: SonarQube Scan
         if: env.SONAR_TOKEN != ''
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v6
         with:
           args: >
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT }}
