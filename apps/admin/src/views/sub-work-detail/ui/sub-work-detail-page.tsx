@@ -13,6 +13,7 @@ import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { RejectSheet, useApprovalDecisions } from "@/features/approval";
 import { useDeleteSubWork, useSubWorkActions, useSubWorkDetail } from "@/features/sub-work";
+import { ShareButton } from "@/features/share";
 import {
   APRV_STTS_NM,
   OPER_TYPE_NM,
@@ -258,6 +259,12 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
             )}
             {subWork.isDelayed && <Badge tone="red">지연</Badge>}
             <div className="flex-1" />
+            {/*
+              * 공유는 권한을 넓히지 않는다 — 토큰이 주는 것은 제목·요약 미리보기까지이고,
+              * 링크를 받은 사람은 종전대로 로그인과 권한 검사를 지나야 내용을 본다(ADR-0016).
+              * 그래서 이 화면을 볼 수 있다는 것만으로 공유할 수 있고 별도 잠금이 없다.
+              */}
+            <ShareButton subWorkId={subWork.subWorkId} title={subWork.title} />
             {canActOnOwnerTasks && (
               <Button
                 variant="ghost"
