@@ -59,30 +59,6 @@ export function eventReceiptBadge(
 }
 
 /**
- * Markdown 본문 → 공유 카드에 실을 한 줄 요약 (og:description).
- *
- * 카카오톡·에브리타임의 공유 카드는 두 줄 남짓만 보여 주므로 앞부분만 남긴다. 표식(`#`,
- * `**`, 링크 문법 등)을 걷어 내는 것은, 걷어 내지 않으면 공유 카드에 `## 모집 일정` 같은
- * 글자가 그대로 뜨기 때문이다. 완전한 파서가 아니라 **표기를 지우는 정도**이고, 그것으로
- * 충분한 자리다(여기서 만든 문자열은 화면에 HTML로 그려지지 않고 메타태그 값으로만 쓰인다).
- */
-export function toShareDescription(mtxtCn: string, limit = 120): string {
-  const plain = mtxtCn
-    .replace(/```[\s\S]*?```/g, " ") // 코드 블록
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // 이미지
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // 링크는 글자만 남긴다
-    .replace(/^\s{0,3}#{1,6}\s+/gm, "") // 제목 표식
-    .replace(/^\s{0,3}>\s?/gm, "") // 인용
-    .replace(/^\s{0,3}([-*+]|\d+\.)\s+/gm, "") // 목록 표식
-    .replace(/[*_~`]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (plain.length <= limit) return plain;
-  return `${plain.slice(0, limit).trimEnd()}…`;
-}
-
-/**
  * 정원 표기 — "확정 12 / 30". 정원이 없으면 "확정 12명"으로 쓴다.
  *
  * 정원이 없는 행사에 `12 / -` 같은 표기를 두지 않는 것은, 분모가 비면 사람들이 남은 자리를
