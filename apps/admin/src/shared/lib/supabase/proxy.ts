@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { ROUTES } from "@/shared/config/routes";
 import { safeNextPath } from "@/shared/lib/next-path";
+import { isCrawlableFormPath, isSharePreviewCrawler } from "@/shared/lib/share-crawler";
 
 /*
  * 미들웨어가 가르는 것은 "인증됐는가" 하나다.
@@ -28,6 +29,8 @@ import { safeNextPath } from "@/shared/lib/next-path";
  *
  * `/f`(공개 폼)는 **일부러 여기 넣지 않았다.** 넣으면 미인증 응답자가 폼까지 들어와 답을
  * 다 쓴 뒤 제출 시점에 로그인으로 튕겨 작성한 답이 날아간다(그래서 예전에 되돌린 자리다).
+ * 대신 `/f`의 공유 카드는 **크롤러에게만** 길을 열어 해결했다 — 아래 updateSession 참고
+ * (ssccops#269).
  */
 const PUBLIC_PATHS: string[] = [ROUTES.login, "/s"];
 
@@ -38,6 +41,26 @@ function isPublicPath(pathname: string): boolean {
 
 /** 세션 쿠키를 리프레시하고, 미인증 사용자를 보호 라우트에서 /login으로 리다이렉트한다 */
 export async function updateSession(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+
+  /*
+   * 공유 카드 크롤러는 `/f/{formId}`를 그대로 통과시킨다 (ssccops#269).
+   *
+   * 크롤러는 미인증이라 리다이렉트되면 generateMetadata가 돌지 않아 카드가 통째로 만들어지지
+   * 않는다. `/f`를 PUBLIC_PATHS에 넣지 못하는 이유는 위에 적었다 — 그래서 사람은 종전대로
+   * 로그인으로 보내고 크롤러에게만 길을 연다.
+   *
+   * **getUser() 앞에서 끊는다.** 크롤러에는 갱신할 세션 쿠키가 없어 Supabase 왕복이 통째로
+   * 헛일이고, 그 왕복은 요청마다 붙는 비용이라 매처를 좁게 잡은 이유와 같은 자리다.
+   *
+   * 문항이 새지 않는다 — PublicFormPage는 "use client"이고 문항·응답은 브라우저 토큰으로
+   * 가져오므로 서버가 내보내는 HTML에는 제목·안내 문구뿐이다(그것은 이미 공개하기로 한
+   * 값이고, DRAFT 폼은 서버가 404를 낸다 · ssccops-server#247).
+   */
+  if (isCrawlableFormPath(pathname) && isSharePreviewCrawler(request.headers.get("user-agent"))) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -61,8 +84,6 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { pathname, search } = request.nextUrl;
 
   if (!user && !isPublicPath(pathname)) {
     const url = request.nextUrl.clone();
