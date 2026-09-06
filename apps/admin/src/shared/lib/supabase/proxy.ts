@@ -18,7 +18,18 @@ import { safeNextPath } from "@/shared/lib/next-path";
  * /login?next=/f/{formId} 로 보내고, 가입까지 마친 뒤 원래 폼으로 되돌아온다.
  * 제출 완료 화면(/f/{formId}/done)도 같은 정책이라 /f/ 접두사째로 보호 대상이다.
  */
-const PUBLIC_PATHS: string[] = [ROUTES.login];
+/*
+ * 미인증 요청을 /login으로 돌려보내지 않는 경로.
+ *
+ * `/s`(공유 링크 착지, ssccops#200)가 여기 있는 것은 **크롤러가 정의상 미인증**이기
+ * 때문이다. 리다이렉트되면 generateMetadata가 아예 돌지 않아 OG 카드가 통째로 만들어지지
+ * 않는다. 대신 그 화면은 제목 한 줄만 그리고 곧바로 상세로 보내므로, 인증 없이 열려 있어도
+ * 새는 것이 없다 — 실제 내용이 있는 상세는 종전대로 여기서 지킨다.
+ *
+ * `/f`(공개 폼)는 **일부러 여기 넣지 않았다.** 넣으면 미인증 응답자가 폼까지 들어와 답을
+ * 다 쓴 뒤 제출 시점에 로그인으로 튕겨 작성한 답이 날아간다(그래서 예전에 되돌린 자리다).
+ */
+const PUBLIC_PATHS: string[] = [ROUTES.login, "/s"];
 
 function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/auth/")) return true;
