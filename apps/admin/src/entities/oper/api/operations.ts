@@ -59,6 +59,8 @@ interface SubWorkSummaryResponse {
   progressRate: number | null;
   dueAt: string | null;
   isDelayed: boolean | null;
+  isReadyForReview: boolean | null;
+  isReviewStale: boolean | null;
 }
 
 interface MeetingListItemResponse {
@@ -126,6 +128,9 @@ function toSubWorkListItem(res: SubWorkSummaryResponse): SubWorkListItem {
     progressRate: toProgressRate(res.progressRate),
     dueAt: res.dueAt,
     isDelayed: res.isDelayed === true,
+    // 정체 판정 둘 (ssccops#196) — 운영 통합도 같은 요약 응답을 받는다
+    isReadyForReview: res.isReadyForReview === true,
+    isReviewStale: res.isReviewStale === true,
   };
 }
 

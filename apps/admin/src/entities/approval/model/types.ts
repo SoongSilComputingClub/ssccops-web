@@ -107,4 +107,10 @@ export interface ApprovalInboxItem {
   latestRejectionReason: string | null;
   canApprove: boolean;
   canReject: boolean;
+  /**
+   * 이 요청이 올라온 지 **3일**이 지났는데 아직 처리되지 않았다는 서버 판정 (ssccops#196).
+   * 임계값은 서버 상수라 화면은 모르며, `requestedAt`에서 화면이 다시 세지 않는다 —
+   * 목록의 `isReviewStale`과 같은 경계를 써야 두 화면이 같은 건을 같게 말한다.
+   */
+  isReviewStale: boolean;
 }

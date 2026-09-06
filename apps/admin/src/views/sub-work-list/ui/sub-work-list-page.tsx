@@ -3,7 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { type SubWorkListItem } from "@/entities/sub-work";
-import { SUB_WORK_LIST_TABS, useSubWorkList, type SubWorkListTab } from "@/features/sub-work";
+import {
+  SUB_WORK_LIST_TABS,
+  SUB_WORK_LIST_TAB_HINTS,
+  useSubWorkList,
+  type SubWorkListTab,
+} from "@/features/sub-work";
 import { ROUTES } from "@/shared/config/routes";
 import { formatMd } from "@/shared/lib/date";
 import {
@@ -38,6 +43,30 @@ function statusBadge(sw: SubWorkListItem): { label: string; tone: BadgeTone } {
   }
   if (sw.workStatus === "DONE") return { label: "완료", tone: "grey" };
   return { label: "진행", tone: "blue" };
+}
+
+/*
+ * 정체 배지 (ssccops#196). 상태 배지 옆에 붙어 "지금 누가 무엇을 눌러야 하는지"를 말한다 —
+ * 상태만으로는 '진행'이 하는 중인지 다 했는데 안 눌렀는지 구별되지 않는다.
+ *
+ * 판정은 서버가 준 두 값만 본다. 진행률·체크리스트로 여기서 다시 세면 서버와 갈리고,
+ * 그 어긋남은 목록에서만 보인다 (shared/lib/date.ts의 deadlineFlag 주석과 같은 규칙).
+ * 한 건이 둘 다일 수는 없다 — 앞은 검토요청 전, 뒤는 검토 상태라 상태가 서로 배타적이다.
+ */
+function stallBadge(sw: SubWorkListItem): { label: string; title: string } | null {
+  if (sw.isReadyForReview) {
+    return {
+      label: "요청 전",
+      title: "완료 점검을 모두 마쳤습니다 — 완료 승인 요청을 하면 승인자에게 넘어갑니다",
+    };
+  }
+  if (sw.isReviewStale) {
+    return {
+      label: "승인 정체",
+      title: "완료 승인 요청 후 3일이 지났습니다 — 승인자의 승인·반려를 기다리고 있습니다",
+    };
+  }
+  return null;
 }
 
 function SubWorkTableSkeleton() {
@@ -119,10 +148,20 @@ export function SubWorkListPage() {
     {
       key: "status",
       header: "상태",
-      width: ".9fr",
+      width: "1.1fr",
       render: (sw) => {
         const badge = statusBadge(sw);
-        return <Badge tone={badge.tone}>{badge.label}</Badge>;
+        const stall = stallBadge(sw);
+        return (
+          <span className="flex flex-wrap items-center gap-1">
+            <Badge tone={badge.tone}>{badge.label}</Badge>
+            {stall && (
+              <Badge tone="outline-red" title={stall.title}>
+                {stall.label}
+              </Badge>
+            )}
+          </span>
+        );
       },
     },
     {
@@ -147,7 +186,12 @@ export function SubWorkListPage() {
       <PageBody>
         <div className="mb-[14px] flex items-center gap-[7px]">
           {SUB_WORK_LIST_TABS.map((t) => (
-            <Chip key={t} active={tab === t} onClick={() => setTab(t)}>
+            <Chip
+              key={t}
+              active={tab === t}
+              onClick={() => setTab(t)}
+              title={SUB_WORK_LIST_TAB_HINTS[t]}
+            >
               {t}
             </Chip>
           ))}

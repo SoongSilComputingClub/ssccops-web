@@ -22,17 +22,31 @@ import { toSubWorkErrorMessage } from "./sub-work-error";
  * 버리고 로딩 상태로 되돌린다.
  */
 
-/** 화면의 필터 칩 6종. 순서가 화면 노출 순서다 */
+/**
+ * 화면의 필터 칩 8종. 순서가 화면 노출 순서다.
+ *
+ * `요청 전`·`승인 정체`는 정체 칩 둘이다 (ssccops#196). 마감이 아니라 **절차**가 멈춘 건을
+ * 가리키므로 마감 계열(`마감임박`·`지연`) 뒤에 둔다. 둘을 한 칩으로 합치지 않은 것은 다음에
+ * 누를 사람이 다르기 때문이다 — 앞은 담당자, 뒤는 승인자다.
+ */
 export const SUB_WORK_LIST_TABS = [
   "전체",
   "진행",
   "승인대기",
   "마감임박",
   "지연",
+  "요청 전",
+  "승인 정체",
   "완료",
 ] as const;
 
 export type SubWorkListTab = (typeof SUB_WORK_LIST_TABS)[number];
+
+/** 칩에 마우스를 올렸을 때의 설명 — 칩 이름만으로는 무엇을 거르는지 알기 어렵다 */
+export const SUB_WORK_LIST_TAB_HINTS: Partial<Record<SubWorkListTab, string>> = {
+  "요청 전": "완료 점검을 모두 마쳤지만 아직 완료 승인 요청을 하지 않은 하위 업무입니다",
+  "승인 정체": "완료 승인 요청 후 3일이 지났지만 아직 승인·반려되지 않은 하위 업무입니다",
+};
 
 /**
  * 마감임박의 임계값(N일)은 목 데이터 시절 `deadlineFlag`가 쓰던 기준을 그대로 물려받는다.
@@ -58,6 +72,14 @@ function toFilter(tab: SubWorkListTab): SubWorkListFilter {
       return { dueBefore: dueWithinDays(DUE_SOON_DAYS) };
     case "지연":
       return { isOverdue: true };
+    /*
+     * 정체 둘은 서버가 판정한다 (ssccops#196) — 화면이 진행률·체크리스트로 다시 세면
+     * 서버와 갈리고, 그 어긋남은 목록에서만 보인다(지연 판정이 그렇게 두 번 갈렸다).
+     */
+    case "요청 전":
+      return { isReadyForReview: true };
+    case "승인 정체":
+      return { isReviewStale: true };
     case "완료":
       return { workStatus: "DONE" };
     case "전체":

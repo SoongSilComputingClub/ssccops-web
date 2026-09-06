@@ -224,6 +224,8 @@ interface SubWorkListItemResponse {
   progressRate: number | null;
   dueAt: string | null;
   isDelayed: boolean | null;
+  isReadyForReview: boolean | null;
+  isReviewStale: boolean | null;
 }
 
 function toListMemberRef(member: SubWorkListMemberResponse | null): SubWorkMemberRef | null {
@@ -254,6 +256,12 @@ function toSubWorkListItem(res: SubWorkListItemResponse): SubWorkListItem {
     progressRate: toListProgressRate(res.progressRate),
     dueAt: res.dueAt,
     isDelayed: res.isDelayed === true,
+    /*
+     * 정체 판정 둘 (ssccops#196). 서버가 아직 이 필드를 내려주지 않는 버전이면 false로
+     * 읽는다 — 없는 값을 '정체'로 뒤집지 않는다(칩이 빈 목록을 답하는 편이 낫다).
+     */
+    isReadyForReview: res.isReadyForReview === true,
+    isReviewStale: res.isReviewStale === true,
   };
 }
 
@@ -271,6 +279,10 @@ export interface SubWorkListFilter {
   approvalStatus?: AprvSttsCd[] | null;
   /** true만 의미가 있다 — 서버가 false를 필터 없음으로 무시한다 */
   isOverdue?: boolean | null;
+  /** 완료 점검 전부 체크 + 검토요청 전. isOverdue와 같이 true만 의미가 있다 (ssccops#196) */
+  isReadyForReview?: boolean | null;
+  /** 검토요청 후 3일 경과, 아직 대기. 임계값은 서버가 정한다 (ssccops#196) */
+  isReviewStale?: boolean | null;
   /** ISO-8601 + 오프셋. `dueWithinDays`로 만든다 */
   dueBefore?: string | null;
   /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
@@ -308,6 +320,8 @@ export async function fetchSubWorks(
     query.append("approvalStatus", status);
   }
   if (filter.isOverdue) query.set("isOverdue", "true");
+  if (filter.isReadyForReview) query.set("isReadyForReview", "true");
+  if (filter.isReviewStale) query.set("isReviewStale", "true");
   if (filter.dueBefore) query.set("dueBefore", filter.dueBefore);
   if (filter.cursor) query.set("cursor", filter.cursor);
   if (filter.size != null) query.set("size", String(filter.size));
