@@ -1,6 +1,7 @@
 export {
   toEventApplicationErrorMessage,
   toEventCategoryErrorMessage,
+  toEventDuplicateErrorMessage,
   toEventErrorMessage,
   toEventImageUploadErrorMessage,
   toEventParticipantErrorMessage,
@@ -15,6 +16,11 @@ export { useEventDetail } from "./model/use-event-detail";
 export type { EventDetailQuery, EventDetailStatus } from "./model/use-event-detail";
 export { useSaveEvent } from "./model/use-save-event";
 export type { EventSave, EventSaveControl } from "./model/use-save-event";
+export { useDuplicateEvent } from "./model/use-duplicate-event";
+export type {
+  EventDuplicateControl,
+  EventDuplicateResult,
+} from "./model/use-duplicate-event";
 export { useEventStatus } from "./model/use-event-status";
 export type {
   EventStatusChange,
