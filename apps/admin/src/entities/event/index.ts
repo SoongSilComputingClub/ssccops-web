@@ -17,7 +17,6 @@ export {
   EVENT_ERROR,
   changeEventStatus,
   createEvent,
-  deleteEvent,
   fetchEvent,
   fetchEvents,
   updateEvent,
