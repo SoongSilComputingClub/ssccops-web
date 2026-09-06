@@ -49,6 +49,7 @@ interface ApprovalInboxItemResponse {
   latestRejectionReason: string | null;
   canApprove: boolean | null;
   canReject: boolean | null;
+  isReviewStale: boolean | null;
 }
 
 /** entities/sub-work의 toQuorum과 같은 규칙 — 0으로 채우지 않는다 */
@@ -88,6 +89,7 @@ function toApprovalInboxItem(res: ApprovalInboxItemResponse): ApprovalInboxItem 
     // 권한 값이 빠진 응답을 '가능'으로 읽지 않는다 (하위 업무 상세와 같은 판단)
     canApprove: res.canApprove === true,
     canReject: res.canReject === true,
+    isReviewStale: res.isReviewStale === true,
   };
 }
 

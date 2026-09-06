@@ -55,6 +55,7 @@ interface ApprovalInboxItemResponse {
   myVote: VoteChoice | null;
   latestRejectionReason: string | null;
   canApprove: boolean | null;
+  isReviewStale: boolean | null;
   canReject: boolean | null;
 }
 
@@ -80,6 +81,8 @@ interface SubWorkSummaryResponse {
   progressRate: number | null;
   dueAt: string | null;
   isDelayed: boolean | null;
+  isReadyForReview: boolean | null;
+  isReviewStale: boolean | null;
 }
 
 interface DashboardResponse {
@@ -117,6 +120,8 @@ function toApprovalInboxItem(res: ApprovalInboxItemResponse): ApprovalInboxItem 
     authorizerAuthorityName: res.authorizerAuthorityName,
     registrantName: res.registrantName,
     requestedAt: res.requestedAt,
+    // 요청이 올라온 지 3일이 지났다는 서버 판정 — requestedAt에서 화면이 다시 세지 않는다
+    isReviewStale: res.isReviewStale === true,
     dueAt: res.dueAt,
     quorum: toQuorum(res.quorum),
     checklistSummary: toChecklistSummary(res.checklistSummary),
@@ -155,6 +160,9 @@ function toSubWorkListItem(res: SubWorkSummaryResponse): SubWorkListItem {
     progressRate: toProgressRate(res.progressRate),
     dueAt: res.dueAt,
     isDelayed: res.isDelayed === true,
+    // 정체 판정 둘 (ssccops#196) — 목록(entities/sub-work)과 같은 규칙으로 받는다
+    isReadyForReview: res.isReadyForReview === true,
+    isReviewStale: res.isReviewStale === true,
   };
 }
 
