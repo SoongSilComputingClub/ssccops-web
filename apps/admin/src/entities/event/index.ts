@@ -1,6 +1,7 @@
 export type {
   EventCategory,
   EventDetail,
+  EventDuplicate,
   EventParticipant,
   EventPhase,
   EventReceiptStatus,
@@ -17,6 +18,7 @@ export {
   EVENT_ERROR,
   changeEventStatus,
   createEvent,
+  duplicateEvent,
   fetchEvent,
   fetchEvents,
   updateEvent,
