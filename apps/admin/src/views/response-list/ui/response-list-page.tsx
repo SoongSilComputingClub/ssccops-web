@@ -6,6 +6,7 @@ import { mbrGrdNm, mbrSttsNm } from "@/entities/member";
 import {
   RSPNS_STTS_BADGE,
   answerColumns,
+  answerDistributions,
   type FormResponseItem,
 } from "@/entities/response";
 import { CAPABILITY } from "@/entities/session";
@@ -37,11 +38,15 @@ import {
   type GridColumn,
 } from "@/shared/ui";
 import { ResponseAnswerTable } from "./response-answer-table";
+import { ResponseDistribution } from "./response-distribution";
 
 const ALL = "전체";
 
-const VIEWS = ["목록", "표"] as const;
+const VIEWS = ["목록", "표", "분포"] as const;
 type ViewMode = (typeof VIEWS)[number];
+
+/** 답이 있어야 그릴 수 있는 보기 — 그때만 상세를 불러온다 */
+const ANSWER_VIEWS: readonly ViewMode[] = ["표", "분포"];
 
 /** 잠긴 조작에 붙는 사유 — 요구 권한을 이름으로 밝힌다 (#117) */
 const NO_REVIEW =
@@ -94,7 +99,10 @@ export function ResponseListPage({ formId }: { formId: number }) {
 
   const canReview = useCan(CAPABILITY.RESPONSE_REVIEW);
 
-  const view: ViewMode = searchParams.get(QUERY_VIEW) === "표" ? "표" : "목록";
+  const rawView = searchParams.get(QUERY_VIEW);
+  const view: ViewMode = VIEWS.includes(rawView as ViewMode)
+    ? (rawView as ViewMode)
+    : "목록";
   const setView = (next: ViewMode) => {
     const params = new URLSearchParams(searchParams.toString());
     if (next === "목록") params.delete(QUERY_VIEW);
@@ -140,7 +148,28 @@ export function ResponseListPage({ formId }: { formId: number }) {
     total: answersTotal,
     errorMessage: answersError,
     reload: reloadAnswers,
-  } = useResponseAnswers(formId, answerIds, view === "표" && status === "ready");
+  } = useResponseAnswers(
+    formId,
+    answerIds,
+    ANSWER_VIEWS.includes(view) && status === "ready",
+  );
+
+  /*
+   * 분포는 답을 문항 기준으로 **세로로** 읽는다 — 표(가로)와 같은 답을 쓰지만 축이 반대라
+   * 규칙은 answer-table.ts 한 곳에 있다. 열 끄고 켜기(hiddenQitemIds)는 여기 걸지 않는다:
+   * 표에서 열을 좁힌 것은 "지금 이 열만 보겠다"이고 분포에서 문항을 빼면 집계가 빠진 것처럼
+   * 읽힌다.
+   */
+  const distributions = useMemo(
+    () =>
+      view === "분포"
+        ? answerDistributions(
+            form?.qitemCpstCn,
+            responses.map((r) => answers[r.formRspnsId]),
+          )
+        : [],
+    [view, form?.qitemCpstCn, responses, answers],
+  );
 
   /*
    * 순번을 언제 보여줄 것인가 (ssccops-server #143).
@@ -335,7 +364,7 @@ export function ResponseListPage({ formId }: { formId: number }) {
             options={VIEWS}
             value={view}
             onChange={setView}
-            className="hidden w-[120px] lg:flex"
+            className="hidden w-[168px] lg:flex"
           />
         </div>
 
@@ -391,7 +420,7 @@ export function ResponseListPage({ formId }: { formId: number }) {
               같은 이유다. 화면 폭을 자바스크립트로 재어 한쪽만 그리면 서버 렌더 결과와 어긋나
               첫 페인트에서 잘못된 쪽이 보인다. 좁은 화면에서는 언제나 목록이다.
             */}
-            <div className={view === "표" ? "lg:hidden" : undefined}>
+            <div className={ANSWER_VIEWS.includes(view) ? "lg:hidden" : undefined}>
               <GridTable
                 columns={columns}
                 rows={status === "ready" ? responses : []}
@@ -412,7 +441,11 @@ export function ResponseListPage({ formId }: { formId: number }) {
               />
             </div>
 
-            {view === "표" && (
+            {/*
+              표와 분포는 같은 답을 쓰므로 불러오기·오류·빈 목록 처리를 함께 쓴다. 보기마다
+              따로 적으면 "일부 실패" 같은 상태가 한쪽에서만 안내되는 일이 생긴다.
+            */}
+            {ANSWER_VIEWS.includes(view) && (
               <div className="hidden lg:block">
                 {answersStatus === "error" ? (
                   <EmptyState
@@ -439,18 +472,25 @@ export function ResponseListPage({ formId }: { formId: number }) {
                   />
                 ) : (
                   <>
-                    {/* 일부만 실패했으면 표는 그리되 무엇이 빠졌는지 말한다 */}
+                    {/* 일부만 실패했으면 그리되 무엇이 빠졌는지 말한다 */}
                     {answersError && (
                       <div className="mb-2 text-[13px] text-n500">{answersError}</div>
                     )}
-                    <ResponseAnswerTable
-                      rows={responses}
-                      columns={visibleColumns}
-                      answers={answers}
-                      onRowClick={(id) =>
-                        router.push(ROUTES.responseDetail(formId, id))
-                      }
-                    />
+                    {view === "표" ? (
+                      <ResponseAnswerTable
+                        rows={responses}
+                        columns={visibleColumns}
+                        answers={answers}
+                        onRowClick={(id) =>
+                          router.push(ROUTES.responseDetail(formId, id))
+                        }
+                      />
+                    ) : (
+                      <ResponseDistribution
+                        distributions={distributions}
+                        totalCount={responses.length}
+                      />
+                    )}
                   </>
                 )}
               </div>
