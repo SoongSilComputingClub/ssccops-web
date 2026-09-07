@@ -59,10 +59,10 @@ function parseFormLblId(value: string | null): number | null {
 function FormCardSkeleton() {
   return (
     <Card className="animate-pulse">
-      <div className="h-[22px] w-[64px] rounded-full bg-black/5" />
-      <div className="mt-3 h-[22px] w-4/5 rounded bg-black/5" />
-      <div className="mt-2 h-[16px] w-3/5 rounded bg-black/5" />
-      <div className="mt-4 h-[16px] w-2/5 rounded bg-black/5" />
+      <div className="h-[22px] w-[64px] rounded-full bg-fill" />
+      <div className="mt-3 h-[22px] w-4/5 rounded bg-fill" />
+      <div className="mt-2 h-[16px] w-3/5 rounded bg-fill" />
+      <div className="mt-4 h-[16px] w-2/5 rounded bg-fill" />
     </Card>
   );
 }
@@ -125,7 +125,7 @@ function FormCard({
           ))}
         </div>
       )}
-      <div className="mt-3 flex items-center gap-3 border-t border-black/5 pt-3 text-[14px]">
+      <div className="mt-3 flex items-center gap-3 border-t border-hairline pt-3 text-[14px]">
         {/* 권한이 없으면 감추지 않고 잠근다 — 사라지면 기능이 없어진 것인지 고장인지 알 수 없다 */}
         <button
           type="button"

@@ -240,8 +240,8 @@ function AuthorityList({
             onClick={() => onSelect(node.authrtCd)}
             className={
               selected === node.authrtCd
-                ? "block w-full cursor-pointer border-t border-black/5 bg-accent-soft py-[10px] text-left"
-                : "block w-full cursor-pointer border-t border-black/5 py-[10px] text-left hover:bg-bg"
+                ? "block w-full cursor-pointer border-t border-hairline bg-accent-soft py-[10px] text-left"
+                : "block w-full cursor-pointer border-t border-hairline py-[10px] text-left hover:bg-bg"
             }
             style={{ paddingLeft: 8 + depth * 22, paddingRight: 8 }}
           >

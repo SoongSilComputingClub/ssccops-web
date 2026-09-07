@@ -276,7 +276,7 @@ export function RoleLabelsPage() {
 
                     return (
                       <div key={c.roleClsfCd} className="contents">
-                        <div className="border-t border-black/5 py-3 text-[15px]">
+                        <div className="border-t border-hairline py-3 text-[15px]">
                           {isEditing ? (
                             <input
                               value={editSeqno}
@@ -297,12 +297,12 @@ export function RoleLabelsPage() {
                             c.indctSeqno
                           )}
                         </div>
-                        <div className="border-t border-black/5 py-3">
+                        <div className="border-t border-hairline py-3">
                           <span className="font-mono text-[13.5px] text-n400">
                             {c.roleClsfCd}
                           </span>
                         </div>
-                        <div className="border-t border-black/5 py-3 text-[15px]">
+                        <div className="border-t border-hairline py-3 text-[15px]">
                           {isEditing ? (
                             <>
                               <input
@@ -342,7 +342,7 @@ export function RoleLabelsPage() {
                             </>
                           )}
                         </div>
-                        <div className="flex gap-3 border-t border-black/5 py-3 text-[14px]">
+                        <div className="flex gap-3 border-t border-hairline py-3 text-[14px]">
                           {isEditing ? (
                             <>
                               <button

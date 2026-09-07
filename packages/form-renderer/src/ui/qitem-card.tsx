@@ -42,7 +42,7 @@ export function QitemCard({
     <div
       className={cn(
         "rounded-2xl bg-surface px-[18px] py-4",
-        error ? "shadow-[0_0_0_1px_#f04452]" : "shadow-[0_0_0_1px_#e5e8eb]",
+        error ? "shadow-[0_0_0_1px_var(--color-danger)]" : "shadow-[0_0_0_1px_var(--color-line)]",
       )}
     >
       <div className="text-[16px] font-semibold">
@@ -92,7 +92,7 @@ export function QitemCard({
                 onClick={() => onChange(toggleOption(qitem, value, o))}
                 className={cn(
                   "flex cursor-pointer items-center gap-[10px] rounded-[12px] px-[10px] py-[13px] text-[15px] lg:py-[11px]",
-                  picked ? "bg-accent/8" : "hover:bg-black/2",
+                  picked ? "bg-accent/8" : "hover:bg-fill-soft",
                 )}
               >
                 <div

@@ -84,13 +84,13 @@ function DetailSkeleton() {
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.6fr]">
       <Card className="animate-pulse">
-        <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
-        <div className="mt-3 h-[28px] w-3/5 rounded bg-black/5" />
-        <div className="mt-6 h-[220px] w-full rounded bg-black/5" />
+        <div className="h-[22px] w-[96px] rounded-full bg-fill" />
+        <div className="mt-3 h-[28px] w-3/5 rounded bg-fill" />
+        <div className="mt-6 h-[220px] w-full rounded bg-fill" />
       </Card>
       <Card className="animate-pulse">
-        <div className="h-[18px] w-[80px] rounded bg-black/5" />
-        <div className="mt-4 h-[220px] w-full rounded bg-black/5" />
+        <div className="h-[18px] w-[80px] rounded bg-fill" />
+        <div className="mt-4 h-[220px] w-full rounded bg-fill" />
       </Card>
     </div>
   );
@@ -502,7 +502,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
 
             <SectionLabel className="mt-5">상위 속성 · oper</SectionLabel>
             <KeyValueGrid
-              className="mt-[10px] border-b border-black/8 pb-[14px]"
+              className="mt-[10px] border-b border-hairline-strong pb-[14px]"
               labelWidth={88}
               items={[
                 {
@@ -621,7 +621,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                       onClick={() => setSelectedTarget(ref)}
                       className={
                         selectedTarget && isSameTarget(selectedTarget, ref)
-                          ? "cursor-pointer rounded-[10px] bg-accent/8 p-3 shadow-[inset_0_0_0_1px_#3182f6]"
+                          ? "cursor-pointer rounded-[10px] bg-accent/8 p-3 shadow-[inset_0_0_0_1px_var(--color-accent)]"
                           : "cursor-pointer rounded-[10px] border border-line p-3 hover:border-accent"
                       }
                     >

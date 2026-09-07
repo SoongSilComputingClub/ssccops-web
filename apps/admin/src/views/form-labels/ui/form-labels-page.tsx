@@ -130,16 +130,16 @@ export function FormLabelsPage() {
                       <div
                         className={
                           l.useYn
-                            ? "border-t border-black/5 py-3 text-[15px] font-medium"
-                            : "border-t border-black/5 py-3 text-[15px] text-n500 line-through"
+                            ? "border-t border-hairline py-3 text-[15px] font-medium"
+                            : "border-t border-hairline py-3 text-[15px] text-n500 line-through"
                         }
                       >
                         {l.lblNm}
                       </div>
-                      <div className="border-t border-black/5 py-3 text-[14.5px] text-n400">
+                      <div className="border-t border-hairline py-3 text-[14.5px] text-n400">
                         {l.usageCount}건
                       </div>
-                      <div className="border-t border-black/5 py-3">
+                      <div className="border-t border-hairline py-3">
                         {/*
                           응답이 오기 전에 다시 눌리면 방금 바꾼 값을 되돌리게 된다 —
                           진행 중에는 훅이 요청을 막고, 여기서는 그 사실을 흐리게 보여 준다

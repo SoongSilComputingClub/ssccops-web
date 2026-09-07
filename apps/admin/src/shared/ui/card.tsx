@@ -19,8 +19,8 @@ export function Card({
       id={id}
       onClick={onClick}
       className={cn(
-        "rounded-2xl bg-surface p-[18px] shadow-[0_0_0_1px_#e5e8eb]",
-        onClick && "cursor-pointer transition-shadow hover:shadow-[0_0_0_1px_#1b64da]",
+        "rounded-2xl bg-surface p-[18px] shadow-[0_0_0_1px_var(--color-line)]",
+        onClick && "cursor-pointer transition-shadow hover:shadow-[0_0_0_1px_var(--color-accent-strong)]",
         className,
       )}
     >

@@ -40,8 +40,8 @@ function ListSkeleton() {
     <div className="flex flex-col gap-2">
       {[0, 1, 2, 3].map((i) => (
         <Card key={i} className="animate-pulse">
-          <div className="h-[20px] w-[72px] rounded-full bg-black/5" />
-          <div className="mt-2 h-[20px] w-3/5 rounded bg-black/5" />
+          <div className="h-[20px] w-[72px] rounded-full bg-fill" />
+          <div className="mt-2 h-[20px] w-3/5 rounded bg-fill" />
         </Card>
       ))}
     </div>

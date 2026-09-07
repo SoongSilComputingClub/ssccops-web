@@ -152,8 +152,8 @@ function OperationsHubSkeleton() {
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.5fr_1fr]">
       {[0, 1].map((i) => (
         <Card key={i} className="animate-pulse">
-          <div className="h-[20px] w-2/5 rounded bg-black/5" />
-          <div className="mt-3 h-[160px] w-full rounded bg-black/5" />
+          <div className="h-[20px] w-2/5 rounded bg-fill" />
+          <div className="mt-3 h-[160px] w-full rounded bg-fill" />
         </Card>
       ))}
     </div>
@@ -455,14 +455,14 @@ export function OperationsHubPage() {
                         key={r.key}
                         className="flex flex-wrap items-center gap-x-3 rounded-xl border border-line bg-surface p-3 lg:contents"
                       >
-                        <div className="lg:border-t lg:border-black/5 lg:py-3">
+                        <div className="lg:border-t lg:border-hairline lg:py-3">
                           <Badge tone={kindTone(r.operTypeCd)}>
                             {OPER_TYPE_NM[r.operTypeCd]}
                           </Badge>
                         </div>
                         <div
                           onClick={() => router.push(r.href)}
-                          className="mt-2 w-full min-w-0 cursor-pointer lg:mt-0 lg:w-auto lg:border-t lg:border-black/5 lg:py-3 lg:pr-3"
+                          className="mt-2 w-full min-w-0 cursor-pointer lg:mt-0 lg:w-auto lg:border-t lg:border-hairline lg:py-3 lg:pr-3"
                         >
                           {/* 카드에서는 truncate를 풀어 줄바꿈시킨다 — 275px에서 자르면 제목이 거의 남지 않는다 */}
                           <div className="text-[15px] font-semibold hover:text-accent lg:truncate">
@@ -472,10 +472,10 @@ export function OperationsHubPage() {
                             {r.ext}
                           </div>
                         </div>
-                        <div className="mt-2 text-[14px] text-n400 lg:mt-0 lg:border-t lg:border-black/5 lg:py-3">
+                        <div className="mt-2 text-[14px] text-n400 lg:mt-0 lg:border-t lg:border-hairline lg:py-3">
                           {r.date}
                         </div>
-                        <div className="mt-2 text-[14px] text-n400 lg:mt-0 lg:border-t lg:border-black/5 lg:py-3">
+                        <div className="mt-2 text-[14px] text-n400 lg:mt-0 lg:border-t lg:border-hairline lg:py-3">
                           {r.pic}
                         </div>
                       </div>

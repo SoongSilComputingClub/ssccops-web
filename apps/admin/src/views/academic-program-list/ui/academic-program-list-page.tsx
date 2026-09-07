@@ -60,10 +60,10 @@ function parseSttsCd(value: string | null): AcdmActvSttsCd | null {
 function ProgramCardSkeleton() {
   return (
     <Card className="animate-pulse">
-      <div className="h-[22px] w-[88px] rounded-full bg-black/5" />
-      <div className="mt-3 h-[24px] w-3/5 rounded bg-black/5" />
-      <div className="mt-2 h-[16px] w-2/5 rounded bg-black/5" />
-      <div className="mt-4 h-[8px] w-full rounded bg-black/5" />
+      <div className="h-[22px] w-[88px] rounded-full bg-fill" />
+      <div className="mt-3 h-[24px] w-3/5 rounded bg-fill" />
+      <div className="mt-2 h-[16px] w-2/5 rounded bg-fill" />
+      <div className="mt-4 h-[8px] w-full rounded bg-fill" />
     </Card>
   );
 }

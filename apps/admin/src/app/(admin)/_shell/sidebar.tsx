@@ -18,7 +18,7 @@ export function Sidebar() {
 
   if (collapsed) {
     return (
-      <div className="flex w-16 flex-none flex-col items-center gap-[10px] border-r border-black/8 bg-surface pt-[22px] pb-4">
+      <div className="flex w-16 flex-none flex-col items-center gap-[10px] border-r border-hairline-strong bg-surface pt-[22px] pb-4">
         <div className="flex size-[30px] flex-none items-center justify-center rounded-[8px] border border-accent text-[15px] text-accent">
           S
         </div>
@@ -70,7 +70,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className="flex w-[230px] flex-none flex-col border-r border-black/8 bg-surface pt-[22px] pb-4">
+    <div className="flex w-[230px] flex-none flex-col border-r border-hairline-strong bg-surface pt-[22px] pb-4">
       <div className="mb-3 flex items-center gap-[10px] border-b border-bg px-[18px] pb-4">
         <div className="flex size-7 flex-none items-center justify-center rounded-[7px] border border-accent text-[15px] text-accent">
           S

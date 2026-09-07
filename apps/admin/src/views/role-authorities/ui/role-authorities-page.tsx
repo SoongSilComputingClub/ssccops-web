@@ -239,8 +239,8 @@ function AuthorityCheckTree({ editor }: { editor: RoleAuthoritiesEditor }) {
             key={node.authrtCd}
             className={
               inherited
-                ? "flex cursor-default items-start gap-3 border-t border-black/5 py-[10px]"
-                : "flex cursor-pointer items-start gap-3 border-t border-black/5 py-[10px]"
+                ? "flex cursor-default items-start gap-3 border-t border-hairline py-[10px]"
+                : "flex cursor-pointer items-start gap-3 border-t border-hairline py-[10px]"
             }
             style={{ paddingLeft: depth * 22 }}
           >

@@ -89,15 +89,15 @@ function DetailSkeleton() {
   return (
     <>
       <Card className="mb-4 animate-pulse">
-        <div className="h-[28px] w-2/5 rounded bg-black/5" />
-        <div className="mt-6 h-[60px] w-full rounded bg-black/5" />
+        <div className="h-[28px] w-2/5 rounded bg-fill" />
+        <div className="mt-6 h-[60px] w-full rounded bg-fill" />
       </Card>
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <Card className="animate-pulse">
-          <div className="h-[240px] w-full rounded bg-black/5" />
+          <div className="h-[240px] w-full rounded bg-fill" />
         </Card>
         <Card className="animate-pulse">
-          <div className="h-[140px] w-full rounded bg-black/5" />
+          <div className="h-[140px] w-full rounded bg-fill" />
         </Card>
       </div>
     </>
@@ -407,7 +407,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
           <Card>
             <SectionLabel>상위 속성 · oper</SectionLabel>
             <KeyValueGrid
-              className="mt-[10px] border-b border-black/8 pb-[14px]"
+              className="mt-[10px] border-b border-hairline-strong pb-[14px]"
               items={[
                 {
                   k: FIELD_LABEL.operationId,
@@ -516,8 +516,8 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
                     <span
                       className={
                         item.isCompleted
-                          ? "flex size-[18px] flex-none items-center justify-center rounded-[6px] bg-accent-strong text-[11px] text-white"
-                          : "size-[18px] flex-none rounded-[6px] shadow-[inset_0_0_0_1px_#d1d6db]"
+                          ? "flex size-[18px] flex-none items-center justify-center rounded-[6px] bg-accent-strong text-[11px] text-on-solid"
+                          : "size-[18px] flex-none rounded-[6px] shadow-[inset_0_0_0_1px_var(--color-line-strong)]"
                       }
                     >
                       {item.isCompleted ? "✓" : ""}

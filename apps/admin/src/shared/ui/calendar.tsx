@@ -12,12 +12,17 @@ const LANE_H = 20;
 /*
  * 항목 색. Badge의 톤 이름을 빌리되 배지를 그리지는 않는다 — 칸이 좁아 테두리·패딩이 들어간
  * 배지를 넣으면 제목이 한 글자도 안 남는다.
+ *
+ * **값도 Badge와 같은 토큰을 쓴다** (#226). 예전에는 `bg-amber-50`·`bg-red-50`처럼
+ * Tailwind 기본 팔레트 이름이 적혀 있었는데, `globals.css`가 `--color-*: initial`로 그
+ * 팔레트를 통째로 지워 두어 **클래스가 아예 생성되지 않았다** — 승인 대기(amber) 막대가
+ * 색 없이 그려지고 있었고 다크모드였다면 그 상태가 그대로 남았다.
  */
 const TONE: Record<string, string> = {
   blue: "bg-accent-soft text-accent-strong",
-  amber: "bg-amber-50 text-amber-700",
-  grey: "bg-black/5 text-n300",
-  red: "bg-red-50 text-red-700",
+  amber: "bg-amber-soft text-amber",
+  grey: "bg-fill text-n300",
+  red: "bg-danger/10 text-danger",
 };
 const TONE_FALLBACK = "bg-accent-soft text-accent-strong";
 
@@ -194,9 +199,9 @@ export function Calendar({
                   onClick={() => onSelect(ymd)}
                   style={{ gridColumn: c + 1, gridRow: "1 / -1" }}
                   className={cn(
-                    "cursor-pointer shadow-[0_0_0_.5px_rgba(0,0,0,.05)]",
-                    outside && "bg-black/2",
-                    ymd === selected && "bg-accent/5 shadow-[inset_0_0_0_1px_#3182f6]",
+                    "cursor-pointer shadow-[0_0_0_.5px_var(--color-hairline)]",
+                    outside && "bg-fill-soft",
+                    ymd === selected && "bg-accent/5 shadow-[inset_0_0_0_1px_var(--color-accent)]",
                   )}
                 />
               );
@@ -217,7 +222,7 @@ export function Calendar({
                       "text-[13.5px] text-n400",
                       outside && "text-n500/50",
                       ymd === today &&
-                        "inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-accent px-1 font-semibold text-white",
+                        "inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-accent px-1 font-semibold text-on-solid",
                     )}
                   >
                     {Number(ymd.slice(8, 10))}

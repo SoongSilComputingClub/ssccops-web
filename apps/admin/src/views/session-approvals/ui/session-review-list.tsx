@@ -32,9 +32,9 @@ function ListSkeleton() {
     <div className="flex flex-col gap-[10px]">
       {[0, 1, 2, 3].map((i) => (
         <Card key={i} className="animate-pulse">
-          <div className="h-[18px] w-2/5 rounded bg-black/5" />
-          <div className="mt-2 h-[22px] w-3/5 rounded bg-black/5" />
-          <div className="mt-3 h-[14px] w-1/2 rounded bg-black/5" />
+          <div className="h-[18px] w-2/5 rounded bg-fill" />
+          <div className="mt-2 h-[22px] w-3/5 rounded bg-fill" />
+          <div className="mt-3 h-[14px] w-1/2 rounded bg-fill" />
         </Card>
       ))}
     </div>
@@ -86,7 +86,7 @@ export function SessionReviewList({
             key={item.sessionId}
             onClick={() => onSelect(item)}
             className={
-              active ? "shadow-[0_0_0_2px_#1b64da]" : "cursor-pointer"
+              active ? "shadow-[0_0_0_2px_var(--color-accent-strong)]" : "cursor-pointer"
             }
           >
             <div className="flex flex-wrap items-center gap-2">

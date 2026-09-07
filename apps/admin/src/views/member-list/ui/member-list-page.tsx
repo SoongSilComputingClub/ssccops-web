@@ -90,8 +90,8 @@ function MemberTableSkeleton() {
   return (
     <Card className="animate-pulse p-3 lg:px-5 lg:pt-4 lg:pb-[6px]">
       {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className="border-t border-black/5 py-[13px] first:border-t-0">
-          <div className="h-[18px] w-full rounded bg-black/5" />
+        <div key={i} className="border-t border-hairline py-[13px] first:border-t-0">
+          <div className="h-[18px] w-full rounded bg-fill" />
         </div>
       ))}
     </Card>

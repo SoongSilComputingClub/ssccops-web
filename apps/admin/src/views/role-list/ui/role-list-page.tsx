@@ -166,7 +166,7 @@ function RoleListView() {
           <button
             type="button"
             onClick={() => router.push(ROUTES.roleNew)}
-            className="cursor-pointer rounded-[12px] border border-accent bg-accent px-4 py-[9px] text-[15px] font-semibold text-white hover:bg-accent-strong"
+            className="cursor-pointer rounded-[12px] border border-accent bg-accent px-4 py-[9px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
           >
             + 새 역할
           </button>

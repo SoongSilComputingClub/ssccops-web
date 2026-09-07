@@ -125,14 +125,14 @@ export function ResultStep({ wizard }: { wizard: MemberImportWizard }) {
               const memberId = row.mbrId;
               return (
               <div key={row.rowNo} className="contents">
-                <div className="border-t border-black/5 py-3 text-[15px]">{row.rowNo}</div>
-                <div className="border-t border-black/5 py-3 text-[15px]">{row.target}</div>
-                <div className="border-t border-black/5 py-3">
+                <div className="border-t border-hairline py-3 text-[15px]">{row.rowNo}</div>
+                <div className="border-t border-hairline py-3 text-[15px]">{row.target}</div>
+                <div className="border-t border-hairline py-3">
                   <Badge tone={STATUS_TONE[row.status] ?? "grey"}>
                     {STATUS_LABEL[row.status] ?? row.status}
                   </Badge>
                 </div>
-                <div className="border-t border-black/5 py-3 text-[14px] text-n400">
+                <div className="border-t border-hairline py-3 text-[14px] text-n400">
                   {memberId != null ? (
                     <button
                       type="button"

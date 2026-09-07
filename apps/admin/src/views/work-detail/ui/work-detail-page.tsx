@@ -60,14 +60,14 @@ function DetailSkeleton() {
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.3fr]">
       <Card className="animate-pulse">
-        <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
-        <div className="mt-3 h-[28px] w-3/5 rounded bg-black/5" />
-        <div className="mt-4 h-[8px] w-full rounded bg-black/5" />
-        <div className="mt-6 h-[180px] w-full rounded bg-black/5" />
+        <div className="h-[22px] w-[96px] rounded-full bg-fill" />
+        <div className="mt-3 h-[28px] w-3/5 rounded bg-fill" />
+        <div className="mt-4 h-[8px] w-full rounded bg-fill" />
+        <div className="mt-6 h-[180px] w-full rounded bg-fill" />
       </Card>
       <Card className="animate-pulse">
-        <div className="h-[18px] w-[80px] rounded bg-black/5" />
-        <div className="mt-4 h-[220px] w-full rounded bg-black/5" />
+        <div className="h-[18px] w-[80px] rounded bg-fill" />
+        <div className="mt-4 h-[220px] w-full rounded bg-fill" />
       </Card>
     </div>
   );
@@ -216,7 +216,7 @@ export function WorkDetailPage({ workId }: { workId: number }) {
 
             <SectionLabel className="mt-5">상위 속성 · oper</SectionLabel>
             <KeyValueGrid
-              className="mt-[10px] border-b border-black/8 pb-[14px]"
+              className="mt-[10px] border-b border-hairline-strong pb-[14px]"
               labelWidth={88}
               items={[
                 {

@@ -138,7 +138,7 @@ export function MappingStep({ wizard }: { wizard: MemberImportWizard }) {
                   {row.map((value, cellIndex) => (
                     <td
                       key={cellIndex}
-                      className="border-t border-black/5 px-2 py-[10px] font-mono text-[12.5px] whitespace-nowrap text-n300"
+                      className="border-t border-hairline px-2 py-[10px] font-mono text-[12.5px] whitespace-nowrap text-n300"
                     >
                       {value || "—"}
                     </td>
