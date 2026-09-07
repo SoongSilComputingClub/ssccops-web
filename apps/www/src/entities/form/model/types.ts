@@ -158,5 +158,12 @@ export interface MyFormResponseDetail {
   mdfcnDt: string | null;
   /** 이전 답 전체 — 재제출 프리필의 재료 */
   rspnsCn: RspnsCn;
+  /**
+   * 이 폼의 문항 구성 — 재제출 폼을 **그릴** 재료 (서버 #274).
+   *
+   * 답만으로는 어느 문항에 붙일지를 모르고, 응답자가 문항을 따로 받을 길이 없다 —
+   * `GET /{formId}/public`은 마감된 폼을 409로 끊는데 재제출의 실제 쓰임이 마감 뒤에 있다.
+   */
+  qitemCpstCn: QitemCpstCn;
   reviewHistories: FormResponseReviewHistory[];
 }

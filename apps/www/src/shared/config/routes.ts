@@ -26,6 +26,15 @@ export const ROUTES = {
   publicForm: (formId: number) => `/f/${formId}`,
   publicFormDone: (formId: number) => `/f/${formId}/done`,
   /**
+   * 내가 낸 응답 한 건 — 수정 요청 사유를 읽고 다시 내는 자리 (ssccops#221).
+   *
+   * `publicForm`(새로 내기)과 **다른 화면이다.** 한 주소에 두 뜻을 담으면 새 응답을 막는
+   * 상태(`alreadySubmitted` — 수정 요청도 포함된다)가 작성 폼을 닫는 것과 재제출이 열려야
+   * 하는 것이 같은 자리에서 부딪힌다.
+   */
+  myFormResponse: (formId: number, formRspnsId: number) =>
+    `/f/${formId}/responses/${formRspnsId}`,
+  /**
    * OAuth 콜백 라우트 핸들러. Supabase 대시보드의 Redirect URLs에 `<오리진>${authCallback}`을
    * 등록해야 로그인이 이 앱으로 돌아온다 — 등록이 없으면 Site URL(어드민)로 조용히 넘어간다.
    */
