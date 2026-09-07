@@ -33,4 +33,5 @@ export {
   validateAnswers,
   validatePageAnswers,
 } from "./model/answers";
+export { FormDescription } from "./ui/form-description";
 export { QitemCard } from "./ui/qitem-card";

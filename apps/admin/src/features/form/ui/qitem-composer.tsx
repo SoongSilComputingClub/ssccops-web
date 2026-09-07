@@ -15,8 +15,31 @@ import {
   QITEM_TYPE_NM,
   type QitemTypeCd,
 } from "@/shared/config/codes";
-import { Badge, Card, Chip, SectionLabel, TextField, Toggle, flash } from "@/shared/ui";
+import { FormDescription } from "@ssccops/form-renderer";
+import { Badge, Card, Chip, SectionLabel, TextArea, TextField, Toggle, flash } from "@/shared/ui";
 import { nextQitemId, parseMaxSlctCnt } from "../model/form-draft";
+
+/*
+ * 안내 문구가 응답자에게 어떻게 보일지 그대로 보여 준다 (ssccops#222).
+ *
+ * 편집기와 응답 화면이 **같은 `FormDescription`을 쓰므로** 여기 보이는 것이 곧 결과다 —
+ * 렌더러를 앱마다 두면 "편집기에서는 목록이었는데 응답 화면에서는 별표가 그대로"가 된다.
+ *
+ * 토글을 두지 않고 늘 그리는 것은, 접어 두면 마크다운이 먹었는지 안 먹었는지를 확인하려고
+ * 매번 펼쳐야 하기 때문이다. 비어 있으면 FormDescription이 아무것도 그리지 않아 자리도
+ * 차지하지 않는다.
+ */
+function DescriptionPreview({ value }: { value?: string }) {
+  if (!value?.trim()) {
+    return null;
+  }
+  return (
+    <div className="mt-2 rounded-[10px] bg-bg px-[11px] py-[9px]">
+      <div className="mb-[2px] text-[11.5px] text-n500">미리보기</div>
+      <FormDescription className="text-[13.5px] leading-[1.7] text-n400">{value}</FormDescription>
+    </div>
+  );
+}
 
 /*
  * 문항 구성 편집기 — 페이지와 문항을 고치는 화면 조각.
@@ -287,7 +310,7 @@ export function QitemComposer({
             }
             placeholder="페이지 제목"
           />
-          <TextField
+          <TextArea
             value={pages[page]?.pageDescCn ?? ""}
             onChange={(e) =>
               onChange((c) => ({
@@ -297,8 +320,10 @@ export function QitemComposer({
                 ),
               }))
             }
-            placeholder="페이지 설명 (선택)"
+            rows={2}
+            placeholder="페이지 설명 (선택) — 줄바꿈과 마크다운을 쓸 수 있습니다"
           />
+          <DescriptionPreview value={pages[page]?.pageDescCn} />
         </div>
       </div>
 
@@ -374,6 +399,14 @@ export function QitemComposer({
                       onChange={(e) => patchQ(q.qitemId, { qitemLblNm: e.target.value })}
                       placeholder="질문 문구"
                     />
+                    <TextArea
+                      className="mt-2"
+                      value={q.qitemDescCn ?? ""}
+                      onChange={(e) => patchQ(q.qitemId, { qitemDescCn: e.target.value })}
+                      rows={2}
+                      placeholder="문항 설명 (선택) — 줄바꿈과 마크다운을 쓸 수 있습니다"
+                    />
+                    <DescriptionPreview value={q.qitemDescCn} />
                     <div className="mt-2 flex flex-wrap gap-[6px]">
                       {QITEM_TYPE_CDS.map((cd) => (
                         <Chip

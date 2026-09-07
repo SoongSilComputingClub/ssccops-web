@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { FormDescription } from "@ssccops/form-renderer";
 import {
   FORM_RECEIPT_BADGE,
   SYSTEM_FORM_BADGE,
@@ -483,11 +484,9 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
               <div className="mt-1 text-[18px] font-semibold">
                 {pages[page]?.pageTtl}
               </div>
-              {pages[page]?.pageDescCn && (
-                <div className="mt-1 text-[13.5px] whitespace-pre-line text-n400">
-                  {pages[page].pageDescCn}
-                </div>
-              )}
+              <FormDescription className="mt-1 text-[13.5px] text-n400">
+                {pages[page]?.pageDescCn}
+              </FormDescription>
             </div>
             <div className="mt-2">
               {pageQitems.length === 0 ? (
