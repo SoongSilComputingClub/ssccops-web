@@ -4,6 +4,10 @@ import {
   myApplicationsErrorMessage,
   type MyApplication,
 } from "@/entities/application";
+import type { MyFormResponseOverview } from "@/entities/form";
+// 배럴을 거치지 않는다 — 배럴이 SSR 로더를 재export 하면 클라 번들이 오염된다(index.ts 주석)
+import { fetchMyResponseDetail } from "@/entities/form/api/my-response-detail";
+import { fetchMyResponsesAcrossForms } from "@/entities/form/api/my-responses-across-forms";
 import { fetchAuthSession, loginErrorMessage, type AuthSession } from "@/entities/session";
 import {
   currentAccessToken,
@@ -14,6 +18,7 @@ import { SignInButton } from "@/features/auth";
 import { ROUTES, signupUrl } from "@/shared/config/routes";
 import { EmptyState, Notice } from "@/shared/ui";
 import { ApplicationCard } from "./application-card";
+import { FormResponsesSection } from "./form-responses-section";
 
 /*
  * 내 신청 현황 (SSR · wave2 D10).
@@ -42,7 +47,7 @@ export async function MyApplicationsPage({ loginError }: { loginError: string | 
       <header className="flex flex-col gap-[2px]">
         <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">내 신청</h1>
         <p className="text-[13.5px] text-n500">
-          신청한 행사의 진행 상황을 이 화면에서 확인할 수 있습니다
+          신청한 행사와 낸 폼의 진행 상황을 이 화면에서 확인할 수 있습니다
         </p>
       </header>
 
@@ -118,9 +123,10 @@ async function SignedInBody() {
    * 한쪽이 실패해도 다른 쪽의 답은 쓴다 — allSettled인 이유다. 세션이 "미가입"이라고 답하면
    * 신청 목록이 403으로 깨진 것은 당연한 결과이므로 오류로 그리지 않고 가입 안내를 그린다.
    */
-  const [sessionResult, applicationsResult] = await Promise.allSettled([
+  const [sessionResult, applicationsResult, responsesResult] = await Promise.allSettled([
     fetchAuthSession(),
     fetchMyApplications(),
+    fetchMyResponsesAcrossForms(),
   ]);
 
   const session: AuthSession | null =
@@ -135,7 +141,74 @@ async function SignedInBody() {
     return <EmptyState title={myApplicationsErrorMessage(reason)} />;
   }
 
-  return <ApplicationList applications={applicationsResult.value} session={session} />;
+  /*
+   * 폼 응답 조회가 실패해도 행사 신청은 그린다 — 두 목록은 서로 다른 엔드포인트이고, 한쪽이
+   * 없다고 다른 쪽까지 감출 이유가 없다. 실패한 구역만 안내로 대체한다.
+   */
+  const responses: MyFormResponseOverview[] | null =
+    responsesResult.status === "fulfilled" ? responsesResult.value : null;
+
+  return (
+    <div className="flex flex-col gap-[24px]">
+      <ApplicationList applications={applicationsResult.value} session={session} />
+      <FormResponses responses={responses} />
+    </div>
+  );
+}
+
+/*
+ * 폼 응답 구역 (ssccops#221).
+ *
+ * **수정요청 사유는 응답 상세(서버 #177)에만 있다** — 목록은 "무엇을 어떤 상태로 냈는가"까지만
+ * 답한다. 그래서 수정요청을 받은 건에 대해서만 상세를 한 번씩 더 부른다. 전부 부르지 않는 것은
+ * 사유가 있는 상태가 그것 하나이기 때문이고, 그런 건은 대개 없거나 한둘이라 요청 수가 목록
+ * 길이에 비례하지 않는다.
+ *
+ * 사유 조회가 실패해도 카드는 선다 — 사유를 못 읽는 것과 수정요청을 받았다는 사실을 모르는
+ * 것은 다른 일이고, 후자만 막으면 이 화면은 제 몫을 한다.
+ */
+async function FormResponses({ responses }: { responses: MyFormResponseOverview[] | null }) {
+  if (responses === null) {
+    return (
+      <section className="flex flex-col gap-[10px]">
+        <SectionHeading title="낸 폼" />
+        <EmptyState title="폼 응답을 불러오지 못했습니다 — 잠시 후 다시 시도해 주세요" />
+      </section>
+    );
+  }
+
+  const changesRequested = responses.filter(
+    (response) => response.rspnsSttsCd === "CHANGES_REQUESTED",
+  );
+  const details = await Promise.allSettled(
+    changesRequested.map((response) =>
+      fetchMyResponseDetail(response.formId, response.formRspnsId),
+    ),
+  );
+
+  const reviewOpinions: Record<number, string> = {};
+  for (const detail of details) {
+    if (detail.status !== "fulfilled") continue;
+    /*
+     * 마지막 수정요청의 의견을 쓴다. 이력은 처리 일시 오름차순이라 뒤에서 찾으며, 승인·반려
+     * 뒤에는 수정요청 상태로 돌아오지 않으므로 이 값이 곧 지금 고쳐야 할 이유다.
+     */
+    const opinion = [...detail.value.reviewHistories]
+      .reverse()
+      .find((history) => history.rvwPrcsSeCd === "REQUEST_CHANGES")?.rvwOpnnCn;
+    if (opinion) reviewOpinions[detail.value.formRspnsId] = opinion;
+  }
+
+  return (
+    <section className="flex flex-col gap-[10px]">
+      <SectionHeading title="낸 폼" />
+      <FormResponsesSection responses={responses} reviewOpinions={reviewOpinions} />
+    </section>
+  );
+}
+
+function SectionHeading({ title }: { title: string }) {
+  return <h2 className="text-[16px] font-semibold tracking-[-.2px]">{title}</h2>;
 }
 
 function ApplicationList({
@@ -157,6 +230,8 @@ function ApplicationList({
       {account && (
         <p className="text-[13px] text-n500">{account} 계정으로 보고 있습니다</p>
       )}
+
+      <SectionHeading title="신청한 행사" />
 
       {applications.length === 0 ? (
         <EmptyState
