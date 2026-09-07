@@ -1,4 +1,4 @@
-import type { RspnsCn } from "@ssccops/form-renderer";
+import type { QitemCpstCn, RspnsCn } from "@ssccops/form-renderer";
 import { apiFetchAuthed } from "@/shared/api/authed-client";
 import type {
   FormResponseReviewHistory,
@@ -42,6 +42,7 @@ interface MyFormResponseDetailApiResponse {
   sbmsnDt: string | null;
   mdfcnDt: string | null;
   rspnsCn: RspnsCn | null;
+  qitemCpstCn: QitemCpstCn | null;
   reviewHistories: FormResponseReviewHistoryApiResponse[] | null;
 }
 
@@ -80,6 +81,12 @@ export async function fetchMyResponseDetail(
     sbmsnDt: res.sbmsnDt,
     mdfcnDt: res.mdfcnDt,
     rspnsCn: res.rspnsCn ?? {},
+    /*
+     * 문항이 없으면 재제출 폼을 그릴 수 없다. 빈 구성으로 떨어뜨려 **화면이 그 사실을 말하게**
+     * 두고(폼이 "문항을 불러오지 못했습니다"로 갈린다) 여기서 던지지 않는다 — 던지면 사유를
+     * 읽는 것까지 함께 막히는데, 그 둘은 다른 일이다.
+     */
+    qitemCpstCn: res.qitemCpstCn ?? { pages: [], qitems: [] },
     /*
      * 계약상 이력은 처리가 없어도 빈 배열이지 null이 아니다. `?? []`는 이력을 내려주지 않는
      * 옛 서버에서 화면이 통째로 죽는 대신 타임라인만 비게 하려는 것이다.

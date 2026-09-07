@@ -20,6 +20,14 @@ import { Badge, Pill } from "@/shared/ui";
  *
  * 순번은 대표 문항의 답이 없을 때만 쓴다. 둘 다 없으면 폼 제목만 남는데, 그것이 서버가 준
  * 사실 그대로다 — "제목 없음" 같은 문구를 지어내면 서버가 준 값과 구별할 수 없다.
+ *
+ * ── 어디로 가는가 ────────────────────────────────────────
+ * **수정 요청을 받은 건은 내 응답 상세로** 간다(ssccops#221) — 거기서 사유를 읽고 그 자리에서
+ * 다시 낸다. 나머지는 폼 화면으로 간다: 낸 것을 다시 확인하거나(여러 건 받는 폼이면) 한 건 더
+ * 내는 자리다.
+ *
+ * 두 주소를 가르는 것이 요점이다. `/f/{formId}`는 "새로 내는" 화면이라 새 응답을 막는 상태
+ * (`alreadySubmitted` — 수정 요청도 포함된다)에서 작성 폼을 닫는데, 재제출은 그때 열려야 한다.
  */
 export function FormResponseCard({
   response,
@@ -31,11 +39,14 @@ export function FormResponseCard({
 }) {
   const status = RESPONSE_STATUS_BADGE[response.rspnsSttsCd];
   const changesRequested = response.rspnsSttsCd === "CHANGES_REQUESTED";
+  const href = changesRequested
+    ? ROUTES.myFormResponse(response.formId, response.formRspnsId)
+    : ROUTES.publicForm(response.formId);
   const submittedAt = response.sbmsnDt ?? response.mdfcnDt;
 
   return (
     <Link
-      href={ROUTES.publicForm(response.formId)}
+      href={href}
       className="flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_#e5e8eb] transition-shadow hover:shadow-[0_0_0_1px_#1b64da] lg:p-[18px]"
     >
       <div className="flex flex-wrap items-center gap-[6px]">
@@ -83,7 +94,7 @@ export function FormResponseCard({
               <p className="mt-[2px] whitespace-pre-line">{reviewOpinion}</p>
             </>
           ) : (
-            <span>수정 요청을 받았습니다 — 폼을 열어 사유를 확인해 주세요</span>
+            <span>수정 요청을 받았습니다 — 눌러서 사유를 확인하고 다시 내주세요</span>
           )}
         </div>
       )}
