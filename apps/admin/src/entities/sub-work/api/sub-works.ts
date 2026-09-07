@@ -285,6 +285,11 @@ export interface SubWorkListFilter {
   isReviewStale?: boolean | null;
   /** ISO-8601 + 오프셋. `dueWithinDays`로 만든다 */
   dueBefore?: string | null;
+  /**
+   * 제목 부분 일치 (ssccops#216). 업무 목록(`WorkListFilter.keyword`)과 **같은 이름·같은
+   * 규칙**이다 — 회의 안건 추가가 두 목록을 나란히 놓고 같은 검색어를 양쪽에 보낸다.
+   */
+  keyword?: string | null;
   /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
   cursor?: string | null;
   /** 1~100 · 서버 기본 20 */
@@ -323,6 +328,7 @@ export async function fetchSubWorks(
   if (filter.isReadyForReview) query.set("isReadyForReview", "true");
   if (filter.isReviewStale) query.set("isReviewStale", "true");
   if (filter.dueBefore) query.set("dueBefore", filter.dueBefore);
+  if (filter.keyword) query.set("keyword", filter.keyword);
   if (filter.cursor) query.set("cursor", filter.cursor);
   if (filter.size != null) query.set("size", String(filter.size));
 
