@@ -18,6 +18,20 @@ import { toWorkErrorMessage } from "./work-error";
  *
  * 이어 받은 페이지는 **덧붙인다**. 커서 페이징은 페이지 번호가 없어 되돌아갈 방법이 없고,
  * 카드 그리드는 스크롤로 훑는 화면이라 이전 페이지를 지우면 방금 본 업무가 없어진다.
+ *
+ * ── 검색어 (ssccops#216) ─────────────────────────────────────
+ * 선택 인자다 — 업무 목록 화면은 검색을 붙이지 않았고 지금 동작 그대로여야 한다. 값을 준
+ * 호출부(회의 안건 추가)만 조건이 걸린다.
+ *
+ * **검색어는 requestKey에 들어간다.** 커서는 직전 조건으로 만들어진 값이라, 조건이 바뀐 채
+ * loadMore로 이어 받으면 서로 다른 조건의 페이지가 한 목록에 섞인다 — useSubWorkList가
+ * 필터 칩(tab)에 이미 쓰는 방식과 같다.
+ *
+ * ── 내 업무 (ssccops#225) ────────────────────────────────────
+ * mine도 같은 이유로 requestKey에 들어간다 — 칩을 켜고 끄면 목록이 처음부터 다시 와야 하고,
+ * 이어 받기도 같은 값을 보내야 한 목록에 두 조건의 페이지가 섞이지 않는다.
+ *
+ * 대상 회원은 보내지 않는다. '나'는 서버가 인증 주체에서 정한다(ssccops-server#268).
  */
 
 export type WorkListStatus = "loading" | "ready" | "error";
@@ -48,7 +62,7 @@ export interface WorkList {
   reload: () => void;
 }
 
-export function useWorkList(): WorkList {
+export function useWorkList(keyword = "", mine = false): WorkList {
   const [loaded, setLoaded] = useState<LoadedWorkList | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -59,7 +73,7 @@ export function useWorkList(): WorkList {
   const inFlightRef = useRef(false);
   const aliveRef = useRef(true);
 
-  const requestKey = String(reloadKey);
+  const requestKey = `${keyword}:${mine}:${reloadKey}`;
 
   useEffect(() => {
     loadedRef.current = loaded;
@@ -75,7 +89,7 @@ export function useWorkList(): WorkList {
   useEffect(() => {
     let alive = true;
 
-    fetchWorks()
+    fetchWorks({ keyword, mine })
       .then((page) => {
         if (!alive) return;
         setLoaded({
@@ -102,7 +116,7 @@ export function useWorkList(): WorkList {
     return () => {
       alive = false;
     };
-  }, [requestKey]);
+  }, [requestKey, keyword, mine]);
 
   const loadMore = useCallback(async (): Promise<string> => {
     const current = loadedRef.current;
@@ -111,7 +125,7 @@ export function useWorkList(): WorkList {
     inFlightRef.current = true;
     setLoadingMore(true);
     try {
-      const page = await fetchWorks({ cursor: current.nextCursor });
+      const page = await fetchWorks({ keyword, mine, cursor: current.nextCursor });
       if (!aliveRef.current) return "";
 
       /*
@@ -136,7 +150,7 @@ export function useWorkList(): WorkList {
       inFlightRef.current = false;
       if (aliveRef.current) setLoadingMore(false);
     }
-  }, []);
+  }, [keyword, mine]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 

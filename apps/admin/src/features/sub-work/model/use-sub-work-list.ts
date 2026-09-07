@@ -20,19 +20,36 @@ import { toSubWorkErrorMessage } from "./sub-work-error";
  * 필터로 만들어진 값이라 필터가 바뀐 채로 이어 받으면(loadMore) 서로 다른 조건의 페이지가
  * 한 목록에 섞인다. 그래서 칩(tab)을 요청 키에 포함해, 탭이 바뀌는 순간 이전 페이지를
  * 버리고 로딩 상태로 되돌린다.
+ *
+ * **검색어도 같은 이유로 요청 키에 들어간다** (ssccops#216). 선택 인자이며 하위 업무 목록
+ * 화면은 검색을 붙이지 않았다 — 값을 준 호출부(회의 안건 추가)만 조건이 걸린다.
  */
 
-/** 화면의 필터 칩 6종. 순서가 화면 노출 순서다 */
+/**
+ * 화면의 필터 칩 8종. 순서가 화면 노출 순서다.
+ *
+ * `요청 전`·`승인 정체`는 정체 칩 둘이다 (ssccops#196). 마감이 아니라 **절차**가 멈춘 건을
+ * 가리키므로 마감 계열(`마감임박`·`지연`) 뒤에 둔다. 둘을 한 칩으로 합치지 않은 것은 다음에
+ * 누를 사람이 다르기 때문이다 — 앞은 담당자, 뒤는 승인자다.
+ */
 export const SUB_WORK_LIST_TABS = [
   "전체",
   "진행",
   "승인대기",
   "마감임박",
   "지연",
+  "요청 전",
+  "승인 정체",
   "완료",
 ] as const;
 
 export type SubWorkListTab = (typeof SUB_WORK_LIST_TABS)[number];
+
+/** 칩에 마우스를 올렸을 때의 설명 — 칩 이름만으로는 무엇을 거르는지 알기 어렵다 */
+export const SUB_WORK_LIST_TAB_HINTS: Partial<Record<SubWorkListTab, string>> = {
+  "요청 전": "완료 점검을 모두 마쳤지만 아직 완료 승인 요청을 하지 않은 하위 업무입니다",
+  "승인 정체": "완료 승인 요청 후 3일이 지났지만 아직 승인·반려되지 않은 하위 업무입니다",
+};
 
 /**
  * 마감임박의 임계값(N일)은 목 데이터 시절 `deadlineFlag`가 쓰던 기준을 그대로 물려받는다.
@@ -58,6 +75,14 @@ function toFilter(tab: SubWorkListTab): SubWorkListFilter {
       return { dueBefore: dueWithinDays(DUE_SOON_DAYS) };
     case "지연":
       return { isOverdue: true };
+    /*
+     * 정체 둘은 서버가 판정한다 (ssccops#196) — 화면이 진행률·체크리스트로 다시 세면
+     * 서버와 갈리고, 그 어긋남은 목록에서만 보인다(지연 판정이 그렇게 두 번 갈렸다).
+     */
+    case "요청 전":
+      return { isReadyForReview: true };
+    case "승인 정체":
+      return { isReviewStale: true };
     case "완료":
       return { workStatus: "DONE" };
     case "전체":
@@ -97,7 +122,19 @@ export interface SubWorkList {
   reload: () => void;
 }
 
-export function useSubWorkList(tab: SubWorkListTab): SubWorkList {
+/*
+ * mine(내 업무)은 탭과 **다른 축**이라 인자를 따로 받는다 (ssccops#225). 탭에 아홉 번째
+ * 값으로 넣으면 단일 선택이라 `내 업무`를 고르는 순간 `지연`이 풀리는데, 담당 여부와
+ * 상태·마감은 겹쳐 걸려야 하는 조건이다.
+ *
+ * tab·keyword와 같이 requestKey에 들어간다 — 조건이 바뀌면 목록이 처음부터 다시 와야 하고,
+ * 이어 받기도 같은 값을 보내야 두 조건의 페이지가 한 목록에 섞이지 않는다.
+ */
+export function useSubWorkList(
+  tab: SubWorkListTab,
+  keyword = "",
+  mine = false,
+): SubWorkList {
   const [loaded, setLoaded] = useState<LoadedSubWorkList | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -108,7 +145,7 @@ export function useSubWorkList(tab: SubWorkListTab): SubWorkList {
   const aliveRef = useRef(true);
   const inFlightRef = useRef(false);
 
-  const requestKey = `${tab}:${reloadKey}`;
+  const requestKey = `${tab}:${keyword}:${mine}:${reloadKey}`;
 
   useEffect(() => {
     loadedRef.current = loaded;
@@ -124,7 +161,7 @@ export function useSubWorkList(tab: SubWorkListTab): SubWorkList {
   useEffect(() => {
     let alive = true;
 
-    fetchSubWorks(toFilter(tab))
+    fetchSubWorks({ ...toFilter(tab), keyword, mine })
       .then((page) => {
         if (!alive) return;
         setLoaded({
@@ -153,7 +190,7 @@ export function useSubWorkList(tab: SubWorkListTab): SubWorkList {
     return () => {
       alive = false;
     };
-  }, [requestKey, tab]);
+  }, [requestKey, tab, keyword, mine]);
 
   const loadMore = useCallback(async (): Promise<string> => {
     const current = loadedRef.current;
@@ -162,7 +199,12 @@ export function useSubWorkList(tab: SubWorkListTab): SubWorkList {
     inFlightRef.current = true;
     setLoadingMore(true);
     try {
-      const page = await fetchSubWorks({ ...toFilter(tab), cursor: current.nextCursor });
+      const page = await fetchSubWorks({
+        ...toFilter(tab),
+        keyword,
+        mine,
+        cursor: current.nextCursor,
+      });
       if (!aliveRef.current) return "";
 
       /*
@@ -188,7 +230,7 @@ export function useSubWorkList(tab: SubWorkListTab): SubWorkList {
       inFlightRef.current = false;
       if (aliveRef.current) setLoadingMore(false);
     }
-  }, [tab]);
+  }, [tab, keyword, mine]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 

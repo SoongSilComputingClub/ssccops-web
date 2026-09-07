@@ -98,3 +98,24 @@ export interface EventCategory {
   /** 목록 표시 순번. 서버가 이 값으로 정렬해 내려주므로 웹은 다시 정렬하지 않는다 */
   indctSeqno: number;
 }
+
+/**
+ * POST /v1/events/{eventId}/duplicate 응답 — 사본이 무엇인지 (ssccops#198).
+ *
+ * **상세가 아니다.** 사본은 늘 기간이 비어 있고 참가자가 0이라 그 값들을 실으면 "승계되는
+ * 경우도 있나" 하는 의문만 만든다(폼 복제 응답과 같은 판단). 화면은 이 `eventId`로 수정
+ * 화면에 가고, `formId`로 신청서 사본이 함께 생겼다는 것을 안내한다.
+ */
+export interface EventDuplicate {
+  /** 사본의 식별자 — 화면은 이것으로 수정 화면에 간다 */
+  eventId: number;
+  /** 원본. 목록에서 잇달아 복제했을 때 어느 것의 사본인지 가른다 */
+  sourceEventId: number;
+  /** 원본 제목 + " (복사본)" — 접미는 서버가 붙인다 */
+  eventTtl: string;
+  /** 사본은 언제나 DRAFT다 */
+  eventSttsCd: EventSttsCd;
+  /** 함께 복제된 신청서 사본. 원본에 폼이 없었으면 null */
+  formId: number | null;
+  crtDt: string;
+}

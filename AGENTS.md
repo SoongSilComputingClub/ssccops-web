@@ -54,7 +54,11 @@ app → views → features → entities → shared     (단방향)
 - 같은 레이어의 슬라이스끼리 참조하지 않는다. 여러 엔티티를 함께 바꾸는 로직은 `features`에 둔다.
 - `views`가 FSD의 pages 레이어다(Next.js 예약어 충돌 회피). widgets 레이어는 생략했다.
 - `app/`은 라우팅 전용 — 각 `page.tsx`는 `views`를 얇게 감싼다. 라우트 그룹은 `(admin)`(운영
-  화면) · `(auth)`(로그인·가입) · `(public)`(공개 폼) · `auth/`(OAuth 콜백 라우트 핸들러)다.
+  화면) · `(auth)`(로그인·가입) · `(public)`(로그인 없이 열리는 착지 화면 — 지금은 공유 링크
+  `/s/{token}` 하나다) · `auth/`(OAuth 콜백 라우트 핸들러)다. **공개 폼 `/f/{formId}`는 여기
+  있다가 `apps/www`로 옮겨 갔다**(ssccops#214) — 응답자에게 뿌리는 링크가 운영 시스템 도메인을
+  가리키면 어드민이 크롤링 대상이 되기 때문이다. 어드민에 남은 것은 폼 상세의 링크 복사뿐이며
+  그 주소는 `publicFormUrl()`이 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`으로 만든다.
 - 슬라이스 내부: `entities/<slice>/{api,model}` · `features/<slice>/{model,ui}` · `views/<slice>/ui`.
 - 화면 경로를 문자열로 적지 않고 `shared/config/routes.ts`의 `ROUTES`를 쓴다.
 
@@ -181,6 +185,21 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
   400이 나면 사용자는 이유를 알 수 없다.
 - **목록은 커서 페이징이라 '더 보기'가 붙는다.** 페이지 번호가 없으므로 페이지네이터를 그리지
   않는다.
+- **색을 화면에 직접 적지 않는다**(ssccops#226 · `apps/admin`). 다크모드는 `dark:` 유틸리티가
+  아니라 **`globals.css`의 토큰 값을 갈아 끼우는 것**으로 되어 있다 — 화면 97개가 이미
+  `text-n500`·`border-line` 같은 이름을 쓰고 있어 변수만 바꾸면 전부 따라온다. 그래서
+  `bg-black/5`·`bg-[#f9fafb]`처럼 뜻 없는 값을 쓰면 **그것만 다크에서 밝은 채로 남는다.**
+  - 쓸 수 있는 이름: 면은 `bg`·`surface`·`fill`·`fill-soft`·`fill-strong`·`subtle`,
+    선은 `line`·`line-strong`·`hairline`·`hairline-strong`, 글자는 `ink`·`n300`·`n400`·`n500`,
+    강조·상태는 `accent(-strong/-soft)`·`danger(-strong)`·`success`·`amber(-soft)`,
+    모달 뒤는 `scrim`, **진한 면 위 글자는 `on-solid`**(라이트에서 흰색, 다크에서 어두운 잉크).
+  - `--color-*: initial`로 **Tailwind 기본 팔레트를 지웠다.** `bg-red-50` 같은 이름은 클래스가
+    아예 생성되지 않아 색이 조용히 빠진다(달력의 승인 대기 막대가 실제로 그랬다).
+  - `fill`·`hairline`·`scrim`은 값에 알파가 들어 있다(깔린 배경 위에 얹히는 색이라 불투명으로
+    바꾸면 겹치는 자리마다 달라진다) — 그래서 `bg-fill/50` 같은 알파 수정자는 쓸 수 없다.
+  - 테마 선택은 `localStorage`이고(서버에 회원 설정 컬럼이 없다) 첫 페인트 전에
+    `layout.tsx`의 동기 스크립트가 `<html data-theme>`에 박는다. **그 스크립트를 걷어내면
+    밝은 화면이 한 번 번쩍인다.**
 - **반응형은 `lg`(1024px) 한 경계로만 가른다**(#85). 예전에는 데스크톱 전용이었고
   `body { min-width: 1024px }`가 그것을 강제했다 — 그 값을 그대로 브레이크포인트로 삼았으므로
   **`lg` 이상은 정의상 예전과 같은 화면**이다. 새 화면을 만들 때도 기본값을 모바일로,
@@ -222,15 +241,51 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
   `main`으로 가는 것은 릴리스 PR뿐이다.
 - 브랜치: 이슈를 열면 `issue-branch-creator.yml`이 제목 앞 태그(`[FEAT]`/`[FIX]`/`[REFACTOR]`/
   `[CHORE]`)를 읽어 `{type}/#{이슈번호}-{영문 슬러그}`로 만들어 준다. 문서·테스트·CI 작업은
-  `[CHORE]`로 열고 세부 종류는 라벨(`docs`·`test`·`cicd`)로 가른다.
-  직접 만들어야 한다면 같은 형식을 따른다.
+  `[CHORE]`로 연다 — **세부 종류를 라벨로 가르지 않는다**(#244, 아래). 직접 만들어야 한다면
+  같은 형식을 따르며, **남의 작업 브랜치가 아니라 `develop`에서 딴다** — 서버 레포에서
+  작업 중이던 다른 브랜치 위에서 갈라져 나온 PR이 문서 한 줄을 고치면서 남의 61개 파일을
+  함께 머지한 적이 있다(`ssccops-server#235`).
 - 커밋 메시지: 이슈가 있으면 `#{이슈번호} {type}({scope}): 설명`, 없으면 `{type}({scope}): 설명`.
   타입은 `feat`/`fix`/`refactor`/`design`/`style`/`docs`/`test`/`chore`/`init`/`rename`/
-  `remove`/`cicd`. **PR의 타입 라벨은 연결된 이슈의 라벨에서만 온다**(`pr-labeler.yml`) —
+  `remove`/`cicd`. **커밋 타입과 이슈 유형은 다른 어휘다**(#244) — 커밋 타입은 위 열둘
+  그대로이고, **이슈 유형은 `feat`·`fix`·`refactor`·`chore` 네 가지가 전부다**(아래).
+  커밋에는 `docs(agents):`라고 적으면서 그 작업의 이슈는 `[CHORE]`인 것이 정상이다.
+  **PR의 타입 라벨은 연결된 이슈의 라벨에서만 온다**(`pr-labeler.yml`) —
   커밋 표기는 라벨에 아무 영향을 주지 않으므로, 표기를 지키는 이유는 `git log`가 읽히기
   때문이다. 이슈를 연결하지 않은 PR에는 타입 라벨이 붙지 않는다.
   (`/commit-message` 스킬이 이 형식을 만들어 준다.)
+- **이슈 유형은 `feat`·`fix`·`refactor`·`chore` 네 가지뿐이다**(#244). 이슈 템플릿이 주는 것이
+  정본이며 라벨과 브랜치 접두어가 여기서 나온다. 문서·테스트·스타일·CI 작업의 이슈는 전부
+  `[CHORE]`다 — `[DOCS]`·`[CICD]` 같은 옛 태그로 열어도 `issue-labeler`·`issue-branch-creator`가
+  `chore`로 받는다. 예전에 쓰던 `docs`·`test`·`style`·`cicd`·`design`·`remove` 라벨은
+  **저장소에서 지웠다**(남겨 두면 화면 목록에서 고를 수 있어 다시 붙는다). 넷으로 못 박는
+  이유는 이 표가 `issue-labeler`·`issue-branch-creator`·`pr-labeler`·`pr-guard` 네 워크플로에
+  흩어져 있어 한 곳만 고치면 갈라지기 때문이다.
 - PR 제목은 `[#이슈번호] 총 작업 내용` — **Squash merge 시 그대로 커밋 제목이 되므로** 형식을
-  지킨다. 이 레포는 Squash and merge만 쓴다. (`/create-pr` 스킬)
-- `main`·`develop`으로 향하는 PR은 `integrate.yml`(Lint → Test → Analyze/Build)과
-  `pr-approval-check.yml`(리뷰 승인)이 함께 돈다.
+  지킨다. (`/create-pr` 스킬) **저장소 설정이 `squash_merge_commit_title = PR_TITLE`이라
+  커밋이 하나뿐인 PR에서도 PR 제목이 이긴다**(#244) — 기본값(`COMMIT_OR_PR_TITLE`)이던 동안에는
+  단일 커밋 PR에서 커밋 메시지가 제목이 되어, PR 제목을 통제해도 `git log`에는 다른 것이 박혔다.
+  **`pr-guard.yml`이 제목·브랜치명·두 번호의 일치·그 이슈의 실재를 검사해 어기면 실패시킨다**(#244)
+  — `develop → main` 릴리스 PR과 dependabot만 면제다.
+- **릴리스에는 버전을 먼저 올린다**(ssccops#229). `develop`에 버전 커밋을 넣고 **그다음에**
+  `develop → main` 릴리스 PR을 연다 — 릴리스 PR 안에서 올리면 두 브랜치가 같아진 뒤에도
+  develop에 버전이 없는 순간이 생긴다. 고치는 파일은 **넷**이다: 루트 `package.json` +
+  `apps/admin`·`apps/www`·`apps/lms`. **`packages/*`는 올리지 않는다** — workspace 내부
+  의존이라 외부 배포를 하지 않고, 올리면 매 릴리스마다 고칠 파일만 늘고 그 숫자를 아무도
+  보지 않는다. 그 뒤 태그(`v0.2.1`)와 GitHub 릴리스를 만든다.
+  - **서버(`ssccops-server`)도 같은 시점에 같은 숫자로 오른다.** 두 레포가 함께 배포되므로
+    한쪽만 올리면 "어느 쪽이 맞는 버전인가"가 갈린다.
+  - 어드민 화면 왼쪽 메뉴 맨 아래에 버전이 보인다. 값은 `next.config.ts`가 `package.json`에서
+    주입하므로 **따로 넣을 것이 없다** — `.env`로 받지 않는 이유는 배포 설정에 넣는 것을
+    잊으면 조용히 비기 때문이다.
+  - `v0.1.0`·`v0.1.1`·`v0.2.0` 세 번은 **태그만 오르고 `package.json`은 `0.1.0`에 머물렀다.**
+    이 절이 없어서 세 번을 놓쳤다.
+- **머지 전략은 둘이다.** 기능·수정 PR은 **Squash and merge**로 develop에 한 커밋으로 들어가고,
+  **`develop → main` 릴리스 PR은 일반 merge commit**이다 — 그쪽을 squash 하면 develop 전체가
+  main에서 커밋 하나로 뭉개져 릴리스에 무엇이 들어갔는지 사라진다. 그래서 `allow_merge_commit`은
+  켜 둔 것이며 끄지 말 것. `allow_rebase_merge`는 두 전략 어디에도 쓰이지 않아 껐다.
+- `main`·`develop`으로 향하는 PR은 `integrate.yml`(Lint → Test → Analyze/Build)이 돌고,
+  `pr-guard.yml`(컨벤션)과 `pr-labeler.yml`(크기·타입 라벨)이 함께 돈다.
+  **`pr-approval-check.yml`은 없다** — 예전에 이 자리에 적혀 있었으나 `.github/workflows/`에
+  그런 파일이 존재한 적이 없다(#244에서 확인). 리뷰 승인을 강제하려면 워크플로가 아니라
+  브랜치 보호 규칙이 필요하다.

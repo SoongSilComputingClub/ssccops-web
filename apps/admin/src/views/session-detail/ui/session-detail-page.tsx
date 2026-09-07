@@ -67,7 +67,7 @@ function ApprovalHistory({
     return <EmptyState message="아직 처리 이력이 없습니다." padding="sm" />;
   }
   return (
-    <div className="flex flex-col divide-y divide-black/6">
+    <div className="flex flex-col divide-y divide-hairline">
       {approvals.map((row) => (
         <div key={row.approvalId} className="py-[10px]">
           <div className="flex flex-wrap items-center gap-2 text-[13.5px] text-n500">
@@ -93,13 +93,13 @@ function DetailSkeleton() {
   return (
     <div className="flex flex-col gap-4">
       <Card className="animate-pulse">
-        <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
-        <div className="mt-3 h-[26px] w-3/5 rounded bg-black/5" />
-        <div className="mt-4 h-[80px] w-full rounded bg-black/5" />
+        <div className="h-[22px] w-[96px] rounded-full bg-fill" />
+        <div className="mt-3 h-[26px] w-3/5 rounded bg-fill" />
+        <div className="mt-4 h-[80px] w-full rounded bg-fill" />
       </Card>
       <Card className="animate-pulse">
-        <div className="h-[18px] w-[120px] rounded bg-black/5" />
-        <div className="mt-4 h-[140px] w-full rounded bg-black/5" />
+        <div className="h-[18px] w-[120px] rounded bg-fill" />
+        <div className="mt-4 h-[140px] w-full rounded bg-fill" />
       </Card>
     </div>
   );
@@ -222,7 +222,7 @@ export function SessionDetailPage({
               <img
                 src={detail.fileReference.fileUrlAddr}
                 alt="출석 인증사진"
-                className="max-h-[320px] w-full rounded-[12px] object-contain shadow-[inset_0_0_0_1px_#e5e8eb]"
+                className="max-h-[320px] w-full rounded-[12px] object-contain shadow-[inset_0_0_0_1px_var(--color-line)]"
               />
             ) : (
               <EmptyState message="첨부된 인증사진이 없습니다." padding="sm" />
@@ -235,7 +235,7 @@ export function SessionDetailPage({
             {detail.attendances.length === 0 ? (
               <EmptyState message="출석부가 비어 있습니다." padding="sm" />
             ) : (
-              <div className="flex flex-col divide-y divide-black/6">
+              <div className="flex flex-col divide-y divide-hairline">
                 {detail.attendances.map((row) => (
                   <div
                     key={row.eventParticipantId}

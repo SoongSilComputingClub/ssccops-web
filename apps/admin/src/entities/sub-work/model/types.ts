@@ -285,4 +285,15 @@ export interface SubWorkListItem {
   dueAt: string | null;
   /** dly_yn 컬럼이 아니라 서버가 조회 시점에 판정한 값이다 (SubWorkDetail.isDelayed와 같다) */
   isDelayed: boolean;
+  /**
+   * 완료 점검을 다 채웠는데 아직 `완료 승인 요청`을 누르지 않았다 — **다음에 누를 사람은
+   * 담당자다**. 서버가 조회 시점에 판정한 값이며(`isDelayed`와 같은 자리) 화면이
+   * 진행률·체크리스트로 다시 세지 않는다. 점검 항목이 없는 유형은 서버가 늘 false로 준다.
+   */
+  isReadyForReview: boolean;
+  /**
+   * 검토요청이 올라간 지 3일이 지났는데 아직 승인·반려가 없다 — **다음에 누를 사람은
+   * 승인자다**. 임계값 3일은 서버 상수(`DeadlinePolicy.REVIEW_STALE_DAYS`)라 화면은 모른다.
+   */
+  isReviewStale: boolean;
 }

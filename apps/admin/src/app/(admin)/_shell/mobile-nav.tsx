@@ -44,7 +44,7 @@ export function MobileNav() {
 
   return (
     <>
-      <div className="flex flex-none items-center gap-[10px] border-b border-black/8 bg-surface px-4 py-3 lg:hidden">
+      <div className="flex flex-none items-center gap-[10px] border-b border-hairline-strong bg-surface px-4 py-3 lg:hidden">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -64,7 +64,7 @@ export function MobileNav() {
         <div className="fixed inset-0 z-[80] lg:hidden">
           <div
             onClick={() => setOpen(false)}
-            className="absolute inset-0 animate-fade-in bg-black/40"
+            className="absolute inset-0 animate-fade-in bg-scrim"
           />
           <div
             ref={panelRef}
@@ -72,7 +72,7 @@ export function MobileNav() {
             role="dialog"
             aria-modal="true"
             aria-label="메뉴"
-            className="absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col border-r border-black/8 bg-surface pt-[22px] pb-4 outline-none"
+            className="absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col border-r border-hairline-strong bg-surface pt-[22px] pb-4 outline-none"
           >
             <div className="mb-3 flex items-center gap-[10px] border-b border-bg px-[18px] pb-4">
               <div className="flex size-7 flex-none items-center justify-center rounded-[7px] border border-accent text-[15px] text-accent">

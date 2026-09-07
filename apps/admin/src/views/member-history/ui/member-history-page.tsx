@@ -186,7 +186,7 @@ function MemberHistoryView({ mbrId }: { mbrId: number }) {
           말하고, 여기서 **무엇이 담기지 않는지**까지 말한다 — 이력이 비어 있을 때 그것이
           "고친 적이 없다"로 읽히는 것을 막는 문장이라 목록보다 위에 있어야 한다.
         */}
-        <div className="mb-4 rounded-[12px] border border-line bg-white/60 px-[14px] py-[11px] text-[13.5px] leading-[1.7] text-n400">
+        <div className="mb-4 rounded-[12px] border border-line bg-subtle px-[14px] py-[11px] text-[13.5px] leading-[1.7] text-n400">
           이 화면에는 <b>등급 · 상태 · 역할 · 회원 정보 변경</b>이 기록됩니다. 회원 정보(학번 ·
           이름 · 연락처 · 학과 등) 수정은 <b>기록이 시작된 뒤부터</b> 쌓이므로, 그전에 고친
           값은 여기에 나타나지 않습니다.
@@ -271,10 +271,10 @@ function HistorySkeleton() {
     <Card className="animate-pulse px-5 pt-[18px] pb-[6px]">
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="mb-[18px] flex gap-3">
-          <div className="mt-[5px] size-[9px] flex-none rounded-full bg-black/5" />
+          <div className="mt-[5px] size-[9px] flex-none rounded-full bg-fill" />
           <div className="min-w-0 flex-1">
-            <div className="h-[16px] w-[200px] rounded bg-black/5" />
-            <div className="mt-[8px] h-[14px] w-[280px] rounded bg-black/5" />
+            <div className="h-[16px] w-[200px] rounded bg-fill" />
+            <div className="mt-[8px] h-[14px] w-[280px] rounded bg-fill" />
           </div>
         </div>
       ))}

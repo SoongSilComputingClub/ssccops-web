@@ -23,9 +23,18 @@ export async function middleware(request: NextRequest) {
  * (`entities/session`), 그 뒤 브라우저가 같은 세션으로 자동 저장·제출을 이어 간다 — 만료가
  * 임박한 토큰이 여기서 갱신되지 않으면 작성 도중에 저장이 401로 끊긴다.
  *
+ * **공개 폼(`/f/{formId}`)이 같은 이유로 들어온다**(ssccops#214). 답을 고칠 때마다 저장하는
+ * 화면이고 한 번에 오래 머무르므로, 갱신이 없으면 긴 폼일수록 마지막에 401을 만난다.
+ * 완료 화면(`/f/{id}/done`)까지 잡지 않는 것은 그쪽이 아무것도 조회하지 않기 때문이다.
+ *
+ * **크롤러를 가려낼 필요가 없다.** 어드민에서는 미들웨어가 미인증 요청을 `/login`으로 돌려보내
+ * `generateMetadata`가 아예 돌지 않았고, 그래서 UA로 크롤러를 골라 통과시키는 장치가 있었다
+ * (ssccops-web#269). 여기서는 `updateSession`이 리다이렉트를 하지 않으므로 우회할 대상 자체가
+ * 없다 — 크롤러는 그냥 페이지를 받고 메타가 만들어진다.
+ *
  * /auth/callback은 제외한다 — 콜백 라우트가 스스로 코드를 세션으로 교환하며, 그 시점에는
  * 아직 갱신할 세션이 없다.
  */
 export const config = {
-  matcher: ["/my-applications", "/events/:eventId/apply"],
+  matcher: ["/my-applications", "/events/:eventId/apply", "/f/:formId"],
 };

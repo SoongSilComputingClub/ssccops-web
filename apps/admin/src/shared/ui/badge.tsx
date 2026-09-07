@@ -16,9 +16,9 @@ const TONE: Record<BadgeTone, string> = {
   grey: "bg-bg text-n300",
   red: "bg-danger/10 text-danger",
   amber: "bg-amber-soft text-amber",
-  outline: "shadow-[inset_0_0_0_1px_#d1d6db] text-n400",
-  "outline-accent": "shadow-[inset_0_0_0_1px_#3182f6] text-accent",
-  "outline-red": "shadow-[inset_0_0_0_1px_rgba(240,68,82,.35)] text-danger",
+  outline: "shadow-[inset_0_0_0_1px_var(--color-line-strong)] text-n400",
+  "outline-accent": "shadow-[inset_0_0_0_1px_var(--color-accent)] text-accent",
+  "outline-red": "shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--color-danger)_35%,transparent)] text-danger",
 };
 
 export function Badge({
@@ -60,7 +60,7 @@ export function Pill({
   const tones = {
     blue: "bg-accent-soft text-accent",
     red: "bg-danger/10 text-danger",
-    outline: "shadow-[inset_0_0_0_1px_#d1d6db] text-n400",
+    outline: "shadow-[inset_0_0_0_1px_var(--color-line-strong)] text-n400",
   };
   return (
     <span

@@ -13,6 +13,7 @@ import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { RejectSheet, useApprovalDecisions } from "@/features/approval";
 import { useDeleteSubWork, useSubWorkActions, useSubWorkDetail } from "@/features/sub-work";
+import { ShareButton } from "@/features/share";
 import {
   APRV_STTS_NM,
   OPER_TYPE_NM,
@@ -37,6 +38,7 @@ import {
   Sheet,
   flash,
 } from "@/shared/ui";
+import { NextStepGuide } from "./next-step-guide";
 
 /*
  * 하위 업무 상세 (ssccops-server OPS-009 조회 · OPS-010 전이 · OPS-013 체크 · #39).
@@ -83,25 +85,19 @@ function isChecklistDone(subWork: SubWorkDetail): boolean {
   return completedCount >= totalCount;
 }
 
-/** 완료 전환 안내 문구 — 유형이 승인자를 지정했으면 그 결재 권한 이름으로 적는다 (서버 #123) */
-function approvalGuide(subWork: SubWorkDetail): string {
-  if (!subWork.approvalRequired) return "승인이 필요하지 않은 유형입니다.";
-  return `완료 전환은 ${subWork.authorizerAuthorityName ?? "승인자"} 승인이 필요합니다.`;
-}
-
 function DetailSkeleton() {
   return (
     <>
       <Card className="mb-4 animate-pulse">
-        <div className="h-[28px] w-2/5 rounded bg-black/5" />
-        <div className="mt-6 h-[60px] w-full rounded bg-black/5" />
+        <div className="h-[28px] w-2/5 rounded bg-fill" />
+        <div className="mt-6 h-[60px] w-full rounded bg-fill" />
       </Card>
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <Card className="animate-pulse">
-          <div className="h-[240px] w-full rounded bg-black/5" />
+          <div className="h-[240px] w-full rounded bg-fill" />
         </Card>
         <Card className="animate-pulse">
-          <div className="h-[140px] w-full rounded bg-black/5" />
+          <div className="h-[140px] w-full rounded bg-fill" />
         </Card>
       </div>
     </>
@@ -263,6 +259,12 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
             )}
             {subWork.isDelayed && <Badge tone="red">지연</Badge>}
             <div className="flex-1" />
+            {/*
+              * 공유는 권한을 넓히지 않는다 — 토큰이 주는 것은 제목·요약 미리보기까지이고,
+              * 링크를 받은 사람은 종전대로 로그인과 권한 검사를 지나야 내용을 본다(ADR-0016).
+              * 그래서 이 화면을 볼 수 있다는 것만으로 공유할 수 있고 별도 잠금이 없다.
+              */}
+            <ShareButton subWorkId={subWork.subWorkId} title={subWork.title} />
             {canActOnOwnerTasks && (
               <Button
                 variant="ghost"
@@ -334,11 +336,16 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
             className="mt-[22px]"
           />
 
-          <div className="mt-[14px] text-center text-[13.5px] text-n400">
-            {isDone
-              ? `완료했습니다 · ${formatDt(subWork.completedAt) || "완료 일시 없음"}`
-              : approvalGuide(subWork)}
-          </div>
+          {/*
+           * 지금 단계 · 다음 할 일 · 잠긴 이유 (ssccops#197). 버튼의 title 툴팁은 그대로 두고
+           * 같은 사실을 여기서 문장으로 말한다 — 모바일에서는 툴팁이 닿지 않고, 권한이 없어
+           * 버튼이 없는 사람에게는 데스크톱에서도 아무 말이 없었다.
+           */}
+          <NextStepGuide
+            subWork={subWork}
+            canActOnOwnerTasks={canActOnOwnerTasks}
+            className="mt-[14px]"
+          />
 
           {/*
            * 정족수는 완료 승인의 선행 조건이라 진행을 보여 주고, 검토 단계에서는 여기서 표를
@@ -400,7 +407,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
           <Card>
             <SectionLabel>상위 속성 · oper</SectionLabel>
             <KeyValueGrid
-              className="mt-[10px] border-b border-black/8 pb-[14px]"
+              className="mt-[10px] border-b border-hairline-strong pb-[14px]"
               items={[
                 {
                   k: FIELD_LABEL.operationId,
@@ -509,8 +516,8 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
                     <span
                       className={
                         item.isCompleted
-                          ? "flex size-[18px] flex-none items-center justify-center rounded-[6px] bg-accent-strong text-[11px] text-white"
-                          : "size-[18px] flex-none rounded-[6px] shadow-[inset_0_0_0_1px_#d1d6db]"
+                          ? "flex size-[18px] flex-none items-center justify-center rounded-[6px] bg-accent-strong text-[11px] text-on-solid"
+                          : "size-[18px] flex-none rounded-[6px] shadow-[inset_0_0_0_1px_var(--color-line-strong)]"
                       }
                     >
                       {item.isCompleted ? "✓" : ""}

@@ -342,6 +342,12 @@ function toQitemRequest(qitem: Qitem): Qitem {
   return {
     qitemId: qitem.qitemId,
     qitemLblNm: qitem.qitemLblNm,
+    /*
+     * 설명은 유형과 무관하다 — 안내 문구이지 유형별 속성이 아니라 유형을 바꿔도 남는다.
+     * 공백뿐이면 아예 빼는 것은 서버가 그것을 NULL로 굳히기 때문이고(ssccops-server#271),
+     * 여기서 ""를 실어 보내면 뜻이 같은 저장이 문항 구성 버전을 한 번 더 올린다.
+     */
+    ...(qitem.qitemDescCn?.trim() ? { qitemDescCn: qitem.qitemDescCn } : {}),
     qitemTypeCd: qitem.qitemTypeCd,
     reqYn: qitem.reqYn,
     pageSeq: qitem.pageSeq ?? 0,

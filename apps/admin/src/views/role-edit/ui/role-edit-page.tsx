@@ -214,7 +214,7 @@ function HoldersCard({
             <div
               key={`${m.mbrId}-${m.roleBgngYmd}-${m.roleEndYmd ?? ""}`}
               onClick={() => router.push(ROUTES.memberDetail(m.mbrId))}
-              className="cursor-pointer border-t border-black/5 py-3 first:border-t-0"
+              className="cursor-pointer border-t border-hairline py-3 first:border-t-0"
             >
               <div className="flex items-center gap-[6px]">
                 <span className="text-[15.5px] font-semibold hover:text-accent">

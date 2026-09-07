@@ -45,8 +45,8 @@ import {
 function EditSkeleton() {
   return (
     <Card className="animate-pulse">
-      <div className="h-[22px] w-2/5 rounded bg-black/5" />
-      <div className="mt-4 h-[240px] w-full rounded bg-black/5" />
+      <div className="h-[22px] w-2/5 rounded bg-fill" />
+      <div className="mt-4 h-[240px] w-full rounded bg-fill" />
     </Card>
   );
 }

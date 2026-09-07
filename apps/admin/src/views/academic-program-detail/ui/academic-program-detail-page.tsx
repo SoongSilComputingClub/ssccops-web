@@ -56,14 +56,14 @@ function DetailSkeleton() {
   return (
     <div className="flex flex-col gap-4">
       <Card className="animate-pulse">
-        <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
-        <div className="mt-3 h-[28px] w-3/5 rounded bg-black/5" />
-        <div className="mt-4 h-[8px] w-full rounded bg-black/5" />
-        <div className="mt-6 h-[140px] w-full rounded bg-black/5" />
+        <div className="h-[22px] w-[96px] rounded-full bg-fill" />
+        <div className="mt-3 h-[28px] w-3/5 rounded bg-fill" />
+        <div className="mt-4 h-[8px] w-full rounded bg-fill" />
+        <div className="mt-6 h-[140px] w-full rounded bg-fill" />
       </Card>
       <Card className="animate-pulse">
-        <div className="h-[18px] w-[120px] rounded bg-black/5" />
-        <div className="mt-4 h-[200px] w-full rounded bg-black/5" />
+        <div className="h-[18px] w-[120px] rounded bg-fill" />
+        <div className="mt-4 h-[200px] w-full rounded bg-fill" />
       </Card>
     </div>
   );

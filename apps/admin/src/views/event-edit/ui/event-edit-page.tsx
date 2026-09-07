@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   eventSttsBadge,
@@ -10,13 +9,7 @@ import {
 } from "@/entities/event";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
-import {
-  EventForm,
-  useDeleteEvent,
-  useEventDetail,
-  useEventStatus,
-  useSaveEvent,
-} from "@/features/event";
+import { EventForm, useEventDetail, useEventStatus, useSaveEvent } from "@/features/event";
 import type { EventSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import {
@@ -27,15 +20,17 @@ import {
   PageBody,
   PageHeader,
   SectionLabel,
-  Sheet,
   flash,
 } from "@/shared/ui";
 
 /*
  * 행사 수정 (#136 · PUT /v1/events/{eventId}).
  *
- * 상태 전이(게시·게시 철회·보관·재공개)와 삭제도 이 화면에 있다 — 행사 상세 화면이 따로
- * 없으므로(라우트 주석 참고) 행사 정보와 전이 버튼이 같은 자리에서 같은 것을 본다.
+ * 상태 전이(게시·게시 철회·보관·재공개)도 이 화면에 있다 — 행사 상세 화면이 따로 없으므로
+ * (라우트 주석 참고) 행사 정보와 전이 버튼이 같은 자리에서 같은 것을 본다.
+ *
+ * **삭제 버튼은 없다** (ssccops ADR-0014). 서버에서 삭제 API가 사라졌고, 치우는 길은 보관
+ * 하나로 모였다 — 작성 중인 행사도 보관할 수 있게 열린 것이 그 때문이다.
  *
  * 상세 조회가 ready가 되기 전에는 폼을 마운트하지 않는다 — useState 초깃값이 곧 폼
  * 초깃값이라 동기화용 useEffect가 필요 없다(work-edit과 같은 판단).
@@ -54,7 +49,11 @@ const TRANSITIONS: Record<
   EventSttsCd,
   { action: EventStatusAction; label: string; primary?: boolean }[]
 > = {
-  DRAFT: [{ action: "PUBLISH", label: "게시", primary: true }],
+  DRAFT: [
+    { action: "PUBLISH", label: "게시", primary: true },
+    // 삭제가 없어진 뒤로 잘못 만든 행사를 치우는 유일한 길이다 (ssccops ADR-0014)
+    { action: "ARCHIVE", label: "보관" },
+  ],
   PUBLISHED: [
     { action: "RETRACT", label: "게시 철회" },
     { action: "ARCHIVE", label: "보관" },
@@ -65,8 +64,8 @@ const TRANSITIONS: Record<
 function EditSkeleton() {
   return (
     <Card className="animate-pulse">
-      <div className="h-[22px] w-2/5 rounded bg-black/5" />
-      <div className="mt-4 h-[200px] w-full rounded bg-black/5" />
+      <div className="h-[22px] w-2/5 rounded bg-fill" />
+      <div className="mt-4 h-[200px] w-full rounded bg-fill" />
     </Card>
   );
 }
@@ -84,7 +83,7 @@ export function EventEditPage({ eventId }: { eventId: number }) {
           {status === "loading" && <EditSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="행사를 찾을 수 없습니다 — 이미 삭제된 행사일 수 있습니다."
+              message="행사를 찾을 수 없습니다."
               action={{ label: "행사 목록", onClick: () => router.replace(ROUTES.events) }}
             />
           )}
@@ -120,11 +119,9 @@ function EventEditView({
   const router = useRouter();
   const save = useSaveEvent();
   const statusControl = useEventStatus();
-  const deletion = useDeleteEvent();
-  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const stts = eventSttsBadge(event.eventSttsCd);
-  const busy = save.pending || statusControl.pending || deletion.pending;
+  const busy = save.pending || statusControl.pending;
 
   const submit = async (input: EventSaveInput) => {
     const { event: updated, message } = await save.update(event.eventId, input);
@@ -184,15 +181,6 @@ function EventEditView({
                 {t.label}
               </Button>
             ))}
-            <Button
-              variant="ghost-danger"
-              size="sm"
-              disabled={busy || !canManage}
-              title={canManage ? undefined : NO_MANAGE}
-              onClick={() => setDeleteOpen(true)}
-            >
-              삭제
-            </Button>
           </div>
         </Card>
 
@@ -206,21 +194,6 @@ function EventEditView({
           onSubmit={(input) => void submit(input)}
         />
 
-        <Sheet
-          open={deleteOpen}
-          title="행사 삭제"
-          hint="삭제하면 되돌릴 수 없습니다. 참가자가 있는 행사는 삭제할 수 없으며 보관으로 전환해주세요."
-          onClose={() => setDeleteOpen(false)}
-          onOk={() => {
-            setDeleteOpen(false);
-            void (async () => {
-              const { deleted, message } = await deletion.remove(event.eventId);
-              if (message) flash(message);
-              if (deleted) router.replace(ROUTES.events);
-            })();
-          }}
-          okLabel="삭제"
-        />
       </PageBody>
     </>
   );

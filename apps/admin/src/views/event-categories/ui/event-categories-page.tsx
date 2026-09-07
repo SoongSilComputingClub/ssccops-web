@@ -199,7 +199,7 @@ export function EventCategoriesPage() {
 
                     return (
                       <div key={c.eventClsfCd} className="contents">
-                        <div className="border-t border-black/5 py-3 text-[15px]">
+                        <div className="border-t border-hairline py-3 text-[15px]">
                           {isEditing ? (
                             <input
                               value={editSeqno}
@@ -220,12 +220,12 @@ export function EventCategoriesPage() {
                             c.indctSeqno
                           )}
                         </div>
-                        <div className="border-t border-black/5 py-3">
+                        <div className="border-t border-hairline py-3">
                           <span className="font-mono text-[13.5px] text-n400">
                             {c.eventClsfCd}
                           </span>
                         </div>
-                        <div className="border-t border-black/5 py-3 text-[15px]">
+                        <div className="border-t border-hairline py-3 text-[15px]">
                           {isEditing ? (
                             <input
                               value={editNm}
@@ -246,7 +246,7 @@ export function EventCategoriesPage() {
                             <span className="font-semibold">{c.eventClsfNm}</span>
                           )}
                         </div>
-                        <div className="flex gap-3 border-t border-black/5 py-3 text-[14px]">
+                        <div className="flex gap-3 border-t border-hairline py-3 text-[14px]">
                           {isEditing ? (
                             <>
                               <button

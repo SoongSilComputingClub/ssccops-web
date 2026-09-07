@@ -47,13 +47,13 @@ function StatsSkeleton() {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="h-[76px] animate-pulse rounded-[12px] bg-black/5"
+            className="h-[76px] animate-pulse rounded-[12px] bg-fill"
           />
         ))}
       </div>
       <Card className="animate-pulse">
-        <div className="h-[18px] w-[120px] rounded bg-black/5" />
-        <div className="mt-4 h-[160px] w-full rounded bg-black/5" />
+        <div className="h-[18px] w-[120px] rounded bg-fill" />
+        <div className="mt-4 h-[160px] w-full rounded bg-fill" />
       </Card>
     </div>
   );
@@ -175,7 +175,7 @@ export function AttendanceStatsPage() {
                   padding="sm"
                 />
               ) : (
-                <div className="flex flex-col divide-y divide-black/6">
+                <div className="flex flex-col divide-y divide-hairline">
                   {programRates.map((row) => (
                     <ProgramRateRow key={row.academicProgramId} row={row} />
                   ))}

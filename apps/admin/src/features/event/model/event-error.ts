@@ -106,14 +106,20 @@ export function toEventStatusErrorMessage(error: unknown): string {
   }
 }
 
-/** 삭제 실패 */
-export function toEventDeleteErrorMessage(error: unknown): string {
+/**
+ * 복제 실패 (ssccops#198 · POST /v1/events/{eventId}/duplicate).
+ *
+ * **아무것도 만들어지지 않았다는 것을 말해 준다.** 서버가 폼 사본까지 한 트랜잭션으로 묶으므로
+ * 실패는 언제나 전부-아니면-전무다 — 그 사실을 밝히지 않으면 사용자는 반쯤 만들어진 사본을
+ * 찾아 목록을 뒤진다.
+ */
+export function toEventDuplicateErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return "행사를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요";
+    return "행사를 복제하지 못했습니다. 잠시 후 다시 시도해주세요";
   }
 
-  if (error.code === EVENT_ERROR.EVENT_HAS_PARTICIPANT) {
-    return "참가자가 있는 행사는 삭제할 수 없습니다 — 삭제 대신 보관으로 전환해주세요";
+  if (error.code === EVENT_ERROR.EVENT_IMAGE_COPY_FAILED) {
+    return "본문 이미지를 복사하지 못해 복제를 취소했습니다 — 잠시 후 다시 시도해주세요";
   }
   return toEventErrorMessage(error);
 }

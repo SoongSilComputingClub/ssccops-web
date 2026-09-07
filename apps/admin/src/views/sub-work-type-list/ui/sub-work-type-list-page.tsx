@@ -166,7 +166,7 @@ export function SubWorkTypeListPage() {
         </div>
 
         {editing !== null && (
-          <Card className="mb-4 shadow-[0_0_0_1px_#3182f6]">
+          <Card className="mb-4 shadow-[0_0_0_1px_var(--color-accent)]">
             <SectionLabel className="mb-3">
               {editing ? "하위 업무 유형 수정" : "새 하위 업무 유형"}
             </SectionLabel>
@@ -343,28 +343,28 @@ export function SubWorkTypeListPage() {
                       <div
                         className={
                           t.useYn
-                            ? "border-t border-black/5 py-3 text-[15px] font-semibold"
-                            : "border-t border-black/5 py-3 text-[15px] font-semibold text-n500 line-through"
+                            ? "border-t border-hairline py-3 text-[15px] font-semibold"
+                            : "border-t border-hairline py-3 text-[15px] font-semibold text-n500 line-through"
                         }
                       >
                         {t.typeName}
                       </div>
-                      <div className="border-t border-black/5 py-3">
+                      <div className="border-t border-hairline py-3">
                         <Badge tone={t.approvalNeeded ? "blue" : "grey"}>
                           {t.approvalNeeded ? "필요" : "불필요"}
                         </Badge>
                       </div>
-                      <div className="border-t border-black/5 py-3 text-[14.5px] text-n400">
+                      <div className="border-t border-hairline py-3 text-[14.5px] text-n400">
                         {t.authorizerAuthorityName ?? "-"}
                       </div>
-                      <div className="border-t border-black/5 py-3 text-[14.5px] text-n400">
+                      <div className="border-t border-hairline py-3 text-[14.5px] text-n400">
                         {agreeCountText(t)}
                       </div>
                       {/* 표에서만 '·'로 잇는다 — 저장 형태는 배열이고 구분자는 표시 규칙이다 */}
-                      <div className="min-w-0 truncate border-t border-black/5 py-3 pr-2 text-[14px] text-n400">
+                      <div className="min-w-0 truncate border-t border-hairline py-3 pr-2 text-[14px] text-n400">
                         {t.completionCheckArticles.join(" · ") || "-"}
                       </div>
-                      <div className="border-t border-black/5 py-3">
+                      <div className="border-t border-hairline py-3">
                         {/*
                           응답이 오기 전에 다시 눌리면 방금 바꾼 값을 되돌리게 된다 —
                           진행 중에는 훅이 요청을 막고, 여기서는 그 사실을 흐리게 보여 준다
@@ -379,7 +379,7 @@ export function SubWorkTypeListPage() {
                           }
                         />
                       </div>
-                      <div className="border-t border-black/5 py-3">
+                      <div className="border-t border-hairline py-3">
                         <button
                           type="button"
                           disabled={!canManage}

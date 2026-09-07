@@ -74,7 +74,7 @@ export function ProposalCurriculumCard({
             {preview.curriculumItems.map((item, index) => (
               <li
                 key={`${item.seqno ?? "-"}|${index}`}
-                className={`flex flex-col gap-[2px] border-t border-black/5 py-3 ${ROW}`}
+                className={`flex flex-col gap-[2px] border-t border-hairline py-3 ${ROW}`}
               >
                 {/*
                   회차 번호는 제출자가 적은 값이지 줄 순서로 매긴 값이 아니다(서버가 그렇게

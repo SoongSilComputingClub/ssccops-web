@@ -6,7 +6,7 @@ import { toFormErrorMessage } from "./form-error";
  *
  * ── 왜 features/proposal이 아니라 여기인가 ─────────────────────
  * 기획안 화면은 **공개 폼 응답자 화면 그 자체**다 — 문항도 자동 저장도 제출도 폼 도메인의
- * 경로를 그대로 탄다(ssccops#131 결정). 슬라이스를 따로 파면 `usePublicForm`·`useMyResponses`를
+ * 경로를 그대로 탄다(ssccops#131 결정). 슬라이스를 따로 파면 `useMyResponses`를
  * 같은 레이어의 다른 슬라이스에서 참조하게 되는데, 그것은 FSD가 막는 방향이다(AGENTS.md).
  * 응답자용 훅을 features/response가 아니라 여기 둔 use-my-responses.ts의 판단과 같은 줄기다.
  *

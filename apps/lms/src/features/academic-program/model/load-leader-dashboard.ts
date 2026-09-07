@@ -21,7 +21,9 @@ import { toLeaderDashboardErrorMessage } from "./leader-dashboard-error";
  * 클라이언트 훅을 둘 이유가 없다.
  *
  * ── 무엇을 모으는가 (이슈 「작업할 내용」) ──────────────────────
- * 1. 내 활동 목록(`?mine=true` · #131) — 그중 **진행 중(ONGOING) 활동 하나**를 대상으로 삼는다.
+ * 1. 내 활동 목록(`?mine=leader` · #131 · #241) — 그중 **진행 중(ONGOING) 활동 하나**를
+ *    대상으로 삼는다. `leader`라서 목록은 이미 내가 스터디장/팀장인 활동뿐이다 — 아래
+ *    `pickPrimary`가 `isLeader`를 보지 않아도 되는 이유다.
  *    없으면 승인(APPROVED)이나 첫 활동. 하나도 없으면 빈 상태.
  * 2. 그 활동의 커리큘럼(#134) — 회차 진행 스트립·미기록 회차·진행률의 재료.
  * 3. 그 활동의 회차 승인 이력(#139 · `aprvPntCd=SESSION`) — "내 기록 처리 현황".

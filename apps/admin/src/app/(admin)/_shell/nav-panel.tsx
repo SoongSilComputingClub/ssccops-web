@@ -8,6 +8,7 @@
  */
 import { useState } from "react";
 import { cn } from "@/shared/lib/cn";
+import { ThemeToggle } from "@/shared/ui";
 import { NAV_FOOT, type NavGroup, type NavItem } from "./nav";
 
 function NavRow({
@@ -123,7 +124,28 @@ export function NavPanel({
         {NAV_FOOT.items.map((item) => (
           <NavRow key={item.label} item={item} pathname={pathname} onNavigate={onNavigate} />
         ))}
+        {/* 사이드바와 드로어가 이 한 벌을 함께 쓴다 — 한쪽에만 두면 모바일에서 못 바꾼다 */}
+        <ThemeToggle className="mx-[18px] mt-2" />
+        <AppVersion />
       </div>
     </>
   );
+}
+
+/*
+ * 지금 보고 있는 버전 (ssccops#229).
+ *
+ * 운영진이 문의할 때 "어느 버전을 보고 계세요"를 물을 수 있게 하는 것이 전부라, 메뉴 맨
+ * 아래에 회색 작은 글씨로만 둔다. 값은 `next.config.ts`가 `package.json`에서 주입한다 —
+ * 릴리스에서 고칠 곳이 `package.json` 하나로 끝나게 하려는 것이다.
+ *
+ * **드로어에도 함께 나온다** — 이 파일이 사이드바와 드로어가 공유하는 마크업 한 벌이기
+ * 때문이다(#85). 위 `ThemeToggle`이 같은 이유로 여기 있다.
+ *
+ * 값이 없으면 아무것도 그리지 않는다. 빈 자리에 `v` 한 글자만 남는 것보다 낫다.
+ */
+function AppVersion() {
+  const version = process.env.NEXT_PUBLIC_APP_VERSION;
+  if (!version) return null;
+  return <div className="px-[18px] pt-2 pb-1 text-[11.5px] text-n500">v{version}</div>;
 }

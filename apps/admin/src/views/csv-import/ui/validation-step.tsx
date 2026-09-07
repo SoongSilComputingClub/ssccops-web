@@ -257,8 +257,8 @@ function IssueTable({
         ))}
         {rows.map((row) => (
           <div key={row.rowNo} className="contents">
-            <div className="border-t border-black/5 py-3 text-[15px]">{row.rowNo}</div>
-            <div className="border-t border-black/5 py-3 text-[15px]">
+            <div className="border-t border-hairline py-3 text-[15px]">{row.rowNo}</div>
+            <div className="border-t border-hairline py-3 text-[15px]">
               {row.target}
               {kind === "error" && (
                 <Badge tone={row.status === "DUPLICATE" ? "amber" : "red"} className="ml-2">
@@ -267,7 +267,7 @@ function IssueTable({
               )}
             </div>
             <div
-              className={`border-t border-black/5 py-3 text-[14px] ${
+              className={`border-t border-hairline py-3 text-[14px] ${
                 kind === "error" ? "text-danger" : "text-amber"
               }`}
             >

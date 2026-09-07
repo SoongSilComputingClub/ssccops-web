@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchSubWork } from "@/entities/sub-work";
 import { fetchWork } from "@/entities/work";
@@ -31,10 +31,12 @@ import {
   Button,
   Card,
   Chip,
+  ChipGroup,
   EmptyState,
   KeyValueGrid,
   PageBody,
   PageHeader,
+  SearchInput,
   SectionLabel,
   Sheet,
   TextArea,
@@ -56,6 +58,19 @@ import {
  * 눌러도 403이 날 버튼을 보여주는 대신, 책임자가 누구인지는 상세 카드에 이미 나와 있다.
  */
 
+/**
+ * 안건 후보를 가르는 종류 필터 (ssccops#216).
+ *
+ * **서버 파라미터가 아니라 "어느 목록을 조회할지"의 문제다** — 업무와 하위 업무는 애초에
+ * 다른 엔드포인트라, `업무`를 고르면 하위 업무를 조회하지 않으면 된다. 한쪽을 안 부르면
+ * 되는 일에 새 조회 계약을 만들 이유가 없다.
+ */
+const AGENDA_TARGET_KINDS = ["전체", "업무", "하위 업무"] as const;
+type AgendaTargetKind = (typeof AGENDA_TARGET_KINDS)[number];
+
+/** 타이핑 도중 매 글자마다 조회하지 않는다 — use-members.ts와 같은 값 */
+const AGENDA_SEARCH_DEBOUNCE_MS = 300;
+
 /** 안건으로 연결할 수 있는 운영 건 후보 — 업무·하위 업무 목록 카드에서 뽑은 표시용 값 */
 interface AgendaTargetOption {
   kind: "WORK" | "SUB_WORK";
@@ -69,13 +84,13 @@ function DetailSkeleton() {
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.6fr]">
       <Card className="animate-pulse">
-        <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
-        <div className="mt-3 h-[28px] w-3/5 rounded bg-black/5" />
-        <div className="mt-6 h-[220px] w-full rounded bg-black/5" />
+        <div className="h-[22px] w-[96px] rounded-full bg-fill" />
+        <div className="mt-3 h-[28px] w-3/5 rounded bg-fill" />
+        <div className="mt-6 h-[220px] w-full rounded bg-fill" />
       </Card>
       <Card className="animate-pulse">
-        <div className="h-[18px] w-[80px] rounded bg-black/5" />
-        <div className="mt-4 h-[220px] w-full rounded bg-black/5" />
+        <div className="h-[18px] w-[80px] rounded bg-fill" />
+        <div className="mt-4 h-[220px] w-full rounded bg-fill" />
       </Card>
     </div>
   );
@@ -268,8 +283,29 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
    * 내리고 oper_id를 담지 않으므로, 고른 뒤(제출 시점에) 상세 조회로 operationId를 다시
    * 구한다 — resolveTargetOperationId 참고.
    */
-  const workList = useWorkList();
-  const subWorkList = useSubWorkList("전체");
+  const [targetKind, setTargetKind] = useState<AgendaTargetKind>("전체");
+  const [targetQuery, setTargetQuery] = useState("");
+  const [debouncedTargetQuery, setDebouncedTargetQuery] = useState("");
+
+  /* 첫 렌더의 초기값이 빈 문자열이라 화면 진입 조회는 디바운스를 기다리지 않는다 */
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setDebouncedTargetQuery(targetQuery),
+      AGENDA_SEARCH_DEBOUNCE_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [targetQuery]);
+
+  const showWorks = targetKind !== "하위 업무";
+  const showSubWorks = targetKind !== "업무";
+
+  const workList = useWorkList(debouncedTargetQuery);
+  const subWorkList = useSubWorkList("전체", debouncedTargetQuery);
+  /*
+   * selectedTarget은 종류·검색어와 **분리해서 쥔다.** 후보 카드에서 뽑은 표시용 값이라
+   * 목록에서 사라져도 살아 있으며, 조건이 바뀔 때마다 비우면 검색으로 찾아 고른 뒤 내용을
+   * 쓰는 도중 조건을 만졌을 때 선택이 조용히 풀린다 — 선택은 조건이 아니라 사용자의 결정이다.
+   */
   const [selectedTarget, setSelectedTarget] = useState<AgendaTargetOption | null>(null);
   const [resolvingTarget, setResolvingTarget] = useState(false);
   const [newProcessStatus, setNewProcessStatus] = useState<AgndPrcsSeCd>("PENDING");
@@ -381,13 +417,13 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
   };
 
   const targetOptions: AgendaTargetOption[] = [
-    ...workList.works.map((w) => ({
+    ...(showWorks ? workList.works : []).map((w) => ({
       kind: "WORK" as const,
       refId: w.workId,
       ttl: w.title,
       meta: `${WORK_TYPE_NM[w.workType]} · ${WORK_STTS_NM[w.workStatus]}`,
     })),
-    ...subWorkList.subWorks.map((sw) => ({
+    ...(showSubWorks ? subWorkList.subWorks : []).map((sw) => ({
       kind: "SUB_WORK" as const,
       refId: sw.subWorkId,
       ttl: sw.title,
@@ -466,7 +502,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
 
             <SectionLabel className="mt-5">상위 속성 · oper</SectionLabel>
             <KeyValueGrid
-              className="mt-[10px] border-b border-black/8 pb-[14px]"
+              className="mt-[10px] border-b border-hairline-strong pb-[14px]"
               labelWidth={88}
               items={[
                 {
@@ -536,34 +572,56 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                   안건으로 올릴 업무 또는 하위 업무를 선택하고 내용을 작성하세요.
                 </div>
 
+                <ChipGroup
+                  className="mt-3"
+                  options={AGENDA_TARGET_KINDS}
+                  value={targetKind}
+                  onChange={setTargetKind}
+                />
+                <SearchInput
+                  className="mt-2"
+                  value={targetQuery}
+                  onChange={setTargetQuery}
+                  placeholder="제목으로 찾기"
+                />
+
                 <div className="mt-3 flex max-h-[260px] flex-col gap-2 overflow-y-auto">
-                  {(workList.status === "loading" || subWorkList.status === "loading") && (
+                  {/* 로딩·오류는 **고른 종류에만** 걸린다 — 묶어 두면 `업무`만 보는 중에도
+                      하위 업무 조회 실패 문구가 뜬다 */}
+                  {((showWorks && workList.status === "loading") ||
+                    (showSubWorks && subWorkList.status === "loading")) && (
                     <div className="p-3 text-[13.5px] text-n500">불러오는 중입니다</div>
                   )}
-                  {workList.status === "error" && (
+                  {showWorks && workList.status === "error" && (
                     <div className="p-3 text-[13.5px] text-danger">
                       {workList.errorMessage || "업무 목록을 불러오지 못했습니다."}
                     </div>
                   )}
-                  {subWorkList.status === "error" && (
+                  {showSubWorks && subWorkList.status === "error" && (
                     <div className="p-3 text-[13.5px] text-danger">
                       {subWorkList.errorMessage || "하위 업무 목록을 불러오지 못했습니다."}
                     </div>
                   )}
-                  {workList.status === "ready" &&
-                    subWorkList.status === "ready" &&
-                    targetOptions.length === 0 && (
+                  {(!showWorks || workList.status === "ready") &&
+                    (!showSubWorks || subWorkList.status === "ready") &&
+                    targetOptions.length === 0 &&
+                    /* 결과 없음은 두 가지다 — 다음에 할 행동이 다르므로 문구를 나눈다 */
+                    (targetQuery.trim() ? (
+                      <div className="p-3 text-[13.5px] text-n500">
+                        검색 결과가 없습니다 — 검색어를 지우면 전체 목록으로 돌아갑니다.
+                      </div>
+                    ) : (
                       <div className="p-3 text-[13.5px] text-n500">
                         연결할 수 있는 업무·하위 업무가 없습니다.
                       </div>
-                    )}
+                    ))}
                   {targetOptions.map((ref) => (
                     <div
                       key={`${ref.kind}-${ref.refId}`}
                       onClick={() => setSelectedTarget(ref)}
                       className={
                         selectedTarget && isSameTarget(selectedTarget, ref)
-                          ? "cursor-pointer rounded-[10px] bg-accent/8 p-3 shadow-[inset_0_0_0_1px_#3182f6]"
+                          ? "cursor-pointer rounded-[10px] bg-accent/8 p-3 shadow-[inset_0_0_0_1px_var(--color-accent)]"
                           : "cursor-pointer rounded-[10px] border border-line p-3 hover:border-accent"
                       }
                     >
@@ -576,7 +634,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                       <div className="mt-[2px] text-[13px] text-n500">{ref.meta}</div>
                     </div>
                   ))}
-                  {workList.hasNext && (
+                  {showWorks && workList.hasNext && (
                     <button
                       type="button"
                       disabled={workList.loadingMore}
@@ -586,7 +644,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                       {workList.loadingMore ? "업무 불러오는 중…" : "업무 더 보기"}
                     </button>
                   )}
-                  {subWorkList.hasNext && (
+                  {showSubWorks && subWorkList.hasNext && (
                     <button
                       type="button"
                       disabled={subWorkList.loadingMore}

@@ -39,7 +39,7 @@ export function Toggle({
     >
       <span
         className={cn(
-          "absolute top-[3px] rounded-full bg-white transition-[left] duration-[180ms]",
+          "absolute top-[3px] rounded-full bg-surface transition-[left] duration-[180ms]",
           md ? "size-4" : "size-[14px]",
           on ? (md ? "left-[19px]" : "left-[17px]") : "left-[3px]",
         )}

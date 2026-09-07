@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   EVENT_PHASE_BADGE,
@@ -9,7 +10,7 @@ import {
 } from "@/entities/event";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
-import { useEventCategoryOptions, useEventList } from "@/features/event";
+import { useDuplicateEvent, useEventCategoryOptions, useEventList } from "@/features/event";
 import { EVENT_STTS_CDS, EVENT_STTS_NM, type EventSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
@@ -21,6 +22,7 @@ import {
   PageBody,
   PageHeader,
   Pill,
+  flash,
 } from "@/shared/ui";
 
 /*
@@ -30,7 +32,7 @@ import {
  * 두고(새로고침·뒤로가기·링크 공유), 파라미터 이름을 서버 쿼리와 똑같이 맞춘다.
  *
  * 상세 화면이 따로 없다 — 제목을 누르면 곧장 수정 화면이다(라우트 주석 참고). 게시·보관
- * 전이와 삭제도 그 화면에서 한다.
+ * 전이도 그 화면에서 한다. **삭제는 없다** — 치우는 길은 보관 하나다(ssccops ADR-0014).
  */
 
 const ALL = "전체";
@@ -51,17 +53,42 @@ function parseEventSttsCd(value: string | null): EventSttsCd | null {
 function EventCardSkeleton() {
   return (
     <Card className="animate-pulse">
-      <div className="h-[22px] w-[64px] rounded-full bg-black/5" />
-      <div className="mt-3 h-[22px] w-4/5 rounded bg-black/5" />
-      <div className="mt-2 h-[16px] w-3/5 rounded bg-black/5" />
-      <div className="mt-4 h-[16px] w-2/5 rounded bg-black/5" />
+      <div className="h-[22px] w-[64px] rounded-full bg-fill" />
+      <div className="mt-3 h-[22px] w-4/5 rounded bg-fill" />
+      <div className="mt-2 h-[16px] w-3/5 rounded bg-fill" />
+      <div className="mt-4 h-[16px] w-2/5 rounded bg-fill" />
     </Card>
   );
 }
 
-function EventCard({ event, canManage }: { event: EventSummary; canManage: boolean }) {
+function EventCard({
+  event,
+  canManage,
+  onDuplicated,
+}: {
+  event: EventSummary;
+  canManage: boolean;
+  onDuplicated: () => void;
+}) {
   const router = useRouter();
+  const { pending, duplicate } = useDuplicateEvent();
+  /** 두 단계 확인의 첫 단계 — 권한 트리 삭제(views/authority-tree)와 같은 방식이다 */
+  const [asking, setAsking] = useState(false);
   const stts = eventSttsBadge(event.eventSttsCd);
+
+  /*
+   * 복제가 끝나면 **사본의 수정 화면으로 간다.** 복제의 목적이 "고쳐서 쓰는 것"이라
+   * 목록에 머무르면 사용자가 사본을 다시 찾아 들어가야 한다 — 절약한 손이 도로 든다.
+   * 목록 갱신을 함께 부르는 것은 이동이 실패하거나 뒤로 돌아왔을 때 사본이 보이게 하기 위해서다.
+   */
+  const runDuplicate = async () => {
+    const { duplicate: copy, message } = await duplicate(event.eventId);
+    if (message) flash(message);
+    setAsking(false);
+    if (copy === null) return;
+    onDuplicated();
+    router.push(ROUTES.eventEdit(copy.eventId));
+  };
   /* 일시 미설정(NONE)은 단계를 말할 수 없다 — 배지를 그리지 않는다 (display.ts 주석 참고) */
   const phase = event.eventPhase === "NONE" ? null : EVENT_PHASE_BADGE[event.eventPhase];
   /* 모집 배지는 연결된 폼의 접수 상태다 — 폼 미연결(공지형)이면 그리지 않는다 (D3) */
@@ -96,7 +123,7 @@ function EventCard({ event, canManage }: { event: EventSummary; canManage: boole
         <Pill tone="blue">{event.eventClsfNm}</Pill>
         {event.formId === null && <Pill tone="outline">폼 없음 · 공지형</Pill>}
       </div>
-      <div className="mt-3 flex items-center gap-3 border-t border-black/5 pt-3 text-[14px]">
+      <div className="mt-3 flex items-center gap-3 border-t border-hairline pt-3 text-[14px]">
         {/* 권한이 없으면 감추지 않고 잠근다 — 사라지면 기능이 없어진 것인지 고장인지 알 수 없다 */}
         <button
           type="button"
@@ -120,8 +147,38 @@ function EventCard({ event, canManage }: { event: EventSummary; canManage: boole
         >
           신청 · 참가자
         </button>
+        {/*
+         * 복제 (ssccops#198). 한 번 더 묻는 것은 **신청서 사본이 함께 생기기 때문**이다 —
+         * 폼 목록에 (복사본)이 하나 늘어나는 것은 사용자가 이 화면에서 보지 못하는 변화이고,
+         * 되돌리려면 행사와 폼을 각각 치워야 한다. 확인 방식은 권한 트리 삭제와 같은 자리에서
+         * 쓰는 두 단계 인라인 확인이다(이 저장소에는 모달이 없다).
+         */}
+        <button
+          type="button"
+          disabled={!canManage || pending}
+          title={canManage ? undefined : NO_MANAGE}
+          onClick={() => (asking ? void runDuplicate() : setAsking(true))}
+          className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {pending ? "복제 중…" : asking ? "복제할까요? 예" : "복제"}
+        </button>
+        {asking && !pending && (
+          <button
+            type="button"
+            onClick={() => setAsking(false)}
+            className="cursor-pointer text-n500"
+          >
+            아니오
+          </button>
+        )}
         <div className="flex-1" />
-        <div className="text-[13px] text-n500">수정 {formatYmd(event.mdfcnDt)}</div>
+        {/* 되돌리기 번거로운 부수효과는 누르기 전에 말한다 — 신청서가 하나 더 생긴다 */}
+        {asking && !pending && (
+          <div className="text-[13px] text-n500">
+            {event.formId === null ? "사본은 작성 중으로 만들어집니다" : "신청서 사본도 함께 생깁니다"}
+          </div>
+        )}
+        {!asking && <div className="text-[13px] text-n500">수정 {formatYmd(event.mdfcnDt)}</div>}
       </div>
     </Card>
   );
@@ -231,7 +288,12 @@ export function EventListPage() {
           ) : (
             <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
               {events.map((e) => (
-                <EventCard key={e.eventId} event={e} canManage={canManage} />
+                <EventCard
+                  key={e.eventId}
+                  event={e}
+                  canManage={canManage}
+                  onDuplicated={reload}
+                />
               ))}
             </div>
           ))}

@@ -10,6 +10,12 @@ export type {
 } from "./model/types";
 /* 응답 내용의 저장 형태는 `@ssccops/form-renderer`가 정의한다(#152) */
 export type { RspnsCn } from "@ssccops/form-renderer";
+export { answerColumns, answerDistributions, answerText } from "./model/answer-table";
+export type {
+  AnswerColumn,
+  DistributionBucket,
+  QitemDistribution,
+} from "./model/answer-table";
 export {
   RSPNS_STTS_BADGE,
   RVW_PRCS_SE_BADGE,
@@ -19,10 +25,12 @@ export {
   RESPONSE_ERROR,
   fetchEventApplications,
   fetchFormResponse,
+  fetchFormResponseDetails,
   fetchFormResponses,
   reviewFormResponse,
 } from "./api/responses";
 export type {
+  FormResponseDetailsResult,
   FormResponseListFilter,
   FormResponseReviewInput,
 } from "./api/responses";

@@ -64,7 +64,7 @@ export interface AcademicProgramMemberFilter {
   ptcpSttsCd?: PtcpSttsCd | null;
 }
 
-/* ── 학술 활동 목록 (GET /v1/academic-programs?mine=true) · #126 ── */
+/* ── 학술 활동 목록 (GET /v1/academic-programs?mine=leader) · #126 ── */
 
 /**
  * 학술_활동_상태 (acdm_actv.acdm_actv_stts_cd).
@@ -79,12 +79,14 @@ export type AcdmActvSttsCd = "APPROVED" | "ONGOING" | "COMPLETED";
 /**
  * table: acdm_actv — 스터디장 대시보드가 그리는 "내 활동" 한 건 (`AcademicProgramSummaryResponse`).
  *
- * `GET /v1/academic-programs?mine=true`가 내가 스터디장/팀장인 활동만 내려준다. 제목·기간은
+ * `GET /v1/academic-programs?mine=leader`가 내가 스터디장/팀장인 활동만 내려준다. 제목·기간은
  * 상위 `event`에 있고 서버가 합성해 함께 준다. 진행률은 저장하지 않는 파생값이다(계획 항목 수
  * 대비 승인 회차 수).
  *
- * 어드민 `AcademicProgramSummary`와 필드 집합이 같되, 이 앱은 `mine=true`로만 받으므로
- * `isLeader`는 사실상 항상 true다(그래도 서버 판정을 그대로 옮긴다 — 재계산 금지).
+ * 어드민 `AcademicProgramSummary`와 필드 집합이 같되, 이 앱은 `mine=leader`로만 받으므로
+ * `isLeader`는 언제나 true다 — `leader`는 정의상 그 값이 참인 집합이다(ssccops-server#215 ·
+ * #241). 그래도 서버 판정을 그대로 옮긴다(재계산 금지). 필터가 `mine=true`였을 때는 기획안
+ * 제출자 행이 섞여 이 값이 false인 항목이 함께 왔다.
  */
 export interface AcademicProgramSummary {
   /** acdm_actv_id · PK */

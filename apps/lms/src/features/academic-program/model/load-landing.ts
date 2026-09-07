@@ -13,15 +13,16 @@ import { isSignupRequired, isUnauthenticated } from "@/shared/api/auth-error";
  * 가입 안내가 먼저다.
  *
  * ── 조회는 하나다 ──────────────────────────────────────────
- * `?mine=true` 목록 한 번으로 세 가지가 다 나온다: 던진 오류가 401이면 미로그인,
- * `SIGNUP_REQUIRED`면 미가입, 성공했으면 `isLeader`로 스터디장 여부. 대시보드 로더
+ * `?mine=leader` 목록 한 번으로 세 가지가 다 나온다: 던진 오류가 401이면 미로그인,
+ * `SIGNUP_REQUIRED`면 미가입, 성공했으면 목록이 비었는지로 스터디장 여부. 대시보드 로더
  * (`load-leader-dashboard`)와 같은 조회를 쓰므로 스터디장이 `/studio`로 넘어가도 캐시가
  * 겹친다.
  *
- * ── `isLeader`로 거른다 — 목록이 비었는지가 아니다 (#224) ─────
- * 서버 `mine` 필터는 스터디장 OR 기획안 제출자를 함께 준다. 기획안만 낸 회원은 목록이
- * 비어 있지 않으면서 `isLeader`는 전부 false다 — 목록 길이로 판정하면 그 사람이 대시보드로
- * 튕겨 "맡은 활동 없음"만 보게 된다.
+ * ── 목록 길이로 판정한다 — 서버가 걸러 준다 (#241) ─────────────
+ * `mine=leader`는 스터디장/팀장 본인인 활동만 준다(ssccops-server#215). 기획안만 낸 회원의
+ * 행은 애초에 오지 않으므로 목록이 비었으면 그대로 일반 회원이다. #224 시절 `mine=true`는
+ * 스터디장 OR 제출자를 함께 줘서 `isLeader`로 한 번 더 걸러야 했다 — 그 판정을 서버가
+ * 필터로 답하게 옮긴 것이다(판정을 웹에서 다시 계산하지 않는다).
  */
 export type LandingLoad =
   /** 스터디장 — 페이지가 `/studio`로 넘긴다 */
@@ -36,7 +37,7 @@ export type LandingLoad =
 export async function loadLanding(): Promise<LandingLoad> {
   try {
     const programs = await fetchMyAcademicPrograms();
-    return programs.some((p) => p.isLeader) ? { outcome: "leader" } : { outcome: "member" };
+    return programs.length > 0 ? { outcome: "leader" } : { outcome: "member" };
   } catch (error) {
     if (isUnauthenticated(error)) return { outcome: "unauthenticated" };
     if (isSignupRequired(error)) return { outcome: "signup-required" };

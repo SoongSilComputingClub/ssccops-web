@@ -4,6 +4,7 @@ import { cn } from "../lib/cn";
 import { isChoiceQitemType } from "../model/qitem-type";
 import { selectedOptions, toggleOption } from "../model/answers";
 import type { AnswerValue, Qitem } from "../model/types";
+import { FormDescription } from "./form-description";
 
 /*
  * 문항 한 칸 — 유형별 렌더링.
@@ -41,13 +42,21 @@ export function QitemCard({
     <div
       className={cn(
         "rounded-2xl bg-surface px-[18px] py-4",
-        error ? "shadow-[0_0_0_1px_#f04452]" : "shadow-[0_0_0_1px_#e5e8eb]",
+        error ? "shadow-[0_0_0_1px_var(--color-danger)]" : "shadow-[0_0_0_1px_var(--color-line)]",
       )}
     >
       <div className="text-[16px] font-semibold">
         {qitem.qitemLblNm}
         {qitem.reqYn && <span className="ml-1 text-danger">*</span>}
       </div>
+      {/*
+       * 설명은 질문 문구 바로 아래, 유형 안내('하나만 선택')보다 위다 — 문항을 읽는 순서가
+       * "무엇을 묻는가 → 어떻게 답하는가"이고 설명은 앞쪽에 속한다.
+       * 비어 있으면 FormDescription이 아무것도 그리지 않는다.
+       */}
+      <FormDescription className="mt-[3px] text-[13.5px] leading-[1.7] text-n400">
+        {qitem.qitemDescCn}
+      </FormDescription>
       {isChoiceQitemType(qitem.qitemTypeCd) && (
         <div className="mt-[2px] text-[12.5px] text-n500">
           {qitem.qitemTypeCd === "SINGLE_CHOICE"
@@ -83,7 +92,7 @@ export function QitemCard({
                 onClick={() => onChange(toggleOption(qitem, value, o))}
                 className={cn(
                   "flex cursor-pointer items-center gap-[10px] rounded-[12px] px-[10px] py-[13px] text-[15px] lg:py-[11px]",
-                  picked ? "bg-accent/8" : "hover:bg-black/2",
+                  picked ? "bg-accent/8" : "hover:bg-fill-soft",
                 )}
               >
                 <div

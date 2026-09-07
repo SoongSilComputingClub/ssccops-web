@@ -45,12 +45,6 @@ export type { FormDraftIssues, QitemCpstIssues } from "./model/form-validation";
 export { FormSaveStatusBar } from "./ui/form-save-status";
 /* 문항 구성 편집기는 폼 편집과 템플릿 편집이 함께 쓴다 — 두 벌이면 규칙이 갈린다 (#134) */
 export { QitemComposer } from "./ui/qitem-composer";
-export { usePublicForm } from "./model/use-public-form";
-export type {
-  PublicFormController,
-  PublicFormStatus,
-  PublicFormSubmitOutcome,
-} from "./model/use-public-form";
 /*
  * 답 다루기(분기 · 검증 · 저장 본문)와 문항 렌더링은 `@ssccops/form-renderer`로 갔다(#152).
  * 화면은 그 패키지에서 곧바로 가져다 쓴다 — 여기서 다시 내보내면 어드민을 거쳐야만 쓸 수 있는
@@ -61,7 +55,7 @@ export type { MyResponseList, MyResponseListStatus } from "./model/use-my-respon
 export { FORM_NOT_ACCEPTING_MESSAGE } from "./model/public-form-error";
 /*
  * 기획안(#163)은 공개 폼 응답자 화면 그 자체라 이 슬라이스에 함께 산다 — 슬라이스를 따로 파면
- * `usePublicForm`·`useMyResponses`를 같은 레이어의 다른 슬라이스에서 참조하게 된다(FSD가 막는다).
+ * `useMyResponses`를 같은 레이어의 다른 슬라이스에서 참조하게 된다(FSD가 막는다).
  * 근거는 model/proposal-copy.ts 머리말.
  */
 export { useProposalForm } from "./model/use-proposal-form";

@@ -9,13 +9,13 @@ import { toPublicFormLoadErrorMessage } from "./public-form-error";
  *
  * **features/response가 아니라 여기에 둔다.** 이 목록을 그리는 것은 응답자 화면이고, 그 화면의
  * 오류 문구는 features/form의 public-form-error가 갖는다 — 훅을 저쪽에 두면 같은 레이어의 다른
- * 슬라이스를 참조하게 되거나(FSD가 막는다) 응답자용 문구가 한 벌 더 생긴다. usePublicForm이
+ * 슬라이스를 참조하게 되거나(FSD가 막는다) 응답자용 문구가 한 벌 더 생긴다. 기획안 화면이
  * 이미 같은 자리에서 entities/response를 부르고 있다.
  *
  * 페칭 방식(apiFetch + useEffect)과 "결과에 요청 식별자를 실어 로딩을 파생시키는" 구조는
  * features/form/model/use-form-list.ts 주석에 근거가 적혀 있다.
  *
- * **공개 폼 조회(usePublicForm)와 합치지 않는다.** 저쪽은 문항을 받아 작성 화면을 세우는
+ * **폼 조회와 합치지 않는다.** 저쪽은 문항을 받아 작성 화면을 세우는
  * 조회라 실패하면 화면 전체가 서지 않아야 하지만, 이 목록은 없어도 답은 쓸 수 있다 — 한 훅에
  * 담으면 지난 제출 내역을 못 받았다는 이유로 작성 화면이 통째로 오류가 된다.
  */

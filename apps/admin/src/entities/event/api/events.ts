@@ -3,6 +3,7 @@ import { apiFetch } from "@/shared/lib/api/client";
 import { withServiceOffset } from "@/shared/lib/date";
 import type {
   EventDetail,
+  EventDuplicate,
   EventPhase,
   EventReceiptStatus,
   EventSummary,
@@ -95,10 +96,15 @@ export const EVENT_ERROR = {
   EVENT_FORM_IN_USE: "EVENT_FORM_IN_USE",
   /** 409 — 이미 다른 행사에 전속 연결된 폼 (D11) */
   FORM_ALREADY_LINKED: "FORM_ALREADY_LINKED",
-  /** 409 — 참가자가 있어 삭제할 수 없다 */
-  EVENT_HAS_PARTICIPANT: "EVENT_HAS_PARTICIPANT",
   /** 413 — 본문 10만 자 상한 초과 */
   EVENT_CONTENT_TOO_LARGE: "EVENT_CONTENT_TOO_LARGE",
+  /**
+   * 502 — 복제 중 본문 이미지를 저장소에서 복사하지 못했다 (ssccops#198).
+   *
+   * **이때는 아무것도 만들어지지 않는다** — 서버가 한 트랜잭션으로 묶어 폼 사본까지 함께
+   * 되돌린다. 화면은 "일부만 만들어졌을지 모른다"고 안내하지 않는다.
+   */
+  EVENT_IMAGE_COPY_FAILED: "EVENT_IMAGE_COPY_FAILED",
 } as const;
 
 /* ── 조회 ──────────────────────────────────────────────────── */
@@ -208,6 +214,43 @@ export async function updateEvent(
   return toEventDetail(res);
 }
 
+/* ── 복제 ──────────────────────────────────────────────────── */
+
+interface EventDuplicateResponse {
+  eventId: number;
+  sourceEventId: number;
+  eventTtl: string;
+  eventSttsCd: EventSttsCd;
+  formId: number | null;
+  crtDt: string;
+}
+
+/**
+ * POST /v1/events/{eventId}/duplicate — 행사 복제 (ssccops#198 · 201).
+ *
+ * **승계/초기화는 전부 서버가 정한다** — 제목 `(복사본)` · `DRAFT` · 기간 비움 · 참가자
+ * 미승계 · 연결 폼도 함께 복제해 사본 연결 · 본문 이미지를 사본의 키로 복사. 화면은 부르고
+ * 이동하기만 한다: 그 규칙을 여기서 다시 계산하면 두 벌이 되고, 무엇보다 이미지 복사와 폼
+ * 복제는 웹이 할 수 있는 일이 아니다.
+ *
+ * 응답은 상세 전체가 아니라 **사본이 무엇인지 알려 주는 값**뿐이다(폼 복제와 같은 계약) —
+ * 사본은 늘 기간이 비어 있고 참가자가 0이라, 그 값들을 실어 주면 "승계되는 경우도 있나"
+ * 하는 의문만 만든다. 화면은 이 eventId로 수정 화면에 간다.
+ */
+export async function duplicateEvent(eventId: number): Promise<EventDuplicate> {
+  const res = await apiFetch<EventDuplicateResponse>(`/v1/events/${eventId}/duplicate`, {
+    method: "POST",
+  });
+  return {
+    eventId: res.eventId,
+    sourceEventId: res.sourceEventId,
+    eventTtl: res.eventTtl,
+    eventSttsCd: res.eventSttsCd,
+    formId: res.formId,
+    crtDt: res.crtDt,
+  };
+}
+
 /* ── 상태 전이 ─────────────────────────────────────────────── */
 
 /**
@@ -237,14 +280,3 @@ export async function changeEventStatus(
 }
 
 /* ── 삭제 ──────────────────────────────────────────────────── */
-
-/**
- * DELETE /v1/events/{eventId} — 행사 삭제.
- *
- * 참가자가 있으면 409 EVENT_HAS_PARTICIPANT로 거절된다 — 그때의 안내(보관으로 전환)는
- * features/event의 오류 매핑이 맡는다. 화면이 참가자 수로 먼저 잠그지 않는 것은 확정 수가
- * 0이어도 대기자가 있을 수 있고, 판정 근거는 어차피 서버이기 때문이다.
- */
-export async function deleteEvent(eventId: number): Promise<void> {
-  await apiFetch<unknown>(`/v1/events/${eventId}`, { method: "DELETE" });
-}

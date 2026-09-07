@@ -21,9 +21,9 @@ export function CircleStepper({
             <div
               className={cn(
                 "flex size-[30px] items-center justify-center rounded-full text-[14px]",
-                done && "bg-accent-strong text-white",
-                active && "bg-accent font-semibold text-white",
-                !done && !active && "text-n500 shadow-[inset_0_0_0_1px_#e5e8eb]",
+                done && "bg-accent-strong text-on-solid",
+                active && "bg-accent font-semibold text-on-solid",
+                !done && !active && "text-n500 shadow-[inset_0_0_0_1px_var(--color-line)]",
               )}
             >
               {done ? "✓" : num}

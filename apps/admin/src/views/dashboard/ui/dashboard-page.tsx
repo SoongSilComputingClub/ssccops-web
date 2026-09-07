@@ -49,8 +49,8 @@ function DashboardSkeleton() {
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.7fr_1fr]">
       {[0, 1].map((i) => (
         <Card key={i} className="animate-pulse">
-          <div className="h-[20px] w-2/5 rounded bg-black/5" />
-          <div className="mt-3 h-[80px] w-full rounded bg-black/5" />
+          <div className="h-[20px] w-2/5 rounded bg-fill" />
+          <div className="mt-3 h-[80px] w-full rounded bg-fill" />
         </Card>
       ))}
     </div>
@@ -79,6 +79,26 @@ export function DashboardPage() {
     deadlineFlag(sw.dueAt, sw.isDelayed, sw.workStatus === "DONE", today);
 
   /*
+   * 정체 배지 (ssccops#196). 마감 배지와 나란히 붙지만 **다른 축**이다 — 저쪽은 마감이,
+   * 이쪽은 절차가 멈춘 것이다. 목록 화면(views/sub-work-list)과 같은 문구를 쓴다.
+   */
+  const stallOf = (sw: SubWorkListItem) => {
+    if (sw.isReadyForReview) {
+      return {
+        label: "요청 전",
+        title: "완료 점검을 모두 마쳤습니다 — 완료 승인 요청을 하면 승인자에게 넘어갑니다",
+      };
+    }
+    if (sw.isReviewStale) {
+      return {
+        label: "승인 정체",
+        title: "완료 승인 요청 후 3일이 지났습니다 — 승인자의 승인·반려를 기다리고 있습니다",
+      };
+    }
+    return null;
+  };
+
+  /*
    * 필터는 서버 재요청 없이 화면에서 거른다 — my-sub-works가 완료 건 포함 전량을 이미
    * 내려준다(entities/dashboard/model/types.ts). "전체"는 이름 그대로 완료 건도 포함하고,
    * 완료만 따로 보려는 사람은 "완료" 칩을 쓴다.
@@ -95,11 +115,22 @@ export function DashboardPage() {
       header: "하위 업무명",
       width: "2fr",
       render: (item) => (
-        <span
-          onClick={() => goToSubWorkApproval(item.subWorkId)}
-          className="cursor-pointer font-semibold hover:text-accent"
-        >
-          {item.title}
+        <span className="flex flex-wrap items-center gap-[6px]">
+          <span
+            onClick={() => goToSubWorkApproval(item.subWorkId)}
+            className="cursor-pointer font-semibold hover:text-accent"
+          >
+            {item.title}
+          </span>
+          {/* 요청이 올라온 지 3일이 지났다는 서버 판정 — 승인자가 먼저 볼 자리다 */}
+          {item.isReviewStale && (
+            <Badge
+              tone="outline-red"
+              title="완료 승인 요청 후 3일이 지났습니다 — 승인·반려를 기다리고 있습니다"
+            >
+              승인 정체
+            </Badge>
+          )}
         </span>
       ),
     },
@@ -153,13 +184,19 @@ export function DashboardPage() {
       width: ".9fr",
       render: (sw) => {
         const flag = flagOf(sw);
+        const stall = stallOf(sw);
         return (
-          <span className="flex items-center gap-2">
+          <span className="flex flex-wrap items-center gap-2">
             <span className={flag === "지연" ? "text-danger" : undefined}>
               {formatMd(sw.dueAt) || "-"}
             </span>
             {flag && (
               <Badge tone={flag === "지연" ? "red" : "outline-accent"}>{flag}</Badge>
+            )}
+            {stall && (
+              <Badge tone="outline-red" title={stall.title}>
+                {stall.label}
+              </Badge>
             )}
           </span>
         );

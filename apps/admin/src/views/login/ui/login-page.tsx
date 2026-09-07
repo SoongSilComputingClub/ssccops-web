@@ -27,18 +27,6 @@ export function LoginPage() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /*
-   * 공개 폼 링크를 열었다가 여기로 튕겨 온 경우인지. 아무 설명 없이 로그인 화면이 뜨면
-   * "링크가 깨졌나?"로 읽히므로 어디서 왔는지는 말해 줘야 한다.
-   *
-   * 폼 제목까지 보여주려면 공개 폼 메타 조회가 하나 더 필요한데, 로그인 화면은 인증
-   * 이전이라 그 조회만을 위해 별도 공개 API를 뚫어야 한다. 값에 비해 비싸므로 지금은
-   * 폼을 특정하지 않는 일반 안내로 둔다.
-   */
-  const fromPublicForm = safeNextPath(searchParams.get("next"), ROUTES.dashboard).startsWith(
-    "/f/",
-  );
-
   const errorCode = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
   const message =
@@ -96,18 +84,6 @@ export function LoginPage() {
       </p>
       <div className="mt-7 mb-6 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
 
-      {fromPublicForm && (
-        <div className="mb-4 rounded-[12px] border border-accent/28 bg-accent/8 px-[14px] py-3">
-          <div className="text-[14px] font-semibold text-accent">
-            폼에 참여하려면 로그인이 필요합니다
-          </div>
-          <div className="mt-1 text-[13px] leading-[1.6] text-n400">
-            응답자를 회원으로 식별하기 때문입니다. 로그인과 가입을 마치면 열려던 폼으로
-            바로 돌아갑니다.
-          </div>
-        </div>
-      )}
-
       {message && (
         <div className="mb-4 rounded-[12px] border border-danger/28 bg-danger/8 px-[14px] py-3">
           <div className="text-[14px] text-danger">{message}</div>
@@ -125,10 +101,10 @@ export function LoginPage() {
         disabled={pending}
         className="w-full cursor-pointer rounded-[14px] border border-accent bg-accent px-[18px] py-[15px] text-left transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-accent"
       >
-        <div className="text-[15px] font-semibold text-white">
+        <div className="text-[15px] font-semibold text-on-solid">
           {pending ? "Google로 이동 중…" : "Google로 계속하기"}
         </div>
-        <div className="mt-[2px] text-[13.5px] text-white/72">
+        <div className="mt-[2px] text-[13.5px] text-on-solid/72">
           Google 계정으로 로그인 또는 회원 가입
         </div>
       </button>

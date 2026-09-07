@@ -11,8 +11,29 @@ export const ROUTES = {
    * 돌아올 곳을 단계 수만큼 관리해야 한다.
    */
   eventApply: (eventId: number) => `/events/${eventId}/apply`,
-  /** 내 신청 현황 — 이 앱에서 로그인이 필요한 **유일한** 화면이다 (#150 · wave2 D10) */
+  /** 내 신청 현황 (#150 · wave2 D10) */
   myApplications: "/my-applications",
+  /**
+   * 공개 폼 — 링크를 아는 회원이 답을 내는 화면 (ssccops#214에서 어드민에서 옮겨 왔다).
+   *
+   * **'공개'는 익명이라는 뜻이 아니다.** 주소를 아는 사람은 누구나 열 수 있지만 답을 내려면
+   * 회원이어야 한다(응답자는 전원 회원이다 — `form_rspns_hstry.mbr_id` NOT NULL). 그래서
+   * 이 화면도 로그인·가입을 화면 안에서 잇는다(행사 신청과 같은 모양이다).
+   *
+   * 행사 신청(`eventApply`)과 갈리는 지점은 **행사에 딸리지 않은 폼**이라는 것이다 — 돌아갈
+   * 행사가 없고, 여러 건을 받는 폼일 수 있다.
+   */
+  publicForm: (formId: number) => `/f/${formId}`,
+  publicFormDone: (formId: number) => `/f/${formId}/done`,
+  /**
+   * 내가 낸 응답 한 건 — 수정 요청 사유를 읽고 다시 내는 자리 (ssccops#221).
+   *
+   * `publicForm`(새로 내기)과 **다른 화면이다.** 한 주소에 두 뜻을 담으면 새 응답을 막는
+   * 상태(`alreadySubmitted` — 수정 요청도 포함된다)가 작성 폼을 닫는 것과 재제출이 열려야
+   * 하는 것이 같은 자리에서 부딪힌다.
+   */
+  myFormResponse: (formId: number, formRspnsId: number) =>
+    `/f/${formId}/responses/${formRspnsId}`,
   /**
    * OAuth 콜백 라우트 핸들러. Supabase 대시보드의 Redirect URLs에 `<오리진>${authCallback}`을
    * 등록해야 로그인이 이 앱으로 돌아온다 — 등록이 없으면 Site URL(어드민)로 조용히 넘어간다.

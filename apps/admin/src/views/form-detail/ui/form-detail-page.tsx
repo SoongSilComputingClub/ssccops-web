@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { FormDescription } from "@ssccops/form-renderer";
 import {
   FORM_RECEIPT_BADGE,
   SYSTEM_FORM_BADGE,
@@ -76,7 +77,7 @@ function QitemPreview({
 }) {
   const isChoice = isChoiceQitemType(qitem.qitemTypeCd);
   return (
-    <div className="border-t border-black/5 py-3 first:border-t-0">
+    <div className="border-t border-hairline py-3 first:border-t-0">
       <div className="text-[16px] font-medium">
         {qitem.qitemLblNm || "(제목 없음)"}
         {qitem.reqYn && <span className="ml-1 text-accent">*</span>}
@@ -128,7 +129,7 @@ function QitemPreview({
       ) : (
         <div
           className={cn(
-            "mt-2 rounded-[10px] border border-line bg-[#f9fafb] px-3 py-2 text-[14px] text-n500",
+            "mt-2 rounded-[10px] border border-line bg-subtle px-3 py-2 text-[14px] text-n500",
             qitem.qitemTypeCd === "LONG_TEXT" && "min-h-[56px]",
           )}
         >
@@ -261,8 +262,14 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
     if (formTmplId) setTemplateSheetOpen(false);
   };
 
+  /*
+   * 공개 폼은 이 앱이 아니라 `apps/www`가 서빙한다(ssccops#214). 그래서 절대 URL 하나만 쓰고
+   * 내부 이동(`router.push`)을 쓰지 않는다 — 옮기기 전 코드가 그랬고, 그대로 두면 이 앱에
+   * 없는 주소로 가 404가 된다. 오리진 설정이 비어 있으면 `null`이라 링크 자리를 감춘다.
+   */
   const publicUrl = publicFormUrl(form.formId);
   const copyLink = () => {
+    if (!publicUrl) return;
     navigator.clipboard?.writeText(publicUrl);
     flash("링크를 복사했습니다");
   };
@@ -409,20 +416,36 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
 
             <Card>
               <SectionLabel className="mb-3">공개 링크</SectionLabel>
-              <div className="rounded-[10px] bg-[#f9fafb] p-3 text-[14px] break-all text-accent">
-                {publicUrl}
-              </div>
-              <div className="mt-3 flex gap-2">
-                <Button onClick={() => router.push(ROUTES.publicForm(form.formId))}>
-                  링크 열기
-                </Button>
-                <Button variant="ghost" onClick={copyLink}>
-                  링크 복사
-                </Button>
-              </div>
-              <div className="mt-2 text-[13px] text-n500">
-                공개 링크는 폼 ID 기준으로 고정됩니다.
-              </div>
+              {publicUrl ? (
+                <>
+                  <div className="rounded-[10px] bg-subtle p-3 text-[14px] break-all text-accent">
+                    {publicUrl}
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      onClick={() => window.open(publicUrl, "_blank", "noopener,noreferrer")}
+                    >
+                      링크 열기
+                    </Button>
+                    <Button variant="ghost" onClick={copyLink}>
+                      링크 복사
+                    </Button>
+                  </div>
+                  <div className="mt-2 text-[13px] text-n500">
+                    공개 링크는 폼 ID 기준으로 고정됩니다.
+                  </div>
+                </>
+              ) : (
+                /*
+                 * 오리진 설정(NEXT_PUBLIC_PUBLIC_FORM_ORIGIN)이 비어 있다. 죽은 주소를 복사해
+                 * 주는 것보다 무엇이 빠졌는지 말하는 편이 낫다 — 운영자가 고칠 수는 없지만
+                 * 이 문구가 없으면 복사한 링크가 왜 안 열리는지 아무도 모른다.
+                 */
+                <div className="rounded-[10px] bg-subtle p-3 text-[13px] text-n500">
+                  공개 링크 주소가 설정되지 않아 링크를 만들 수 없습니다 — 배포 설정을
+                  확인해주세요.
+                </div>
+              )}
             </Card>
 
             <Card>
@@ -454,18 +477,16 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 </Chip>
               ))}
             </div>
-            <div className="rounded-[10px] bg-[#f9fafb] p-3">
+            <div className="rounded-[10px] bg-subtle p-3">
               <div className="text-[12.5px] text-n500">
                 {page + 1} / {pages.length} 페이지
               </div>
               <div className="mt-1 text-[18px] font-semibold">
                 {pages[page]?.pageTtl}
               </div>
-              {pages[page]?.pageDescCn && (
-                <div className="mt-1 text-[13.5px] whitespace-pre-line text-n400">
-                  {pages[page].pageDescCn}
-                </div>
-              )}
+              <FormDescription className="mt-1 text-[13.5px] text-n400">
+                {pages[page]?.pageDescCn}
+              </FormDescription>
             </div>
             <div className="mt-2">
               {pageQitems.length === 0 ? (
