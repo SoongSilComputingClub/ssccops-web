@@ -332,6 +332,74 @@ export async function fetchFormResponse(
   return toFormResponseDetail(res);
 }
 
+/** 한 번에 띄우는 요청 수 — 브라우저의 호스트당 연결 한도(6)에 맞춘다 */
+const DETAIL_CONCURRENCY = 6;
+
+export interface FormResponseDetailsResult {
+  /** formRspnsId → 상세. 실패한 건은 없다 */
+  details: Record<number, FormResponseDetail>;
+  /** 못 받은 건수 — 부르는 쪽이 문구를 정한다 */
+  failures: number;
+}
+
+/**
+ * 여러 응답의 상세를 모아 온다.
+ *
+ * **답을 여러 건 한 번에 주는 엔드포인트가 없어서** 상세를 건수만큼 부른다. 서버가 목록에
+ * 응답 내용을 싣지 않기로 계약했고(`FormResponseSummaryResponse`: *"답이 필요하면 상세를
+ * 부른다"*) 그 계약을 화면 사정으로 뒤집지 않는다 — 응답 한 건의 답 상한이 10만 자이고 목록에는
+ * 페이징이 없어(ssccops-server#37), 목록에 답을 실으면 매일 쓰는 심사 목록이 그 상한을 그대로
+ * 짊어진다.
+ *
+ * **엔티티 API에 두는 이유**: 이 "여러 번 부르기"를 쓰는 곳이 둘이다 — 표 보기(ssccops#227의
+ * `useResponseAnswers`)와 CSV 내보내기(ssccops#223). 훅 안에 두면 CSV 쪽이 같은 워커 풀을 한 벌
+ * 더 쓰게 되고, 그때 동시 실행 수·실패 처리가 두 곳에서 따로 움직인다. **나중에 서버가 표
+ * 보기용 조회를 열면 바꿀 곳은 이 함수 하나다** — 선택지는 ssccops#227에 A·B·C로 정리돼 있다.
+ *
+ * 워커를 `DETAIL_CONCURRENCY`개 띄우고 각자 다음 번호를 집어 간다. 배열을 미리 잘라 나누면
+ * 느린 한 건이 그 조각 전체를 붙잡지만, 이렇게 하면 먼저 끝난 워커가 남은 것을 계속 가져간다.
+ *
+ * **한 건이 실패해도 나머지를 버리지 않는다** — 몇 건이 빠졌는지만 돌려주고, 그것을 오류로 볼지
+ * 안내로 볼지는 부르는 쪽이 정한다(표는 빈 칸으로 그리고 CSV는 내보내기를 멈춘다).
+ *
+ * @param onProgress 몇 건까지 왔는지 — 수십 건이면 눈에 띄게 걸려 화면이 멈춘 것처럼 보인다
+ * @param isAlive false가 되면 남은 요청을 더 띄우지 않는다 (화면이 떠난 뒤 계속 부르지 않게)
+ */
+export async function fetchFormResponseDetails(
+  formId: number,
+  formRspnsIds: readonly number[],
+  onProgress?: (done: number) => void,
+  isAlive: () => boolean = () => true,
+): Promise<FormResponseDetailsResult> {
+  const details: Record<number, FormResponseDetail> = {};
+  let failures = 0;
+  let done = 0;
+  let cursor = 0;
+
+  const worker = async () => {
+    for (;;) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= formRspnsIds.length || !isAlive()) return;
+
+      const id = formRspnsIds[index];
+      try {
+        details[id] = await fetchFormResponse(formId, id);
+      } catch {
+        failures += 1;
+      }
+      done += 1;
+      if (isAlive()) onProgress?.(done);
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(DETAIL_CONCURRENCY, formRspnsIds.length) }, worker),
+  );
+
+  return { details, failures };
+}
+
 /* ── 검토 처리 ─────────────────────────────────────────────── */
 
 /** 검토 처리 요청 — 결론과 의견을 함께 보낸다 */

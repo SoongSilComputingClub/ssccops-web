@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { RspnsCn } from "@ssccops/form-renderer";
-import { fetchFormResponse } from "@/entities/response";
+import { fetchFormResponseDetails } from "@/entities/response";
 
 /*
  * 표 보기가 쓸 답 모음 (ssccops#227).
@@ -26,18 +26,14 @@ import { fetchFormResponse } from "@/entities/response";
  * 가져오는 자리를 여기로 좁혀 둔 것이 그래서다. 선택지는 상위 이슈(ssccops#227)에 A·B·C로
  * 정리해 두었다.
  *
- * 동시 실행을 CONCURRENCY로 묶는 것은 응답 50건이 브라우저의 호스트당 연결 한도를 넘겨 다른
- * 요청까지 굶기지 않게 하기 위해서다. 진행 수를 함께 내리는 것은 수십 건일 때 화면이 멈춘 것처럼
- * 보이지 않게 하기 위한 것이고, 실패한 건을 통째로 버리지 않는 것은 한 건이 안 왔다고 나머지
- * 답까지 못 보여 줄 이유가 없기 때문이다.
+ * 여러 건을 동시에 부르는 규칙(동시 실행 수·실패 허용·진행 보고)은 **엔티티 API의
+ * `fetchFormResponseDetails`**에 있다 — CSV 내보내기(ssccops#223)가 같은 것을 필요로 해서,
+ * 훅 안에 두면 워커 풀이 두 벌이 된다. 여기서는 그것을 부르고 화면 상태로 옮기기만 한다.
  *
  * 상태 관리는 features/response/use-response-list.ts와 같은 규칙이다 — **결과에 요청 식별자를
  * 실어** 로딩을 파생시키고 이펙트 본문에서 setState를 부르지 않는다(react-hooks/set-state-in-effect).
  * 늦게 도착한 이전 요청의 결과가 최신 화면을 덮어쓰지 못하게 하는 것이 요점이다.
  */
-
-/** 한 번에 띄우는 요청 수 — 브라우저의 호스트당 연결 한도(6)에 맞춘다 */
-const CONCURRENCY = 6;
 
 export type ResponseAnswersStatus = "idle" | "loading" | "ready" | "error";
 
@@ -92,41 +88,23 @@ export function useResponseAnswers(
     let alive = true;
     const ids = idsKey.split(",").map(Number);
 
-    const collected: Record<number, RspnsCn> = {};
-    let failures = 0;
-    let done = 0;
-    let cursor = 0;
-
-    /*
-     * 워커를 CONCURRENCY개 띄우고 각자 다음 번호를 집어 간다. 배열을 잘라 나누면 느린 한 건이
-     * 그 조각 전체를 붙잡지만, 이렇게 하면 먼저 끝난 워커가 남은 것을 계속 가져간다.
-     */
-    const worker = async () => {
-      for (;;) {
-        const index = cursor;
-        cursor += 1;
-        if (index >= ids.length || !alive) return;
-
-        try {
-          const detail = await fetchFormResponse(formId, ids[index]);
-          collected[ids[index]] = detail.rspnsCn;
-        } catch {
-          // 한 건이 안 왔다고 나머지를 버리지 않는다 — 끝에서 몇 건이 빠졌는지만 알린다
-          failures += 1;
-        }
-        done += 1;
-        if (alive) setProgress({ key: requestKey, count: done });
-      }
-    };
-
-    void Promise.all(
-      Array.from({ length: Math.min(CONCURRENCY, ids.length) }, worker),
-    ).then(() => {
+    void fetchFormResponseDetails(
+      formId,
+      ids,
+      (done) => setProgress({ key: requestKey, count: done }),
+      () => alive,
+    ).then(({ details, failures }) => {
       if (!alive) return;
+
+      const answers: Record<number, RspnsCn> = {};
+      for (const [id, detail] of Object.entries(details)) {
+        answers[Number(id)] = detail.rspnsCn;
+      }
+
       const allFailed = failures === ids.length;
       setLoaded({
         key: requestKey,
-        answers: collected,
+        answers,
         errorMessage: allFailed
           ? "응답 내용을 불러오지 못했습니다."
           : failures > 0
