@@ -11,7 +11,11 @@ import {
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useFormDetail } from "@/features/form";
-import { useResponseAnswers, useResponseList } from "@/features/response";
+import {
+  useResponseAnswers,
+  useResponseCsvExport,
+  useResponseList,
+} from "@/features/response";
 import {
   RSPNS_RVW_STTS_CDS,
   RSPNS_STTS_CDS,
@@ -22,6 +26,7 @@ import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
 import {
   Badge,
+  Button,
   Card,
   Chip,
   EmptyState,
@@ -149,6 +154,42 @@ export function ResponseListPage({ formId }: { formId: number }) {
     form?.mltplRspnsYn === true ||
     responses.some((r) => r.rspnsSeq !== null && r.rspnsSeq > 1);
 
+  /*
+   * CSV 내보내기 (ssccops#223).
+   *
+   * **지금 보고 있는 범위를 그대로 내보낸다** — 상태 필터가 걸려 있으면 그 결과가 파일이 된다.
+   * 언제나 전량을 내보내면 "승인된 것만 뽑아 달라"는 흔한 요구에 화면이 답하지 못하고, 운영진은
+   * 엑셀에서 다시 걸러야 한다. 필터가 URL에 있으므로 그 링크를 받은 사람이 내려받은 파일도 같다.
+   *
+   * 연락처 열은 `MEMBER_MANAGE`로 가른다. ⚠️ 이것은 **표시 경계이지 보안 경계가 아니다** —
+   * 응답 상세는 `RESPONSE_REVIEW` 하나로 막혀 있고 `telno`는 권한과 무관하게 실려 온다.
+   * 근거와 남은 일은 `features/response/model/response-csv.ts`에 적어 두었다.
+   */
+  const canSeeTelno = useCan(CAPABILITY.MEMBER_MANAGE);
+
+  /*
+   * **끈 열도 파일에는 들어간다**(`visibleColumns`가 아니라 `allColumns`다).
+   *
+   * 열을 끄는 것은 화면을 훑기 편하려는 개인 취향이라 URL에도 담지 않는 값인데, 그 취향이
+   * 파일의 내용까지 정하면 내려받은 사람은 **문항이 빠진 줄도 모른다.** 화면은 다시 켜면
+   * 되지만 파일은 그 자리에서 끝이고, 엑셀에서 열을 지우는 것이 없는 열을 되살리는 것보다
+   * 언제나 쉽다.
+   */
+  const {
+    exportCsv,
+    status: exportStatus,
+    loadedCount: exportLoaded,
+    total: exportTotal,
+    errorMessage: exportError,
+  } = useResponseCsvExport({
+    formId,
+    formTtlNm: form?.formTtlNm,
+    responses,
+    columns: allColumns,
+    includeTelno: canSeeTelno,
+    includeRspnsSeq: showRspnsSeq,
+  });
+
   const applyFilter = (value: RspnsSttsCd | null) => {
     const params = new URLSearchParams(searchParams.toString());
     if (value === null) params.delete(QUERY_STATUS);
@@ -263,6 +304,30 @@ export function ResponseListPage({ formId }: { formId: number }) {
             {status === "ready" ? `${responses.length}건` : ""}
           </div>
           {/*
+            내보내기는 좁은 화면에서도 둔다 — 표 보기와 달리 파일을 받는 일이라 화면 폭과
+            무관하고, 모바일에서 명단을 넘겨야 하는 상황이 실제로 있다.
+
+            불러오는 중에는 몇 건까지 왔는지 버튼이 직접 말한다. 별도 안내 줄을 띄우면 응답이
+            적을 때(대부분) 나타났다 사라지는 줄이 목록을 밀어 올린다.
+          */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={exportCsv}
+            disabled={status !== "ready" || responses.length === 0 || exportStatus === "loading"}
+            title={
+              responses.length === 0
+                ? "내보낼 응답이 없습니다"
+                : canSeeTelno
+                  ? undefined
+                  : "연락처는 회원 관리(MEMBER_MANAGE) 권한이 있어야 파일에 들어갑니다"
+            }
+          >
+            {exportStatus === "loading"
+              ? `내보내는 중… (${exportLoaded}/${exportTotal})`
+              : "CSV 내보내기"}
+          </Button>
+          {/*
             보기 전환은 좁은 화면에서 감춘다 — 표가 데스크톱 전용이라(GridTable이 lg 미만에서
             카드로 바뀌는 규칙과 부딪힌다) 누를 수 있는데 아무것도 안 바뀌는 버튼을 두지 않는다.
           */}
@@ -307,6 +372,11 @@ export function ResponseListPage({ formId }: { formId: number }) {
               응답인지를 뜻합니다.
             </div>
           )}
+          {/*
+            내보내기 실패는 눌렀을 때만 생기는 일이라 여기서만 말한다 — 한 건이라도 못 받으면
+            파일을 만들지 않는다(빈 칸이 "비워 뒀다"로 읽힌다).
+          */}
+          {exportError && <div className="text-danger">{exportError}</div>}
         </div>
 
         {status === "error" ? (

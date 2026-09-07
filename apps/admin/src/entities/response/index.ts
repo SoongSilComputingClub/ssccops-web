@@ -21,10 +21,12 @@ export {
   RESPONSE_ERROR,
   fetchEventApplications,
   fetchFormResponse,
+  fetchFormResponseDetails,
   fetchFormResponses,
   reviewFormResponse,
 } from "./api/responses";
 export type {
+  FormResponseDetailsResult,
   FormResponseListFilter,
   FormResponseReviewInput,
 } from "./api/responses";
