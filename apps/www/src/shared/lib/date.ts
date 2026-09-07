@@ -81,3 +81,19 @@ export function formatEventDate(eventBgngDt: string | null): string | null {
   if (!bgng) return null;
   return `${bgng.m}월 ${bgng.d}일 (${weekday(bgng)})${bgng.hm ? ` ${bgng.hm}` : ""}`;
 }
+
+/**
+ * 일시 한 줄 — `"2026-09-15 18:00"`.
+ *
+ * 행사 표기(`formatEventPeriod`)와 달리 요일·연도 문구를 붙이지 않는다. 쓰이는 자리가 접수
+ * 기간·제출 시각처럼 **이미 맥락이 있는 값**이라, 같은 줄에 요일까지 들어가면 정작 읽어야 할
+ * 숫자가 묻힌다.
+ *
+ * 이 파일의 다른 함수와 같은 이유로 **문자열을 잘라 쓴다** — `new Date(...)`로 파싱하면
+ * 서울 밖에서 열었을 때 제출 시각이 다른 시각으로 보인다(머리말 참고). 값이 없으면 빈
+ * 문자열이고, "미정" 같은 대체 문구는 그리는 쪽이 정한다.
+ */
+export function formatDt(value: string | null): string {
+  if (!value) return "";
+  return value.slice(0, 16).replace("T", " ");
+}

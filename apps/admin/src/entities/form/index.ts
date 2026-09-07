@@ -24,8 +24,6 @@ export {
   SYSTEM_FORM_OPEN_PARTS,
   SYSTEM_FORM_QITEM_LOCKED,
 } from "./model/display";
-export type { PublicFormMeta } from "./api/public-form-meta";
-export { fetchPublicFormMeta } from "./api/public-form-meta";
 export {
   FORM_ERROR,
   changeFormStatus,
@@ -44,8 +42,6 @@ export type {
   FormStatusAction,
   FormStatusChangeResult,
 } from "./api/forms";
-export { PUBLIC_FORM_ERROR, fetchPublicForm } from "./api/public-forms";
-export type { PublicForm } from "./api/public-forms";
 export { PROPOSAL_SYS_FORM_CD, findProposalForm } from "./api/proposal-form";
 export {
   FORM_LABEL_ERROR,

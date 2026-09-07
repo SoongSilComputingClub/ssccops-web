@@ -54,7 +54,11 @@ app → views → features → entities → shared     (단방향)
 - 같은 레이어의 슬라이스끼리 참조하지 않는다. 여러 엔티티를 함께 바꾸는 로직은 `features`에 둔다.
 - `views`가 FSD의 pages 레이어다(Next.js 예약어 충돌 회피). widgets 레이어는 생략했다.
 - `app/`은 라우팅 전용 — 각 `page.tsx`는 `views`를 얇게 감싼다. 라우트 그룹은 `(admin)`(운영
-  화면) · `(auth)`(로그인·가입) · `(public)`(공개 폼) · `auth/`(OAuth 콜백 라우트 핸들러)다.
+  화면) · `(auth)`(로그인·가입) · `(public)`(로그인 없이 열리는 착지 화면 — 지금은 공유 링크
+  `/s/{token}` 하나다) · `auth/`(OAuth 콜백 라우트 핸들러)다. **공개 폼 `/f/{formId}`는 여기
+  있다가 `apps/www`로 옮겨 갔다**(ssccops#214) — 응답자에게 뿌리는 링크가 운영 시스템 도메인을
+  가리키면 어드민이 크롤링 대상이 되기 때문이다. 어드민에 남은 것은 폼 상세의 링크 복사뿐이며
+  그 주소는 `publicFormUrl()`이 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`으로 만든다.
 - 슬라이스 내부: `entities/<slice>/{api,model}` · `features/<slice>/{model,ui}` · `views/<slice>/ui`.
 - 화면 경로를 문자열로 적지 않고 `shared/config/routes.ts`의 `ROUTES`를 쓴다.
 
