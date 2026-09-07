@@ -568,7 +568,7 @@ export function QitemComposer({
                               value={q.ptrnCn ?? ""}
                               invalid={!isCompilableRegExp(q.ptrnCn)}
                               onChange={(e) => patchQ(q.qitemId, { ptrnCn: e.target.value })}
-                              placeholder="정규식 (예: ^[0-9]{9}$)"
+                              placeholder="정규식 (예: ^[0-9]{8}$)"
                               className="mt-2 font-mono text-[16px] lg:text-[13.5px]"
                             />
                             {/* 깨진 정규식은 공개 폼의 응답 검증을 통째로 무너뜨린다 */}
