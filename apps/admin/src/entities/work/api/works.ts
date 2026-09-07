@@ -188,6 +188,12 @@ export const WORK_ERROR = {
 export interface WorkListFilter {
   workStatus?: WorkSttsCd | null;
   workType?: WorkTypeCd | null;
+  /**
+   * 제목 부분 일치 (ssccops#216). 서버가 대소문자를 가리지 않고 `%`·`_`는 리터럴로 다룬다 —
+   * 화면이 따로 정규화하거나 이스케이프하지 않는다(규칙이 두 벌이 되면 갈린다).
+   * 공백만인 값은 서버가 조건 없음으로 떨어뜨리므로 그대로 보내도 된다.
+   */
+  keyword?: string | null;
   /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
   cursor?: string | null;
   /** 1~100 · 서버 기본 20 */
@@ -214,6 +220,7 @@ export async function fetchWorks(filter: WorkListFilter = {}): Promise<WorkListP
   const query = new URLSearchParams();
   if (filter.workStatus) query.set("workStatus", filter.workStatus);
   if (filter.workType) query.set("workType", filter.workType);
+  if (filter.keyword) query.set("keyword", filter.keyword);
   if (filter.cursor) query.set("cursor", filter.cursor);
   if (filter.size != null) query.set("size", String(filter.size));
 

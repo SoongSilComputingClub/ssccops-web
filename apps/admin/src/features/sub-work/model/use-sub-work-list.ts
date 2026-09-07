@@ -20,6 +20,9 @@ import { toSubWorkErrorMessage } from "./sub-work-error";
  * 필터로 만들어진 값이라 필터가 바뀐 채로 이어 받으면(loadMore) 서로 다른 조건의 페이지가
  * 한 목록에 섞인다. 그래서 칩(tab)을 요청 키에 포함해, 탭이 바뀌는 순간 이전 페이지를
  * 버리고 로딩 상태로 되돌린다.
+ *
+ * **검색어도 같은 이유로 요청 키에 들어간다** (ssccops#216). 선택 인자이며 하위 업무 목록
+ * 화면은 검색을 붙이지 않았다 — 값을 준 호출부(회의 안건 추가)만 조건이 걸린다.
  */
 
 /**
@@ -119,7 +122,7 @@ export interface SubWorkList {
   reload: () => void;
 }
 
-export function useSubWorkList(tab: SubWorkListTab): SubWorkList {
+export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
   const [loaded, setLoaded] = useState<LoadedSubWorkList | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -130,7 +133,7 @@ export function useSubWorkList(tab: SubWorkListTab): SubWorkList {
   const aliveRef = useRef(true);
   const inFlightRef = useRef(false);
 
-  const requestKey = `${tab}:${reloadKey}`;
+  const requestKey = `${tab}:${keyword}:${reloadKey}`;
 
   useEffect(() => {
     loadedRef.current = loaded;
@@ -146,7 +149,7 @@ export function useSubWorkList(tab: SubWorkListTab): SubWorkList {
   useEffect(() => {
     let alive = true;
 
-    fetchSubWorks(toFilter(tab))
+    fetchSubWorks({ ...toFilter(tab), keyword })
       .then((page) => {
         if (!alive) return;
         setLoaded({
@@ -175,7 +178,7 @@ export function useSubWorkList(tab: SubWorkListTab): SubWorkList {
     return () => {
       alive = false;
     };
-  }, [requestKey, tab]);
+  }, [requestKey, tab, keyword]);
 
   const loadMore = useCallback(async (): Promise<string> => {
     const current = loadedRef.current;
@@ -184,7 +187,11 @@ export function useSubWorkList(tab: SubWorkListTab): SubWorkList {
     inFlightRef.current = true;
     setLoadingMore(true);
     try {
-      const page = await fetchSubWorks({ ...toFilter(tab), cursor: current.nextCursor });
+      const page = await fetchSubWorks({
+        ...toFilter(tab),
+        keyword,
+        cursor: current.nextCursor,
+      });
       if (!aliveRef.current) return "";
 
       /*
@@ -210,7 +217,7 @@ export function useSubWorkList(tab: SubWorkListTab): SubWorkList {
       inFlightRef.current = false;
       if (aliveRef.current) setLoadingMore(false);
     }
-  }, [tab]);
+  }, [tab, keyword]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
