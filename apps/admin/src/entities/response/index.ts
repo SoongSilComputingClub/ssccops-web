@@ -10,6 +10,8 @@ export type {
 } from "./model/types";
 /* 응답 내용의 저장 형태는 `@ssccops/form-renderer`가 정의한다(#152) */
 export type { RspnsCn } from "@ssccops/form-renderer";
+export { answerColumns, answerText } from "./model/answer-table";
+export type { AnswerColumn } from "./model/answer-table";
 export {
   RSPNS_STTS_BADGE,
   RVW_PRCS_SE_BADGE,
