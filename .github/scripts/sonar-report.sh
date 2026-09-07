@@ -87,18 +87,26 @@ QG_STATUS=$(echo "$QG_JSON" | jq -r '.projectStatus.status // "UNKNOWN"')
 # 잘려 빈 응답이 온 것을 "커버리지 0%" 로 보고했다 — 그 폴백이 진짜 오류를 가렸고
 # 아무도 눈치채지 못한 채 그 숫자가 기준을 정하는 근거로 쓰일 뻔했다(ssccops#231).
 #
-# 판정 재료는 응답의 모양이다. 조회가 성공하면 `.component`(측정값)·`.issues`(이슈)가
+# 판정 재료는 응답의 모양이다. 조회가 성공하면 `.component`(측정값)·`.facets`(이슈)가
 # 있고, 빗나가면 그 자리가 없거나 `.errors` 가 온다. 값이 진짜로 없는 것(테스트 러너가
 # 없어 커버리지 측정 자체가 없는 경우)은 조회는 성공하되 그 metric 만 빠진 모양이라
 # 셋이 구별된다 — 성공+값 · 성공+없음 · 실패.
 # ----------------------------------------------------------------------------
+# `facets=types` 로 **집계값**을 받는다. 예전에는 돌아온 `issues` 배열을 세었는데 그 배열은
+# 한 페이지(기본 100건)라 **총계가 아니라 페이지 크기를 세고 있었다** — 실제로 web 의 첫
+# 보고(4+0+96)와 그다음 보고(1+71+28)가 **둘 다 정확히 100** 이었다. `ps=1` 로 본문은 받지
+# 않고 facet 만 받는다.
 ISSUES_JSON=$(curl -s -u "$SONAR_TOKEN:" \
-  "$SONAR_HOST_URL/api/issues/search?projectKeys=$PROJECT_KEY&branch=$BRANCH_ENC&resolved=false")
+  "$SONAR_HOST_URL/api/issues/search?projectKeys=$PROJECT_KEY&branch=$BRANCH_ENC&resolved=false&facets=types&ps=1")
 
-if echo "$ISSUES_JSON" | jq -e 'has("issues")' >/dev/null 2>&1; then
-  BUGS=$(echo "$ISSUES_JSON" | jq '[ .issues[] | select(.type=="BUG") ] | length')
-  VULNS=$(echo "$ISSUES_JSON" | jq '[ .issues[] | select(.type=="VULNERABILITY") ] | length')
-  SMELLS=$(echo "$ISSUES_JSON" | jq '[ .issues[] | select(.type=="CODE_SMELL") ] | length')
+if echo "$ISSUES_JSON" | jq -e 'has("facets")' >/dev/null 2>&1; then
+  type_count() {
+    echo "$ISSUES_JSON" | jq -r --arg t "$1" \
+      '[ .facets[] | select(.property=="types") | .values[] | select(.val==$t) | .count ] | first // 0'
+  }
+  BUGS=$(type_count BUG)
+  VULNS=$(type_count VULNERABILITY)
+  SMELLS=$(type_count CODE_SMELL)
 else
   echo "::warning::이슈 질의가 빗나갔다 (branch=$BRANCH). 응답: $(echo "$ISSUES_JSON" | head -c 200)"
   BUGS="조회 실패"
