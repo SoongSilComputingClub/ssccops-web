@@ -69,6 +69,9 @@ function stallBadge(sw: SubWorkListItem): { label: string; title: string } | nul
   return null;
 }
 
+/** 칩 이름만으로는 무엇을 거르는지 알기 어렵다 — 담당이지 등록이 아니라는 것을 말한다 */
+const MINE_HINT = "담당자가 나인 하위 업무만 봅니다 — 내가 등록했지만 남이 담당하는 건은 빠집니다";
+
 function SubWorkTableSkeleton() {
   return (
     <Card className="animate-pulse px-5 pt-4 pb-[6px]">
@@ -88,6 +91,12 @@ function SubWorkTableSkeleton() {
 export function SubWorkListPage() {
   const router = useRouter();
   const [tab, setTab] = useState<SubWorkListTab>("전체");
+  /*
+   * 내 업무는 탭과 다른 축이라 상태를 따로 쥔다 (ssccops#225) — 탭에 아홉 번째 값으로 넣으면
+   * 단일 선택이라 `내 업무`를 고르는 순간 `지연`이 풀린다. 담당 여부와 상태·마감은 겹쳐
+   * 걸려야 하는 조건이다.
+   */
+  const [mine, setMine] = useState(false);
   const {
     subWorks,
     status,
@@ -98,7 +107,7 @@ export function SubWorkListPage() {
     loadingMore,
     loadMore,
     reload,
-  } = useSubWorkList(tab);
+  } = useSubWorkList(tab, "", mine);
 
   const runLoadMore = async () => {
     const message = await loadMore();
@@ -195,6 +204,14 @@ export function SubWorkListPage() {
               {t}
             </Chip>
           ))}
+          {/*
+            탭과 다른 축이라 구분선을 두고 뒤에 놓는다 — 나란히 두면 아홉 번째 탭으로 읽혀
+            하나를 고르면 앞의 것이 풀리는 줄 안다.
+          */}
+          <span aria-hidden className="mx-[3px] h-[16px] w-px bg-black/10" />
+          <Chip active={mine} onClick={() => setMine((on) => !on)} title={MINE_HINT}>
+            내 업무
+          </Chip>
           <div className="flex-1" />
           {status === "ready" && (
             <div className="text-[14px] text-n500">
@@ -221,7 +238,15 @@ export function SubWorkListPage() {
                 rowKey={(sw) => String(sw.subWorkId)}
                 onRowClick={(sw) => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
                 dense
-                empty={<EmptyState message="조건에 맞는 하위 업무가 없습니다." />}
+                empty={
+                  <EmptyState
+                    message={
+                      mine
+                        ? "담당하고 있는 하위 업무가 없습니다."
+                        : "조건에 맞는 하위 업무가 없습니다."
+                    }
+                  />
+                }
               />
             </Card>
 
