@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  QitemCard,
-  nextPageSeq,
-  pageSeqOf,
-  validatePageAnswers,
-} from "@ssccops/form-renderer";
+import { FormDescription, QitemCard, nextPageSeq, pageSeqOf, validatePageAnswers } from "@ssccops/form-renderer";
 import { NOT_ACCEPTING_MESSAGE, SaveStatusBar, useApplyForm } from "@/features/apply";
 import { SignInButton } from "@/features/auth";
 import { ROUTES } from "@/shared/config/routes";
@@ -228,11 +223,9 @@ export function PublicFormStep({ formId }: { formId: number }) {
         <div className="text-[16px] font-semibold">
           {currentPage + 1}. {pages[currentPage]?.pageTtl}
         </div>
-        {pages[currentPage]?.pageDescCn && (
-          <p className="text-[13.5px] leading-[1.7] whitespace-pre-line text-n400">
-            {pages[currentPage].pageDescCn}
-          </p>
-        )}
+        <FormDescription className="text-[13.5px] leading-[1.7] text-n400">
+          {pages[currentPage]?.pageDescCn}
+        </FormDescription>
       </Card>
 
       {pageQitems.map((qitem) => (

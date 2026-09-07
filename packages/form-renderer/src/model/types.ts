@@ -23,6 +23,13 @@ export interface Qitem {
   /** 문항 식별자 — 응답(rspnsCn)의 key가 된다 */
   qitemId: string;
   qitemLblNm: string;
+  /**
+   * 문항 설명 — 질문 문구 아래에 붙는 안내. 마크다운으로 렌더된다(`FormDescription`).
+   *
+   * 없는 것과 빈 문자열을 구별하지 않는다 — 서버가 저장 시점에 공백뿐인 값을 `null`로
+   * 굳히므로(ssccops-server#271) 화면도 "비어 있으면 그리지 않는다" 하나로 다룬다.
+   */
+  qitemDescCn?: string;
   qitemTypeCd: QitemTypeCd;
   /** 필수 응답 여부 */
   reqYn: boolean;

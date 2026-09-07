@@ -4,6 +4,7 @@ import { cn } from "../lib/cn";
 import { isChoiceQitemType } from "../model/qitem-type";
 import { selectedOptions, toggleOption } from "../model/answers";
 import type { AnswerValue, Qitem } from "../model/types";
+import { FormDescription } from "./form-description";
 
 /*
  * 문항 한 칸 — 유형별 렌더링.
@@ -48,6 +49,14 @@ export function QitemCard({
         {qitem.qitemLblNm}
         {qitem.reqYn && <span className="ml-1 text-danger">*</span>}
       </div>
+      {/*
+       * 설명은 질문 문구 바로 아래, 유형 안내('하나만 선택')보다 위다 — 문항을 읽는 순서가
+       * "무엇을 묻는가 → 어떻게 답하는가"이고 설명은 앞쪽에 속한다.
+       * 비어 있으면 FormDescription이 아무것도 그리지 않는다.
+       */}
+      <FormDescription className="mt-[3px] text-[13.5px] leading-[1.7] text-n400">
+        {qitem.qitemDescCn}
+      </FormDescription>
       {isChoiceQitemType(qitem.qitemTypeCd) && (
         <div className="mt-[2px] text-[12.5px] text-n500">
           {qitem.qitemTypeCd === "SINGLE_CHOICE"

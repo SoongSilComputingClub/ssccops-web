@@ -2,14 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  QitemCard,
-  nextPageSeq,
-  pageSeqOf,
-  validatePageAnswers,
-  type QitemCpstCn,
-  type RspnsCn,
-} from "@ssccops/form-renderer";
+import { FormDescription, QitemCard, nextPageSeq, pageSeqOf, type QitemCpstCn, type RspnsCn, validatePageAnswers } from "@ssccops/form-renderer";
 // 배럴을 거치지 않는다 — 배럴이 SSR 로더(→ next/headers)를 재export 해 클라 번들을 오염시킨다
 import { PROPOSAL_RESUBMIT_NOTE } from "@/features/proposal/model/proposal-error";
 import { useResubmitForm } from "@/features/proposal/model/use-resubmit-form";
@@ -130,11 +123,9 @@ export function ResubmitForm({
           {pages.length > 1 && `${currentPage + 1}. `}
           {pages[currentPage]?.pageTtl}
         </div>
-        {pages[currentPage]?.pageDescCn && (
-          <p className="mt-1 text-[14px] whitespace-pre-line text-n400">
-            {pages[currentPage].pageDescCn}
-          </p>
-        )}
+        <FormDescription className="mt-1 text-[14px] text-n400">
+          {pages[currentPage]?.pageDescCn}
+        </FormDescription>
       </Card>
 
       {pageQitems.map((q) => (
