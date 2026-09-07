@@ -194,6 +194,15 @@ export interface WorkListFilter {
    * 공백만인 값은 서버가 조건 없음으로 떨어뜨리므로 그대로 보내도 된다.
    */
   keyword?: string | null;
+  /**
+   * 담당자가 나인 건만 (ssccops#225). **true만 의미가 있다** — 서버가 false를 필터 없음으로
+   * 무시한다(`isOverdue`와 같은 꼴).
+   *
+   * **회원 식별자를 보내지 않는다.** 서버가 인증 주체(`@CurrentMember`)에서 가져오므로 이
+   * 필터는 "켤지 말지"만 말한다 — 식별자를 실으면 값을 바꾸는 것만으로 남의 담당 목록이 되고,
+   * 이 목록은 `WORK_READ`로 이미 열려 있다.
+   */
+  mine?: boolean | null;
   /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
   cursor?: string | null;
   /** 1~100 · 서버 기본 20 */
@@ -221,6 +230,7 @@ export async function fetchWorks(filter: WorkListFilter = {}): Promise<WorkListP
   if (filter.workStatus) query.set("workStatus", filter.workStatus);
   if (filter.workType) query.set("workType", filter.workType);
   if (filter.keyword) query.set("keyword", filter.keyword);
+  if (filter.mine) query.set("mine", "true");
   if (filter.cursor) query.set("cursor", filter.cursor);
   if (filter.size != null) query.set("size", String(filter.size));
 

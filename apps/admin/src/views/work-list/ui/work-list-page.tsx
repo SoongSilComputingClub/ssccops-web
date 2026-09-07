@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { CAPABILITY } from "@/entities/session";
 import { workSttsTone, type WorkListItem } from "@/entities/work";
 import { useCan } from "@/features/auth";
@@ -12,6 +13,7 @@ import {
   Badge,
   Button,
   Card,
+  Chip,
   EmptyState,
   PageBody,
   PageHeader,
@@ -72,6 +74,13 @@ function WorkCard({ work, onClick }: { work: WorkListItem; onClick: () => void }
 
 export function WorkListPage() {
   const router = useRouter();
+  /*
+   * 내 업무 (ssccops#225) — 이 화면의 첫 필터다.
+   *
+   * 서버 조건(`mine`)으로 거른다. 받아 둔 배열을 화면에서 걸러도 첫 페이지 20건 안에 있는
+   * 것만 걸러지는데, 목록이 길어져서 이 필터가 필요해진 상황이 정확히 그때다.
+   */
+  const [mine, setMine] = useState(false);
   const {
     works,
     status,
@@ -81,7 +90,7 @@ export function WorkListPage() {
     loadingMore,
     loadMore,
     reload,
-  } = useWorkList();
+  } = useWorkList("", mine);
 
   /*
    * 조회(GET /v1/works)는 WORK_READ만 있어도 되지만(서버 #101), 등록은 여전히 WORK_MANAGE다 —
@@ -110,6 +119,18 @@ export function WorkListPage() {
         }}
       />
       <PageBody>
+        <div className="mb-[14px] flex items-center gap-[7px]">
+          <Chip
+            active={mine}
+            onClick={() => setMine((v) => !v)}
+            title="담당자가 나인 업무만 봅니다"
+          >
+            내 업무
+          </Chip>
+          <div className="flex-1" />
+          {status === "ready" && <div className="text-[14px] text-n500">{totalCount}건</div>}
+        </div>
+
         {status === "loading" && (
           <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
             {[0, 1, 2, 3].map((i) => (
@@ -128,9 +149,13 @@ export function WorkListPage() {
         {status === "ready" &&
           (works.length === 0 ? (
             <EmptyState
-              message="등록된 업무가 없습니다."
-              /* 유도 버튼은 감춘다 — 권하면서 누르지 못하게 하는 모순이고, 사유는 헤더가 말한다 */
-              action={canManage ? { label: "+ 등록", onClick: openCreate } : undefined}
+              message={mine ? "담당하고 있는 업무가 없습니다." : "등록된 업무가 없습니다."}
+              /*
+                유도 버튼은 감춘다 — 권하면서 누르지 못하게 하는 모순이고, 사유는 헤더가 말한다.
+                `내 업무`를 켠 상태에서도 감춘다 — 지금 없는 것은 업무가 아니라 내 담당이라
+                등록을 권하는 것이 답이 아니다.
+              */
+              action={canManage && !mine ? { label: "+ 등록", onClick: openCreate } : undefined}
             />
           ) : (
             <>

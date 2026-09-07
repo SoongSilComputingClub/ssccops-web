@@ -23,6 +23,13 @@ import { toSubWorkErrorMessage } from "./sub-work-error";
  *
  * **검색어도 같은 이유로 요청 키에 들어간다** (ssccops#216). 선택 인자이며 하위 업무 목록
  * 화면은 검색을 붙이지 않았다 — 값을 준 호출부(회의 안건 추가)만 조건이 걸린다.
+ *
+ * **`내 업무`(mine)도 같다** (ssccops#225). 다만 이것은 칩(tab)과 **배타가 아니라 함께 걸리는
+ * 축**이라 SUB_WORK_LIST_TABS에 넣지 않고 별도 인자로 받는다 — 탭들은 서로 배타지만 "내가
+ * 담당한 것 중 지연된 것"은 정상적인 조합이다.
+ *
+ * **회원 식별자를 다루지 않는다** — 서버가 인증 주체에서 가져오므로 이 훅이 아는 것은 "켤지
+ * 말지"뿐이다.
  */
 
 /**
@@ -122,7 +129,11 @@ export interface SubWorkList {
   reload: () => void;
 }
 
-export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
+export function useSubWorkList(
+  tab: SubWorkListTab,
+  keyword = "",
+  mine = false,
+): SubWorkList {
   const [loaded, setLoaded] = useState<LoadedSubWorkList | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -133,7 +144,7 @@ export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
   const aliveRef = useRef(true);
   const inFlightRef = useRef(false);
 
-  const requestKey = `${tab}:${keyword}:${reloadKey}`;
+  const requestKey = `${tab}:${keyword}:${mine}:${reloadKey}`;
 
   useEffect(() => {
     loadedRef.current = loaded;
@@ -149,7 +160,7 @@ export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
   useEffect(() => {
     let alive = true;
 
-    fetchSubWorks({ ...toFilter(tab), keyword })
+    fetchSubWorks({ ...toFilter(tab), keyword, mine })
       .then((page) => {
         if (!alive) return;
         setLoaded({
@@ -178,7 +189,7 @@ export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
     return () => {
       alive = false;
     };
-  }, [requestKey, tab, keyword]);
+  }, [requestKey, tab, keyword, mine]);
 
   const loadMore = useCallback(async (): Promise<string> => {
     const current = loadedRef.current;
@@ -189,6 +200,7 @@ export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
     try {
       const page = await fetchSubWorks({
         ...toFilter(tab),
+        mine,
         keyword,
         cursor: current.nextCursor,
       });
@@ -217,7 +229,7 @@ export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
       inFlightRef.current = false;
       if (aliveRef.current) setLoadingMore(false);
     }
-  }, [tab, keyword]);
+  }, [tab, keyword, mine]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 

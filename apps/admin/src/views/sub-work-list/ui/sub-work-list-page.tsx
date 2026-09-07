@@ -88,6 +88,11 @@ function SubWorkTableSkeleton() {
 export function SubWorkListPage() {
   const router = useRouter();
   const [tab, setTab] = useState<SubWorkListTab>("전체");
+  /*
+   * 내 업무 (ssccops#225) — 탭과 **배타가 아니라 함께 걸리는 축**이라 별도 상태다.
+   * "내가 담당한 것 중 지연된 것"은 정상적인 조합이고, 탭 목록에 넣으면 그 조합이 사라진다.
+   */
+  const [mine, setMine] = useState(false);
   const {
     subWorks,
     status,
@@ -98,7 +103,7 @@ export function SubWorkListPage() {
     loadingMore,
     loadMore,
     reload,
-  } = useSubWorkList(tab);
+  } = useSubWorkList(tab, "", mine);
 
   const runLoadMore = async () => {
     const message = await loadMore();
@@ -195,6 +200,18 @@ export function SubWorkListPage() {
               {t}
             </Chip>
           ))}
+          {/*
+            구분선을 두어 축이 다르다는 것을 보인다 — 왼쪽은 하나만 켜지는 탭이고
+            `내 업무`는 그 위에 겹쳐 걸리는 토글이다.
+          */}
+          <span className="mx-[3px] h-[18px] w-px flex-none bg-line" />
+          <Chip
+            active={mine}
+            onClick={() => setMine((v) => !v)}
+            title="담당자가 나인 하위 업무만 봅니다"
+          >
+            내 업무
+          </Chip>
           <div className="flex-1" />
           {status === "ready" && (
             <div className="text-[14px] text-n500">
@@ -221,7 +238,15 @@ export function SubWorkListPage() {
                 rowKey={(sw) => String(sw.subWorkId)}
                 onRowClick={(sw) => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
                 dense
-                empty={<EmptyState message="조건에 맞는 하위 업무가 없습니다." />}
+                empty={
+                  <EmptyState
+                    message={
+                      mine
+                        ? "담당하고 있는 하위 업무가 없습니다."
+                        : "조건에 맞는 하위 업무가 없습니다."
+                    }
+                  />
+                }
               />
             </Card>
 
