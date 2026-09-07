@@ -1,12 +1,17 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { mbrGrdNm, mbrSttsNm } from "@/entities/member";
-import { RSPNS_STTS_BADGE, type FormResponseItem } from "@/entities/response";
+import {
+  RSPNS_STTS_BADGE,
+  answerColumns,
+  type FormResponseItem,
+} from "@/entities/response";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useFormDetail } from "@/features/form";
-import { useResponseList } from "@/features/response";
+import { useResponseAnswers, useResponseList } from "@/features/response";
 import {
   RSPNS_RVW_STTS_CDS,
   RSPNS_STTS_CDS,
@@ -23,10 +28,15 @@ import {
   GridTable,
   PageBody,
   PageHeader,
+  Segmented,
   type GridColumn,
 } from "@/shared/ui";
+import { ResponseAnswerTable } from "./response-answer-table";
 
 const ALL = "전체";
+
+const VIEWS = ["목록", "표"] as const;
+type ViewMode = (typeof VIEWS)[number];
 
 /** 잠긴 조작에 붙는 사유 — 요구 권한을 이름으로 밝힌다 (#117) */
 const NO_REVIEW =
@@ -43,6 +53,16 @@ const NO_REVIEW =
  * 조회가 나갔는지 주소창만 보고 알 수 있다.
  */
 const QUERY_STATUS = "statusCode";
+
+/*
+ * 보기(목록·표)도 URL에 둔다 — 상태 필터와 같은 이유이며 운영 통합 달력(`?view=`)과도 같은 방식이다.
+ * "이 폼 응답 표로 좀 봐줘"를 링크 하나로 건넬 수 있다.
+ *
+ * **열을 끄고 켠 선택은 URL에 담지 않는다.** 문항이 열둘인 폼에서 셋만 남기면 주소가 그만큼
+ * 길어지고, 그 값은 보는 사람마다 다른 개인 취향이라 링크로 건넬 값이 아니다. 화면을 벗어나면
+ * 전부 켜진 기본값으로 돌아간다 — 기억해 두는 것보다 "언제나 전부 보인다"가 덜 놀랍다.
+ */
+const QUERY_VIEW = "view";
 
 /** URL은 사용자가 손으로 고칠 수 있다 — 모르는 값은 필터 없음으로 떨어뜨린다 */
 function parseRspnsSttsCd(value: string | null): RspnsSttsCd | null {
@@ -68,6 +88,54 @@ export function ResponseListPage({ formId }: { formId: number }) {
   );
 
   const canReview = useCan(CAPABILITY.RESPONSE_REVIEW);
+
+  const view: ViewMode = searchParams.get(QUERY_VIEW) === "표" ? "표" : "목록";
+  const setView = (next: ViewMode) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "목록") params.delete(QUERY_VIEW);
+    else params.set(QUERY_VIEW, next);
+    const qs = params.toString();
+    const base = ROUTES.responses(formId);
+    // replace인 것은 보기 전환이 뒤로가기 기록을 쌓을 만한 이동이 아니기 때문이다
+    router.replace(qs ? `${base}?${qs}` : base, { scroll: false });
+  };
+
+  /*
+   * 문항 열은 폼 상세의 문항 구성에서 온다 — 응답 API는 문항 라벨을 주지 않는다
+   * (FormResponseDetail 주석: "문항 라벨은 여기 없다"). 순서도 폼이 정한 그대로 쓴다.
+   */
+  const allColumns = useMemo(() => answerColumns(form?.qitemCpstCn), [form?.qitemCpstCn]);
+
+  /*
+   * 끈 열만 기억한다(켠 열이 아니라). 기본이 "전부 켜짐"이라, 폼에 문항이 추가되면 그 열은
+   * 자동으로 보인다 — 켠 목록을 들고 있으면 새 문항이 조용히 빠진다.
+   */
+  const [hiddenQitemIds, setHiddenQitemIds] = useState<string[]>([]);
+  const visibleColumns = allColumns.filter((c) => !hiddenQitemIds.includes(c.qitemId));
+
+  const toggleColumn = (qitemId: string) =>
+    setHiddenQitemIds((prev) =>
+      prev.includes(qitemId)
+        ? prev.filter((id) => id !== qitemId)
+        : [...prev, qitemId],
+    );
+
+  /*
+   * 답은 표를 열 때만 불러온다 — 목록 보기에서는 쓰지 않는 값이라 미리 받을 이유가 없다.
+   * 왜 상세를 여러 번 부르는지는 useResponseAnswers 머리말에 있다.
+   */
+  const answerIds = useMemo(
+    () => responses.map((r) => r.formRspnsId),
+    [responses],
+  );
+  const {
+    answers,
+    status: answersStatus,
+    loadedCount,
+    total: answersTotal,
+    errorMessage: answersError,
+    reload: reloadAnswers,
+  } = useResponseAnswers(formId, answerIds, view === "표" && status === "ready");
 
   /*
    * 순번을 언제 보여줄 것인가 (ssccops-server #143).
@@ -194,7 +262,33 @@ export function ResponseListPage({ formId }: { formId: number }) {
           <div className="text-[14px] text-n500">
             {status === "ready" ? `${responses.length}건` : ""}
           </div>
+          {/*
+            보기 전환은 좁은 화면에서 감춘다 — 표가 데스크톱 전용이라(GridTable이 lg 미만에서
+            카드로 바뀌는 규칙과 부딪힌다) 누를 수 있는데 아무것도 안 바뀌는 버튼을 두지 않는다.
+          */}
+          <Segmented
+            options={VIEWS}
+            value={view}
+            onChange={setView}
+            className="hidden w-[120px] lg:flex"
+          />
         </div>
+
+        {/* 열 끄고 켜기 — 표를 볼 때만, 그리고 끌 문항이 있을 때만 */}
+        {view === "표" && allColumns.length > 0 && (
+          <div className="mb-[10px] hidden flex-wrap items-center gap-[6px] lg:flex">
+            <span className="text-[13px] text-n500">열</span>
+            {allColumns.map((c) => (
+              <Chip
+                key={c.qitemId}
+                active={!hiddenQitemIds.includes(c.qitemId)}
+                onClick={() => toggleColumn(c.qitemId)}
+              >
+                {c.label}
+              </Chip>
+            ))}
+          </div>
+        )}
 
         <div className="mb-[14px] text-[13px] leading-[1.7] text-n500">
           {/* 권한 없음이 먼저다 — 그 경우 어느 응답도 심사할 수 없다 */}
@@ -222,24 +316,75 @@ export function ResponseListPage({ formId }: { formId: number }) {
           />
         ) : (
           <Card className="px-5 pt-4 pb-[6px]">
-            <GridTable
-              columns={columns}
-              rows={status === "ready" ? responses : []}
-              rowKey={(r) => String(r.formRspnsId)}
-              dense
-              empty={
-                <EmptyState
-                  padding="sm"
-                  message={
-                    status === "loading"
-                      ? "불러오는 중…"
-                      : rspnsSttsCd
-                        ? "해당 상태의 응답이 없습니다."
-                        : "아직 제출된 응답이 없습니다."
-                  }
-                />
-              }
-            />
+            {/*
+              두 보기를 함께 렌더하고 한쪽을 감춘다 — GridTable이 카드 전환을 그렇게 하는 것과
+              같은 이유다. 화면 폭을 자바스크립트로 재어 한쪽만 그리면 서버 렌더 결과와 어긋나
+              첫 페인트에서 잘못된 쪽이 보인다. 좁은 화면에서는 언제나 목록이다.
+            */}
+            <div className={view === "표" ? "lg:hidden" : undefined}>
+              <GridTable
+                columns={columns}
+                rows={status === "ready" ? responses : []}
+                rowKey={(r) => String(r.formRspnsId)}
+                dense
+                empty={
+                  <EmptyState
+                    padding="sm"
+                    message={
+                      status === "loading"
+                        ? "불러오는 중…"
+                        : rspnsSttsCd
+                          ? "해당 상태의 응답이 없습니다."
+                          : "아직 제출된 응답이 없습니다."
+                    }
+                  />
+                }
+              />
+            </div>
+
+            {view === "표" && (
+              <div className="hidden lg:block">
+                {answersStatus === "error" ? (
+                  <EmptyState
+                    padding="sm"
+                    message={answersError || "응답 내용을 불러오지 못했습니다."}
+                    action={{ label: "다시 시도", onClick: reloadAnswers }}
+                  />
+                ) : responses.length === 0 ? (
+                  <EmptyState
+                    padding="sm"
+                    message={
+                      status === "loading"
+                        ? "불러오는 중…"
+                        : rspnsSttsCd
+                          ? "해당 상태의 응답이 없습니다."
+                          : "아직 제출된 응답이 없습니다."
+                    }
+                  />
+                ) : answersStatus === "loading" ? (
+                  /* 수십 건이면 눈에 띄게 걸린다 — 몇 건까지 왔는지 보여 준다 */
+                  <EmptyState
+                    padding="sm"
+                    message={`응답 내용을 불러오는 중… (${loadedCount}/${answersTotal})`}
+                  />
+                ) : (
+                  <>
+                    {/* 일부만 실패했으면 표는 그리되 무엇이 빠졌는지 말한다 */}
+                    {answersError && (
+                      <div className="mb-2 text-[13px] text-n500">{answersError}</div>
+                    )}
+                    <ResponseAnswerTable
+                      rows={responses}
+                      columns={visibleColumns}
+                      answers={answers}
+                      onRowClick={(id) =>
+                        router.push(ROUTES.responseDetail(formId, id))
+                      }
+                    />
+                  </>
+                )}
+              </div>
+            )}
           </Card>
         )}
       </PageBody>
