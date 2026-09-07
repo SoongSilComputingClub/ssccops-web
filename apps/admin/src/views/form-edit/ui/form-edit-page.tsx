@@ -47,8 +47,19 @@ import {
  * 조작을 초안 변경으로 옮기는 일만 한다 — 어떤 값이 언제 서버로 나가는지는 여기서 알 필요가
  * 없고, 알게 두면 JSX 사이에 저장 규칙이 흩어진다.
  *
- * 저장 버튼은 남겼지만 의미가 달라졌다. 이제는 "이걸 눌러야 저장된다"가 아니라 **"지금
- * 저장됐다는 것을 확인하고 싶다 · 실패했을 때 직접 다시 시도한다"** 를 위한 수단이다.
+ * **수동 저장 버튼은 없다** (ssccops#219). 이 버튼의 뜻은 두 번 바뀌었다 — 처음에는 "이걸
+ * 눌러야 저장된다"였고, 자동 저장(#63) 뒤에는 "지금 저장됐다는 것을 확인하고 · 실패했을 때
+ * 직접 다시 시도한다"로 남겨 두었다. 그런데 **버튼이 그 두 번째 뜻을 말하지 못해** 운영진은
+ * 누르지 않으면 안 되는 줄 알고 눌렀고, 눌러도 이미 저장돼 있어 혼란스러워했다(2026-09-07
+ * 피드백).
+ *
+ * 그 두 일은 이미 다른 곳에 있다 — **확인은 FormSaveStatusBar가, 재시도는 그 줄의 `다시 시도`가
+ * 한다.** 그래서 버튼을 걷었다. 상태 표시줄을 함께 지우면 안 되는 이유가 여기 있다: 그것이
+ * 없어지는 순간 자동 저장은 아무 신호도 남기지 않는 구조가 되고, 실패했을 때 사용자가 할 수
+ * 있는 일도 사라진다.
+ *
+ * `저장하고 상세로`는 남는다. 이름에 '저장'이 있지만 **수동 저장이 아니라 이동**이며, 나가기
+ * 전에 한 번 밀어 넣는 것은 화면 안 이동을 beforeunload가 잡아 주지 않기 때문이다.
  *
  * '저장하고 접수 시작'은 **명시적으로 누를 때만** 접수 상태를 건드린다. #8에서 이 버튼을 뺐던
  * 이유는 저장 본문에 formSttsCd를 실어 보내던 구조 때문이었다 — 자동 저장이 상태를 실어 나르면
@@ -150,7 +161,10 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
   const setCpst = (fn: (cpst: QitemCpstCn) => QitemCpstCn) =>
     setDraft((d) => ({ ...d, qitemCpstCn: fn(d.qitemCpstCn) }));
 
-  /** 지금 저장 — 보류 중이면 사유를 알린다. 조용히 아무 일도 일어나지 않으면 안 된다 */
+  /*
+   * 나가기 전에 밀어 넣는 저장 — 보류 중이면 사유를 알린다. 조용히 아무 일도 일어나지 않으면
+   * 안 된다. 수동 저장 버튼이 사라진 뒤로(ssccops#219) 이 함수를 부르는 곳은 `goDetail` 하나다.
+   */
   const saveNow = async (): Promise<number | null> => {
     if (issues.blockingMessage) {
       flash(issues.blockingMessage);
@@ -404,25 +418,22 @@ function FormEditContent({ editor }: { editor: FormEditor }) {
             </Card>
 
             <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  className="flex-1 py-[13px]"
-                  onClick={() => void saveNow()}
-                >
-                  지금 저장
-                </Button>
-                <Button className="flex-1 py-[13px]" onClick={() => void goDetail()}>
-                  저장하고 상세로
-                </Button>
-              </div>
+              {/*
+                수동 저장 버튼이 있던 자리다 (ssccops#219). 확인은 위쪽 상태 표시줄이, 실패
+                시 재시도는 그 줄의 `다시 시도`가 맡으므로 버튼으로 남길 이유가 없어졌다.
+                이것은 저장이 아니라 **이동**이며, 나가기 전 저장은 화면 안 이동을
+                beforeunload가 잡아 주지 않아서 붙어 있다.
+              */}
+              <Button className="py-[13px]" onClick={() => void goDetail()}>
+                저장하고 상세로
+              </Button>
               {/*
                 접수 상태를 바꾸는 유일한 버튼 — 자동 저장은 상태를 건드리지 않는다.
 
                 학술 폼(academicProgramId != null)에서는 감춘다 (#194). 학술 폼의 접수 시작은
                 "모집 관리"의 START_RECRUITMENT 이 담당하므로, 여기서 이 버튼을 누르는 것은
                 잘못된 경로다 (AGENTS.md: "버튼은 '지금 할 수 있는 전이' 하나만").
-                `지금 저장` · `저장하고 상세로` · `템플릿으로 저장` 은 학술 폼에서도 그대로 둔다.
+                `저장하고 상세로` · `템플릿으로 저장` 은 학술 폼에서도 그대로 둔다.
               */}
               {editor.academicProgramId == null && (
                 <Button
