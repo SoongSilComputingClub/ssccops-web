@@ -1,3 +1,4 @@
+import { isChoiceQitemType } from "@ssccops/form-renderer";
 import type {
   AnswerValue,
   Qitem,
@@ -87,3 +88,115 @@ export function answerText(rspnsCn: RspnsCn | null | undefined, qitemId: string)
  * qitem_ver를 내려주면 그때 이 자리에 판정을 더한다(그전까지 화면이 추측하면, 문항을 추가한
  * 폼에서 "응답자가 비워 뒀다"는 거짓말이 표에 박힌다).
  */
+
+/* ── 문항별 분포 (ssccops#224) ─────────────────────────────────────────────
+ *
+ * 표(#227)와 축이 또 다르다. 표는 응답 하나를 가로로 읽고 분포는 문항 하나를 세로로 읽는다 —
+ * 같은 `rspns_cn`을 보지만 묻는 것이 "이 사람이 뭐라 답했나"가 아니라 "이 선택지를 몇 명이
+ * 골랐나"다. 그래서 `answerText`를 쓸 수 없다: 그쪽은 다중선택을 쉼표로 이어 **한 칸의 문자열**로
+ * 만드는데, 세는 쪽은 이어 붙이기 전의 값 하나하나가 필요하다.
+ *
+ * 그래도 같은 파일에 두는 이유는 둘이 **같은 저장 형태를 읽는 규칙**이기 때문이다. 다중선택이
+ * 배열이라는 것, 빈 값인 key가 아예 저장되지 않는다는 것 — 그 사실을 아는 자리가 갈리면
+ * 표와 분포가 같은 폼에서 다른 말을 한다.
+ */
+
+/** 선택지 하나의 집계 */
+export interface DistributionBucket {
+  label: string;
+  count: number;
+  /**
+   * 폼이 지금 선언하고 있는 선택지인가.
+   *
+   * 운영자가 접수를 연 뒤 선택지를 지우면 **그 선택지를 고른 답은 그대로 남는다**. 버리면
+   * 합이 응답자 수와 어긋나고, 그 어긋남은 화면에서 설명되지 않는다 — 그래서 선언 목록 뒤에
+   * 이어 붙이고 지워진 것임을 표시한다.
+   */
+  declared: boolean;
+}
+
+/** 문항 하나의 집계 */
+export interface QitemDistribution {
+  qitemId: string;
+  label: string;
+  typeCd: QitemTypeCd;
+  /** 선택지별 집계를 그릴 수 있는 문항인가 */
+  choice: boolean;
+  /** 한 사람이 여럿 고를 수 있는가 — 비율의 합이 100%를 넘을 수 있다 */
+  multi: boolean;
+  /**
+   * 이 문항에 답한 사람 수 — **비율의 분모다.**
+   *
+   * 분모를 '전체 응답자'로 두지 않는 것이 이 설계의 요점이다. 서버는 빈 값인 key를 저장하지
+   * 않고 응답이 어느 문항 구성 버전으로 작성됐는지도 내려주지 않으므로(`qitem_ver`), 답이 없는
+   * 것이 **비워 둔 것인지 그때는 없던 문항인지 가릴 수 없다**(같은 파일 아래 경고). 전체를
+   * 분모로 삼으면 나중에 추가된 문항의 비율이 실제보다 낮게 나오고, 그것은 화면이 지어낸
+   * 거짓이다. '답한 사람 중 몇 %'는 어느 경우에도 참이다.
+   */
+  answeredCount: number;
+  /** 선택형만 채워진다. 선언 순서 그대로이고 **0인 선택지도 남는다** */
+  buckets: DistributionBucket[];
+}
+
+/**
+ * 한 응답의 답 하나를 **고른 값들**로 편다.
+ *
+ * 다중선택은 배열, 나머지는 문자열이다. 같은 값이 두 번 들어 있어도 한 사람은 한 번만 센다 —
+ * 묻는 것이 "몇 번 골렸나"가 아니라 "몇 명이 골랐나"이기 때문이다.
+ */
+function selectedValues(value: AnswerValue | undefined): string[] {
+  if (value === undefined || value === null) return [];
+  const list = Array.isArray(value) ? value : [value];
+  return [...new Set(list.filter((v) => v !== ""))];
+}
+
+/**
+ * 문항 구성과 응답 전량에서 문항별 집계를 만든다.
+ *
+ * **문항 순서는 폼이 정한 그대로다** — `answerColumns`와 같은 규칙이며, 표와 분포에서 "세 번째
+ * 문항"이 다른 것을 가리키지 않게 한다.
+ */
+export function answerDistributions(
+  qitemCpstCn: QitemCpstCn | null | undefined,
+  rspnsCns: readonly (RspnsCn | null | undefined)[],
+): QitemDistribution[] {
+  const qitems: Qitem[] = qitemCpstCn?.qitems ?? [];
+
+  return qitems.map((q) => {
+    const choice = isChoiceQitemType(q.qitemTypeCd);
+
+    /*
+     * 선언된 선택지를 0으로 먼저 깔아 둔다 — 아무도 고르지 않은 선택지가 목록에서 사라지면
+     * "그런 선택지가 없었다"로 읽힌다. Map이라 삽입 순서가 유지되고, 나중에 나타나는 선언 밖
+     * 값은 자연히 뒤에 붙는다.
+     */
+    const counts = new Map<string, number>();
+    if (choice) for (const option of q.optionList) counts.set(option, 0);
+
+    let answeredCount = 0;
+    for (const rspnsCn of rspnsCns) {
+      const selected = selectedValues(rspnsCn?.[q.qitemId]);
+      if (selected.length === 0) continue;
+      answeredCount += 1;
+      if (!choice) continue;
+      for (const value of selected) counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+
+    const declared = new Set(q.optionList);
+    return {
+      qitemId: q.qitemId,
+      label: q.qitemLblNm,
+      typeCd: q.qitemTypeCd,
+      choice,
+      multi: q.qitemTypeCd === "MULTI_CHOICE",
+      answeredCount,
+      buckets: choice
+        ? [...counts].map(([label, count]) => ({
+            label,
+            count,
+            declared: declared.has(label),
+          }))
+        : [],
+    };
+  });
+}
