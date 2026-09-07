@@ -8,6 +8,7 @@
  */
 import { useState } from "react";
 import { cn } from "@/shared/lib/cn";
+import { ThemeToggle } from "@/shared/ui";
 import { NAV_FOOT, type NavGroup, type NavItem } from "./nav";
 
 function NavRow({
@@ -123,6 +124,8 @@ export function NavPanel({
         {NAV_FOOT.items.map((item) => (
           <NavRow key={item.label} item={item} pathname={pathname} onNavigate={onNavigate} />
         ))}
+        {/* 사이드바와 드로어가 이 한 벌을 함께 쓴다 — 한쪽에만 두면 모바일에서 못 바꾼다 */}
+        <ThemeToggle className="mx-[18px] mt-2" />
       </div>
     </>
   );
