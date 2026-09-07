@@ -83,6 +83,8 @@ interface PublicFormResponse {
   qitemCpstCn: QitemCpstCn | null;
   alreadySubmitted: boolean | null;
   submittedAt: string | null;
+  mltplRspnsYn: boolean | null;
+  myResponseCount: number | null;
 }
 
 /**
@@ -115,6 +117,12 @@ export async function fetchPublicForm(formId: number): Promise<PublicForm> {
      */
     alreadySubmitted: res.alreadySubmitted === true,
     submittedAt: res.submittedAt,
+    /*
+     * 두 값 모두 **서버가 말할 때만** 그대로 받는다. 이 필드를 모르는 배포에서 `mltplRspnsYn`을
+     * true로 짐작하면 1건 폼인데 제출 뒤에도 작성 화면이 계속 떠 두 번째 제출이 409로 끊긴다.
+     */
+    mltplRspnsYn: res.mltplRspnsYn === true,
+    myResponseCount: res.myResponseCount ?? 0,
   };
 }
 

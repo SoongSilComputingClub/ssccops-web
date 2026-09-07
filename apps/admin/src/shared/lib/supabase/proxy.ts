@@ -2,7 +2,6 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { ROUTES } from "@/shared/config/routes";
 import { safeNextPath } from "@/shared/lib/next-path";
-import { isCrawlableFormPath, isSharePreviewCrawler } from "@/shared/lib/share-crawler";
 
 /*
  * 미들웨어가 가르는 것은 "인증됐는가" 하나다.
@@ -14,10 +13,12 @@ import { isCrawlableFormPath, isSharePreviewCrawler } from "@/shared/lib/share-c
  * /signup·/signup/complete는 더 이상 공개 경로가 아니다 — 인증은 필요하되 가입 완료 여부는
  * SignupGate가 가른다. 예전에는 PUBLIC_PATHS에 있어 미인증 사용자도 가입 화면을 통과했다.
  *
- * /f/{formId} 공개 폼도 마찬가지로 공개 경로가 아니다. 링크 자체는 여전히 누구에게나
- * 열려 있지만(주소를 아는 사람은 누구나 연다) 응답하려면 회원이어야 한다 — 미인증이면
- * /login?next=/f/{formId} 로 보내고, 가입까지 마친 뒤 원래 폼으로 되돌아온다.
- * 제출 완료 화면(/f/{formId}/done)도 같은 정책이라 /f/ 접두사째로 보호 대상이다.
+ * **공개 폼(`/f/{formId}`)은 이제 이 앱에 없다**(ssccops#214 — `apps/www`로 옮겼다). 그 이력을
+ * 남겨 두는 것은 같은 자리를 두 번 뒤집었기 때문이다: 처음에는 공개 경로였다가, 응답자를
+ * 회원으로 식별하기로 하면서(`form_rspns_hstry.mbr_id` NOT NULL) 보호 대상으로 되돌렸고
+ * — 미인증으로 들여보내면 답을 다 쓴 뒤 제출에서 튕겨 **작성한 답이 날아간다** — 그 뒤
+ * 공유 카드를 위해 크롤러 UA만 통과시키는 예외를 뒀다(ssccops-web#269). 옮겨 간 앱에는
+ * 리다이렉트하는 미들웨어가 없어 그 예외도 필요 없어졌고, 함께 지웠다.
  */
 /*
  * 미인증 요청을 /login으로 돌려보내지 않는 경로.
@@ -26,11 +27,6 @@ import { isCrawlableFormPath, isSharePreviewCrawler } from "@/shared/lib/share-c
  * 때문이다. 리다이렉트되면 generateMetadata가 아예 돌지 않아 OG 카드가 통째로 만들어지지
  * 않는다. 대신 그 화면은 제목 한 줄만 그리고 곧바로 상세로 보내므로, 인증 없이 열려 있어도
  * 새는 것이 없다 — 실제 내용이 있는 상세는 종전대로 여기서 지킨다.
- *
- * `/f`(공개 폼)는 **일부러 여기 넣지 않았다.** 넣으면 미인증 응답자가 폼까지 들어와 답을
- * 다 쓴 뒤 제출 시점에 로그인으로 튕겨 작성한 답이 날아간다(그래서 예전에 되돌린 자리다).
- * 대신 `/f`의 공유 카드는 **크롤러에게만** 길을 열어 해결했다 — 아래 updateSession 참고
- * (ssccops#269).
  */
 const PUBLIC_PATHS: string[] = [ROUTES.login, "/s"];
 
@@ -42,24 +38,6 @@ function isPublicPath(pathname: string): boolean {
 /** 세션 쿠키를 리프레시하고, 미인증 사용자를 보호 라우트에서 /login으로 리다이렉트한다 */
 export async function updateSession(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
-
-  /*
-   * 공유 카드 크롤러는 `/f/{formId}`를 그대로 통과시킨다 (ssccops#269).
-   *
-   * 크롤러는 미인증이라 리다이렉트되면 generateMetadata가 돌지 않아 카드가 통째로 만들어지지
-   * 않는다. `/f`를 PUBLIC_PATHS에 넣지 못하는 이유는 위에 적었다 — 그래서 사람은 종전대로
-   * 로그인으로 보내고 크롤러에게만 길을 연다.
-   *
-   * **getUser() 앞에서 끊는다.** 크롤러에는 갱신할 세션 쿠키가 없어 Supabase 왕복이 통째로
-   * 헛일이고, 그 왕복은 요청마다 붙는 비용이라 매처를 좁게 잡은 이유와 같은 자리다.
-   *
-   * 문항이 새지 않는다 — PublicFormPage는 "use client"이고 문항·응답은 브라우저 토큰으로
-   * 가져오므로 서버가 내보내는 HTML에는 제목·안내 문구뿐이다(그것은 이미 공개하기로 한
-   * 값이고, DRAFT 폼은 서버가 404를 낸다 · ssccops-server#247).
-   */
-  if (isCrawlableFormPath(pathname) && isSharePreviewCrawler(request.headers.get("user-agent"))) {
-    return NextResponse.next({ request });
-  }
 
   let response = NextResponse.next({ request });
 

@@ -87,9 +87,6 @@ export const ROUTES = {
 
   my: "/my",
 
-  publicForm: (formId: number) => `/f/${formId}`,
-  publicFormDone: (formId: number) => `/f/${formId}/done`,
-
   /*
    * 기획안 검토 (#164) — 학술국장이 남이 낸 기획안을 승인·수정요청·반려하는 화면.
    *
@@ -148,19 +145,20 @@ export const ROUTES = {
 /**
  * 공개 폼의 절대 URL — 운영진이 복사해 외부에 뿌리는 값이라 상대 경로로는 쓸 수 없다.
  *
+ * **`/f/{formId}`는 이제 이 앱의 화면이 아니다**(ssccops#214 — `apps/www`로 옮겼다). 그래서
+ * `ROUTES`에 두지 않는다: 저기 있으면 `router.push(ROUTES.publicForm(...))` 같은 내부 이동이
+ * 다시 쓰이고, 그 이동은 **이 앱에 없는 주소로 가 404가 된다**(실제로 옮기기 전 코드가 그랬다).
+ * 경로 조각을 이 함수 안에만 두면 절대 URL 말고는 만들 수 없다.
+ *
  * 예전에는 화면에 `https://form.sscc.kr`이 박혀 있었다. 배포 도메인이 그와 다르면 복사한
  * 링크가 그대로 죽는데, 화면에는 멀쩡한 주소로 보이므로 알아채기까지 오래 걸린다.
  * 그래서 오리진은 배포별 환경변수(NEXT_PUBLIC_PUBLIC_FORM_ORIGIN)로 뺐다.
  *
- * 값이 없으면 지금 접속한 오리진으로 떨어진다 — 공개 폼(/f/{formId})은 이 앱이 직접 서빙하므로
- * 로컬·프리뷰에서는 그 편이 맞고, 무엇보다 죽은 도메인을 복사해 주는 것보다 낫다.
+ * **이제 그 값을 반드시 채워야 한다.** 비어 있으면 지금 접속한 오리진(어드민)으로 떨어지는데,
+ * 옮긴 뒤로는 그 주소에 폼이 없다 — 값이 없을 때 `null`을 돌려주는 것은 죽은 링크를 복사해
+ * 주지 않기 위해서이고, 부르는 쪽이 링크 자리를 감추거나 안내로 대체한다.
  */
-export function publicFormUrl(formId: number): string {
-  const configured = process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN;
-  const origin = configured
-    ? configured.replace(/\/+$/, "")
-    : typeof window === "undefined"
-      ? ""
-      : window.location.origin;
-  return `${origin}${ROUTES.publicForm(formId)}`;
+export function publicFormUrl(formId: number): string | null {
+  const configured = process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN?.replace(/\/+$/, "");
+  return configured ? `${configured}/f/${formId}` : null;
 }

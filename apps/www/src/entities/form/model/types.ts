@@ -31,6 +31,48 @@ export interface PublicForm {
   alreadySubmitted: boolean;
   /** **마지막** 제출 일시(Asia/Seoul 오프셋 포함). 한 건도 내지 않았으면 null */
   submittedAt: string | null;
+  /**
+   * 이 폼이 한 사람의 **여러 건**을 받는가 (ssccops-server #143).
+   *
+   * 켜져 있으면 이미 낸 뒤에도 또 내는 것이 정상이라 `alreadySubmitted`가 계속 false이고,
+   * 화면은 제출 안내 대신 작성 폼을 그린다. 행사 신청은 1건이라 이 값을 보지 않는다 —
+   * 공개 폼(`/f/{formId}`)만 쓴다.
+   */
+  mltplRspnsYn: boolean;
+  /** 내가 이 폼에 **낸** 건수(임시저장 제외). 1건 폼에서는 0 아니면 1이다 */
+  myResponseCount: number;
+}
+
+/**
+ * 응답 상태 (ssccops-server `ResponseStatus`).
+ *
+ * `entities/application`의 `ApplicationStatus`와 **다른 축이다** — 저쪽은 참가자 상태까지
+ * 합친 '신청 결과'이고 이쪽은 폼 응답 한 건의 심사 상태다. 합치면 참가자 행이 없는 폼
+ * (행사에 딸리지 않은 공개 폼)에서 뜻이 무너진다.
+ */
+export type ResponseStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "CHANGES_REQUESTED"
+  | "ACCEPTED"
+  | "REJECTED";
+
+/**
+ * 내가 이 폼에 낸 응답 한 건 (GET /v1/forms/{formId}/responses/mine).
+ *
+ * 답 내용(`rspnsCn`)은 실리지 않는다 — 서버가 계약에서 뺐고, 이 목록이 답하는 것은 "몇 건을
+ * 어떤 상태로 냈는가"다.
+ */
+export interface MyFormResponse {
+  formRspnsId: number;
+  /** 응답 순번 — 모르는 배포에서는 null이고 화면이 표기를 뺀다 */
+  rspnsSeq: number | null;
+  rspnsSttsCd: ResponseStatus;
+  /** 제출 회차(재제출마다 오른다) — 순번과 다른 값이다 */
+  sbmsnSeq: number | null;
+  /** 작성 중(DRAFT)이면 null */
+  sbmsnDt: string | null;
+  mdfcnDt: string | null;
 }
 
 /** 작성 중(DRAFT) 응답 한 건 */
