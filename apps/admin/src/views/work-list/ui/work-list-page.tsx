@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { CAPABILITY } from "@/entities/session";
 import { workSttsTone, type WorkListItem } from "@/entities/work";
 import { useCan } from "@/features/auth";
@@ -12,6 +13,7 @@ import {
   Badge,
   Button,
   Card,
+  Chip,
   EmptyState,
   PageBody,
   PageHeader,
@@ -30,6 +32,9 @@ import {
 
 /** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
 const NO_WORK_MANAGE = "업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
+
+/** 칩 이름만으로는 무엇을 거르는지 알기 어렵다 — 담당이지 등록이 아니라는 것을 말한다 */
+const MINE_HINT = "담당자가 나인 업무만 봅니다 — 내가 등록했지만 남이 담당하는 건은 빠집니다";
 
 function WorkCardSkeleton() {
   return (
@@ -72,6 +77,11 @@ function WorkCard({ work, onClick }: { work: WorkListItem; onClick: () => void }
 
 export function WorkListPage() {
   const router = useRouter();
+  /*
+   * 이 화면의 첫 필터다 (ssccops#225). 지금까지 업무 목록에는 필터 UI가 없었고 상태·유형은
+   * 카드 배지로만 보였다 — 축이 늘면 하위 업무 목록처럼 칩 줄이 자란다.
+   */
+  const [mine, setMine] = useState(false);
   const {
     works,
     status,
@@ -81,7 +91,7 @@ export function WorkListPage() {
     loadingMore,
     loadMore,
     reload,
-  } = useWorkList();
+  } = useWorkList("", mine);
 
   /*
    * 조회(GET /v1/works)는 WORK_READ만 있어도 되지만(서버 #101), 등록은 여전히 WORK_MANAGE다 —
@@ -110,6 +120,14 @@ export function WorkListPage() {
         }}
       />
       <PageBody>
+        <div className="mb-[14px] flex items-center gap-[7px]">
+          <Chip active={mine} onClick={() => setMine((on) => !on)} title={MINE_HINT}>
+            내 업무
+          </Chip>
+          <div className="flex-1" />
+          {status === "ready" && <div className="text-[14px] text-n500">{totalCount}건</div>}
+        </div>
+
         {status === "loading" && (
           <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
             {[0, 1, 2, 3].map((i) => (
@@ -128,9 +146,13 @@ export function WorkListPage() {
         {status === "ready" &&
           (works.length === 0 ? (
             <EmptyState
-              message="등록된 업무가 없습니다."
-              /* 유도 버튼은 감춘다 — 권하면서 누르지 못하게 하는 모순이고, 사유는 헤더가 말한다 */
-              action={canManage ? { label: "+ 등록", onClick: openCreate } : undefined}
+              message={mine ? "담당하고 있는 업무가 없습니다." : "등록된 업무가 없습니다."}
+              /*
+                유도 버튼은 감춘다 — 권하면서 누르지 못하게 하는 모순이고, 사유는 헤더가 말한다.
+                필터를 켠 상태에서도 감추는 것은 지금 없는 것이 '내 담당'이지 업무 자체가
+                아니어서다 — 등록을 권하는 것이 답이 아니다.
+              */
+              action={canManage && !mine ? { label: "+ 등록", onClick: openCreate } : undefined}
             />
           ) : (
             <>

@@ -122,7 +122,19 @@ export interface SubWorkList {
   reload: () => void;
 }
 
-export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
+/*
+ * mine(내 업무)은 탭과 **다른 축**이라 인자를 따로 받는다 (ssccops#225). 탭에 아홉 번째
+ * 값으로 넣으면 단일 선택이라 `내 업무`를 고르는 순간 `지연`이 풀리는데, 담당 여부와
+ * 상태·마감은 겹쳐 걸려야 하는 조건이다.
+ *
+ * tab·keyword와 같이 requestKey에 들어간다 — 조건이 바뀌면 목록이 처음부터 다시 와야 하고,
+ * 이어 받기도 같은 값을 보내야 두 조건의 페이지가 한 목록에 섞이지 않는다.
+ */
+export function useSubWorkList(
+  tab: SubWorkListTab,
+  keyword = "",
+  mine = false,
+): SubWorkList {
   const [loaded, setLoaded] = useState<LoadedSubWorkList | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -133,7 +145,7 @@ export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
   const aliveRef = useRef(true);
   const inFlightRef = useRef(false);
 
-  const requestKey = `${tab}:${keyword}:${reloadKey}`;
+  const requestKey = `${tab}:${keyword}:${mine}:${reloadKey}`;
 
   useEffect(() => {
     loadedRef.current = loaded;
@@ -149,7 +161,7 @@ export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
   useEffect(() => {
     let alive = true;
 
-    fetchSubWorks({ ...toFilter(tab), keyword })
+    fetchSubWorks({ ...toFilter(tab), keyword, mine })
       .then((page) => {
         if (!alive) return;
         setLoaded({
@@ -178,7 +190,7 @@ export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
     return () => {
       alive = false;
     };
-  }, [requestKey, tab, keyword]);
+  }, [requestKey, tab, keyword, mine]);
 
   const loadMore = useCallback(async (): Promise<string> => {
     const current = loadedRef.current;
@@ -190,6 +202,7 @@ export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
       const page = await fetchSubWorks({
         ...toFilter(tab),
         keyword,
+        mine,
         cursor: current.nextCursor,
       });
       if (!aliveRef.current) return "";
@@ -217,7 +230,7 @@ export function useSubWorkList(tab: SubWorkListTab, keyword = ""): SubWorkList {
       inFlightRef.current = false;
       if (aliveRef.current) setLoadingMore(false);
     }
-  }, [tab, keyword]);
+  }, [tab, keyword, mine]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 

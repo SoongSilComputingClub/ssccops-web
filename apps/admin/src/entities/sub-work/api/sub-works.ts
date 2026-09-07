@@ -290,6 +290,14 @@ export interface SubWorkListFilter {
    * 규칙**이다 — 회의 안건 추가가 두 목록을 나란히 놓고 같은 검색어를 양쪽에 보낸다.
    */
   keyword?: string | null;
+  /**
+   * 담당자가 나인 건만 (ssccops#225). `true`만 의미가 있다 — 서버가 생략·`false`를 필터
+   * 없음으로 본다.
+   *
+   * **대상 회원을 화면이 실어 보내지 않는다.** '나'는 서버가 인증 주체에서 정하므로
+   * (`ssccops-server#268`) 여기서는 필터를 켤지만 말한다 — 식별자를 보낼 자리가 애초에 없다.
+   */
+  mine?: boolean | null;
   /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
   cursor?: string | null;
   /** 1~100 · 서버 기본 20 */
@@ -329,6 +337,7 @@ export async function fetchSubWorks(
   if (filter.isReviewStale) query.set("isReviewStale", "true");
   if (filter.dueBefore) query.set("dueBefore", filter.dueBefore);
   if (filter.keyword) query.set("keyword", filter.keyword);
+  if (filter.mine) query.set("mine", "true");
   if (filter.cursor) query.set("cursor", filter.cursor);
   if (filter.size != null) query.set("size", String(filter.size));
 
