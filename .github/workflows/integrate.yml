@@ -15,13 +15,18 @@
 #
 #   analyze(SonarQube)는 build를 막지 않는다. 코드 품질 리포트가 없다고 해서
 #   "이 브랜치가 빌드되는가"라는 판정까지 함께 막을 이유가 없다.
+#   **Quality Gate가 빨개도 막지 않는다**(ssccops#231) — 기존 코드의 지적을 다 갚기 전에
+#   잠그면 아무것도 머지할 수 없다. 숫자를 보고 기준을 정한 뒤에 잠근다.
 #
 # GitHub Secrets (없으면 analyze는 건너뛴다):
 #   - SONAR_TOKEN        : SonarQube Token
 #   - SONAR_HOST_URL     : SonarQube Server URL (e.g., https://sonar.example.com)
 #
+# SonarQube 분석 설정은 저장소 루트의 sonar-project.properties 에 있다 — 프로젝트 키·분석
+# 대상·제외 목록은 배포마다 달라지는 값이 아니라 저장소의 속성이다. 예전에는 키를
+# vars.SONAR_PROJECT 로 받았는데 그 변수가 등록된 적이 없어 빈 키로 돌 뻔했다.
+#
 # GitHub Variables:
-#   - SONAR_PROJECT              : SonarQube Project Key
 #   - NEXT_PUBLIC_API_BASE_URL   : ssccops-server 주소 (빌드 검증용, 없어도 빌드는 통과)
 #   - NEXT_PUBLIC_SUPABASE_URL   : Supabase 프로젝트 URL
 #   - NEXT_PUBLIC_SUPABASE_ANON_KEY : Supabase anon key
@@ -187,26 +192,26 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
+      # 커버리지를 **원래 자리로** 되돌려 받는다(`apps/*/coverage/`). 아티팩트 안의 구조를
+      # sonar 설정에 옮겨 적으면 업로드 경로를 고치는 날 그쪽이 조용히 어긋난다.
       - name: Download test results
         if: env.SONAR_TOKEN != ''
         uses: actions/download-artifact@v4
         continue-on-error: true
         with:
           name: test-results
-          path: coverage/
+          path: .
 
-      # v6부터 args를 Bash가 아니라 액션이 직접 토큰으로 나눈다(GHSA-5xq9-5g24-4g6f, #254).
-      # 값에 공백이 있는 인자는 "-Dsonar.x=a b"처럼 토큰째 감싼다 — 값만 감싸면 갈라진다.
+      # 분석 설정은 전부 저장소 루트의 `sonar-project.properties`에 있다 — 스캐너가 그 파일을
+      # 자동으로 읽는다. 여기에는 CI 실행마다 달라지는 것(토큰·호스트)만 남긴다.
+      # 예전에는 `-Dsonar.projectKey=${{ vars.SONAR_PROJECT }}`였는데 **그 변수가 등록된 적이
+      # 없어** 빈 키로 돌 뻔했다. 없으면 실패하는 것이 아니라 조용히 비는 종류다.
+      #
+      # v8은 GPG 서명 검증이 기본값이다(v7까지는 건너뛰었다). 스캐너 CLI를 내려받는 경로가
+      # 막히면 여기서 실패하므로, 실패하면 네트워크·프록시부터 본다.
       - name: SonarQube Scan
         if: env.SONAR_TOKEN != ''
-        uses: SonarSource/sonarqube-scan-action@v6
-        with:
-          args: >
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT }}
-            -Dsonar.sources=apps/admin/src,apps/www/src,packages/form-renderer/src
-            -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/*.test.ts,**/*.test.tsx
-            -Dsonar.typescript.tsconfigPath=apps/admin/tsconfig.json,apps/www/tsconfig.json,packages/form-renderer/tsconfig.json
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+        uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
 
       - name: SonarQube Quality Gate + PR Comment (Community)
         if: env.SONAR_TOKEN != '' && github.event_name == 'pull_request'
@@ -322,12 +327,18 @@ jobs:
             -f body="$BODY"
 
           # ------------------------------------------------------------------
-          # Fail workflow if Quality Gate failed
+          # Quality Gate 는 **막지 않는다** (ssccops#231)
+          #
+          # 처음 돌리면 기존 코드의 지적이 수백~수천 건 나온다. 그 상태로 게이트를 잠그면
+          # 아무것도 머지할 수 없다 — 먼저 숫자를 보고, 기준을 정한 뒤에 잠근다.
+          # 여기서 exit 1 을 하면 analyze job 이 빨개져 그 판단을 건너뛰고 잠그는 것과 같다.
+          #
+          # 잠글 준비가 되면 아래 주석을 풀고 AGENTS.md 의 서술도 함께 바꾼다.
           # ------------------------------------------------------------------
           if [ "$QG_STATUS" != "OK" ]; then
-            echo "Quality Gate FAILED"
-            exit 1
+            echo "::warning::Quality Gate FAILED — 지금은 막지 않는다 (ssccops#231)"
           fi
+          # if [ "$QG_STATUS" != "OK" ]; then exit 1; fi
 
   # ==========================================================================
   # Build Job - 프로덕션 빌드 검증

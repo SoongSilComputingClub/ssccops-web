@@ -42,8 +42,18 @@ pnpm build
   `tsc`가 `Cannot find name 'PageProps'`로 죽는다(`integrate.yml`의 lint job과 같은 순서다).
 - **테스트 러너는 아직 없다.** CI의 test job은 `src` 아래에 `*.test.*`·`*.spec.*`가 있을 때만
   돈다. 테스트를 처음 추가하는 사람이 러너와 `test:coverage` 스크립트를 함께 붙인다.
-- SonarQube 분석은 토큰이 있을 때만 돌고 build를 막지 않는다. Prettier 단계는 없다(의존성도
-  설정 파일도 없다 — 도입하려면 둘을 먼저 추가하고 워크플로에 단계를 되살린다).
+- **SonarQube 분석은 아무것도 막지 않는다** — 토큰이 있을 때만 돌고, build와 별도 job이며,
+  **Quality Gate가 빨개도 실패시키지 않는다**(ssccops#231). 기존 코드의 지적을 다 갚기 전에
+  잠그면 아무것도 머지할 수 없어서다 — 숫자를 먼저 보고 기준을 정한 뒤에 잠근다. 잠그는
+  자리는 `integrate.yml`의 Quality Gate 단계에 주석으로 표시해 두었다.
+  - 설정은 **저장소 루트의 `sonar-project.properties`**에 있고 워크플로에는 토큰·호스트만
+    남는다. 프로젝트 키를 `vars.SONAR_PROJECT`로 받던 때가 있었는데 **그 변수가 등록된 적이
+    없어 빈 키로 돌 뻔했다**(없으면 실패하지 않고 조용히 빈다).
+  - **`sonar.sources`에 앱을 나열하지 않는다.** 루트(`.`) 전체를 대상으로 두고 제외 목록만
+    관리한다 — 나열하던 시절 `apps/lms`가 통째로 빠져 있었다(ssccops#190). 검증 명령을 전부
+    루트 turbo로 도는 것과 같은 이유다.
+- Prettier 단계는 없다(의존성도 설정 파일도 없다 — 도입하려면 둘을 먼저 추가하고 워크플로에
+  단계를 되살린다).
 
 ## 아키텍처 — FSD
 
