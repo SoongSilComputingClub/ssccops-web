@@ -37,7 +37,7 @@ export function RegistrationNotice({
       className="mb-4 rounded-2xl border border-amber bg-amber-soft p-[18px]"
     >
       <div className="flex flex-wrap items-start gap-[10px] lg:flex-nowrap">
-        <div className="mt-[3px] flex size-[18px] flex-none items-center justify-center rounded-full bg-amber text-[12px] font-bold text-white">
+        <div className="mt-[3px] flex size-[18px] flex-none items-center justify-center rounded-full bg-amber text-[12px] font-bold text-on-solid">
           !
         </div>
         <div className="min-w-0 flex-1">

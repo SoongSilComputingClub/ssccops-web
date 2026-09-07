@@ -164,9 +164,9 @@ interface RecruitmentDetailProps {
 function DetailSkeleton() {
   return (
     <Card className="animate-pulse">
-      <div className="h-[22px] w-[96px] rounded-full bg-black/5" />
-      <div className="mt-3 h-[26px] w-3/5 rounded bg-black/5" />
-      <div className="mt-4 h-[120px] w-full rounded bg-black/5" />
+      <div className="h-[22px] w-[96px] rounded-full bg-fill" />
+      <div className="mt-3 h-[26px] w-3/5 rounded bg-fill" />
+      <div className="mt-4 h-[120px] w-full rounded bg-fill" />
     </Card>
   );
 }
@@ -449,7 +449,7 @@ function ApplicantsCard({
           padding="sm"
         />
       ) : (
-        <div className="flex flex-col divide-y divide-black/6">
+        <div className="flex flex-col divide-y divide-hairline">
           {applications.map((app) => {
             const choice = choiceOf(app);
             const badge = RSPNS_STTS_BADGE[app.rspnsSttsCd];
@@ -527,7 +527,7 @@ function ApplicantsCard({
         </Button>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-black/6 pt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-hairline pt-4">
         {/*
           '확정'이 아니라 '저장'이다 (#209). 서버의 선발이 멱등해져(서버 #198) 언제든 다시
           눌러 값을 고칠 수 있는데, 문구가 "확정"이면 되돌릴 수 없는 조작으로 읽힌다 —
@@ -648,8 +648,8 @@ export function RecruitmentDetail({
           />
           {appStatus === "loading" ? (
             <Card className="animate-pulse">
-              <div className="h-[18px] w-[100px] rounded bg-black/5" />
-              <div className="mt-4 h-[160px] w-full rounded bg-black/5" />
+              <div className="h-[18px] w-[100px] rounded bg-fill" />
+              <div className="mt-4 h-[160px] w-full rounded bg-fill" />
             </Card>
           ) : (
             <ApplicantsCard

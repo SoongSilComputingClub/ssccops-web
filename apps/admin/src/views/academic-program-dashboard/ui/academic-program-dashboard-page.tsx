@@ -45,14 +45,14 @@ function DashboardSkeleton() {
       <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-3">
         {[0, 1, 2].map((i) => (
           <Card key={i} className="animate-pulse">
-            <div className="h-[16px] w-2/5 rounded bg-black/5" />
-            <div className="mt-3 h-[28px] w-1/4 rounded bg-black/5" />
+            <div className="h-[16px] w-2/5 rounded bg-fill" />
+            <div className="mt-3 h-[28px] w-1/4 rounded bg-fill" />
           </Card>
         ))}
       </div>
       <Card className="animate-pulse">
-        <div className="h-[20px] w-1/5 rounded bg-black/5" />
-        <div className="mt-3 h-[120px] w-full rounded bg-black/5" />
+        <div className="h-[20px] w-1/5 rounded bg-fill" />
+        <div className="mt-3 h-[120px] w-full rounded bg-fill" />
       </Card>
     </div>
   );

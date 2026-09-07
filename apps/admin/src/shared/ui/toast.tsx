@@ -32,7 +32,7 @@ export function ToastViewport() {
   return (
     <div
       key={seq}
-      className="fixed bottom-7 left-1/2 z-[95] -translate-x-1/2 animate-fade-in rounded-[14px] bg-ink px-[18px] py-3 text-[15px] whitespace-nowrap text-white"
+      className="fixed bottom-7 left-1/2 z-[95] -translate-x-1/2 animate-fade-in rounded-[14px] bg-ink px-[18px] py-3 text-[15px] whitespace-nowrap text-on-solid"
     >
       {message}
     </div>

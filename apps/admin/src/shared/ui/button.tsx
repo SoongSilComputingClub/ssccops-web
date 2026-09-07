@@ -13,14 +13,14 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANT: Record<Variant, string> = {
   primary:
-    "bg-accent border border-accent text-white font-semibold hover:bg-accent-strong hover:border-accent-strong",
+    "bg-accent border border-accent text-on-solid font-semibold hover:bg-accent-strong hover:border-accent-strong",
   ghost:
     "border border-line-strong text-n300 hover:border-accent hover:text-accent",
   "ghost-danger":
     "border border-line-strong text-n300 hover:border-danger hover:text-danger",
   /** 되돌릴 수 없는 삭제처럼 늘 위험을 드러내야 하는 자리 — hover에서만 붉어지는 ghost-danger와 다르다 */
   danger:
-    "bg-danger border border-danger text-white font-semibold hover:bg-danger-strong hover:border-danger-strong",
+    "bg-danger border border-danger text-on-solid font-semibold hover:bg-danger-strong hover:border-danger-strong",
 };
 
 export function Button({

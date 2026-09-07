@@ -77,7 +77,7 @@ function QitemPreview({
 }) {
   const isChoice = isChoiceQitemType(qitem.qitemTypeCd);
   return (
-    <div className="border-t border-black/5 py-3 first:border-t-0">
+    <div className="border-t border-hairline py-3 first:border-t-0">
       <div className="text-[16px] font-medium">
         {qitem.qitemLblNm || "(제목 없음)"}
         {qitem.reqYn && <span className="ml-1 text-accent">*</span>}
@@ -129,7 +129,7 @@ function QitemPreview({
       ) : (
         <div
           className={cn(
-            "mt-2 rounded-[10px] border border-line bg-[#f9fafb] px-3 py-2 text-[14px] text-n500",
+            "mt-2 rounded-[10px] border border-line bg-subtle px-3 py-2 text-[14px] text-n500",
             qitem.qitemTypeCd === "LONG_TEXT" && "min-h-[56px]",
           )}
         >
@@ -418,7 +418,7 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
               <SectionLabel className="mb-3">공개 링크</SectionLabel>
               {publicUrl ? (
                 <>
-                  <div className="rounded-[10px] bg-[#f9fafb] p-3 text-[14px] break-all text-accent">
+                  <div className="rounded-[10px] bg-subtle p-3 text-[14px] break-all text-accent">
                     {publicUrl}
                   </div>
                   <div className="mt-3 flex gap-2">
@@ -441,7 +441,7 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                  * 주는 것보다 무엇이 빠졌는지 말하는 편이 낫다 — 운영자가 고칠 수는 없지만
                  * 이 문구가 없으면 복사한 링크가 왜 안 열리는지 아무도 모른다.
                  */
-                <div className="rounded-[10px] bg-[#f9fafb] p-3 text-[13px] text-n500">
+                <div className="rounded-[10px] bg-subtle p-3 text-[13px] text-n500">
                   공개 링크 주소가 설정되지 않아 링크를 만들 수 없습니다 — 배포 설정을
                   확인해주세요.
                 </div>
@@ -477,7 +477,7 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 </Chip>
               ))}
             </div>
-            <div className="rounded-[10px] bg-[#f9fafb] p-3">
+            <div className="rounded-[10px] bg-subtle p-3">
               <div className="text-[12.5px] text-n500">
                 {page + 1} / {pages.length} 페이지
               </div>

@@ -409,7 +409,7 @@ export function OperationCreatePage({
                 onClick={() => setOperTypeCd(cd)}
                 className={
                   operTypeCd === cd
-                    ? "cursor-pointer rounded-[12px] bg-accent/8 p-[14px] shadow-[inset_0_0_0_1px_#3182f6]"
+                    ? "cursor-pointer rounded-[12px] bg-accent/8 p-[14px] shadow-[inset_0_0_0_1px_var(--color-accent)]"
                     : "cursor-pointer rounded-[12px] border border-line p-[14px] hover:border-accent"
                 }
               >

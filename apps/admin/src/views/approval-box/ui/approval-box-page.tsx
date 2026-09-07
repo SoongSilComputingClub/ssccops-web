@@ -45,9 +45,9 @@ function ApprovalBoxSkeleton() {
     <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
       {[0, 1, 2, 3].map((i) => (
         <Card key={i} className="animate-pulse">
-          <div className="h-[20px] w-2/5 rounded bg-black/5" />
-          <div className="mt-3 h-[24px] w-3/5 rounded bg-black/5" />
-          <div className="mt-4 h-[16px] w-full rounded bg-black/5" />
+          <div className="h-[20px] w-2/5 rounded bg-fill" />
+          <div className="mt-3 h-[24px] w-3/5 rounded bg-fill" />
+          <div className="mt-4 h-[16px] w-full rounded bg-fill" />
         </Card>
       ))}
     </div>
@@ -156,7 +156,7 @@ export function ApprovalBoxPage() {
                   <Card
                     key={item.subWorkId}
                     id={`approval-card-${item.subWorkId}`}
-                    className={highlighted ? "shadow-[0_0_0_2px_#1b64da]" : undefined}
+                    className={highlighted ? "shadow-[0_0_0_2px_var(--color-accent-strong)]" : undefined}
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge tone={aprvSttsTone(item.approvalStatus)}>

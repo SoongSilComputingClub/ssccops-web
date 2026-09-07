@@ -76,12 +76,12 @@ function SubWorkTableSkeleton() {
   return (
     <Card className="animate-pulse px-5 pt-4 pb-[6px]">
       {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className="flex items-center gap-3 border-t border-black/[.06] py-3 first:border-t-0">
-          <div className="h-[16px] w-1/4 rounded bg-black/5" />
-          <div className="h-[16px] w-1/6 rounded bg-black/5" />
-          <div className="h-[16px] w-1/6 rounded bg-black/5" />
-          <div className="h-[16px] w-1/6 rounded bg-black/5" />
-          <div className="h-[16px] w-1/6 rounded bg-black/5" />
+        <div key={i} className="flex items-center gap-3 border-t border-hairline py-3 first:border-t-0">
+          <div className="h-[16px] w-1/4 rounded bg-fill" />
+          <div className="h-[16px] w-1/6 rounded bg-fill" />
+          <div className="h-[16px] w-1/6 rounded bg-fill" />
+          <div className="h-[16px] w-1/6 rounded bg-fill" />
+          <div className="h-[16px] w-1/6 rounded bg-fill" />
         </div>
       ))}
     </Card>
@@ -208,7 +208,7 @@ export function SubWorkListPage() {
             탭과 다른 축이라 구분선을 두고 뒤에 놓는다 — 나란히 두면 아홉 번째 탭으로 읽혀
             하나를 고르면 앞의 것이 풀리는 줄 안다.
           */}
-          <span aria-hidden className="mx-[3px] h-[16px] w-px bg-black/10" />
+          <span aria-hidden className="mx-[3px] h-[16px] w-px bg-fill-strong" />
           <Chip active={mine} onClick={() => setMine((on) => !on)} title={MINE_HINT}>
             내 업무
           </Chip>

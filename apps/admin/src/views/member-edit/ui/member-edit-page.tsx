@@ -101,9 +101,9 @@ function MemberEditForm({ mbrId }: { mbrId: number }) {
         <PageBody>
           {editor.status === "loading" && (
             <Card className="animate-pulse">
-              <div className="h-[30px] w-[180px] rounded bg-black/5" />
-              <div className="mt-3 h-[18px] w-[240px] rounded bg-black/5" />
-              <div className="mt-5 h-[120px] w-full rounded bg-black/5" />
+              <div className="h-[30px] w-[180px] rounded bg-fill" />
+              <div className="mt-3 h-[18px] w-[240px] rounded bg-fill" />
+              <div className="mt-5 h-[120px] w-full rounded bg-fill" />
             </Card>
           )}
           {editor.status === "not-found" && (

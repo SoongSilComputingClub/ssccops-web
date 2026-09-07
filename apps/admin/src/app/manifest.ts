@@ -34,7 +34,13 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     scope: "/",
     display: "standalone",
-    // 화면 바탕(--color-bg). 앱이 뜨는 동안 보이는 색이라 본문과 같아야 이질감이 없다
+    /*
+     * 화면 바탕(--color-bg). 앱이 뜨는 동안 보이는 색이라 본문과 같아야 이질감이 없다.
+     *
+     * **다크모드로 갈리지 않는다** (#226) — 매니페스트는 설치 시점에 한 번 읽히는 정적
+     * 값이라 미디어 쿼리를 담을 수 없다. 그래서 여기는 라이트 값으로 두고, 브라우저로
+     * 열었을 때의 주소창 색만 `layout.tsx`의 themeColor가 테마별로 가른다.
+     */
     background_color: "#f2f4f6",
     // 상단 바가 bg-surface(흰색)라 상태 표시줄도 같은 색으로 이어 붙인다
     theme_color: "#ffffff",

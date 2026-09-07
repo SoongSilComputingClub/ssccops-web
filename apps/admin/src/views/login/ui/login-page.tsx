@@ -101,10 +101,10 @@ export function LoginPage() {
         disabled={pending}
         className="w-full cursor-pointer rounded-[14px] border border-accent bg-accent px-[18px] py-[15px] text-left transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-accent"
       >
-        <div className="text-[15px] font-semibold text-white">
+        <div className="text-[15px] font-semibold text-on-solid">
           {pending ? "Google로 이동 중…" : "Google로 계속하기"}
         </div>
-        <div className="mt-[2px] text-[13.5px] text-white/72">
+        <div className="mt-[2px] text-[13.5px] text-on-solid/72">
           Google 계정으로 로그인 또는 회원 가입
         </div>
       </button>

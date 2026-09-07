@@ -42,7 +42,7 @@ const COMPONENTS: Components = {
   ul: (props) => <ul className="my-[3px] list-disc pl-[18px]" {...props} />,
   ol: (props) => <ol className="my-[3px] list-decimal pl-[18px]" {...props} />,
   li: (props) => <li className="whitespace-pre-line" {...props} />,
-  code: (props) => <code className="rounded-[4px] bg-black/5 px-[4px] py-[1px]" {...props} />,
+  code: (props) => <code className="rounded-[4px] bg-fill px-[4px] py-[1px]" {...props} />,
   /*
    * 제목은 안내 문구 안에서 크기로 튀지 않게 굵기만 준다. 문항 카드 안에 h1이 들어가면
    * 질문 문구보다 커져 무엇이 질문인지 흐려진다.

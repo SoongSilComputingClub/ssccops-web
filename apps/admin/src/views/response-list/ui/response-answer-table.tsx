@@ -74,7 +74,7 @@ export function ResponseAnswerTable({
           {rows.map((r) => {
             const rspnsCn = answers[r.formRspnsId];
             return (
-              <tr key={r.formRspnsId} className="border-t border-[rgba(0,0,0,.06)]">
+              <tr key={r.formRspnsId} className="border-t border-hairline">
                 {/*
                   이름과 학번은 상세로 가는 자리다 — 목록의 이름 열이 하던 일을 표에서도 유지한다
                   (심사 흐름이 끊기지 않는다). 답 칸은 펼침이 걸려 있어 이동에 쓰지 않는다.

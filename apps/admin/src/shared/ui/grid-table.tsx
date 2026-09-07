@@ -27,7 +27,7 @@ export interface GridColumn<T> {
 
 /**
  * 원본 디자인의 CSS-grid 테이블 관례:
- * 헤더 13px n500 · 행 구분 rgba(0,0,0,.06) 상단 보더 · 셀 15px, truncate
+ * 헤더 13px n500 · 행 구분 hairline 상단 보더 · 셀 15px, truncate
  *
  * lg(1024px) 미만에서는 같은 데이터를 카드 목록으로 그린다 (#85).
  * CSS만으로 전환할 수 없어 두 벌을 그리고 `hidden`으로 가린다 — 행이 `contents`라
@@ -78,7 +78,7 @@ export function GridTable<T>({
                 key={col.key}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 className={cn(
-                  "min-w-0 overflow-hidden border-t border-black/5 text-[15px] text-ellipsis whitespace-nowrap",
+                  "min-w-0 overflow-hidden border-t border-hairline text-[15px] text-ellipsis whitespace-nowrap",
                   dense ? "py-3" : "py-[13px]",
                   col.align === "right" && "text-right",
                   onRowClick && "cursor-pointer",

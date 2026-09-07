@@ -149,7 +149,7 @@ export function NextStepGuide({
   }
 
   return (
-    <div className={cn("rounded-[10px] bg-black/3 px-3 py-[10px] text-[13.5px]", className)}>
+    <div className={cn("rounded-[10px] bg-fill-soft px-3 py-[10px] text-[13.5px]", className)}>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span>
           <span className="text-n500">지금</span>{" "}

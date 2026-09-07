@@ -24,7 +24,7 @@ import { Button, Card, SectionLabel, flash } from "@/shared/ui";
 /** 안내표의 구분 색 — '이관 안 함'은 지킬 규칙이 아니라 사실이라 가장 옅게 둔다 */
 const REQ_COLOR: Record<string, string> = {
   필수: "text-accent",
-  조건부: "text-[#f59f00]",
+  조건부: "text-amber",
   선택: "text-n500",
   "이관 안 함": "text-n500",
 };
@@ -144,18 +144,18 @@ export function FileStep({ wizard }: { wizard: MemberImportWizard }) {
           ))}
           {CSV_SPEC_ROWS.map((r) => (
             <div key={r.col} className="contents">
-              <div className="border-t border-black/5 py-[10px] text-[14.5px] font-medium">
+              <div className="border-t border-hairline py-[10px] text-[14.5px] font-medium">
                 {r.col}
               </div>
               <div
-                className={`border-t border-black/5 py-[10px] text-[14px] ${REQ_COLOR[r.req] ?? "text-n500"}`}
+                className={`border-t border-hairline py-[10px] text-[14px] ${REQ_COLOR[r.req] ?? "text-n500"}`}
               >
                 {r.req}
               </div>
-              <div className="border-t border-black/5 py-[10px] text-[14px] text-n400">
+              <div className="border-t border-hairline py-[10px] text-[14px] text-n400">
                 {r.desc || "—"}
               </div>
-              <div className="border-t border-black/5 py-[10px] font-mono text-[13px] text-n400">
+              <div className="border-t border-hairline py-[10px] font-mono text-[13px] text-n400">
                 {r.ex}
               </div>
             </div>
@@ -165,7 +165,7 @@ export function FileStep({ wizard }: { wizard: MemberImportWizard }) {
         <div className="mt-3 text-[13.5px] text-n500">
           헤더 이름이 달라도 다음 단계에서 직접 매핑할 수 있습니다. 컬럼 순서는 상관없습니다.
         </div>
-        <pre className="mt-3 overflow-x-auto rounded-[10px] bg-[#f9fafb] p-3 font-mono text-[12.5px] leading-[1.9] text-n300">
+        <pre className="mt-3 overflow-x-auto rounded-[10px] bg-subtle p-3 font-mono text-[12.5px] leading-[1.9] text-n300">
           {CSV_SAMPLE}
         </pre>
       </Card>

@@ -121,9 +121,9 @@ function MemberDetailView({ mbrId }: { mbrId: number }) {
         <PageBody>
           {status === "loading" && (
             <Card className="animate-pulse">
-              <div className="h-[30px] w-[180px] rounded bg-black/5" />
-              <div className="mt-3 h-[18px] w-[240px] rounded bg-black/5" />
-              <div className="mt-5 h-[120px] w-full rounded bg-black/5" />
+              <div className="h-[30px] w-[180px] rounded bg-fill" />
+              <div className="mt-3 h-[18px] w-[240px] rounded bg-fill" />
+              <div className="mt-5 h-[120px] w-full rounded bg-fill" />
             </Card>
           )}
           {status === "not-found" && (
@@ -407,8 +407,8 @@ function MemberRoleCard({
         </>
       ) : roles.status === "loading" ? (
         <div className="flex flex-col gap-[9px]">
-          <div className="h-[46px] animate-pulse rounded-[12px] bg-black/5" />
-          <div className="h-[46px] animate-pulse rounded-[12px] bg-black/5" />
+          <div className="h-[46px] animate-pulse rounded-[12px] bg-fill" />
+          <div className="h-[46px] animate-pulse rounded-[12px] bg-fill" />
         </div>
       ) : roles.status === "error" ? (
         <EmptyState
@@ -691,7 +691,7 @@ function ChangeWarningPanel({
         들어가지 못해 다음 줄로 넘어간다. lg 이상에서는 w-auto라 예전 자리 그대로다.
       */}
       <div className="flex flex-wrap items-start gap-[10px] lg:flex-nowrap">
-        <div className="mt-[3px] flex size-[18px] flex-none items-center justify-center rounded-full bg-amber text-[12px] font-bold text-white">
+        <div className="mt-[3px] flex size-[18px] flex-none items-center justify-center rounded-full bg-amber text-[12px] font-bold text-on-solid">
           !
         </div>
         <div className="min-w-0 flex-1">

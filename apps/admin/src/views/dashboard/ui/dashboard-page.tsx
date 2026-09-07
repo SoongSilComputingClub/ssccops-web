@@ -49,8 +49,8 @@ function DashboardSkeleton() {
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.7fr_1fr]">
       {[0, 1].map((i) => (
         <Card key={i} className="animate-pulse">
-          <div className="h-[20px] w-2/5 rounded bg-black/5" />
-          <div className="mt-3 h-[80px] w-full rounded bg-black/5" />
+          <div className="h-[20px] w-2/5 rounded bg-fill" />
+          <div className="mt-3 h-[80px] w-full rounded bg-fill" />
         </Card>
       ))}
     </div>

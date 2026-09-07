@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { ToastViewport } from "@/shared/ui";
 import "./globals.css";
 
@@ -13,6 +14,10 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "SSCC 운영",
+    /*
+     * 다크에서도 default를 유지한다 (#226) — black-translucent로 바꾸면 상태 표시줄이
+     * 화면 위로 겹쳐 올라와 상단 바가 그만큼 잘린다. 테마별로 가를 수 있는 값도 아니다.
+     */
     statusBarStyle: "default",
   },
   /*
@@ -38,13 +43,22 @@ export const viewport: Viewport = {
    * 창 색이고, 이쪽은 브라우저로 열었을 때의 주소창 색이라 적용 시점이 다르다.
    * Next 14부터 themeColor는 metadata가 아니라 viewport에 넣는다.
    */
-  themeColor: "#ffffff",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#1f1f26" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko">
       <head>
+        {/*
+          * 저장된 테마를 **첫 페인트 전에** 박는다 (#226). React가 붙은 뒤에 적용하면
+          * 밝은 화면이 한 번 번쩍이고 어두워진다 — 그래서 이것만 동기 스크립트다.
+          * 문자열은 shared/lib/theme.ts가 저장 키와 함께 쥐고 있어 둘이 갈리지 않는다.
+          */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
         <link
           rel="stylesheet"

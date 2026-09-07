@@ -22,7 +22,7 @@ export function PageHeader({
 }) {
   const router = useRouter();
   return (
-    <div className="flex flex-none items-center gap-[14px] border-b border-black/8 bg-gradient-to-b from-white to-bg px-8 py-5">
+    <div className="flex flex-none items-center gap-[14px] border-b border-hairline-strong bg-gradient-to-b from-surface to-bg px-8 py-5">
       {showBack && (
         <button
           type="button"
