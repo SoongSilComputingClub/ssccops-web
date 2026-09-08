@@ -11,7 +11,7 @@ import {
   type RosterCellState,
   type RosterColumn,
 } from "@/features/academic-session/model/use-attendance-roster";
-import { formatYmd } from "@/shared/lib/date";
+import { formatYmdDotted } from "@/shared/lib/date";
 import { cn } from "@/shared/lib/cn";
 
 /*
@@ -126,9 +126,9 @@ export function AttendanceRosterMatrix({
                   className="min-w-[44px] px-[6px] py-[10px] text-center align-bottom font-medium"
                   title={
                     column.session.actualYmd
-                      ? `진행일 ${formatYmd(column.session.actualYmd)}`
+                      ? `진행일 ${formatYmdDotted(column.session.actualYmd)}`
                       : column.session.planYmd
-                        ? `계획일 ${formatYmd(column.session.planYmd)}`
+                        ? `계획일 ${formatYmdDotted(column.session.planYmd)}`
                         : undefined
                   }
                 >

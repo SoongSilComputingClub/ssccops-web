@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@ssccops/codes": "workspace:*",
+    "@ssccops/date": "workspace:*",
     "@ssccops/form-renderer": "workspace:*",
     "@ssccops/ui": "workspace:*",
     "@supabase/ssr": "^0.12.4",
