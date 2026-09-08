@@ -1,5 +1,6 @@
 export {
   toSubWorkActionErrorMessage,
+  toSubWorkChecklistItemErrorMessage,
   toSubWorkCreateErrorMessage,
   toSubWorkDeleteErrorMessage,
   toSubWorkErrorMessage,

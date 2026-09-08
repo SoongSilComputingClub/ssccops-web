@@ -77,6 +77,47 @@ export function toSubWorkActionErrorMessage(error: unknown): string {
 }
 
 /**
+ * 점검 **항목 편집**(추가·문구 수정·삭제) 실패 → 화면에 띄울 한 줄 (서버 #307).
+ *
+ * 체크·해제(toSubWorkActionErrorMessage)와 나누는 이유는 **잠금이 두 겹이고 푸는 사람이
+ * 다르기 때문이다.**
+ *
+ * | 코드 | 무엇이 막았나 | 누가 푸나 |
+ * |---|---|---|
+ * | `TRANSITION_NOT_ALLOWED` | 지금 단계에서는 항목을 못 고친다 | 다른 사람이 상태를 되돌려야 한다 |
+ * | `CHECKLIST_ITEM_COMPLETED` | 체크된 항목이라 못 지운다 | 체크를 해제하면 본인이 푼다 |
+ *
+ * 한 문구로 뭉치면 사용자는 **자기가 풀 수 있는 것과 없는 것을 구별하지 못한다.** 서버가 두
+ * 코드를 갈라 준 이유가 이것이며, 그래서 화면도 `message`가 아니라 `code`로 분기한다.
+ *
+ * `VALIDATION_FAILED`는 서버 문장을 그대로 쓴다 — 빈 문구·길이 초과·중복이 한 코드에 겹치고
+ * 어느 것인지는 서버 메시지에만 남아 있다(등록 오류와 같은 규칙).
+ */
+export function toSubWorkChecklistItemErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "점검 항목을 바꾸지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "점검 항목을 바꿀 권한이 없습니다 — 담당자이거나 업무 관리(WORK_MANAGE) 권한이 필요합니다";
+    case SUB_WORK_ERROR.TRANSITION_NOT_ALLOWED:
+      return "지금 단계에서는 점검 항목을 바꿀 수 없습니다 — 그 사이 다른 사람이 상태를 옮긴 것일 수 있어 목록을 다시 불러왔습니다";
+    case SUB_WORK_ERROR.CHECKLIST_ITEM_COMPLETED:
+      return "체크된 항목은 지울 수 없습니다 — 체크를 해제한 뒤 지워주세요";
+    case SUB_WORK_ERROR.NOT_FOUND:
+      return "점검 항목을 찾을 수 없습니다. 이미 지워졌을 수 있으니 화면을 다시 불러와주세요";
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}
+
+/**
  * 하위 업무 삭제 실패 → 화면에 띄울 한 줄 (서버 #125).
  *
  * 403은 다른 쓰기 작업의 403(승인자 아님·WORK_MANAGE 없음)과 또 다르다 — 삭제는 담당자

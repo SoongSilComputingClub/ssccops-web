@@ -38,6 +38,7 @@ import {
   Sheet,
   flash,
 } from "@/shared/ui";
+import { ChecklistCard } from "./checklist-card";
 import { NextStepGuide } from "./next-step-guide";
 
 /*
@@ -106,9 +107,23 @@ function DetailSkeleton() {
 
 export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
   const router = useRouter();
-  const { subWork, status, errorMessage, reload, applyChecklistUpdate } =
-    useSubWorkDetail(subWorkId);
-  const { pending, transition, setChecklistItem } = useSubWorkActions(subWorkId);
+  const {
+    subWork,
+    status,
+    errorMessage,
+    reload,
+    applyChecklistUpdate,
+    applyChecklistInsert,
+    applyChecklistRemoval,
+  } = useSubWorkDetail(subWorkId);
+  const {
+    pending,
+    transition,
+    setChecklistItem,
+    addChecklistItem,
+    renameChecklistItem,
+    removeChecklistItem,
+  } = useSubWorkActions(subWorkId);
   /*
    * 투표는 승인함 카드와 같은 훅을 쓴다 — 이 화면은 대상이 하나뿐이라 pendingSubWorkId 가
    * 사실상 불리언이지만, 호출·오류 문구·403 세션 동기화가 한 곳에 모여 있는 값이 더 크다.
@@ -207,6 +222,51 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
     // 성공 문구는 없다 — 체크박스가 즉시 바뀌는 것 자체가 결과다 (실패했을 때만 문구가 온다)
     if (message) flash(message);
     if (result) applyChecklistUpdate(result);
+  };
+
+  /*
+   * 점검 항목 편집 (서버 #307).
+   *
+   * **실패하면 목록을 다시 받는다.** 서버가 거부했다는 것은 화면을 열어 둔 사이 다른 사람이
+   * 상태를 옮겼을 수 있다는 뜻이고, 그러면 편집 가능 플래그(isChecklistItemEditable ·
+   * isDeletable)까지 낡은 값이라 버튼이 실제와 다른 것을 그리고 있다. 문구만 띄우고 두면
+   * 사용자는 같은 버튼을 계속 누른다.
+   *
+   * 성공했을 때는 다시 부르지 않는다 — 응답이 바뀐 항목과 **다시 센 요약**을 함께 주므로
+   * 그 두 값만 갈아 끼우면 서버와 어긋날 여지가 없다(체크와 같은 규칙).
+   */
+  const addItem = async (article: string) => {
+    const { result, message } = await addChecklistItem(article);
+    if (message) flash(message);
+    if (!result) {
+      reload();
+      return false;
+    }
+    applyChecklistInsert(result);
+    return true;
+  };
+
+  const renameItem = async (checklistItemId: number, article: string) => {
+    const { result, message } = await renameChecklistItem(checklistItemId, article);
+    if (message) flash(message);
+    if (!result) {
+      reload();
+      return false;
+    }
+    applyChecklistUpdate(result);
+    return true;
+  };
+
+  const removeItem = async (checklistItemId: number) => {
+    const { result, message } = await removeChecklistItem(checklistItemId);
+    if (message) flash(message);
+    if (!result) {
+      reload();
+      return false;
+    }
+    // 요약이 안 왔으면 목록만 줄이지 않고 통째로 다시 받는다 — '3/4 완료'인데 줄이 셋인 화면을 만들지 않는다
+    if (!applyChecklistRemoval(result)) reload();
+    return true;
   };
 
   /*
@@ -497,48 +557,20 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
             )}
           </Card>
 
-          <Card>
-            <SectionLabel className="mb-[14px]">완료 점검 목록</SectionLabel>
-            {subWork.checklist.length === 0 ? (
-              <EmptyState message="이 유형에는 완료 점검 항목이 없습니다." padding="sm" />
-            ) : (
-              <div className="flex flex-col gap-[13px]">
-                {subWork.checklist.map((item) => (
-                  <button
-                    key={item.checklistItemId}
-                    type="button"
-                    // 완료된 건은 체크를 되돌릴 수 없다 (서버 409) — 누를 수 없게 해 이유를 붙인다
-                    disabled={isDone || pending}
-                    title={isDone ? "완료된 하위 업무는 점검 목록을 바꿀 수 없습니다" : undefined}
-                    onClick={() => void toggleChecklistItem(item)}
-                    className="flex cursor-pointer items-center gap-[11px] text-left disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <span
-                      className={
-                        item.isCompleted
-                          ? "flex size-[18px] flex-none items-center justify-center rounded-[6px] bg-accent-strong text-[11px] text-on-solid"
-                          : "size-[18px] flex-none rounded-[6px] shadow-[inset_0_0_0_1px_var(--color-line-strong)]"
-                      }
-                    >
-                      {item.isCompleted ? "✓" : ""}
-                    </span>
-                    <span
-                      className={
-                        item.isCompleted ? "text-[15.5px] text-n400" : "text-[15.5px]"
-                      }
-                    >
-                      {item.article}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-            {/* '2/4 완료'는 목록 길이로 다시 세지 않고 서버가 준 요약을 그대로 쓴다 */}
-            <div className="mt-4 text-[14px] text-n500">
-              {subWork.checklistSummary.completedCount}/
-              {subWork.checklistSummary.totalCount} 완료
-            </div>
-          </Card>
+          {/*
+           * 완료 점검 목록 — 체크·해제와 항목 편집(서버 #307)이 한 카드에 있다. 편집을 열지
+           * 말지는 **서버가 준 플래그**가 정한다(카드 주석 참고) — 이 화면은 업무_상태로
+           * 되짚지 않는다.
+           */}
+          <ChecklistCard
+            subWork={subWork}
+            pending={pending}
+            canActOnOwnerTasks={canActOnOwnerTasks}
+            onToggle={(item) => void toggleChecklistItem(item)}
+            onAdd={addItem}
+            onRename={renameItem}
+            onRemove={removeItem}
+          />
         </div>
 
         <RejectSheet

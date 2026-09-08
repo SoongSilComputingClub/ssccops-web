@@ -97,11 +97,22 @@ export interface SubWorkMemberRef {
 /** 완료 점검 목록 한 줄 (sub_work_chck_list) */
 export interface SubWorkChecklistItem {
   checklistItemId: number;
-  /** 점검 항목 내용 — 유형에서 복사된 값이라 여기서 수정하지 않는다 */
+  /** 점검 항목 내용 — 유형에서 복사된 값이고 등록 뒤에도 고칠 수 있다 (서버 #307) */
   article: string;
   isCompleted: boolean;
   /** 1부터. 서버가 이 순서로 정렬해 내려준다 */
   sortOrder: number;
+  /**
+   * 이 항목을 지울 수 있는가 — **서버 판정값**이다 (서버 #307).
+   *
+   * 화면이 `isCompleted`와 업무_상태로 계산하지 않는다. 규칙이 두 벌이 되면 서버 판정과
+   * 갈리고 **그 어긋남은 목록에서만 보인다** — `isDelayed`가 서버에서 오는 것과 같은 이유이며
+   * 이 저장소가 그 자리에서 두 번 데었다(서버 #121 · #194).
+   *
+   * 응답에 없으면 false다. 없는 값을 '가능'으로 읽으면 눌렀다가 거부당하는 버튼이 생긴다
+   * (canApprove·canReject와 같은 폴백).
+   */
+  isDeletable: boolean;
 }
 
 /**
@@ -181,6 +192,17 @@ export interface SubWorkDetail {
   completedAt: string | null;
   checklist: SubWorkChecklistItem[];
   checklistSummary: SubWorkChecklistSummary;
+  /**
+   * 점검 **항목 자체**(추가·문구 수정·삭제)를 지금 고칠 수 있는가 — **서버 판정값**이다
+   * (서버 #307 `requireChecklistItemEditable`).
+   *
+   * 체크·해제와 다른 축이다. 체크는 진척 기록이고 항목 편집은 완료 조건 자체를 바꾸는 일이라
+   * 서버가 더 세게 잠근다 — **화면은 그 기준을 알지 못하고 알 필요도 없다.** 업무_상태를 보고
+   * 여기서 다시 계산하면 서버가 기준을 옮겼을 때 화면만 뒤처진다.
+   *
+   * 항목별 삭제 가능 여부는 이것과 또 다르다 — `SubWorkChecklistItem.isDeletable`을 본다.
+   */
+  isChecklistItemEditable: boolean;
   quorum: SubWorkQuorum;
   /**
    * **이번 회차**의 내 표 (OPS-009 myVote). 아직 던지지 않았으면 null이고, 정족수 유형이
@@ -227,11 +249,32 @@ export interface SubWorkTransitionResult {
   changedAt: string | null;
 }
 
-/** 체크 · 해제 결과 (OPS-013) — 바뀐 항목과 다시 센 요약이 함께 온다 */
+/**
+ * 체크 · 해제 · 항목 추가 · 문구 수정 결과 (OPS-013 · 서버 #307).
+ *
+ * 넷이 같은 모양인 것은 **바뀐 항목과 다시 센 요약**이 응답에 함께 오기 때문이다 — 화면이
+ * 요약을 목록 길이로 다시 세지 않는다.
+ */
 export interface SubWorkChecklistUpdate {
   subWorkId: number;
   item: SubWorkChecklistItem;
   checklistSummary: SubWorkChecklistSummary;
+}
+
+/**
+ * 항목 삭제 결과 (서버 #307).
+ *
+ * 지워진 항목은 더 이상 없으므로 `item` 대신 식별자만 온다. 요약은 여기서도 서버가 다시 세어
+ * 준다 — 지운 항목을 목록에서 빼면서 화면이 `totalCount`를 1 줄이면 세는 규칙이 두 벌이 된다.
+ */
+export interface SubWorkChecklistRemoval {
+  subWorkId: number;
+  checklistItemId: number;
+  /**
+   * 요약이 안 왔으면 **null이다 — 0/0으로 채우지 않는다.** 없는 값을 만들어 내면 '항목이
+   * 하나도 없는 하위 업무'와 구별되지 않는다(변환기 규칙). 그때 화면은 상세를 다시 부른다.
+   */
+  checklistSummary: SubWorkChecklistSummary | null;
 }
 
 /**
