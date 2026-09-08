@@ -264,7 +264,7 @@ export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
               * 링크를 받은 사람은 종전대로 로그인과 권한 검사를 지나야 내용을 본다(ADR-0016).
               * 그래서 이 화면을 볼 수 있다는 것만으로 공유할 수 있고 별도 잠금이 없다.
               */}
-            <ShareButton subWorkId={subWork.subWorkId} title={subWork.title} />
+            <ShareButton targetType="SUB_WORK" targetId={subWork.subWorkId} title={subWork.title} />
             {canActOnOwnerTasks && (
               <Button
                 variant="ghost"

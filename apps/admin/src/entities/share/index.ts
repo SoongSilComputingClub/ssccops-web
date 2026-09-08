@@ -1,7 +1,8 @@
 export type { ShareLink, SharePreview } from "./api/share-links";
 export {
+  ShareOriginMissingError,
+  fetchShareLink,
   fetchSharePreview,
-  fetchSubWorkShareLink,
-  issueSubWorkShareLink,
-  revokeSubWorkShareLink,
+  issueShareLink,
+  revokeShareLink,
 } from "./api/share-links";
