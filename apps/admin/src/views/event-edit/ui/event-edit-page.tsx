@@ -10,6 +10,7 @@ import {
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { EventForm, useEventDetail, useEventStatus, useSaveEvent } from "@/features/event";
+import { EventShareButton } from "@/features/share";
 import type { EventSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import {
@@ -182,6 +183,27 @@ function EventEditView({
               </Button>
             ))}
           </div>
+        </Card>
+
+        {/*
+          공유 (ssccops#254 · ssccops-web#338).
+
+          **게시 상태 카드와 나란히 두되 섞지 않는다.** 저 카드의 버튼은 전부 상태를 바꾸는
+          것이고 공유는 아무것도 바꾸지 않는다 — 한 줄에 세우면 '게시'와 '공유하기'가 같은
+          무게로 보인다. 대신 바로 아래에 두는 것은 **공유가 무엇을 건네는지가 위 카드의
+          상태에서 곧바로 따라 나오기 때문**이다(게시 전이면 토큰 링크, 게시됐으면 공개 주소).
+
+          공유는 권한을 넓히지 않으므로 별도 잠금이 없다 — 토큰이 주는 것은 제목·요약
+          미리보기까지이고(ADR-0016), 이 화면을 여는 것 자체가 이미 행사 관리 권한을 지난
+          것이다(조회부터 EVENT_MANAGE다). 업무·회의 상세와 같은 판단이다.
+        */}
+        <Card className="mb-4">
+          <SectionLabel className="mb-3">공유</SectionLabel>
+          <EventShareButton
+            eventId={event.eventId}
+            eventSttsCd={event.eventSttsCd}
+            title={event.eventTtl}
+          />
         </Card>
 
         <EventForm

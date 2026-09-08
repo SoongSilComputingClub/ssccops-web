@@ -20,10 +20,29 @@ import { ApiError } from "@/shared/lib/api/client";
  * **어느 대상이든 받는다.** 대상별로 갈리는 것(서버 경로 · 오류 문구에 넣을 이름과 권한)은
  * 전부 `@ssccops/share-meta`의 표가 갖고, 이 훅은 그 표를 볼 뿐이다 — 대상이 늘어도 훅이
  * 늘지 않는다(ADR-0017).
+ *
+ * **한 자리만 대상의 사정을 받는다: `publicUrl`**(ssccops-web#338). 게시된 행사처럼 이미
+ * 익명이 여는 주소가 있는 대상은 발급을 부르지 않고 그 주소를 건넨다. 그 판정(게시됐는가)은
+ * 표가 아니라 대상을 그리는 화면이 하므로 값으로 받는다 — 표는 대상의 상태를 모른다.
  */
 
-/** 링크를 어떻게 건넸는가. 화면 안내 문구가 이 값으로 갈린다 */
-export type ShareDelivery = "shared" | "copied" | null;
+/** 링크를 어떻게 건넸는가 — 공유 시트로 넘겼는가, 클립보드에 복사했는가 */
+export type ShareDeliveryHow = "shared" | "copied";
+
+/**
+ * 무엇을 건넸는가.
+ *
+ * **`how`만으로는 부족하다** — 행사처럼 건넬 것이 둘인 대상이 있다(ssccops-web#338).
+ * 게시 전이면 토큰 링크(`/s/{token}`)를, 게시됐으면 공개 주소(`/events/{id}`)를 건네는데,
+ * 화면이 그 둘을 같은 문구로 알리면 **운영자가 게시 전 링크를 공개 링크로 알고 뿌린다.**
+ * 그래서 안내 문구를 정할 값을 여기서 함께 돌려준다.
+ *
+ * 건넬 것이 하나뿐인 대상(업무·하위 업무·회의)은 언제나 `"token"`이다.
+ */
+export type ShareDeliveryTarget = "token" | "public";
+
+/** 링크를 건넨 결과. 화면 안내 문구가 이 값으로 갈린다 */
+export type ShareDelivery = { how: ShareDeliveryHow; target: ShareDeliveryTarget } | null;
 
 /*
  * 조회 결과를 대상과 **함께** 들고 있다.
@@ -79,6 +98,21 @@ function messageOf(error: unknown, targetType: ShareTargetType): string {
         return `공유 링크를 만들 권한이 없습니다 — ${rule.readAuthority} 권한이 필요합니다`;
       case "NOT_FOUND":
         return `${withObjectParticle(rule.label)} 찾을 수 없습니다 — 이미 지워졌을 수 있습니다`;
+      /*
+       * 게시·보관된 행사에 발급을 요청했다 (ssccops-server#312 · 409).
+       *
+       * **실패가 아니라 다른 길이 있다는 안내다.** 서버가 막는 이유는 게시된 행사에 이미
+       * 익명이 여는 주소가 있어 토큰이 더하는 것이 폐기 기능뿐인데 그 폐기가 원본 공개 URL을
+       * 막지 못하기 때문이며, 거절이 아무 수단도 빼앗지 않는다. "잠시 후 다시"로 떨어지면
+       * 사람이 영영 다시 눌러 본다.
+       *
+       * 화면은 이미 상태로 갈라 그리므로(`EventShareButton`) 이 문구가 나오는 것은 화면이
+       * 낡았을 때뿐이다 — 열어 둔 사이 다른 운영자가 게시했거나 보관한 경우다. 그래서
+       * 다음 행동이 "새로 고치기"이고, 어느 쪽으로 옮겨 갔는지는 단정하지 않는다(보관된
+       * 행사는 공개 주소도 열리지 않는다).
+       */
+      case "EVENT_SHARE_NOT_DRAFT":
+        return "게시 전 행사만 공유 링크를 만들 수 있습니다 — 이미 게시됐다면 공개 주소를 그대로 쓰면 됩니다. 화면을 새로 고쳐 주세요";
       default:
         return "공유 링크를 처리하지 못했습니다 — 잠시 후 다시 시도해 주세요";
     }
@@ -97,10 +131,10 @@ function messageOf(error: unknown, targetType: ShareTargetType): string {
  * 공유 시트를 사용자가 닫으면 `AbortError`가 온다 — 그것은 실패가 아니라 취소라 오류로 알리지
  * 않고, 대신 복사로 떨어져 링크는 손에 남게 한다.
  */
-async function deliver(link: ShareLink, title: string): Promise<ShareDelivery> {
+async function deliver(url: string, title: string): Promise<ShareDeliveryHow> {
   if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
     try {
-      await navigator.share({ title, url: link.url });
+      await navigator.share({ title, url });
       return "shared";
     } catch (error) {
       if (!(error instanceof DOMException && error.name === "AbortError")) {
@@ -109,15 +143,32 @@ async function deliver(link: ShareLink, title: string): Promise<ShareDelivery> {
       // 사용자가 시트를 닫았다 — 실패가 아니므로 복사로 떨어져 링크는 손에 쥐어 준다
     }
   }
-  await navigator.clipboard.writeText(link.url);
+  await navigator.clipboard.writeText(url);
   return "copied";
+}
+
+export interface ShareLinkOptions {
+  /**
+   * 이 대상이 **이미 익명에게 열려 있는 주소**. 있으면 발급을 부르지 않고 이 주소를 건넨다.
+   *
+   * 게시된 행사가 그 자리다(ssccops-web#338) — 토큰을 요청해 봐야 서버가 409로 막고, 막는
+   * 이유가 "이 주소면 충분하다"이기 때문이다. 값이 `null`인 것은 두 가지 뜻일 수 있어
+   * (그런 주소가 없는 대상 · 오리진 설정이 비었다) 무엇을 그릴지는 부르는 화면이 정한다.
+   *
+   * **조회와 폐기는 이 값과 무관하다.** 게시 전에 발급한 링크는 게시 뒤에도 살아 있으므로
+   * 공개 주소를 건네는 상태에서도 '공유 중지'는 그려져야 한다 — 보이지 않으면 폐기할
+   * 수단이 없어진다.
+   */
+  publicUrl?: string | null;
 }
 
 export function useShareLink(
   targetType: ShareTargetType,
   targetId: number,
   title: string,
+  options: ShareLinkOptions = {},
 ): ShareLinkState {
+  const { publicUrl } = options;
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -156,15 +207,24 @@ export function useShareLink(
     setPending(true);
     setError(null);
     try {
+      /*
+       * 이미 열려 있는 주소가 있으면 그것을 건네고 발급은 부르지 않는다. 살아 있는 토큰이
+       * 함께 있을 수도 있지만(게시 전에 발급했다) **건네는 것은 공개 주소다** — 받는 사람이
+       * 게시된 행사를 보는 데에 토큰이 필요하지 않고, 뿌린 링크가 폐기로 죽지도 않는다.
+       */
+      if (publicUrl) {
+        setDelivery({ how: await deliver(publicUrl, title), target: "public" });
+        return;
+      }
       const issued = link ?? (await issueShareLink(targetType, targetId));
       setLoaded({ targetType, targetId, link: issued });
-      setDelivery(await deliver(issued, title));
+      setDelivery({ how: await deliver(issued.url, title), target: "token" });
     } catch (e) {
       setError(messageOf(e, targetType));
     } finally {
       setPending(false);
     }
-  }, [link, targetType, targetId, title]);
+  }, [link, publicUrl, targetType, targetId, title]);
 
   const revoke = useCallback(async () => {
     setPending(true);

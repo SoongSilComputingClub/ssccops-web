@@ -123,6 +123,30 @@ const SHARE_TARGETS = {
     landingApp: "www",
     apiPath: (targetId: number) => `/v1/academic-programs/${targetId}/share`,
   },
+  /*
+   * 행사 (ssccops#254 · ssccops-server#312 · PR #315). 착지는 www다 — 행사를 뿌리는 대상이
+   * 동아리 밖이라 링크가 운영 도메인을 가리키면 안 된다(ADR-0017).
+   *
+   * ── 이 줄이 앞의 넷과 다른 점: 발급이 상태를 본다 ──────────
+   * 서버는 **게시 전(DRAFT) 행사에만 토큰을 내준다.** 게시·보관된 행사에 오는 발급 요청은
+   * 409 `EVENT_SHARE_NOT_DRAFT`다. 게시된 행사에는 이미 익명이 여는 주소(`/events/{id}`)가
+   * 있어 토큰이 더하는 것은 폐기 기능뿐인데, 그 폐기가 원본 공개 URL을 막지 못한다 —
+   * "공유를 중지했다"는 표시가 사실이 아니게 되는 버튼이 되므로 서버가 아예 내주지 않는다.
+   *
+   * **조회·폐기는 상태를 보지 않는다.** 게시 전에 발급한 링크는 게시 뒤에도 살아 있고, 그때
+   * 화면이 그것을 보지 못하면 폐기할 수단이 없어진다. 그래서 이 표의 `apiPath` 하나가 세
+   * 메서드에 그대로 쓰이는 것은 앞의 넷과 같고, **갈리는 것은 화면이 발급을 부를지 말지다**
+   * (`apps/admin`의 `EventShareButton`).
+   *
+   * 그 분기를 이 표에 담지 않은 것은 표가 "어느 앱이 받는가 · 어디로 부르는가"만 정하기
+   * 때문이다. 대상의 상태를 아는 것은 그 대상을 그리는 화면이고, 표는 상태를 모른다.
+   */
+  EVENT: {
+    label: "행사",
+    readAuthority: "행사 관리(EVENT_MANAGE)",
+    landingApp: "www",
+    apiPath: (targetId: number) => `/v1/events/${targetId}/share`,
+  },
 } as const satisfies Record<string, ShareTargetRule>;
 
 /** 서버 `shr_lnk.trgt_se_cd`가 쓰는 대상 구분 코드 */
