@@ -108,7 +108,7 @@ QG_STATUS=$(echo "$QG_JSON" | jq -r '.projectStatus.status // "UNKNOWN"')
 # 무시되고 인스턴스 전체가 돌아온다** — server 쪽에서 같은 자리를 고쳤다(ssccops-server#291).
 # 이 리포트가 "기본 브랜치 기준" 이라고 말하려면 프로젝트 범위부터 실제로 걸려 있어야 한다.
 ISSUES_JSON=$(curl -s -u "$SONAR_TOKEN:" \
-  "$SONAR_HOST_URL/api/issues/search?componentKeys=$PROJECT_KEY&resolved=false&facets=types&ps=1")
+  "$SONAR_HOST_URL/api/issues/search?componentKeys=$PROJECT_KEY&resolved=false&facets=types,rules&ps=1")
 
 if echo "$ISSUES_JSON" | jq -e 'has("facets")' >/dev/null 2>&1; then
   type_count() {
@@ -124,6 +124,21 @@ else
   VULNS="조회 실패"
   SMELLS="조회 실패"
 fi
+
+# 규칙별 상위 목록 (ssccops-web#311 -> #310).
+#
+# 타입별 합계만으로는 **무엇부터 볼지 알 수 없다.** 지적 수가 곧 문제의 가짓수는 아니고,
+# 같은 규칙이 여러 파일에서 걸린 것이 대부분이라 규칙으로 묶으면 판단 단위가 몇 개로 줄어든다.
+# facets=rules 는 위 요청에 이미 얹혀 오므로 추가 왕복이 없다.
+#
+# **이 표가 검증 수단이기도 하다** — `java:` 규칙이 섞여 나오면 프로젝트 필터가 또 빠진 것이다.
+# server 에서 `typescript:` 규칙이 1위로 나온 것이 필터 결함을 드러낸 방식이 정확히 이것이었다.
+RULES_TABLE=$(echo "$ISSUES_JSON" | jq -r '
+  [ (.facets // [])[] | select(.property=="rules") | (.values // [])[] ]
+  | sort_by(-.count) | .[:15]
+  | if length == 0 then empty
+    else ("| 규칙 | 건수 |", "|---|---|"), (.[] | "| `\(.val)` | \(.count) |")
+    end')
 
 MEASURES_JSON=$(curl -s -u "$SONAR_TOKEN:" \
   "$SONAR_HOST_URL/api/measures/component?component=$PROJECT_KEY&metricKeys=coverage,duplicated_lines_density")
@@ -186,6 +201,24 @@ EOF
 )
 
 echo "$BODY" >> "$GITHUB_STEP_SUMMARY"
+
+# **본문도 stdout 에 찍는다.** job 요약은 UI 에서만 보이고 Actions API 로는 읽히지 않는다 —
+# 로그에 없으면 사람이 브라우저를 열어 옮겨 적기 전에는 아무도(자동화 포함) 이 숫자를 볼 수
+# 없고, 기준선이 이슈에 남지 않는다. ssccops#238 의 검증이 실제로 여기서 막혔다.
+echo "$BODY"
+
+# 규칙별 분포는 job 요약과 stdout 양쪽에 붙인다.
+if [ -n "${RULES_TABLE:-}" ]; then
+  {
+    echo
+    echo "### 규칙별 상위 15개"
+    echo
+    echo "$RULES_TABLE"
+  } >> "$GITHUB_STEP_SUMMARY"
+
+  echo "--- 규칙별 상위 15개 ---"
+  echo "$RULES_TABLE"
+fi
 
 # Quality Gate 실패로 이 스크립트를 실패시키지 않는다 — 위 주석 참고.
 if [ "$QG_STATUS" != "OK" ]; then
