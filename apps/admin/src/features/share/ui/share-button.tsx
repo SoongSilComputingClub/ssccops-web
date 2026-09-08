@@ -53,9 +53,12 @@ export function ShareButton({
     /*
      * 무엇으로 건넸는지에 따라 문구가 갈린다 — 복사인데 "공유했습니다"라고 하면 사용자는
      * 이미 보낸 줄 알고, 공유 시트를 띄웠는데 "복사했습니다"라고 하면 붙여넣을 곳을 찾는다.
+     *
+     * `delivery.target`은 여기서 보지 않는다 — 이 버튼이 건네는 것은 언제나 토큰 링크
+     * 하나다. 건넬 것이 둘인 대상(행사)은 자기 버튼을 갖는다(`EventShareButton`).
      */
-    if (delivery === "copied") flash("공유 링크를 복사했습니다 — 메신저에 붙여 넣으세요");
-    if (delivery === "shared") flash("공유 링크를 전달했습니다");
+    if (delivery?.how === "copied") flash("공유 링크를 복사했습니다 — 메신저에 붙여 넣으세요");
+    if (delivery?.how === "shared") flash("공유 링크를 전달했습니다");
   }, [delivery]);
 
   /*

@@ -7,6 +7,7 @@ import {
   toShareDescription,
 } from "@ssccops/share-meta";
 import { fetchSharePreview } from "@/entities/share";
+import { ROUTES } from "@/shared/config/routes";
 import { lmsOrigin, lmsProgramDetailPath } from "@/shared/config/lms-routes";
 import { ShareLanding } from "@/views/share-landing";
 
@@ -47,6 +48,10 @@ import { ShareLanding } from "@/views/share-landing";
  * "누구에게 뿌리는 링크인가"다. 라우트를 미리 만들지 않고 `ssccops#253`·`#254` 중 먼저
  * 착수하는 쪽이 만들기로 한 것은, 미리 만들면 받을 대상이 하나도 없는 라우트가 되기 때문이다.
  *
+ * **행사(ssccops#254)가 그 둘째 대상이고, 여기서 처음으로 목적지가 이 앱 자신이다.** 학술은
+ * 발급도 착지도 남의 앱을 거쳤지만 행사 상세(`/events/{eventId}`)는 www의 화면이라 이 라우트가
+ * 남의 오리진을 알 필요가 없다 — 그 차이를 아래 `DETAIL_HREF`가 줄마다 담는다.
+ *
  * ── 어드민 착지는 이 변경으로 달라지지 않는다 ────────────────
  * 저쪽 표는 `Record<ShareTargetOf<"admin">, ...>`라 www 대상이 늘어도 그 표에 들어가지 않고,
  * `detailPathOf`가 모르는 대상을 `null`로 떨어뜨려 404가 된다. **두 앱이 서로의 대상을 404로
@@ -54,32 +59,61 @@ import { ShareLanding } from "@/views/share-landing";
  */
 
 /*
- * 이 앱이 받는 대상 → 사람을 보낼 상세 경로(오리진은 아래에서 붙인다).
+ * 이 앱이 받는 대상 → 사람을 보낼 주소.
  *
- * **경로는 앱이 갖고 있고 표에는 없다.** 어느 앱이 받는지는 세 앱이 함께 보는 규칙이지만,
- * 그 앱 안의 주소는 그 앱만 아는 것이다 — 다만 여기서는 그 "그 앱"이 lms라 이 앱이 남의 URL
- * 구조를 알게 된다. ADR-0017이 결합 ⓐ로 적고 받아들인 대가이며, 값은
- * `shared/config/lms-routes.ts` 한 곳에 모여 있다.
+ * **주소는 앱이 갖고 있고 표에는 없다.** 어느 앱이 받는지는 세 앱이 함께 보는 규칙이지만,
+ * 그 앱 안의 주소는 그 앱만 아는 것이다.
  *
- * `ShareTargetOf<"www">`라 **표에 www 착지 대상을 더하면 여기가 비어 컴파일이 깨진다** —
- * 갈 곳 없는 대상이 조용히 404가 되는 것보다 낫다. 세션(ACADEMIC_SESSION)이 아직 표에 없는
- * 이유가 그 장치에 걸렸기 때문이고, 근거는 `packages/share-meta/src/targets.ts` 헤더에 있다.
+ * `ShareTargetOf<"www">`라 **`targets.ts`에 www 착지 대상을 더하면 여기가 비어 컴파일이
+ * 깨진다** — 갈 곳 없는 대상이 조용히 404가 되는 것보다 낫다. 세션(ACADEMIC_SESSION)이 아직
+ * 표에 없는 이유가 그 장치에 걸렸기 때문이고, 근거는 `packages/share-meta/src/targets.ts`
+ * 헤더에 있다.
+ *
+ * ── 값이 경로가 아니라 완성된 주소인 이유 ───────────────────
+ * 처음(ssccops#253)에는 경로만 담고 오리진을 밖에서 한 번에 붙였다. **두 번째 대상인 행사가
+ * 그 모양을 깼다** — 행사 상세는 이 앱 자신의 화면이라 붙일 오리진이 없다. 오리진을 밖에
+ * 두면 "행사에는 lms 오리진을 붙이지 않는다"는 예외가 표 밖에 생기고, 대상이 늘 때마다 그
+ * 예외를 기억해야 한다. 대신 각 줄이 **자기가 어디까지 아는지를 스스로 적게** 두면 예외가
+ * 사라진다.
+ *
+ * 그래서 `null`의 뜻도 줄마다 다르다 — lms 줄은 "오리진 설정이 비었다", 이 앱 자신의 줄은
+ * 애초에 `null`이 될 수 없다. 화면은 둘을 가르지 않고 안내만 그린다(`ShareLanding`).
  */
-const DETAIL_PATH: Record<ShareTargetOf<"www">, (targetId: number) => string> = {
-  ACADEMIC_PROGRAM: lmsProgramDetailPath,
+const DETAIL_HREF: Record<ShareTargetOf<"www">, (targetId: number) => string | null> = {
+  /*
+   * 학술 프로그램 → lms. **남의 앱이라 오리진을 설정으로 받는다**(ADR-0017 결합 ⓐ).
+   * 값이 비면 `null`이고, 그때 착지 화면은 자동 이동 없이 이유만 보여 준다 — 404로 답하면
+   * 사람은 "지워진 링크"로 읽고 운영진은 원인을 못 찾는다.
+   */
+  ACADEMIC_PROGRAM: (targetId) => {
+    const origin = lmsOrigin();
+    return origin ? `${origin}${lmsProgramDetailPath(targetId)}` : null;
+  },
+  /*
+   * 행사 → **이 앱 자신의 화면**(`/events/{eventId}` · ssccops#254). 남의 앱 주소를 알 필요가
+   * 없는 첫 줄이라 오리진도 설정도 없다 — 같은 오리진이므로 상대 경로면 충분하다.
+   *
+   * 게시된 행사라면 이 주소는 익명이 그냥 열 수 있고, 게시 전이라면 이 화면이 "행사를 찾을 수
+   * 없습니다"로 떨어진다. **그것이 맞다** — 토큰이 주는 것은 미리보기까지이고(ADR-0016),
+   * 상세는 종전대로 게시 여부를 본다. 링크를 받은 사람이 게시 전 본문을 읽게 되면 익명에게
+   * 게시 전 내용을 여는 결정이 되는데, 그것은 이 기능이 정할 일이 아니다.
+   */
+  EVENT: ROUTES.eventDetail,
 };
 
 /**
- * 서버가 준 대상 구분 코드 → 이 앱이 보낼 상세 경로. 받지 않는 대상이면 `null`이다.
+ * 서버가 준 대상 구분 코드 → 이 앱이 보낼 주소를 만드는 함수. 받지 않는 대상이면 `null`이다.
  *
  * 두 가지가 걸러진다. **이 웹이 모르는 대상**(서버만 먼저 배포됐다)과 **어드민이 받는
  * 대상**(ADR-0017)이다. 둘을 가르지 않는 것은 갈 곳을 모르는 링크와 죽은 링크가 사용자에게
  * 같은 것이기 때문이다.
  */
-function detailPathOf(trgtSeCd: string): ((targetId: number) => string) | null {
+function detailHrefOf(trgtSeCd: string): ((targetId: number) => string | null) | null {
   if (!isShareTargetType(trgtSeCd)) return null;
-  const paths = DETAIL_PATH as Partial<Record<ShareTargetType, (targetId: number) => string>>;
-  return paths[trgtSeCd] ?? null;
+  const hrefs = DETAIL_HREF as Partial<
+    Record<ShareTargetType, (targetId: number) => string | null>
+  >;
+  return hrefs[trgtSeCd] ?? null;
 }
 
 export async function generateMetadata({ params }: PageProps<"/s/[token]">): Promise<Metadata> {
@@ -130,20 +164,13 @@ export default async function Page({ params }: PageProps<"/s/[token]">) {
    * **이 화면은 자기 대상만 받는다.** 서버가 아는 대상을 이 앱이 모를 수도 있고(서버만 먼저
    * 배포된 경우), 알지만 어드민이 받는 대상일 수도 있다(ADR-0017) — 어느 쪽이든 여기서는 404다.
    */
-  const toDetail = detailPathOf(preview.trgtSeCd);
+  const toDetail = detailHrefOf(preview.trgtSeCd);
   if (!toDetail) notFound();
 
   /*
-   * 오리진이 비어 있어도 404로 만들지 않는다. 링크는 살아 있고 대상도 있는데 **이 앱의 배포
-   * 설정만 빠진 것**이라, 404로 답하면 사람은 "지워진 링크"로 읽고 운영진은 원인을 찾지
-   * 못한다. 카드는 이미 만들어졌으므로 화면은 제목과 이유만 보여 준다.
+   * 주소를 만들지 못해도 404로 만들지 않는다. 링크는 살아 있고 대상도 있는데 **이 앱의 배포
+   * 설정만 빠진 것**이라(lms 오리진), 404로 답하면 사람은 "지워진 링크"로 읽고 운영진은
+   * 원인을 찾지 못한다. 카드는 이미 만들어졌으므로 화면은 제목과 이유만 보여 준다.
    */
-  const origin = lmsOrigin();
-
-  return (
-    <ShareLanding
-      title={preview.title}
-      href={origin ? `${origin}${toDetail(preview.trgtId)}` : null}
-    />
-  );
+  return <ShareLanding title={preview.title} href={toDetail(preview.trgtId)} />;
 }
