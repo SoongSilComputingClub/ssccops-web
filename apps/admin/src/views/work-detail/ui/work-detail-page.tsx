@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CAPABILITY } from "@/entities/session";
 import { workSttsTone, type WorkSubWorkSummary } from "@/entities/work";
 import { useCan } from "@/features/auth";
+import { ShareButton } from "@/features/share";
 import { useDeleteWork, useWorkDetail } from "@/features/work";
 import {
   OPER_TYPE_NM,
@@ -185,6 +186,16 @@ export function WorkDetailPage({ workId }: { workId: number }) {
               </Badge>
               <div className="text-[14px] text-n400">{WORK_TYPE_NM[work.workType]}</div>
               <div className="flex-1" />
+              {/*
+                * 공유는 권한을 넓히지 않는다 — 토큰이 주는 것은 제목·요약 미리보기까지이고,
+                * 링크를 받은 사람은 종전대로 로그인과 권한 검사를 지나야 내용을 본다(ADR-0016).
+                * 그래서 이 화면을 볼 수 있다는 것만으로 공유할 수 있고 별도 잠금이 없다
+                * (하위 업무 상세와 같은 판단이다).
+                *
+                * `title`은 화면이 이미 그리고 있는 업무명(운영 건 제목)을 그대로 넘긴다 —
+                * 공유 시트·토스트가 쓰는 값이고, 서버가 카드에 넣는 제목과는 별개다.
+                */}
+              <ShareButton targetType="WORK" targetId={work.workId} title={work.title} />
               <Button
                 variant="ghost"
                 size="sm"
