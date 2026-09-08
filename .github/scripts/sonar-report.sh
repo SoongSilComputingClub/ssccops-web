@@ -185,9 +185,45 @@ VULN_RULES_TABLE=$(echo "$VULN_ISSUES_JSON" | jq -r '
 # api/issues/search 는 `componentKeys` 다. SonarQube 는 모르는 파라미터를 오류로 만들지 않고
 # 조용히 무시하므로(ssccops-server#291 에서 `projectKeys` 로 밟았다) 이름이 틀리면 인스턴스
 # 전체가 돌아온다. 값이 총계와 동떨어지면 그것부터 의심할 것.
-HOTSPOTS_JSON=$(curl -s -u "$SONAR_TOKEN:" \
+#
+# **상태 코드를 함께 받는다** (ssccops-web#323). 이 값이 오래 `?` 로 나왔는데, `?` 는
+# `.paging.total` 이 없을 때의 폴백이라 **왜 없는지를 말해 주지 않았다.** 파라미터 이름이
+# 틀린 것인지 엔드포인트가 사라진 것인지(`/api/hotspots/*` 는 deprecated 계열이다) 구분이
+# 되지 않았다. server 쪽에서 응답을 CI 로그에 한 번 찍어 확인했고(ssccops-server#301),
+# 답은 둘 다 아니었다:
+#
+#     HTTP 403  {"errors":[{"msg":"Insufficient privileges"}]}
+#
+# **엔드포인트도 파라미터도 멀쩡하고 토큰이 못 읽는 것이다.** 같은 토큰으로 issues·measures·
+# qualitygates 질의는 전부 통하므로 토큰이 죽은 것도 아니다 — 핫스팟만 별도 권한을 요구한다.
+# 그러니 **여기서 고칠 수 있는 것은 없다.** SonarQube 에서 이 토큰에 프로젝트 Browse 권한을
+# 주면 숫자가 저절로 돌아온다.
+#
+# **web 에서 다시 진단하지 않았다** — 두 스크립트의 질의가 한 글자도 다르지 않고 같은
+# 인스턴스의 같은 토큰을 쓴다. 같은 답을 두 번 받으려고 develop 을 한 번 더 돌 이유가 없다.
+#
+# 대신 **물음표 하나만 남기지 않는다** — 값을 못 얻었으면 못 얻은 이유를 적는다. 물음표는
+# 매 실행마다 같은 질문을 다시 하게 만들었고, 그 질문의 답이 위에 있다.
+HOTSPOTS_RAW=$(curl -s -w '\n%{http_code}' -u "$SONAR_TOKEN:" \
   "$SONAR_HOST_URL/api/hotspots/search?projectKey=$PROJECT_KEY&status=TO_REVIEW&ps=1")
-HOTSPOTS=$(echo "$HOTSPOTS_JSON" | jq -r '.paging.total // "?"')
+HOTSPOTS_CODE=$(printf '%s' "$HOTSPOTS_RAW" | tail -n1)
+HOTSPOTS_JSON=$(printf '%s' "$HOTSPOTS_RAW" | sed '$d')
+
+HOTSPOTS=""
+if [ "$HOTSPOTS_CODE" = "200" ]; then
+  HOTSPOTS=$(echo "$HOTSPOTS_JSON" | jq -r '.paging.total // empty' 2>/dev/null || true)
+fi
+
+if [ -n "$HOTSPOTS" ]; then
+  HOTSPOTS_NOTE="> **보안 핫스팟은 취약점 수에 포함되지 않는다** — 별도 API(\`api/hotspots/search\`)라 따로 센다. 취약점 수가 보안 지적의 전부가 아니다."
+else
+  HOTSPOTS_ERR=$(echo "$HOTSPOTS_JSON" | jq -r '.errors[0].msg // empty' 2>/dev/null || true)
+  HOTSPOTS="세지 못했다 (HTTP ${HOTSPOTS_CODE}${HOTSPOTS_ERR:+ — ${HOTSPOTS_ERR}})"
+  HOTSPOTS_NOTE="> **보안 핫스팟을 세지 못했다** — \`api/hotspots/search\` 가 위 상태로 답했다. \`403 Insufficient privileges\` 면 CI 토큰에 이 프로젝트 Browse 권한이 없다는 뜻이고(같은 토큰으로 나머지 질의는 통한다), SonarQube 에서 권한을 주면 숫자가 돌아온다 (ssccops#239).
+>
+> 어느 쪽이든 **보안 핫스팟은 위 취약점 수에 포함되지 않는다** — 취약점 수가 보안 지적의 전부가 아니다."
+  echo "::warning::보안 핫스팟을 세지 못했다 (HTTP $HOTSPOTS_CODE ${HOTSPOTS_ERR:-}). 토큰 권한을 확인할 것 (ssccops#239)."
+fi
 
 MEASURES_JSON=$(curl -s -u "$SONAR_TOKEN:" \
   "$SONAR_HOST_URL/api/measures/component?component=$PROJECT_KEY&metricKeys=coverage,duplicated_lines_density")
@@ -246,7 +282,7 @@ Dashboard: ${DASHBOARD_URL}
 
 > **이 수치는 프로젝트 기본 브랜치 기준이다** — 이 서버는 Community Build 라 브랜치를 가르지 못한다(ssccops#234). 분석은 develop push 한 곳에서만 돌므로 곧 develop 의 상태다.
 >
-> **보안 핫스팟은 취약점 수에 포함되지 않는다** — 별도 API(\`api/hotspots/search\`)라 따로 센다. 취약점 수가 보안 지적의 전부가 아니다.
+${HOTSPOTS_NOTE}
 >
 > Quality Gate는 **머지를 막지 않는다** (ssccops#231). 기준을 정한 뒤에 잠근다.
 EOF
