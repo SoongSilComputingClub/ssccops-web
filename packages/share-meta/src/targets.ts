@@ -51,6 +51,19 @@ const SHARE_TARGETS = {
     landingApp: "admin",
     apiPath: (targetId: number) => `/v1/sub-works/${targetId}/share`,
   },
+  /*
+   * 업무 (ssccops#251 · ssccops-server#306). 하위 업무의 부모라 받는 사람이 같다 —
+   * 운영진끼리 도는 링크이므로 admin이 받는다(ADR-0017의 표 그대로다).
+   *
+   * 권한이 하위 업무와 같은 `WORK_READ`인 것은 서버가 그렇게 가르기 때문이다. 업무와 하위
+   * 업무는 조회 권한을 나눠 갖지 않는다 — 볼 수 있는 사람이 공유할 수 있다는 판단도 같다.
+   */
+  WORK: {
+    label: "업무",
+    readAuthority: "업무 조회(WORK_READ)",
+    landingApp: "admin",
+    apiPath: (targetId: number) => `/v1/works/${targetId}/share`,
+  },
 } as const satisfies Record<string, ShareTargetRule>;
 
 /** 서버 `shr_lnk.trgt_se_cd`가 쓰는 대상 구분 코드 */
