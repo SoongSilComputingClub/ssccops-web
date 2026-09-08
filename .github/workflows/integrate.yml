@@ -49,6 +49,9 @@
 #   - 이 저장소는 pnpm을 쓴다(pnpm-lock.yaml). npm ci / cache:'npm' 을 쓰면
 #     package-lock.json이 없어 setup-node 단계에서 곧바로 실패한다.
 #   - pnpm/action-setup은 반드시 setup-node보다 먼저 와야 cache:'pnpm'이 동작한다.
+#   - setup-node v5부터 packageManager 필드를 보고 캐시를 자동으로 켰다가 v6에서 그 자동
+#     캐싱을 npm으로만 한정했다. pnpm은 자동으로 잡히지 않으므로 cache:'pnpm'을 계속
+#     명시한다 — 지우면 캐시가 조용히 꺼진다.
 #   - Prettier 검사 단계는 두지 않는다 — 이 저장소에 prettier 의존성도 설정 파일도 없다.
 #     도입한다면 devDependencies와 설정을 먼저 추가하고 여기에 단계를 되살린다.
 #   - Next.js는 dist/ 를 만들지 않고(.next), 배포는 Cloudflare Workers Builds가
@@ -80,14 +83,14 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # package.json의 packageManager 필드(pnpm@x.y.z)를 그대로 따른다
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -120,13 +123,13 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -153,7 +156,7 @@ jobs:
         run: pnpm -r test:coverage
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results
@@ -187,13 +190,13 @@ jobs:
 
       - name: Checkout source
         if: env.SONAR_TOKEN != ''
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # SonarQube 분석을 위해 전체 히스토리 필요
 
       - name: Cache SonarQube packages
         if: env.SONAR_TOKEN != ''
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
@@ -201,9 +204,13 @@ jobs:
 
       # 커버리지를 **원래 자리로** 되돌려 받는다(`apps/*/coverage/`). 아티팩트 안의 구조를
       # sonar 설정에 옮겨 적으면 업로드 경로를 고치는 날 그쪽이 조용히 어긋난다.
+      #
+      # download-artifact v8은 다이제스트 불일치를 기본값 error로 다룬다(v7까지는 경고였다).
+      # 업로드는 이름으로 하고 있어 v5의 `artifact-ids` 경로 변경과는 무관하고, upload는
+      # archive 기본값(zip)을 그대로 쓰므로 v8의 direct download 경로도 타지 않는다.
       - name: Download test results
         if: env.SONAR_TOKEN != ''
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: test-results
@@ -242,13 +249,13 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
