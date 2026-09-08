@@ -15,7 +15,7 @@ import {
 } from "@/features/auth";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
-import { safeNextPath, withNextParam } from "@/shared/lib/next-path";
+import { safeNextPath, withNextParam } from "@ssccops/auth";
 import { Button, Card, Field, TextField, flash } from "@/shared/ui";
 
 /**

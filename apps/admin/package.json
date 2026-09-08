@@ -15,6 +15,7 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
+    "@ssccops/auth": "workspace:*",
     "@ssccops/codes": "workspace:*",
     "@ssccops/date": "workspace:*",
     "@ssccops/form-renderer": "workspace:*",

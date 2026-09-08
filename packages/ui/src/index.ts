@@ -11,7 +11,6 @@
  * | `Chip` | 이름만 같고 다른 컴포넌트다. admin은 필터 칩, www·lms는 선택 칩 |
  * | `EmptyState` | API가 다르다. admin은 `message`+`action`, www·lms는 `title`+`description` |
  * | `Button`·`GridTable`·`Calendar` 등 | admin에만 있다 — 중복이 아니다 |
- * | `Notice` | www·lms에만 있다. 올릴 수 있지만 이번 범위는 상위 이슈가 지목한 것까지다 |
  *
  * ── 색을 토큰으로 적는다 ────────────────────────────────────
  * `var(--color-line)`처럼 쓰고 값(`#e5e8eb`)으로 박지 않는다. 세 앱의 `@theme`이 같은 이름을
@@ -23,4 +22,5 @@ export { cn } from "./lib/cn";
 export { Badge, Pill, type BadgeTone } from "./ui/badge";
 export { Card, CardTitle, SectionLabel } from "./ui/card";
 export { Markdown } from "./ui/markdown";
+export { Notice } from "./ui/notice";
 export { TextField, Field } from "./ui/field";

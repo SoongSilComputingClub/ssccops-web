@@ -9,7 +9,7 @@
  * 등록해 두어도 실제로 나가는 `...?next=%2Fdashboard`와는 일치하지 않는다. 일치하지 않으면
  * GoTrue는 오류를 내지 않고 **조용히 Site URL로 대체한다** — 로컬에서 시작한 로그인이 배포
  * 도메인에서 끝나고, 그쪽에는 PKCE code_verifier 쿠키가 없어 exchange_failed로 죽는다
- * (ssccops#84).
+ * (ssccops#84 — 어드민이 실제로 밟았다).
  *
  * 화이트리스트를 `/**` 로 넓히면 그 오리진의 임의 경로가 리다이렉트 대상이 되므로, 반대로
  * `redirectTo`에서 쿼리를 걷어내고 목적지를 쿠키로 옮겼다. 등록값이 `<오리진>/auth/callback`
@@ -24,7 +24,7 @@ export const OAUTH_NEXT_COOKIE = "sscc-oauth-next";
  * 쿠키 경로를 콜백 라우트로 좁힌다.
  *
  * `/` 로 두면 모든 요청에 딸려 나가는데, 이 값은 콜백 라우트 한 곳에서만 읽는다.
- * 미들웨어 매처가 `auth/`를 제외하고 있어 이 경로에서 다른 처리와 겹칠 일도 없다.
+ * 세 앱 모두 미들웨어 매처가 `auth/`를 제외하고 있어 이 경로에서 다른 처리와 겹칠 일도 없다.
  */
 export const OAUTH_NEXT_COOKIE_PATH = "/auth/callback";
 

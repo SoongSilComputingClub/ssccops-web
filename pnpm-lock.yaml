@@ -17,6 +17,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@ssccops/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@ssccops/codes':
         specifier: workspace:*
         version: link:../../packages/codes
@@ -84,6 +87,9 @@ importers:
 
   apps/lms:
     dependencies:
+      '@ssccops/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@ssccops/codes':
         specifier: workspace:*
         version: link:../../packages/codes
@@ -151,6 +157,9 @@ importers:
 
   apps/www:
     dependencies:
+      '@ssccops/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@ssccops/codes':
         specifier: workspace:*
         version: link:../../packages/codes
@@ -218,6 +227,27 @@ importers:
       wrangler:
         specifier: ^4.122.0
         version: 4.122.0
+
+  packages/auth:
+    devDependencies:
+      '@supabase/ssr':
+        specifier: ^0.12.4
+        version: 0.12.4(@supabase/supabase-js@2.112.3)
+      '@types/node':
+        specifier: ^20
+        version: 20.19.43
+      eslint:
+        specifier: ^9
+        version: 9.39.5(jiti@2.7.0)
+      eslint-config-next:
+        specifier: 16.3.0
+        version: 16.3.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      next:
+        specifier: 16.3.0
+        version: 16.3.0(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
 
   packages/codes:
     devDependencies:

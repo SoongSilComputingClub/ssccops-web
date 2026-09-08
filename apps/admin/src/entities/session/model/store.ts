@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { createClient } from "@/shared/lib/supabase/client";
+import { createClient } from "@ssccops/auth/supabase/client";
 import type { AuthSession, AuthUser, MemberProfile, MemberRole } from "./types";
 
 /**
