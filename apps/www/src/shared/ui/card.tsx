@@ -1,14 +1,13 @@
-import type { ReactNode } from "react";
-import { cn } from "@/shared/lib/cn";
+import { Card } from "@ssccops/ui";
 
-/** 서피스 카드 — rounded 16px + 1px 링 (어드민과 같은 토큰) */
-export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return (
-    <div className={cn("rounded-2xl bg-surface p-[18px] shadow-[0_0_0_1px_#e5e8eb]", className)}>
-      {children}
-    </div>
-  );
-}
+/*
+ * 카드는 `@ssccops/ui`에서 온다 (ssccops#243).
+ *
+ * **`EmptyState`는 이 앱에 남는다.** 어드민에도 같은 이름이 있지만 그쪽은 `message`와 동작
+ * 버튼(`action`)을 맨 div로 그리고, 이쪽은 `title`+`description`을 카드 안에 그린다 —
+ * 이름만 같고 API도 모양도 다르다. 합치면 한쪽 화면이 바뀌므로 두 벌로 둔다.
+ */
+export { Card };
 
 /** 값이 비었을 때의 안내 — 목록이 비었을 때와 조회가 실패했을 때 모두 이 모양으로 그린다 */
 export function EmptyState({

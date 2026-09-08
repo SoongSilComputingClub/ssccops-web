@@ -1,45 +1,22 @@
 "use client";
 
-import type {
-  ComponentPropsWithRef,
-  InputHTMLAttributes,
-  ReactNode,
-  SelectHTMLAttributes,
-} from "react";
-import { cn } from "@/shared/lib/cn";
+import type { ComponentPropsWithRef, SelectHTMLAttributes } from "react";
+import { cn, Field, TextField } from "@ssccops/ui";
 
-/* disabled 표시를 base에 둔 것은 권한이 없어 잠긴 입력란이 눌리지 않는 이유를 보여야 하기 때문이다 (#29) */
 /*
- * 좁은 화면에서 16px인 이유는 미관이 아니라 동작이다 (#105).
+ * 입력 컴포넌트 — `TextField`·`Field`는 `@ssccops/ui`에서 온다 (ssccops#243).
  *
- * iOS Safari는 16px 미만인 입력란에 포커스하면 화면을 자동으로 확대하고, 그 확대는 스스로
- * 돌아오지 않는다 — 첫 칸에 입력하는 순간 폼 전체가 커진 채로 남는다. lg에서는 원래 크기를
- * 그대로 쓴다(데스크톱에는 이 동작이 없다).
+ * `Field`는 세 앱이 글자까지 같았고, `TextField`는 이쪽이 자라 있어(`inset`) 그것을 올렸다.
+ * **`TextArea`·`SelectField`는 이 앱에만 있어 여기 남는다** — 중복이 아니다.
+ *
+ * 좁은 화면 16px 규칙(#105)은 패키지의 `INPUT_BASE`가 갖는다. 아래 둘은 그 규칙을 **각자
+ * 적어 두고 있으므로** 패키지 쪽을 고칠 때 여기도 함께 본다 — 그때 이 둘도 패키지로 올릴지
+ * 판단하면 된다(지금은 쓰는 앱이 하나라 올릴 이유가 없다).
  */
 const INPUT_BASE =
   "w-full rounded-[12px] border text-[16px] text-ink outline-none placeholder:text-n500 focus:border-accent disabled:cursor-not-allowed disabled:opacity-45 lg:text-[15.5px]";
 
-export function TextField({
-  inset,
-  invalid,
-  className,
-  ...rest
-}: InputHTMLAttributes<HTMLInputElement> & { inset?: boolean; invalid?: boolean }) {
-  return (
-    <input
-      // 색만으로 오류를 알리면 스크린리더·색각 이상 사용자가 놓친다 — 상태를 함께 노출한다
-      aria-invalid={invalid || undefined}
-      className={cn(
-        INPUT_BASE,
-        "px-[11px] py-[9px]",
-        inset ? "border-transparent bg-bg" : "border-line bg-surface",
-        invalid && "border-danger focus:border-danger",
-        className,
-      )}
-      {...rest}
-    />
-  );
-}
+export { Field, TextField };
 
 /*
  * props에 ref가 들어 있는 것은 React 19에서 함수 컴포넌트가 ref를 평범한 prop으로 받기
@@ -64,10 +41,7 @@ export function TextArea({
   );
 }
 
-export function SelectField({
-  className,
-  ...rest
-}: SelectHTMLAttributes<HTMLSelectElement>) {
+export function SelectField({ className, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       className={cn(
@@ -77,36 +51,5 @@ export function SelectField({
       )}
       {...rest}
     />
-  );
-}
-
-/**
- * 라벨 + 입력 래퍼.
- *
- * `error`는 입력칸 바로 아래에 붙는다 — 토스트 한 줄로 알리면 여러 칸이 잘못됐을 때
- * 어디를 고쳐야 하는지 알 수 없고, 메시지가 사라진 뒤에는 다시 볼 수도 없다.
- */
-export function Field({
-  label,
-  required,
-  error,
-  children,
-  className,
-}: {
-  label: ReactNode;
-  required?: boolean;
-  error?: string | null;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={className}>
-      <div className="mb-[6px] text-[13.5px] text-n400">
-        {label}
-        {required && <span className="ml-[2px] text-accent">*</span>}
-      </div>
-      {children}
-      {error && <div className="mt-[5px] text-[12.5px] text-danger">{error}</div>}
-    </div>
   );
 }

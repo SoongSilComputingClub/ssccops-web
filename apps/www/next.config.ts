@@ -6,7 +6,7 @@ import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
  * 두었다 — 신청 흐름(EV-006)이 붙을 때 설정을 다시 손대지 않아도 되게 하려는 것이다.
  */
 const nextConfig: NextConfig = {
-  transpilePackages: ["@ssccops/form-renderer"],
+  transpilePackages: ["@ssccops/form-renderer", "@ssccops/ui", "@ssccops/codes"],
 };
 
 export default nextConfig;
