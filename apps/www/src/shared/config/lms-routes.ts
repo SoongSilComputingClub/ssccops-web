@@ -43,3 +43,29 @@ export function lmsOrigin(): string | null {
 export function lmsProgramDetailPath(academicProgramId: number): string {
   return `/studio/programs/${academicProgramId}`;
 }
+
+/**
+ * 회차 하나 — lms `/studio/sessions/{sessionId}`.
+ *
+ * ── 이 주소는 **해석기**이지 화면이 아니다 ───────────────────
+ * lms에는 회차 상세 화면이 없다(회차는 활동 상세의 "회차 이력" 안에서 보인다). 이 주소는 회차
+ * id 하나를 받아 `GET /v1/academic-sessions/{sessionId}`로 활동 id를 얻은 뒤
+ * `/studio/programs/{활동}#session-{회차}`로 넘겨 주는 자리다.
+ *
+ * ── 왜 그 조회를 이 앱(www)에서 하지 않는가 ──────────────────
+ * **그 조회는 인증 경로이고, 필요한 인증은 lms의 것이다.** 이 앱의 `/s/{token}` 착지는 설계상
+ * 익명이다(크롤러가 닿아야 해서 미들웨어 매처에도 없다). 거기서 인증 경로를 부르면 두 갈래로
+ * 다 깨진다 — 서버 컴포넌트에서 부르면 크롤러가 401을 받고, 브라우저에서 부르면 **www에
+ * 로그인하지 않은 사람**이 401을 받는다. www와 lms는 오리진이 달라 세션이 따로 놀므로, lms를
+ * 쓰는 부원이 www에는 로그인하지 않은 상태가 오히려 흔하다.
+ *
+ * 목적지가 어차피 로그인이 필요한 화면이므로 **해석을 목적지 앱에 맡긴다.** lms는 모든 경로에서
+ * 세션 쿠키를 갱신하고 미로그인이면 그 화면 위에서 로그인시킨다 — 로그인 뒤 이 주소가 다시
+ * 그려지면 그때 해석이 끝난다. 그 대가로 이 앱은 **비동기 조회도 인증도 없이** 주소 한 줄만
+ * 조립하면 되고, 착지 표(`DETAIL_HREF`)가 동기로 남는다.
+ *
+ * 크롤러는 이 주소를 따라가지 않는다 — 카드는 `/public/v1/share/{token}`이 이미 만들었다.
+ */
+export function lmsSessionPath(sessionId: number): string {
+  return `/studio/sessions/${sessionId}`;
+}

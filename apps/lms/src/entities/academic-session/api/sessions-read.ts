@@ -106,3 +106,21 @@ export async function fetchAcademicSession(
   );
   return toSessionDetail(res);
 }
+
+/**
+ * GET /v1/academic-sessions/{sessionId} — 회차 상세를 **회차 id 하나로** 읽는다 (#316).
+ *
+ * 위 중첩 조회와 응답이 같고, 갈리는 것은 활동 id를 이미 알아야 부를 수 있는가 하나다. 공유
+ * 링크 착지는 회차 id 하나만 들고 오므로 이쪽을 쓴다 — 응답의 `academicProgramId`가 활동
+ * 상세로 넘어가는 재료다.
+ *
+ * **중첩 조회를 대체하지 않는다.** 활동 문맥 안에서 여는 화면들은 남의 활동 회차 번호로 부르는
+ * 것이 404여야 하고, 그 검사는 경로가 가리키는 대상을 못 박는 장치다(서버 컨트롤러 주석).
+ * 인증만 요구하는 것도 중첩 조회와 같다.
+ */
+export async function fetchAcademicSessionById(
+  sessionId: number,
+): Promise<AcademicSessionDetail> {
+  const res = await apiFetchAuthed<SessionDetailResponse>(`/v1/academic-sessions/${sessionId}`);
+  return toSessionDetail(res);
+}

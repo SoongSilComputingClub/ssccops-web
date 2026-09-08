@@ -376,7 +376,15 @@ function SessionHistory({ sessions }: { sessions: AcademicSessionSummary[] }) {
         return (
           <div
             key={session.sessionId}
-            className="flex items-start gap-[12px] py-[12px] first:pt-0 last:pb-0"
+            /*
+             * 공유 링크가 이 한 줄로 데려온다 (#335). `apps/www`의 착지가 회차 id를 들고
+             * `/studio/sessions/{id}`로 보내면 그쪽이 `#session-{id}`를 붙여 여기로 넘긴다
+             * — 회차 이력은 한 학기치가 쌓이므로 맨 위에 떨어뜨리면 사람이 훑어야 한다.
+             *
+             * `scroll-mt`는 상단 바에 가려지지 않게 띄우는 여백이다.
+             */
+            id={`session-${session.sessionId}`}
+            className="flex scroll-mt-[80px] items-start gap-[12px] py-[12px] first:pt-0 last:pb-0"
           >
             <div className="w-[86px] flex-none pt-[2px] text-[13.5px] text-n500">
               {formatYmdDotted(session.actualYmd) || formatYmdDotted(session.planYmd)}
@@ -399,6 +407,29 @@ function SessionHistory({ sessions }: { sessions: AcademicSessionSummary[] }) {
                   ? ` · 작성 ${session.registrantMemberName}`
                   : ""}
               </div>
+            </div>
+            {/*
+             * 회차 공유 (#335). 활동과 **별개 대상이다** — 모집을 뿌리는 것과 이번 주 회차를
+             * 뿌리는 것은 받는 사람도 시점도 다르다(서버가 대상을 둘로 나눈 근거와 같다).
+             *
+             * 이력에 그려지는 것은 실제로 기록된 회차뿐이라 상태로 가르지 않는다 — 행사가
+             * 게시 여부로 갈렸던 것과 달리 서버도 회차 발급에 상태 조건을 두지 않는다.
+             *
+             * 제목은 회차 번호와 커리큘럼 제목으로 조립한다(모바일 공유 시트가 제목을
+             * 요구한다). **빈 값을 "-"로 채우지 않는다** — 그 표시 규칙은 이 화면의 것이고
+             * 공유 시트에 "-"가 뜨면 안 된다(활동 공유 버튼과 같은 판단).
+             */}
+            <div className="flex-none">
+              <ShareButton
+                targetType="ACADEMIC_SESSION"
+                targetId={session.sessionId}
+                title={[
+                  session.seqno != null ? `${session.seqno}회차` : "",
+                  session.curriculumTitle,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              />
             </div>
           </div>
         );

@@ -67,6 +67,11 @@ export interface SessionSummaryResponse {
 
 export interface SessionDetailResponse {
   sessionId: number;
+  /**
+   * 이 회차가 속한 활동 (#316). 경로에 이미 활동 id가 있는 중첩 조회에도 같이 실린다 —
+   * 서버가 응답을 두 벌로 두지 않기로 한 결과다. 회차 id 하나만 아는 호출자가 쓴다.
+   */
+  academicProgramId: number;
   curriculumItemId: number;
   seqno: number | null;
   curriculumTtl: string | null;
@@ -159,6 +164,7 @@ export function toAttendanceRow(res: AttendanceRowResponse): AcademicAttendanceR
 export function toSessionDetail(res: SessionDetailResponse): AcademicSessionDetail {
   return {
     sessionId: res.sessionId,
+    academicProgramId: res.academicProgramId,
     curriculumItemId: res.curriculumItemId,
     seqno: res.seqno,
     curriculumTitle: res.curriculumTtl ?? "",
