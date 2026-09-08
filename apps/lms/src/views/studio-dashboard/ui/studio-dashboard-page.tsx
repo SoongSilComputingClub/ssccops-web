@@ -24,7 +24,7 @@ import {
   studioRecordUrl,
   studioRosterUrl,
 } from "@/shared/config/routes";
-import { formatDt, formatYmdDotted, todayInSeoul } from "@/shared/lib/date";
+import { formatDt, formatYmd, todayInSeoul } from "@/shared/lib/date";
 import { Badge, Card, EmptyState, Notice } from "@/shared/ui";
 
 /*
@@ -175,7 +175,7 @@ function ThisWeekList({
         return (
           <div key={item.curriculumItemId} className="flex items-start gap-[12px]">
             <div className="w-[86px] flex-none pt-[2px] text-[13.5px] text-n500">
-              {formatYmdDotted(item.planYmd)}
+              {formatYmd(item.planYmd)}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-[7px]">
@@ -227,7 +227,7 @@ function ApprovalFeed({ approvals }: { approvals: AcademicProgramApproval[] }) {
             <div className="flex items-center gap-[7px]">
               <Badge tone={view.tone}>{view.label}</Badge>
               <span className="text-[13px] text-n500">
-                {formatDt(approval.approvedAt) || formatYmdDotted(approval.approvedAt)}
+                {formatDt(approval.approvedAt)}
               </span>
             </div>
             <div className="mt-[5px] text-[14px] text-n400">
@@ -276,7 +276,7 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
           value={String(stats.unrecorded.length)}
           hint={
             stats.unrecorded[0]
-              ? `${stats.unrecorded[0].seqno ?? "-"}회차 · ${formatYmdDotted(stats.unrecorded[0].planYmd)} 예정`
+              ? `${stats.unrecorded[0].seqno ?? "-"}회차 · ${formatYmd(stats.unrecorded[0].planYmd)} 예정`
               : "밀린 회차 없음"
           }
           tone={stats.unrecorded.length > 0 ? "warn" : "default"}
@@ -318,7 +318,7 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
         </div>
         <div className="mt-[10px] text-[22px] font-semibold">{program.title || "-"}</div>
         <div className="mt-[4px] text-[14px] text-n400">
-          {formatYmdDotted(program.eventBeginAt)} ~ {formatYmdDotted(program.eventEndAt)}
+          {formatYmd(program.eventBeginAt)} ~ {formatYmd(program.eventEndAt)}
           {program.leaderName ? ` · 스터디장 ${program.leaderName}` : ""}
         </div>
 
@@ -375,7 +375,7 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
                     <Badge tone="amber">미제출</Badge>
                     <div className="min-w-0 flex-1 text-[13.5px] text-n400">
                       {item.seqno != null ? `${item.seqno}회차 ` : ""}
-                      {item.title || "커리큘럼 항목"} — {formatYmdDotted(item.planYmd)} 예정
+                      {item.title || "커리큘럼 항목"} — {formatYmd(item.planYmd)} 예정
                     </div>
                     {item.isEditable && (
                       <Link

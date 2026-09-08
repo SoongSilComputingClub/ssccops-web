@@ -18,7 +18,7 @@ import {
   studioRecordUrl,
   studioRosterUrl,
 } from "@/shared/config/routes";
-import { formatDt, formatYmdDotted } from "@/shared/lib/date";
+import { formatDt, formatYmd } from "@/shared/lib/date";
 import { Badge, Card, EmptyState, Notice } from "@/shared/ui";
 
 /*
@@ -181,7 +181,7 @@ function DetailBody({ data }: { data: MyProgramDetailReady }) {
           {program.title || "-"}
         </div>
         <div className="mt-[4px] text-[14px] text-n400">
-          {formatYmdDotted(program.eventBeginAt)} ~ {formatYmdDotted(program.eventEndAt)}
+          {formatYmd(program.eventBeginAt)} ~ {formatYmd(program.eventEndAt)}
           {program.leaderName ? ` · 스터디장 ${program.leaderName}` : ""}
         </div>
 
@@ -234,7 +234,7 @@ function DetailBody({ data }: { data: MyProgramDetailReady }) {
           value={String(stats.delayedItems.length)}
           hint={
             stats.delayedItems[0]
-              ? `${stats.delayedItems[0].seqno ?? "-"}회차 · ${formatYmdDotted(
+              ? `${stats.delayedItems[0].seqno ?? "-"}회차 · ${formatYmd(
                   stats.delayedItems[0].planYmd,
                 )} 예정`
               : "밀린 회차 없음"
@@ -336,9 +336,9 @@ function CurriculumProgress({
                 </span>
               </div>
               <div className="mt-[5px] text-[13px] text-n500">
-                계획 {formatYmdDotted(item.planYmd) || "미정"}
+                계획 {formatYmd(item.planYmd) || "미정"}
                 {item.actualYmd
-                  ? ` · 진행 ${formatYmdDotted(item.actualYmd)}`
+                  ? ` · 진행 ${formatYmd(item.actualYmd)}`
                   : ""}
               </div>
             </div>
@@ -379,7 +379,7 @@ function SessionHistory({ sessions }: { sessions: AcademicSessionSummary[] }) {
             className="flex items-start gap-[12px] py-[12px] first:pt-0 last:pb-0"
           >
             <div className="w-[86px] flex-none pt-[2px] text-[13.5px] text-n500">
-              {formatYmdDotted(session.actualYmd) || formatYmdDotted(session.planYmd)}
+              {formatYmd(session.actualYmd) || formatYmd(session.planYmd)}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-[7px]">
@@ -434,7 +434,7 @@ function ApprovalFeed({ approvals }: { approvals: AcademicProgramApproval[] }) {
             <div className="flex items-center gap-[7px]">
               <Badge tone={view.tone}>{view.label}</Badge>
               <span className="text-[13px] text-n500">
-                {formatDt(approval.approvedAt) || formatYmdDotted(approval.approvedAt)}
+                {formatDt(approval.approvedAt)}
               </span>
             </div>
             <div className="mt-[5px] text-[14px] text-n400">

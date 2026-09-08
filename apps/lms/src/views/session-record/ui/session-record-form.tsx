@@ -14,7 +14,7 @@ import {
   type SubmitMode,
 } from "@/features/academic-session/model/use-submit-session";
 import { ROUTES } from "@/shared/config/routes";
-import { formatYmdDotted, todayInSeoul } from "@/shared/lib/date";
+import { formatYmd, todayInSeoul } from "@/shared/lib/date";
 import { Badge, Card, Field } from "@/shared/ui";
 import { AttendanceChecklist } from "./attendance-checklist";
 import { PhotoField } from "./photo-field";
@@ -158,7 +158,7 @@ export function SessionRecordForm({
           <Badge tone={badge.tone}>{badge.label}</Badge>
           <span className="flex-1" />
           {curriculumItem.planYmd && (
-            <span className="text-[13px] text-n500">계획일 {formatYmdDotted(curriculumItem.planYmd)}</span>
+            <span className="text-[13px] text-n500">계획일 {formatYmd(curriculumItem.planYmd)}</span>
           )}
         </div>
 
@@ -180,7 +180,7 @@ export function SessionRecordForm({
             </div>
             {curriculumItem.planYmd && (
               <div className="mt-[3px] text-[13px] text-n500">
-                계획일 {formatYmdDotted(curriculumItem.planYmd)}
+                계획일 {formatYmd(curriculumItem.planYmd)}
               </div>
             )}
           </div>
