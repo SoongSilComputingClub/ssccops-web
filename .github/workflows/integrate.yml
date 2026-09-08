@@ -5,7 +5,7 @@
 #   - 의존성 설치 및 캐싱 (pnpm)
 #   - TypeScript 타입 체크 + ESLint 정적 분석
 #   - 테스트 수행 및 커버리지 생성 (테스트 파일이 있을 때만)
-#   - SonarQube 코드 품질/커버리지/보안 분석 (토큰이 설정된 경우에만)
+#   - SonarQube 코드 품질/커버리지/보안 분석 (develop 푸시에서만 · 토큰이 있을 때만)
 #   - 프로덕션 빌드 검증
 #
 # Job 구조:
@@ -15,6 +15,12 @@
 #
 #   analyze(SonarQube)는 build를 막지 않는다. 코드 품질 리포트가 없다고 해서
 #   "이 브랜치가 빌드되는가"라는 판정까지 함께 막을 이유가 없다.
+#
+#   **analyze 는 `develop` 푸시에서만 돈다** (ssccops#238). 이 서버는 SonarQube Community
+#   Build 이고 브랜치 플러그인이 없어(ssccops#234) 스캐너가 브랜치를 선언하지 못한다 —
+#   **모든 분석이 프로젝트 기본 브랜치 한 자리를 덮어쓴다.** PR 마다 돌리면 그 자리가 PR
+#   내용으로 바뀌어 "지금 develop 이 어떤 상태인가"를 아무도 알 수 없고, 그러면 Quality
+#   Gate 를 잠글 기준을 만들 수 없다(ssccops#235). 머지된 상태만 분석한다.
 #   **Quality Gate가 빨개도 막지 않는다**(ssccops#231) — 기존 코드의 지적을 다 갚기 전에
 #   잠그면 아무것도 머지할 수 없다. 숫자를 보고 기준을 정한 뒤에 잠근다.
 #
@@ -163,10 +169,11 @@ jobs:
     name: Analyze
     runs-on: ubuntu-latest
     needs: [lint, test]
+    # develop 푸시에서만. PR·main·workflow_dispatch 는 제외한다 — 위 Job 구조 주석 참고.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
 
     permissions:
       contents: read
-      pull-requests: write
 
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -218,15 +225,11 @@ jobs:
       # 맞추기 위해서**이고, 워크플로 YAML 안의 bash 는 `bash -n` 으로 문법 검사조차 할 수
       # 없기 때문이다. 실제로 이 로직이 조용히 틀린 값을 보고한 적이 있다(#306).
       #
-      # `gh` 는 GH_TOKEN 을 읽는다. BRANCH 는 스크립트가 URL 인코딩해 질의한다 —
-      # 브랜치명에 `#` 이 들어가는 저장소라 인코딩 없이는 질의가 잘린다.
-      - name: SonarQube Quality Gate + PR Comment (Community)
-        if: env.SONAR_TOKEN != '' && github.event_name == 'pull_request'
+      # 리포트는 job 요약에만 남긴다. push 에는 코멘트를 달 PR 이 없다.
+      - name: SonarQube Quality Gate report
+        if: env.SONAR_TOKEN != ''
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-          BRANCH: ${{ github.head_ref }}
+          REF_NAME: ${{ github.ref_name }}
         run: bash .github/scripts/sonar-report.sh
 
   # ==========================================================================
