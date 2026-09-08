@@ -1,5 +1,5 @@
 import { memberRoleBadge, ptcpSttsBadge, type AcademicProgramMember } from "@/entities/academic-program";
-import { formatYmd } from "@/shared/lib/date";
+import { formatYmdDotted } from "@/shared/lib/date";
 import { Badge } from "@/shared/ui";
 
 /*
@@ -16,7 +16,7 @@ import { Badge } from "@/shared/ui";
 export function MemberRowDesktop({ member }: { member: AcademicProgramMember }) {
   const role = memberRoleBadge(member.isLeader);
   const status = ptcpSttsBadge(member.ptcpSttsCd);
-  const joined = formatYmd(member.joinedAt);
+  const joined = formatYmdDotted(member.joinedAt);
 
   return (
     <tr className="border-t border-line">
@@ -37,7 +37,7 @@ export function MemberRowDesktop({ member }: { member: AcademicProgramMember }) 
 export function MemberCardMobile({ member }: { member: AcademicProgramMember }) {
   const role = memberRoleBadge(member.isLeader);
   const status = ptcpSttsBadge(member.ptcpSttsCd);
-  const joined = formatYmd(member.joinedAt);
+  const joined = formatYmdDotted(member.joinedAt);
 
   return (
     <div className="flex flex-col gap-[8px] border-t border-line px-[4px] py-[14px] first:border-t-0">

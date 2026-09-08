@@ -1,11 +1,36 @@
+import { formatDt, todayInSeoul } from "@ssccops/date";
+
 import { TODAY } from "@/shared/config/constants";
 
-/**
- * 날짜/시간 표준
+/*
+ * 날짜/시간 표기 — 공통 규칙은 `@ssccops/date`에 있다 (ssccops-web#328).
+ *
  * - 일자D  (DATE)      → "YYYY-MM-DD"
  * - 일시TS (TIMESTAMP) → ISO-8601 "YYYY-MM-DDTHH:mm:ss"
  *
- * 화면 표기("8월 20일", "D-3", "마감임박")는 저장하지 않고 여기서 파생한다.
+ * 화면 표기("8월 20일" · "D-3" · "마감임박")는 저장하지 않고 여기서 파생한다.
+ *
+ * ── 옮겨 간 것 ──────────────────────────────────────────────
+ * `formatDt`·`formatYmd`·`todayInSeoul`·`weekBounds`·`isWithinThisWeek`는 `@ssccops/date`에
+ * 있다. 아래 재export로 남기는 것은 `@/shared/lib/date`를 부르는 자리가 50곳이 넘어서다 —
+ * 호출부를 건드리지 않고 사본만 없앤다(`shared/lib/cn.ts`와 같은 방식 · ssccops#243).
+ *
+ * `formatDt`는 이제 **모양이 어긋난 값에 빈 문자열을 준다**(합치면서 lms 쪽 구현을 택했다 —
+ * 근거는 패키지 주석). 이 앱의 호출 자리는 모두 일시TS 필드라 달라지는 화면은 없다.
+ *
+ * ── 여기 남은 것과 그 이유 ──────────────────────────────────
+ * 아래 함수들은 **이 앱에만 있다.** 사본이 없으니 합칠 것이 없고, 옮기면 근거가 이 앱에 있는
+ * 판단이 공유 패키지로 새어 나간다.
+ *
+ * - `toInput`·`fromInput`·`withServiceOffset`·`SERVICE_UTC_OFFSET` — 폼 편집 화면이 있는 앱은
+ *   어드민뿐이다. `datetime-local` 입력과 서버 `OffsetDateTime` 사이를 잇는 규칙이라 읽기 전용
+ *   앱에는 쓸 자리가 없다.
+ * - `formatInstant` — 서버가 `Instant`로 내리는 자리(변경 이력의 `createdAt`)를 그리는 앱이
+ *   어드민뿐이다.
+ * - `formatMd` — "8월 20일"은 어드민 대시보드·목록의 좁은 칸을 위한 표기다.
+ * - `daysUntil`·`ddayText`·`deadlineFlag`·`dueWithinDays` — 마감 배지 규칙. 기본 기준일이
+ *   목 데이터용 상수 `TODAY`라 **공유 패키지가 알아서는 안 되는 값에 묶여 있다**(공유로 올리려면
+ *   기본값부터 `todayInSeoul()`로 바꿔야 하는데, 그것은 표기 통합이 아니라 동작 변경이다).
  */
 
 /** 일시TS·일자D → datetime-local / date 입력값 */
@@ -22,6 +47,8 @@ export function fromInput(value: string, withTime?: boolean): string {
   if (!withTime) return value.slice(0, 10);
   return value.length === 16 ? `${value}:00` : value;
 }
+
+export { formatDt, formatYmd, isWithinThisWeek, todayInSeoul, weekBounds } from "@ssccops/date";
 
 /**
  * 서비스 표준 시간대(Asia/Seoul)의 UTC 오프셋.
@@ -56,12 +83,6 @@ export function withServiceOffset(value: string | null): string | null {
   if (HAS_OFFSET.test(value)) return value;
   const withSeconds = value.length === 16 ? `${value}:00` : value;
   return `${withSeconds}${SERVICE_UTC_OFFSET}`;
-}
-
-/** 일시TS → "2026-08-12 19:00" */
-export function formatDt(value: string | null): string {
-  if (!value) return "";
-  return value.slice(0, 16).replace("T", " ");
 }
 
 /**
@@ -99,66 +120,11 @@ export function formatInstant(value: string | null): string {
   }).format(new Date(ms));
 }
 
-/** 일시TS·일자D → "2026-08-12" */
-export function formatYmd(value: string | null): string {
-  return value ? value.slice(0, 10) : "";
-}
-
 /** 일시TS·일자D → "8월 20일" */
 export function formatMd(value: string | null): string {
   if (!value) return "";
   const [, m, d] = value.slice(0, 10).split("-");
   return `${Number(m)}월 ${Number(d)}일`;
-}
-
-/**
- * 오늘 날짜(Asia/Seoul) — "YYYY-MM-DD".
- *
- * **서버에서 받아 온 값의 D-day는 이 함수로 센다.** 기본 기준일 `TODAY`는 목 데이터의 D-day
- * 시맨틱을 고정하려고 박아 둔 상수(2026-08-09)라, 실제 데이터에 쓰면 이미 지난 마감이
- * "D-11"로 보이는 식으로 조용히 틀린다.
- *
- * 브라우저의 로컬 시간대가 아니라 서비스 시간대로 센다 — 서버가 일시를 Asia/Seoul 오프셋으로
- * 내려주고 화면도 그 문자열을 그대로 잘라 쓰므로(`formatDt`), 여기서만 현지 시간대를 쓰면
- * 해외에서 접속한 운영자에게 하루가 어긋난다 (`withServiceOffset`과 같은 판단).
- */
-export function todayInSeoul(): string {
-  // sv-SE 로케일이 ISO와 같은 YYYY-MM-DD 표기를 준다
-  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(new Date());
-}
-
-/**
- * `today`(YYYY-MM-DD)가 속한 주(월요일 시작)의 [시작, 끝] 일자를 돌려준다.
- *
- * "이번 주" 판정을 서버가 내려주지 않으므로(학술 대시보드 #126) 회차 목록을 받아 이 범위로
- * 거른다 — 기준일은 `todayInSeoul()`이다. 프로토타입의 고정 기준일(2026-08-21)을 쓰면 이미
- * 지난 회차가 미래로 보인다. 월요일 시작으로 잡는 것은 학술 회차가 대개 주 단위 커리큘럼이라
- * 주말을 한 주의 끝으로 두는 편이 읽기 자연스러워서다(ISO-8601 주 정의와도 같다).
- */
-export function weekBounds(today: string = todayInSeoul()): {
-  start: string;
-  end: string;
-} {
-  const base = new Date(`${today}T00:00:00Z`);
-  // getUTCDay(): 일=0…토=6 → 월요일까지 되돌릴 일수
-  const backToMonday = (base.getUTCDay() + 6) % 7;
-  const start = new Date(base.getTime() - backToMonday * 86_400_000);
-  const end = new Date(start.getTime() + 6 * 86_400_000);
-  return {
-    start: start.toISOString().slice(0, 10),
-    end: end.toISOString().slice(0, 10),
-  };
-}
-
-/** `date`(YYYY-MM-DD)가 `today` 기준 이번 주(월~일) 안에 드는가. 값이 없으면 false */
-export function isWithinThisWeek(
-  date: string | null,
-  today: string = todayInSeoul(),
-): boolean {
-  if (!date) return false;
-  const ymd = date.slice(0, 10);
-  const { start, end } = weekBounds(today);
-  return ymd >= start && ymd <= end;
 }
 
 /** 기준일(TODAY)로부터 남은 일수. 값이 없으면 null */

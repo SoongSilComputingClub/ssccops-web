@@ -20,6 +20,9 @@ importers:
       '@ssccops/codes':
         specifier: workspace:*
         version: link:../../packages/codes
+      '@ssccops/date':
+        specifier: workspace:*
+        version: link:../../packages/date
       '@ssccops/form-renderer':
         specifier: workspace:*
         version: link:../../packages/form-renderer
@@ -84,6 +87,9 @@ importers:
       '@ssccops/codes':
         specifier: workspace:*
         version: link:../../packages/codes
+      '@ssccops/date':
+        specifier: workspace:*
+        version: link:../../packages/date
       '@ssccops/form-renderer':
         specifier: workspace:*
         version: link:../../packages/form-renderer
@@ -148,6 +154,9 @@ importers:
       '@ssccops/codes':
         specifier: workspace:*
         version: link:../../packages/codes
+      '@ssccops/date':
+        specifier: workspace:*
+        version: link:../../packages/date
       '@ssccops/form-renderer':
         specifier: workspace:*
         version: link:../../packages/form-renderer
@@ -211,6 +220,18 @@ importers:
         version: 4.122.0
 
   packages/codes:
+    devDependencies:
+      eslint:
+        specifier: ^9
+        version: 9.39.5(jiti@2.7.0)
+      eslint-config-next:
+        specifier: 16.3.0
+        version: 16.3.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/date:
     devDependencies:
       eslint:
         specifier: ^9
