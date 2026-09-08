@@ -11,6 +11,7 @@ import {
   type MyProgramDetailReady,
 } from "@/features/academic-program";
 import { LoginGate } from "@/features/auth";
+import { ShareButton } from "@/features/share";
 import {
   ROUTES,
   signupUrl,
@@ -157,6 +158,24 @@ function DetailBody({ data }: { data: MyProgramDetailReady }) {
           >
             팀원 관리
           </Link>
+          {/*
+           * 공유 (ssccops#253 · ADR-0017). 출석부·팀원 관리와 같은 줄에 둔다 — 셋 다 "이 활동을
+           * 가지고 무엇을 한다"이고, 공유만 따로 떼면 스터디장이 찾아야 할 자리가 하나 는다.
+           *
+           * **링크가 가리키는 곳은 이 앱이 아니다.** 학술 링크는 부원에게 나가므로 착지를
+           * apps/www가 받는다 — 발급하는 앱이 아니라 대상 종류가 정한다(ADR-0017). 사람이
+           * 눌러 도착하는 곳은 다시 이 화면이고, 내 활동이 아니면 위 로더가 "찾을 수
+           * 없습니다"로 떨어뜨린다(토큰이 주는 것은 미리보기까지다 · ADR-0016).
+           *
+           * 제목을 함께 넘기는 것은 모바일 공유 시트가 제목을 요구하기 때문이다. 비어 있는
+           * 제목을 "-"로 채우지 않는다 — 그 표시 규칙은 화면의 것이고 공유 시트에 "-"가 뜨면
+           * 안 된다.
+           */}
+          <ShareButton
+            targetType="ACADEMIC_PROGRAM"
+            targetId={program.academicProgramId}
+            title={program.title}
+          />
         </div>
         <div className="mt-[10px] text-[22px] font-semibold">
           {program.title || "-"}

@@ -19,6 +19,7 @@
     "@ssccops/codes": "workspace:*",
     "@ssccops/date": "workspace:*",
     "@ssccops/form-renderer": "workspace:*",
+    "@ssccops/share-meta": "workspace:*",
     "@ssccops/ui": "workspace:*",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
