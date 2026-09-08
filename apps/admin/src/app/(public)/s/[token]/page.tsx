@@ -55,6 +55,7 @@ import { ShareLanding } from "@/views/share-landing";
 const DETAIL_PATH: Record<ShareTargetOf<"admin">, (targetId: number) => string> = {
   SUB_WORK: ROUTES.subWorkDetail,
   WORK: ROUTES.workDetail,
+  MEETING: ROUTES.meetingDetail,
 };
 
 /**

@@ -64,6 +64,25 @@ const SHARE_TARGETS = {
     landingApp: "admin",
     apiPath: (targetId: number) => `/v1/works/${targetId}/share`,
   },
+  /*
+   * 회의 (ssccops#252 · ssccops-server#310). 운영진끼리 "이번 주 회의 이거야"를 던지는
+   * 링크라 admin이 받는다(ADR-0017).
+   *
+   * 권한이 `MEETING_READ`인 것은 서버가 회의를 그것으로 가르기 때문이다 — 업무 계열과 달리
+   * 회의는 자기 조회 권한을 따로 갖는다(`MeetingController`의 `@RequireAuthority`, 시드의
+   * `authrt` 표시명이 "회의 조회"다). 발급도 조회 권한만 요구한다: 토큰이 주는 것이 미리보기
+   * 까지라 볼 수 있는 사람이 공유할 수 있다는 판단이 업무와 같다(ADR-0016).
+   *
+   * 이슈 본문(`ssccops-web#334`)의 예시는 업무 줄을 복사해 `WORK_READ`로 적혀 있었다. 이
+   * 값은 권한 오류 문구에만 쓰이는 문자열이라, 틀린 권한 이름을 그대로 두면 화면이 사용자에게
+   * 받을 수 없는 권한을 요구하게 된다.
+   */
+  MEETING: {
+    label: "회의",
+    readAuthority: "회의 조회(MEETING_READ)",
+    landingApp: "admin",
+    apiPath: (targetId: number) => `/v1/meetings/${targetId}/share`,
+  },
 } as const satisfies Record<string, ShareTargetRule>;
 
 /** 서버 `shr_lnk.trgt_se_cd`가 쓰는 대상 구분 코드 */
