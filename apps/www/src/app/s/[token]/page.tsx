@@ -8,7 +8,7 @@ import {
 } from "@ssccops/share-meta";
 import { fetchSharePreview } from "@/entities/share";
 import { ROUTES } from "@/shared/config/routes";
-import { lmsOrigin, lmsProgramDetailPath } from "@/shared/config/lms-routes";
+import { lmsOrigin, lmsProgramDetailPath, lmsSessionPath } from "@/shared/config/lms-routes";
 import { ShareLanding } from "@/views/share-landing";
 
 /*
@@ -65,9 +65,9 @@ import { ShareLanding } from "@/views/share-landing";
  * 그 앱 안의 주소는 그 앱만 아는 것이다.
  *
  * `ShareTargetOf<"www">`라 **`targets.ts`에 www 착지 대상을 더하면 여기가 비어 컴파일이
- * 깨진다** — 갈 곳 없는 대상이 조용히 404가 되는 것보다 낫다. 세션(ACADEMIC_SESSION)이 아직
- * 표에 없는 이유가 그 장치에 걸렸기 때문이고, 근거는 `packages/share-meta/src/targets.ts`
- * 헤더에 있다.
+ * 깨진다** — 갈 곳 없는 대상이 조용히 404가 되는 것보다 낫다. 세션(ACADEMIC_SESSION)이 한
+ * 박자 늦게 들어온 것이 그 장치에 걸렸기 때문이고, 무엇이 그것을 풀었는지는
+ * `packages/share-meta/src/targets.ts` 헤더에 있다.
  *
  * ── 값이 경로가 아니라 완성된 주소인 이유 ───────────────────
  * 처음(ssccops#253)에는 경로만 담고 오리진을 밖에서 한 번에 붙였다. **두 번째 대상인 행사가
@@ -88,6 +88,23 @@ const DETAIL_HREF: Record<ShareTargetOf<"www">, (targetId: number) => string | n
   ACADEMIC_PROGRAM: (targetId) => {
     const origin = lmsOrigin();
     return origin ? `${origin}${lmsProgramDetailPath(targetId)}` : null;
+  },
+  /*
+   * 회차 → lms. **이 줄이 이 표를 동기로 유지하기 위해 한 일이 있다.**
+   *
+   * 토큰이 주는 것은 회차 id 하나인데 lms에는 회차 상세 화면이 없어, 사람을 보내려면 활동 id가
+   * 있어야 하고 그 값은 `GET /v1/academic-sessions/{sessionId}`를 불러야 나온다. **그 조회를
+   * 여기서 하지 않는다** — 인증 경로인데 이 착지는 설계상 익명이라(크롤러가 닿아야 한다) 서버
+   * 컴포넌트에서 부르면 크롤러가, 브라우저에서 부르면 www에 로그인하지 않은 사람이 401을
+   * 받는다. www와 lms는 오리진이 달라 세션이 따로 논다.
+   *
+   * 대신 **해석을 목적지 앱에 맡긴다.** 여기서는 회차 id를 그대로 실은 주소 한 줄만 만들고,
+   * lms의 `/studio/sessions/{sessionId}`가 자기 인증으로 활동 id를 찾아 활동 상세로 넘긴다.
+   * 그래서 이 표는 프로그램·행사와 같은 모양(동기)으로 남는다 — 근거는 `lms-routes.ts`에 있다.
+   */
+  ACADEMIC_SESSION: (targetId) => {
+    const origin = lmsOrigin();
+    return origin ? `${origin}${lmsSessionPath(targetId)}` : null;
   },
   /*
    * 행사 → **이 앱 자신의 화면**(`/events/{eventId}` · ssccops#254). 남의 앱 주소를 알 필요가

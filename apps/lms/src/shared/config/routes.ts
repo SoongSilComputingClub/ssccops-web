@@ -40,6 +40,15 @@ export const ROUTES = {
    */
   studioProgramDetail: "/studio/programs/[programId]",
   /**
+   * 회차 하나 — **화면이 아니라 해석기다** (#335).
+   *
+   * 공유 링크가 들고 오는 것은 회차 id 하나인데 이 앱에는 회차 상세 화면이 없다(회차는 활동
+   * 상세의 "회차 이력" 안에서 보인다). 이 주소는 회차 id로 활동 id를 찾아
+   * `studioProgramDetail`의 해당 회차 자리로 넘겨 주기만 한다 — 그래서 목록·카드에서 이 주소로
+   * 링크를 걸 이유가 없고, 실제로 거는 곳은 `apps/www`의 공유 착지 하나다.
+   */
+  studioSessionLanding: "/studio/sessions/[sessionId]",
+  /**
    * 회차 기록 — 스터디장이 진행한 회차를 적는다 (#128).
    *
    * 대상은 주소의 `?programId=`(활동)와 `?curriculumItemId=`(그 활동의 커리큘럼 항목)로 받는다
@@ -116,6 +125,23 @@ export function myApplicationDetailUrl(formRspnsId: number): string {
  */
 export function studioProgramDetailUrl(academicProgramId: number): string {
   return `${ROUTES.studioPrograms}/${academicProgramId}`;
+}
+
+/**
+ * 활동 상세 안의 **회차 한 줄** — `/studio/programs/{programId}#session-{sessionId}` (#335).
+ *
+ * 회차 이력은 한 학기치가 쌓이므로, 공유 링크를 받은 사람을 활동 상세 맨 위에 떨어뜨리면
+ * "3회차"를 찾아 목록을 훑어야 한다. 앵커가 그 한 줄로 데려간다 — 회차 이력 행이
+ * `id="session-{sessionId}"`를 달고 있는 것이 이 주소의 짝이다(`my-program-detail-page.tsx`).
+ *
+ * 앵커라서 **활동 상세 화면 자체는 달라지지 않는다.** 회차를 못 찾으면(지워졌거나 다른 활동의
+ * 회차면) 브라우저가 그냥 맨 위에 머무는 것이 자연스러운 실패다.
+ */
+export function studioProgramSessionUrl(
+  academicProgramId: number,
+  sessionId: number,
+): string {
+  return `${studioProgramDetailUrl(academicProgramId)}#session-${sessionId}`;
 }
 
 /**
