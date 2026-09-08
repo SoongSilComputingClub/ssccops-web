@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # ============================================================================
-# SonarQube 분석 결과를 읽어 PR 코멘트와 job 요약으로 남긴다.
+# SonarQube 분석 결과를 읽어 job 요약으로 남긴다.
 # ============================================================================
 # integrate.yml 의 analyze job 이 쓴다. 인라인 bash 를 여기로 뺀 이유는 둘이다 —
 # `ssccops-server` 가 같은 자리(.github/scripts/sonar-report.sh)에 같은 스크립트를 두어
 # **두 레포의 모양을 맞추기 위해서**이고, 워크플로 YAML 안의 bash 는 `bash -n` 으로
 # 문법 검사조차 할 수 없기 때문이다. 이 스크립트가 조용히 틀린 값을 보고한 이력이 있다
-# (ssccops-web#306 · 아래 BRANCH_ENC).
+# (ssccops-web#306 — 브랜치명 인코딩. 그 질의 자체는 ssccops#238 에서 걷어냈다).
 #
 # **Quality Gate 가 실패해도 이 스크립트는 0 으로 끝난다** (ssccops#231).
 # 처음 분석을 켜면 기존 코드의 지적이 수백 건 나오는데, 그 상태로 게이트를 잠그면
@@ -17,10 +17,7 @@
 #
 # 필요한 환경변수:
 #   SONAR_TOKEN · SONAR_HOST_URL   분석 서버 접속
-#   GH_TOKEN                       PR 코멘트 작성 (gh CLI)
-#   REPO                           owner/repo
-#   BRANCH                         분석 대상 브랜치명
-#   PR_NUMBER                      (선택) 있으면 PR 에 코멘트를 단다
+#   REF_NAME                       분석한 ref (표시용. 질의에는 쓰지 않는다 — 아래 참고)
 # ============================================================================
 set -euo pipefail
 
@@ -36,13 +33,23 @@ PROJECT_KEY=$(grep '^projectKey=' "$REPORT_FILE" | cut -d'=' -f2)
 DASHBOARD_URL=$(grep '^dashboardUrl=' "$REPORT_FILE" | cut -d'=' -f2-)
 
 echo "ProjectKey: $PROJECT_KEY"
-echo "Branch: $BRANCH"
+echo "Ref: ${REF_NAME:-?}"
 
-# 브랜치명을 URL 인코딩한다. 이 저장소의 브랜치는 `{type}/#{이슈번호}-{슬러그}` 형식이라
-# **이름에 `#` 이 들어간다** — 그대로 쿼리에 끼우면 curl 이 그 뒤를 fragment 로 잘라내
-# `branch=chore/` 만 전송되고, 없는 브랜치라 응답이 비어 커버리지가 0% 로 보고된다.
-# 실제로 #304 의 첫 실행이 그렇게 나왔다 (ssccops-web#306 · ssccops-server#284).
-BRANCH_ENC=$(jq -rn --arg v "$BRANCH" '$v|@uri')
+# ----------------------------------------------------------------------------
+# **질의에 branch 파라미터를 넣지 않는다** (ssccops#238).
+#
+# 이 서버는 SonarQube Community Build 26.8.0 이고 브랜치 플러그인이 없다(ssccops#234).
+# 스캐너가 `sonar.branch.name` 을 선언하지 못해 — 선언하면 업그레이드하라는 오류로 분석이
+# 죽는다 — **모든 분석이 프로젝트 기본 브랜치 한 자리에 쌓인다.**
+#
+# 그 상태에서 `&branch=<브랜치명>` 으로 조회하면 **없는 브랜치를 묻는 것**이라 응답이 빈다.
+# ssccops-web#306 이 URL 인코딩을 고쳤지만 그것은 다른 결함이었고, 이쪽은 인코딩이 맞아도
+# 여전히 빗나간다 — **제출할 때 브랜치를 밝히지 않았으니 조회에서 무엇을 하든 같은 데이터를
+# 되읽는다.** 그래서 파라미터를 뺀다.
+#
+# 분석이 develop push 한 곳에서만 돌므로 프로젝트 기본 브랜치의 상태가 곧 develop 의
+# 상태다. 리포트도 그렇게 말한다.
+# ----------------------------------------------------------------------------
 
 # ----------------------------------------------------------------------------
 # CE 태스크가 끝나기를 기다린다 (분석 제출과 집계는 비동기다)
@@ -96,8 +103,12 @@ QG_STATUS=$(echo "$QG_JSON" | jq -r '.projectStatus.status // "UNKNOWN"')
 # 한 페이지(기본 100건)라 **총계가 아니라 페이지 크기를 세고 있었다** — 실제로 web 의 첫
 # 보고(4+0+96)와 그다음 보고(1+71+28)가 **둘 다 정확히 100** 이었다. `ps=1` 로 본문은 받지
 # 않고 facet 만 받는다.
+#
+# 필터 이름은 `componentKeys` 다. `projectKeys` 는 이 API 에 없는 이름이라 **오류 없이 통째로
+# 무시되고 인스턴스 전체가 돌아온다** — server 쪽에서 같은 자리를 고쳤다(ssccops-server#291).
+# 이 리포트가 "기본 브랜치 기준" 이라고 말하려면 프로젝트 범위부터 실제로 걸려 있어야 한다.
 ISSUES_JSON=$(curl -s -u "$SONAR_TOKEN:" \
-  "$SONAR_HOST_URL/api/issues/search?projectKeys=$PROJECT_KEY&branch=$BRANCH_ENC&resolved=false&facets=types&ps=1")
+  "$SONAR_HOST_URL/api/issues/search?componentKeys=$PROJECT_KEY&resolved=false&facets=types&ps=1")
 
 if echo "$ISSUES_JSON" | jq -e 'has("facets")' >/dev/null 2>&1; then
   type_count() {
@@ -108,14 +119,14 @@ if echo "$ISSUES_JSON" | jq -e 'has("facets")' >/dev/null 2>&1; then
   VULNS=$(type_count VULNERABILITY)
   SMELLS=$(type_count CODE_SMELL)
 else
-  echo "::warning::이슈 질의가 빗나갔다 (branch=$BRANCH). 응답: $(echo "$ISSUES_JSON" | head -c 200)"
+  echo "::warning::이슈 질의가 빗나갔다. 응답: $(echo "$ISSUES_JSON" | head -c 200)"
   BUGS="조회 실패"
   VULNS="조회 실패"
   SMELLS="조회 실패"
 fi
 
 MEASURES_JSON=$(curl -s -u "$SONAR_TOKEN:" \
-  "$SONAR_HOST_URL/api/measures/component?component=$PROJECT_KEY&branch=$BRANCH_ENC&metricKeys=coverage,duplicated_lines_density")
+  "$SONAR_HOST_URL/api/measures/component?component=$PROJECT_KEY&metricKeys=coverage,duplicated_lines_density")
 
 # 측정값 하나를 꺼낸다. 조회 자체가 빗나갔으면 "조회 실패", 조회는 됐는데 그 metric 이
 # 없으면 "없음"(측정된 적이 없다는 뜻이고, 0% 와 다르다).
@@ -136,7 +147,7 @@ measure_of() {
 }
 
 if ! echo "$MEASURES_JSON" | jq -e 'has("component")' >/dev/null 2>&1; then
-  echo "::warning::측정값 질의가 빗나갔다 (branch=$BRANCH). 응답: $(echo "$MEASURES_JSON" | head -c 200)"
+  echo "::warning::측정값 질의가 빗나갔다. 응답: $(echo "$MEASURES_JSON" | head -c 200)"
 fi
 
 COVERAGE=$(measure_of coverage)
@@ -155,7 +166,7 @@ BODY=$(cat <<EOF
 
 ${ICON} **Quality Gate ${RESULT}**
 
-**브랜치:** \`${BRANCH}\`
+**분석한 커밋:** \`${REF_NAME:-?}\` @ \`${GITHUB_SHA:0:7}\`
 
 ### 이슈
 - 버그: ${BUGS}
@@ -166,17 +177,15 @@ ${ICON} **Quality Gate ${RESULT}**
 - 커버리지: ${COVERAGE}
 - 중복도: ${DUPLICATION}
 
-Dashboard: ${DASHBOARD_URL}&branch=${BRANCH_ENC}
+Dashboard: ${DASHBOARD_URL}
 
+> **이 수치는 프로젝트 기본 브랜치 기준이다** — 이 서버는 Community Build 라 브랜치를 가르지 못한다(ssccops#234). 분석은 develop push 한 곳에서만 돌므로 곧 develop 의 상태다.
+>
 > Quality Gate는 **머지를 막지 않는다** (ssccops#231). 기준을 정한 뒤에 잠근다.
 EOF
 )
 
 echo "$BODY" >> "$GITHUB_STEP_SUMMARY"
-
-if [ -n "${PR_NUMBER:-}" ]; then
-  gh api "repos/$REPO/issues/$PR_NUMBER/comments" -f body="$BODY"
-fi
 
 # Quality Gate 실패로 이 스크립트를 실패시키지 않는다 — 위 주석 참고.
 if [ "$QG_STATUS" != "OK" ]; then
