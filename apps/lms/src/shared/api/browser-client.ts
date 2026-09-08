@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient } from "@/shared/lib/supabase/client";
+import { createClient } from "@ssccops/auth/supabase/client";
 import { AUTH_ERROR } from "./auth-error";
 import {
   ApiError,

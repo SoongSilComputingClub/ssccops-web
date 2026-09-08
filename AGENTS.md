@@ -130,6 +130,16 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
 - 세션 갱신·가드는 `src/middleware.ts`가 한다. Next 16의 컨벤션은 `proxy.ts`지만
   `@opennextjs/cloudflare`가 아직 인식하지 못해 빌드가 깨진다 — **함부로 옮기지 말 것**
   (한 번 옮겼다 되돌린 이력이 있다). 매처는 좁게 잡는다(요청마다 Supabase 왕복이 붙는다).
+- **세션 갱신 코드 자체는 `@ssccops/auth`에 있다**(ssccops-web#329) — 세 앱이 같은 사본을
+  들고 있었다. 진입점은 `@ssccops/auth/supabase/{client,server,proxy}`이고 `?next=` 검증·
+  OAuth 목적지 쿠키는 `@ssccops/auth` 배럴이다.
+  - **`updateSession`은 기본이 갱신기다.** 미인증 요청을 로그인 화면으로 밀어내는 것은
+    두 번째 인자 `SessionGuard`를 줄 때뿐이고, **주는 앱은 admin 하나다**
+    (`shared/lib/supabase/guard.ts`). www·lms에는 밀어낼 로그인 화면이 없어 인자를 비운다 —
+    로그인은 지금 보고 있는 화면 위에서 시작한다.
+  - **공개 경로 목록(`PUBLIC_PATHS`)은 공유하지 않는다.** admin에 `/s`(공유 링크 착지 ·
+    ssccops#200)가 있는 것은 크롤러가 정의상 미인증이라 리다이렉트되면 `generateMetadata`가
+    아예 돌지 않기 때문이다. 앱마다 다른 값이지 함께 볼 규칙이 아니다.
 - 권한은 서버가 `GET /v1/auth/session`의 `member.capabilities` 배열로 내려준다. 화면이 권한을
   묻는 **유일한 통로는 `useCan(CAPABILITY.X)`**다.
 - **역할 이름·서열(`indct_seqno`)·권한 트리 펼침을 웹에서 다시 계산하지 않는다.** 판정 규칙은

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
 import { currentPath, safeNextPath, rememberOAuthNext } from "@ssccops/auth";
-import { createClient } from "@/shared/lib/supabase/client";
+import { createClient } from "@ssccops/auth/supabase/client";
 
 /*
  * 이 앱의 **로그인 진입은 화면이 아니라 버튼**이다(apps/www의 규약을 잇는다).

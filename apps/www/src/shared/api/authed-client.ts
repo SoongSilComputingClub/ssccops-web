@@ -1,4 +1,4 @@
-import { createClient } from "@/shared/lib/supabase/server";
+import { createClient } from "@ssccops/auth/supabase/server";
 import { AUTH_ERROR } from "./auth-error";
 import { ApiError, apiFetch } from "./client";
 
@@ -27,7 +27,7 @@ export { AUTH_ERROR, isSignupRequired, isUnauthenticated } from "./auth-error";
  * `getUser()`가 아니라 `getSession()`을 쓴다 — 우리가 필요한 것은 사용자 정보가 아니라
  * **ssccops-server에 실어 보낼 토큰**이고, 그 토큰이 유효한지 판정하는 것은 서버다.
  * 여기서 `getUser()`를 부르면 화면을 그릴 때마다 Supabase 왕복이 하나 더 붙는데, 갱신은 이미
- * 미들웨어가 이 경로에서 끝내 두었다(shared/lib/supabase/proxy.ts).
+ * 미들웨어가 이 경로에서 끝내 두었다(@ssccops/auth/supabase/proxy).
  */
 export async function currentAccessToken(): Promise<string | null> {
   const supabase = await createClient();

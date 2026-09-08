@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ROUTES } from "@/shared/config/routes";
 import { safeNextPath, OAUTH_NEXT_COOKIE, OAUTH_NEXT_COOKIE_PATH } from "@ssccops/auth";
-import { createClient } from "@/shared/lib/supabase/server";
+import { createClient } from "@ssccops/auth/supabase/server";
 
 /**
  * 목적지 쿠키를 지운다 — 성공·실패를 가리지 않고 이 라우트를 빠져나가는 모든 응답에 붙인다.

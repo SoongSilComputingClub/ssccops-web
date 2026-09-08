@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createClient } from "@/shared/lib/supabase/client";
+import { createClient } from "@ssccops/auth/supabase/client";
 import { SignInButton } from "./sign-in-button";
 
 /*

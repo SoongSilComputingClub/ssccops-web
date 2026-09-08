@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ROUTES } from "@/shared/config/routes";
 import { safeNextPath, rememberOAuthNext } from "@ssccops/auth";
-import { createClient } from "@/shared/lib/supabase/client";
+import { createClient } from "@ssccops/auth/supabase/client";
 
 /*
  * /auth/callback 이 붙여 주는 실패 원인 → 사용자 문구.

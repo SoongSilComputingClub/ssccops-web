@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { signupUrl } from "@/shared/config/routes";
-import { createClient } from "@/shared/lib/supabase/client";
+import { createClient } from "@ssccops/auth/supabase/client";
 import { Notice } from "@/shared/ui";
 import { SignInButton } from "./sign-in-button";
 

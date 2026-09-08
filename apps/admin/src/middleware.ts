@@ -1,13 +1,19 @@
 import type { NextRequest } from "next/server";
-import { updateSession } from "@/shared/lib/supabase/proxy";
+import { updateSession } from "@ssccops/auth/supabase/proxy";
+import { ADMIN_SESSION_GUARD } from "@/shared/lib/supabase/guard";
 
 /*
  * Next.js 16은 middleware.ts를 proxy.ts로 대체했지만, @opennextjs/cloudflare가 아직
  * proxy.ts 컨벤션을 인식하지 못해 빌드가 깨진다 (opennextjs/opennextjs-cloudflare#962).
  * 어댑터가 지원할 때까지 구 컨벤션(middleware.ts / export function middleware)을 유지한다.
  */
+/*
+ * 세 앱 중 **가드를 주는 것은 이 앱뿐이다**(ssccops-web#329). `updateSession`이 하는 일은
+ * 세션 쿠키 갱신이고, 미인증 요청을 `/login`으로 밀어내는 판단은 여기서 넘기는 값이 정한다 —
+ * 공개 경로 목록(`/s` 공유 링크 착지 포함)은 앱마다 다르므로 공유 패키지에 두지 않았다.
+ */
 export async function middleware(request: NextRequest) {
-  return updateSession(request);
+  return updateSession(request, ADMIN_SESSION_GUARD);
 }
 
 /*
