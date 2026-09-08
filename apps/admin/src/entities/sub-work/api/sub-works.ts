@@ -8,6 +8,7 @@ import { ApiError, apiFetch, apiFetchList } from "@/shared/lib/api/client";
 import { withServiceOffset } from "@/shared/lib/date";
 import type {
   SubWorkChecklistItem,
+  SubWorkChecklistRemoval,
   SubWorkChecklistSummary,
   SubWorkChecklistUpdate,
   SubWorkDetail,
@@ -81,6 +82,15 @@ export const SUB_WORK_ERROR = {
   REASON_REQUIRED: "REASON_REQUIRED",
   /** 이미 소프트 삭제된 하위 업무를 다시 삭제 시도 (409, 서버 #125) */
   ALREADY_DELETED: "ALREADY_DELETED",
+  /**
+   * 체크된 점검 항목을 지우려 했다 (409, 서버 #307).
+   *
+   * **`TRANSITION_NOT_ALLOWED`와 갈라 쓰는 이유는 화면이 두 잠금을 구별해야 하기 때문이다** —
+   * "지금 단계라서 못 고침"은 다른 사람이 상태를 옮긴 것이라 목록을 다시 받으면 풀리고,
+   * "체크돼 있어서 못 지움"은 체크를 해제하면 사용자가 스스로 푼다. 한 코드로 뭉치면 화면이
+   * 둘 중 무엇을 말해야 하는지 알 수 없다(서버 #307 "먼저 확인할 것" 절이 이 갈림을 남겼다).
+   */
+  CHECKLIST_ITEM_COMPLETED: "CHECKLIST_ITEM_COMPLETED",
 } as const;
 
 /** 반려 사유 최대 길이 (sub_work_rjct.rjct_rsn · OPS-010 reason) — 초과는 400이다 */
@@ -367,6 +377,8 @@ interface ChecklistItemResponse {
   article: string | null;
   isCompleted: boolean | null;
   sortOrder: number | null;
+  /** 서버 #307 — 이 항목을 지울 수 있는가. 옛 서버는 이 필드를 내리지 않는다 */
+  isDeletable: boolean | null;
 }
 
 interface ChecklistSummaryResponse {
@@ -416,6 +428,8 @@ interface SubWorkDetailResponse {
   completedAt: string | null;
   checklist: ChecklistItemResponse[] | null;
   checklistSummary: ChecklistSummaryResponse | null;
+  /** 서버 #307 — 점검 항목 자체를 지금 고칠 수 있는가. 옛 서버는 이 필드를 내리지 않는다 */
+  isChecklistItemEditable: boolean | null;
   quorum: QuorumResponse | null;
   /*
    * 이번 회차의 내 표. 상세 화면에서도 투표하므로 받는다(ssccops-web#82) — 승인함은
@@ -449,6 +463,13 @@ interface ChecklistItemUpdateResponse {
   checklistSummary: ChecklistSummaryResponse | null;
 }
 
+/** 항목 삭제 응답 (서버 #307) — 지워진 항목은 없으므로 식별자와 다시 센 요약만 온다 */
+interface ChecklistItemDeleteResponse {
+  subWorkId: number | null;
+  checklistItemId: number | null;
+  checklistSummary: ChecklistSummaryResponse | null;
+}
+
 /* ── 응답 → 도메인 ─────────────────────────────────────────── */
 
 /**
@@ -466,6 +487,11 @@ function toChecklistItem(res: ChecklistItemResponse): SubWorkChecklistItem {
     article: res.article ?? "",
     isCompleted: res.isCompleted === true,
     sortOrder: res.sortOrder ?? 0,
+    /*
+     * 서버가 안 내려준 판정을 '가능'으로 읽지 않는다 — canApprove·canReject와 같은 폴백이다.
+     * 서버 #307이 배포되기 전에는 이 값이 늘 false라 삭제 버튼이 아예 그려지지 않는다.
+     */
+    isDeletable: res.isDeletable === true,
   };
 }
 
@@ -543,6 +569,11 @@ function toSubWorkDetail(res: SubWorkDetailResponse): SubWorkDetail {
     completedAt: res.completedAt,
     checklist,
     checklistSummary: toChecklistSummary(res.checklistSummary),
+    /*
+     * 업무_상태로 되짚지 않는다 — 서버가 판정한 값만 쓴다(서버 #307). 옛 서버가 이 필드를
+     * 안 내리면 편집 UI가 통째로 잠긴 채 종전 화면 그대로 동작한다.
+     */
+    isChecklistItemEditable: res.isChecklistItemEditable === true,
     quorum: toQuorum(res.quorum),
     // 정족수 유형이 아니면 서버가 null로 내린다 — 그때는 화면에 찬반 버튼 자체가 없다
     myVote: res.myVote ?? null,
@@ -692,6 +723,111 @@ export async function updateSubWorkChecklistItem(
     subWorkId: res.subWorkId ?? subWorkId,
     item: toChecklistItem(res.item),
     checklistSummary: toChecklistSummary(res.checklistSummary),
+  };
+}
+
+/* ── 점검 항목 편집 (서버 #307) ─────────────────────────────── */
+
+/*
+ * 항목 추가·문구 수정·삭제.
+ *
+ * **체크·해제(위의 updateSubWorkChecklistItem)와 경로를 나눈다.** 서버가 두 가지를 다른
+ * 세기로 잠그기 때문이다 — 체크는 진척 기록이라 완료 전까지 열려 있고, 항목 편집은 완료
+ * 조건 자체를 바꾸는 일이라 더 일찍 잠긴다. 한 경로에 본문만 바꿔 보내면 어느 잠금에 걸린
+ * 것인지 응답만 보고는 알 수 없다.
+ *
+ * **⚠ 서버 계약 미확정 — ssccops-server#307을 확인할 것.** 그쪽 PR이 아직 들어가지 않아
+ * 아래 경로·본문 키·응답 모양은 기존 체크리스트 API(OPS-013)의 규칙을 그대로 이은 가정이다.
+ * 서버가 확정되면 **이 파일만** 고치면 된다 — 화면과 훅은 도메인 타입만 안다.
+ *
+ * 항목 문구의 길이 상한은 여기서 정하지 않는다. `chck_artcl_cn`은 내용T(TEXT)라 데이터사전에
+ * 상한이 없고, 화면이 없는 제한을 만들면 서버가 받아 줄 값을 화면이 먼저 막는다 — 서버가
+ * 400을 주면 그 문장을 그대로 보여 준다(VALIDATION_FAILED 규칙과 같다).
+ */
+
+/**
+ * POST /v1/sub-works/{subWorkId}/checklist — 항목 추가.
+ *
+ * `sortOrder`를 보내지 않는다. 끝에 붙이는 것이 서버 기본이고(#307), 화면이 번호를 매기면
+ * 동시에 두 사람이 더했을 때 같은 순번이 생긴다.
+ */
+export async function addSubWorkChecklistItem(
+  subWorkId: number,
+  article: string,
+): Promise<SubWorkChecklistUpdate> {
+  const res = await apiFetch<ChecklistItemUpdateResponse | null>(
+    `/v1/sub-works/${subWorkId}/checklist`,
+    { method: "POST", body: JSON.stringify({ article: article.trim() }) },
+  );
+
+  if (!res?.item) {
+    throw new ApiError(
+      SUB_WORK_ERROR.VALIDATION_FAILED,
+      "항목은 추가됐지만 서버가 결과를 돌려주지 않았습니다. 화면을 새로고침해주세요",
+    );
+  }
+
+  return {
+    subWorkId: res.subWorkId ?? subWorkId,
+    item: toChecklistItem(res.item),
+    checklistSummary: toChecklistSummary(res.checklistSummary),
+  };
+}
+
+/**
+ * PATCH /v1/sub-works/{subWorkId}/checklist/{checklistItemId}/article — 문구 수정.
+ *
+ * 체크·해제와 같은 자원이지만 하위 경로를 따로 두는 이유는 위 절에 적었다 — 종전 체크 요청
+ * (`{ isCompleted }`)이 그대로 살아 있어야 하고, 두 잠금이 서로 다르다.
+ */
+export async function renameSubWorkChecklistItem(
+  subWorkId: number,
+  checklistItemId: number,
+  article: string,
+): Promise<SubWorkChecklistUpdate> {
+  const res = await apiFetch<ChecklistItemUpdateResponse | null>(
+    `/v1/sub-works/${subWorkId}/checklist/${checklistItemId}/article`,
+    { method: "PATCH", body: JSON.stringify({ article: article.trim() }) },
+  );
+
+  if (!res?.item) {
+    throw new ApiError(
+      SUB_WORK_ERROR.VALIDATION_FAILED,
+      "문구는 저장됐지만 서버가 결과를 돌려주지 않았습니다. 화면을 새로고침해주세요",
+    );
+  }
+
+  return {
+    subWorkId: res.subWorkId ?? subWorkId,
+    item: toChecklistItem(res.item),
+    checklistSummary: toChecklistSummary(res.checklistSummary),
+  };
+}
+
+/**
+ * DELETE /v1/sub-works/{subWorkId}/checklist/{checklistItemId} — 항목 삭제.
+ *
+ * 체크된 항목은 409 `CHECKLIST_ITEM_COMPLETED`, 편집이 잠긴 단계는 409
+ * `TRANSITION_NOT_ALLOWED`다 — 화면이 두 문구를 갈라 쓴다.
+ *
+ * 응답 본문이 비어 있어도 실패로 보지 않는다. 삭제는 **없어졌다는 사실 자체가 결과**다.
+ * 다만 요약이 안 왔다면 0/0으로 채우지 않고 null로 둔다 — 화면이 그때 상세를 다시 부른다.
+ */
+export async function deleteSubWorkChecklistItem(
+  subWorkId: number,
+  checklistItemId: number,
+): Promise<SubWorkChecklistRemoval> {
+  const res = await apiFetch<ChecklistItemDeleteResponse | null>(
+    `/v1/sub-works/${subWorkId}/checklist/${checklistItemId}`,
+    { method: "DELETE" },
+  );
+
+  return {
+    subWorkId: res?.subWorkId ?? subWorkId,
+    checklistItemId: res?.checklistItemId ?? checklistItemId,
+    checklistSummary: res?.checklistSummary
+      ? toChecklistSummary(res.checklistSummary)
+      : null,
   };
 }
 
