@@ -10,7 +10,7 @@ import { version } from "./package.json";
  * OpenNext 빌드에서도 같게 돌도록 여기서 명시한다.
  */
 const nextConfig: NextConfig = {
-  transpilePackages: ["@ssccops/form-renderer"],
+  transpilePackages: ["@ssccops/form-renderer", "@ssccops/ui", "@ssccops/codes"],
 
   /*
    * 화면에 띄울 버전을 `package.json`에서 그대로 끌어온다 (ssccops#229).

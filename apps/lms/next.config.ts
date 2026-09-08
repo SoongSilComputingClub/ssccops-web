@@ -7,7 +7,7 @@ import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
  * 손대지 않아도 되게 하려는 것이다. `globals.css`의 `@source`도 같은 이유로 함께 걸어 둔다.
  */
 const nextConfig: NextConfig = {
-  transpilePackages: ["@ssccops/form-renderer"],
+  transpilePackages: ["@ssccops/form-renderer", "@ssccops/ui", "@ssccops/codes"],
 };
 
 export default nextConfig;
