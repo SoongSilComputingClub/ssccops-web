@@ -12,9 +12,27 @@
  *
  * ── 대상을 더할 때 ──────────────────────────────────────────
  * 아래 `SHARE_TARGETS`에 한 줄을 더한다. 그 한 줄이 착지 앱·서버 경로·오류 문구를 한꺼번에
- * 정한다. `landingApp`이 `"admin"`이면 그 앱의 착지 라우트가 상세 경로를 채울 때까지 타입이
- * 맞지 않아 빌드가 깨진다(`ShareTargetOf` 참고) — 갈 곳 없는 대상이 조용히 404가 되는 것보다
- * 낫다고 보아 그렇게 뒀다.
+ * 정한다. **그 앱의 착지 라우트가 상세 경로를 채울 때까지 타입이 맞지 않아 빌드가 깨진다**
+ * (`ShareTargetOf` 참고) — 갈 곳 없는 대상이 조용히 404가 되는 것보다 낫다고 보아 그렇게 뒀다.
+ * `landingApp`이 `"www"`인 줄을 더하면 `apps/www`의 착지 라우트가, `"admin"`이면
+ * `apps/admin`의 것이 깨진다.
+ *
+ * ── 그래서 여기 아직 없는 대상: 세션(ACADEMIC_SESSION) ───────
+ * `ssccops#253`은 프로그램과 세션 둘을 함께 열기로 했지만 **세션 줄은 이 표에 넣지 못했다.**
+ * 위 장치가 정확히 그 이유를 말해 준다 — 넣는 순간 `apps/www`의 착지 라우트가 "이 세션을
+ * 사람에게 어디로 보낼 것인가"를 채워야 하는데, **lms에 세션 하나를 가리키는 주소가 없다.**
+ *
+ * 회차를 여는 lms의 두 자리는 활동 상세의 회차 이력(활동 주소 안이라 세션 자체의 주소가
+ * 아니다)과 회차 기록 작성(`/studio/record?programId=&curriculumItemId=` — 활동과 커리큘럼
+ * 항목 두 값을 함께 받고, 스터디장이 쓰는 작성 화면이라 링크를 받은 부원이 갈 곳이 아니다)
+ * 뿐이다. 토큰이 들고 오는 것은 `trgt_id` **하나**(세션 id)이고, 그 하나로 두 값을 복원할
+ * 경로가 서버에도 없다(`GET /v1/academic-programs/{programId}/sessions/{sessionId}`가 활동
+ * id를 함께 요구한다).
+ *
+ * 그러므로 세션은 **웹이 혼자 정할 수 없다.** 세션 id 하나로 읽는 서버 경로(ssccops-server#311)
+ * 나 부원이 볼 세션 상세 화면 중 하나가 먼저 있어야 하고, 그 판단은 이 SubTask 밖이다.
+ * 억지로 넣으면 카드는 펼쳐지는데 눌렀을 때 갈 곳이 없는 링크가 나가고, 그것은 이 표가 막으려
+ * 세운 바로 그 상태다.
  */
 
 /** 링크를 받는 앱 */
@@ -82,6 +100,28 @@ const SHARE_TARGETS = {
     readAuthority: "회의 조회(MEETING_READ)",
     landingApp: "admin",
     apiPath: (targetId: number) => `/v1/meetings/${targetId}/share`,
+  },
+  /*
+   * 학술 프로그램 (ssccops#253 · ssccops-server#311). **첫 www 착지 대상이다.**
+   *
+   * 여기서 처음으로 **발급하는 앱과 받는 앱이 갈린다** — 발급은 lms(스터디장이 자기 활동
+   * 상세에서 누른다), 착지는 www다(ADR-0017). 받는 사람이 운영진이 아니라 부원이라 링크가
+   * 운영 도메인을 가리키면 안 되고, 그 판단이 발급 주체가 아니라 대상에 걸려 있다는 것이
+   * 이 한 줄로 드러난다.
+   *
+   * ── 서버는 아직 확정하지 않았다 (ssccops-server#311) ────────
+   * 그 이슈에는 브랜치만 있고 PR이 없다. 경로는 #311이 못 박은 규칙 — **"각 도메인 기존 경로
+   * + /share"** — 을 그대로 적용했다(`/v1/academic-programs/{id}`가 이미 있는 상세 경로다).
+   * 권한 문구는 lms에서 이 버튼을 누르는 사람이 그 활동의 스터디장이라는 사실에서 왔다 —
+   * 활동 조회 자체는 로그인만 요구하므로(`programs-read.ts`) "볼 수 있는 사람이 공유할 수
+   * 있다"를 업무와 같은 방식으로 옮기면 아무나 발급하게 되어, 소유자로 좁혀 적었다.
+   * **서버가 다르게 정하면 고칠 곳은 이 표뿐이다.**
+   */
+  ACADEMIC_PROGRAM: {
+    label: "학술 프로그램",
+    readAuthority: "활동 스터디장·팀장 본인 또는 학술 활동 관리(ACADEMIC_PROGRAM_MANAGE)",
+    landingApp: "www",
+    apiPath: (targetId: number) => `/v1/academic-programs/${targetId}/share`,
   },
 } as const satisfies Record<string, ShareTargetRule>;
 

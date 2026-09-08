@@ -99,6 +99,9 @@ importers:
       '@ssccops/form-renderer':
         specifier: workspace:*
         version: link:../../packages/form-renderer
+      '@ssccops/share-meta':
+        specifier: workspace:*
+        version: link:../../packages/share-meta
       '@ssccops/ui':
         specifier: workspace:*
         version: link:../../packages/ui
