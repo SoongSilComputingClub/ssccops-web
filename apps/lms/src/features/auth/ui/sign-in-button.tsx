@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
-import { currentPath, safeNextPath } from "@/shared/lib/next-path";
-import { rememberOAuthNext } from "@/shared/lib/oauth-next";
+import { currentPath, safeNextPath, rememberOAuthNext } from "@ssccops/auth";
 import { createClient } from "@/shared/lib/supabase/client";
 
 /*

@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ROUTES } from "@/shared/config/routes";
-import { safeNextPath } from "@/shared/lib/next-path";
-import { rememberOAuthNext } from "@/shared/lib/oauth-next";
+import { safeNextPath, rememberOAuthNext } from "@ssccops/auth";
 import { createClient } from "@/shared/lib/supabase/client";
 
 /*

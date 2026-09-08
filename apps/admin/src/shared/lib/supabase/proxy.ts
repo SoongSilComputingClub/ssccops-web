@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { ROUTES } from "@/shared/config/routes";
-import { safeNextPath } from "@/shared/lib/next-path";
+import { safeNextPath } from "@ssccops/auth";
 
 /*
  * 미들웨어가 가르는 것은 "인증됐는가" 하나다.

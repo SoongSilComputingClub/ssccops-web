@@ -1,5 +1,5 @@
 import { ROUTES } from "@/shared/config/routes";
-import { currentPath, withNextParam } from "@/shared/lib/next-path";
+import { currentPath, withNextParam } from "@ssccops/auth";
 import { createClient } from "@/shared/lib/supabase/client";
 
 /*

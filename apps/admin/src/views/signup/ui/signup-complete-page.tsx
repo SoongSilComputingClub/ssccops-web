@@ -6,7 +6,7 @@ import { mbrGrdTone } from "@/entities/member";
 import { useSessionStore } from "@/entities/session";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
-import { safeNextPath } from "@/shared/lib/next-path";
+import { safeNextPath } from "@ssccops/auth";
 import { Badge, Button, Card, flash } from "@/shared/ui";
 
 /**

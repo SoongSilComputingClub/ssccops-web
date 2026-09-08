@@ -1,6 +1,7 @@
 # 모노레포 워크스페이스 — apps/* 는 배포 단위 앱, packages/* 는 두 앱이 함께 쓰는 공유 패키지
 # (packages/form-renderer = 폼 렌더러 · #152 · packages/share-meta = 공유 카드 문구 · ssccops#201 ·
-#  packages/date = 일시 표기 규칙 · ssccops-web#328).
+#  packages/ui = 표시 요소 · ssccops#243 · packages/date = 일시 표기 규칙 · ssccops-web#328 ·
+#  packages/auth = 로그인 왕복·세션 · ssccops-web#329).
 packages:
   - apps/*
   - packages/*

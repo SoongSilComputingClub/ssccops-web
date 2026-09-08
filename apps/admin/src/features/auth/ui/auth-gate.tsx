@@ -3,7 +3,7 @@
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/shared/config/routes";
-import { currentPath, withNextParam } from "@/shared/lib/next-path";
+import { currentPath, withNextParam } from "@ssccops/auth";
 import { useAuthBootstrap } from "../model/use-auth-bootstrap";
 import { BootstrapError, BootstrapPending } from "./bootstrap-fallback";
 
