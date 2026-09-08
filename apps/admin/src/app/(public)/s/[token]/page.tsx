@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { toShareDescription } from "@ssccops/share-meta";
+import {
+  type ShareTargetOf,
+  type ShareTargetType,
+  isShareTargetType,
+  toShareDescription,
+} from "@ssccops/share-meta";
 import { fetchSharePreview } from "@/entities/share";
 import { ROUTES } from "@/shared/config/routes";
 import { ShareLanding } from "@/views/share-landing";
 
 /*
- * 공유 링크 착지 페이지 (ssccops#200 · ADR-0016).
+ * 공유 링크 착지 페이지 (ssccops#200 · ssccops#250 · ADR-0016 · ADR-0017).
  *
  * 두 종류의 방문자가 같은 주소로 온다.
  *
@@ -31,9 +36,38 @@ import { ShareLanding } from "@/views/share-landing";
  * 공개 앱에 두면 그쪽이 어드민의 URL 구조를 알아야 한다 ② 익명 경로가 내주는 값의 범위는 어느
  * 앱이 렌더하든 서버가 정한다 — 옮겨도 새는 양은 같고 호스트 이름만 바뀐다.
  *
+ * **이 화면이 받는 것은 운영진에게 뿌리는 대상뿐이다**(ADR-0017). 부원·외부로 나가는 대상
+ * (학술·행사)은 `apps/www`의 같은 경로가 받으며, 그 라우트는 받을 대상이 생길 때 만든다
+ * (`ssccops#253`·`#254`). 어느 앱이 받는지는 `@ssccops/share-meta`의 표가 정한다.
+ *
  * `robots.txt`로 이 경로를 막지 않는다 — 슬랙 등은 robots를 존중해서 카드가 통째로 안 뜨고,
  * 토큰이 추측 불가라 검색엔진이 URL을 발견할 경로 자체가 없다.
  */
+
+/*
+ * 이 앱이 받는 대상 → 사람을 보낼 상세 경로.
+ *
+ * **경로는 앱이 갖고 있고 표에는 없다.** 어느 앱이 받는지는 세 앱이 함께 보는 규칙이지만,
+ * 그 앱 안의 주소는 그 앱만 아는 것이다(위 ①과 같은 이유다 — 남의 URL 구조를 아는 앱을 만들지
+ * 않는다). `ShareTargetOf<"admin">`이라 **표에 admin 착지 대상을 더하면 여기가 비어 컴파일이
+ * 깨진다** — 갈 곳 없는 대상이 조용히 404가 되는 것보다 낫다.
+ */
+const DETAIL_PATH: Record<ShareTargetOf<"admin">, (targetId: number) => string> = {
+  SUB_WORK: ROUTES.subWorkDetail,
+};
+
+/**
+ * 서버가 준 대상 구분 코드 → 이 앱의 상세 경로. 받지 않는 대상이면 `null`이다.
+ *
+ * 두 가지가 걸러진다. **이 웹이 모르는 대상**(서버만 먼저 배포됐다)과 **www가 받는
+ * 대상**(ADR-0017)이다. 둘을 가르지 않는 것은 갈 곳을 모르는 링크와 죽은 링크가 사용자에게
+ * 같은 것이기 때문이다.
+ */
+function detailPathOf(trgtSeCd: string): ((targetId: number) => string) | null {
+  if (!isShareTargetType(trgtSeCd)) return null;
+  const paths = DETAIL_PATH as Partial<Record<ShareTargetType, (targetId: number) => string>>;
+  return paths[trgtSeCd] ?? null;
+}
 
 export async function generateMetadata({ params }: PageProps<"/s/[token]">): Promise<Metadata> {
   const { token } = await params;
@@ -81,11 +115,11 @@ export default async function Page({ params }: PageProps<"/s/[token]">) {
   if (!preview) notFound();
 
   /*
-   * 서버가 아는 대상 종류를 이 앱이 모를 수 있다(서버만 먼저 배포된 경우). 그때 빈 화면을
-   * 그리는 대신 404로 두는 것은, 갈 곳을 모르는 링크와 죽은 링크가 사용자에게 같은 것이기
-   * 때문이다.
+   * **이 화면은 자기 대상만 받는다.** 서버가 아는 대상을 이 앱이 모를 수도 있고(서버만 먼저
+   * 배포된 경우), 알지만 www가 받는 대상일 수도 있다(ADR-0017) — 어느 쪽이든 여기서는 404다.
    */
-  if (preview.trgtSeCd !== "SUB_WORK") notFound();
+  const toDetail = detailPathOf(preview.trgtSeCd);
+  if (!toDetail) notFound();
 
-  return <ShareLanding title={preview.title} href={ROUTES.subWorkDetail(preview.trgtId)} />;
+  return <ShareLanding title={preview.title} href={toDetail(preview.trgtId)} />;
 }
