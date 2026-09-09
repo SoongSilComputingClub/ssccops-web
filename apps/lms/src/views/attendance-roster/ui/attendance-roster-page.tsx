@@ -49,7 +49,7 @@ export async function AttendanceRosterPage({
       {selection.outcome === "unauthenticated" && (
         <LoginGate
           title="로그인이 필요합니다"
-          description="출석부는 활동의 스터디장만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+          description="출석부는 활동의 스터디장만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
         />
       )}
       {selection.outcome === "signup-required" && (
@@ -83,7 +83,7 @@ async function RosterBody({ academicProgramId }: { academicProgramId: number }) 
     return (
       <LoginGate
         title="로그인이 필요합니다"
-        description="출석부는 활동의 스터디장만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+        description="출석부는 활동의 스터디장만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
       />
     );
   }

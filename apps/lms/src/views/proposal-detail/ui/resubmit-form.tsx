@@ -73,7 +73,7 @@ export function ResubmitForm({
     return (
       <Card>
         <p className="text-[14px] text-n300">
-          이 폼의 문항을 불러오지 못했습니다 — 화면을 새로고침해주세요.
+          이 폼의 문항을 불러오지 못했습니다 — 화면을 새로고침해주세요
         </p>
       </Card>
     );

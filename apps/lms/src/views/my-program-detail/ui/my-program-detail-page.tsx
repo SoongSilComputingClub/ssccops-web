@@ -92,7 +92,7 @@ function Body({
     return (
       <LoginGate
         title="로그인이 필요합니다"
-        description="활동 상세는 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+        description="활동 상세는 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
       />
     );
   }
@@ -120,7 +120,7 @@ function Body({
     return (
       <EmptyState
         title="활동을 찾을 수 없습니다"
-        description="내가 맡은 활동이 아니거나 아직 이관되지 않은 활동일 수 있습니다 — 내 활동 목록을 다시 확인해주세요."
+        description="내가 맡은 활동이 아니거나 아직 이관되지 않은 활동일 수 있습니다 — 내 활동 목록을 다시 확인해주세요"
       />
     );
   }
@@ -264,7 +264,7 @@ function DetailBody({ data }: { data: MyProgramDetailReady }) {
 
       {/* 국장 처리 현황 */}
       <Card>
-        <div className="mb-[14px] text-[16px] font-medium">국장 처리 현황</div>
+        <div className="mb-[14px] text-[16px] font-medium">학술국장 처리 현황</div>
         <ApprovalFeed approvals={approvals} />
       </Card>
     </div>
@@ -452,7 +452,7 @@ function ApprovalFeed({ approvals }: { approvals: AcademicProgramApproval[] }) {
   if (approvals.length === 0) {
     return (
       <div className="text-[14px] text-n500">
-        아직 국장이 처리한 회차 기록이 없습니다.
+        아직 학술국장이 처리한 회차 기록이 없습니다.
       </div>
     );
   }

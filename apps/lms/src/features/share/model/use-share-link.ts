@@ -70,24 +70,24 @@ function messageOf(error: unknown, targetType: LmsShareTargetType): string {
    * 안내하면 사람이 영영 다시 눌러 본다.
    */
   if (error instanceof ShareOriginMissingError) {
-    return "공개 링크 주소가 설정되지 않았습니다 — 운영진에게 문의해 주세요";
+    return "공개 링크 주소가 설정되지 않았습니다 — 운영진에게 문의해주세요";
   }
   if (error instanceof ApiError) {
     const rule = shareTargetRule(targetType);
     switch (error.code) {
       case "CLIENT_UNAUTHENTICATED":
       case "UNAUTHENTICATED":
-        return "로그인이 풀렸습니다 — 다시 로그인한 뒤 시도해 주세요";
+        return "로그인이 풀렸습니다 — 다시 로그인한 뒤 시도해주세요";
       case "FORBIDDEN":
       case "AUTHORITY_REQUIRED":
         return `공유 링크를 만들 권한이 없습니다 — ${rule.readAuthority} 권한이 필요합니다`;
       case "NOT_FOUND":
         return `${withObjectParticle(rule.label)} 찾을 수 없습니다 — 이미 지워졌을 수 있습니다`;
       default:
-        return "공유 링크를 처리하지 못했습니다 — 잠시 후 다시 시도해 주세요";
+        return "공유 링크를 처리하지 못했습니다 — 잠시 후 다시 시도해주세요";
     }
   }
-  return "공유 링크를 처리하지 못했습니다 — 잠시 후 다시 시도해 주세요";
+  return "공유 링크를 처리하지 못했습니다 — 잠시 후 다시 시도해주세요";
 }
 
 /*
