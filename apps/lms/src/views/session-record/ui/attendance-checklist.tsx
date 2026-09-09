@@ -65,8 +65,8 @@ export function AttendanceChecklist({
                 <span
                   aria-hidden
                   className={cn(
-                    "flex h-[22px] w-[22px] flex-none items-center justify-center rounded-[7px] text-[13px] text-white",
-                    checked ? "bg-accent" : "bg-bg shadow-[inset_0_0_0_1px_#d1d6db]",
+                    "flex h-[22px] w-[22px] flex-none items-center justify-center rounded-[7px] text-[13px] text-on-solid",
+                    checked ? "bg-accent" : "bg-bg shadow-[inset_0_0_0_1px_var(--color-line-strong)]",
                   )}
                 >
                   {checked ? "✓" : ""}

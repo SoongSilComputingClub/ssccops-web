@@ -250,7 +250,7 @@ export function SessionRecordForm({
                   router.push(ROUTES.studio);
                   router.refresh();
                 }}
-                className="rounded-[12px] bg-accent px-[16px] py-[10px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
+                className="rounded-[12px] bg-accent px-[16px] py-[10px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
               >
                 내 활동으로
               </button>
@@ -264,7 +264,7 @@ export function SessionRecordForm({
                 type="button"
                 onClick={onSubmit}
                 disabled={submitting}
-                className="rounded-[12px] bg-accent px-[16px] py-[10px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong disabled:opacity-50"
+                className="rounded-[12px] bg-accent px-[16px] py-[10px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong disabled:opacity-50"
               >
                 {submitting ? "제출 중…" : "제출 · 승인 요청"}
               </button>

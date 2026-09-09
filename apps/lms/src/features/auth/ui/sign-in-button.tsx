@@ -68,7 +68,7 @@ export function SignInButton({
         className={cn(
           "rounded-xl text-[15px] font-semibold transition-colors disabled:opacity-50",
           variant === "primary"
-            ? "bg-accent px-[16px] py-[12px] text-white hover:bg-accent-strong"
+            ? "bg-accent px-[16px] py-[12px] text-on-solid hover:bg-accent-strong"
             : "px-[10px] py-[6px] text-[14.5px] text-n300 hover:text-ink",
           className,
         )}

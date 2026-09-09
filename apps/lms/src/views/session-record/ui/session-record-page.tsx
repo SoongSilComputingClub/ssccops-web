@@ -160,14 +160,14 @@ async function CurriculumPicker({
             <Link
               key={item.curriculumItemId}
               href={studioRecordUrl(academicProgramId, item.curriculumItemId)}
-              className="flex items-center gap-[10px] rounded-2xl bg-surface p-[14px] shadow-[0_0_0_1px_#e5e8eb] transition-shadow hover:shadow-[0_0_0_1px_#3182f6]"
+              className="flex items-center gap-[10px] rounded-2xl bg-surface p-[14px] shadow-[0_0_0_1px_var(--color-line)] transition-shadow hover:shadow-[0_0_0_1px_var(--color-accent)]"
             >
               {inner}
             </Link>
           ) : (
             <div
               key={item.curriculumItemId}
-              className="flex items-center gap-[10px] rounded-2xl bg-surface p-[14px] opacity-60 shadow-[0_0_0_1px_#e5e8eb]"
+              className="flex items-center gap-[10px] rounded-2xl bg-surface p-[14px] opacity-60 shadow-[0_0_0_1px_var(--color-line)]"
               title="제출·승인된 회차는 이 화면에서 다시 쓸 수 없습니다"
             >
               {inner}

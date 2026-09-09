@@ -72,7 +72,7 @@ function Body({
         {signup && (
           <a
             href={signup}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
+            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
           >
             회원 가입하기
           </a>
