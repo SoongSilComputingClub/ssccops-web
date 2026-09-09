@@ -13,11 +13,11 @@ export default function NotFound() {
     <Card className="flex flex-col items-center gap-[10px] px-[18px] py-[52px] text-center">
       <div className="text-[18px] font-medium">페이지를 찾을 수 없습니다</div>
       <p className="text-[14px] leading-[1.6] text-n500">
-        주소가 바뀌었거나 삭제된 페이지입니다 — 학술 대시보드에서 다시 찾아 주세요
+        주소가 바뀌었거나 삭제된 페이지입니다 — 학술 대시보드에서 다시 찾아주세요
       </p>
       <Link
         href={ROUTES.studio}
-        className="mt-[6px] rounded-xl bg-accent px-[16px] py-[10px] text-[14.5px] font-semibold text-white"
+        className="mt-[6px] rounded-xl bg-accent px-[16px] py-[10px] text-[14.5px] font-semibold text-on-solid"
       >
         학술 대시보드로
       </Link>

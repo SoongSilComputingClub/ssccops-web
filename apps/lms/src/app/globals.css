@@ -1,11 +1,17 @@
 @import "tailwindcss";
 
 /*
- * 공유 폼 렌더러(#152)의 클래스도 함께 훑는다 — 아직 이 앱에서 쓰는 화면은 없지만(#169),
- * 기획안 제출 화면(회원이 PROPOSAL 시스템 폼을 그린다)이 붙는 순간 스타일이 빠진 채로 뜨는
- * 것을 막는다. 자동 탐색은 node_modules 아래의 심링크를 건너뛰므로 경로를 직접 가리켜야 한다.
+ * 공유 패키지(폼 렌더러 #152 · UI #243)의 클래스도 함께 훑는다. 폼 렌더러를 쓰는 화면은 아직
+ * 없지만(#169) 기획안 제출 화면(회원이 PROPOSAL 시스템 폼을 그린다)이 붙는 순간 스타일이 빠진
+ * 채로 뜨는 것을 막고, UI 패키지는 이미 카드·배지·마크다운이 쓴다. 자동 탐색은 node_modules
+ * 아래의 심링크를 건너뛰므로 경로를 직접 가리켜야 한다.
+ *
+ * **공유 패키지를 새로 만들면 여기에 한 줄을 더한다.** `packages/ui`(#243)를 빠뜨려
+ * 카드 여백·배지·마크다운 리듬이 세 앱에서 통째로 사라진 적이 있다(#316) — Tailwind는
+ * 없는 클래스를 조용히 건너뛰므로 타입·린트·빌드가 전부 통과한다.
  */
 @source "../../../../packages/form-renderer/src";
+@source "../../../../packages/ui/src";
 
 /*
  * 학술 공개 앱 디자인 토큰 — 어드민(apps/admin)·공개 행사 앱(apps/www)과 **같은 값**이다
@@ -29,7 +35,33 @@
   --color-line: #e5e8eb;
   --color-line-strong: #d1d6db;
   --color-danger: #f04452;
+  --color-danger-strong: #d63a46;
   --color-success: #00b25f;
+
+  /*
+   * 의미 토큰 (#341 — admin #226에서 옮겼다). 예전에 `bg-black/40`·`shadow-[…#e5e8eb]`처럼
+   * 값으로 적히던 것들이다.
+   *
+   * 알파를 값에 그대로 담는 이유: 이 색들은 **깔린 배경에 얹히는** 것이라 불투명 색으로
+   * 바꾸면 겹치는 자리마다 색이 달라진다. 대신 `bg-fill/50` 같은 알파 수정자는 쓸 수 없다.
+   */
+  --color-fill: rgb(0 0 0 / 0.05); /* 얕게 채운 면 — 칩·보조 버튼·hover */
+  --color-fill-soft: rgb(0 0 0 / 0.025); /* 더 얕게 */
+  --color-fill-strong: rgb(0 0 0 / 0.1); /* 세로 구분 막대 */
+  --color-hairline: rgb(0 0 0 / 0.05); /* 얇은 구분선 */
+  --color-hairline-strong: rgb(0 0 0 / 0.08); /* 셸 경계 */
+  --color-scrim: rgb(0 0 0 / 0.45); /* 모달·드로어 뒤 */
+  --color-subtle: #f9fafb; /* 살짝 눌린 배경 — 코드·인용 상자 */
+
+  /*
+   * 진한 면(accent·danger·amber·ink) 위의 글자.
+   *
+   * 라이트에서는 흰색이지만 **다크에서는 어두운 잉크다.** accent를 어두운 배경에서
+   * 읽히게 밝히면(#4c8ff8) 흰 글자 대비가 2.9:1로 떨어진다 — 밝은 파랑 위에 어두운
+   * 글자를 얹어 5.8:1을 얻는다. 그래서 `text-white`가 아니라 이 토큰을 쓴다.
+   */
+  --color-on-solid: #ffffff;
+
   --color-white: #ffffff;
   --color-black: #000000;
   --color-transparent: transparent;
@@ -40,6 +72,91 @@
 
   /* 모바일 드로어 오버레이. 어드민·www와 같은 값이다 */
   --animate-fade-in: fade-in 0.16s ease both;
+}
+
+/*
+ * 어두운 팔레트 (#341 — admin #226의 값을 그대로 옮겼다).
+ *
+ * 규칙이 두 벌인 것은 **시스템 따름**과 **명시 선택**이 둘 다 필요해서다 —
+ * 아무것도 고르지 않은 사람은 OS를 따라가고, 고른 사람은 그 선택이 이긴다.
+ * `[data-theme]`는 FOUC 차단 스크립트가 `<html>`에 미리 박아 둔다.
+ *
+ * `@theme`가 만든 변수는 theme 레이어에 있고 이 규칙들은 레이어 밖이라, 선택자
+ * 특정도와 무관하게 이쪽이 이긴다.
+ *
+ * **값은 눈대중으로 다시 고르지 않는다.** admin이 대비를 실측해 정한 것이고
+ * (surface 위, WCAG AA 4.5 기준) 세 앱이 같은 색 어휘를 써야 한다:
+ *   ink 13.6 · n300 9.7 · n400 6.3 · n500 4.95 · accent 5.1 · danger 5.9 ·
+ *   success 8.0 · amber 8.2 · accent-soft 위 accent 4.88
+ * `accent-soft`가 4.39로 미달이라 #16243b까지 낮춘 값이다 — 더 밝히면 배지 글자가 흐려진다.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --color-bg: #17171c;
+    --color-surface: #1f1f26;
+    --color-ink: #e8eaed;
+    --color-accent: #4c8ff8;
+    --color-accent-strong: #7aaefb;
+    --color-accent-soft: #16243b;
+    --color-amber: #f0a952;
+    --color-amber-soft: #2b1f0b;
+    --color-n300: #c3c8cf;
+    --color-n400: #9aa1ab;
+    --color-n500: #868e99;
+    --color-line: #2c2d35;
+    --color-line-strong: #3d3f49;
+    --color-danger: #ff6b76;
+    --color-danger-strong: #ff8a93;
+    --color-success: #2fce85;
+
+    --color-fill: rgb(255 255 255 / 0.07);
+    --color-fill-soft: rgb(255 255 255 / 0.035);
+    --color-fill-strong: rgb(255 255 255 / 0.14);
+    --color-hairline: rgb(255 255 255 / 0.09);
+    --color-hairline-strong: rgb(255 255 255 / 0.13);
+    --color-scrim: rgb(0 0 0 / 0.66);
+    --color-subtle: #232a33;
+
+    --color-on-solid: #12131a;
+  }
+}
+
+/* 명시 선택 — 시스템이 무엇이든 이쪽이 이긴다 */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #17171c;
+  --color-surface: #1f1f26;
+  --color-ink: #e8eaed;
+  --color-accent: #4c8ff8;
+  --color-accent-strong: #7aaefb;
+  --color-accent-soft: #16243b;
+  --color-amber: #f0a952;
+  --color-amber-soft: #2b1f0b;
+  --color-n300: #c3c8cf;
+  --color-n400: #9aa1ab;
+  --color-n500: #868e99;
+  --color-line: #2c2d35;
+  --color-line-strong: #3d3f49;
+  --color-danger: #ff6b76;
+  --color-danger-strong: #ff8a93;
+  --color-success: #2fce85;
+
+  --color-fill: rgb(255 255 255 / 0.07);
+  --color-fill-soft: rgb(255 255 255 / 0.035);
+  --color-fill-strong: rgb(255 255 255 / 0.14);
+  --color-hairline: rgb(255 255 255 / 0.09);
+  --color-hairline-strong: rgb(255 255 255 / 0.13);
+  --color-scrim: rgb(0 0 0 / 0.66);
+  --color-subtle: #232a33;
+
+  --color-on-solid: #12131a;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 @keyframes fade-in {
@@ -64,6 +181,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d6db;
+  /* 값(#d1d6db)으로 박혀 있던 자리 — 다크에서 이것만 밝은 채로 남았다 (#341) */
+  background: var(--color-line-strong);
   border-radius: 12px;
 }

@@ -56,7 +56,7 @@ export async function SessionRecordPage({
       {selection.outcome === "unauthenticated" && (
         <LoginGate
           title="로그인이 필요합니다"
-          description="회차 기록은 활동의 스터디장만 작성할 수 있습니다 — 구글 계정으로 로그인해 주세요"
+          description="회차 기록은 활동의 스터디장만 작성할 수 있습니다 — 구글 계정으로 로그인해주세요"
         />
       )}
       {selection.outcome === "signup-required" && (
@@ -108,7 +108,7 @@ async function CurriculumPicker({
     return (
       <LoginGate
         title="로그인이 필요합니다"
-        description="회차 기록은 활동의 스터디장만 작성할 수 있습니다 — 구글 계정으로 로그인해 주세요"
+        description="회차 기록은 활동의 스터디장만 작성할 수 있습니다 — 구글 계정으로 로그인해주세요"
       />
     );
   }
@@ -160,14 +160,14 @@ async function CurriculumPicker({
             <Link
               key={item.curriculumItemId}
               href={studioRecordUrl(academicProgramId, item.curriculumItemId)}
-              className="flex items-center gap-[10px] rounded-2xl bg-surface p-[14px] shadow-[0_0_0_1px_#e5e8eb] transition-shadow hover:shadow-[0_0_0_1px_#3182f6]"
+              className="flex items-center gap-[10px] rounded-2xl bg-surface p-[14px] shadow-[0_0_0_1px_var(--color-line)] transition-shadow hover:shadow-[0_0_0_1px_var(--color-accent)]"
             >
               {inner}
             </Link>
           ) : (
             <div
               key={item.curriculumItemId}
-              className="flex items-center gap-[10px] rounded-2xl bg-surface p-[14px] opacity-60 shadow-[0_0_0_1px_#e5e8eb]"
+              className="flex items-center gap-[10px] rounded-2xl bg-surface p-[14px] opacity-60 shadow-[0_0_0_1px_var(--color-line)]"
               title="제출·승인된 회차는 이 화면에서 다시 쓸 수 없습니다"
             >
               {inner}
@@ -192,7 +192,7 @@ async function RecordBody({
     return (
       <LoginGate
         title="로그인이 필요합니다"
-        description="회차 기록은 활동의 스터디장만 작성할 수 있습니다 — 구글 계정으로 로그인해 주세요"
+        description="회차 기록은 활동의 스터디장만 작성할 수 있습니다 — 구글 계정으로 로그인해주세요"
       />
     );
   }
@@ -214,7 +214,7 @@ async function RecordBody({
     return (
       <EmptyState
         title={`${result.sesnSttsLabel} 회차입니다`}
-        description="제출된 회차는 국장 검토가 끝나야, 승인된 회차는 더 이상 수정할 수 없습니다 — 회차 내용은 '내 활동'에서 볼 수 있습니다."
+        description="제출된 회차는 학술국장 검토가 끝날 때까지, 승인된 회차는 그 뒤로도 수정할 수 없습니다 — 회차 내용은 '내 활동'에서 볼 수 있습니다"
       />
     );
   }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { ThemeToggle } from "@/shared/ui";
 import { visibleNavLinks } from "./nav-links";
 
 /**
@@ -58,7 +59,7 @@ export function MobileNav({ isLeader }: { isLeader: boolean }) {
         <div className="fixed inset-0 z-[80] lg:hidden">
           <div
             onClick={() => setOpen(false)}
-            className="absolute inset-0 animate-fade-in bg-black/40"
+            className="absolute inset-0 animate-fade-in bg-scrim"
           />
           <div
             ref={panelRef}
@@ -66,7 +67,7 @@ export function MobileNav({ isLeader }: { isLeader: boolean }) {
             role="dialog"
             aria-modal="true"
             aria-label="메뉴"
-            className="absolute inset-y-0 right-0 flex w-[78%] max-w-[280px] flex-col border-l border-black/8 bg-surface pt-[22px] pb-4 outline-none"
+            className="absolute inset-y-0 right-0 flex w-[78%] max-w-[280px] flex-col border-l border-hairline-strong bg-surface pt-[22px] pb-4 outline-none"
           >
             <div className="mb-3 flex items-center justify-between border-b border-bg px-[18px] pb-4">
               <b className="text-[15px]">메뉴</b>
@@ -102,6 +103,18 @@ export function MobileNav({ isLeader }: { isLeader: boolean }) {
                 );
               })}
             </nav>
+
+            {/*
+             * 테마는 목차 아래 발치에 둔다 (#341 · 어드민 사이드바와 같은 자리). 상단 바의
+             * 아이콘 버튼과 **같은 상태를 본다** — `useTheme`이 구독이라 한쪽에서 바꾸면
+             * 다른 쪽 표시도 함께 맞는다(각자 state를 쥐면 갈린다).
+             *
+             * `mt-auto`로 아래에 붙이는 것은 목차가 짧은 일반 회원(항목 둘)의 드로어에서
+             * 메뉴 바로 밑에 떠 있지 않게 하려는 것이다.
+             */}
+            <div className="mt-auto px-[18px] pt-4">
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       )}

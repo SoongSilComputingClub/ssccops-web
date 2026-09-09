@@ -9,6 +9,7 @@ import { CAPABILITY } from "@/entities/session";
 import { useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useMeetingActions, useMeetingDetail } from "@/features/meeting";
+import { ShareButton } from "@/features/share";
 import { useSubWorkList } from "@/features/sub-work";
 import { useWorkList } from "@/features/work";
 import {
@@ -465,6 +466,24 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                 {FIELD_LABEL.operationId} · {meeting.operationId}
               </span>
               <div className="flex-1" />
+              {/*
+                * 공유는 권한을 넓히지 않는다 — 토큰이 주는 것은 제목·요약 미리보기까지이고,
+                * 링크를 받은 사람은 종전대로 로그인과 권한 검사를 지나야 내용을 본다(ADR-0016).
+                * 그래서 이 화면을 볼 수 있다는 것만으로 공유할 수 있고 별도 잠금이 없다
+                * (업무·하위 업무 상세와 같은 판단이다).
+                *
+                * 책임자 전이 버튼보다 앞에 두는 것은 공유가 상태를 바꾸지 않기 때문이다 —
+                * 누구에게나 같은 자리에 있고, 오른쪽 끝의 파괴적인 버튼(취소·삭제)과 섞이지
+                * 않는다.
+                *
+                * `targetId`는 `meetingId`다 — 서버 경로가 `/v1/meetings/{meetingId}/share`이며
+                * 화면이 함께 그리는 `operationId`(상위 oper)와는 다른 값이다.
+                */}
+              <ShareButton
+                targetType="MEETING"
+                targetId={meeting.meetingId}
+                title={meeting.title}
+              />
               {isChair && chairAction && (
                 <Button
                   size="sm"

@@ -11,6 +11,7 @@ import {
   type MyProgramDetailReady,
 } from "@/features/academic-program";
 import { LoginGate } from "@/features/auth";
+import { ShareButton } from "@/features/share";
 import {
   ROUTES,
   signupUrl,
@@ -91,7 +92,7 @@ function Body({
     return (
       <LoginGate
         title="로그인이 필요합니다"
-        description="활동 상세는 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+        description="활동 상세는 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
       />
     );
   }
@@ -106,7 +107,7 @@ function Body({
         {signup && (
           <a
             href={signup}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
+            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
           >
             회원 가입하기
           </a>
@@ -119,7 +120,7 @@ function Body({
     return (
       <EmptyState
         title="활동을 찾을 수 없습니다"
-        description="내가 맡은 활동이 아니거나 아직 이관되지 않은 활동일 수 있습니다 — 내 활동 목록을 다시 확인해주세요."
+        description="내가 맡은 활동이 아니거나 아직 이관되지 않은 활동일 수 있습니다 — 내 활동 목록을 다시 확인해주세요"
       />
     );
   }
@@ -157,6 +158,24 @@ function DetailBody({ data }: { data: MyProgramDetailReady }) {
           >
             팀원 관리
           </Link>
+          {/*
+           * 공유 (ssccops#253 · ADR-0017). 출석부·팀원 관리와 같은 줄에 둔다 — 셋 다 "이 활동을
+           * 가지고 무엇을 한다"이고, 공유만 따로 떼면 스터디장이 찾아야 할 자리가 하나 는다.
+           *
+           * **링크가 가리키는 곳은 이 앱이 아니다.** 학술 링크는 부원에게 나가므로 착지를
+           * apps/www가 받는다 — 발급하는 앱이 아니라 대상 종류가 정한다(ADR-0017). 사람이
+           * 눌러 도착하는 곳은 다시 이 화면이고, 내 활동이 아니면 위 로더가 "찾을 수
+           * 없습니다"로 떨어뜨린다(토큰이 주는 것은 미리보기까지다 · ADR-0016).
+           *
+           * 제목을 함께 넘기는 것은 모바일 공유 시트가 제목을 요구하기 때문이다. 비어 있는
+           * 제목을 "-"로 채우지 않는다 — 그 표시 규칙은 화면의 것이고 공유 시트에 "-"가 뜨면
+           * 안 된다.
+           */}
+          <ShareButton
+            targetType="ACADEMIC_PROGRAM"
+            targetId={program.academicProgramId}
+            title={program.title}
+          />
         </div>
         <div className="mt-[10px] text-[22px] font-semibold">
           {program.title || "-"}
@@ -245,7 +264,7 @@ function DetailBody({ data }: { data: MyProgramDetailReady }) {
 
       {/* 국장 처리 현황 */}
       <Card>
-        <div className="mb-[14px] text-[16px] font-medium">국장 처리 현황</div>
+        <div className="mb-[14px] text-[16px] font-medium">학술국장 처리 현황</div>
         <ApprovalFeed approvals={approvals} />
       </Card>
     </div>
@@ -270,7 +289,7 @@ function StatBox({
         ? "text-amber"
         : "text-ink";
   return (
-    <div className="rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_#e5e8eb]">
+    <div className="rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_var(--color-line)]">
       <div className="text-[13px] text-n500">{label}</div>
       <div className={`mt-[6px] text-[24px] font-medium ${valueColor}`}>{value}</div>
       {hint && <div className="mt-[4px] text-[13px] text-n500">{hint}</div>}
@@ -329,7 +348,7 @@ function CurriculumProgress({
                   program.program.academicProgramId,
                   item.curriculumItemId,
                 )}
-                className="flex-none whitespace-nowrap rounded-[12px] border border-accent bg-accent px-[12px] py-[6px] text-[13px] font-semibold text-white hover:bg-accent-strong"
+                className="flex-none whitespace-nowrap rounded-[12px] border border-accent bg-accent px-[12px] py-[6px] text-[13px] font-semibold text-on-solid hover:bg-accent-strong"
               >
                 기록 작성
               </Link>
@@ -357,7 +376,15 @@ function SessionHistory({ sessions }: { sessions: AcademicSessionSummary[] }) {
         return (
           <div
             key={session.sessionId}
-            className="flex items-start gap-[12px] py-[12px] first:pt-0 last:pb-0"
+            /*
+             * 공유 링크가 이 한 줄로 데려온다 (#335). `apps/www`의 착지가 회차 id를 들고
+             * `/studio/sessions/{id}`로 보내면 그쪽이 `#session-{id}`를 붙여 여기로 넘긴다
+             * — 회차 이력은 한 학기치가 쌓이므로 맨 위에 떨어뜨리면 사람이 훑어야 한다.
+             *
+             * `scroll-mt`는 상단 바에 가려지지 않게 띄우는 여백이다.
+             */
+            id={`session-${session.sessionId}`}
+            className="flex scroll-mt-[80px] items-start gap-[12px] py-[12px] first:pt-0 last:pb-0"
           >
             <div className="w-[86px] flex-none pt-[2px] text-[13.5px] text-n500">
               {formatYmd(session.actualYmd) || formatYmd(session.planYmd)}
@@ -381,6 +408,29 @@ function SessionHistory({ sessions }: { sessions: AcademicSessionSummary[] }) {
                   : ""}
               </div>
             </div>
+            {/*
+             * 회차 공유 (#335). 활동과 **별개 대상이다** — 모집을 뿌리는 것과 이번 주 회차를
+             * 뿌리는 것은 받는 사람도 시점도 다르다(서버가 대상을 둘로 나눈 근거와 같다).
+             *
+             * 이력에 그려지는 것은 실제로 기록된 회차뿐이라 상태로 가르지 않는다 — 행사가
+             * 게시 여부로 갈렸던 것과 달리 서버도 회차 발급에 상태 조건을 두지 않는다.
+             *
+             * 제목은 회차 번호와 커리큘럼 제목으로 조립한다(모바일 공유 시트가 제목을
+             * 요구한다). **빈 값을 "-"로 채우지 않는다** — 그 표시 규칙은 이 화면의 것이고
+             * 공유 시트에 "-"가 뜨면 안 된다(활동 공유 버튼과 같은 판단).
+             */}
+            <div className="flex-none">
+              <ShareButton
+                targetType="ACADEMIC_SESSION"
+                targetId={session.sessionId}
+                title={[
+                  session.seqno != null ? `${session.seqno}회차` : "",
+                  session.curriculumTitle,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              />
+            </div>
           </div>
         );
       })}
@@ -402,7 +452,7 @@ function ApprovalFeed({ approvals }: { approvals: AcademicProgramApproval[] }) {
   if (approvals.length === 0) {
     return (
       <div className="text-[14px] text-n500">
-        아직 국장이 처리한 회차 기록이 없습니다.
+        아직 학술국장이 처리한 회차 기록이 없습니다.
       </div>
     );
   }
@@ -415,7 +465,7 @@ function ApprovalFeed({ approvals }: { approvals: AcademicProgramApproval[] }) {
             <div className="flex items-center gap-[7px]">
               <Badge tone={view.tone}>{view.label}</Badge>
               <span className="text-[13px] text-n500">
-                {formatDt(approval.approvedAt) || formatYmd(approval.approvedAt)}
+                {formatDt(approval.approvedAt)}
               </span>
             </div>
             <div className="mt-[5px] text-[14px] text-n400">

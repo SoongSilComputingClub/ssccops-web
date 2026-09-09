@@ -17,12 +17,24 @@ importers:
 
   apps/admin:
     dependencies:
+      '@ssccops/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@ssccops/codes':
+        specifier: workspace:*
+        version: link:../../packages/codes
+      '@ssccops/date':
+        specifier: workspace:*
+        version: link:../../packages/date
       '@ssccops/form-renderer':
         specifier: workspace:*
         version: link:../../packages/form-renderer
       '@ssccops/share-meta':
         specifier: workspace:*
         version: link:../../packages/share-meta
+      '@ssccops/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@supabase/ssr':
         specifier: ^0.12.4
         version: 0.12.4(@supabase/supabase-js@2.112.3)
@@ -62,7 +74,7 @@ importers:
         version: 9.39.5(jiti@2.7.0)
       eslint-config-next:
         specifier: 16.3.0
-        version: 16.3.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+        version: 16.3.0(@typescript-eslint/parser@8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
       tailwindcss:
         specifier: ^4
         version: 4.3.3
@@ -75,9 +87,24 @@ importers:
 
   apps/lms:
     dependencies:
+      '@ssccops/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@ssccops/codes':
+        specifier: workspace:*
+        version: link:../../packages/codes
+      '@ssccops/date':
+        specifier: workspace:*
+        version: link:../../packages/date
       '@ssccops/form-renderer':
         specifier: workspace:*
         version: link:../../packages/form-renderer
+      '@ssccops/share-meta':
+        specifier: workspace:*
+        version: link:../../packages/share-meta
+      '@ssccops/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@supabase/ssr':
         specifier: ^0.12.4
         version: 0.12.4(@supabase/supabase-js@2.112.3)
@@ -133,12 +160,24 @@ importers:
 
   apps/www:
     dependencies:
+      '@ssccops/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@ssccops/codes':
+        specifier: workspace:*
+        version: link:../../packages/codes
+      '@ssccops/date':
+        specifier: workspace:*
+        version: link:../../packages/date
       '@ssccops/form-renderer':
         specifier: workspace:*
         version: link:../../packages/form-renderer
       '@ssccops/share-meta':
         specifier: workspace:*
         version: link:../../packages/share-meta
+      '@ssccops/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@supabase/ssr':
         specifier: ^0.12.4
         version: 0.12.4(@supabase/supabase-js@2.112.3)
@@ -181,7 +220,7 @@ importers:
         version: 9.39.5(jiti@2.7.0)
       eslint-config-next:
         specifier: 16.3.0
-        version: 16.3.0(@typescript-eslint/parser@8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+        version: 16.3.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
       tailwindcss:
         specifier: ^4
         version: 4.3.3
@@ -191,6 +230,51 @@ importers:
       wrangler:
         specifier: ^4.122.0
         version: 4.122.0
+
+  packages/auth:
+    devDependencies:
+      '@supabase/ssr':
+        specifier: ^0.12.4
+        version: 0.12.4(@supabase/supabase-js@2.112.3)
+      '@types/node':
+        specifier: ^20
+        version: 20.19.43
+      eslint:
+        specifier: ^9
+        version: 9.39.5(jiti@2.7.0)
+      eslint-config-next:
+        specifier: 16.3.0
+        version: 16.3.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      next:
+        specifier: 16.3.0
+        version: 16.3.0(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/codes:
+    devDependencies:
+      eslint:
+        specifier: ^9
+        version: 9.39.5(jiti@2.7.0)
+      eslint-config-next:
+        specifier: 16.3.0
+        version: 16.3.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/date:
+    devDependencies:
+      eslint:
+        specifier: ^9
+        version: 9.39.5(jiti@2.7.0)
+      eslint-config-next:
+        specifier: 16.3.0
+        version: 16.3.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
 
   packages/form-renderer:
     dependencies:
@@ -216,6 +300,31 @@ importers:
 
   packages/share-meta:
     devDependencies:
+      eslint:
+        specifier: ^9
+        version: 9.39.5(jiti@2.7.0)
+      eslint-config-next:
+        specifier: 16.3.0
+        version: 16.3.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/ui:
+    dependencies:
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+      react-markdown:
+        specifier: ^10.1.0
+        version: 10.1.0(@types/react@19.2.18)(react@19.2.8)
+      remark-gfm:
+        specifier: ^4.0.1
+        version: 4.0.1
+    devDependencies:
+      '@types/react':
+        specifier: ^19
+        version: 19.2.18
       eslint:
         specifier: ^9
         version: 9.39.5(jiti@2.7.0)

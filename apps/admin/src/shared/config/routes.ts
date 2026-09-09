@@ -162,3 +162,23 @@ export function publicFormUrl(formId: number): string | null {
   const configured = process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN?.replace(/\/+$/, "");
   return configured ? `${configured}/f/${formId}` : null;
 }
+
+/**
+ * 게시된 행사의 공개 URL — 운영진이 복사해 외부에 뿌리는 값이다 (ssccops#254 · ssccops-web#338).
+ *
+ * **게시된 행사에는 공유 토큰을 발급하지 않는다**(서버가 409 `EVENT_SHARE_NOT_DRAFT`로 막는다).
+ * 이미 익명이 여는 주소가 이것이고, 토큰이 더하는 것은 폐기 기능뿐인데 그 폐기가 이 주소를
+ * 막지 못하기 때문이다 — 그래서 게시된 행사의 '공유하기'가 복사하는 값이 여기서 나온다.
+ *
+ * `publicFormUrl`과 같은 오리진 변수를 쓰는 것은 **값이 같은 오리진(www)이기 때문**이다
+ * (ADR-0017이 학술 발급에 그 변수를 재사용한 근거와 같다 — 이름이 쓰임새보다 좁아진 것은
+ * 남아 있는 빚이다). 비면 `null`이고, 부르는 쪽은 죽은 주소를 복사해 주는 대신 안내로 떨어진다.
+ *
+ * **경로를 `ROUTES`에 두지 않는 것도 폼과 같은 이유다** — `/events/{eventId}`는 이 앱의 화면이
+ * 아니라 `apps/www`의 화면이라, 내부 이동에 쓰이면 404가 된다(이 앱의 행사 주소는
+ * `ROUTES.eventEdit`이다).
+ */
+export function publicEventUrl(eventId: number): string | null {
+  const configured = process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN?.replace(/\/+$/, "");
+  return configured ? `${configured}/events/${eventId}` : null;
+}

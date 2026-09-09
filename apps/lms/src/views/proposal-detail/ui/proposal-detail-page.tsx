@@ -5,7 +5,12 @@ import {
   type MyFormResponseDetail,
   type QitemCpstCn,
 } from "@/entities/response";
-import { loadProposalDetail, PROPOSAL_REJECTED_LOCKED } from "@/features/proposal";
+import {
+  loadProposalDetail,
+  PROPOSAL_NOT_SEEDED_DESCRIPTION,
+  PROPOSAL_NOT_SEEDED_TITLE,
+  PROPOSAL_REJECTED_LOCKED,
+} from "@/features/proposal";
 import { LoginGate } from "@/features/auth";
 import { ROUTES, signupUrl } from "@/shared/config/routes";
 import { Badge, Card, EmptyState, Notice } from "@/shared/ui";
@@ -78,7 +83,7 @@ function Body({
     return (
       <LoginGate
         title="로그인이 필요합니다"
-        description="기획안 상세는 낸 본인만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+        description="기획안 상세는 낸 본인만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
       />
     );
   }
@@ -93,7 +98,7 @@ function Body({
         {signup && (
           <a
             href={signup}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
+            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
           >
             회원 가입하기
           </a>
@@ -105,8 +110,8 @@ function Body({
   if (result.outcome === "not-seeded") {
     return (
       <EmptyState
-        title="기획안 폼이 아직 준비되지 않았습니다"
-        description="운영진이 기획안 접수를 시작하면 이 화면을 열 수 있습니다."
+        title={PROPOSAL_NOT_SEEDED_TITLE}
+        description={PROPOSAL_NOT_SEEDED_DESCRIPTION}
       />
     );
   }
@@ -115,7 +120,7 @@ function Body({
     return (
       <EmptyState
         title="기획안을 찾을 수 없습니다"
-        description="이미 지워졌거나 다른 사람이 낸 기획안일 수 있습니다 — 제출 현황을 다시 확인해주세요."
+        description="이미 지워졌거나 다른 사람이 낸 기획안일 수 있습니다 — 제출 현황을 다시 확인해주세요"
       />
     );
   }
@@ -259,7 +264,7 @@ function ProcessArea({
       <Card>
         <div className="text-[13px] tracking-[.3px] text-n400">처리 결과</div>
         <p className="mt-2 text-[13.5px] leading-[1.7] text-n300">
-          승인된 기획안입니다 — 학술 활동으로 이관되면 활동 화면에서 이어집니다.
+          승인된 기획안입니다 — 학술 활동으로 이관되면 활동 화면에서 이어집니다
         </p>
       </Card>
     );
@@ -271,7 +276,7 @@ function ProcessArea({
         <div className="text-[13px] tracking-[.3px] text-n400">상태</div>
         <p className="mt-2 text-[13.5px] leading-[1.7] text-n300">
           아직 제출하지 않은 기획안입니다 — 기획안 작성 화면에서 이어서 작성해 제출할 수
-          있습니다.
+          있습니다
         </p>
       </Card>
     );
@@ -282,7 +287,7 @@ function ProcessArea({
     <Card>
       <div className="text-[13px] tracking-[.3px] text-n400">상태</div>
       <p className="mt-2 text-[13.5px] leading-[1.7] text-n300">
-        학술국장 검토를 기다리는 중입니다 — 결과는 이 화면에서 확인할 수 있습니다.
+        학술국장 검토를 기다리는 중입니다 — 결과는 이 화면에서 확인할 수 있습니다
       </p>
     </Card>
   );

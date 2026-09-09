@@ -9,11 +9,11 @@
 export function loginErrorMessage(code: string): string {
   switch (code) {
     case "access_denied":
-      return "구글 로그인을 취소했습니다 — 다시 시도해 주세요";
+      return "구글 로그인을 취소했습니다 — 다시 시도해주세요";
     case "missing_code":
     case "exchange_failed":
-      return "로그인을 마치지 못했습니다 — 다시 시도해 주세요";
+      return "로그인을 마치지 못했습니다 — 다시 시도해주세요";
     default:
-      return "로그인에 실패했습니다 — 다시 시도해 주세요";
+      return "로그인에 실패했습니다 — 다시 시도해주세요";
   }
 }

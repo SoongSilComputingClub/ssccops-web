@@ -49,7 +49,7 @@ export async function MyProgramsPage({
       {selection.outcome === "unauthenticated" && (
         <LoginGate
           title="로그인이 필요합니다"
-          description="내 활동은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+          description="내 활동은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
         />
       )}
       {selection.outcome === "signup-required" && (

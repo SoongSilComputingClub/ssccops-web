@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { signupUrl } from "@/shared/config/routes";
-import { createClient } from "@/shared/lib/supabase/client";
+import { createClient } from "@ssccops/auth/supabase/client";
 import { Notice } from "@/shared/ui";
 import { SignInButton } from "./sign-in-button";
 
@@ -29,7 +29,7 @@ import { SignInButton } from "./sign-in-button";
  */
 export function LoginGate({
   title = "로그인이 필요합니다",
-  description = "학술 활동 화면은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요",
+  description = "학술 활동 화면은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요",
 }: {
   title?: string;
   description?: string;
@@ -70,12 +70,12 @@ export function LoginGate({
   return (
     <Notice
       title="아직 준비 중인 화면입니다"
-      description="학술 활동 화면은 후속 작업으로 추가됩니다. 회원이 아니라면 먼저 가입해 주세요."
+      description="학술 활동 화면은 후속 작업으로 추가됩니다. 회원이 아니라면 먼저 가입해주세요."
     >
       {signup && (
         <a
           href={signup}
-          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
+          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
         >
           회원 가입하기
         </a>

@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
-import { currentPath, safeNextPath } from "@/shared/lib/next-path";
-import { rememberOAuthNext } from "@/shared/lib/oauth-next";
-import { createClient } from "@/shared/lib/supabase/client";
+import { currentPath, safeNextPath, rememberOAuthNext } from "@ssccops/auth";
+import { createClient } from "@ssccops/auth/supabase/client";
 
 /*
  * 이 앱의 **로그인 진입은 화면이 아니라 버튼**이다(apps/www의 규약을 잇는다).
@@ -69,7 +68,7 @@ export function SignInButton({
         className={cn(
           "rounded-xl text-[15px] font-semibold transition-colors disabled:opacity-50",
           variant === "primary"
-            ? "bg-accent px-[16px] py-[12px] text-white hover:bg-accent-strong"
+            ? "bg-accent px-[16px] py-[12px] text-on-solid hover:bg-accent-strong"
             : "px-[10px] py-[6px] text-[14.5px] text-n300 hover:text-ink",
           className,
         )}
@@ -78,7 +77,7 @@ export function SignInButton({
       </button>
       {failed && (
         <p className="text-[12.5px] text-amber">
-          로그인을 시작하지 못했습니다 — 잠시 후 다시 시도해 주세요
+          로그인을 시작하지 못했습니다 — 잠시 후 다시 시도해주세요
         </p>
       )}
     </div>

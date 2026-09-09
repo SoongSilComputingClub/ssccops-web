@@ -252,35 +252,27 @@ export const FORM_STTS_NM: Record<FormSttsCd, string> = {
 
 export const FORM_STTS_CDS = codesOf(FORM_STTS_NM);
 
-/* ── 응답_상태 (form_rspns_hstry.rspns_stts_cd) · DB 명시 ───── */
+/* ── 응답_상태 · 검토_처리_구분 — `@ssccops/codes`에서 온다 (ssccops#243) ── */
 
-export type RspnsSttsCd =
-  | "DRAFT"
-  | "SUBMITTED"
-  | "CHANGES_REQUESTED"
-  | "ACCEPTED"
-  | "REJECTED";
-
-/**
- * 작성 중(DRAFT)의 표시명에 "미제출"을 붙여 둔다.
+/*
+ * lms에 **글자까지 같은 사본**이 있었다. 서버 `data.sql` 시드와 맞춰진 계약이라 한 곳만
+ * 고쳐지면 화면이 조용히 빈 라벨로 깨지는데, 두 벌이면 그 일이 언제 일어나는지 알 수 없다.
  *
- * 폼_상태의 DRAFT("작성 중")와 글자가 같은데 의미가 전혀 다르다 — 폼의 작성 중은 운영자가
- * 편집 중인 폼이고, 응답의 작성 중은 **지원자가 아직 제출하지 않은 답안**이다. 목록에서 이
- * 둘을 같은 문구로 보여 주면 운영자가 "제출된 응답"으로 오해하고 심사하게 된다.
- *
- * 수정요청(CHANGES_REQUESTED)은 ssccops-server #141에서 더해졌다. 선언 순서를 서버
- * `ResponseStatus` enum과 맞춰 둔다 — 이 순서가 곧 필터 칩의 순서라, 심사가 진행되는 차례
- * (제출 → 수정요청 → 결론)대로 놓여야 목록에서 읽기 쉽다.
+ * 아래 두 상수는 **이 앱에만 있다** — 심사 목록의 필터·버튼 순서라 어드민 화면의 판단이지
+ * 서버 코드값이 아니다.
  */
-export const RSPNS_STTS_NM: Record<RspnsSttsCd, string> = {
-  DRAFT: "작성 중(미제출)",
-  SUBMITTED: "제출",
-  CHANGES_REQUESTED: "수정요청",
-  ACCEPTED: "승인",
-  REJECTED: "반려",
-};
+export {
+  RSPNS_STTS_CDS,
+  RSPNS_STTS_NM,
+  RSPNS_STTS_TERMINAL_CDS,
+  RVW_PRCS_SE_CDS,
+  RVW_PRCS_SE_NM,
+  isRspnsSttsTerminal,
+  type RspnsSttsCd,
+  type RvwPrcsSeCd,
+} from "@ssccops/codes";
 
-export const RSPNS_STTS_CDS = codesOf(RSPNS_STTS_NM);
+import { RSPNS_STTS_CDS, type RspnsSttsCd } from "@ssccops/codes";
 
 /**
  * 심사 대상 상태 — DRAFT를 뺀 나머지. 목록 필터 칩이 도는 목록이다.
@@ -304,46 +296,6 @@ export const RSPNS_RVW_TRGT_CDS = [
   "CHANGES_REQUESTED",
   "REJECTED",
 ] as const satisfies readonly RspnsSttsCd[];
-
-/**
- * 결론이 난 상태 — 승인 · 반려. 되돌릴 수 없다 (ssccops-server #141).
- *
- * 화면이 검토 패널을 잠글 기준이라 코드 사전이 갖는다. 뷰마다 `=== "ACCEPTED" || === "REJECTED"`를
- * 적으면 서버가 종결 어휘를 늘렸을 때 어느 화면은 잠그고 어느 화면은 열어 두게 된다.
- */
-export const RSPNS_STTS_TERMINAL_CDS = [
-  "ACCEPTED",
-  "REJECTED",
-] as const satisfies readonly RspnsSttsCd[];
-
-export function isRspnsSttsTerminal(cd: RspnsSttsCd): boolean {
-  return (RSPNS_STTS_TERMINAL_CDS as readonly RspnsSttsCd[]).includes(cd);
-}
-
-/* ── 검토_처리_구분 (form_rspns_rvw_hstry.rvw_prcs_se_cd) · DB 명시 ─ */
-
-/**
- * 검토자가 그때 무엇을 했는가를 말하는 어휘 (ssccops-server #141).
- *
- * 예전 이름은 `RspnsPrcsSeCd`(`RSPNS_` 접두사)였다. 그것은 명명 규칙이 아니라 **서버의 이름
- * 충돌을 화면이 떠안은 우회**였다 — 회의 안건이 `prcs_se_cd`라는 일반명을 먼저 차지해서,
- * 뒤에 온 이쪽이 접두사를 붙여 피할 수밖에 없었다. 서버가 두 컬럼에 각자 한정어를 붙이며
- * (`agnd_` · `rvw_`) 그 우회를 걷어냈으므로 여기도 서버 이름을 그대로 쓴다 (ssccops#159).
- *
- * **응답_상태와 1:1이 아니다.** 제출(SUBMIT)은 결과 상태가 SUBMITTED로 같지만 검토자가 아니라
- * 응답자가 한 일이고, 재제출까지 세면 한 응답에 여러 번 나타난다 — 상태는 "지금 어디에 있는가",
- * 처리 구분은 "그때 무슨 일이 있었는가"다.
- */
-export type RvwPrcsSeCd = "SUBMIT" | "ACCEPT" | "REQUEST_CHANGES" | "REJECT";
-
-export const RVW_PRCS_SE_NM: Record<RvwPrcsSeCd, string> = {
-  SUBMIT: "제출",
-  ACCEPT: "승인",
-  REQUEST_CHANGES: "수정요청",
-  REJECT: "반려",
-};
-
-export const RVW_PRCS_SE_CDS = codesOf(RVW_PRCS_SE_NM);
 
 /* ── 허용_행위 (dlgt.prm_act_cd) ────────────────────────────── */
 

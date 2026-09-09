@@ -57,7 +57,7 @@ export async function ProgramMembersPage({
       {selection.outcome === "unauthenticated" && (
         <LoginGate
           title="로그인이 필요합니다"
-          description="팀원 명단은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+          description="팀원 명단은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
         />
       )}
       {selection.outcome === "signup-required" && (
@@ -91,7 +91,7 @@ async function MembersBody({ academicProgramId }: { academicProgramId: number })
     return (
       <LoginGate
         title="로그인이 필요합니다"
-        description="팀원 명단은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+        description="팀원 명단은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
       />
     );
   }
@@ -116,7 +116,7 @@ async function MembersBody({ academicProgramId }: { academicProgramId: number })
   }
 
   return (
-    <section className="rounded-2xl bg-surface p-[6px] shadow-[0_0_0_1px_#e5e8eb] lg:p-[10px]">
+    <section className="rounded-2xl bg-surface p-[6px] shadow-[0_0_0_1px_var(--color-line)] lg:p-[10px]">
       {/* 데스크톱: 표 */}
       <table className="hidden w-full border-collapse lg:table">
         <thead>

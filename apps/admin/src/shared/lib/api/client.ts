@@ -1,6 +1,6 @@
 import { ROUTES } from "@/shared/config/routes";
-import { currentPath, withNextParam } from "@/shared/lib/next-path";
-import { createClient } from "@/shared/lib/supabase/client";
+import { currentPath, withNextParam } from "@ssccops/auth";
+import { createClient } from "@ssccops/auth/supabase/client";
 
 /*
  * 끝 슬래시를 떼어 둔다.

@@ -1,76 +1,32 @@
-/**
- * 학술 일시 표기.
+/*
+ * 학술 일시 표기 — 규칙은 전부 `@ssccops/date`에 있다 (ssccops-web#328 · #340).
  *
  * 서버는 모든 일시를 서비스 시간대(Asia/Seoul)의 `OffsetDateTime`으로 준다
  * ("2026-03-01T00:00:00+09:00"). **문자열을 잘라 쓴다** — `new Date(...)`로 파싱해
- * 브라우저·워커의 로컬 시간대로 그리면, 서울 밖에서 열었을 때 같은 날짜가 다른 값으로 보인다
- * (apps/www `shared/lib/date.ts`와 같은 판단).
- */
-
-/** 일시TS·일자D → "2026. 3. 1." · 값이 없거나 모양이 어긋나면 빈 문자열(추측하지 않는다) */
-export function formatYmd(value: string | null | undefined): string {
-  if (!value) return "";
-  const matched = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
-  if (!matched) return "";
-  const [, y, m, d] = matched;
-  return `${Number(y)}. ${Number(m)}. ${Number(d)}.`;
-}
-
-/**
- * 일시TS → "2026-08-28 19:00" — 서버가 준 `OffsetDateTime` 문자열의 앞 16자를 잘라 쓴다.
+ * 브라우저·워커의 로컬 시간대로 그리면, 서울 밖에서 열었을 때 같은 날짜가 다른 값으로 보인다.
  *
- * `formatYmd`와 같은 판단이다 — `new Date(...)`로 파싱해 로컬 시간대로 그리면 서울 밖에서
- * 열었을 때 다른 시각이 보인다. 검토 이력의 처리 일시가 서버 응답에서 Asia/Seoul 오프셋을
- * 달고 오므로(`FormResponseReviewHistoryResponse`) 앞 16자가 곧 서비스 시간대의 값이다.
- * 값이 없거나 모양이 어긋나면 빈 문자열(추측하지 않는다).
- */
-export function formatDt(value: string | null | undefined): string {
-  if (!value) return "";
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) return "";
-  return value.slice(0, 16).replace("T", " ");
-}
-
-/**
- * 오늘 날짜(Asia/Seoul) — "YYYY-MM-DD".
+ * ── 이 파일에 고유한 것은 이제 없다 ─────────────────────────
+ * `formatDt`·`todayInSeoul`·`weekBounds`·`isWithinThisWeek`가 #328에서 `@ssccops/date`로
+ * 갔고(앞의 셋은 어드민에 **글자까지 같은 사본**이 있었다), 마지막까지 남아 있던 점 표기
+ * `formatYmdDotted`를 #340에서 지웠다. 아래 재export만 남기는 것은 호출부를 건드리지 않기
+ * 위해서다(`shared/lib/cn.ts`와 같은 방식 · ssccops#243).
  *
- * 회차 기록 작성 화면의 '실제 진행일' 입력 기본값으로 쓴다 — 브라우저의 로컬 시간대가 아니라
- * 서비스 시간대로 센다(어드민 `todayInSeoul`과 같은 판단). 해외에서 접속한 스터디장에게 하루가
- * 어긋나면 안 된다.
- */
-export function todayInSeoul(): string {
-  // sv-SE 로케일이 ISO와 같은 YYYY-MM-DD 표기를 준다
-  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul" }).format(new Date());
-}
-
-/**
- * `today`(YYYY-MM-DD)가 속한 주(월요일 시작)의 [시작, 끝] 일자.
+ * ── 점 표기를 지운 이유 (#340) ──────────────────────────────
+ * #328은 `formatYmd`라는 **같은 이름이 앱마다 다른 값을 내던 것**만 해소하고, 표기를 통일할지는
+ * "화면을 보고 정한다"며 남겨 두었다 — 회차 목록·출석부·대시보드의 표기를 눈으로 확인하지 않은
+ * 채 20곳을 뒤집을 것이 아니어서다. #340이 그 확인을 수행했고 통일로 결론냈다.
  *
- * "이번 주" 판정을 서버가 내려주지 않으므로(스터디장 대시보드 #126) 회차 목록을 이 범위로
- * 거른다 — 기준일은 `todayInSeoul()`이다. 프로토타입의 고정 기준일(2026-08-21)을 쓰면 이미
- * 지난 회차가 미래로 보인다. 어드민 `shared/lib/date.ts`의 `weekBounds`와 같은 정의다(월요일
- * 시작 = ISO-8601 주). 두 앱은 소스를 공유하지 않으므로 한쪽을 고치면 다른 쪽도 함께 본다.
+ * 판단의 근거는 두 가지다. 하나는 **한 화면 안에서 구분자가 섞였다는 것** — 대시보드의
+ * `계획일 2026. 3. 1.` 옆에 제출 일시 `2026-08-28 19:00`이 나란히 섰다. 다른 하나는
+ * `AGENTS.md` §데이터 표기가 일자D를 `YYYY-MM-DD`로 못 박았고 admin·www·공유 패키지가 이미
+ * 그 값이라는 것이다 — lms만 다른 어휘를 쓰면 세 앱이 한 서비스로 보이지 않는다.
+ *
+ * 폭이 좁은 자리(대시보드·회차 이력의 `w-[86px]` 칸)를 특히 확인했는데, **점 표기 쪽이 오히려
+ * 넓었다** — `2026. 12. 31.`은 그 칸을 넘치고 `2026-12-31`은 들어간다. 자릿수가 달라져도 폭이
+ * 변하지 않는 것도 `-` 표기 쪽이다.
+ *
+ * 함수를 남겨 두지 않은 것은 **남기면 새 화면이 다시 집어 쓰기 때문**이다. 쓰는 곳이 없는
+ * 표기 함수는 그 자체가 "이렇게 써도 된다"는 신호가 된다.
  */
-export function weekBounds(today: string = todayInSeoul()): {
-  start: string;
-  end: string;
-} {
-  const base = new Date(`${today}T00:00:00Z`);
-  const backToMonday = (base.getUTCDay() + 6) % 7;
-  const start = new Date(base.getTime() - backToMonday * 86_400_000);
-  const end = new Date(start.getTime() + 6 * 86_400_000);
-  return {
-    start: start.toISOString().slice(0, 10),
-    end: end.toISOString().slice(0, 10),
-  };
-}
 
-/** `date`(YYYY-MM-DD)가 `today` 기준 이번 주(월~일) 안에 드는가. 값이 없으면 false */
-export function isWithinThisWeek(
-  date: string | null | undefined,
-  today: string = todayInSeoul(),
-): boolean {
-  if (!date) return false;
-  const ymd = date.slice(0, 10);
-  const { start, end } = weekBounds(today);
-  return ymd >= start && ymd <= end;
-}
+export { formatDt, formatYmd, isWithinThisWeek, todayInSeoul, weekBounds } from "@ssccops/date";

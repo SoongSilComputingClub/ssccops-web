@@ -1,10 +1,15 @@
 import type { NextRequest } from "next/server";
-import { updateSession } from "@/shared/lib/supabase/proxy";
+import { updateSession } from "@ssccops/auth/supabase/proxy";
 
 /*
  * Next.js 16은 middleware.ts를 proxy.ts로 대체했지만, @opennextjs/cloudflare가 아직
  * proxy.ts 컨벤션을 인식하지 못해 빌드가 깨진다 (opennextjs/opennextjs-cloudflare#962).
  * 어드민과 같은 이유로 구 컨벤션(middleware.ts / export function middleware)을 유지한다.
+ */
+/*
+ * **가드를 주지 않는다**(ssccops-web#329). `updateSession`은 두 번째 인자로 `SessionGuard`를
+ * 받으면 미인증 요청을 로그인 화면으로 밀어내지만, 이 앱에는 밀어낼 로그인 화면이 없다 —
+ * 인자를 비우면 세션 쿠키 갱신만 하고 끝난다. 그 판단의 근거는 아래 매처 주석에 있다.
  */
 export async function middleware(request: NextRequest) {
   return updateSession(request);
@@ -34,6 +39,17 @@ export async function middleware(request: NextRequest) {
  *
  * /auth/callback은 제외한다 — 콜백 라우트가 스스로 코드를 세션으로 교환하며, 그 시점에는
  * 아직 갱신할 세션이 없다.
+ *
+ * **공유 링크 착지(`/s/{token}`)도 여기 없고, 없는 것이 맞다**(ssccops#253 · ADR-0017).
+ * 어드민에서는 미들웨어가 미인증 요청을 `/login`으로 밀어내므로 그 경로를 가드의
+ * `PUBLIC_PATHS`에 넣어야 했다 — 넣지 않으면 `generateMetadata`가 아예 돌지 않고, **크롤러는
+ * 정의상 미인증**이라 카드가 통째로 만들어지지 않는다. 이 앱에는 그 목록도 리다이렉트도
+ * 없으므로(위 `updateSession(request)` — 가드 없음) 예외를 적을 자리가 없고, 매처가 잡지
+ * 않아 세션 왕복도 붙지 않는다. 익명 미리보기만 그리는 화면이라 세션이 필요하지도 않다.
+ *
+ * **그래서 매처를 넓힐 때 이 자리가 함께 걸린다.** 언젠가 이 앱에 로그인 화면이 생겨
+ * 가드를 주게 되면 `/s`를 공개 경로로 먼저 적어야 한다 — 그 전에는 매처를 `/((?!...).*)`
+ * 같은 포괄 패턴으로 바꾸는 것만으로도 착지 요청마다 Supabase 왕복이 붙는다.
  */
 export const config = {
   matcher: ["/my-applications", "/events/:eventId/apply", "/f/:formId"],

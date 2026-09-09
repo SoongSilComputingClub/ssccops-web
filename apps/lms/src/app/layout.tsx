@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
+import { ThemeToggle } from "@/shared/ui";
 import { AuthNav } from "@/features/auth";
 // 서버 전용 조회는 배럴이 재export 하지 않는다(클라이언트 번들 오염 방지) — 직접 임포트한다
 import { fetchIsAcademicLeader } from "@/entities/academic-program/api/programs-read";
@@ -52,7 +54,14 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#ffffff",
+  /*
+   * 브라우저 주소창 색 — 테마마다 다르다 (#341). 하나만 두면 어두운 화면 위에 흰 주소창이
+   * 남아 그 자리만 튄다. 값은 각 테마의 `surface`다(어드민과 같다).
+   */
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#1f1f26" },
+  ],
 };
 
 /*
@@ -72,6 +81,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko">
       <head>
+        {/*
+          * 저장된 테마를 **첫 페인트 전에** 박는다 (#341 · admin #226과 같다). React가 붙은
+          * 뒤에 적용하면 밝은 화면이 한 번 번쩍이고 어두워진다 — 그래서 이것만 동기
+          * 스크립트다. 문자열은 `shared/lib/theme`(→ `@ssccops/ui`)이 저장 키와 함께 쥐고 있어 갈리지 않는다.
+          */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
         <link
           rel="stylesheet"
@@ -96,6 +111,19 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <div className="flex items-center gap-[6px]">
               <DesktopNav isLeader={isLeader} />
               <AuthNav />
+              {/*
+               * 테마는 admin(사이드바 발치)과 같은 3버튼으로 고른다 (#349). 전에는 아이콘 한
+               * 버튼으로 돌려 골랐는데(#341), 누르기 전에는 다음이 무엇인지 알 수 없고 세 값
+               * 중 하나로 곧장 갈 수도 없었다 — 두 앱을 오가는 사람에게 같은 설정이 다른
+               * 물건으로 보인다.
+               *
+               * `fit`을 주는 것은 이 자리가 로고·메뉴·로그아웃과 한 줄을 나눠 쓰기 때문이다.
+               * 기본값(`flex-1`)은 폭을 채우려 들어 드로어·사이드바 발치에서만 맞다.
+               *
+               * `lg:` 이상에서만 보이는 것은 좁은 화면에서 드로어와 겹치기 때문이다 — 그쪽은
+               * 드로어 발치의 `ThemeToggle`이 맡고, 둘은 같은 상태를 본다.
+               */}
+              <ThemeToggle fit className="hidden lg:flex" />
               <MobileNav isLeader={isLeader} />
             </div>
           </div>

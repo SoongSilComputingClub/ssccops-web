@@ -39,7 +39,7 @@ export function LandingPage({ result }: { result: LandingLoad }) {
       <Shell>
         <LoginGate
           title="로그인이 필요합니다"
-          description="학술 화면은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+          description="학술 화면은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
         />
       </Shell>
     );
@@ -127,7 +127,7 @@ function SignupNotice() {
       {signup && (
         <a
           href={signup}
-          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
+          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
         >
           회원 가입하기
         </a>

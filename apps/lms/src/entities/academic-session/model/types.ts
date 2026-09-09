@@ -152,6 +152,8 @@ export interface AcademicSessionFileReference {
  */
 export interface AcademicSessionDetail {
   sessionId: number;
+  /** 이 회차가 속한 활동 (#316) — 회차 id 하나만 아는 화면이 활동 상세로 넘어갈 때 쓴다 */
+  academicProgramId: number;
   curriculumItemId: number;
   seqno: number | null;
   /** 계획 커리큘럼 항목 제목 (curriculumTtl) */

@@ -30,7 +30,7 @@ export function ProgramSignupNotice({ signupHref }: { signupHref: string | null 
       {signupHref && (
         <a
           href={signupHref}
-          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
+          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
         >
           회원 가입하기
         </a>
@@ -51,7 +51,7 @@ export function BackToProgramsNotice({
     <Notice title={title} description={description}>
       <Link
         href={ROUTES.studioPrograms}
-        className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
+        className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
       >
         내 활동으로
       </Link>

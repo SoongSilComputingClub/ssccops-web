@@ -104,7 +104,7 @@ function StatBox({
   const valueColor =
     tone === "accent" ? "text-accent" : tone === "warn" ? "text-amber" : "text-ink";
   return (
-    <div className="rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_#e5e8eb]">
+    <div className="rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_var(--color-line)]">
       <div className="text-[13px] text-n500">{label}</div>
       <div className={`mt-[6px] text-[24px] font-medium ${valueColor}`}>{value}</div>
       {hint && <div className="mt-[4px] text-[13px] text-n500">{hint}</div>}
@@ -133,7 +133,7 @@ function CurriculumStrip({
                   ? "bg-accent-soft text-accent"
                   : badge.tone === "amber"
                     ? "bg-amber-soft text-amber"
-                    : "text-accent shadow-[inset_0_0_0_1px_#3182f6]"
+                    : "text-accent shadow-[inset_0_0_0_1px_var(--color-accent)]"
             }`}
             title={`${item.title || "커리큘럼 항목"} · ${badge.label}`}
           >
@@ -191,7 +191,7 @@ function ThisWeekList({
             {item.isEditable && (
               <Link
                 href={studioRecordUrl(program.academicProgramId, item.curriculumItemId)}
-                className="flex-none whitespace-nowrap rounded-[12px] border border-accent bg-accent px-[12px] py-[6px] text-[13.5px] font-semibold text-white hover:bg-accent-strong"
+                className="flex-none whitespace-nowrap rounded-[12px] border border-accent bg-accent px-[12px] py-[6px] text-[13.5px] font-semibold text-on-solid hover:bg-accent-strong"
               >
                 기록 작성
               </Link>
@@ -214,7 +214,7 @@ function ApprovalFeed({ approvals }: { approvals: AcademicProgramApproval[] }) {
   if (approvals.length === 0) {
     return (
       <div className="text-[14px] text-n500">
-        아직 국장이 처리한 회차 기록이 없습니다.
+        아직 학술국장이 처리한 회차 기록이 없습니다.
       </div>
     );
   }
@@ -227,7 +227,7 @@ function ApprovalFeed({ approvals }: { approvals: AcademicProgramApproval[] }) {
             <div className="flex items-center gap-[7px]">
               <Badge tone={view.tone}>{view.label}</Badge>
               <span className="text-[13px] text-n500">
-                {formatDt(approval.approvedAt) || formatYmd(approval.approvedAt)}
+                {formatDt(approval.approvedAt)}
               </span>
             </div>
             <div className="mt-[5px] text-[14px] text-n400">
@@ -284,7 +284,7 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
         <StatBox
           label="검토 대기"
           value={String(stats.pendingReview)}
-          hint="국장 검토 중인 회차"
+          hint="학술국장 검토 중인 회차"
           tone={stats.pendingReview > 0 ? "accent" : "default"}
         />
         <StatBox
@@ -348,7 +348,7 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
                 <span className="h-[10px] w-[10px] rounded-[3px] bg-accent-soft" />제출
               </span>
               <span className="flex items-center gap-[6px]">
-                <span className="h-[10px] w-[10px] rounded-[3px] shadow-[inset_0_0_0_1px_#d1d6db]" />
+                <span className="h-[10px] w-[10px] rounded-[3px] shadow-[inset_0_0_0_1px_var(--color-line-strong)]" />
                 승인
               </span>
             </div>
@@ -383,7 +383,7 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
                           program.academicProgramId,
                           item.curriculumItemId,
                         )}
-                        className="flex-none whitespace-nowrap rounded-[12px] border border-accent bg-accent px-[12px] py-[6px] text-[13px] font-semibold text-white hover:bg-accent-strong"
+                        className="flex-none whitespace-nowrap rounded-[12px] border border-accent bg-accent px-[12px] py-[6px] text-[13px] font-semibold text-on-solid hover:bg-accent-strong"
                       >
                         기록 작성
                       </Link>
@@ -449,14 +449,14 @@ export async function StudioDashboardPage({
           학술 대시보드
         </h1>
         <p className="text-[13.5px] text-n500">
-          내 활동의 진행 현황 · 이번 주 회차 · 국장 처리 현황
+          내 활동의 진행 현황 · 이번 주 회차 · 학술국장 처리 현황
         </p>
       </header>
 
       {result.outcome === "unauthenticated" && (
         <LoginGate
           title="로그인이 필요합니다"
-          description="학술 대시보드는 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+          description="학술 대시보드는 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
         />
       )}
 
@@ -491,7 +491,7 @@ function SignupNotice() {
       {signup && (
         <a
           href={signup}
-          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
+          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
         >
           회원 가입하기
         </a>

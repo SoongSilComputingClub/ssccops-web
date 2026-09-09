@@ -44,7 +44,7 @@ import { cn } from "@/shared/lib/cn";
 
 const CELL_STYLE: Record<RosterCellState, string> = {
   present: "bg-accent-soft text-accent",
-  absent: "bg-bg text-n500 shadow-[inset_0_0_0_1px_#d1d6db]",
+  absent: "bg-bg text-n500 shadow-[inset_0_0_0_1px_var(--color-line-strong)]",
   none: "bg-transparent text-n500",
 };
 
@@ -109,7 +109,7 @@ export function AttendanceRosterMatrix({
       )}
 
       {/* 표: 가로 스크롤 컨테이너 안에서만 밀린다 */}
-      <div className="overflow-x-auto rounded-2xl bg-surface shadow-[0_0_0_1px_#e5e8eb]">
+      <div className="overflow-x-auto rounded-2xl bg-surface shadow-[0_0_0_1px_var(--color-line)]">
         <table className="w-full border-collapse text-[13px]">
           <thead>
             <tr className="text-n500">

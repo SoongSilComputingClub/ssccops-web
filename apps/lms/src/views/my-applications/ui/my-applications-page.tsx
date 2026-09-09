@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { loadMyApplications } from "@/features/proposal";
+import {
+  loadMyApplications,
+  PROPOSAL_NOT_SEEDED_DESCRIPTION,
+  PROPOSAL_NOT_SEEDED_TITLE,
+} from "@/features/proposal";
 import { LoginGate } from "@/features/auth";
 import { ROUTES, signupUrl } from "@/shared/config/routes";
 import { EmptyState, Notice } from "@/shared/ui";
@@ -44,7 +48,7 @@ export async function MyApplicationsPage() {
         {result.outcome === "ready" && result.acceptingYn && (
           <Link
             href={ROUTES.proposalNew}
-            className="rounded-xl bg-accent px-[14px] py-[10px] text-[13.5px] font-semibold text-white hover:bg-accent-strong"
+            className="rounded-xl bg-accent px-[14px] py-[10px] text-[13.5px] font-semibold text-on-solid hover:bg-accent-strong"
           >
             새 기획안 작성하기
           </Link>
@@ -65,7 +69,7 @@ function Body({
     return (
       <LoginGate
         title="로그인이 필요합니다"
-        description="기획안 제출 현황은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+        description="기획안 제출 현황은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
       />
     );
   }
@@ -80,7 +84,7 @@ function Body({
         {signup && (
           <a
             href={signup}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
+            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
           >
             회원 가입하기
           </a>
@@ -92,8 +96,8 @@ function Body({
   if (result.outcome === "not-seeded") {
     return (
       <EmptyState
-        title="기획안 폼이 아직 준비되지 않았습니다"
-        description="운영진이 기획안 접수를 시작하면 이 화면에서 작성·확인할 수 있습니다."
+        title={PROPOSAL_NOT_SEEDED_TITLE}
+        description={PROPOSAL_NOT_SEEDED_DESCRIPTION}
       />
     );
   }
