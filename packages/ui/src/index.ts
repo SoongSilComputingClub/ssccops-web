@@ -37,4 +37,3 @@ export { Markdown } from "./ui/markdown";
 export { Notice } from "./ui/notice";
 export { TextField, Field } from "./ui/field";
 export { ThemeToggle } from "./ui/theme-toggle";
-export { ThemeCycleButton } from "./ui/theme-cycle-button";
