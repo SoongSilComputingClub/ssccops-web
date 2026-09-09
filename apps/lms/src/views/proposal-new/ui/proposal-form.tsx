@@ -17,11 +17,17 @@ import {
 import { PROPOSAL_NEW_INTRO } from "@/features/proposal/model/proposal-error";
 import { useCurriculumRows } from "@/features/proposal/model/use-curriculum-rows";
 import { useProposalForm } from "@/features/proposal/model/use-proposal-form";
+import { useScheduleParts } from "@/features/proposal/model/use-schedule-parts";
 import {
   CURRICULUM_QITEM_ID,
   CurriculumField,
   isCurriculumQitem,
 } from "@/features/proposal/ui/curriculum-field";
+import {
+  SCHEDULE_QITEM_ID,
+  ScheduleField,
+  isScheduleQitem,
+} from "@/features/proposal/ui/schedule-field";
 import { ROUTES } from "@/shared/config/routes";
 import { Card } from "@/shared/ui";
 
@@ -229,6 +235,7 @@ function ProposalQitems({
   onChange: (qitemId: string, value: AnswerValue) => void;
 }) {
   const curriculum = useCurriculumRows(answers[CURRICULUM_QITEM_ID]);
+  const schedule = useScheduleParts(answers[SCHEDULE_QITEM_ID]);
 
   return (
     <>
@@ -243,6 +250,22 @@ function ProposalQitems({
               curriculum.setRows(rows);
               onChange(q.qitemId, text);
             }}
+          />
+        ) : isScheduleQitem(q) && schedule.parts !== null ? (
+          <ScheduleField
+            key={q.qitemId}
+            qitem={q}
+            parts={schedule.parts}
+            error={errors[q.qitemId]}
+            onChange={(parts, text) => {
+              schedule.setParts(parts);
+              onChange(q.qitemId, text);
+            }}
+            /*
+             * 직접 입력으로 내려가면 그 뒤로는 자유 입력이다. 고르던 값은 지우지 않고 그대로
+             * 문자열로 남겨 둔다 — 골라 둔 것을 화면이 대신 지우면 다시 치게 만든다.
+             */
+            onFreeText={() => schedule.setParts(null)}
           />
         ) : (
           <QitemCard

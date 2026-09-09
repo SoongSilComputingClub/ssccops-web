@@ -15,6 +15,7 @@ import {
 import { PROPOSAL_RESUBMIT_NOTE } from "@/features/proposal/model/proposal-error";
 import { useCurriculumRows } from "@/features/proposal/model/use-curriculum-rows";
 import { useResubmitForm } from "@/features/proposal/model/use-resubmit-form";
+import { useScheduleParts } from "@/features/proposal/model/use-schedule-parts";
 import { ROUTES } from "@/shared/config/routes";
 import { Card } from "@/shared/ui";
 // 커리큘럼 표는 신규 작성 화면과 같은 것을 쓴다 — 두 화면이 만드는 문자열이 갈리면 안 된다
@@ -23,6 +24,12 @@ import {
   CurriculumField,
   isCurriculumQitem,
 } from "@/features/proposal/ui/curriculum-field";
+// 정기 일정 드롭다운도 같은 이유로 신규 작성 화면과 같은 것을 쓴다 (#349)
+import {
+  SCHEDULE_QITEM_ID,
+  ScheduleField,
+  isScheduleQitem,
+} from "@/features/proposal/ui/schedule-field";
 
 /*
  * 기획안 재제출 폼 (#171 · 클라이언트).
@@ -64,6 +71,7 @@ export function ResubmitForm({
    * 비동기로 도착한다).
    */
   const curriculum = useCurriculumRows(initialAnswers[CURRICULUM_QITEM_ID]);
+  const schedule = useScheduleParts(initialAnswers[SCHEDULE_QITEM_ID]);
   const [page, setPage] = useState(0);
   const [flash, setFlash] = useState("");
 
@@ -166,6 +174,18 @@ export function ResubmitForm({
               curriculum.setRows(rows);
               form.setAnswer(q.qitemId, text);
             }}
+          />
+        ) : isScheduleQitem(q) && schedule.parts !== null ? (
+          <ScheduleField
+            key={q.qitemId}
+            qitem={q}
+            parts={schedule.parts}
+            error={form.errors[q.qitemId]}
+            onChange={(parts, text) => {
+              schedule.setParts(parts);
+              form.setAnswer(q.qitemId, text);
+            }}
+            onFreeText={() => schedule.setParts(null)}
           />
         ) : (
           <QitemCard
