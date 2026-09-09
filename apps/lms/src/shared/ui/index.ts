@@ -4,3 +4,4 @@ export { Card, EmptyState } from "./card";
 export { Chip, Field, TextField } from "./field";
 export { Markdown } from "./markdown";
 export { Notice } from "./notice";
+export { ThemeToggle, ThemeCycleButton } from "./theme-toggle";

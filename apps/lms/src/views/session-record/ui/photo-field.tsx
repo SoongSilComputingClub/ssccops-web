@@ -65,14 +65,14 @@ export function PhotoField({
           <img
             src={shownUrl}
             alt="출석 인증사진 미리보기"
-            className="max-h-[240px] w-full rounded-[12px] object-contain shadow-[inset_0_0_0_1px_#e5e8eb]"
+            className="max-h-[240px] w-full rounded-[12px] object-contain shadow-[inset_0_0_0_1px_var(--color-line)]"
           />
           <div className="flex gap-[8px]">
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={disabled}
-              className="rounded-[10px] px-[12px] py-[7px] text-[13.5px] text-accent shadow-[inset_0_0_0_1px_#3182f6] disabled:opacity-50"
+              className="rounded-[10px] px-[12px] py-[7px] text-[13.5px] text-accent shadow-[inset_0_0_0_1px_var(--color-accent)] disabled:opacity-50"
             >
               {file ? "다른 사진 고르기" : "사진 바꾸기"}
             </button>
@@ -81,7 +81,7 @@ export function PhotoField({
                 type="button"
                 onClick={onClear}
                 disabled={disabled}
-                className="rounded-[10px] px-[12px] py-[7px] text-[13.5px] text-n300 shadow-[inset_0_0_0_1px_#d1d6db] disabled:opacity-50"
+                className="rounded-[10px] px-[12px] py-[7px] text-[13.5px] text-n300 shadow-[inset_0_0_0_1px_var(--color-line-strong)] disabled:opacity-50"
               >
                 {existing ? "새 사진 취소" : "사진 제거"}
               </button>

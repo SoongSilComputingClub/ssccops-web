@@ -44,7 +44,7 @@ export function ProgramSwitcher({
 
   if (programs.length <= 1) {
     return (
-      <div className="rounded-2xl bg-surface px-[16px] py-[12px] shadow-[0_0_0_1px_#e5e8eb]">
+      <div className="rounded-2xl bg-surface px-[16px] py-[12px] shadow-[0_0_0_1px_var(--color-line)]">
         <div className="text-[12px] text-n500">활동</div>
         <div className="mt-[2px] text-[15px] font-medium">
           {selected?.title || "-"}
@@ -54,7 +54,7 @@ export function ProgramSwitcher({
   }
 
   return (
-    <label className="flex flex-col gap-[6px] rounded-2xl bg-surface px-[16px] py-[12px] shadow-[0_0_0_1px_#e5e8eb]">
+    <label className="flex flex-col gap-[6px] rounded-2xl bg-surface px-[16px] py-[12px] shadow-[0_0_0_1px_var(--color-line)]">
       <span className="text-[12px] text-n500">활동 선택</span>
       <select
         value={selectedId}

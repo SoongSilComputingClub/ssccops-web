@@ -17,7 +17,7 @@ export default function NotFound() {
       </p>
       <Link
         href={ROUTES.studio}
-        className="mt-[6px] rounded-xl bg-accent px-[16px] py-[10px] text-[14.5px] font-semibold text-white"
+        className="mt-[6px] rounded-xl bg-accent px-[16px] py-[10px] text-[14.5px] font-semibold text-on-solid"
       >
         학술 대시보드로
       </Link>

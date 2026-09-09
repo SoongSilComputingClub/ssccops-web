@@ -116,7 +116,7 @@ async function MembersBody({ academicProgramId }: { academicProgramId: number })
   }
 
   return (
-    <section className="rounded-2xl bg-surface p-[6px] shadow-[0_0_0_1px_#e5e8eb] lg:p-[10px]">
+    <section className="rounded-2xl bg-surface p-[6px] shadow-[0_0_0_1px_var(--color-line)] lg:p-[10px]">
       {/* 데스크톱: 표 */}
       <table className="hidden w-full border-collapse lg:table">
         <thead>

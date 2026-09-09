@@ -44,7 +44,7 @@ export async function MyApplicationsPage() {
         {result.outcome === "ready" && result.acceptingYn && (
           <Link
             href={ROUTES.proposalNew}
-            className="rounded-xl bg-accent px-[14px] py-[10px] text-[13.5px] font-semibold text-white hover:bg-accent-strong"
+            className="rounded-xl bg-accent px-[14px] py-[10px] text-[13.5px] font-semibold text-on-solid hover:bg-accent-strong"
           >
             새 기획안 작성하기
           </Link>
@@ -80,7 +80,7 @@ function Body({
         {signup && (
           <a
             href={signup}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
+            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
           >
             회원 가입하기
           </a>

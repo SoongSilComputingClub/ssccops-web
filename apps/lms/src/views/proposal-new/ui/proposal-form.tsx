@@ -179,7 +179,7 @@ export function ProposalForm({
           type="button"
           onClick={() => void onNext()}
           disabled={form.submitting}
-          className="flex-[2] cursor-pointer rounded-[14px] border border-accent bg-accent py-[14px] text-[15px] font-semibold text-white hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex-[2] cursor-pointer rounded-[14px] border border-accent bg-accent py-[14px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isLast ? (form.submitting ? "제출 중…" : "제출하기") : "다음"}
         </button>

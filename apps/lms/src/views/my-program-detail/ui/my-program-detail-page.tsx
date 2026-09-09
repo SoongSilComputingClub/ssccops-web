@@ -107,7 +107,7 @@ function Body({
         {signup && (
           <a
             href={signup}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white hover:bg-accent-strong"
+            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
           >
             회원 가입하기
           </a>
@@ -289,7 +289,7 @@ function StatBox({
         ? "text-amber"
         : "text-ink";
   return (
-    <div className="rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_#e5e8eb]">
+    <div className="rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_var(--color-line)]">
       <div className="text-[13px] text-n500">{label}</div>
       <div className={`mt-[6px] text-[24px] font-medium ${valueColor}`}>{value}</div>
       {hint && <div className="mt-[4px] text-[13px] text-n500">{hint}</div>}
@@ -348,7 +348,7 @@ function CurriculumProgress({
                   program.program.academicProgramId,
                   item.curriculumItemId,
                 )}
-                className="flex-none whitespace-nowrap rounded-[12px] border border-accent bg-accent px-[12px] py-[6px] text-[13px] font-semibold text-white hover:bg-accent-strong"
+                className="flex-none whitespace-nowrap rounded-[12px] border border-accent bg-accent px-[12px] py-[6px] text-[13px] font-semibold text-on-solid hover:bg-accent-strong"
               >
                 기록 작성
               </Link>

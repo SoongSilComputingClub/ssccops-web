@@ -31,7 +31,7 @@ export function SubmissionCard({ response }: { response: MyFormResponse }) {
   return (
     <Link
       href={myApplicationDetailUrl(response.formRspnsId)}
-      className="flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_#e5e8eb] transition-shadow hover:shadow-[0_0_0_1px_#3182f6] lg:p-[18px]"
+      className="flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_var(--color-line)] transition-shadow hover:shadow-[0_0_0_1px_var(--color-accent)] lg:p-[18px]"
     >
       <div className="flex flex-wrap items-center gap-x-[8px] gap-y-[4px]">
         <span className="text-[15px] font-semibold">
