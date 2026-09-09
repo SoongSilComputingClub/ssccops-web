@@ -2,10 +2,26 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FormDescription, QitemCard, nextPageSeq, pageSeqOf, type QitemCpstCn, validatePageAnswers } from "@ssccops/form-renderer";
+import {
+  FormDescription,
+  QitemCard,
+  nextPageSeq,
+  pageSeqOf,
+  validatePageAnswers,
+  type AnswerValue,
+  type Qitem,
+  type QitemCpstCn,
+  type RspnsCn,
+} from "@ssccops/form-renderer";
 // 배럴을 거치지 않는다 — 배럴이 SSR 로더(→ next/headers)를 재export 해 클라 번들을 오염시킨다
 import { PROPOSAL_NEW_INTRO } from "@/features/proposal/model/proposal-error";
+import { useCurriculumRows } from "@/features/proposal/model/use-curriculum-rows";
 import { useProposalForm } from "@/features/proposal/model/use-proposal-form";
+import {
+  CURRICULUM_QITEM_ID,
+  CurriculumField,
+  isCurriculumQitem,
+} from "@/features/proposal/ui/curriculum-field";
 import { ROUTES } from "@/shared/config/routes";
 import { Card } from "@/shared/ui";
 
@@ -26,7 +42,13 @@ import { Card } from "@/shared/ui";
  * ── 커리큘럼 안내를 여기에 적지 않는다 ──────────────────────
  * `1회차 | 주제 | 2026-03-05` 형식 안내는 서버 시드가 문항 문구에 직접 넣어 두었다. 화면이
  * 같은 말을 한 번 더 적으면 두 문장은 갈리고, 갈린 순간 제출자는 화면 안내대로 적었는데
- * 승인이 막힌다. 화면이 커리큘럼을 파싱하지 않는 것도 같은 결정의 다른 면이다.
+ * 승인이 막힌다.
+ *
+ * ── 커리큘럼만 표로 받는다 (#342) ───────────────────────────
+ * 그 문항 하나는 `CurriculumField`(회차·주제·날짜 3칸)가 그리고 나머지는 그대로
+ * `QitemCard`가 그린다. **저장되는 값은 지금과 같은 문자열이다** — 표는 그 문자열을 손으로
+ * 맞춰 적던 것을 대신할 뿐이고, 구조화는 여전히 승인 시점에 서버가 한다. 표로 열 수 없는
+ * 답(자유 입력으로 낸 기존 기획안)은 지금까지 쓰던 자유 입력 그대로 둔다.
  */
 export function ProposalForm({
   formId,
@@ -142,15 +164,12 @@ export function ProposalForm({
         </FormDescription>
       </Card>
 
-      {pageQitems.map((q) => (
-        <QitemCard
-          key={q.qitemId}
-          qitem={q}
-          value={form.answers[q.qitemId]}
-          error={form.errors[q.qitemId]}
-          onChange={(value) => form.setAnswer(q.qitemId, value)}
-        />
-      ))}
+      <ProposalQitems
+        qitems={pageQitems}
+        answers={form.answers}
+        errors={form.errors}
+        onChange={form.setAnswer}
+      />
 
       <SaveLine save={form.save} onRetry={form.retrySave} />
 
@@ -185,6 +204,57 @@ export function ProposalForm({
         </button>
       </div>
     </div>
+  );
+}
+
+/*
+ * 한 페이지의 문항들 (#342).
+ *
+ * ── 왜 따로 떼어 냈는가 ─────────────────────────────────────
+ * 커리큘럼 표의 행 상태(`useCurriculumRows`)는 **초안이 복원된 뒤의 답**을 초깃값으로 잡아야
+ * 한다. 바깥 컴포넌트는 `loadingDraft`가 참인 동안에도 이미 마운트되어 있어(그 판정은 훅이
+ * 전부 돈 뒤의 조기 반환이다) 거기서 훅을 부르면 초깃값이 늘 빈 답이고, 이어서 쓰던 기획안을
+ * 열어도 표가 비어 버린다. 이 컴포넌트는 로딩이 끝난 뒤에야 마운트되므로 첫 답이 곧 표의
+ * 초깃값이다 — 동기화용 `useEffect`가 없는 것은 이 앱의 폼이 줄곧 지켜 온 규칙이다.
+ */
+function ProposalQitems({
+  qitems,
+  answers,
+  errors,
+  onChange,
+}: {
+  qitems: Qitem[];
+  answers: RspnsCn;
+  errors: Record<string, string>;
+  onChange: (qitemId: string, value: AnswerValue) => void;
+}) {
+  const curriculum = useCurriculumRows(answers[CURRICULUM_QITEM_ID]);
+
+  return (
+    <>
+      {qitems.map((q) =>
+        isCurriculumQitem(q) && curriculum.rows !== null ? (
+          <CurriculumField
+            key={q.qitemId}
+            qitem={q}
+            rows={curriculum.rows}
+            error={errors[q.qitemId]}
+            onChange={(rows, text) => {
+              curriculum.setRows(rows);
+              onChange(q.qitemId, text);
+            }}
+          />
+        ) : (
+          <QitemCard
+            key={q.qitemId}
+            qitem={q}
+            value={answers[q.qitemId]}
+            error={errors[q.qitemId]}
+            onChange={(value) => onChange(q.qitemId, value)}
+          />
+        ),
+      )}
+    </>
   );
 }
 
