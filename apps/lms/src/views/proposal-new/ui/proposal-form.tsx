@@ -68,7 +68,7 @@ export function ProposalForm({
     return (
       <Card>
         <p className="text-[14px] text-n300">
-          이 폼의 문항을 불러오지 못했습니다 — 화면을 새로고침해주세요.
+          이 폼의 문항을 불러오지 못했습니다 — 화면을 새로고침해주세요
         </p>
       </Card>
     );
@@ -134,7 +134,7 @@ export function ProposalForm({
     <div className="flex flex-col gap-[12px]">
       <div className="rounded-2xl border border-accent/30 bg-accent-soft px-[14px] py-[11px] text-[13.5px] leading-[1.7] text-accent">
         {form.restored
-          ? "이어서 작성 중입니다 — 이전에 쓰다 만 내용이 채워져 있습니다."
+          ? "이어서 작성 중입니다 — 이전에 쓰다 만 내용이 채워져 있습니다"
           : PROPOSAL_NEW_INTRO}
       </div>
 

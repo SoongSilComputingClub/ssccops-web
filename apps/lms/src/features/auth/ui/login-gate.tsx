@@ -29,7 +29,7 @@ import { SignInButton } from "./sign-in-button";
  */
 export function LoginGate({
   title = "로그인이 필요합니다",
-  description = "학술 활동 화면은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요",
+  description = "학술 활동 화면은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요",
 }: {
   title?: string;
   description?: string;
@@ -70,7 +70,7 @@ export function LoginGate({
   return (
     <Notice
       title="아직 준비 중인 화면입니다"
-      description="학술 활동 화면은 후속 작업으로 추가됩니다. 회원이 아니라면 먼저 가입해 주세요."
+      description="학술 활동 화면은 후속 작업으로 추가됩니다. 회원이 아니라면 먼저 가입해주세요."
     >
       {signup && (
         <a

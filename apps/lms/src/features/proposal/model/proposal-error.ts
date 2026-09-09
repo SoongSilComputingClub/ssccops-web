@@ -25,6 +25,23 @@ import { API_ERROR, ApiError } from "@/shared/api/client";
 export const PROPOSAL_FORM_MISSING =
   "기획안 폼이 아직 준비되지 않았습니다 — 운영진이 폼을 세운 뒤 다시 열어주세요";
 
+/**
+ * 같은 "아직 세워지지 않았다"를 **화면 안내**로 그릴 때의 제목·본문.
+ *
+ * `PROPOSAL_FORM_MISSING`은 오류 한 줄(배너)이고 이쪽은 `EmptyState`의 두 칸이라 형태가
+ * 다르다 — 뜻이 같으므로 문장은 한 벌로 두고 세 화면(제출 현황·작성·상세)이 함께 쓴다.
+ * 예전에는 세 화면이 각자 적어 "작성·확인할 수 있습니다"·"작성해 제출할 수 있습니다"·
+ * "화면을 열 수 있습니다"로 갈렸다(#343).
+ *
+ * ── `PROPOSAL_NOT_ACCEPTING_*`과 합치지 않는다 ──────────────────
+ * 저쪽은 **폼은 있는데 지금 접수를 닫아 둔** 상태(`acceptingYn === false`)고 이쪽은 **폼
+ * 자체가 없는**(`FORM_NOT_FOUND`) 상태다. 한 문장으로 묶으면 운영진이 접수를 열기만 하면
+ * 되는 상황과 폼부터 세워야 하는 상황이 같은 말로 보인다.
+ */
+export const PROPOSAL_NOT_SEEDED_TITLE = "기획안 폼이 아직 준비되지 않았습니다";
+export const PROPOSAL_NOT_SEEDED_DESCRIPTION =
+  "운영진이 기획안 접수를 시작하면 이 화면에서 기획안을 작성하고 검토 상태를 확인할 수 있습니다";
+
 /** 없는 응답 · 본인 것이 아닌 응답을 열었다(서버가 한 코드로 묶는다) */
 export const PROPOSAL_RESPONSE_NOT_FOUND =
   "이 기획안을 찾을 수 없습니다 — 제출 현황에서 다시 골라주세요";

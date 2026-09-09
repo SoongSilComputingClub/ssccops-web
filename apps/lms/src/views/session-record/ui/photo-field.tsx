@@ -97,7 +97,7 @@ export function PhotoField({
             "flex h-[150px] flex-col items-center justify-center gap-[6px] rounded-[12px] border border-dashed border-line-strong bg-bg text-center transition-colors hover:border-accent disabled:cursor-not-allowed disabled:opacity-50",
           )}
         >
-          <span className="text-[14.5px] text-n300">사진을 선택해 주세요</span>
+          <span className="text-[14.5px] text-n300">사진을 선택해주세요</span>
           <span className="font-mono text-[12.5px] text-n500">JPG · PNG</span>
         </button>
       )}

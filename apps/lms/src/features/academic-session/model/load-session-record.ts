@@ -44,7 +44,7 @@ export type SessionRecordLoad =
       curriculumItem: CurriculumItemWithSession;
       /** 출석 체크리스트에 그릴 확정 팀원 전원 */
       members: AcademicProgramMember[];
-      /** 재제출일 때만 채워진다 — 폼 초깃값과 "국장이 요청한 수정 사항" */
+      /** 재제출일 때만 채워진다 — 폼 초깃값과 "학술국장이 요청한 수정 사항" */
       session: AcademicSessionDetail | null;
     }
   /** 스터디장 본인이 아니라 이 회차를 기록할 수 없다 */
@@ -88,7 +88,7 @@ export async function loadSessionRecord(
       return {
         outcome: "not-recordable",
         sesnSttsLabel:
-          curriculumItem.sesnSttsCd === "APPROVED" ? "이미 승인된" : "국장 검토 중인",
+          curriculumItem.sesnSttsCd === "APPROVED" ? "이미 승인된" : "학술국장 검토 중인",
       };
     }
 

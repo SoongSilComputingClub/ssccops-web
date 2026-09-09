@@ -59,7 +59,7 @@ export function submitSessionErrorMessage(error: unknown): string {
     case ACADEMIC_SESSION_ERROR.SESSION_ALREADY_EXISTS:
       return "이미 기록된 회차입니다 — 화면을 새로고침하면 재제출 화면으로 열립니다";
     case ACADEMIC_SESSION_ERROR.SESSION_NOT_EDITABLE:
-      return "지금은 회차 기록을 수정할 수 없습니다 — 국장 검토 중이거나 이미 승인된 회차입니다";
+      return "지금은 회차 기록을 수정할 수 없습니다 — 학술국장 검토 중이거나 이미 승인된 회차입니다";
     case ACADEMIC_SESSION_ERROR.INVALID_ATTENDANCE_TARGET:
       return "출석 대상이 아닌 팀원이 포함돼 있습니다 — 화면을 새로고침해 팀원 명단을 다시 불러주세요";
     case ACADEMIC_SESSION_ERROR.VALIDATION_FAILED:

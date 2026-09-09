@@ -109,11 +109,11 @@ export function SessionRecordForm({
   const onSubmit = async () => {
     // 클라이언트 검증은 서버 @NotNull·@NotBlank와 같은 최소 판정만 — 규칙을 두 벌로 만들지 않는다
     const errors: { actlYmd?: string; prgrsCn?: string } = {};
-    if (!actlYmd) errors.actlYmd = "실제 진행일을 입력해 주세요";
-    if (!prgrsCn.trim()) errors.prgrsCn = "진행 내용을 입력해 주세요";
+    if (!actlYmd) errors.actlYmd = "실제 진행일을 입력해주세요";
+    if (!prgrsCn.trim()) errors.prgrsCn = "진행 내용을 입력해주세요";
     setFieldError(errors);
     if (Object.keys(errors).length > 0) {
-      setBanner("입력을 확인해 주세요");
+      setBanner("입력을 확인해주세요");
       return;
     }
     setBanner("");
@@ -164,7 +164,7 @@ export function SessionRecordForm({
 
         {mode === "resubmit" && session?.latestOpinion && (
           <div className="rounded-[12px] bg-accent-soft px-[12px] py-[10px]">
-            <div className="text-[13px] font-medium text-accent">국장이 요청한 수정 사항</div>
+            <div className="text-[13px] font-medium text-accent">학술국장이 요청한 수정 사항</div>
             <p className="mt-[4px] whitespace-pre-wrap text-[13.5px] leading-[1.6] text-n300">
               {session.latestOpinion}
             </p>
@@ -202,7 +202,7 @@ export function SessionRecordForm({
             onChange={(event) => setPrgrsCn(event.target.value)}
             disabled={submitting}
             rows={5}
-            placeholder="계획 대비 실제로 다룬 내용, 변경 사항, 과제를 적어 주세요"
+            placeholder="계획 대비 실제로 다룬 내용, 변경 사항, 과제를 적어주세요"
             className={`${INPUT_CLASS} min-h-[120px] resize-y`}
           />
         </Field>

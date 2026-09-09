@@ -42,7 +42,7 @@ export async function SessionLandingPage({
     return (
       <LoginGate
         title="로그인이 필요합니다"
-        description="공유받은 회차는 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+        description="공유받은 회차는 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
       />
     );
   }
@@ -70,7 +70,7 @@ export async function SessionLandingPage({
     return (
       <EmptyState
         title="회차를 찾을 수 없습니다"
-        description="이미 삭제된 회차이거나 주소가 잘못됐을 수 있습니다 — 링크를 보낸 사람에게 다시 확인해주세요."
+        description="이미 삭제된 회차이거나 주소가 잘못됐을 수 있습니다 — 링크를 보낸 사람에게 다시 확인해주세요"
       />
     );
   }

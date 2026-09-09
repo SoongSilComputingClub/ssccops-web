@@ -214,7 +214,7 @@ function ApprovalFeed({ approvals }: { approvals: AcademicProgramApproval[] }) {
   if (approvals.length === 0) {
     return (
       <div className="text-[14px] text-n500">
-        아직 국장이 처리한 회차 기록이 없습니다.
+        아직 학술국장이 처리한 회차 기록이 없습니다.
       </div>
     );
   }
@@ -284,7 +284,7 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
         <StatBox
           label="검토 대기"
           value={String(stats.pendingReview)}
-          hint="국장 검토 중인 회차"
+          hint="학술국장 검토 중인 회차"
           tone={stats.pendingReview > 0 ? "accent" : "default"}
         />
         <StatBox
@@ -449,14 +449,14 @@ export async function StudioDashboardPage({
           학술 대시보드
         </h1>
         <p className="text-[13.5px] text-n500">
-          내 활동의 진행 현황 · 이번 주 회차 · 국장 처리 현황
+          내 활동의 진행 현황 · 이번 주 회차 · 학술국장 처리 현황
         </p>
       </header>
 
       {result.outcome === "unauthenticated" && (
         <LoginGate
           title="로그인이 필요합니다"
-          description="학술 대시보드는 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해 주세요"
+          description="학술 대시보드는 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
         />
       )}
 
