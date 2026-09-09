@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
-import { ThemeCycleButton } from "@/shared/ui";
+import { ThemeToggle } from "@/shared/ui";
 import { AuthNav } from "@/features/auth";
 // 서버 전용 조회는 배럴이 재export 하지 않는다(클라이언트 번들 오염 방지) — 직접 임포트한다
 import { fetchIsAcademicLeader } from "@/entities/academic-program/api/programs-read";
@@ -112,12 +112,18 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <DesktopNav isLeader={isLeader} />
               <AuthNav />
               {/*
-               * 테마는 좁은 자리라 아이콘 한 버튼으로 돌려 고른다 (#341). 3버튼 토글은
-               * 스터디장 목차(일곱)와 함께 두면 헤더가 넘쳐 두 줄이 된다 — 넉넉한 모바일
-               * 드로어 발치에는 그쪽(`ThemeToggle`)을 두고, 둘은 같은 상태를 본다.
-               * `lg:` 이상에서만 보이는 것은 좁은 화면에서 드로어와 겹치기 때문이다.
+               * 테마는 admin(사이드바 발치)과 같은 3버튼으로 고른다 (#349). 전에는 아이콘 한
+               * 버튼으로 돌려 골랐는데(#341), 누르기 전에는 다음이 무엇인지 알 수 없고 세 값
+               * 중 하나로 곧장 갈 수도 없었다 — 두 앱을 오가는 사람에게 같은 설정이 다른
+               * 물건으로 보인다.
+               *
+               * `fit`을 주는 것은 이 자리가 로고·메뉴·로그아웃과 한 줄을 나눠 쓰기 때문이다.
+               * 기본값(`flex-1`)은 폭을 채우려 들어 드로어·사이드바 발치에서만 맞다.
+               *
+               * `lg:` 이상에서만 보이는 것은 좁은 화면에서 드로어와 겹치기 때문이다 — 그쪽은
+               * 드로어 발치의 `ThemeToggle`이 맡고, 둘은 같은 상태를 본다.
                */}
-              <ThemeCycleButton className="hidden lg:flex" />
+              <ThemeToggle fit className="hidden lg:flex" />
               <MobileNav isLeader={isLeader} />
             </div>
           </div>
