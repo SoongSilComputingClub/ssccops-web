@@ -206,7 +206,14 @@ function toFormDetail(res: FormDetailResponse): FormDetail {
 
 /** 폼 목록 필터 — 값이 없으면(null) 해당 축을 거르지 않는다 */
 export interface FormListFilter {
-  formSttsCd?: FormSttsCd | null;
+  /**
+   * 접수 상태 **파생값**으로 거른다 — 저장값 `form_stts_cd`가 아니다 (ADR-0019).
+   *
+   * 배지가 `receiptStatus`로 그려지는데 필터만 `form_stts_cd`를 보고 있어서, 접수 기간이
+   * 끝난 폼(`EXPIRED`)이 '기간 종료' 배지를 달고도 상태 코드는 `OPEN`이라 '접수 중' 탭에
+   * 남아 있었다. 두 축을 하나로 모은다.
+   */
+  receiptStatus?: FormReceiptStatus | null;
   formLblId?: number | null;
 }
 
@@ -258,12 +265,22 @@ export const FORM_ERROR = {
 /**
  * GET /v1/forms — 목록.
  *
- * 상태·라벨 필터를 쿼리로 보낸다. 예전에는 전체를 받아 화면에서 filter()로 걸렀는데,
+ * 접수 상태·라벨 필터를 쿼리로 보낸다. 예전에는 전체를 받아 화면에서 filter()로 걸렀는데,
  * 폼이 늘어날수록 안 쓸 데이터를 받아 버리는 구조라 서버 조건으로 옮겼다. 둘 다 주면 AND다.
+ *
+ * 상태 축은 저장값이 아니라 파생값(`receiptStatus`)이다 — 근거는 FormListFilter.
  */
 export async function fetchForms(filter: FormListFilter = {}): Promise<FormSummary[]> {
   const query = new URLSearchParams();
-  if (filter.formSttsCd) query.set("statusCode", filter.formSttsCd);
+  /*
+   * 파라미터 이름이 `statusCode`가 아닌 것은 의도한 것이다 — 같은 이름이 저장값과 파생값을
+   * 섞어 받으면 나중에 어느 쪽인지 코드를 읽어야 안다(ssccops-server #325가 그 길을 기각했다).
+   * 값은 응답의 `receiptStatus`와 같은 어휘이므로 이름도 그것에 맞춘다.
+   *
+   * 화면의 URL 쿼리 파라미터도 같은 이름을 쓴다(views/form-list) — 주소창과 요청이 1:1이면
+   * 어떤 조회가 나갔는지 주소만 보고 알 수 있다. 이름을 바꾸면 두 곳을 함께 바꾼다.
+   */
+  if (filter.receiptStatus) query.set("receiptStatus", filter.receiptStatus);
   if (filter.formLblId != null) query.set("labelId", String(filter.formLblId));
 
   const qs = query.toString();

@@ -18,13 +18,34 @@ import type { FormReceiptStatus } from "./types";
  * `formSttsCd`로 배지를 고르면 이미 응답을 받지 않는 폼이 '접수중'이라고 말하게 된다.
  *
  * 그래서 `FORM_STTS_BADGE`는 지웠다 — 남겨 두면 다음 화면이 다시 그것으로 배지를 그려
- * 같은 괴리가 되살아난다. 목록 필터 칩처럼 **폼 상태 코드 자체**를 표기해야 하는 자리는
- * 기준 코드 사전의 `FORM_STTS_NM`을 쓴다.
+ * 같은 괴리가 되살아난다. **목록 필터 칩도 이 표기를 그대로 쓴다**(ADR-0019) — 배지가
+ * '기간 종료'라고 말하는데 칩이 '종료됨'이면 사용자는 둘을 같은 것으로 읽지 못한다.
+ * 저장값인 상태 코드(`form_stts_cd`) 자체를 표기해야 하는 자리가 생기면 그때는 기준 코드
+ * 사전의 `FORM_STTS_NM`을 쓴다 — 지금 그런 자리는 없다.
  *
  * 'EXPIRED'만 amber인 것은 운영자가 손댈 여지가 있는 유일한 칸이기 때문이다 — 기간을
  * 늘리든 마감하든 결정이 필요하다. '접수 예정'과 '작성 중'은 아직 아무 일도 일어나지 않은
  * 상태라 강조하지 않는다.
  */
+/**
+ * 접수 상태의 표기 순서 — 목록 필터 칩이 이 순서로 선다 (ADR-0019).
+ *
+ * 폼 한 장이 지나가는 시간 순서다: 작성 → 예정 → 접수 → 기간 종료 · 마감. `EXPIRED`와
+ * `CLOSED`를 이웃에 두는 것은 **둘을 가르기 위해서**다 — 기간이 끝난 것과 운영자가 직접
+ * 닫은 것은 다음에 할 일이 다르고(기간을 늘릴지 / 그대로 둘지), 배지가 그 둘을 가르므로
+ * 필터도 가른다. 한 칩이 둘을 함께 잡으면 그 탭 안에서 배지 두 가지가 섞인다.
+ *
+ * `FORM_RECEIPT_BADGE`의 키 순서에 기대지 않고 배열을 따로 두는 것은, Record의 키 순서를
+ * 타입이 지켜 주지 않아 누가 항목을 옮기면 칩 순서가 조용히 따라 바뀌기 때문이다.
+ */
+export const FORM_RECEIPT_STATUSES: readonly FormReceiptStatus[] = [
+  "DRAFT",
+  "SCHEDULED",
+  "ACCEPTING",
+  "EXPIRED",
+  "CLOSED",
+];
+
 export const FORM_RECEIPT_BADGE: Record<
   FormReceiptStatus,
   { label: string; tone: "outline" | "blue" | "grey" | "amber" }
