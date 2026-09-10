@@ -7,14 +7,30 @@ import { SignInButton } from "@/features/auth";
 import { currentAccessToken, isUnauthenticated } from "@/shared/api/authed-client";
 import { ROUTES } from "@/shared/config/routes";
 import { Badge, EmptyState, Notice } from "@/shared/ui";
+import { ResponseAnswers } from "./response-answers";
 import { ResubmitForm } from "./resubmit-form";
 import { ReviewTimeline } from "./review-timeline";
 
 /*
- * 내 응답 상세 — 사유를 읽고 그 자리에서 다시 낸다 (ssccops#221 · `/f/{formId}/responses/{id}`).
+ * 내 응답 상세 — 낸 것을 읽고, 수정 요청을 받았으면 그 자리에서 다시 낸다
+ * (ssccops#221 · #263 · `/f/{formId}/responses/{id}`).
+ *
+ * ── 조회는 열고 수정은 닫는다 (ssccops-web#358) ──────────────
+ * 이 화면은 **자기가 낸 응답을 보는 자리**이고, 재제출은 그 위에 조건부로 얹힌다. 처음에는
+ * 반대였다 — 재제출 화면이라 여겨 수정 요청을 받지 않은 응답은 카드에서 여기로 오지도
+ * 못했고, 그래서 운영진이 본 증상이 "수정 요청을 보내야 응답이 보인다"였다. 서버는 처음부터
+ * 상태와 무관하게 내용을 내주고 있었으므로(서버 #326) 막던 것은 화면이었고, 그것을 걷었다.
+ *
+ * **승인·반려로 종결된 응답도 열린다.** 종결은 수정을 막는 것이지 조회를 막는 것이 아니고,
+ * **반려 사유는 처리 이력에만 있어** 여기를 닫으면 반려된 사람이 사유를 읽을 길이 없다.
+ *
+ * ── 다시 낼 수 있는가는 서버가 답한다 ────────────────────────
+ * `detail.canResubmit`이다. 화면이 `rspnsSttsCd`로 되짚지 않는다 — 판정이 두 벌이면 상태
+ * 어휘가 늘 때 서버만 고쳐지고 화면은 옛 규칙으로 남는다. **재제출 규칙 자체는 그대로다**
+ * (수정 요청을 받은 응답만 · 응답 수정 기능은 운영진이 기각했다).
  *
  * ── 왜 별도 화면인가 ─────────────────────────────────────────
- * `/f/{formId}`는 **"새로 내는" 화면**이고 여기는 **"다시 내는" 화면**이다. 한 화면에 두 뜻을
+ * `/f/{formId}`는 **"새로 내는" 화면**이고 여기는 **"이미 낸 것"의 화면**이다. 한 화면에 두 뜻을
  * 담으면 `alreadySubmitted`(새 응답을 막는 상태 — 수정 요청도 포함된다)가 작성 폼을 닫는 것과
  * 재제출이 열려야 하는 것이 같은 자리에서 부딪힌다. 그래서 재제출은 **이 경로로만** 들어온다.
  *
@@ -92,7 +108,9 @@ export async function FormResponsePage({
   }
 
   const status = RESPONSE_STATUS_BADGE[detail.rspnsSttsCd];
-  const canResubmit = detail.rspnsSttsCd === "CHANGES_REQUESTED";
+  // 서버가 준 값 그대로다 — 상태 코드로 다시 계산하지 않는다(머리말 참고)
+  const canResubmit = detail.canResubmit;
+  const isDraft = detail.rspnsSttsCd === "DRAFT";
 
   return (
     <FormResponseShell>
@@ -117,9 +135,12 @@ export async function FormResponsePage({
       <ReviewTimeline histories={detail.reviewHistories} />
 
       {/*
-       * 재제출은 수정 요청을 받은 응답에서만 연다. 승인·반려는 종결이고(서버 전이표), 제출 뒤
-       * 검토를 기다리는 중이면 고칠 것이 아니라 기다리는 것이 맞다 — 폼을 그려 두고 제출에서
-       * 409로 막으면 사용자는 무엇을 고쳐야 하는지 알 수 없다.
+       * 재제출은 수정 요청을 받은 응답에서만 연다(서버가 `canResubmit`으로 말한다). 승인·반려는
+       * 종결이고(서버 전이표), 제출 뒤 검토를 기다리는 중이면 고칠 것이 아니라 기다리는 것이
+       * 맞다 — 폼을 그려 두고 제출에서 409로 막으면 사용자는 무엇을 고쳐야 하는지 알 수 없다.
+       *
+       * 폼이 닫힌 자리에는 **낸 답을 읽기 전용으로** 그린다. 재제출이 열린 쪽은 같은 답이
+       * 프리필로 이미 폼 안에 있으므로 두 번 그리지 않는다.
        */}
       {canResubmit ? (
         <ResubmitForm
@@ -128,17 +149,29 @@ export async function FormResponsePage({
           initialAnswers={detail.rspnsCn}
         />
       ) : (
-        <Notice
-          title="지금은 다시 낼 수 없습니다"
-          description="수정 요청을 받은 응답만 다시 낼 수 있습니다."
-        >
-          <Link
-            href={ROUTES.myApplications}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
+        <>
+          <ResponseAnswers composition={detail.qitemCpstCn} answers={detail.rspnsCn} />
+
+          {/*
+           * 작성 중인 응답은 갈 곳이 다르다 — 여기서는 이어 쓸 수 없고 폼이 그 자리다.
+           * 카드가 이제 전부 이 화면으로 오므로(#358) 그 길을 여기서 되돌려 준다.
+           */}
+          <Notice
+            title={isDraft ? "아직 제출하지 않은 응답입니다" : "이 응답은 지금 고칠 수 없습니다"}
+            description={
+              isDraft
+                ? "폼에서 이어서 작성한 뒤 제출해주세요."
+                : "다시 낼 수 있는 것은 운영진이 수정을 요청한 응답뿐입니다."
+            }
           >
-            내 신청으로
-          </Link>
-        </Notice>
+            <Link
+              href={isDraft ? ROUTES.publicForm(formId) : ROUTES.myApplications}
+              className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
+            >
+              {isDraft ? "이어서 작성하기" : "내 신청으로"}
+            </Link>
+          </Notice>
+        </>
       )}
     </FormResponseShell>
   );

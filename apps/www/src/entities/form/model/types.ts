@@ -148,12 +148,24 @@ export interface FormResponseReviewHistory {
  * 재제출 화면의 재료 둘을 함께 싣는다 — **왜 수정요청을 받았는가**(`reviewHistories`)와
  * **내가 뭐라고 썼는가**(`rspnsCn`)다. 그 둘이 없으면 재제출은 전체 본문을 처음부터 다시
  * 치는 것으로만 된다(재제출은 전체 재전송이고 임시저장이 없다 · 서버 #177 결정 2).
+ *
+ * **상태와 무관하게 열린다**(서버 #326). 승인·반려로 종결된 응답도 내용과 이력이 온다 —
+ * 종결은 수정을 막는 것이지 조회를 막는 것이 아니고, **반려 사유는 `reviewHistories`에만
+ * 있어** 조회를 막으면 반려된 사람이 사유를 읽을 길이 사라진다.
  */
 export interface MyFormResponseDetail {
   formRspnsId: number;
   rspnsSeq: number | null;
   rspnsSttsCd: ResponseStatus;
   sbmsnSeq: number | null;
+  /**
+   * 지금 이 응답을 **다시 낼 수 있는가** (서버 #326).
+   *
+   * 화면이 `rspnsSttsCd === "CHANGES_REQUESTED"`를 스스로 적어 만들던 판정이다. 그 규칙은
+   * 이미 서버가 갖고 있으므로(제출 회차를 올릴지와 같은 한 줄) **여기서 다시 계산하지
+   * 않는다** — 두 벌이 되면 상태 어휘가 늘 때 서버만 고쳐지고 화면은 옛 규칙으로 남는다.
+   */
+  canResubmit: boolean;
   sbmsnDt: string | null;
   mdfcnDt: string | null;
   /** 이전 답 전체 — 재제출 프리필의 재료 */
