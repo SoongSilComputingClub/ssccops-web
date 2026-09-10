@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import { signUp, type SignupStatusCode } from "@/entities/member";
-import { signupUrl } from "@/shared/config/routes";
 import { Card, Chip, Field, TextField } from "@/shared/ui";
 import {
   EMPTY_SIGNUP_VALUES,
@@ -15,6 +14,7 @@ import {
   type SignupFieldErrors,
   type SignupFormValues,
 } from "../model/signup-form";
+import { MemberLinkStep } from "./member-link-step";
 
 /*
  * 간편 가입 — **신청 흐름 안에 임베드된다** (wave2 §8-4).
@@ -241,12 +241,26 @@ export function SignupStep({
        * 학번 중복 — **오류가 아니라 갈림길이다.**
        *
        * 여기 선 사람은 잘못 입력한 것이 아니라 이미 명부에 있는 사람이고, 해야 할 일은 값을
-       * 고치는 것이 아니라 기존 회원 정보에 계정을 연결하는 것이다. 그 연결 화면은 어드민에만
-       * 있으므로 오리진이 설정돼 있으면 링크로 열어 주고, 없으면 문의 안내만 남긴다.
+       * 고치는 것이 아니라 기존 회원 정보에 계정을 연결하는 것이다. 그 연결을 **이 자리에서
+       * 끝낸다**(#364) — 어드민으로 넘기면 거기서 다시 로그인하고 연결한 뒤 신청서로 돌아오려고
+       * 또 이동해야 하는데, 바로 위 카드가 "다른 화면으로 이동하지 않습니다"라고 적고 있다.
        * **학번을 지우면 통과한다는 사실은 알려주지 않는다** — 그 길의 끝이 같은 사람의 두 번째
        * 회원 줄이다.
+       *
+       * 연결이 끝나면 가입과 **같은 신호**(`onSignedUp`)를 올린다. 부모가 보는 것은 "이 계정이
+       * 이제 회원인가" 하나뿐이고, 회원 행을 새로 만들었는지 명부의 행에 붙였는지는 그다음
+       * 단계와 무관하다.
        */}
-      {duplicatedStudentNumber && <StudentNumberDuplicatedNotice />}
+      {duplicatedStudentNumber && (
+        <MemberLinkStep
+          initialValues={{
+            studentNumber: values.studentNumber,
+            name: values.name,
+            phoneNumber: values.phoneNumber,
+          }}
+          onLinked={onSignedUp}
+        />
+      )}
 
       {formError && (
         <div className="rounded-[12px] bg-surface px-[14px] py-[11px] text-[13.5px] text-danger shadow-[0_0_0_1px_#f04452]">
@@ -263,32 +277,5 @@ export function SignupStep({
         {pending ? "가입 처리 중…" : "가입하고 신청서 작성"}
       </button>
     </div>
-  );
-}
-
-function StudentNumberDuplicatedNotice() {
-  const signup = signupUrl();
-
-  return (
-    <Card className="flex flex-col gap-[8px]">
-      <div className="text-[14.5px] font-semibold">이 학번은 이미 명부에 등록돼 있습니다</div>
-      <p className="text-[13.5px] leading-[1.7] text-n400">
-        본인 학번이 맞다면 이미 등록된 회원일 가능성이 높습니다. 새로 가입하는 대신 기존 회원
-        정보에 이 계정을 연결하면 기수·등급·역할이 그대로 유지됩니다. 연결에는 학번·이름·
-        전화번호가 모두 필요합니다.
-      </p>
-      {signup ? (
-        <a
-          href={signup}
-          className="self-start rounded-xl bg-accent px-[14px] py-[10px] text-[14px] font-semibold text-white transition-colors hover:bg-accent-strong"
-        >
-          기존 회원 정보와 연결하기
-        </a>
-      ) : (
-        <p className="text-[12.5px] leading-[1.7] text-n500">
-          연결 화면 주소가 아직 설정되지 않았습니다 — 운영진에게 문의해 주세요.
-        </p>
-      )}
-    </Card>
   );
 }

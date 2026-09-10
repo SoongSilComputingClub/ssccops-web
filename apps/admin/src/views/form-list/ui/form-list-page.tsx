@@ -4,16 +4,25 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   FORM_RECEIPT_BADGE,
+  FORM_RECEIPT_STATUSES,
   SYSTEM_FORM_BADGE,
   SYSTEM_FORM_DELETE_LOCKED,
   SYSTEM_FORM_DUPLICATE_NOTE,
+  type FormReceiptStatus,
   type FormSummary,
 } from "@/entities/form";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
-import { useDuplicateForm, useFormLabelOptions, useFormList } from "@/features/form";
+import {
+  FORM_DELETE_CAPABILITY,
+  FormDeleteSheet,
+  NO_FORM_DELETE,
+  useDuplicateForm,
+  useFormDelete,
+  useFormLabelOptions,
+  useFormList,
+} from "@/features/form";
 import { TemplateStartSheet, useFormFromTemplate } from "@/features/form-template";
-import { FORM_STTS_CDS, FORM_STTS_NM, type FormSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
 import {
@@ -41,13 +50,28 @@ const NO_WRITE = "폼을 만들거나 고칠 권한이 없습니다";
  * 값의 이름을 서버 쿼리 파라미터와 똑같이 맞춘 것도 의도한 것이다 — URL과 요청이 1:1이면
  * 어떤 조회가 나갔는지 주소창만 보고 알 수 있다.
  */
-const QUERY_STATUS = "statusCode";
+const QUERY_RECEIPT_STATUS = "receiptStatus";
 const QUERY_LABEL = "labelId";
 
+/*
+ * 상태 축의 파라미터 이름이 `statusCode`에서 `receiptStatus`로 바뀌었다 (ADR-0019).
+ * 서버 조회 파라미터와 같은 이름이며, 그 이름은 entities/form/api/forms.ts가 함께 쥔다.
+ *
+ * ── 옛 링크(`?statusCode=OPEN`)는 번역하지 않고 무시한다 ─────────────────────
+ *
+ * 옮긴 축에는 `OPEN`에 해당하는 칩이 없다. `OPEN`은 접수 예정·접수 중·기간 종료 셋으로
+ * 갈라지므로 1:1로 옮길 값이 없고, 셋 중 하나를 골라 주면 **사용자가 보내지 않은 조건을
+ * 지어내는 것**이 된다. 전체로 떨어뜨리면 사용자는 칩을 눌러 좁힐 수 있지만, 잘못 좁힌
+ * 목록은 있는 폼을 없다고 말하고 사용자는 그것이 필터 때문인지 알 수 없다.
+ *
+ * `DRAFT`·`CLOSED`만 1:1이라 그 둘만 옮기는 것도 생각할 수 있지만, 같은 파라미터가 어떤
+ * 값에는 듣고 어떤 값에는 조용히 안 듣는 쪽이 전부 안 듣는 것보다 나쁘다.
+ */
+
 /** URL은 사용자가 손으로 고칠 수 있다 — 모르는 값은 필터 없음으로 떨어뜨린다 */
-function parseFormSttsCd(value: string | null): FormSttsCd | null {
-  return value && FORM_STTS_CDS.includes(value as FormSttsCd)
-    ? (value as FormSttsCd)
+function parseFormReceiptStatus(value: string | null): FormReceiptStatus | null {
+  return value && FORM_RECEIPT_STATUSES.includes(value as FormReceiptStatus)
+    ? (value as FormReceiptStatus)
     : null;
 }
 
@@ -70,15 +94,23 @@ function FormCardSkeleton() {
 function FormCard({
   form,
   duplicating,
+  deleting,
   canWrite,
+  canDelete,
   onDuplicate,
+  onDelete,
 }: {
   form: FormSummary;
   /** 이 카드의 복제가 진행 중인가 — 연타로 사본이 여러 장 생기는 것을 막는다 */
   duplicating: boolean;
+  /** 이 카드의 삭제가 진행 중인가 */
+  deleting: boolean;
   /** FORM_WRITE 보유 여부 — 복제·수정을 잠글지 정한다 */
   canWrite: boolean;
+  /** 삭제 요구 권한 보유 여부 — 지금은 FORM_WRITE와 같은 값이지만 판단의 출처가 다르다 */
+  canDelete: boolean;
   onDuplicate: () => void;
+  onDelete: () => void;
 }) {
   const router = useRouter();
   /*
@@ -151,6 +183,26 @@ function FormCard({
         >
           수정
         </button>
+        {/*
+          삭제만 danger 색이다 — 복제·수정과 같은 accent로 두면 좁은 화면에서 세 글자가 나란히
+          서서 잘못 누르기 쉽다. **시스템 폼에서는 잠근다**: 서버가 409로 거절하므로(서버 #140)
+          누르게 두면 확인 시트를 지나 거절만 받는다. 사유 문구는 서버 거절과 같은 문장이다.
+        */}
+        <button
+          type="button"
+          disabled={deleting || !canDelete || form.sysYn}
+          title={
+            !canDelete
+              ? NO_FORM_DELETE
+              : form.sysYn
+                ? SYSTEM_FORM_DELETE_LOCKED
+                : undefined
+          }
+          onClick={onDelete}
+          className="cursor-pointer text-danger disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {deleting ? "지우는 중…" : "삭제"}
+        </button>
         <div className="flex-1" />
         <div className="text-[13px] text-n500">수정 {formatYmd(form.mdfcnDt)}</div>
       </div>
@@ -169,11 +221,24 @@ export function FormListPage() {
    * '템플릿에서 시작'도 같은 권한이다(서버 FormTemplateController가 클래스 레벨로 건다).
    */
   const canWrite = useCan(CAPABILITY.FORM_WRITE);
+  /*
+   * 삭제·복구 권한은 편집과 **따로 묻는다** (features/form/model/form-delete-copy.ts).
+   * 지금은 같은 코드를 보지만 서버 계약이 확정되면 갈릴 수 있고(회의 삭제에는 MEETING_DELETE가
+   * 따로 있다), 그때 고칠 자리가 화면이 아니라 그 한 파일이어야 한다.
+   */
+  const canDelete = useCan(FORM_DELETE_CAPABILITY);
+  const deletion = useFormDelete();
+  /*
+   * 삭제 확인 시트가 보고 있는 폼. 열림 여부를 따로 두지 않고 **대상 자체**를 상태로 쥔다 —
+   * boolean과 대상을 나눠 두면 닫는 순간 대상만 남아, 다음에 열릴 때 이전 폼의 제목·응답 수가
+   * 한 프레임 그려진다(확인 시트에서 그것은 잘못된 폼을 지우게 하는 종류의 어긋남이다).
+   */
+  const [deleteTarget, setDeleteTarget] = useState<FormSummary | null>(null);
 
-  const formSttsCd = parseFormSttsCd(searchParams.get(QUERY_STATUS));
+  const receiptStatus = parseFormReceiptStatus(searchParams.get(QUERY_RECEIPT_STATUS));
   const formLblId = parseFormLblId(searchParams.get(QUERY_LABEL));
 
-  const { forms, status, errorMessage, reload } = useFormList({ formSttsCd, formLblId });
+  const { forms, status, errorMessage, reload } = useFormList({ receiptStatus, formLblId });
   const { labels } = useFormLabelOptions();
 
   /*
@@ -207,6 +272,23 @@ export function FormListPage() {
       setStartSheetOpen(false);
       router.push(ROUTES.formEdit(formId));
     }
+  };
+
+  /*
+   * 삭제 후에는 목록을 다시 부른다 — 지운 폼은 이 목록에서 빠져야 한다.
+   *
+   * **stale(이미 지워졌다·사라졌다)도 성공과 똑같이 다시 부른다.** 그 오류의 뜻이 "다른 탭에서
+   * 이미 지웠다"이므로 사용자가 원한 상태와 서버의 상태는 이미 같고, 여기서 할 일은 사과가
+   * 아니라 최신 목록을 보여주는 것이다(접수 상태 전이가 같은 판단을 한다).
+   */
+  const runDelete = async (formId: number) => {
+    const { outcome, message } = await deletion.remove(formId);
+    if (outcome === "busy") return;
+
+    // 요청이 끝난 뒤에 닫는다 — 먼저 닫으면 실패했을 때 무엇을 하다 실패했는지가 사라진다
+    setDeleteTarget(null);
+    flash(message);
+    if (outcome === "done" || outcome === "stale") reload();
   };
 
   /** 누른 축만 바꾸고 나머지 필터는 URL에 남겨 둔다 (상태·라벨은 AND로 함께 걸린다) */
@@ -250,26 +332,40 @@ export function FormListPage() {
           <div className="text-[13px] text-n500">
             템플릿의 문항 구성을 복사해 작성 중 폼을 만듭니다
           </div>
+          <div className="flex-1" />
+          {/*
+            **목차(사이드바)에도 있는 자리를 여기 한 번 더 둔다.** 지운 직후의 토스트가 '지운
+            폼'을 가리키는데, 그 토스트가 사라진 뒤 되돌리려는 사람이 서 있는 곳이 이 화면이다 —
+            목차를 훑어 찾게 하는 것과 바로 옆에서 누르게 하는 것은 되살릴 수 있다는 사실의
+            무게가 다르다. 권한으로 감추지 않는 것은 조회가 목록과 같은 FORM_READ라서다.
+          */}
+          <Button variant="ghost" onClick={() => router.push(ROUTES.formsDeleted)}>
+            지운 폼
+          </Button>
         </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-[7px]">
           <Chip
-            active={formSttsCd === null}
-            onClick={() => applyFilter(QUERY_STATUS, null)}
+            active={receiptStatus === null}
+            onClick={() => applyFilter(QUERY_RECEIPT_STATUS, null)}
           >
             {ALL}
           </Chip>
           {/*
-            필터는 배지와 달리 **폼 상태 코드 자체**를 고르는 자리다 — 서버 쿼리(statusCode)가
-            form_stts_cd로 거르므로 파생값(receiptStatus)이 아니라 기준 코드명을 그대로 쓴다.
+            **필터와 배지가 같은 축을 본다** (ADR-0019). 예전에는 필터만 폼 상태 코드
+            (form_stts_cd)를 골라서, 기간이 끝난 폼이 '기간 종료' 배지를 달고도 상태는
+            아직 OPEN이라 '접수 중' 탭에 남았다.
+
+            문구도 배지에서 그대로 꺼내 쓴다 — 배지가 '기간 종료'인데 칩이 '종료됨'이면
+            사용자는 그 둘을 같은 것으로 읽지 못한다. 여기서 새 문구를 짓지 않는다.
           */}
-          {FORM_STTS_CDS.map((cd) => (
+          {FORM_RECEIPT_STATUSES.map((rs) => (
             <Chip
-              key={cd}
-              active={formSttsCd === cd}
-              onClick={() => applyFilter(QUERY_STATUS, cd)}
+              key={rs}
+              active={receiptStatus === rs}
+              onClick={() => applyFilter(QUERY_RECEIPT_STATUS, rs)}
             >
-              {FORM_STTS_NM[cd]}
+              {FORM_RECEIPT_BADGE[rs].label}
             </Chip>
           ))}
           {/*
@@ -316,7 +412,7 @@ export function FormListPage() {
           (forms.length === 0 ? (
             <EmptyState
               message={
-                formSttsCd || formLblId
+                receiptStatus || formLblId
                   ? "조건에 맞는 폼이 없습니다."
                   : "등록된 폼이 없습니다."
               }
@@ -338,13 +434,32 @@ export function FormListPage() {
                   key={f.formId}
                   form={f}
                   duplicating={duplication.pendingFormId === f.formId}
+                  deleting={deletion.pendingFormId === f.formId}
                   canWrite={canWrite}
+                  canDelete={canDelete}
                   onDuplicate={() => void runDuplicate(f.formId)}
+                  onDelete={() => setDeleteTarget(f)}
                 />
               ))}
             </div>
           ))}
       </PageBody>
+
+      {/*
+        확인 시트는 대상이 있을 때만 마운트한다 — `open` prop만 끄면 닫힌 시트가 이전 폼의
+        제목과 응답 수를 계속 들고 있게 되고, 그 값이 다음 삭제에서 한 프레임 새어 나온다.
+      */}
+      {deleteTarget && (
+        <FormDeleteSheet
+          open
+          formTtlNm={deleteTarget.formTtlNm}
+          responseCount={deleteTarget.responseCount}
+          rcptEndDt={deleteTarget.rcptEndDt}
+          pending={deletion.pending}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => void runDelete(deleteTarget.formId)}
+        />
+      )}
 
       {/* 선택지에는 켜진 템플릿만 실린다 — 거르는 것은 서버다 (features/form-template) */}
       <TemplateStartSheet

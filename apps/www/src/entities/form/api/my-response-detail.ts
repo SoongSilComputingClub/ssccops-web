@@ -18,6 +18,9 @@ import type {
  * - **본인 행이 아니면 404 `FORM_RESPONSE_NOT_FOUND`** — 없는 응답과 같은 코드다(그 번호의
  *   응답이 존재하는지가 새어 나가지 않게). 화면은 둘을 똑같이 "찾을 수 없음"으로 다룬다.
  * - **접수 가능 여부를 보지 않는다** — 오히려 이 조회의 실제 쓰임이 마감 뒤에 있다.
+ * - **응답 상태도 보지 않는다**(서버 #326) — `DRAFT`·`SUBMITTED`·`CHANGES_REQUESTED`·
+ *   `ACCEPTED`·`REJECTED` 전부 내용과 이력이 온다. 다시 낼 수 있는가는 화면이 상태로
+ *   유추하지 않고 서버가 실어 보내는 `canResubmit`이 답한다.
  * - 이력 항목은 운영자용과 같은 record라 **처리자_명이 제출자에게도 실린다**(서버 #177 결정 1).
  *
  * 이 파일은 `apps/lms`의 같은 이름 조회에서 옮겨 왔다(기획안 전용 화면이 먼저 쓰던 것이다).
@@ -39,6 +42,7 @@ interface MyFormResponseDetailApiResponse {
   rspnsSeq: number | null;
   rspnsSttsCd: ResponseStatus;
   sbmsnSeq: number | null;
+  canResubmit: boolean | null;
   sbmsnDt: string | null;
   mdfcnDt: string | null;
   rspnsCn: RspnsCn | null;
@@ -77,6 +81,12 @@ export async function fetchMyResponseDetail(
     formRspnsId: res.formRspnsId,
     rspnsSeq: res.rspnsSeq ?? null,
     rspnsSttsCd: res.rspnsSttsCd,
+    /*
+     * 서버가 말하지 않으면 열지 않는다(서버 #326 이전 배포). 여기서 상태 코드로 되짚으면
+     * 판정이 두 벌이 되는데, 그것이 이 필드를 받게 된 이유다 — 그리고 `false`인 응답에
+     * 재제출을 시도해도 제출 경로가 종전대로 막으므로 화면만 조용히 어긋난다.
+     */
+    canResubmit: res.canResubmit ?? false,
     sbmsnSeq: res.sbmsnSeq ?? null,
     sbmsnDt: res.sbmsnDt,
     mdfcnDt: res.mdfcnDt,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormDescription, QitemCard, nextPageSeq, pageSeqOf, validatePageAnswers } from "@ssccops/form-renderer";
 import { NOT_ACCEPTING_MESSAGE, SaveStatusBar, useApplyForm } from "@/features/apply";
@@ -100,10 +101,33 @@ export function PublicFormStep({ formId }: { formId: number }) {
         title="이미 제출한 폼입니다"
         description={
           form?.submittedAt
-            ? `제출 일시 ${formatDt(form.submittedAt)} — 결과는 등록한 연락처로 안내드립니다.`
-            : "결과는 등록한 연락처로 안내드립니다."
+            ? `제출 일시 ${formatDt(form.submittedAt)} — 진행 상황은 '내 신청'에서 확인할 수 있고, 결과는 등록한 연락처로 안내드립니다`
+            : "진행 상황은 '내 신청'에서 확인할 수 있습니다 — 결과는 등록한 연락처로 안내드립니다"
         }
-      />
+      >
+        {/*
+          홍보로 도는 것은 이 폼 주소 하나뿐이다 — 이미 낸 사람이 그 링크를 다시 열면 여기에
+          닿는데, '내 신청'은 상단 메뉴에만 있어 폼 링크로 처음 들어온 사람은 보지 않는다.
+          그래서 안내 안에 출구를 둔다(제출 완료 화면 `ApplyDone`이 이미 쓰는 모양이다).
+
+          **응답 상세(`ROUTES.myFormResponse`)로 바로 보내지 않는다.** 이 화면이 가진 것은
+          `alreadySubmitted`·`submittedAt`뿐이고 폼 조회(`GET /v1/forms/{formId}/public`)는
+          응답 식별자를 주지 않는다. 상세로 보내려면 여기서 `.../responses/mine`을 한 번 더
+          불러 식별자를 캐내야 하는데, 그러면 문항을 그리지도 않는 안내 카드가 조회 상태와
+          실패 문구를 따로 갖게 된다. 낸 건이 한 건뿐인 폼이라(여러 건 받는 폼은 이 분기에
+          오지 않는다) 목록을 거치는 비용도 한 번 더 누르는 것뿐이다.
+
+          미인증 상태로 눌러도 길이 끊기지 않는다 — '내 신청'은 로그인하지 않은 사람에게
+          `SignInButton next={ROUTES.myApplications}`를 그리므로 로그인 뒤 그 자리로 돌아온다.
+          (이 분기 자체는 인증된 사람만 닿는다. 토큰이 죽으면 `unauthenticated`로 갈린다.)
+        */}
+        <Link
+          href={ROUTES.myApplications}
+          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
+        >
+          내 신청 보기
+        </Link>
+      </Notice>
     );
   }
 
