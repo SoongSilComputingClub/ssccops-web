@@ -4,7 +4,16 @@ import { useRef, useState } from "react";
 import type { EventDetail, EventSaveInput } from "@/entities/event";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { fromInput, toInput } from "@/shared/lib/date";
-import { Button, Card, Field, SectionLabel, SelectField, TextArea, TextField } from "@/shared/ui";
+import {
+  Button,
+  Card,
+  Field,
+  SectionLabel,
+  SelectField,
+  Sheet,
+  TextArea,
+  TextField,
+} from "@/shared/ui";
 import { useEventCategoryOptions } from "../model/use-event-category-options";
 import { useEventImageUpload } from "../model/use-event-image-upload";
 import { useFormLinkOptions } from "../model/use-form-link-options";
@@ -143,6 +152,15 @@ export function EventForm({
   const [errors, setErrors] = useState<Partial<Record<EventFormField, string>>>({});
 
   /*
+   * 연결 변경을 확인받는 동안 붙잡아 둔 저장 입력 (ssccops#270).
+   *
+   * 열림 여부를 boolean으로 따로 두지 않고 **입력 자체**를 상태로 쥔다 — 확인을 누르는 순간
+   * 보내야 할 값이 그 안에 이미 굳어 있어야, 시트가 떠 있는 사이 폼이 다시 그려져도 검증을
+   * 통과한 그 값이 그대로 나간다(views/form-list의 삭제 확인 시트와 같은 판단).
+   */
+  const [pendingSave, setPendingSave] = useState<EventSaveInput | null>(null);
+
+  /*
    * 업로드 상태는 본문과 대표 이미지를 **가려서** 쥔다. 훅의 pending 하나만 보면 대표
    * 이미지를 올리는 동안 본문 영역에도 "올리는 중"이 뜬다 — 어느 자리에 들어갈 파일인지가
    * 사용자에게는 서로 다른 일이라, 진행 표시가 엉뚱한 자리에 서면 방금 무엇을 눌렀는지
@@ -209,6 +227,23 @@ export function EventForm({
   };
 
   /*
+   * 지금 저장이 **연결을 끊는가**. 확인 팝업을 띄울 조건이다 (ssccops#270).
+   *
+   * 서버가 가드를 걷어(ssccops-server#336) 신청이 있어도 연결이 바뀐다. 조용히 바뀌면 안 되는
+   * 일이라 저장 전에 무엇이 끊기는지 알린다.
+   *
+   * **원래 붙어 있던 폼이 있을 때만** 뜬다. `없음 → 폼`은 잃는 것이 없고, 등록 화면은
+   * initial이 null이라 자연히 걸리지 않는다. 뜨는 경우는 `폼 → 다른 폼`과 `폼 → 없음` 둘이다.
+   */
+  const nextFormId = formId ? Number(formId) : null;
+  const linkBeingBroken = initial?.formId != null && initial.formId !== nextFormId;
+
+  /* 끊기는 폼의 이름. 후보 조회가 실패했거나 폼이 지워졌으면 번호로 말한다 (아래 SelectField와 같다) */
+  const brokenFormLabel = linkBeingBroken
+    ? (forms.find((f) => f.formId === initial?.formId)?.formTtlNm ?? `신청서 #${initial?.formId}`)
+    : "";
+
+  /*
    * 후보 목록에 지금 값이 없어도 선택 상태가 비어 보이지 않게 한 줄을 보탠다 — 분류가 방금
    * 삭제됐거나 후보 조회가 실패한 경우다. 서버가 조인해 준 이름(initial.eventClsfNm)이 있어
    * 코드만 덩그러니 보여주지 않는다.
@@ -244,17 +279,23 @@ export function EventForm({
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
-    onSubmit({
+    const input: EventSaveInput = {
       eventClsfCd,
       eventTtl: eventTtl.trim(),
       mtxtCn,
       thmbUrlAddr: thmbUrlAddr.trim() || null,
-      formId: formId ? Number(formId) : null,
+      formId: nextFormId,
       eventBgngDt: eventBgngDt ? fromInput(eventBgngDt, true) : null,
       eventEndDt: eventEndDt ? fromInput(eventEndDt, true) : null,
       plcNm: plcNm.trim() || null,
       ptcpLmtCnt: ptcpLmtCnt ? Number(ptcpLmtCnt) : null,
-    });
+    };
+
+    if (linkBeingBroken) {
+      setPendingSave(input);
+      return;
+    }
+    onSubmit(input);
   };
 
   return (
@@ -469,6 +510,46 @@ export function EventForm({
         </Button>
         {!canManage && <div className="mt-2 text-[13.5px] text-n500">{lockedHint}</div>}
       </div>
+
+      {/*
+        연결을 끊기 전 확인 (ssccops#270 · 서버 ssccops-server#336).
+        문구가 말하는 셋은 서버가 코드로 확인한 것이다 — 지어내지 않는다.
+      */}
+      <Sheet
+        open={pendingSave !== null}
+        title="연결한 신청서를 바꿉니다"
+        hint={
+          brokenFormLabel
+            ? `${brokenFormLabel} 연결이 이 행사에서 풀립니다`
+            : "지금 연결된 신청서가 이 행사에서 떨어집니다"
+        }
+        okLabel="바꾸고 저장"
+        onClose={() => setPendingSave(null)}
+        onOk={() => {
+          const input = pendingSave;
+          setPendingSave(null);
+          if (input) onSubmit(input);
+        }}
+      >
+        <ul className="flex list-disc flex-col gap-[10px] pl-[18px] text-[14px] leading-[1.55]">
+          <li>
+            <b>받은 응답은 지워지지 않습니다.</b> 옛 신청서에 그대로 남습니다. 다만 신청자
+            화면에서는 <b>내 신청</b>이 아니라 <b>내 폼 응답</b>으로 옮겨 보입니다.
+          </li>
+          <li>
+            {/* 숫자를 말할 수 있는 것은 확정 참가자뿐이다 — 심사 중 응답 수는 화면에 오지 않는다 */}
+            <b>
+              이미 확정된 참가자
+              {initial && initial.confirmedCount > 0 ? ` ${initial.confirmedCount}명은` : "는"}
+            </b>{" "}
+            명단에 그대로 남습니다.
+          </li>
+          <li>
+            <b>옛 신청서의 응답으로는 이 행사의 참가자를 더 이상 등록할 수 없습니다.</b> 심사 중인
+            응답이 있다면 승인하더라도 이 행사 명단에는 올릴 수 없습니다.
+          </li>
+        </ul>
+      </Sheet>
     </>
   );
 }
