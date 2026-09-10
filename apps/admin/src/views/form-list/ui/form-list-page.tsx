@@ -4,16 +4,17 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   FORM_RECEIPT_BADGE,
+  FORM_RECEIPT_STATUSES,
   SYSTEM_FORM_BADGE,
   SYSTEM_FORM_DELETE_LOCKED,
   SYSTEM_FORM_DUPLICATE_NOTE,
+  type FormReceiptStatus,
   type FormSummary,
 } from "@/entities/form";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useDuplicateForm, useFormLabelOptions, useFormList } from "@/features/form";
 import { TemplateStartSheet, useFormFromTemplate } from "@/features/form-template";
-import { FORM_STTS_CDS, FORM_STTS_NM, type FormSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
 import {
@@ -41,13 +42,28 @@ const NO_WRITE = "폼을 만들거나 고칠 권한이 없습니다";
  * 값의 이름을 서버 쿼리 파라미터와 똑같이 맞춘 것도 의도한 것이다 — URL과 요청이 1:1이면
  * 어떤 조회가 나갔는지 주소창만 보고 알 수 있다.
  */
-const QUERY_STATUS = "statusCode";
+const QUERY_RECEIPT_STATUS = "receiptStatus";
 const QUERY_LABEL = "labelId";
 
+/*
+ * 상태 축의 파라미터 이름이 `statusCode`에서 `receiptStatus`로 바뀌었다 (ADR-0019).
+ * 서버 조회 파라미터와 같은 이름이며, 그 이름은 entities/form/api/forms.ts가 함께 쥔다.
+ *
+ * ── 옛 링크(`?statusCode=OPEN`)는 번역하지 않고 무시한다 ─────────────────────
+ *
+ * 옮긴 축에는 `OPEN`에 해당하는 칩이 없다. `OPEN`은 접수 예정·접수 중·기간 종료 셋으로
+ * 갈라지므로 1:1로 옮길 값이 없고, 셋 중 하나를 골라 주면 **사용자가 보내지 않은 조건을
+ * 지어내는 것**이 된다. 전체로 떨어뜨리면 사용자는 칩을 눌러 좁힐 수 있지만, 잘못 좁힌
+ * 목록은 있는 폼을 없다고 말하고 사용자는 그것이 필터 때문인지 알 수 없다.
+ *
+ * `DRAFT`·`CLOSED`만 1:1이라 그 둘만 옮기는 것도 생각할 수 있지만, 같은 파라미터가 어떤
+ * 값에는 듣고 어떤 값에는 조용히 안 듣는 쪽이 전부 안 듣는 것보다 나쁘다.
+ */
+
 /** URL은 사용자가 손으로 고칠 수 있다 — 모르는 값은 필터 없음으로 떨어뜨린다 */
-function parseFormSttsCd(value: string | null): FormSttsCd | null {
-  return value && FORM_STTS_CDS.includes(value as FormSttsCd)
-    ? (value as FormSttsCd)
+function parseFormReceiptStatus(value: string | null): FormReceiptStatus | null {
+  return value && FORM_RECEIPT_STATUSES.includes(value as FormReceiptStatus)
+    ? (value as FormReceiptStatus)
     : null;
 }
 
@@ -170,10 +186,10 @@ export function FormListPage() {
    */
   const canWrite = useCan(CAPABILITY.FORM_WRITE);
 
-  const formSttsCd = parseFormSttsCd(searchParams.get(QUERY_STATUS));
+  const receiptStatus = parseFormReceiptStatus(searchParams.get(QUERY_RECEIPT_STATUS));
   const formLblId = parseFormLblId(searchParams.get(QUERY_LABEL));
 
-  const { forms, status, errorMessage, reload } = useFormList({ formSttsCd, formLblId });
+  const { forms, status, errorMessage, reload } = useFormList({ receiptStatus, formLblId });
   const { labels } = useFormLabelOptions();
 
   /*
@@ -254,22 +270,26 @@ export function FormListPage() {
 
         <div className="mb-4 flex flex-wrap items-center gap-[7px]">
           <Chip
-            active={formSttsCd === null}
-            onClick={() => applyFilter(QUERY_STATUS, null)}
+            active={receiptStatus === null}
+            onClick={() => applyFilter(QUERY_RECEIPT_STATUS, null)}
           >
             {ALL}
           </Chip>
           {/*
-            필터는 배지와 달리 **폼 상태 코드 자체**를 고르는 자리다 — 서버 쿼리(statusCode)가
-            form_stts_cd로 거르므로 파생값(receiptStatus)이 아니라 기준 코드명을 그대로 쓴다.
+            **필터와 배지가 같은 축을 본다** (ADR-0019). 예전에는 필터만 폼 상태 코드
+            (form_stts_cd)를 골라서, 기간이 끝난 폼이 '기간 종료' 배지를 달고도 상태는
+            아직 OPEN이라 '접수 중' 탭에 남았다.
+
+            문구도 배지에서 그대로 꺼내 쓴다 — 배지가 '기간 종료'인데 칩이 '종료됨'이면
+            사용자는 그 둘을 같은 것으로 읽지 못한다. 여기서 새 문구를 짓지 않는다.
           */}
-          {FORM_STTS_CDS.map((cd) => (
+          {FORM_RECEIPT_STATUSES.map((rs) => (
             <Chip
-              key={cd}
-              active={formSttsCd === cd}
-              onClick={() => applyFilter(QUERY_STATUS, cd)}
+              key={rs}
+              active={receiptStatus === rs}
+              onClick={() => applyFilter(QUERY_RECEIPT_STATUS, rs)}
             >
-              {FORM_STTS_NM[cd]}
+              {FORM_RECEIPT_BADGE[rs].label}
             </Chip>
           ))}
           {/*
@@ -316,7 +336,7 @@ export function FormListPage() {
           (forms.length === 0 ? (
             <EmptyState
               message={
-                formSttsCd || formLblId
+                receiptStatus || formLblId
                   ? "조건에 맞는 폼이 없습니다."
                   : "등록된 폼이 없습니다."
               }

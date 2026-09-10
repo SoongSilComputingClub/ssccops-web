@@ -15,6 +15,7 @@ export type {
 export type { FormPage, Qitem, QitemCpstCn } from "@ssccops/form-renderer";
 export {
   FORM_RECEIPT_BADGE,
+  FORM_RECEIPT_STATUSES,
   MULTIPLE_RESPONSE_CHANGE_NOTE,
   MULTIPLE_RESPONSE_NOTE,
   QITEM_VERSION_NOTE,
