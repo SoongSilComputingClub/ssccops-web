@@ -16,8 +16,12 @@ import {
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import {
+  FORM_DELETE_CAPABILITY,
   FormCloseSheet,
+  FormDeleteSheet,
+  NO_FORM_DELETE,
   useDuplicateForm,
+  useFormDelete,
   useFormDetail,
   useFormStatus,
   type FormStatusChange,
@@ -159,6 +163,14 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
   const canWrite = useCan(CAPABILITY.FORM_WRITE);
   const canChangeStatus = useCan(CAPABILITY.FORM_STATUS_CHANGE);
   const templateSave = useTemplateFromForm();
+  /*
+   * 삭제·복구 권한은 편집(FORM_WRITE)과 따로 묻는다 — 지금은 같은 코드를 보지만 서버 계약이
+   * 확정되면 갈릴 수 있고(회의 삭제에는 MEETING_DELETE가 따로 있다 · 서버 #125), 그때 고칠
+   * 자리는 화면이 아니라 features/form/model/form-delete-copy.ts 한 곳이어야 한다.
+   */
+  const canDelete = useCan(FORM_DELETE_CAPABILITY);
+  const deletion = useFormDelete();
+  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [closeSheetOpen, setCloseSheetOpen] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [page, setPage] = useState(0);
@@ -231,6 +243,25 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
       if (change.outcome !== "busy") setCloseSheetOpen(false);
       return change;
     });
+
+  /*
+   * 삭제에 성공하면 **목록으로 나간다.**
+   *
+   * 이 화면에 남을 수 없어서다 — 지워진 폼은 상세 조회에서도 빠지므로(서버 #329) 여기서 다시
+   * 불러 봐야 "폼을 찾을 수 없습니다"만 남는다. 그것은 방금 자기가 한 일의 결과인데도 화면에는
+   * 고장으로 읽힌다. 상태 전이의 `missing`이 같은 자리에서 목록으로 나가는 것과 같은 판단이다.
+   *
+   * **stale도 같이 나간다.** 다른 탭에서 이미 지운 폼이라 여기 남을 이유가 없다.
+   */
+  const runDelete = async () => {
+    const { outcome, message } = await deletion.remove(form.formId);
+    if (outcome === "busy") return;
+
+    // 요청이 끝난 뒤에 닫는다 — 먼저 닫으면 실패했을 때 무엇을 하다 실패했는지가 사라진다
+    setDeleteSheetOpen(false);
+    flash(message);
+    if (outcome === "done" || outcome === "stale") router.push(ROUTES.forms);
+  };
 
   /*
    * 복제 후에는 사본의 **편집 화면**으로 보낸다.
@@ -334,8 +365,9 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 않는다. 실제로 막히는 것은 삭제와 시스템이 쓰는 문항뿐이라, 회차마다 바꾸는
                 값들이 열려 있다는 사실을 같은 상자에 적는다 (권한 트리 화면과 같은 방식).
 
-                이 화면에는 삭제 버튼이 없어(서버에도 폼 삭제 경로가 없다) 잠글 버튼 대신
-                안내가 그 자리를 대신한다.
+                아래 '삭제'가 이 안내와 **같은 문장**으로 잠겨 있다(ssccops-web#359) — 예전에는
+                잠글 버튼이 없어 이 상자가 그 자리를 대신했다. 상자를 남겨 두는 것은 잠긴 버튼의
+                툴팁이 마우스를 올려야 보이기 때문이다.
               */}
               {form.sysYn && (
                 <div className="mt-3 rounded-[12px] bg-bg px-[14px] py-[10px] text-[13px] leading-[1.6] text-n400">
@@ -383,6 +415,32 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
                 onClick={() => setTemplateSheetOpen(true)}
               >
                 템플릿으로 저장
+              </Button>
+              {/*
+                삭제는 나머지 셋과 **줄을 나눠** 맨 아래에 둔다 — 수정·복제·템플릿 저장은 폼을
+                늘리는 조작이고 이것만 치우는 조작이라, 나란히 두면 잘못 누르기 쉽다.
+
+                시스템 폼에서는 잠근다: 서버가 409로 거절하므로(서버 #140) 누르게 두면 확인
+                시트를 지나 거절만 받는다. 사유는 그 거절과 같은 문장이다.
+
+                톤은 `danger`가 아니라 `ghost-danger`다 — 늘 붉은 `danger`는 "되돌릴 수 없는
+                삭제"의 자리이고(button.tsx 주석), 이것은 소프트 삭제라 되돌릴 수 있다. 되돌릴
+                수 있는 조작에 되돌릴 수 없는 것과 같은 색을 쓰면 그 색의 뜻이 닳는다.
+              */}
+              <Button
+                variant="ghost-danger"
+                className="mt-2 w-full"
+                disabled={deletion.pending || !canDelete || form.sysYn}
+                title={
+                  !canDelete
+                    ? NO_FORM_DELETE
+                    : form.sysYn
+                      ? SYSTEM_FORM_DELETE_LOCKED
+                      : undefined
+                }
+                onClick={() => setDeleteSheetOpen(true)}
+              >
+                {deletion.pending ? "지우는 중…" : "삭제"}
               </Button>
               <div className="mt-3 flex items-center rounded-[12px] border border-line p-3">
                 <div className="text-[14.5px]">접수 상태 변경</div>
@@ -535,6 +593,16 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
         pending={status.pending}
         onClose={() => setCloseSheetOpen(false)}
         onConfirm={confirmClose}
+      />
+
+      <FormDeleteSheet
+        open={deleteSheetOpen}
+        formTtlNm={form.formTtlNm}
+        responseCount={form.responseCount}
+        rcptEndDt={form.rcptEndDt}
+        pending={deletion.pending}
+        onClose={() => setDeleteSheetOpen(false)}
+        onConfirm={() => void runDelete()}
       />
 
       <SaveAsTemplateSheet

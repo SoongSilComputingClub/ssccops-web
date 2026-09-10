@@ -169,7 +169,9 @@ export const NAV_GROUPS: NavGroup[] = [
         isActive: (p) =>
           p.startsWith("/forms") &&
           !p.startsWith("/forms/labels") &&
-          !p.startsWith("/forms/templates"),
+          !p.startsWith("/forms/templates") &&
+          // 지운 폼은 폼 목록의 부분집합이 아니라 다른 모집단이다 — 두 줄이 함께 켜지지 않게 뺀다
+          !p.startsWith("/forms/deleted"),
         requires: CAPABILITY.FORM_READ,
       },
       /*
@@ -189,6 +191,24 @@ export const NAV_GROUPS: NavGroup[] = [
         href: ROUTES.formTemplates,
         isActive: starts("/forms/templates"),
         requires: CAPABILITY.FORM_WRITE,
+      },
+      /*
+       * 지운 폼 (ssccops-web#359). **목차에 올리는 것 자체가 이 작업의 요건이다.**
+       *
+       * 응답이 들어온 폼도 지운다는 결정(ssccops#261)이 감당 가능한 것은 되돌릴 수 있기
+       * 때문인데, 되돌리는 자리를 삭제 직후의 토스트로만 알리면 그 토스트가 사라진 뒤에는
+       * 아무도 찾지 못한다 — 그때부터는 하드 삭제와 구별되지 않는다.
+       *
+       * requires 는 목록과 같은 FORM_READ 다. nav.ts 의 규칙은 **화면이 첫 조회에 부르는 API가
+       * 요구하는 권한**을 적는 것이고, 이 화면의 첫 조회는 같은 GET /v1/forms 다(파라미터만
+       * 다르다). 복구만 FORM_WRITE 라 그것은 화면 안에서 버튼을 잠근다 — 라벨 관리가 조회는
+       * 열고 추가만 잠그는 것과 같은 판단이다.
+       */
+      {
+        label: "지운 폼",
+        href: ROUTES.formsDeleted,
+        isActive: starts("/forms/deleted"),
+        requires: CAPABILITY.FORM_READ,
       },
     ],
   },

@@ -14,8 +14,14 @@ export type {
  */
 export type { FormPage, Qitem, QitemCpstCn } from "@ssccops/form-renderer";
 export {
+  DELETED_FORM_BADGE,
+  FORM_DELETE_CONFIRM_TITLE,
+  FORM_DELETE_HINT,
+  FORM_DELETE_NO_RESPONSE_NOTE,
   FORM_RECEIPT_BADGE,
   FORM_RECEIPT_STATUSES,
+  FORM_RESTORE_NOTE,
+  formDeleteResponseWarning,
   MULTIPLE_RESPONSE_CHANGE_NOTE,
   MULTIPLE_RESPONSE_NOTE,
   QITEM_VERSION_NOTE,
@@ -29,9 +35,11 @@ export {
   FORM_ERROR,
   changeFormStatus,
   createForm,
+  deleteForm,
   duplicateForm,
   fetchForm,
   fetchForms,
+  restoreForm,
   toQitemCpstBody,
   updateForm,
 } from "./api/forms";

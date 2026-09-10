@@ -3,12 +3,22 @@
  * 폼(정의)과 응답(제출물)은 다루는 자원도 화면도 다른데 한 features 아래 섞여 있었다.
  */
 export { FormCloseSheet } from "./ui/form-close-sheet";
+export { FormDeleteSheet } from "./ui/form-delete-sheet";
 export {
+  toFormDeleteErrorMessage,
   toFormDuplicateErrorMessage,
   toFormErrorMessage,
   toFormLabelErrorMessage,
+  toFormRestoreErrorMessage,
   toFormStatusErrorMessage,
 } from "./model/form-error";
+export { FORM_DELETE_CAPABILITY, NO_FORM_DELETE } from "./model/form-delete-copy";
+export { useFormDelete } from "./model/use-form-delete";
+export type {
+  FormDeleteChange,
+  FormDeleteControl,
+  FormDeleteOutcome,
+} from "./model/use-form-delete";
 export { useFormStatus } from "./model/use-form-status";
 export type {
   FormStatusChange,

@@ -56,6 +56,18 @@ interface FormSummaryResponse {
   labels: FormLabelRefResponse[] | null;
   responseCount: number | null;
   mdfcnDt: string;
+  /*
+   * 지운 일시 (ssccops-server#329 · `del_dt`). **계약 미확정 — 두 이름을 함께 받는다.**
+   *
+   * 폼 도메인의 응답은 데이터사전 표기를 그대로 쓰지만(`crtDt`·`mdfcnDt`), 서버의 소프트
+   * 삭제 선례인 운영 도메인은 같은 컬럼을 `deletedAt`으로 내보낸다(OperationEntity). 어느
+   * 쪽으로 확정될지 모르는 채 하나만 읽으면 **'지운 폼' 목록의 삭제 일시가 통째로 빈 칸이
+   * 되고, 그것은 화면이 죽지 않아 아무도 눈치채지 못하는 종류의 어긋남이다.**
+   *
+   * 값이 없는 것과 이름이 다른 것을 여기서 흡수하고, 계약이 정해지면 지는 쪽을 지운다.
+   */
+  delDt?: string | null;
+  deletedAt?: string | null;
 }
 
 /**
@@ -146,6 +158,8 @@ function toFormSummary(res: FormSummaryResponse): FormSummary {
     labels: toLabelRefs(res.labels),
     responseCount: res.responseCount ?? 0,
     mdfcnDt: res.mdfcnDt,
+    // 살아 있는 폼은 없는 값이다 — 없으면 없는 대로 null이고, 화면은 그때 삭제 표시를 그리지 않는다
+    delDt: res.delDt ?? res.deletedAt ?? null,
   };
 }
 
@@ -215,6 +229,15 @@ export interface FormListFilter {
    */
   receiptStatus?: FormReceiptStatus | null;
   formLblId?: number | null;
+  /**
+   * **지운 폼만** 본다 (ssccops-server#329). 기본값(`false`)은 살아 있는 폼만이다.
+   *
+   * 접수 상태·라벨과 달리 이것은 같은 집합을 좁히는 조건이 아니라 **다른 모집단으로 갈아타는
+   * 스위치**다 — 그래서 `null`(거르지 않음)이 없다. 삭제된 것과 안 된 것을 한 번에 받는 값이
+   * 없는 것은 의도한 것이다: 섞어 놓으면 어느 카드가 지워진 것인지 배지 하나에 걸리게 되고,
+   * 그 목록에서는 복제·수정·접수 시작이 절반의 카드에서만 뜻이 있게 된다.
+   */
+  deleted?: boolean;
 }
 
 /** 폼 조회·저장이 돌려주는 오류 코드 (ssccops-server FormErrorCode) */
@@ -260,6 +283,23 @@ export const FORM_ERROR = {
    * 잠금 목록을 받은 뒤 배포로 계약이 바뀐 경우는 여전히 이 400으로 온다.
    */
   SYSTEM_FORM_CONTRACT_VIOLATION: "SYSTEM_FORM_CONTRACT_VIOLATION",
+  /**
+   * 409 — 이미 지워진 폼을 또 지우려 함 (ssccops-server#329 · **계약 미확정**).
+   *
+   * 코드 문자열은 회의 소프트 삭제(서버 #125 · `MEETING_ERROR.ALREADY_DELETED`)를 따라 잡았다.
+   * 폼 삭제도 같은 `OperationEntity.softDelete` 계열이라 같은 이름이 나올 가능성이 가장 높고,
+   * 어긋나더라도 화면이 죽지는 않는다 — 모르는 코드는 서버 문장을 그대로 보여준다.
+   *
+   * 이 코드가 오는 것은 **화면이 낡았다**는 뜻이다(다른 탭에서 이미 지웠다). 그래서 실패로
+   * 사과하지 않고 목록을 다시 불러 최신 상태를 보여준다.
+   */
+  FORM_ALREADY_DELETED: "ALREADY_DELETED",
+  /**
+   * 409 — 지워지지 않은 폼을 되살리려 함 (ssccops-server#329 · **계약 미확정**).
+   *
+   * `ALREADY_DELETED`의 짝이다. 이쪽도 화면이 낡은 경우라 같은 처리를 받는다.
+   */
+  FORM_NOT_DELETED: "NOT_DELETED",
 } as const;
 
 /**
@@ -282,6 +322,18 @@ export async function fetchForms(filter: FormListFilter = {}): Promise<FormSumma
    */
   if (filter.receiptStatus) query.set("receiptStatus", filter.receiptStatus);
   if (filter.formLblId != null) query.set("labelId", String(filter.formLblId));
+  /*
+   * **계약 미확정** (ssccops-server#329). 별도 경로(`/v1/forms/deleted`)가 아니라 같은 목록의
+   * 파라미터로 잡은 것은 서버 이슈가 "목록 질의에서 지워진 폼을 뺀다 — 그 질의 위에 얹어라"로
+   * 적혀 있어서다. 지운 폼 목록이 필요로 하는 값(제목·라벨·응답 수·수정 일시)이 살아 있는
+   * 목록과 같으므로 응답 모양을 둘로 만들 이유도 없다.
+   *
+   * **거짓일 때는 아예 보내지 않는다.** 이 파라미터를 모르는 배포에서 `deleted=false`는 조용히
+   * 무시되어 지금과 같은 목록이 오지만, `deleted=true`는 같은 무시가 **지워진 폼 대신 살아
+   * 있는 폼 전부**를 지운 폼 목록에 그린다 — 그 화면은 거기서 '복구'를 누르게 한다.
+   * 그래서 지운 폼 화면은 응답의 `delDt`를 한 번 더 본다(views/deleted-form-list).
+   */
+  if (filter.deleted) query.set("deleted", "true");
 
   const qs = query.toString();
   const forms = await apiFetch<FormSummaryResponse[] | null>(
@@ -567,4 +619,41 @@ export async function duplicateForm(formId: number): Promise<FormDuplicateResult
     formSttsCd: res.formSttsCd ?? "DRAFT",
     crtDt: res.crtDt ?? null,
   };
+}
+
+/* ── 삭제 · 복구 ───────────────────────────────────────────── */
+
+/**
+ * DELETE /v1/forms/{formId} — 소프트 삭제 (ssccops-server#329 · **계약 미확정**).
+ *
+ * **응답이 들어온 폼도 지운다.** 응답 수를 보지 않는 것이 확정된 결정이며(ssccops#261 결정
+ * 코멘트), 그 대가는 **신청자의 '내 신청'에서도 그 항목이 사라진다**는 것이다 — 폼이 없으면
+ * 응답 상세를 그릴 제목도 문항도 없다. 되돌릴 수 있다는 것이 그 대가를 감당 가능하게 만드는
+ * 유일한 조건이라, 이 함수는 `restoreForm`과 **반드시 같은 화면에서** 쓰인다.
+ *
+ * 지우는 것은 폼 자신뿐이고 응답(form_rspns)은 그대로 남는다 — 회의 소프트 삭제(서버 #125)가
+ * 안건을 남겨 두는 것과 같다. 그래서 복구하면 응답도 함께 돌아온다.
+ *
+ * 시스템 폼은 409 `SYSTEM_FORM_IMMUTABLE`로 거절된다(서버 #140) — 화면은 그 전에 잠근다.
+ * 이미 지워진 폼은 409 `ALREADY_DELETED`, 없는 폼은 404 `NOT_FOUND`다.
+ */
+export async function deleteForm(formId: number): Promise<void> {
+  await apiFetch<void>(`/v1/forms/${formId}`, { method: "DELETE" });
+}
+
+/**
+ * POST /v1/forms/{formId}/restore — 지운 폼 되살리기 (ssccops-server#329 · **계약 미확정**).
+ *
+ * `DELETE`의 짝을 `POST .../restore`로 잡은 것은 이 폼 도메인이 이미 그 모양을 쓰고 있기
+ * 때문이다 — 접수 시작·마감이 `POST /v1/forms/{formId}/status`이고 복제가
+ * `POST /v1/forms/{formId}/duplicate`다. `PATCH`로 삭제 표시를 지우는 방식은 폼 수정(PUT)과
+ * 같은 자원을 두 방식으로 고치게 되어, 자동 저장이 도는 이 도메인에서 특히 위험하다.
+ *
+ * 복구는 **지우기 전 상태를 그대로 되돌린다** — 접수 상태도 라벨도 응답도 그대로다(복제와
+ * 다르다). 그래서 돌려받을 값이 없어 반환이 없다: 화면은 목록을 다시 부른다.
+ *
+ * 지워지지 않은 폼은 409 `NOT_DELETED`, 없는 폼은 404 `NOT_FOUND`다.
+ */
+export async function restoreForm(formId: number): Promise<void> {
+  await apiFetch<void>(`/v1/forms/${formId}/restore`, { method: "POST" });
 }
