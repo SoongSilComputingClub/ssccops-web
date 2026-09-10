@@ -213,6 +213,15 @@ export interface MemberListPage {
   /** 다음 페이지 커서 — 마지막 페이지면 null */
   nextCursor: string | null;
   hasNext: boolean;
+  /**
+   * 서버가 실제로 적용한 페이지 크기.
+   *
+   * 화면이 «21–40번째»를 그리려면 이 값이 필요하다 — 커서 페이징에는 페이지 번호가 없으므로
+   * 시작 번호를 `(지나온 페이지 수) × size + 1`로 계산한다. 요청에 size를 싣지 않으면 서버
+   * 기본값이 그대로 실려 오므로, 화면이 20을 넣어 두고 짐작하면 그 기본값이 바뀌는 날
+   * 조용히 어긋난다.
+   */
+  size: number;
   /** 필터를 적용한 건수 */
   totalCount: number;
   /** 필터 이전 전체 건수 — 화면의 "N명 · 전체 M명"에서 M이다 */
@@ -245,6 +254,8 @@ export async function fetchMembers(filter: MemberListFilter = {}): Promise<Membe
     members: data,
     nextCursor: page?.nextCursor ?? null,
     hasNext: page?.hasNext ?? false,
+    /* 봉투가 없으면 이번에 받은 건수를 페이지 크기로 본다 — 한 페이지뿐인 목록과 같은 뜻이다 */
+    size: page?.size ?? data.length,
     totalCount: page?.totalCount ?? data.length,
     /*
      * 전체 건수는 필터를 걸지 않았을 때의 수라 걸린 건수보다 작을 수 없다. 봉투가 없으면

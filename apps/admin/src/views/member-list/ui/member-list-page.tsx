@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   generationText,
   mbrGrdTone,
@@ -26,7 +26,6 @@ import {
   PageHeader,
   Pill,
   SearchInput,
-  flash,
   type GridColumn,
 } from "@/shared/ui";
 
@@ -63,9 +62,33 @@ const SORTS: readonly { label: string; param: MemberSortParam }[] = [
   { label: "최근 수정순", param: "-mdfcnDt" },
 ];
 
-/** 선택 칩 토글 — 이미 골라 둔 코드를 다시 누르면 뺀다 */
-function toggleCode<T extends string>(codes: T[], code: T): T[] {
-  return codes.includes(code) ? codes.filter((c) => c !== code) : [...codes, code];
+/*
+ * 조회 조건과 지금 보는 페이지를 컴포넌트 state가 아니라 URL 쿼리스트링에 둔다
+ * (views/form-list와 같은 판단). state로 들고 있으면 회원 상세에 들어갔다 돌아올 때마다
+ * 검색어·필터·페이지가 통째로 풀려 명부를 처음부터 다시 뒤져야 한다.
+ *
+ * ── 페이지를 커서 스택으로 적는다 ──────────────────────────────
+ * 커서 페이징에는 페이지 번호가 없다(AP-13 · 서버 PageResponse 주석). 지나온 커서를 `c`로
+ * 반복해 실으면 **배열 길이 + 1이 곧 페이지 번호**이고, 마지막 값이 지금 페이지의 커서다.
+ * 뒤로 가기는 하나 빼는 것이고, 이 값들이 URL에 있으니 상세 왕복·새로고침·링크 공유가 모두
+ * 같은 페이지로 돌아온다.
+ *
+ * 스택을 화면 state나 sessionStorage에 두지 않은 이유가 그것이다 — 상세에서 돌아오면
+ * 컴포넌트가 다시 마운트되므로, URL 밖에 둔 스택은 그 순간 비어 '이전'이 잠긴다.
+ */
+const QUERY_Q = "q";
+const QUERY_GRADE = "mbrGrdCd";
+const QUERY_STATUS = "mbrSttsCd";
+const QUERY_SORT = "sort";
+const QUERY_CURSOR = "c";
+
+/** 검색어 입력이 멎었다고 보는 시간 — 한 글자 더 칠 만한 간격보다 약간 길게 */
+const SEARCH_DEBOUNCE_MS = 300;
+
+/** URL은 사용자가 손으로 고칠 수 있다 — 모르는 정렬은 첫 번째로 떨어뜨린다 */
+function parseSortIdx(value: string | null): number {
+  const idx = SORTS.findIndex((s) => s.param === value);
+  return idx < 0 ? 0 : idx;
 }
 
 export function MemberListPage() {
@@ -100,10 +123,33 @@ function MemberTableSkeleton() {
 
 function MemberListView() {
   const router = useRouter();
-  const [q, setQ] = useState("");
-  const [mbrGrdCds, setMbrGrdCds] = useState<MbrGrdCd[]>([]);
-  const [mbrSttsCds, setMbrSttsCds] = useState<MbrSttsCd[]>([]);
-  const [sortIdx, setSortIdx] = useState(0);
+  const searchParams = useSearchParams();
+
+  const q = searchParams.get(QUERY_Q) ?? "";
+  const mbrGrdCds = searchParams.getAll(QUERY_GRADE) as MbrGrdCd[];
+  const mbrSttsCds = searchParams.getAll(QUERY_STATUS) as MbrSttsCd[];
+  const sortIdx = parseSortIdx(searchParams.get(QUERY_SORT));
+  const cursors = searchParams.getAll(QUERY_CURSOR);
+
+  /*
+   * 검색어만 입력칸이 따로 값을 쥔다. 글자마다 URL을 갈면 히스토리가 그만큼 쌓여 뒤로가기가
+   * 한 글자씩 지우는 버튼이 되고, 조회도 글자 수만큼 나간다. 멎은 뒤에 replace로 주소만
+   * 맞추므로 히스토리는 한 칸도 늘지 않는다.
+   */
+  const [qInput, setQInput] = useState(q);
+
+  /*
+   * 뒤로가기·링크 진입처럼 URL이 바깥에서 바뀌면 입력칸이 그 값을 따라간다.
+   *
+   * effect가 아니라 **렌더 중에 맞춘다.** effect로 하면 낡은 글자가 한 프레임 그려진 뒤 바뀌고,
+   * 그사이 아래 디바운스가 그 낡은 값을 다시 URL로 밀어 뒤로가기가 되돌아온다.
+   * (react.dev — "You Might Not Need an Effect"의 prop 변화에 state 맞추기)
+   */
+  const [syncedQ, setSyncedQ] = useState(q);
+  if (syncedQ !== q) {
+    setSyncedQ(q);
+    setQInput(q);
+  }
 
   const { grades, statuses } = useMemberCodes();
   const {
@@ -113,23 +159,94 @@ function MemberListView() {
     totalCount,
     overallCount,
     hasNext,
-    loadingMore,
-    loadMore,
+    nextCursor,
+    size,
     reload,
-  } = useMembers({ q, mbrGrdCds, mbrSttsCds, sort: SORTS[sortIdx].param });
+  } = useMembers({
+    q,
+    mbrGrdCds,
+    mbrSttsCds,
+    sort: SORTS[sortIdx].param,
+    // 마지막 커서가 지금 페이지의 것이다. 비어 있으면 첫 페이지다
+    cursor: cursors.length > 0 ? cursors[cursors.length - 1] : null,
+  });
 
   const filtered = q.trim() !== "" || mbrGrdCds.length > 0 || mbrSttsCds.length > 0;
 
-  const resetFilters = () => {
-    setQ("");
-    setMbrGrdCds([]);
-    setMbrSttsCds([]);
+  const pushParams = (params: URLSearchParams, replace = false) => {
+    const qs = params.toString();
+    const href = qs ? `${ROUTES.members}?${qs}` : ROUTES.members;
+    // scroll:false — 칩만 눌렀는데 맨 위로 튀지 않게 (views/form-list와 같다)
+    if (replace) router.replace(href, { scroll: false });
+    else router.push(href, { scroll: false });
   };
 
-  const runLoadMore = async () => {
-    const message = await loadMore();
-    if (message) flash(message);
+  /*
+   * 조건 축을 바꿀 때는 커서를 **전부 버린다.** 커서는 그 조건 위에서만 뜻이 있어서,
+   * 남겨 두면 새 조건의 목록을 옛 조건의 경계에서 잘라 보여주게 된다.
+   */
+  const applyCondition = (mutate: (params: URLSearchParams) => void, replace = false) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(QUERY_CURSOR);
+    mutate(params);
+    pushParams(params, replace);
   };
+
+  const toggleParam = (key: string, code: string) => {
+    applyCondition((params) => {
+      const next = params.getAll(key).includes(code)
+        ? params.getAll(key).filter((c) => c !== code)
+        : [...params.getAll(key), code];
+      params.delete(key);
+      for (const c of next) params.append(key, c);
+    });
+  };
+
+  /* 검색어가 멎으면 주소만 맞춘다 — 값이 그대로면 아무것도 하지 않는다(무한 replace 방지) */
+  useEffect(() => {
+    if (qInput === q) return;
+    const timer = setTimeout(() => {
+      applyCondition((params) => {
+        if (qInput.trim()) params.set(QUERY_Q, qInput);
+        else params.delete(QUERY_Q);
+      }, true);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+    // applyCondition은 렌더마다 새로 만들어진다 — 값 축만 의존성에 둔다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qInput, q]);
+
+  const resetFilters = () => {
+    setQInput("");
+    applyCondition((params) => {
+      params.delete(QUERY_Q);
+      params.delete(QUERY_GRADE);
+      params.delete(QUERY_STATUS);
+    });
+  };
+
+  const goNext = () => {
+    if (!nextCursor) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.append(QUERY_CURSOR, nextCursor);
+    pushParams(params);
+  };
+
+  const goPrev = () => {
+    if (cursors.length === 0) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(QUERY_CURSOR);
+    for (const c of cursors.slice(0, -1)) params.append(QUERY_CURSOR, c);
+    pushParams(params);
+  };
+
+  /*
+   * 몇 번째부터 몇 번째인가. 커서 페이징에는 offset이 없으므로 지나온 페이지 수로 센다 —
+   * 마지막 페이지를 뺀 모든 페이지가 가득 차 있다는 것이 이 셈의 전제이고, 커서 페이징이
+   * 그것을 지킨다.
+   */
+  const firstIndex = cursors.length * size + 1;
+  const lastIndex = firstIndex + members.length - 1;
 
   const columns: GridColumn<MemberSummary>[] = [
     {
@@ -218,8 +335,8 @@ function MemberListView() {
         */}
         <div className="mb-[14px] flex flex-col gap-[10px] lg:flex-row lg:items-center">
           <SearchInput
-            value={q}
-            onChange={setQ}
+            value={qInput}
+            onChange={setQInput}
             placeholder="회원명 · 학생번호"
             className="lg:max-w-[320px] lg:flex-1"
           />
@@ -236,7 +353,11 @@ function MemberListView() {
             </div>
             <button
               type="button"
-              onClick={() => setSortIdx((i) => (i + 1) % SORTS.length)}
+              onClick={() =>
+                applyCondition((params) =>
+                  params.set(QUERY_SORT, SORTS[(sortIdx + 1) % SORTS.length].param),
+                )
+              }
               className="cursor-pointer text-[14px] whitespace-nowrap text-accent"
             >
               {SORTS[sortIdx].label} ⇅
@@ -248,14 +369,17 @@ function MemberListView() {
         <div className="mb-4 flex flex-wrap items-start gap-4">
           <div className="flex flex-wrap items-center gap-[7px]">
             <div className="text-[13px] text-n500">등급</div>
-            <Chip active={mbrGrdCds.length === 0} onClick={() => setMbrGrdCds([])}>
+            <Chip
+              active={mbrGrdCds.length === 0}
+              onClick={() => applyCondition((params) => params.delete(QUERY_GRADE))}
+            >
               전체
             </Chip>
             {grades.map((g) => (
               <Chip
                 key={g.code}
                 active={mbrGrdCds.includes(g.code)}
-                onClick={() => setMbrGrdCds((codes) => toggleCode(codes, g.code))}
+                onClick={() => toggleParam(QUERY_GRADE, g.code)}
               >
                 {g.name}
               </Chip>
@@ -263,14 +387,17 @@ function MemberListView() {
           </div>
           <div className="flex flex-wrap items-center gap-[7px]">
             <div className="text-[13px] text-n500">상태</div>
-            <Chip active={mbrSttsCds.length === 0} onClick={() => setMbrSttsCds([])}>
+            <Chip
+              active={mbrSttsCds.length === 0}
+              onClick={() => applyCondition((params) => params.delete(QUERY_STATUS))}
+            >
               전체
             </Chip>
             {statuses.map((s) => (
               <Chip
                 key={s.code}
                 active={mbrSttsCds.includes(s.code)}
-                onClick={() => setMbrSttsCds((codes) => toggleCode(codes, s.code))}
+                onClick={() => toggleParam(QUERY_STATUS, s.code)}
               >
                 {s.name}
               </Chip>
@@ -319,17 +446,26 @@ function MemberListView() {
             </Card>
 
             {/*
-              커서 페이징이라 한 번에 20건까지만 온다. 받아 둔 건수와 걸린 건수를 함께
-              보여 주는 것은 '더 보기'가 몇 번 더 남았는지 짐작할 수 있게 하기 위해서다.
+              페이지 번호를 두지 않고 앞뒤 이동만 둔다. 커서 페이징에는 "5페이지"로 바로 갈
+              길이 없고(AP-13), 만들려면 앞 페이지를 전부 다시 부르거나 규약을 오프셋으로
+              뒤집어야 한다. 대신 커서로 정확히 되는 것 — 앞뒤와 지금 어디인지 — 을 준다.
+              특정 회원에 닿는 길은 위의 검색·등급·상태 필터가 더 빠르다.
             */}
-            {hasNext && (
-              <div className="mt-5 flex items-center gap-3">
-                <Button onClick={() => void runLoadMore()} disabled={loadingMore}>
-                  {loadingMore ? "불러오는 중…" : "더 보기"}
+            {(cursors.length > 0 || hasNext) && (
+              <div className="mt-5 flex items-center justify-center gap-4">
+                <Button
+                  variant="ghost"
+                  onClick={goPrev}
+                  disabled={cursors.length === 0}
+                >
+                  ◀ 이전
                 </Button>
-                <div className="text-[13.5px] text-n500">
-                  {members.length} / {totalCount}명
+                <div className="text-[13.5px] whitespace-nowrap text-n500">
+                  {firstIndex}–{lastIndex} / 전체 {totalCount}명
                 </div>
+                <Button variant="ghost" onClick={goNext} disabled={!hasNext}>
+                  다음 ▶
+                </Button>
               </div>
             )}
           </>
