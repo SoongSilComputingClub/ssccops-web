@@ -124,7 +124,7 @@ export function toFormLabelErrorMessage(error: unknown): string {
 }
 
 /**
- * 폼 삭제 실패 → 화면에 띄울 한 줄 (ssccops-server#329 · **계약 미확정**).
+ * 폼 삭제 실패 → 화면에 띄울 한 줄 (ssccops-server#329 · PR #330으로 확정).
  *
  * 403을 여기서 따로 받는 것은 공통 처리(`toFormErrorMessage`)가 폼 관련 403을 전부 "폼 조회
  * (FORM_READ) 권한이 필요합니다"로 말하기 때문이다 — 삭제가 막힌 사람에게 조회 권한을 주라고
@@ -156,7 +156,7 @@ export function toFormDeleteErrorMessage(error: unknown): string {
 }
 
 /**
- * 폼 복구 실패 → 화면에 띄울 한 줄 (ssccops-server#329 · **계약 미확정**).
+ * 폼 복구 실패 → 화면에 띄울 한 줄 (ssccops-server#329 · PR #330으로 확정).
  *
  * 삭제와 요구 권한이 같다고 보므로 403 문구도 같다 — 지울 수는 있는데 되살릴 수는 없는 권한
  * 조합은 소프트 삭제를 하드 삭제로 되돌리는 것이라 그런 계약이 나올 이유가 없다.
