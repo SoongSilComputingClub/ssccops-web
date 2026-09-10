@@ -22,12 +22,17 @@ import { Badge, Pill } from "@/shared/ui";
  * 사실 그대로다 — "제목 없음" 같은 문구를 지어내면 서버가 준 값과 구별할 수 없다.
  *
  * ── 어디로 가는가 ────────────────────────────────────────
- * **수정 요청을 받은 건은 내 응답 상세로** 간다(ssccops#221) — 거기서 사유를 읽고 그 자리에서
- * 다시 낸다. 나머지는 폼 화면으로 간다: 낸 것을 다시 확인하거나(여러 건 받는 폼이면) 한 건 더
- * 내는 자리다.
+ * **언제나 내 응답 상세로** 간다(ssccops#263 · ssccops-web#358). 이 카드가 가리키는 것은 폼이
+ * 아니라 **내가 낸 한 건**이고, 그것을 여는 주소는 하나뿐이다.
  *
- * 두 주소를 가르는 것이 요점이다. `/f/{formId}`는 "새로 내는" 화면이라 새 응답을 막는 상태
- * (`alreadySubmitted` — 수정 요청도 포함된다)에서 작성 폼을 닫는데, 재제출은 그때 열려야 한다.
+ * 전에는 수정 요청을 받은 건만 상세로 보내고 나머지는 폼 화면(`/f/{formId}`)으로 되돌렸다.
+ * 폼은 "새로 내는" 화면이라 낸 내용을 그리지 않으므로, 최종 제출한 사람은 카드를 눌러도
+ * **자기가 무엇을 냈는지 볼 수 없었다** — 운영진이 본 "수정 요청을 보내야 응답이 보인다"가
+ * 이것이다. 서버는 처음부터 상태와 무관하게 내용을 내주고 있었다(서버 #326).
+ *
+ * **수정 규칙은 그대로다.** 상세로 가는 것과 거기서 다시 낼 수 있는 것은 다른 일이고, 후자는
+ * 서버가 `canResubmit`으로 답한다. 한 건 더 내려는 사람(여러 건 받는 폼)은 폼 주소로 가는데,
+ * 그 자리는 이 목록의 카드가 아니라 폼 링크다.
  */
 export function FormResponseCard({
   response,
@@ -39,14 +44,11 @@ export function FormResponseCard({
 }) {
   const status = RESPONSE_STATUS_BADGE[response.rspnsSttsCd];
   const changesRequested = response.rspnsSttsCd === "CHANGES_REQUESTED";
-  const href = changesRequested
-    ? ROUTES.myFormResponse(response.formId, response.formRspnsId)
-    : ROUTES.publicForm(response.formId);
   const submittedAt = response.sbmsnDt ?? response.mdfcnDt;
 
   return (
     <Link
-      href={href}
+      href={ROUTES.myFormResponse(response.formId, response.formRspnsId)}
       className="flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_#e5e8eb] transition-shadow hover:shadow-[0_0_0_1px_#1b64da] lg:p-[18px]"
     >
       <div className="flex flex-wrap items-center gap-[6px]">
