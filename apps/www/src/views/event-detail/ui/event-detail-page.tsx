@@ -49,7 +49,14 @@ export async function EventDetailPage({ eventId }: { eventId: number }) {
         <img
           src={event.thmbUrlAddr}
           alt=""
-          className="h-[180px] w-full rounded-2xl bg-bg object-cover lg:h-[240px]"
+          /*
+           * 목록 카드와 같은 정사각형 틀 (ssccops#273).
+           *
+           * 폭을 묶는 것이 여기서만 필요하다 — 상세는 이미지가 본문 전체 폭을 차지해서,
+           * 1:1을 그대로 두면 넓은 화면에서 높이가 화면을 통째로 덮고 정작 읽을 본문이
+           * 첫 화면 밖으로 밀린다.
+           */
+          className="aspect-square w-full max-w-[320px] rounded-2xl bg-bg object-cover lg:max-w-[400px]"
         />
       )}
 

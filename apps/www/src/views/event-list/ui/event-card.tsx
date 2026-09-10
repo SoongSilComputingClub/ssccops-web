@@ -34,7 +34,14 @@ export function EventCard({ event }: { event: PublicEventSummary }) {
         <img
           src={event.thmbUrlAddr}
           alt=""
-          className="h-[140px] w-full bg-bg object-cover lg:h-[150px]"
+          /*
+           * 정사각형 틀이다 (ssccops#273). 운영진이 붙이는 것은 카드뉴스라 1:1로 만들어
+           * 오는데, 가로로 긴 틀에 object-cover로 채우면 위아래가 날아갔다.
+           *
+           * object-cover를 그대로 두는 것은 가로형 이미지를 올린 지난 행사 때문이다 —
+           * 그쪽은 좌우가 잘리지만 카드의 줄이 흐트러지지는 않는다.
+           */
+          className="aspect-square w-full bg-bg object-cover"
         />
       )}
       <div className="flex flex-1 flex-col gap-[6px] p-[16px] lg:p-[18px]">
