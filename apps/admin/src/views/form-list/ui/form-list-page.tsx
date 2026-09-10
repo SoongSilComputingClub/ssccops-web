@@ -13,7 +13,15 @@ import {
 } from "@/entities/form";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
-import { useDuplicateForm, useFormLabelOptions, useFormList } from "@/features/form";
+import {
+  FORM_DELETE_CAPABILITY,
+  FormDeleteSheet,
+  NO_FORM_DELETE,
+  useDuplicateForm,
+  useFormDelete,
+  useFormLabelOptions,
+  useFormList,
+} from "@/features/form";
 import { TemplateStartSheet, useFormFromTemplate } from "@/features/form-template";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
@@ -86,15 +94,23 @@ function FormCardSkeleton() {
 function FormCard({
   form,
   duplicating,
+  deleting,
   canWrite,
+  canDelete,
   onDuplicate,
+  onDelete,
 }: {
   form: FormSummary;
   /** 이 카드의 복제가 진행 중인가 — 연타로 사본이 여러 장 생기는 것을 막는다 */
   duplicating: boolean;
+  /** 이 카드의 삭제가 진행 중인가 */
+  deleting: boolean;
   /** FORM_WRITE 보유 여부 — 복제·수정을 잠글지 정한다 */
   canWrite: boolean;
+  /** 삭제 요구 권한 보유 여부 — 지금은 FORM_WRITE와 같은 값이지만 판단의 출처가 다르다 */
+  canDelete: boolean;
   onDuplicate: () => void;
+  onDelete: () => void;
 }) {
   const router = useRouter();
   /*
@@ -167,6 +183,26 @@ function FormCard({
         >
           수정
         </button>
+        {/*
+          삭제만 danger 색이다 — 복제·수정과 같은 accent로 두면 좁은 화면에서 세 글자가 나란히
+          서서 잘못 누르기 쉽다. **시스템 폼에서는 잠근다**: 서버가 409로 거절하므로(서버 #140)
+          누르게 두면 확인 시트를 지나 거절만 받는다. 사유 문구는 서버 거절과 같은 문장이다.
+        */}
+        <button
+          type="button"
+          disabled={deleting || !canDelete || form.sysYn}
+          title={
+            !canDelete
+              ? NO_FORM_DELETE
+              : form.sysYn
+                ? SYSTEM_FORM_DELETE_LOCKED
+                : undefined
+          }
+          onClick={onDelete}
+          className="cursor-pointer text-danger disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {deleting ? "지우는 중…" : "삭제"}
+        </button>
         <div className="flex-1" />
         <div className="text-[13px] text-n500">수정 {formatYmd(form.mdfcnDt)}</div>
       </div>
@@ -185,6 +221,19 @@ export function FormListPage() {
    * '템플릿에서 시작'도 같은 권한이다(서버 FormTemplateController가 클래스 레벨로 건다).
    */
   const canWrite = useCan(CAPABILITY.FORM_WRITE);
+  /*
+   * 삭제·복구 권한은 편집과 **따로 묻는다** (features/form/model/form-delete-copy.ts).
+   * 지금은 같은 코드를 보지만 서버 계약이 확정되면 갈릴 수 있고(회의 삭제에는 MEETING_DELETE가
+   * 따로 있다), 그때 고칠 자리가 화면이 아니라 그 한 파일이어야 한다.
+   */
+  const canDelete = useCan(FORM_DELETE_CAPABILITY);
+  const deletion = useFormDelete();
+  /*
+   * 삭제 확인 시트가 보고 있는 폼. 열림 여부를 따로 두지 않고 **대상 자체**를 상태로 쥔다 —
+   * boolean과 대상을 나눠 두면 닫는 순간 대상만 남아, 다음에 열릴 때 이전 폼의 제목·응답 수가
+   * 한 프레임 그려진다(확인 시트에서 그것은 잘못된 폼을 지우게 하는 종류의 어긋남이다).
+   */
+  const [deleteTarget, setDeleteTarget] = useState<FormSummary | null>(null);
 
   const receiptStatus = parseFormReceiptStatus(searchParams.get(QUERY_RECEIPT_STATUS));
   const formLblId = parseFormLblId(searchParams.get(QUERY_LABEL));
@@ -223,6 +272,23 @@ export function FormListPage() {
       setStartSheetOpen(false);
       router.push(ROUTES.formEdit(formId));
     }
+  };
+
+  /*
+   * 삭제 후에는 목록을 다시 부른다 — 지운 폼은 이 목록에서 빠져야 한다.
+   *
+   * **stale(이미 지워졌다·사라졌다)도 성공과 똑같이 다시 부른다.** 그 오류의 뜻이 "다른 탭에서
+   * 이미 지웠다"이므로 사용자가 원한 상태와 서버의 상태는 이미 같고, 여기서 할 일은 사과가
+   * 아니라 최신 목록을 보여주는 것이다(접수 상태 전이가 같은 판단을 한다).
+   */
+  const runDelete = async (formId: number) => {
+    const { outcome, message } = await deletion.remove(formId);
+    if (outcome === "busy") return;
+
+    // 요청이 끝난 뒤에 닫는다 — 먼저 닫으면 실패했을 때 무엇을 하다 실패했는지가 사라진다
+    setDeleteTarget(null);
+    flash(message);
+    if (outcome === "done" || outcome === "stale") reload();
   };
 
   /** 누른 축만 바꾸고 나머지 필터는 URL에 남겨 둔다 (상태·라벨은 AND로 함께 걸린다) */
@@ -266,6 +332,16 @@ export function FormListPage() {
           <div className="text-[13px] text-n500">
             템플릿의 문항 구성을 복사해 작성 중 폼을 만듭니다
           </div>
+          <div className="flex-1" />
+          {/*
+            **목차(사이드바)에도 있는 자리를 여기 한 번 더 둔다.** 지운 직후의 토스트가 '지운
+            폼'을 가리키는데, 그 토스트가 사라진 뒤 되돌리려는 사람이 서 있는 곳이 이 화면이다 —
+            목차를 훑어 찾게 하는 것과 바로 옆에서 누르게 하는 것은 되살릴 수 있다는 사실의
+            무게가 다르다. 권한으로 감추지 않는 것은 조회가 목록과 같은 FORM_READ라서다.
+          */}
+          <Button variant="ghost" onClick={() => router.push(ROUTES.formsDeleted)}>
+            지운 폼
+          </Button>
         </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-[7px]">
@@ -358,13 +434,32 @@ export function FormListPage() {
                   key={f.formId}
                   form={f}
                   duplicating={duplication.pendingFormId === f.formId}
+                  deleting={deletion.pendingFormId === f.formId}
                   canWrite={canWrite}
+                  canDelete={canDelete}
                   onDuplicate={() => void runDuplicate(f.formId)}
+                  onDelete={() => setDeleteTarget(f)}
                 />
               ))}
             </div>
           ))}
       </PageBody>
+
+      {/*
+        확인 시트는 대상이 있을 때만 마운트한다 — `open` prop만 끄면 닫힌 시트가 이전 폼의
+        제목과 응답 수를 계속 들고 있게 되고, 그 값이 다음 삭제에서 한 프레임 새어 나온다.
+      */}
+      {deleteTarget && (
+        <FormDeleteSheet
+          open
+          formTtlNm={deleteTarget.formTtlNm}
+          responseCount={deleteTarget.responseCount}
+          rcptEndDt={deleteTarget.rcptEndDt}
+          pending={deletion.pending}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => void runDelete(deleteTarget.formId)}
+        />
+      )}
 
       {/* 선택지에는 켜진 템플릿만 실린다 — 거르는 것은 서버다 (features/form-template) */}
       <TemplateStartSheet

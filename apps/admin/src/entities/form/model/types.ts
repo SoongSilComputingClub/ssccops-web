@@ -96,6 +96,17 @@ export interface FormSummary {
    */
   responseCount: number;
   mdfcnDt: string;
+  /**
+   * 지운 일시 — 살아 있는 폼은 `null` (ssccops-server#329 · `del_dt`).
+   *
+   * **소프트 삭제라 행은 남는다.** 기본 목록 질의는 이 값이 있는 폼을 빼므로 `/forms`에서 온
+   * 항목은 언제나 `null`이고, 값이 채워진 항목은 '지운 폼' 목록에서만 온다.
+   *
+   * 불리언(`delYn`)이 아니라 일시인 것은 **되살리는 화면이 이 작업의 전제**이기 때문이다
+   * (ssccops#261 결정 코멘트). 지운 폼 목록에서 "언제 지웠는가"를 못 보여주면 운영진은 방금
+   * 실수로 지운 것과 지난 학기에 치운 것을 가릴 수 없어 되살릴 대상을 고르지 못한다.
+   */
+  delDt: string | null;
 }
 
 /** 상세의 응답 요약 — 목록의 responseCount와 같은 집계 규칙(DRAFT 제외)을 따른다 */

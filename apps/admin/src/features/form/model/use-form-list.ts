@@ -49,7 +49,7 @@ export interface FormList {
 }
 
 export function useFormList(filter: FormListFilter = {}): FormList {
-  const { receiptStatus = null, formLblId = null } = filter;
+  const { receiptStatus = null, formLblId = null, deleted = false } = filter;
   const [loaded, setLoaded] = useState<LoadedFormList | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -57,7 +57,7 @@ export function useFormList(filter: FormListFilter = {}): FormList {
    * 지금 화면이 보여야 할 조회의 식별자. 필터가 바뀌거나 재시도를 누르면 값이 달라지고,
    * 그 순간부터 이전 결과는 자동으로 "남의 결과"가 된다.
    */
-  const requestKey = `${receiptStatus ?? ""}|${formLblId ?? ""}|${reloadKey}`;
+  const requestKey = `${receiptStatus ?? ""}|${formLblId ?? ""}|${deleted}|${reloadKey}`;
 
   /*
    * 의존성은 필터 객체가 아니라 그 안의 원시값이다 — 호출부가 `{ receiptStatus }`를 인라인으로
@@ -66,7 +66,7 @@ export function useFormList(filter: FormListFilter = {}): FormList {
   useEffect(() => {
     let alive = true;
 
-    fetchForms({ receiptStatus, formLblId })
+    fetchForms({ receiptStatus, formLblId, deleted })
       .then((next) => {
         if (alive) setLoaded({ key: requestKey, forms: next, errorMessage: "" });
       })
@@ -79,7 +79,7 @@ export function useFormList(filter: FormListFilter = {}): FormList {
     return () => {
       alive = false;
     };
-  }, [receiptStatus, formLblId, requestKey]);
+  }, [receiptStatus, formLblId, deleted, requestKey]);
 
   // 이번 요청의 결과가 아직 없으면(최초 진입이든 필터 변경 직후든) 로딩이다
   const current = loaded?.key === requestKey ? loaded : null;
