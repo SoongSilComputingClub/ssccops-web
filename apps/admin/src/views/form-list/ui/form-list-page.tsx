@@ -67,10 +67,31 @@ const QUERY_LABEL = "labelId";
  * `DRAFT`·`CLOSED`만 1:1이라 그 둘만 옮기는 것도 생각할 수 있지만, 같은 파라미터가 어떤
  * 값에는 듣고 어떤 값에는 조용히 안 듣는 쪽이 전부 안 듣는 것보다 나쁘다.
  */
+const QUERY_RECEIPT_STATUS_ALL = "ALL";
 
-/** URL은 사용자가 손으로 고칠 수 있다 — 모르는 값은 필터 없음으로 떨어뜨린다 */
+/**
+ * 파라미터가 없을 때의 기본 필터 (#266).
+ *
+ * 운영자가 목록에 들어와 찾는 것은 대개 지금 응답을 받고 있는 폼이고, 초안·마감이 섞인 전체
+ * 목록에서 그것을 눈으로 골라내야 했다. 그래서 **화면이 접수 중에서 시작한다.**
+ *
+ * 위 주석이 "잘못 좁힌 목록은 있는 폼을 없다고 말한다"고 적어 둔 것은 **옛 링크를 번역할 때의
+ * 판단**이다 — 사용자가 보낸 조건을 시스템이 지어내지 않는다는 뜻이었다. 화면의 기본값은
+ * 사용자가 보낸 조건이 아니라 시작점이고, 칩이 눌린 채로 보이므로 좁혀졌다는 사실이 드러난다.
+ * 그 둘은 다른 자리다.
+ */
+const DEFAULT_RECEIPT_STATUS: FormReceiptStatus = "ACCEPTING";
+
+/**
+ * URL은 사용자가 손으로 고칠 수 있다 — 모르는 값은 필터 없음으로 떨어뜨린다.
+ *
+ * 파라미터가 **없는 것**과 **전체**가 이제 다른 뜻이다. 없으면 기본값(접수 중)이고, 전체는
+ * `ALL`이라는 값으로 적는다 — 기본값이 좁힌 목록이라 파라미터를 지우는 것으로는 넓힐 수 없다.
+ */
 function parseFormReceiptStatus(value: string | null): FormReceiptStatus | null {
-  return value && FORM_RECEIPT_STATUSES.includes(value as FormReceiptStatus)
+  if (value === null) return DEFAULT_RECEIPT_STATUS;
+  if (value === QUERY_RECEIPT_STATUS_ALL) return null;
+  return FORM_RECEIPT_STATUSES.includes(value as FormReceiptStatus)
     ? (value as FormReceiptStatus)
     : null;
 }
@@ -345,9 +366,10 @@ export function FormListPage() {
         </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-[7px]">
+          {/* 전체는 파라미터를 지우는 것이 아니라 값을 넣는다 — 지우면 기본값(접수 중)이다 */}
           <Chip
             active={receiptStatus === null}
-            onClick={() => applyFilter(QUERY_RECEIPT_STATUS, null)}
+            onClick={() => applyFilter(QUERY_RECEIPT_STATUS, QUERY_RECEIPT_STATUS_ALL)}
           >
             {ALL}
           </Chip>
