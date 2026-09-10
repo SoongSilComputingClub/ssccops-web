@@ -7,7 +7,7 @@ import { ApiError } from "@/shared/lib/api/client";
 import { toFormDeleteErrorMessage, toFormRestoreErrorMessage } from "./form-error";
 
 /*
- * 폼 삭제·복구 훅 (ssccops-server#329 · **계약 미확정**).
+ * 폼 삭제·복구 훅 (ssccops-server#329 · PR #330으로 확정).
  *
  * ── 왜 삭제와 복구가 한 훅인가 ──────────────────────────────────
  * 두 화면에 따로 두면 잠금·오류 처리·성공 후 갱신이 두 벌이 된다. 그런데 이 둘은 같은 결정의
