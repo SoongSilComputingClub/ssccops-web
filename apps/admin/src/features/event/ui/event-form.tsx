@@ -8,7 +8,9 @@ import {
   Button,
   Card,
   Field,
+  Markdown,
   SectionLabel,
+  Segmented,
   SelectField,
   Sheet,
   TextArea,
@@ -34,6 +36,18 @@ import { useFormLinkOptions } from "../model/use-form-link-options";
  * 수정 화면은 상세 조회가 ready가 된 뒤에야 이 폼을 마운트한다 — useState 초깃값이 곧 폼
  * 초깃값이라 동기화용 useEffect가 필요 없다(AGENTS.md · work-edit과 같은 판단).
  */
+
+/*
+ * 본문 칸의 두 얼굴 (ssccops#274).
+ *
+ * 운영진은 Markdown으로 적는데 게시하기 전에는 어떻게 보이는지 알 방법이 없었다 — 공개
+ * 화면에 들어가 봐야 알았고, 그러려면 먼저 게시해야 했다.
+ *
+ * **미리보기가 답하는 것은 "무엇이 어떻게 그려지는가"이지 "어디서 줄이 바뀌는가"가 아니다.**
+ * 어드민 폼과 공개 상세는 본문 칸의 폭이 달라 줄바꿈 자리가 같을 수 없다. 픽셀까지 맞추려면
+ * 공개 화면의 레이아웃을 이 폼 안에 한 벌 더 지어야 하는데, 그 사본이야말로 나중에 갈린다.
+ */
+const BODY_TABS = ["편집", "미리보기"] as const;
 
 /** 본문 상한 — 서버 413 EVENT_CONTENT_TOO_LARGE와 같은 값. 왕복 없이 먼저 알린다 */
 const MTXT_CN_MAX_LENGTH = 100_000;
@@ -159,6 +173,7 @@ export function EventForm({
    * 통과한 그 값이 그대로 나간다(views/form-list의 삭제 확인 시트와 같은 판단).
    */
   const [pendingSave, setPendingSave] = useState<EventSaveInput | null>(null);
+  const [bodyTab, setBodyTab] = useState<(typeof BODY_TABS)[number]>("편집");
 
   /*
    * 업로드 상태는 본문과 대표 이미지를 **가려서** 쥔다. 훅의 pending 하나만 보면 대표
@@ -457,8 +472,8 @@ export function EventForm({
               {formError && <div className="mt-[5px] text-[12.5px] text-n500">{formError}</div>}
               <div className="mt-[5px] text-[13px] leading-[1.6] text-n500">
                 모집 기간·접수 여부는 연결한 폼이 정합니다 — 행사에는 모집 기간 입력란이
-                없습니다. 폼 하나는 행사 하나에만 연결할 수 있고, 신청이 접수된 뒤에는 연결을
-                바꾸거나 해제할 수 없습니다.
+                없습니다. 폼 하나는 행사 하나에만 연결할 수 있습니다. 신청이 접수된 뒤에도
+                연결을 바꾸거나 해제할 수 있고, 그때 무엇이 끊기는지는 저장 전에 알려 드립니다.
               </div>
             </Field>
           </div>
@@ -468,34 +483,70 @@ export function EventForm({
       <Card className="mt-4">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <SectionLabel>{FIELD_LABEL.eventContent} (Markdown)</SectionLabel>
+          <Segmented
+            options={BODY_TABS}
+            value={bodyTab}
+            onChange={setBodyTab}
+            className="w-[168px]"
+          />
           <div className="flex-1" />
-          <ImagePickButton
-            label={uploadingAt === "body" ? "올리는 중…" : "이미지 첨부"}
-            disabled={busy || imageUpload.pending || Boolean(attachLock)}
-            hint={attachLock}
-            onPick={(file) => void runUpload("body", file, insertImageMarkdown)}
-          />
+          {/*
+            미리보기 중에는 첨부 버튼을 감춘다 — 넣을 커서 자리가 없다. 잠그지 않고 감추는
+            것은 사유가 권한이 아니라 지금 보는 화면이라서다. 잠근 버튼에 붙일 이유가
+            "편집으로 돌아가세요" 하나뿐이면 그 버튼은 그 자리에 없는 편이 낫다.
+          */}
+          {bodyTab === "편집" && (
+            <ImagePickButton
+              label={uploadingAt === "body" ? "올리는 중…" : "이미지 첨부"}
+              disabled={busy || imageUpload.pending || Boolean(attachLock)}
+              hint={attachLock}
+              onPick={(file) => void runUpload("body", file, insertImageMarkdown)}
+            />
+          )}
         </div>
-        <Field label={null} error={errors.mtxtCn}>
-          <TextArea
-            ref={mtxtRef}
-            value={mtxtCn}
-            onChange={(e) => setMtxtCn(e.target.value)}
-            className="min-h-[260px] font-mono text-[16px] leading-[1.8] lg:text-[13.5px]"
-            placeholder={"# 행사 안내\n\nMarkdown으로 작성합니다. 회원에게 보이는 본문입니다."}
-          />
-        </Field>
+        {/*
+          편집칸을 언마운트하지 않고 hidden으로 접는다. 지우면 돌아왔을 때 커서 자리와
+          스크롤이 사라지고, insertImageMarkdown이 잡아 둔 ref도 끊긴다.
+        */}
+        <div hidden={bodyTab !== "편집"}>
+          <Field label={null} error={errors.mtxtCn}>
+            <TextArea
+              ref={mtxtRef}
+              value={mtxtCn}
+              onChange={(e) => setMtxtCn(e.target.value)}
+              className="min-h-[260px] font-mono text-[16px] leading-[1.8] lg:text-[13.5px]"
+              placeholder={"# 행사 안내\n\nMarkdown으로 작성합니다. 회원에게 보이는 본문입니다."}
+            />
+          </Field>
+        </div>
+        {bodyTab === "미리보기" && (
+          <div className="min-h-[260px] rounded-[12px] border border-line bg-bg px-[16px] py-[6px]">
+            {mtxtCn.trim() ? (
+              <Markdown>{mtxtCn}</Markdown>
+            ) : (
+              <div className="py-[110px] text-center text-[13.5px] text-n500">
+                아직 본문이 없습니다 — 편집에서 적으면 여기에 그려집니다
+              </div>
+            )}
+          </div>
+        )}
+        {/* 오류는 미리보기에서도 보여야 한다 — 상한을 넘긴 채 넘어올 수 있다 */}
+        {bodyTab === "미리보기" && errors.mtxtCn && (
+          <div className="mt-2 text-[12.5px] text-danger">{errors.mtxtCn}</div>
+        )}
         {/*
           업로드 실패는 토스트가 아니라 이 자리에 남긴다 — 본문과 대표 이미지가 같은 훅을
           쓰므로 무엇이 왜 막혔는지 다시 볼 수 있어야 하고, 사라지는 알림이면 파일을 다시
           고르는 사이에 문구가 없어진다.
         */}
         {uploadError && <div className="mt-2 text-[12.5px] text-danger">{uploadError}</div>}
+        {/* 글자 수는 두 화면 모두에서 뜻이 있다. 첨부 안내는 편집에만 있다 */}
         <div className="mt-2 text-[12.5px] text-n500">
-          {mtxtCn.length.toLocaleString()} / {MTXT_CN_MAX_LENGTH.toLocaleString()}자 —
-          {attachLock
-            ? ` ${attachLock}`
-            : " 이미지를 첨부하면 커서 자리에 이미지 문법이 들어갑니다"}
+          {mtxtCn.length.toLocaleString()} / {MTXT_CN_MAX_LENGTH.toLocaleString()}자
+          {bodyTab === "편집" &&
+            (attachLock
+              ? ` — ${attachLock}`
+              : " — 이미지를 첨부하면 커서 자리에 이미지 문법이 들어갑니다")}
         </div>
       </Card>
 
