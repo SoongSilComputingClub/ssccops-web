@@ -368,15 +368,30 @@ export function EventForm({
                   key={thmbUrlAddr.trim()}
                   src={thmbUrlAddr.trim()}
                   alt=""
-                  className="mt-2 h-[120px] w-full rounded-[12px] border border-line object-cover"
+                  /*
+                    공개 화면과 **같은 정사각형 틀**이다 (ssccops#273). 여기만 비율이 다르면
+                    올릴 때 확인한 그림과 실제가 달라, 미리보기가 거짓말을 한다.
+                    폭을 묶는 것은 입력란 사이에 낀 자리라 1:1을 폭 그대로 두면 폼이
+                    이미지 하나로 길어지기 때문이다.
+                  */
+                  className="mt-2 aspect-square w-full max-w-[200px] rounded-[12px] border border-line object-cover"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
                   }}
                 />
               )}
               <div className="mt-[5px] text-[12.5px] text-n500">
-                목록 카드와 공개 화면의 대표 이미지로 쓰입니다 — 공유 링크 미리보기에도 이
-                이미지가 나옵니다
+                목록 카드와 공개 화면의 대표 이미지로 쓰입니다 —{" "}
+                <b>정사각형(1:1)</b>을 권장합니다. 다른 비율이면 좌우가 잘립니다
+              </div>
+              {/*
+                공유 미리보기를 따로 적는 것은 자르는 비율을 우리가 정하지 못하기 때문이다 —
+                메신저마다 다르고, 한 번 만들어진 카드는 갱신되지도 않는다(ADR-0016).
+                위 문장에 이어 붙이면 "정사각형으로 나옵니다"로 읽힌다.
+              */}
+              <div className="mt-[3px] text-[12.5px] text-n500">
+                공유 링크 미리보기에도 이 이미지가 나옵니다 — 그쪽 잘리는 모양은 메신저가
+                정합니다
               </div>
               {attachLock && (
                 <div className="mt-[5px] text-[12.5px] text-n500">{attachLock}</div>
