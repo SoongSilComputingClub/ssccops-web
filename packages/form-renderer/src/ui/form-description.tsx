@@ -77,7 +77,7 @@ export function FormDescription({
   children: string | null | undefined;
   className?: string;
 }>) {
-  if (!children || !children.trim()) {
+  if (!children?.trim()) {
     return null;
   }
 

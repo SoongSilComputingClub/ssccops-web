@@ -100,7 +100,7 @@ interface WorkCreateResponse {
  * 그리는 쪽(뷰)이 정한다.
  */
 function toMemberRef(member: MemberSummaryResponse | null): WorkMemberRef | null {
-  if (!member || member.memberId == null) return null;
+  if (member?.memberId == null) return null;
   return { memberId: member.memberId, name: member.name ?? "" };
 }
 
