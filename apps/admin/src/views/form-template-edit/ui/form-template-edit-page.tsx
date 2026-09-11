@@ -118,16 +118,14 @@ function FormTemplateEditContent({
     if (await save()) router.push(ROUTES.formTemplates);
   };
 
+  const creatorSuffix = editor.creatrMbrNm ? ` · 만든 사람 ${editor.creatrMbrNm}` : "";
+
   return (
     <>
       <PageHeader
         title={title}
         /* 첫 저장으로 번호가 생기는 순간 "저장 전"에서 템플릿 번호로 바뀐다 */
-        subtitle={
-          editor.formTmplId
-            ? `템플릿 #${editor.formTmplId}${editor.creatrMbrNm ? ` · 만든 사람 ${editor.creatrMbrNm}` : ""}`
-            : "저장 전"
-        }
+        subtitle={editor.formTmplId ? `템플릿 #${editor.formTmplId}${creatorSuffix}` : "저장 전"}
         showBack
       />
       <PageBody>

@@ -58,6 +58,11 @@ function formatDay(parts: Parts): string {
   return `${parts.y}년 ${parts.m}월 ${parts.d}일 (${weekday(parts)})`;
 }
 
+/** "2026년 9월 15일 (화) 18:00" — 시각이 없는 일자D 값이면 날짜까지만 */
+function formatDayTime(parts: Parts): string {
+  return parts.hm ? `${formatDay(parts)} ${parts.hm}` : formatDay(parts);
+}
+
 function sameDay(a: Parts, b: Parts): boolean {
   return a.y === b.y && a.m === b.m && a.d === b.d;
 }
@@ -79,20 +84,21 @@ export function formatEventPeriod(
   const end = parse(eventEndDt);
 
   if (!bgng && !end) return null;
-  if (!bgng && end) return `~ ${formatDay(end)}${end.hm ? ` ${end.hm}` : ""}`;
+  if (!bgng && end) return `~ ${formatDayTime(end)}`;
   if (!bgng) return null;
 
-  const head = `${formatDay(bgng)}${bgng.hm ? ` ${bgng.hm}` : ""}`;
+  const head = formatDayTime(bgng);
   if (!end) return head;
 
   // 같은 날 안에서 끝나면 뒤쪽 날짜를 반복하지 않는다 — 한 줄이 두 배로 길어질 뿐이다
   if (sameDay(bgng, end)) return end.hm ? `${head} ~ ${end.hm}` : head;
-  return `${head} ~ ${formatDay(end)}${end.hm ? ` ${end.hm}` : ""}`;
+  return `${head} ~ ${formatDayTime(end)}`;
 }
 
 /** 목록 카드의 짧은 일시 — "9월 15일 (화) 18:00". 연도를 떼어 카드 한 줄에 장소까지 들어가게 한다 */
 export function formatEventDate(eventBgngDt: string | null): string | null {
   const bgng = parse(eventBgngDt);
   if (!bgng) return null;
-  return `${bgng.m}월 ${bgng.d}일 (${weekday(bgng)})${bgng.hm ? ` ${bgng.hm}` : ""}`;
+  const day = `${bgng.m}월 ${bgng.d}일 (${weekday(bgng)})`;
+  return bgng.hm ? `${day} ${bgng.hm}` : day;
 }
