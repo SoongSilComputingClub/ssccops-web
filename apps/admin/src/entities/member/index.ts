@@ -27,6 +27,12 @@ export {
 } from "./api/members";
 /* 동아리 가입 연도 → 기수 (#214) — 계산식은 서버에만 있다 */
 export { fetchGenerationNumber } from "./api/members";
+/* 회원 삭제 (임시 · ADR-0021 · #411) — 플래그가 꺼져 있으면 화면이 부르지 않는다 */
+export {
+  fetchMemberDeletionPreview,
+  deleteMember,
+  type MemberDeletionPreview,
+} from "./api/members";
 /* 회원 정보 수정 (#47 · 서버 #77) */
 export {
   updateMember,
