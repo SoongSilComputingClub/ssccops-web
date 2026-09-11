@@ -47,7 +47,7 @@ function read(): Theme {
 
 function apply(theme: Theme) {
   const root = document.documentElement;
-  if (theme === "system") root.removeAttribute("data-theme");
+  if (theme === "system") delete root.dataset.theme;
   else root.dataset.theme = theme;
 }
 
