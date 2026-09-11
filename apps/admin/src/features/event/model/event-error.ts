@@ -5,6 +5,7 @@ import {
   EVENT_PARTICIPANT_ERROR,
 } from "@/entities/event";
 import { API_ERROR, ApiError } from "@/shared/lib/api/client";
+import { NO_EVENT_DELETE } from "./event-delete-copy";
 
 /*
  * 행사 API 실패 → 화면에 띄울 한 줄 (#136).
@@ -38,8 +39,9 @@ export function toEventErrorMessage(error: unknown): string {
 /**
  * 저장(생성·수정) 실패.
  *
- * 폼 연결의 두 409는 서버만 아는 사실이다 — 화면이 들고 있는 폼 목록으로는 다른 행사에 이미
- * 전속됐는지(D11), 신청이 방금 생겼는지 알 수 없다. 문구에 다음 행동을 담는다.
+ * 폼 연결의 409는 서버만 아는 사실이다 — 화면이 들고 있는 폼 목록으로는 다른 행사에 이미
+ * 전속됐는지(D11) 알 수 없다. 문구에 다음 행동을 담는다. 신청 뒤의 연결 변경을 막던
+ * `EVENT_FORM_IN_USE` 분기는 서버가 그 가드를 걷어(ssccops-server#336) 함께 걷었다.
  */
 export function toEventSaveErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
@@ -47,8 +49,6 @@ export function toEventSaveErrorMessage(error: unknown): string {
   }
 
   switch (error.code) {
-    case EVENT_ERROR.EVENT_FORM_IN_USE:
-      return "신청이 접수된 행사라 폼 연결을 바꾸거나 해제할 수 없습니다 — 폼은 그대로 두고 저장해주세요";
     case EVENT_ERROR.FORM_ALREADY_LINKED:
       return "이미 다른 행사에 연결된 폼입니다 — 다른 폼을 고르거나 그쪽 연결을 먼저 해제해주세요";
     case EVENT_ERROR.EVENT_CLASSIFICATION_NOT_FOUND:
@@ -209,6 +209,61 @@ export function toEventCategoryErrorMessage(error: unknown): string {
       return "이 분류를 쓰는 행사가 있어 삭제할 수 없습니다 — 행사의 분류를 먼저 바꿔주세요";
     case EVENT_CATEGORY_ERROR.EVENT_CLASSIFICATION_NOT_FOUND:
       return "이미 없는 분류입니다. 목록을 다시 불러옵니다";
+    default:
+      return toEventErrorMessage(error);
+  }
+}
+
+/**
+ * 행사 삭제 실패 → 화면에 띄울 한 줄 (ADR-0020 · ssccops-server#347).
+ *
+ * **학술 활동 409만은 토스트가 아니라 시트 안에 남는다** — 문장을 여기서 만드는 것은 같지만,
+ * 훅이 그 코드를 `blocked`로 가려내 화면이 시트를 닫지 않는다(use-event-delete.ts). 이 문장은
+ * 다음 행동(학술 쪽에서 프로그램을 먼저 정리한다)을 담아야 한다 — 왜 안 되는지만 말하면
+ * 사용자는 같은 버튼을 다시 누른다.
+ */
+export function toEventDeleteErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "행사를 지우지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return NO_EVENT_DELETE;
+    case EVENT_ERROR.EVENT_HAS_ACADEMIC_PROGRAM:
+      return "학술 활동이 딸린 행사라 지울 수 없습니다 — 학술 활동에서 이 행사의 프로그램을 먼저 정리해주세요";
+    /*
+     * 둘 다 "화면이 낡았다"는 뜻이다 — 다른 탭에서 이미 지웠거나 이미 없어진 행사다.
+     * 사과가 아니라 최신 목록을 가져오는 것이 다음 행동이라 문장이 그것을 말한다.
+     */
+    case EVENT_ERROR.EVENT_ALREADY_DELETED:
+      return "이미 지워진 행사입니다. 목록을 다시 불러옵니다";
+    default:
+      return toEventErrorMessage(error);
+  }
+}
+
+/**
+ * 행사 복구 실패 → 화면에 띄울 한 줄 (ADR-0020 · ssccops-server#347).
+ *
+ * 삭제와 요구 권한이 같으므로 403 문구도 같다. **404를 삭제·조회와 다르게 말한다** — 공통
+ * 매핑의 "이미 삭제된 행사일 수 있습니다"는 이 화면에서 뜻이 뒤집힌다(여기 있는 행사는 전부
+ * 지워진 것이라 그 문장은 정상을 오류처럼 읽게 한다). 폼 복구와 같은 판단이다.
+ */
+export function toEventRestoreErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "행사를 되살리지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return NO_EVENT_DELETE;
+    case EVENT_ERROR.EVENT_NOT_DELETED:
+      return "이미 되살아난 행사입니다. 목록을 다시 불러옵니다";
+    case EVENT_ERROR.EVENT_NOT_FOUND:
+      return "행사를 찾을 수 없습니다 — 목록을 다시 불러옵니다";
     default:
       return toEventErrorMessage(error);
   }
