@@ -42,12 +42,12 @@ export function CurriculumField({
   rows,
   error,
   onChange,
-}: {
+}: Readonly<{
   qitem: Qitem;
   rows: CurriculumRow[];
   error?: string;
   onChange: (rows: CurriculumRow[], text: string) => void;
-}) {
+}>) {
   // 표는 늘 한 줄은 보여 준다 — 빈 표에 '행 추가'만 있으면 무엇을 적는 자리인지 알 수 없다
   const shown = rows.length > 0 ? rows : [emptyCurriculumRow()];
 

@@ -25,9 +25,9 @@ import { EmptyState, Notice } from "@/shared/ui";
  */
 export async function SessionLandingPage({
   sessionId,
-}: {
+}: Readonly<{
   sessionId: number | null;
-}) {
+}>) {
   const result = await loadSessionLanding(sessionId);
 
   /*

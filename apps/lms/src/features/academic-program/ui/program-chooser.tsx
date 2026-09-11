@@ -21,7 +21,7 @@ export function NoProgramNotice() {
 }
 
 /** 미가입 안내 */
-export function ProgramSignupNotice({ signupHref }: { signupHref: string | null }) {
+export function ProgramSignupNotice({ signupHref }: Readonly<{ signupHref: string | null }>) {
   return (
     <Notice
       title="회원 가입을 마쳐야 학술 활동 화면을 볼 수 있습니다"
@@ -43,10 +43,10 @@ export function ProgramSignupNotice({ signupHref }: { signupHref: string | null 
 export function BackToProgramsNotice({
   title,
   description,
-}: {
+}: Readonly<{
   title: string;
   description: string;
-}) {
+}>) {
   return (
     <Notice title={title} description={description}>
       <Link

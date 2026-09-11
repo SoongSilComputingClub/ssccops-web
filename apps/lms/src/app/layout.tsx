@@ -75,7 +75,7 @@ export const viewport: Viewport = {
  * 미로그인·조회 실패는 `fetchIsAcademicLeader`가 `false`로 삼킨다 — 헤더 하나 때문에 전
  * 화면이 오류로 죽지 않게 한다(그 함수 주석 참고).
  */
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
   const isLeader = await fetchIsAcademicLeader();
 
   return (

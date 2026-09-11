@@ -50,14 +50,14 @@ export function SessionRecordForm({
   curriculumItem,
   members,
   session,
-}: {
+}: Readonly<{
   academicProgramId: number;
   mode: SubmitMode;
   curriculumItem: CurriculumItemWithSession;
   members: AcademicProgramMember[];
   /** 재제출일 때만 채워진다 */
   session: AcademicSessionDetail | null;
-}) {
+}>) {
   const router = useRouter();
   const { submitting, submit } = useSubmitSession(academicProgramId);
 

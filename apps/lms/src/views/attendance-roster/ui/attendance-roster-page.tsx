@@ -31,10 +31,10 @@ import { AttendanceRosterMatrix } from "./attendance-roster-matrix";
 
 export async function AttendanceRosterPage({
   academicProgramId,
-}: {
+}: Readonly<{
   /** 주소의 ?programId= 값. 숫자가 아니거나 없으면 null → 목록 맨 위 */
   academicProgramId: number | null;
-}) {
+}>) {
   const selection = await selectProgram(academicProgramId);
 
   return (
@@ -76,7 +76,7 @@ export async function AttendanceRosterPage({
   );
 }
 
-async function RosterBody({ academicProgramId }: { academicProgramId: number }) {
+async function RosterBody({ academicProgramId }: Readonly<{ academicProgramId: number }>) {
   const result = await loadAttendanceRoster(academicProgramId);
 
   if (result.outcome === "unauthenticated") {

@@ -23,7 +23,7 @@ import { myApplicationDetailUrl } from "@/shared/config/routes";
  * 값이 없으면(대표 문항 선언이 없는 폼·지워진 문항·비워 둔 답·서버가 아직 안 싣는 배포)
  * 종전 문구 그대로다. 없는 값을 지어내지 않는다.
  */
-export function SubmissionCard({ response }: { response: MyFormResponse }) {
+export function SubmissionCard({ response }: Readonly<{ response: MyFormResponse }>) {
   const badge = RSPNS_STTS_BADGE[response.rspnsSttsCd];
   const isChangesRequested = response.rspnsSttsCd === "CHANGES_REQUESTED";
   const isRejected = response.rspnsSttsCd === "REJECTED";

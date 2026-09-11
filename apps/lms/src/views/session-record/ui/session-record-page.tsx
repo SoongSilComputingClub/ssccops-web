@@ -38,10 +38,10 @@ import { SessionRecordForm } from "./session-record-form";
 export async function SessionRecordPage({
   academicProgramId,
   curriculumItemId,
-}: {
+}: Readonly<{
   academicProgramId: number | null;
   curriculumItemId: number | null;
-}) {
+}>) {
   const selection = await selectProgram(academicProgramId);
 
   return (
@@ -99,9 +99,9 @@ export async function SessionRecordPage({
  */
 async function CurriculumPicker({
   academicProgramId,
-}: {
+}: Readonly<{
   academicProgramId: number;
-}) {
+}>) {
   const result = await loadRecordTargets(academicProgramId);
 
   if (result.outcome === "unauthenticated") {
@@ -182,10 +182,10 @@ async function CurriculumPicker({
 async function RecordBody({
   academicProgramId,
   curriculumItemId,
-}: {
+}: Readonly<{
   academicProgramId: number;
   curriculumItemId: number;
-}) {
+}>) {
   const result = await loadSessionRecord(academicProgramId, curriculumItemId);
 
   if (result.outcome === "unauthenticated") {
