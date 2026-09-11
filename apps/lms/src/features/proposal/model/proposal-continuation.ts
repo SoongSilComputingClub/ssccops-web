@@ -30,7 +30,5 @@ export function continuableResponse(
   const changesRequested = responses.filter(
     (r) => r.rspnsSttsCd === "CHANGES_REQUESTED",
   );
-  return changesRequested.length === 0
-    ? null
-    : (changesRequested[changesRequested.length - 1] ?? null);
+  return changesRequested.at(-1) ?? null;
 }
