@@ -529,6 +529,7 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
           <Card>
             <SectionLabel className="mb-3">문항 미리보기</SectionLabel>
             <div className="mb-3 flex flex-wrap gap-[6px]">
+              {/* key=index — 읽기 전용 미리보기이고 index가 곧 pageSeq다 (#401 · S6479) */}
               {pages.map((p, i) => (
                 <Chip key={i} active={page === i} onClick={() => setPage(i)}>
                   {i + 1}. {p.pageTtl}

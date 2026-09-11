@@ -25,6 +25,7 @@
  * 주소로 사람을 던지는 것보다 낫다(폼 상세가 `publicFormUrl()`에서 내린 판단과 같다).
  */
 export function lmsOrigin(): string | null {
+  // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
   return process.env.NEXT_PUBLIC_LMS_ORIGIN?.replace(/\/+$/, "") || null;
 }
 

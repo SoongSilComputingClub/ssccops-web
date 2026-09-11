@@ -195,6 +195,7 @@ export const ROUTES = {
  * 주지 않기 위해서이고, 부르는 쪽이 링크 자리를 감추거나 안내로 대체한다.
  */
 export function publicFormUrl(formId: number): string | null {
+  // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
   const configured = process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN?.replace(/\/+$/, "");
   return configured ? `${configured}/f/${formId}` : null;
 }
@@ -215,6 +216,7 @@ export function publicFormUrl(formId: number): string | null {
  * `ROUTES.eventEdit`이다).
  */
 export function publicEventUrl(eventId: number): string | null {
+  // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
   const configured = process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN?.replace(/\/+$/, "");
   return configured ? `${configured}/events/${eventId}` : null;
 }

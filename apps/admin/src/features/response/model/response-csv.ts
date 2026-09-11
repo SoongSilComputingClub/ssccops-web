@@ -123,9 +123,30 @@ export function responseCsvFilename(
   formTitle: string | null | undefined,
   today: string,
 ): string {
-  const safe = (formTitle ?? "")
+  const collapsed = (formTitle ?? "")
     .replace(/[\\/:*?"<>|]/g, " ")
-    .replace(/\s+/g, " ")
-    .replace(/^[\s.]+|[\s.]+$/g, "");
+    .replace(/\s+/g, " ");
+  const safe = trimEdges(collapsed, isSpaceOrDot);
   return `${safe || `폼_${formId}`}_응답_${today}.csv`;
+}
+
+/*
+ * 앞뒤의 공백·마침표를 걷어내는 것은 정규식이 아니라 루프로 한다 (#401 · S8786).
+ *
+ * 예전의 `/^[\s.]+|[\s.]+$/g`는 뒤쪽 갈래가 입력 길이의 제곱으로 되돌아간다 — 마침표가 길게
+ * 이어지다 다른 글자가 오면 마침표마다 끝까지 갔다가 되돌아온다. 제목은 운영진이 적는 값이다 —
+ * 서버가 200자에서 막아 주지만(FormSaveRequest) 그 상한은 웹에 없는 약속이라, 입력 길이에
+ * 비례하는 방법으로 바꾼다. 앞 단계가 공백을 전부 `" "` 하나로 합쳐 두었으므로 여기서 볼
+ * 것은 공백 한 글자와 마침표뿐이다.
+ */
+function isSpaceOrDot(ch: string): boolean {
+  return ch === " " || ch === ".";
+}
+
+function trimEdges(text: string, shouldTrim: (ch: string) => boolean): string {
+  let start = 0;
+  let end = text.length;
+  while (start < end && shouldTrim(text[start])) start += 1;
+  while (end > start && shouldTrim(text[end - 1])) end -= 1;
+  return text.slice(start, end);
 }
