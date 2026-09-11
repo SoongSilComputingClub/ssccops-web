@@ -22,7 +22,7 @@ import { ApplyPanel } from "./apply-panel";
  * 넘긴다 — "권한이 없습니다"가 아니다. 공개 앱에는 권한이라는 개념이 없고, 없는 주소와
  * 아직 공개하지 않은 주소를 화면이 구별해 주면 게시 전 행사의 존재가 새어 나간다.
  */
-export async function EventDetailPage({ eventId }: { eventId: number }) {
+export async function EventDetailPage({ eventId }: Readonly<{ eventId: number }>) {
   let event: PublicEventDetail;
   try {
     event = await fetchPublicEvent(eventId);

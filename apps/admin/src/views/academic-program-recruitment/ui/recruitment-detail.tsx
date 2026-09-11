@@ -85,7 +85,7 @@ import {
  * `formId` 가 없으면(승인 전 활동이거나 서버 옛 배포) 링크 대신 안내 문구 — 없는 값을
  * 지어내지 않는다(AGENTS.md).
  */
-function FormEditLink({ formId, label }: { formId: number | null; label: string }) {
+function FormEditLink({ formId, label }: Readonly<{ formId: number | null; label: string }>) {
   if (formId == null) {
     return (
       <div className="text-[13px] text-n500">
@@ -176,11 +176,11 @@ function StartRecruitmentCard({
   formId,
   starting,
   onStart,
-}: {
+}: Readonly<{
   formId: number | null;
   starting: boolean;
   onStart: (input: { recruitmentStartAt: string; recruitmentEndAt: string }) => void;
-}) {
+}>) {
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
 
@@ -217,7 +217,7 @@ function StartRecruitmentCard({
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-[13px] text-n500">
-          모집 시작 일시
+          <span>모집 시작 일시</span>
           <input
             type="datetime-local"
             value={startAt}
@@ -226,7 +226,7 @@ function StartRecruitmentCard({
           />
         </label>
         <label className="flex flex-col gap-1 text-[13px] text-n500">
-          모집 종료 일시
+          <span>모집 종료 일시</span>
           <input
             type="datetime-local"
             value={endAt}
@@ -260,10 +260,10 @@ function StartRecruitmentCard({
 function RecruitmentNoticeCard({
   program,
   confirmedCount,
-}: {
+}: Readonly<{
   program: AcademicProgramDetail;
   confirmedCount: number;
-}) {
+}>) {
   const receipt = program.formReceiptStatus as FormReceiptStatus | null;
   const receiptBadge = receipt ? FORM_RECEIPT_BADGE[receipt] : null;
 
@@ -348,7 +348,7 @@ function ApplicantsCard({
   select,
   selecting,
   teamMembers,
-}: {
+}: Readonly<{
   applications: RecruitmentApplication[];
   totalCount: number;
   hasNext: boolean;
@@ -360,7 +360,7 @@ function ApplicantsCard({
   select: RecruitmentSelectState["select"];
   selecting: boolean;
   teamMembers: RecruitmentSelectState["teamMembers"];
-}) {
+}>) {
   const canManage = useCan(CAPABILITY.ACADEMIC_PROGRAM_MANAGE);
 
   /*
@@ -599,7 +599,7 @@ export function RecruitmentDetail({
   select,
   selecting,
   teamMembers,
-}: RecruitmentDetailProps) {
+}: Readonly<RecruitmentDetailProps>) {
   if (detailStatus === "idle" || !program) {
     return (
       <EmptyState message="왼쪽 목록에서 활동을 선택하면 모집 현황이 표시됩니다." />

@@ -59,7 +59,7 @@ function StatsSkeleton() {
   );
 }
 
-function ProgramRateRow({ row }: { row: ProgramAttendanceRate }) {
+function ProgramRateRow({ row }: Readonly<{ row: ProgramAttendanceRate }>) {
   const value = row.rate ?? 0;
   const low = row.rate !== null && row.rate < LOW_ATTENDANCE_RATE;
   return (
@@ -185,8 +185,7 @@ export function AttendanceStatsPage() {
 
             <Card>
               <SectionLabel className="mb-3">
-                출석률이 낮은 회원
-                <span className="ml-2 text-[13px] font-normal text-n500">
+                출석률이 낮은 회원<span className="ml-2 text-[13px] font-normal text-n500">
                   {LOW_ATTENDANCE_RATE}% 미만
                 </span>
               </SectionLabel>
@@ -211,8 +210,7 @@ export function AttendanceStatsPage() {
                 className="cursor-pointer text-accent underline"
               >
                 회차 이력
-              </button>
-              에서 확인합니다.
+              </button>에서 확인합니다.
             </div>
           </div>
         )}

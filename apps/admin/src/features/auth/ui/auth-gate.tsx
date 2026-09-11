@@ -14,7 +14,7 @@ import { BootstrapError, BootstrapPending } from "./bootstrap-fallback";
  * 가입 여부는 서버 세션 조회가 있어야 알 수 있고, 그 조회를 미들웨어에 두면 모든 요청마다
  * 백엔드 왕복이 하나씩 붙는다 — 그래서 이 판정만 클라이언트에 남겼다.
  */
-export function AuthGate({ children }: { children: ReactNode }) {
+export function AuthGate({ children }: Readonly<{ children: ReactNode }>) {
   const router = useRouter();
   const { status, errorMessage, retry } = useAuthBootstrap();
 

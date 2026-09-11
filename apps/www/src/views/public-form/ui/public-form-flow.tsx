@@ -18,12 +18,12 @@ export function PublicFormFlow({
   signedUp,
   authUserEmail,
   authUserName,
-}: {
+}: Readonly<{
   formId: number;
   signedUp: boolean;
   authUserEmail: string | null;
   authUserName: string | null;
-}) {
+}>) {
   const [member, setMember] = useState(signedUp);
 
   if (!member) {

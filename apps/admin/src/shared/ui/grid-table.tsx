@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { onKeyActivate } from "@ssccops/ui";
 import { cn } from "@/shared/lib/cn";
 
 export interface GridColumn<T> {
@@ -34,6 +35,12 @@ export interface GridColumn<T> {
  * 행마다 박스가 없고, 열 트랙이 인라인 style이라 미디어 쿼리로 덮을 수 없기 때문이다.
  * 화면 폭에 따라 한쪽만 렌더하는 방법(useMediaQuery)은 서버 렌더 결과와 어긋나
  * 첫 페인트에서 잘못된 쪽이 보인다.
+ *
+ * **`onRowClick`이 있을 때만 셀·카드에 `role="button"`·`tabIndex`가 붙는다** (ssccops-web#403).
+ * 셀 안에 버튼(«회원 보기»·체크박스)이 드는 표가 있어 `<button>`으로는 못 바꾸고, 누를 수
+ * 없는 행이 Tab에 잡히면 키보드로는 표를 지나가는 데 행 수만큼 Tab을 눌러야 한다. 데스크톱은
+ * 행이 `contents`라 박스가 없어 셀마다 붙는다 — 한 행이 열 수만큼 정거장이 되는 것은 알지만,
+ * 행 박스를 만들면 열 트랙이 깨진다(위 주석).
  */
 export function GridTable<T>({
   columns,
@@ -42,14 +49,14 @@ export function GridTable<T>({
   onRowClick,
   dense,
   empty,
-}: {
+}: Readonly<{
   columns: GridColumn<T>[];
   rows: T[];
   rowKey: (row: T, index: number) => string;
   onRowClick?: (row: T) => void;
   dense?: boolean;
   empty?: ReactNode;
-}) {
+}>) {
   const primary = columns.find((c) => c.mobilePrimary) ?? columns[0];
   const secondary = columns.filter((c) => c !== primary && !c.mobileHide);
 
@@ -77,6 +84,9 @@ export function GridTable<T>({
               <div
                 key={col.key}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
+                role={onRowClick ? "button" : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                onKeyDown={onRowClick ? onKeyActivate(() => onRowClick(row)) : undefined}
                 className={cn(
                   "min-w-0 overflow-hidden border-t border-hairline text-[15px] text-ellipsis whitespace-nowrap",
                   dense ? "py-3" : "py-[13px]",
@@ -97,6 +107,9 @@ export function GridTable<T>({
           <div
             key={rowKey(row, index)}
             onClick={onRowClick ? () => onRowClick(row) : undefined}
+            role={onRowClick ? "button" : undefined}
+            tabIndex={onRowClick ? 0 : undefined}
+            onKeyDown={onRowClick ? onKeyActivate(() => onRowClick(row)) : undefined}
             className={cn(
               "rounded-xl border border-line bg-surface p-3",
               onRowClick && "cursor-pointer",

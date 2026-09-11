@@ -68,17 +68,19 @@ export function FormTemplateListPage() {
       width: "2fr",
       mobilePrimary: true,
       render: (t) => (
-        <span
+        /* 키보드 접근(#403) */
+        <button
+          type="button"
           onClick={() => (canWrite ? goEdit(t.formTmplId) : undefined)}
           title={canWrite ? undefined : NO_TEMPLATE_WRITE}
           className={
             t.useYn
-              ? "cursor-pointer font-medium hover:text-accent"
-              : "cursor-pointer text-n500 line-through hover:text-accent"
+              ? "max-w-full cursor-pointer overflow-hidden text-left text-ellipsis font-medium hover:text-accent"
+              : "max-w-full cursor-pointer overflow-hidden text-left text-ellipsis text-n500 line-through hover:text-accent"
           }
         >
           {t.tmplNm}
-        </span>
+        </button>
       ),
     },
     {

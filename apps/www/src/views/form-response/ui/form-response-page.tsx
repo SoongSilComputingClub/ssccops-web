@@ -47,10 +47,10 @@ import { ReviewTimeline } from "./review-timeline";
 export async function FormResponsePage({
   formId,
   formRspnsId,
-}: {
+}: Readonly<{
   formId: number;
   formRspnsId: number;
-}) {
+}>) {
   if (
     !Number.isInteger(formId) ||
     formId <= 0 ||
@@ -178,6 +178,6 @@ export async function FormResponsePage({
 }
 
 /** 공개 폼 계열과 같은 폭을 쓴다 — 근거는 `public-form-page`의 주석에 있다 */
-function FormResponseShell({ children }: { children: ReactNode }) {
+function FormResponseShell({ children }: Readonly<{ children: ReactNode }>) {
   return <div className="mx-auto flex max-w-[860px] flex-col gap-[14px]">{children}</div>;
 }

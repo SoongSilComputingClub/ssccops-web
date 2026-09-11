@@ -172,7 +172,8 @@ export async function fetchMemberHistories(
   for (const type of filter.types ?? []) query.append("type", type);
 
   const qs = query.toString();
-  const path = `/v1/members/${memberId}/histories${qs ? `?${qs}` : ""}`;
+  const suffix = qs ? `?${qs}` : "";
+  const path = `/v1/members/${memberId}/histories${suffix}`;
 
   const entries = await apiFetch<MemberHistoryEntry[] | null>(path);
   return entries ?? [];

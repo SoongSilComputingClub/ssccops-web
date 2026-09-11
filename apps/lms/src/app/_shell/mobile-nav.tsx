@@ -18,7 +18,7 @@ import { visibleNavLinks } from "./nav-links";
  *
  * 열렸을 때 본문 스크롤을 잠그고, ESC·바깥 클릭·항목 이동으로 닫는 규약도 어드민과 같다.
  */
-export function MobileNav({ isLeader }: { isLeader: boolean }) {
+export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -57,7 +57,12 @@ export function MobileNav({ isLeader }: { isLeader: boolean }) {
 
       {open && (
         <div className="fixed inset-0 z-[80] lg:hidden">
+          {/*
+            스크림 — 클릭으로 닫히지만 키보드로 «누르는» 대상이 아니다. Esc는 위 effect가
+            document에서 받는다. 보조기기에서는 치운다 (ssccops-web#403 · Sheet와 같은 판단).
+          */}
           <div
+            aria-hidden="true"
             onClick={() => setOpen(false)}
             className="absolute inset-0 animate-fade-in bg-scrim"
           />

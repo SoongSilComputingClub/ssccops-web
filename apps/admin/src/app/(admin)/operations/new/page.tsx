@@ -5,7 +5,7 @@ const FIXED_KINDS: OperTypeCd[] = ["WORK", "MEETING"];
 
 export default async function Page({
   searchParams,
-}: PageProps<"/operations/new">) {
+}: Readonly<PageProps<"/operations/new">>) {
   const { workId, kind } = await searchParams;
   const fixedKind = FIXED_KINDS.find((cd) => cd === kind);
   return (

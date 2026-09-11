@@ -29,7 +29,7 @@ const REQ_COLOR: Record<string, string> = {
   "이관 안 함": "text-n500",
 };
 
-export function FileStep({ wizard }: { wizard: MemberImportWizard }) {
+export function FileStep({ wizard }: Readonly<{ wizard: MemberImportWizard }>) {
   const inputId = useId();
   const [dragging, setDragging] = useState(false);
 

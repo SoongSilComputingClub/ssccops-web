@@ -46,10 +46,10 @@ export async function MyProgramDetailPage({
    * 경우에는 뒤로 갈 곳이 필요해 링크를 남긴다.
    */
   embedded = false,
-}: {
+}: Readonly<{
   academicProgramId: number | null;
   embedded?: boolean;
-}) {
+}>) {
   if (academicProgramId === null) {
     return (
       <div className="flex flex-col gap-[16px]">
@@ -85,9 +85,9 @@ function BackLink() {
 
 function Body({
   result,
-}: {
+}: Readonly<{
   result: Awaited<ReturnType<typeof loadMyProgramDetail>>;
-}) {
+}>) {
   if (result.outcome === "unauthenticated") {
     return (
       <LoginGate
@@ -134,7 +134,7 @@ function Body({
   return <DetailBody data={result} />;
 }
 
-function DetailBody({ data }: { data: MyProgramDetailReady }) {
+function DetailBody({ data }: Readonly<{ data: MyProgramDetailReady }>) {
   const { program, curriculum, sessions, approvals, stats } = data;
   const badge = acdmActvSttsBadge(program.sttsCd);
 
@@ -276,12 +276,12 @@ function StatBox({
   value,
   hint,
   tone,
-}: {
+}: Readonly<{
   label: string;
   value: string;
   hint?: string;
   tone?: "default" | "accent" | "warn";
-}) {
+}>) {
   const valueColor =
     tone === "accent"
       ? "text-accent"
@@ -304,10 +304,10 @@ function StatBox({
 function CurriculumProgress({
   program,
   curriculum,
-}: {
+}: Readonly<{
   program: MyProgramDetailReady;
   curriculum: CurriculumItemWithSession[];
-}) {
+}>) {
   if (curriculum.length === 0) {
     return (
       <div className="text-[14px] text-n500">
@@ -360,7 +360,7 @@ function CurriculumProgress({
   );
 }
 
-function SessionHistory({ sessions }: { sessions: AcademicSessionSummary[] }) {
+function SessionHistory({ sessions }: Readonly<{ sessions: AcademicSessionSummary[] }>) {
   if (sessions.length === 0) {
     return (
       <div className="text-[14px] text-n500">
@@ -448,7 +448,7 @@ function approvalStatusView(code: string): {
   return { label: code, tone: "grey" };
 }
 
-function ApprovalFeed({ approvals }: { approvals: AcademicProgramApproval[] }) {
+function ApprovalFeed({ approvals }: Readonly<{ approvals: AcademicProgramApproval[] }>) {
   if (approvals.length === 0) {
     return (
       <div className="text-[14px] text-n500">

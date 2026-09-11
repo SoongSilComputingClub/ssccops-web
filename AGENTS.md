@@ -276,6 +276,11 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
   되살아나므로 그대로 두고 커밋한다.
 - **`.env*`는 통째로 ignore되고 `.env.example`만 예외다.** `NEXT_PUBLIC_*`은 빌드 타임에
   인라인되므로 **값을 바꾸면 `pnpm dev`를 재시작해야** 반영된다.
+- **`NEXT_PUBLIC_DEPLOY_ENV`는 dev 워커의 Cloudflare 빌드 변수에만 `dev`다**(#413). 없으면
+  prod — 잊으면 dev가 prod 아이콘·제목으로 보일 뿐 반대는 없다. 판정(`deployMarks`)은
+  `@ssccops/ui`에 있지만 **`process.env.NEXT_PUBLIC_DEPLOY_ENV`는 각 앱 `layout.tsx`·`manifest.ts`가
+  글자 그대로 읽어 넘긴다** — 패키지 안에서 읽으면 인라인을 못 받아 빈 값이 된다. 아이콘
+  파일은 `pnpm icons`(`scripts/icons/generate-icons.py`)의 산출물이라 손으로 고치지 않는다.
 - **`README.md`에는 PoC 시절 서술이 남아 있다**("API 미연동 PoC", zustand 시드). 지금은 대부분의
   도메인이 서버 연동이고 목 스토어는 `features/approval/model/use-approval-actions.ts`(어디서도
   쓰지 않는다)에만 잔재로 남아 있다 — 승인함은 `useApprovalDecisions`를 쓴다.

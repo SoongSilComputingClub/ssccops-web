@@ -55,6 +55,12 @@ import { useMemberCodes } from "../model/use-member-codes";
  * 결과 단계는 부모가 넘긴 `targets`가 아니라 응답의 `rows`로 그린다. 부모는 결과를 받는 즉시
  * 목록을 다시 부르고 선택을 비우는데(`onSaved`), 그 순간 `targets`는 비어 있다 — 응답이
  * 이름을 함께 실어 주는 이유가 이것이다.
+ *
+ * ── 상태는 부모가, 그림은 단계 컴포넌트가 (#409) ──────────────────
+ * 세 단계의 상태·훅은 `BulkGradeStatusSheet` 하나가 쥔다 — 단계를 오가도 입력이 살아 있어야
+ * 하고(미리보기에서 «이전»으로 돌아오면 값이 그대로여야 한다), 요청과 결과도 한 자리에서
+ * 이어져야 한다. 단계 컴포넌트(`BulkInputStep`·`BulkPreviewStep`·`BulkResultStep`)는 받은 값을
+ * 그리기만 하고 상태를 갖지 않는다. 잠금 판정은 순수 함수(`checkBulkInput`)다.
  */
 
 type Step = "input" | "preview" | "result";
@@ -72,12 +78,85 @@ const STATUS_TONE: Record<MemberBulkChangeStatus, BadgeTone> = {
   FAILED: "red",
 };
 
+/** 입력 단계의 잠금 판정. 전부 입력에서 파생된다 — 상태로 쥐지 않는다 */
+type BulkInputCheck = {
+  today: string;
+  endDateAllowed: boolean;
+  futureApplied: boolean;
+  endBeforeApplied: boolean;
+  tooLongReason: boolean;
+  /** 빈 문자열이면 잠기지 않았다 */
+  blockedReason: string;
+};
+
+/** «다음»·«N명 변경»을 잠그는 사유 — 먼저 걸리는 것 하나만 말한다 */
+function bulkBlockedReason({
+  targetCount,
+  isGrade,
+  pick,
+  futureApplied,
+  endBeforeApplied,
+  tooLongReason,
+}: Readonly<{
+  targetCount: number;
+  isGrade: boolean;
+  pick: string | null;
+  futureApplied: boolean;
+  endBeforeApplied: boolean;
+  tooLongReason: boolean;
+}>): string {
+  if (targetCount === 0) return "대상이 없습니다 — 목록에서 회원을 먼저 선택하세요";
+  if (pick === null) return `변경할 ${isGrade ? "등급" : "상태"}을 선택하세요`;
+  if (futureApplied) return "적용 일자는 오늘 이후일 수 없습니다";
+  if (endBeforeApplied) return "종료 예정일은 적용 일자보다 앞설 수 없습니다";
+  if (tooLongReason) return `변경 사유는 ${CHANGE_REASON_MAX}자를 넘을 수 없습니다`;
+  return "";
+}
+
+/** 서버가 거절할 입력을 미리 잠그는 규칙 — 한 명짜리 시트와 같다(파일 머리 주석) */
+function checkBulkInput({
+  isGrade,
+  targetCount,
+  pick,
+  appliedDate,
+  expectedEndDate,
+  reason,
+}: Readonly<{
+  isGrade: boolean;
+  targetCount: number;
+  pick: string | null;
+  appliedDate: string;
+  expectedEndDate: string;
+  reason: string;
+}>): BulkInputCheck {
+  /* 종료 예정일은 휴학·군휴학에만 자리가 있다 — 한 명짜리 시트와 같은 판단 */
+  const endDateAllowed =
+    !isGrade && pick !== null && statusAllowsExpectedEndDate(pick as MbrSttsCd);
+
+  const today = todayInSeoul();
+  const futureApplied = appliedDate !== "" && appliedDate > today;
+  const endBeforeApplied =
+    endDateAllowed && expectedEndDate !== "" && expectedEndDate < (appliedDate || today);
+  const tooLongReason = reason.trim().length > CHANGE_REASON_MAX;
+
+  const blockedReason = bulkBlockedReason({
+    targetCount,
+    isGrade,
+    pick,
+    futureApplied,
+    endBeforeApplied,
+    tooLongReason,
+  });
+
+  return { today, endDateAllowed, futureApplied, endBeforeApplied, tooLongReason, blockedReason };
+}
+
 export function BulkGradeStatusSheet({
   kind,
   targets,
   onClose,
   onSaved,
-}: {
+}: Readonly<{
   kind: "grd" | "stts" | null;
   /** memberId → 이름. 미리보기가 이름을 펼치고, 저장 시점에 id 목록으로 굳힌다 */
   targets: ReadonlyMap<number, string>;
@@ -87,7 +166,7 @@ export function BulkGradeStatusSheet({
    * 에만 부르지 않는다. 부모는 여기서 목록을 다시 부르고 선택을 비운다.
    */
   onSaved: (result: MemberBulkChangeResult) => void;
-}) {
+}>) {
   const { grades, statuses, loading } = useMemberCodes();
   const { bulkChangeGrade, bulkChangeStatus, changing, changeErrorMessage, clearChangeError } =
     useMemberActions();
@@ -106,28 +185,14 @@ export function BulkGradeStatusSheet({
   const options = isGrade ? grades : statuses;
   const pickedName = options.find((o) => o.code === pick)?.name ?? "";
 
-  /* 종료 예정일은 휴학·군휴학에만 자리가 있다 — 한 명짜리 시트와 같은 판단 */
-  const endDateAllowed =
-    !isGrade && pick !== null && statusAllowsExpectedEndDate(pick as MbrSttsCd);
-
-  const today = todayInSeoul();
-  const futureApplied = appliedDate !== "" && appliedDate > today;
-  const endBeforeApplied =
-    endDateAllowed && expectedEndDate !== "" && expectedEndDate < (appliedDate || today);
-  const tooLongReason = reason.trim().length > CHANGE_REASON_MAX;
-
-  const blockedReason =
-    targets.size === 0
-      ? "대상이 없습니다 — 목록에서 회원을 먼저 선택하세요"
-      : pick === null
-        ? `변경할 ${isGrade ? "등급" : "상태"}을 선택하세요`
-        : futureApplied
-          ? "적용 일자는 오늘 이후일 수 없습니다"
-          : endBeforeApplied
-            ? "종료 예정일은 적용 일자보다 앞설 수 없습니다"
-            : tooLongReason
-              ? `변경 사유는 ${CHANGE_REASON_MAX}자를 넘을 수 없습니다`
-              : "";
+  const check = checkBulkInput({
+    isGrade,
+    targetCount: targets.size,
+    pick,
+    appliedDate,
+    expectedEndDate,
+    reason,
+  });
 
   const close = () => {
     /* 요청이 나가 있는 동안은 닫지 않는다 — 닫히면 회원별 결과를 볼 자리가 사라진다 */
@@ -159,7 +224,7 @@ export function BulkGradeStatusSheet({
           mbrIds,
           aftrMbrSttsCd: pick as MbrSttsCd,
           sttsAplcnYmd: dateOrNull(appliedDate),
-          sttsEndPrnmntYmd: endDateAllowed ? dateOrNull(expectedEndDate) : null,
+          sttsEndPrnmntYmd: check.endDateAllowed ? dateOrNull(expectedEndDate) : null,
           sttsChgRsnCn: reasonOrNull(),
         });
 
@@ -174,100 +239,107 @@ export function BulkGradeStatusSheet({
 
   /* ── 결과 ─────────────────────────────────────────────────── */
   if (step === "result" && result) {
-    const { summary, rows } = result;
     return (
-      <Sheet
-        open
-        title={title}
-        hint={`${summary.totalCount}명 중 ${summary.changedCount}명 변경 · ${summary.skippedCount}명 이미 ${pickedName} · ${summary.failedCount}명 실패`}
-        onClose={close}
-        cancelLabel="닫기"
-      >
-        {/* 375px 화면의 시트 안에서는 4칸이 서지 않는다 — CSV 결과처럼 2×2로 접는다 */}
-        <div className="mb-4 grid grid-cols-2 gap-3">
-          <StatBox label="전체" value={summary.totalCount} />
-          <StatBox label="변경" value={summary.changedCount} tone="accent" />
-          <StatBox label="건너뜀 (이미 같은 값)" value={summary.skippedCount} />
-          <StatBox label="실패" value={summary.failedCount} tone="danger" />
-        </div>
-        {summary.skippedCount > 0 && (
-          <div className="mb-3 text-[13px] text-n500">
-            건너뛴 회원은 이미 같은 값이라 이력을 남기지 않았습니다 — 실패가 아닙니다.
-          </div>
-        )}
-        <div className="flex flex-col">
-          {rows.map((row) => (
-            <ResultRow key={row.memberId} row={row} />
-          ))}
-        </div>
-      </Sheet>
+      <BulkResultStep title={title} pickedName={pickedName} result={result} onClose={close} />
     );
   }
 
   /* ── 미리보기 ─────────────────────────────────────────────── */
   if (step === "preview") {
     return (
-      <Sheet
-        open
+      <BulkPreviewStep
         title={title}
-        hint={`아래 ${targets.size}명의 ${isGrade ? "등급" : "상태"}를 바꿉니다 · 되돌리려면 한 명씩 다시 바꿔야 합니다`}
+        isGrade={isGrade}
+        targets={targets}
+        pickedName={pickedName}
+        appliedDate={appliedDate}
+        expectedEndDate={expectedEndDate}
+        reason={reason}
+        endDateAllowed={check.endDateAllowed}
+        blockedReason={check.blockedReason}
+        changing={changing}
+        changeErrorMessage={changeErrorMessage}
+        clearChangeError={clearChangeError}
         onClose={close}
-        onOk={submit}
-        okLabel={changing ? "변경 중…" : `${targets.size}명 변경`}
-        okDisabled={changing || blockedReason !== ""}
-        okTitle={blockedReason || undefined}
-        cancelLabel="이전"
-        onCancel={() => {
-          if (changing) return;
-          clearChangeError();
-          setStep("input");
-        }}
-      >
-        <KeyValueGrid
-          className="mb-4"
-          items={[
-            { k: isGrade ? "등급" : "상태", v: <b>{pickedName}</b> },
-            /* 비워 두면 서버의 오늘이다 — 화면 시계로 채우지 않는 이유는 요청 타입 주석 */
-            { k: "적용 일자", v: appliedDate || "오늘 (서버 기준)" },
-            ...(endDateAllowed ? [{ k: "종료 예정일", v: expectedEndDate || "없음" }] : []),
-            { k: "변경 사유", v: reason.trim() || <span className="text-n500">없음</span> },
-          ]}
-        />
-        <Field label={`대상 ${targets.size}명`}>
-          {/*
-            이름을 전부 펼친다 — 다른 페이지에서 고른 사람이 섞여 있어 "N명"만으로는 누구인지
-            확인할 수 없다. 100명이어도 필로 접히면 몇 줄이고, 시트가 안에서 스크롤된다.
-          */}
-          <div className="flex flex-wrap gap-[6px]">
-            {/* 동명이인이 있을 수 있어 열쇠는 이름이 아니라 회원 번호다 */}
-            {[...targets].map(([memberId, name]) => (
-              <Pill key={memberId} tone="outline">
-                {name}
-              </Pill>
-            ))}
-          </div>
-        </Field>
-        <div className="mt-3 text-[13px] text-n500">
-          이미 {pickedName}인 회원은 건너뛰고 이력을 남기지 않습니다.
-        </div>
-        {/* 서버가 거절한 사유는 시트 안에 남긴다 — 한 명짜리 시트와 같은 자리 */}
-        {changeErrorMessage && (
-          <div className="mt-4 rounded-[12px] border border-danger/40 bg-danger/5 px-3 py-[9px] text-[13.5px] text-danger">
-            {changeErrorMessage}
-          </div>
-        )}
-      </Sheet>
+        onSubmit={submit}
+        onBack={() => setStep("input")}
+      />
     );
   }
 
   /* ── 입력 ─────────────────────────────────────────────────── */
   return (
+    <BulkInputStep
+      title={title}
+      isGrade={isGrade}
+      targetCount={targets.size}
+      options={options}
+      loading={loading}
+      pick={pick}
+      appliedDate={appliedDate}
+      expectedEndDate={expectedEndDate}
+      reason={reason}
+      check={check}
+      setPick={setPick}
+      setAppliedDate={setAppliedDate}
+      setExpectedEndDate={setExpectedEndDate}
+      setReason={setReason}
+      clearChangeError={clearChangeError}
+      onClose={close}
+      onNext={() => setStep("preview")}
+    />
+  );
+}
+
+/* ── 입력 ─────────────────────────────────────────────────── */
+function BulkInputStep({
+  title,
+  isGrade,
+  targetCount,
+  options,
+  loading,
+  pick,
+  appliedDate,
+  expectedEndDate,
+  reason,
+  check,
+  setPick,
+  setAppliedDate,
+  setExpectedEndDate,
+  setReason,
+  clearChangeError,
+  onClose,
+  onNext,
+}: Readonly<{
+  title: string;
+  isGrade: boolean;
+  targetCount: number;
+  options: ReadonlyArray<{ code: string; name: string }>;
+  loading: boolean;
+  pick: string | null;
+  appliedDate: string;
+  expectedEndDate: string;
+  reason: string;
+  check: BulkInputCheck;
+  setPick: (value: string) => void;
+  setAppliedDate: (value: string) => void;
+  setExpectedEndDate: (value: string) => void;
+  setReason: (value: string) => void;
+  /** 입력이 바뀌면 서버가 거절한 사유를 지운다 — 새 입력에 옛 사유가 붙어 있으면 안 된다 */
+  clearChangeError: () => void;
+  onClose: () => void;
+  onNext: () => void;
+}>) {
+  const { today, endDateAllowed, futureApplied, endBeforeApplied, tooLongReason, blockedReason } =
+    check;
+
+  return (
     <Sheet
       open
       title={title}
-      hint={`선택한 ${targets.size}명 · 변경할 값을 선택하세요`}
-      onClose={close}
-      onOk={() => setStep("preview")}
+      hint={`선택한 ${targetCount}명 · 변경할 값을 선택하세요`}
+      onClose={onClose}
+      onOk={onNext}
       okLabel="다음"
       okDisabled={blockedReason !== ""}
       okTitle={blockedReason || undefined}
@@ -358,11 +430,144 @@ export function BulkGradeStatusSheet({
   );
 }
 
+/* ── 미리보기 ─────────────────────────────────────────────── */
+function BulkPreviewStep({
+  title,
+  isGrade,
+  targets,
+  pickedName,
+  appliedDate,
+  expectedEndDate,
+  reason,
+  endDateAllowed,
+  blockedReason,
+  changing,
+  changeErrorMessage,
+  clearChangeError,
+  onClose,
+  onSubmit,
+  onBack,
+}: Readonly<{
+  title: string;
+  isGrade: boolean;
+  targets: ReadonlyMap<number, string>;
+  pickedName: string;
+  appliedDate: string;
+  expectedEndDate: string;
+  reason: string;
+  endDateAllowed: boolean;
+  blockedReason: string;
+  changing: boolean;
+  changeErrorMessage: string | null;
+  clearChangeError: () => void;
+  onClose: () => void;
+  onSubmit: () => void;
+  onBack: () => void;
+}>) {
+  const noun = isGrade ? "등급" : "상태";
+
+  return (
+    <Sheet
+      open
+      title={title}
+      hint={`아래 ${targets.size}명의 ${noun}를 바꿉니다 · 되돌리려면 한 명씩 다시 바꿔야 합니다`}
+      onClose={onClose}
+      onOk={onSubmit}
+      okLabel={changing ? "변경 중…" : `${targets.size}명 변경`}
+      okDisabled={changing || blockedReason !== ""}
+      okTitle={blockedReason || undefined}
+      cancelLabel="이전"
+      onCancel={() => {
+        if (changing) return;
+        clearChangeError();
+        onBack();
+      }}
+    >
+      <KeyValueGrid
+        className="mb-4"
+        items={[
+          { k: noun, v: <b>{pickedName}</b> },
+          /* 비워 두면 서버의 오늘이다 — 화면 시계로 채우지 않는 이유는 요청 타입 주석 */
+          { k: "적용 일자", v: appliedDate || "오늘 (서버 기준)" },
+          ...(endDateAllowed ? [{ k: "종료 예정일", v: expectedEndDate || "없음" }] : []),
+          { k: "변경 사유", v: reason.trim() || <span className="text-n500">없음</span> },
+        ]}
+      />
+      <Field label={`대상 ${targets.size}명`}>
+        {/*
+          이름을 전부 펼친다 — 다른 페이지에서 고른 사람이 섞여 있어 "N명"만으로는 누구인지
+          확인할 수 없다. 100명이어도 필로 접히면 몇 줄이고, 시트가 안에서 스크롤된다.
+        */}
+        <div className="flex flex-wrap gap-[6px]">
+          {/* 동명이인이 있을 수 있어 열쇠는 이름이 아니라 회원 번호다 */}
+          {[...targets].map(([memberId, name]) => (
+            <Pill key={memberId} tone="outline">
+              {name}
+            </Pill>
+          ))}
+        </div>
+      </Field>
+      <div className="mt-3 text-[13px] text-n500">
+        이미 {pickedName}인 회원은 건너뛰고 이력을 남기지 않습니다.
+      </div>
+      {/* 서버가 거절한 사유는 시트 안에 남긴다 — 한 명짜리 시트와 같은 자리 */}
+      {changeErrorMessage && (
+        <div className="mt-4 rounded-[12px] border border-danger/40 bg-danger/5 px-3 py-[9px] text-[13.5px] text-danger">
+          {changeErrorMessage}
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
+/* ── 결과 ─────────────────────────────────────────────────── */
+function BulkResultStep({
+  title,
+  pickedName,
+  result,
+  onClose,
+}: Readonly<{
+  title: string;
+  pickedName: string;
+  result: MemberBulkChangeResult;
+  onClose: () => void;
+}>) {
+  const { summary, rows } = result;
+
+  return (
+    <Sheet
+      open
+      title={title}
+      hint={`${summary.totalCount}명 중 ${summary.changedCount}명 변경 · ${summary.skippedCount}명 이미 ${pickedName} · ${summary.failedCount}명 실패`}
+      onClose={onClose}
+      cancelLabel="닫기"
+    >
+      {/* 375px 화면의 시트 안에서는 4칸이 서지 않는다 — CSV 결과처럼 2×2로 접는다 */}
+      <div className="mb-4 grid grid-cols-2 gap-3">
+        <StatBox label="전체" value={summary.totalCount} />
+        <StatBox label="변경" value={summary.changedCount} tone="accent" />
+        <StatBox label="건너뜀 (이미 같은 값)" value={summary.skippedCount} />
+        <StatBox label="실패" value={summary.failedCount} tone="danger" />
+      </div>
+      {summary.skippedCount > 0 && (
+        <div className="mb-3 text-[13px] text-n500">
+          건너뛴 회원은 이미 같은 값이라 이력을 남기지 않았습니다 — 실패가 아닙니다.
+        </div>
+      )}
+      <div className="flex flex-col">
+        {rows.map((row) => (
+          <ResultRow key={row.memberId} row={row} />
+        ))}
+      </div>
+    </Sheet>
+  );
+}
+
 /**
  * 회원별 결과 한 줄. 경고는 **그 회원 줄 아래**에 붙는다 — 요약으로 합치면 누구 것인지가
  * 사라지고, 경고의 쓸모는 사람이 가서 정리하는 것이다(상세의 경고 패널과 같은 배지·문구).
  */
-function ResultRow({ row }: { row: MemberBulkChangeRow }) {
+function ResultRow({ row }: Readonly<{ row: MemberBulkChangeRow }>) {
   return (
     <div className="border-t border-hairline py-[9px] first:border-t-0">
       <div className="flex items-center gap-2">

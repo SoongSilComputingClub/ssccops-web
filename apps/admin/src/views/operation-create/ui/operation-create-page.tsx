@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSessionStore } from "@/entities/session";
-import { CAPABILITY } from "@/entities/session";
+import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useCreateMeeting } from "@/features/meeting";
 import { assignableMemberLabel, useAssignableMembers } from "@/features/member";
@@ -69,11 +68,11 @@ const NO_MANAGE_REASON: Record<OperTypeCd, string> = {
 export function OperationCreatePage({
   workId: fixedWorkId,
   kind: fixedKind,
-}: {
+}: Readonly<{
   workId?: number;
   /** 특정 운영_유형 화면(예: 회의 목록의 '+ 등록')에서 들어온 경우 선택 카드를 그 유형 하나로 고정한다 */
   kind?: OperTypeCd;
-}) {
+}>) {
   const router = useRouter();
   /* 업무(WORK)·하위 업무(SUB_WORK)·회의(MEETING)가 모두 서버로 나간다 (#30 · #36 · #83) */
   const sessionMember = useSessionStore((s) => s.member);
@@ -404,13 +403,16 @@ export function OperationCreatePage({
           */}
           <div className={kinds.length > 1 ? "grid gap-3 lg:grid-cols-2" : "grid gap-3"}>
             {kinds.map((cd) => (
-              <div
+              /* 키보드 접근(#403) — grid 항목이라 늘어난 높이에서 내용이 가운데로 몰리지 않게 content-start */
+              <button
+                type="button"
                 key={cd}
+                aria-pressed={operTypeCd === cd}
                 onClick={() => setOperTypeCd(cd)}
                 className={
                   operTypeCd === cd
-                    ? "cursor-pointer rounded-[12px] bg-accent/8 p-[14px] shadow-[inset_0_0_0_1px_var(--color-accent)]"
-                    : "cursor-pointer rounded-[12px] border border-line p-[14px] hover:border-accent"
+                    ? "block w-full cursor-pointer content-start rounded-[12px] bg-accent/8 p-[14px] text-left shadow-[inset_0_0_0_1px_var(--color-accent)]"
+                    : "block w-full cursor-pointer content-start rounded-[12px] border border-line p-[14px] text-left hover:border-accent"
                 }
               >
                 <div className="flex items-center gap-2">
@@ -422,7 +424,7 @@ export function OperationCreatePage({
                 <div className="mt-1 text-[13px] leading-[1.5] text-n500">
                   {KIND_META[cd].note}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </Card>

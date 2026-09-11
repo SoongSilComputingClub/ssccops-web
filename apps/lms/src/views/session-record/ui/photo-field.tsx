@@ -22,7 +22,7 @@ export function PhotoField({
   onPick,
   onClear,
   disabled,
-}: {
+}: Readonly<{
   /** 재제출 화면에서 이미 올라간 사진 (없으면 null) */
   existing: AcademicSessionFileReference | null;
   /** 이번에 새로 고른 파일 (없으면 null) */
@@ -30,7 +30,7 @@ export function PhotoField({
   onPick: (file: File) => void;
   onClear: () => void;
   disabled?: boolean;
-}) {
+}>) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 고른 파일의 로컬 미리보기 주소. 파일이 바뀔 때만 새로 만들고, 이전 것은 아래 이펙트가 해제한다

@@ -326,8 +326,8 @@ export function SignupPage() {
           </div>
           <div className="mt-1 text-[13.5px] leading-[1.7] text-n400">
             본인 학번이 맞다면 이미 SSCC 명부에 등록된 회원일 가능성이 높습니다. 새로 가입하는
-            대신 <span className="font-semibold text-ink">기존 회원 정보에 이 계정을 연결</span>
-            하세요 — 기수 · 등급 · 역할이 그대로 유지됩니다. 연결에는 학번 · 회원명 · 전화번호가
+            대신 <span className="font-semibold text-ink">기존 회원 정보에 이 계정을 연결</span>하세요
+            — 기수 · 등급 · 역할이 그대로 유지됩니다. 연결에는 학번 · 회원명 · 전화번호가
             모두 필요하며 명부의 값과 다르면 연결되지 않습니다.
           </div>
           <div className="mt-[10px] flex gap-2">

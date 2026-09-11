@@ -8,6 +8,15 @@ export {
   type SelectableMember,
 } from "./model/use-member-selection";
 export { RoleSheet } from "./ui/role-sheet";
+/* 회원 하드 삭제 (임시 · ADR-0021 · #411 · 서버 #361) — 플래그가 꺼져 있으면 구역 자체가 없다 */
+export { useMemberDelete, type MemberDelete } from "./model/use-member-delete";
+export { MemberDeleteSheet } from "./ui/member-delete-sheet";
+export {
+  MEMBER_HARD_DELETE_ENABLED,
+  MEMBER_DELETE_TITLE,
+  MEMBER_DELETE_DESCRIPTION,
+  MEMBER_DELETED_MESSAGE,
+} from "./model/member-delete-copy";
 /* 서버 조회 (#46 · 서버 #76) */
 export { useMembers, type MemberList, type MemberListQuery } from "./model/use-members";
 export { useMemberDetail, type MemberDetailQuery } from "./model/use-member-detail";
@@ -40,6 +49,7 @@ export {
   toMyProfileSaveErrorMessage,
   toMemberChangeErrorMessage,
   toMemberHistoryErrorMessage,
+  toMemberDeleteErrorMessage,
 } from "./model/member-error";
 /* 회원 정보 수정 · 내 프로필 수정 (#47 · 서버 #77) */
 export {

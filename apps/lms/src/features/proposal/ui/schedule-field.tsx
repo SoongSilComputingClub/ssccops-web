@@ -41,13 +41,13 @@ export function ScheduleField({
   error,
   onChange,
   onFreeText,
-}: {
+}: Readonly<{
   qitem: Qitem;
   parts: ScheduleParts;
   error?: string;
   onChange: (parts: ScheduleParts, text: string) => void;
   onFreeText: () => void;
-}) {
+}>) {
   const commit = (next: ScheduleParts) => onChange(next, toScheduleText(next));
 
   const setPart = (patch: Partial<ScheduleParts>) => commit({ ...parts, ...patch });
@@ -199,12 +199,12 @@ function Select({
   className,
   children,
   ...rest
-}: {
+}: Readonly<{
   value: string;
   onChange: (value: string) => void;
   className?: string;
   children: ReactNode;
-} & Omit<SelectHTMLAttributes<HTMLSelectElement>, "value" | "onChange" | "className">) {
+} & Omit<SelectHTMLAttributes<HTMLSelectElement>, "value" | "onChange" | "className">>) {
   return (
     <select
       value={value}

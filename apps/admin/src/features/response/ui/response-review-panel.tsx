@@ -76,7 +76,7 @@ export function ResponseReviewPanel({
   acceptBlockReason,
   acceptNotice,
   onReviewed,
-}: {
+}: Readonly<{
   formId: number;
   formRspnsId: number;
   current: RspnsSttsCd;
@@ -98,7 +98,7 @@ export function ResponseReviewPanel({
   acceptNotice?: string;
   /** 처리 성공 후 호출 — 호출부가 상세를 **통째로** 다시 부른다 */
   onReviewed: () => void;
-}) {
+}>) {
   const { saving, review } = useResponseReview();
   /*
    * 판정 훅(features/auth의 useCan)을 쓰지 않고 세션을 직접 읽는다 — features끼리 가져오면

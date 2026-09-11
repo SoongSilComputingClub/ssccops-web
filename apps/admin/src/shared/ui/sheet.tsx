@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Button } from "./button";
 
 /** 중앙 모달 시트 — 등급/상태/역할 변경, 반려 사유 입력 등 */
@@ -13,10 +13,11 @@ export function Sheet({
   okLabel = "확인",
   okDisabled,
   okTitle,
+  okVariant = "primary",
   cancelLabel = "취소",
   onCancel,
   children,
-}: {
+}: Readonly<{
   open: boolean;
   title: string;
   hint?: string;
@@ -32,6 +33,14 @@ export function Sheet({
   okDisabled?: boolean;
   okTitle?: string;
   /**
+   * 확인 버튼의 색. 기본은 accent다.
+   *
+   * 되돌릴 수 없는 삭제(회원 하드 삭제 #411)만 `danger`를 쓴다 — 폼·행사 삭제는 되살릴 수
+   * 있어 기본색으로 두었고, 이쪽은 누르는 순간까지 위험이 눈에 남아야 한다. `ghost` 계열은
+   * 여기 없다 — 확인 버튼이 흐려지면 취소와 구분되지 않는다.
+   */
+  okVariant?: "primary" | "danger";
+  /**
    * 왼쪽 버튼의 글자와 동작. 기본은 «취소 → onClose»다.
    *
    * 단계가 있는 시트(회원 일괄 변경 #382 — 입력 → 미리보기 → 결과)가 미리보기에서 «이전»,
@@ -41,11 +50,30 @@ export function Sheet({
   cancelLabel?: string;
   onCancel?: () => void;
   children?: ReactNode;
-}) {
+}>) {
+  /*
+   * Esc로 닫는다 (ssccops-web#403).
+   *
+   * 스크림(아래 배경 div)은 클릭으로 닫히지만 키보드로 «누르는» 대상이 아니다 — 화면 전체를
+   * 덮는 배경에 `role="button"`·`tabIndex`를 붙이면 Tab 정거장이 하나 늘 뿐 뜻이 없다. 모달을
+   * 키보드로 나가는 규약은 Esc이고, 시트가 열릴 때 초점을 안으로 옮기지 않으므로 시트
+   * 컨테이너의 `onKeyDown`은 초점이 밖에 있으면 받지 못한다 — 드로어(mobile-nav)와 같이
+   * document에서 받는다. 배경은 `aria-hidden`으로 보조기기에서 치운다.
+   */
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
   return (
     <>
       <div
+        aria-hidden="true"
         className="fixed inset-0 z-[90] animate-fade-in bg-scrim"
         onClick={onClose}
       />
@@ -63,7 +91,7 @@ export function Sheet({
             {cancelLabel}
           </Button>
           {onOk && (
-            <Button onClick={onOk} disabled={okDisabled} title={okTitle}>
+            <Button variant={okVariant} onClick={onOk} disabled={okDisabled} title={okTitle}>
               {okLabel}
             </Button>
           )}

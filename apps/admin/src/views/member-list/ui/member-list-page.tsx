@@ -94,7 +94,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 /** URL은 사용자가 손으로 고칠 수 있다 — 모르는 정렬은 첫 번째로 떨어뜨린다 */
 function parseSortIdx(value: string | null): number {
   const idx = SORTS.findIndex((s) => s.param === value);
-  return idx < 0 ? 0 : idx;
+  return Math.max(0, idx);
 }
 
 export function MemberListPage() {
@@ -340,8 +340,16 @@ function MemberListView() {
         const locked = !checked && selection.full;
         return (
           <span className="flex items-center gap-[10px]">
-            {/* 행 클릭을 여기서 끊는다 — 근거는 이 열의 첫 주석 */}
-            <span className="flex flex-none" onClick={(e) => e.stopPropagation()}>
+            {/*
+              행 클릭을 여기서 끊는다 — 근거는 이 열의 첫 주석. 누르는 것은 안의 체크박스이고
+              이 span은 울타리일 뿐이라 role="presentation"으로 둔다(#403). 키는 행의
+              onKeyActivate가 자기 자신에서 난 것만 받으므로 여기서 끊을 것이 없다.
+            */}
+            <span
+              role="presentation"
+              className="flex flex-none"
+              onClick={(e) => e.stopPropagation()}
+            >
               <input
                 type="checkbox"
                 aria-label={`${m.name} 선택`}

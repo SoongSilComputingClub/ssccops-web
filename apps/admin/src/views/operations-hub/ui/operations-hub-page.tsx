@@ -411,10 +411,12 @@ export function OperationsHubPage() {
                         ) : (
                           <div className="flex flex-col gap-2">
                             {selectedRows.map((r) => (
-                              <div
+                              /* 키보드 접근(#403) */
+                              <button
+                                type="button"
                                 key={r.key}
                                 onClick={() => router.push(r.href)}
-                                className="flex cursor-pointer items-center gap-2"
+                                className="flex w-full cursor-pointer items-center gap-2 text-left"
                               >
                                 <Badge tone={kindTone(r.operTypeCd)}>
                                   {OPER_TYPE_NM[r.operTypeCd]}
@@ -423,7 +425,7 @@ export function OperationsHubPage() {
                                   {r.ttl}
                                 </div>
                                 <div className="flex-none text-[12.5px] text-n500">{r.pic}</div>
-                              </div>
+                              </button>
                             ))}
                           </div>
                         )}
@@ -460,9 +462,14 @@ export function OperationsHubPage() {
                             {OPER_TYPE_NM[r.operTypeCd]}
                           </Badge>
                         </div>
-                        <div
+                        {/*
+                          키보드 접근(#403) — lg에서는 grid 항목이라 늘어난 높이에서 내용이
+                          가운데로 몰리지 않게 content-start
+                        */}
+                        <button
+                          type="button"
                           onClick={() => router.push(r.href)}
-                          className="mt-2 w-full min-w-0 cursor-pointer lg:mt-0 lg:w-auto lg:border-t lg:border-hairline lg:py-3 lg:pr-3"
+                          className="mt-2 w-full min-w-0 cursor-pointer content-start text-left lg:mt-0 lg:w-auto lg:border-t lg:border-hairline lg:py-3 lg:pr-3"
                         >
                           {/* 카드에서는 truncate를 풀어 줄바꿈시킨다 — 275px에서 자르면 제목이 거의 남지 않는다 */}
                           <div className="text-[15px] font-semibold hover:text-accent lg:truncate">
@@ -471,7 +478,7 @@ export function OperationsHubPage() {
                           <div className="mt-[2px] text-[13.5px] text-n500 lg:truncate">
                             {r.ext}
                           </div>
-                        </div>
+                        </button>
                         <div className="mt-2 text-[14px] text-n400 lg:mt-0 lg:border-t lg:border-hairline lg:py-3">
                           {r.date}
                         </div>
@@ -492,9 +499,11 @@ export function OperationsHubPage() {
                   )}
                   {data.works.map((w) => (
                     <div key={w.workId}>
-                      <div
+                      {/* 키보드 접근(#403) */}
+                      <button
+                        type="button"
                         onClick={() => router.push(ROUTES.workDetail(w.workId))}
-                        className="flex cursor-pointer items-center gap-2"
+                        className="flex w-full cursor-pointer items-center gap-2 text-left"
                       >
                         <Badge tone={workSttsTone(w.workStatus)}>
                           {WORK_STTS_NM[w.workStatus]}
@@ -502,19 +511,21 @@ export function OperationsHubPage() {
                         <div className="text-[15px] font-semibold hover:text-accent">
                           {w.title}
                         </div>
-                      </div>
+                      </button>
                       <div className="mt-2 flex flex-col gap-2 border-l border-line pl-[14px]">
                         {data.subWorks
                           .filter((sw) => sw.work?.workId === w.workId)
                           .map((sw) => {
                             const badge = subWorkBadge(sw);
                             return (
-                              <div
+                              /* 키보드 접근(#403) */
+                              <button
+                                type="button"
                                 key={sw.subWorkId}
                                 onClick={() =>
                                   router.push(ROUTES.subWorkDetail(sw.subWorkId))
                                 }
-                                className="flex cursor-pointer items-center gap-2"
+                                className="flex w-full cursor-pointer items-center gap-2 text-left"
                               >
                                 <Badge tone={badge.tone}>{badge.label}</Badge>
                                 <div className="min-w-0 truncate text-[14px] hover:text-accent">
@@ -523,7 +534,7 @@ export function OperationsHubPage() {
                                 <div className="flex-none text-[12.5px] text-n500">
                                   {WORK_STTS_NM[sw.workStatus]} · {sw.progressRate}%
                                 </div>
-                              </div>
+                              </button>
                             );
                           })}
                       </div>
@@ -536,10 +547,12 @@ export function OperationsHubPage() {
                     <div className="text-[13.5px] text-n500">등록된 회의가 없습니다</div>
                   )}
                   {data.meetings.map((m) => (
-                    <div
+                    /* 키보드 접근(#403) */
+                    <button
+                      type="button"
                       key={m.meetingId}
                       onClick={() => router.push(ROUTES.meetingDetail(m.meetingId))}
-                      className="flex cursor-pointer items-center gap-2"
+                      className="flex w-full cursor-pointer items-center gap-2 text-left"
                     >
                       <Badge tone={mtgSttsTone(m.meetingStatus)}>
                         {m.meetingStatus ? MTG_STTS_NM[m.meetingStatus] : "-"}
@@ -550,7 +563,7 @@ export function OperationsHubPage() {
                       <div className="flex-none text-[12.5px] text-n500">
                         {formatDt(m.startAt)}
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </Card>

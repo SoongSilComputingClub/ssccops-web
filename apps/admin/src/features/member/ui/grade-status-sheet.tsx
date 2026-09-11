@@ -37,14 +37,14 @@ export function GradeStatusSheet({
   kind,
   onClose,
   onChanged,
-}: {
+}: Readonly<{
   /** 서버가 준 회원 — 현재 등급·상태의 근거다 */
   member: MemberDetail;
   kind: "grd" | "stts" | null;
   onClose: () => void;
   /** 변경 성공. 응답의 회원·경고를 상세 화면이 받아 뱃지와 이력을 갈아 끼운다 */
   onChanged: (result: MemberChangeResult) => void;
-}) {
+}>) {
   const { grades, statuses, loading } = useMemberCodes();
   const { changeGrade, changeStatus, changing, changeErrorMessage, clearChangeError } =
     useMemberActions();

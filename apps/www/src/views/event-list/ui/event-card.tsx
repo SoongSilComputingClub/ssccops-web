@@ -9,7 +9,7 @@ import { formatEventDate } from "@/shared/lib/date";
 import { Badge, Pill } from "@/shared/ui";
 
 /** 목록 카드 — 대표 이미지 · 배지 · 제목 · 분류 · 일시 · 장소 */
-export function EventCard({ event }: { event: PublicEventSummary }) {
+export function EventCard({ event }: Readonly<{ event: PublicEventSummary }>) {
   const phase = eventPhaseBadge(event.eventPhase);
   const receipt = eventReceiptBadge(event.receiptStatus);
   const date = formatEventDate(event.eventBgngDt);

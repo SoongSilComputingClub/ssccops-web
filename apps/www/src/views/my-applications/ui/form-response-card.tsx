@@ -37,11 +37,11 @@ import { Badge, Pill } from "@/shared/ui";
 export function FormResponseCard({
   response,
   reviewOpinion,
-}: {
+}: Readonly<{
   response: MyFormResponseOverview;
   /** 수정요청 사유 — 조회하지 못했거나 해당 없으면 null */
   reviewOpinion: string | null;
-}) {
+}>) {
   const status = RESPONSE_STATUS_BADGE[response.rspnsSttsCd];
   const changesRequested = response.rspnsSttsCd === "CHANGES_REQUESTED";
   const submittedAt = response.sbmsnDt ?? response.mdfcnDt;

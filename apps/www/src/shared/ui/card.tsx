@@ -13,10 +13,10 @@ export { Card };
 export function EmptyState({
   title,
   description,
-}: {
+}: Readonly<{
   title: string;
   description?: string;
-}) {
+}>) {
   return (
     <Card className="flex flex-col items-center gap-[6px] px-[18px] py-[52px] text-center">
       <div className="text-[15px] text-n300">{title}</div>

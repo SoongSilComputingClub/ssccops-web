@@ -19,6 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ssccops/ui": "workspace:*",
     "react-markdown": "^10.1.0"
   },
   "peerDependencies": {

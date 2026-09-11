@@ -43,7 +43,7 @@ import {
 const NO_MANAGE =
   "권한 관리(ROLE_MANAGE) 권한이 없어 역할의 권한을 볼 수 없습니다 — 최고관리자에게 요청해주세요";
 
-export function RoleAuthoritiesPage({ roleId }: { roleId: number }) {
+export function RoleAuthoritiesPage({ roleId }: Readonly<{ roleId: number }>) {
   const canManage = useCan(CAPABILITY.ROLE_MANAGE);
 
   /*
@@ -64,7 +64,7 @@ export function RoleAuthoritiesPage({ roleId }: { roleId: number }) {
   return <RoleAuthoritiesEditorView roleId={roleId} />;
 }
 
-function RoleAuthoritiesEditorView({ roleId }: { roleId: number }) {
+function RoleAuthoritiesEditorView({ roleId }: Readonly<{ roleId: number }>) {
   const router = useRouter();
   const editor = useRoleAuthorities(roleId);
 
@@ -106,8 +106,7 @@ function RoleAuthoritiesEditorView({ roleId }: { roleId: number }) {
                 className="cursor-pointer text-accent"
               >
                 권한 관리
-              </button>
-              에서 다룹니다.
+              </button>에서 다룹니다.
             </div>
           </>
         )}
@@ -126,10 +125,10 @@ function RoleAuthoritiesEditorView({ roleId }: { roleId: number }) {
 function ChangeSummary({
   editor,
   onSave,
-}: {
+}: Readonly<{
   editor: RoleAuthoritiesEditor;
   onSave: () => void;
-}) {
+}>) {
   return (
     <Card className="mb-4">
       <div className="flex items-baseline gap-[10px]">
@@ -187,11 +186,11 @@ function DiffLine({
   tone,
   label,
   items,
-}: {
+}: Readonly<{
   tone: "add" | "remove";
   label: string;
   items: readonly { authrtCd: string; authrtNm: string }[];
-}) {
+}>) {
   return (
     <div className="flex flex-wrap items-center gap-[6px]">
       <Badge tone={tone === "add" ? "blue" : "red"}>
@@ -208,7 +207,7 @@ function DiffLine({
 }
 
 /** 체크박스 트리 — 들여쓰기로 계층을, 배지로 상속·변경분을 드러낸다 */
-function AuthorityCheckTree({ editor }: { editor: RoleAuthoritiesEditor }) {
+function AuthorityCheckTree({ editor }: Readonly<{ editor: RoleAuthoritiesEditor }>) {
   const rows = flattenAuthorities(editor.tree);
 
   if (rows.length === 0) {

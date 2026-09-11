@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import type { EventDetail, EventSaveInput } from "@/entities/event";
+import type { FormSummary } from "@/entities/form";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { fromInput, toInput } from "@/shared/lib/date";
 import {
@@ -86,13 +87,13 @@ function ImagePickButton({
   disabled,
   hint,
   onPick,
-}: {
+}: Readonly<{
   label: string;
   disabled: boolean;
   /** 잠겼을 때의 사유 — 버튼을 감추지 않고 이유를 붙인다(AGENTS.md) */
   hint?: string;
   onPick: (file: File) => void;
-}) {
+}>) {
   const pickerRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -121,6 +122,31 @@ function ImagePickButton({
   );
 }
 
+/*
+ * 지금 저장이 **연결을 끊는가**. 확인 팝업을 띄울 조건이다 (ssccops#270).
+ *
+ * 서버가 가드를 걷어(ssccops-server#336) 신청이 있어도 연결이 바뀐다. 조용히 바뀌면 안 되는
+ * 일이라 저장 전에 무엇이 끊기는지 알린다.
+ *
+ * **원래 붙어 있던 폼이 있을 때만** 뜬다. `없음 → 폼`은 잃는 것이 없고, 등록 화면은
+ * initial이 null이라 자연히 걸리지 않는다. 뜨는 경우는 `폼 → 다른 폼`과 `폼 → 없음` 둘이다.
+ */
+function isLinkBeingBroken(initial: EventDetail | null, nextFormId: number | null): boolean {
+  return initial?.formId != null && initial.formId !== nextFormId;
+}
+
+/* 끊기는 폼의 이름. 후보 조회가 실패했거나 폼이 지워졌으면 번호로 말한다 (폼 연결 SelectField와 같다) */
+function brokenFormLabelOf(
+  initial: EventDetail | null,
+  forms: readonly FormSummary[],
+  linkBeingBroken: boolean,
+): string {
+  if (!linkBeingBroken) return "";
+  return (
+    forms.find((f) => f.formId === initial?.formId)?.formTtlNm ?? `신청서 #${initial?.formId}`
+  );
+}
+
 export function EventForm({
   initial,
   eventId,
@@ -129,7 +155,7 @@ export function EventForm({
   lockedHint,
   submitLabel,
   onSubmit,
-}: {
+}: Readonly<{
   /** 수정이면 현재 값 전부(전체 교체 폼) · 등록이면 null */
   initial: EventDetail | null;
   /**
@@ -146,7 +172,7 @@ export function EventForm({
   lockedHint: string;
   submitLabel: string;
   onSubmit: (input: EventSaveInput) => void;
-}) {
+}>) {
   const { categories, errorMessage: categoryError } = useEventCategoryOptions();
   const { forms, errorMessage: formError } = useFormLinkOptions();
   const imageUpload = useEventImageUpload();
@@ -241,22 +267,9 @@ export function EventForm({
     });
   };
 
-  /*
-   * 지금 저장이 **연결을 끊는가**. 확인 팝업을 띄울 조건이다 (ssccops#270).
-   *
-   * 서버가 가드를 걷어(ssccops-server#336) 신청이 있어도 연결이 바뀐다. 조용히 바뀌면 안 되는
-   * 일이라 저장 전에 무엇이 끊기는지 알린다.
-   *
-   * **원래 붙어 있던 폼이 있을 때만** 뜬다. `없음 → 폼`은 잃는 것이 없고, 등록 화면은
-   * initial이 null이라 자연히 걸리지 않는다. 뜨는 경우는 `폼 → 다른 폼`과 `폼 → 없음` 둘이다.
-   */
   const nextFormId = formId ? Number(formId) : null;
-  const linkBeingBroken = initial?.formId != null && initial.formId !== nextFormId;
-
-  /* 끊기는 폼의 이름. 후보 조회가 실패했거나 폼이 지워졌으면 번호로 말한다 (아래 SelectField와 같다) */
-  const brokenFormLabel = linkBeingBroken
-    ? (forms.find((f) => f.formId === initial?.formId)?.formTtlNm ?? `신청서 #${initial?.formId}`)
-    : "";
+  const linkBeingBroken = isLinkBeingBroken(initial, nextFormId);
+  const brokenFormLabel = brokenFormLabelOf(initial, forms, linkBeingBroken);
 
   /*
    * 후보 목록에 지금 값이 없어도 선택 상태가 비어 보이지 않게 한 줄을 보탠다 — 분류가 방금
@@ -287,7 +300,7 @@ export function EventForm({
     if (eventBgngDt && eventEndDt && eventEndDt < eventBgngDt) {
       next.eventPeriod = "종료 일시가 시작 일시보다 빠릅니다";
     }
-    if (ptcpLmtCnt && (!/^[0-9]+$/.test(ptcpLmtCnt) || Number(ptcpLmtCnt) < 1)) {
+    if (ptcpLmtCnt && (!/^\d+$/.test(ptcpLmtCnt) || Number(ptcpLmtCnt) < 1)) {
       next.ptcpLmtCnt = "정원은 1 이상의 숫자여야 합니다 — 비워 두면 정원 없음입니다";
     }
 
@@ -480,75 +493,20 @@ export function EventForm({
         </Card>
       </div>
 
-      <Card className="mt-4">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <SectionLabel>{FIELD_LABEL.eventContent} (Markdown)</SectionLabel>
-          <Segmented
-            options={BODY_TABS}
-            value={bodyTab}
-            onChange={setBodyTab}
-            className="w-[168px]"
-          />
-          <div className="flex-1" />
-          {/*
-            미리보기 중에는 첨부 버튼을 감춘다 — 넣을 커서 자리가 없다. 잠그지 않고 감추는
-            것은 사유가 권한이 아니라 지금 보는 화면이라서다. 잠근 버튼에 붙일 이유가
-            "편집으로 돌아가세요" 하나뿐이면 그 버튼은 그 자리에 없는 편이 낫다.
-          */}
-          {bodyTab === "편집" && (
-            <ImagePickButton
-              label={uploadingAt === "body" ? "올리는 중…" : "이미지 첨부"}
-              disabled={busy || imageUpload.pending || Boolean(attachLock)}
-              hint={attachLock}
-              onPick={(file) => void runUpload("body", file, insertImageMarkdown)}
-            />
-          )}
-        </div>
-        {/*
-          편집칸을 언마운트하지 않고 hidden으로 접는다. 지우면 돌아왔을 때 커서 자리와
-          스크롤이 사라지고, insertImageMarkdown이 잡아 둔 ref도 끊긴다.
-        */}
-        <div hidden={bodyTab !== "편집"}>
-          <Field label={null} error={errors.mtxtCn}>
-            <TextArea
-              ref={mtxtRef}
-              value={mtxtCn}
-              onChange={(e) => setMtxtCn(e.target.value)}
-              className="min-h-[260px] font-mono text-[16px] leading-[1.8] lg:text-[13.5px]"
-              placeholder={"# 행사 안내\n\nMarkdown으로 작성합니다. 회원에게 보이는 본문입니다."}
-            />
-          </Field>
-        </div>
-        {bodyTab === "미리보기" && (
-          <div className="min-h-[260px] rounded-[12px] border border-line bg-bg px-[16px] py-[6px]">
-            {mtxtCn.trim() ? (
-              <Markdown>{mtxtCn}</Markdown>
-            ) : (
-              <div className="py-[110px] text-center text-[13.5px] text-n500">
-                아직 본문이 없습니다 — 편집에서 적으면 여기에 그려집니다
-              </div>
-            )}
-          </div>
-        )}
-        {/* 오류는 미리보기에서도 보여야 한다 — 상한을 넘긴 채 넘어올 수 있다 */}
-        {bodyTab === "미리보기" && errors.mtxtCn && (
-          <div className="mt-2 text-[12.5px] text-danger">{errors.mtxtCn}</div>
-        )}
-        {/*
-          업로드 실패는 토스트가 아니라 이 자리에 남긴다 — 본문과 대표 이미지가 같은 훅을
-          쓰므로 무엇이 왜 막혔는지 다시 볼 수 있어야 하고, 사라지는 알림이면 파일을 다시
-          고르는 사이에 문구가 없어진다.
-        */}
-        {uploadError && <div className="mt-2 text-[12.5px] text-danger">{uploadError}</div>}
-        {/* 글자 수는 두 화면 모두에서 뜻이 있다. 첨부 안내는 편집에만 있다 */}
-        <div className="mt-2 text-[12.5px] text-n500">
-          {mtxtCn.length.toLocaleString()} / {MTXT_CN_MAX_LENGTH.toLocaleString()}자
-          {bodyTab === "편집" &&
-            (attachLock
-              ? ` — ${attachLock}`
-              : " — 이미지를 첨부하면 커서 자리에 이미지 문법이 들어갑니다")}
-        </div>
-      </Card>
+      <EventBodyEditor
+        bodyTab={bodyTab}
+        setBodyTab={setBodyTab}
+        mtxtCn={mtxtCn}
+        setMtxtCn={setMtxtCn}
+        mtxtRef={mtxtRef}
+        error={errors.mtxtCn}
+        uploadingAt={uploadingAt}
+        busy={busy}
+        uploadPending={imageUpload.pending}
+        attachLock={attachLock}
+        uploadError={uploadError}
+        onPick={(file) => void runUpload("body", file, insertImageMarkdown)}
+      />
 
       <div className="mt-5">
         <Button
@@ -562,45 +520,181 @@ export function EventForm({
         {!canManage && <div className="mt-2 text-[13.5px] text-n500">{lockedHint}</div>}
       </div>
 
-      {/*
-        연결을 끊기 전 확인 (ssccops#270 · 서버 ssccops-server#336).
-        문구가 말하는 셋은 서버가 코드로 확인한 것이다 — 지어내지 않는다.
-      */}
-      <Sheet
-        open={pendingSave !== null}
-        title="연결한 신청서를 바꿉니다"
-        hint={
-          brokenFormLabel
-            ? `${brokenFormLabel} 연결이 이 행사에서 풀립니다`
-            : "지금 연결된 신청서가 이 행사에서 떨어집니다"
-        }
-        okLabel="바꾸고 저장"
-        onClose={() => setPendingSave(null)}
-        onOk={() => {
-          const input = pendingSave;
-          setPendingSave(null);
-          if (input) onSubmit(input);
-        }}
-      >
-        <ul className="flex list-disc flex-col gap-[10px] pl-[18px] text-[14px] leading-[1.55]">
-          <li>
-            <b>받은 응답은 지워지지 않습니다.</b> 옛 신청서에 그대로 남습니다. 다만 신청자
-            화면에서는 <b>내 신청</b>이 아니라 <b>내 폼 응답</b>으로 옮겨 보입니다.
-          </li>
-          <li>
-            {/* 숫자를 말할 수 있는 것은 확정 참가자뿐이다 — 심사 중 응답 수는 화면에 오지 않는다 */}
-            <b>
-              이미 확정된 참가자
-              {initial && initial.confirmedCount > 0 ? ` ${initial.confirmedCount}명은` : "는"}
-            </b>{" "}
-            명단에 그대로 남습니다.
-          </li>
-          <li>
-            <b>옛 신청서의 응답으로는 이 행사의 참가자를 더 이상 등록할 수 없습니다.</b> 심사 중인
-            응답이 있다면 승인하더라도 이 행사 명단에는 올릴 수 없습니다.
-          </li>
-        </ul>
-      </Sheet>
+      <FormLinkChangeSheet
+        pendingSave={pendingSave}
+        setPendingSave={setPendingSave}
+        brokenFormLabel={brokenFormLabel}
+        initial={initial}
+        onSubmit={onSubmit}
+      />
     </>
+  );
+}
+
+/*
+ * 본문 칸 — 편집/미리보기 전환 · 이미지 첨부 · 글자 수 (ssccops#274).
+ * 상태(`bodyTab`·`mtxtCn`·업로드 진행·오류)는 폼이 쥐고 여기는 그리기만 한다 — 첨부한
+ * 이미지가 커서 자리에 들어가려면 textarea ref와 본문 값이 폼의 `insertImageMarkdown`과
+ * 같은 것을 가리켜야 해서다.
+ */
+function EventBodyEditor({
+  bodyTab,
+  setBodyTab,
+  mtxtCn,
+  setMtxtCn,
+  mtxtRef,
+  error,
+  uploadingAt,
+  busy,
+  uploadPending,
+  attachLock,
+  uploadError,
+  onPick,
+}: Readonly<{
+  bodyTab: (typeof BODY_TABS)[number];
+  setBodyTab: (tab: (typeof BODY_TABS)[number]) => void;
+  mtxtCn: string;
+  setMtxtCn: (value: string) => void;
+  mtxtRef: RefObject<HTMLTextAreaElement | null>;
+  /** 본문 칸의 검증 오류 — 미리보기에서도 보여야 한다 */
+  error: string | undefined;
+  uploadingAt: "body" | "thumbnail" | null;
+  busy: boolean;
+  uploadPending: boolean;
+  /** 첨부를 잠글 사유 — 없으면 undefined(잠기지 않았다) */
+  attachLock: string | undefined;
+  uploadError: string | null;
+  onPick: (file: File) => void;
+}>) {
+  return (
+    <Card className="mt-4">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <SectionLabel>{FIELD_LABEL.eventContent} (Markdown)</SectionLabel>
+        <Segmented
+          options={BODY_TABS}
+          value={bodyTab}
+          onChange={setBodyTab}
+          className="w-[168px]"
+        />
+        <div className="flex-1" />
+        {/*
+          미리보기 중에는 첨부 버튼을 감춘다 — 넣을 커서 자리가 없다. 잠그지 않고 감추는
+          것은 사유가 권한이 아니라 지금 보는 화면이라서다. 잠근 버튼에 붙일 이유가
+          "편집으로 돌아가세요" 하나뿐이면 그 버튼은 그 자리에 없는 편이 낫다.
+        */}
+        {bodyTab === "편집" && (
+          <ImagePickButton
+            label={uploadingAt === "body" ? "올리는 중…" : "이미지 첨부"}
+            disabled={busy || uploadPending || Boolean(attachLock)}
+            hint={attachLock}
+            onPick={onPick}
+          />
+        )}
+      </div>
+      {/*
+        편집칸을 언마운트하지 않고 hidden으로 접는다. 지우면 돌아왔을 때 커서 자리와
+        스크롤이 사라지고, insertImageMarkdown이 잡아 둔 ref도 끊긴다.
+      */}
+      <div hidden={bodyTab !== "편집"}>
+        <Field label={null} error={error}>
+          <TextArea
+            ref={mtxtRef}
+            value={mtxtCn}
+            onChange={(e) => setMtxtCn(e.target.value)}
+            className="min-h-[260px] font-mono text-[16px] leading-[1.8] lg:text-[13.5px]"
+            placeholder={"# 행사 안내\n\nMarkdown으로 작성합니다. 회원에게 보이는 본문입니다."}
+          />
+        </Field>
+      </div>
+      {bodyTab === "미리보기" && (
+        <div className="min-h-[260px] rounded-[12px] border border-line bg-bg px-[16px] py-[6px]">
+          {mtxtCn.trim() ? (
+            <Markdown>{mtxtCn}</Markdown>
+          ) : (
+            <div className="py-[110px] text-center text-[13.5px] text-n500">
+              아직 본문이 없습니다 — 편집에서 적으면 여기에 그려집니다
+            </div>
+          )}
+        </div>
+      )}
+      {/* 오류는 미리보기에서도 보여야 한다 — 상한을 넘긴 채 넘어올 수 있다 */}
+      {bodyTab === "미리보기" && error && (
+        <div className="mt-2 text-[12.5px] text-danger">{error}</div>
+      )}
+      {/*
+        업로드 실패는 토스트가 아니라 이 자리에 남긴다 — 본문과 대표 이미지가 같은 훅을
+        쓰므로 무엇이 왜 막혔는지 다시 볼 수 있어야 하고, 사라지는 알림이면 파일을 다시
+        고르는 사이에 문구가 없어진다.
+      */}
+      {uploadError && <div className="mt-2 text-[12.5px] text-danger">{uploadError}</div>}
+      {/* 글자 수는 두 화면 모두에서 뜻이 있다. 첨부 안내는 편집에만 있다 */}
+      <div className="mt-2 text-[12.5px] text-n500">
+        {mtxtCn.length.toLocaleString()} / {MTXT_CN_MAX_LENGTH.toLocaleString()}자
+        {bodyTab === "편집" &&
+          (attachLock
+            ? ` — ${attachLock}`
+            : " — 이미지를 첨부하면 커서 자리에 이미지 문법이 들어갑니다")}
+      </div>
+    </Card>
+  );
+}
+
+/*
+ * 연결을 끊기 전 확인 (ssccops#270 · 서버 ssccops-server#336).
+ * 문구가 말하는 셋은 서버가 코드로 확인한 것이다 — 지어내지 않는다.
+ *
+ * 열림 여부는 `pendingSave`가 말한다 — 폼이 검증을 통과한 입력을 붙잡아 둔 것이 곧 «확인
+ * 중»이다(폼의 `pendingSave` 주석).
+ */
+function FormLinkChangeSheet({
+  pendingSave,
+  setPendingSave,
+  brokenFormLabel,
+  initial,
+  onSubmit,
+}: Readonly<{
+  pendingSave: EventSaveInput | null;
+  setPendingSave: (input: EventSaveInput | null) => void;
+  /** 끊기는 폼의 이름. 비어 있으면 이름을 모른다 */
+  brokenFormLabel: string;
+  initial: EventDetail | null;
+  onSubmit: (input: EventSaveInput) => void;
+}>) {
+  return (
+    <Sheet
+      open={pendingSave !== null}
+      title="연결한 신청서를 바꿉니다"
+      hint={
+        brokenFormLabel
+          ? `${brokenFormLabel} 연결이 이 행사에서 풀립니다`
+          : "지금 연결된 신청서가 이 행사에서 떨어집니다"
+      }
+      okLabel="바꾸고 저장"
+      onClose={() => setPendingSave(null)}
+      onOk={() => {
+        const input = pendingSave;
+        setPendingSave(null);
+        if (input) onSubmit(input);
+      }}
+    >
+      <ul className="flex list-disc flex-col gap-[10px] pl-[18px] text-[14px] leading-[1.55]">
+        <li>
+          <b>받은 응답은 지워지지 않습니다.</b> 옛 신청서에 그대로 남습니다. 다만 신청자
+          화면에서는 <b>내 신청</b>이 아니라 <b>내 폼 응답</b>으로 옮겨 보입니다.
+        </li>
+        <li>
+          {/* 숫자를 말할 수 있는 것은 확정 참가자뿐이다 — 심사 중 응답 수는 화면에 오지 않는다 */}
+          <b>
+            이미 확정된 참가자
+            {initial && initial.confirmedCount > 0 ? ` ${initial.confirmedCount}명은` : "는"}
+          </b>{" "}
+          명단에 그대로 남습니다.
+        </li>
+        <li>
+          <b>옛 신청서의 응답으로는 이 행사의 참가자를 더 이상 등록할 수 없습니다.</b> 심사 중인
+          응답이 있다면 승인하더라도 이 행사 명단에는 올릴 수 없습니다.
+        </li>
+      </ul>
+    </Sheet>
   );
 }

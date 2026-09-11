@@ -165,6 +165,27 @@ export const MEMBER_ERROR = {
   STUDENT_NUMBER_DUPLICATED: "STUDENT_NUMBER_DUPLICATED",
   /** MEMBER_MANAGE 권한 없음 (403) */
   FORBIDDEN: "FORBIDDEN",
+  /*
+   * ── 회원 삭제 (임시 · ADR-0021 · #411 · 서버 #361) ───────────
+   * 아래 셋은 서버 PR과 같은 시점에 계약(이슈 #411 본문)만 보고 적었다. 서버가 다른 문자열을
+   * 고르면 **여기 한 줄만** 고친다 — 훅·시트·오류 매핑은 전부 이 상수로만 분기한다.
+   */
+  /**
+   * 삭제 기능이 배포 설정에서 꺼져 있다 (404).
+   *
+   * 없는 회원(`NOT_FOUND`)과 상태는 같지만 뜻이 다르다 — 회원은 있는데 **엔드포인트가 닫혀
+   * 있다**. 웹 플래그만 켜고 서버 플래그를 안 켠 배포에서 이 코드가 온다.
+   */
+  FEATURE_DISABLED: "FEATURE_DISABLED",
+  /**
+   * 이 회원이 남의 기록에 행위자로 남아 있어 지울 수 없다 (409).
+   *
+   * 미리보기(`blockedBy`)가 비어 있었는데도 오는 경우는 미리보기와 삭제 사이에 이 회원이 폼을
+   * 만들거나 승인을 한 것이다 — 화면이 낡은 것이지 실패가 아니다.
+   */
+  MEMBER_REFERENCED: "MEMBER_REFERENCED",
+  /** 자기 자신을 지우려 함 (400) — 서버 계약이 "400 (본인)"이라고만 적어 이름은 짐작이다 */
+  CANNOT_DELETE_SELF: "CANNOT_DELETE_SELF",
 } as const;
 
 /* ── 목록 ──────────────────────────────────────────────────── */
@@ -798,6 +819,52 @@ export async function bulkChangeMemberStatus(
     body: JSON.stringify(input),
   });
   return toBulkChangeResult(raw);
+}
+
+/* ── 삭제 (임시 · ADR-0021 · #411 · 서버 #361) ────────────── */
+
+/**
+ * GET /v1/members/{memberId}/deletion-preview 응답 — 지우면 함께 사라지는 것과 못 지우는 이유.
+ *
+ * 세 건수는 **이 회원 본인의 기록**(ON DELETE CASCADE로 함께 지워진다)이고, `blockedBy`는
+ * 이 회원이 **남의 것에 한 일**(폼 작성자·승인자 …)의 이름 목록이다. 후자가 하나라도 있으면
+ * 서버는 삭제를 409로 거절하므로 화면은 확인 버튼을 아예 그리지 않는다.
+ */
+export interface MemberDeletionPreview {
+  /** 함께 지워질 폼 응답 */
+  responseCount: number;
+  /** 함께 지워질 행사 참가 */
+  participationCount: number;
+  /** 함께 지워질 등급·상태 변경 이력 */
+  historyCount: number;
+  /** 이 회원이 행위자로 남아 있는 자리 — 비어 있어야 지울 수 있다 */
+  blockedBy: string[];
+}
+
+/**
+ * GET /v1/members/{memberId}/deletion-preview (`MEMBER_MANAGE`).
+ *
+ * 기능이 꺼져 있으면 404 `FEATURE_DISABLED`다. `blockedBy`가 null로 오는 경우를 빈 배열로
+ * 맞춘다 — 서버가 목록 필드를 null로 내리는 관례가 있어(`fetchMemberGrades`와 같다) 화면이
+ * `.length`를 읽다 죽지 않게 한다.
+ */
+export async function fetchMemberDeletionPreview(
+  memberId: number,
+): Promise<MemberDeletionPreview> {
+  const raw = await apiFetch<MemberDeletionPreview>(`/v1/members/${memberId}/deletion-preview`);
+  return { ...raw, blockedBy: raw.blockedBy ?? [] };
+}
+
+/**
+ * DELETE /v1/members/{memberId} — 회원 행을 지운다 (`MEMBER_MANAGE` · 204).
+ *
+ * **하드 삭제다.** 되돌릴 수 없고 본인 기록(응답·참가·이력·역할)이 함께 사라진다. 구글 계정은
+ * 남아 그 사람이 다시 로그인하면 가입 화면으로 가고 거기서 기존 회원 정보와 연결한다 — 그것이
+ * 복구 경로다(ADR-0021). 거절: 404 `FEATURE_DISABLED` · 404 `NOT_FOUND` · 400(본인) ·
+ * 409 `MEMBER_REFERENCED`.
+ */
+export async function deleteMember(memberId: number): Promise<void> {
+  await apiFetch<void>(`/v1/members/${memberId}`, { method: "DELETE" });
 }
 
 /* ── 기준 코드 ─────────────────────────────────────────────── */

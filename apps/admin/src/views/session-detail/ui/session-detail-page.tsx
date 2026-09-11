@@ -60,9 +60,9 @@ function approvalStatusTone(code: string) {
 
 function ApprovalHistory({
   approvals,
-}: {
+}: Readonly<{
   approvals: AcademicProgramApproval[];
-}) {
+}>) {
   if (approvals.length === 0) {
     return <EmptyState message="아직 처리 이력이 없습니다." padding="sm" />;
   }
@@ -108,10 +108,10 @@ function DetailSkeleton() {
 export function SessionDetailPage({
   academicProgramId,
   sessionId,
-}: {
+}: Readonly<{
   academicProgramId: number;
   sessionId: number;
-}) {
+}>) {
   const {
     status,
     errorMessage,

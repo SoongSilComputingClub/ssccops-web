@@ -239,12 +239,12 @@ interface SubWorkListItemResponse {
 }
 
 function toListMemberRef(member: SubWorkListMemberResponse | null): SubWorkMemberRef | null {
-  if (!member || member.memberId == null) return null;
+  if (member?.memberId == null) return null;
   return { memberId: member.memberId, name: member.name ?? "" };
 }
 
 function toWorkRef(work: SubWorkListWorkResponse | null): SubWorkListItem["work"] {
-  if (!work || work.workId == null) return null;
+  if (work?.workId == null) return null;
   return { workId: work.workId, title: work.title ?? "" };
 }
 
@@ -477,7 +477,7 @@ interface ChecklistItemDeleteResponse {
  * 표시용 폴백은 그리는 쪽(뷰)이 정한다 (업무 도메인이 잡아 둔 규칙 그대로).
  */
 function toMemberRef(member: MemberSummaryResponse | null): SubWorkMemberRef | null {
-  if (!member || member.memberId == null) return null;
+  if (member?.memberId == null) return null;
   return { memberId: member.memberId, name: member.name ?? "" };
 }
 
@@ -528,7 +528,7 @@ function toQuorum(res: QuorumResponse | null): SubWorkQuorum {
 
 function toRejection(res: RejectionResponse | null): SubWorkRejection | null {
   // 사유가 없는 반려는 서버가 만들지 않는다(REASON_REQUIRED) — 빈 사유면 보여줄 것이 없다
-  if (!res || res.rejectionId == null || !res.reason) return null;
+  if (res?.rejectionId == null || !res.reason) return null;
   return {
     rejectionId: res.rejectionId,
     rejector: toMemberRef(res.rejector),

@@ -29,10 +29,10 @@ import { MyProgramDetailPage } from "@/views/my-program-detail";
 
 export async function MyProgramsPage({
   academicProgramId,
-}: {
+}: Readonly<{
   /** 주소의 ?programId= 값. 숫자가 아니거나 없으면 null → 목록 맨 위 */
   academicProgramId: number | null;
-}) {
+}>) {
   const selection = await selectProgram(academicProgramId);
 
   return (

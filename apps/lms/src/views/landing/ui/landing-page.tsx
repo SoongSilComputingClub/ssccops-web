@@ -33,7 +33,7 @@ import { Card, Notice } from "@/shared/ui";
  * 상단 바의 `MEMBER` 항목 둘과 정확히 같다 — 이 사람이 지금 할 수 있는 일이 그 둘이다.
  * 활동을 맡게 되면 이 화면 자체를 지나치게 되므로 카드를 다시 세울 일도 없다.
  */
-export function LandingPage({ result }: { result: LandingLoad }) {
+export function LandingPage({ result }: Readonly<{ result: LandingLoad }>) {
   if (result.outcome === "unauthenticated") {
     return (
       <Shell>
@@ -73,7 +73,7 @@ export function LandingPage({ result }: { result: LandingLoad }) {
   );
 }
 
-function Shell({ children }: { children: ReactNode }) {
+function Shell({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <div className="flex flex-col gap-[16px]">
       <header className="flex flex-col gap-[2px]">
@@ -99,12 +99,12 @@ function ActionCard({
   title,
   description,
   cta,
-}: {
+}: Readonly<{
   href: string;
   title: string;
   description: string;
   cta: string;
-}) {
+}>) {
   return (
     <Link href={href} className="block rounded-2xl focus:outline-accent">
       <Card className="flex h-full flex-col gap-[8px] px-[20px] py-[24px] transition-shadow hover:shadow-[0_0_0_1px_var(--color-accent)]">

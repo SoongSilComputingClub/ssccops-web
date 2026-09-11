@@ -554,6 +554,11 @@ export function useFormEditor(formId?: number): FormEditor {
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
+      /*
+       * `returnValue`는 deprecated지만 일부러 남긴다 (#401 · S1874). 표준은 `preventDefault()`
+       * 하나이고 그것을 먼저 부르지만, Chrome·Edge 119 미만(삼성 인터넷 구버전 포함)은 이 값이
+       * 비어 있으면 확인 창을 띄우지 않는다. 대체 API가 아니라 옛 브라우저용 이중 표기다.
+       */
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", handleBeforeUnload);

@@ -51,7 +51,7 @@ import { ApplyFlow } from "./apply-flow";
  * 비로그인·미가입 모두 **이 화면 안에서** 안내한다. 밀어낼 로그인 화면이 이 앱에 없고, 억지로
  * 어딘가로 보내면 되돌아올 곳이 없어 왕복만 도는 길이 생긴다('내 신청'과 같은 규칙이다).
  */
-export async function EventApplyPage({ eventId }: { eventId: number }) {
+export async function EventApplyPage({ eventId }: Readonly<{ eventId: number }>) {
   let event: PublicEventDetail;
   try {
     event = await fetchPublicEvent(eventId);
@@ -102,10 +102,10 @@ export async function EventApplyPage({ eventId }: { eventId: number }) {
 async function SignedInBody({
   event,
   formId,
-}: {
+}: Readonly<{
   event: PublicEventDetail;
   formId: number;
-}) {
+}>) {
   let session: AuthSession;
   try {
     session = await fetchAuthSession();
@@ -130,11 +130,11 @@ function ApplyShell({
   event,
   eventId,
   children,
-}: {
+}: Readonly<{
   event: PublicEventDetail | null;
   eventId: number;
   children: ReactNode;
-}) {
+}>) {
   return (
     <div className="mx-auto flex max-w-[860px] flex-col gap-[14px]">
       <Link href={ROUTES.eventDetail(eventId)} className="text-[13.5px] text-accent-strong">
@@ -159,7 +159,7 @@ function ApplyShell({
  * 상태별로 **문구만** 갈린다 — 코드값은 어디에도 드러내지 않고, 표시명은 행사 슬라이스의
  * 배지 사전 한 곳에서 가져온다. 폼이 연결되지 않은 공지형 행사는 신청이라는 개념 자체가 없다.
  */
-function ClosedNotice({ event }: { event: PublicEventDetail }) {
+function ClosedNotice({ event }: Readonly<{ event: PublicEventDetail }>) {
   const receipt = eventReceiptBadge(event.receiptStatus);
 
   if (event.receiptStatus === null || event.formId === null) {
@@ -184,7 +184,7 @@ function ClosedNotice({ event }: { event: PublicEventDetail }) {
 }
 
 /** 아직 로그인하지 않았다 — 이 화면의 기본 상태이지 오류가 아니다 */
-function SignInNotice({ eventId }: { eventId: number }) {
+function SignInNotice({ eventId }: Readonly<{ eventId: number }>) {
   return (
     <Notice
       title="로그인하면 신청할 수 있습니다"
@@ -196,7 +196,7 @@ function SignInNotice({ eventId }: { eventId: number }) {
 }
 
 /** 토큰은 있는데 서버가 받아 주지 않았다 — 대개 만료다 */
-function SessionExpiredNotice({ eventId }: { eventId: number }) {
+function SessionExpiredNotice({ eventId }: Readonly<{ eventId: number }>) {
   return (
     <Notice
       title="로그인이 만료되었습니다"
@@ -207,7 +207,7 @@ function SessionExpiredNotice({ eventId }: { eventId: number }) {
   );
 }
 
-function BackToEvent({ eventId }: { eventId: number }) {
+function BackToEvent({ eventId }: Readonly<{ eventId: number }>) {
   return (
     <Link
       href={ROUTES.eventDetail(eventId)}

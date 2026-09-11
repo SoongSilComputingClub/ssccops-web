@@ -30,7 +30,7 @@ import { MyResponsesPanel } from "./my-responses-panel";
  * 화면(`/f/{id}/done`)으로 옮겨 간다(행사 신청은 같은 자리에서 완료를 그린다 — 그쪽은 돌아갈
  * 행사가 있어 굳이 주소를 바꿀 이유가 없다).
  */
-export function PublicFormStep({ formId }: { formId: number }) {
+export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
   const router = useRouter();
   const apply = useApplyForm(formId);
   const [page, setPage] = useState(0);

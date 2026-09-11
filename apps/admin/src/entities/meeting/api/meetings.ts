@@ -102,7 +102,7 @@ interface MeetingTransitionResponse {
 
 /** 담당자·등록자·제출자 요약. 값이 없으면(이관 데이터 등) null로 떨어뜨린다 */
 function toMemberRef(member: MemberSummaryResponse | null): MeetingMemberRef | null {
-  if (!member || member.memberId == null) return null;
+  if (member?.memberId == null) return null;
   return { memberId: member.memberId, name: member.name ?? "" };
 }
 

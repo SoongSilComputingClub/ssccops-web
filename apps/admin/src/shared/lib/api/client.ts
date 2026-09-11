@@ -15,6 +15,7 @@ import { createClient } from "@ssccops/auth/supabase/client";
  * 값이 비어 있으면 빈 문자열이 아니라 undefined 로 둔다 — 미설정을 아래에서
  * CLIENT_CONFIG_MISSING 으로 갈라내야 하는데, 빈 문자열로 뭉개면 그 분기가 사라진다.
  */
+// `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") || undefined;
 
 /** ssccops-server 공통 응답 봉투 (global.apipayload.ApiResponse) — 성공·실패 모두 이 모양이다 */

@@ -66,6 +66,7 @@ function toShareLink(targetType: ShareTargetType, token: string): ShareLink {
     return { token, url: `${window.location.origin}${path}` };
   }
 
+  // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
   const configured = process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN?.replace(/\/+$/, "");
   if (!configured) {
     throw new ShareOriginMissingError();
@@ -148,6 +149,7 @@ export interface SharePreview {
  * 결과로 수렴하며, 서버도 그 셋을 같은 404로 답한다(어느 토큰이 한때 존재했는지를 감춘다).
  */
 export async function fetchSharePreview(token: string): Promise<SharePreview | null> {
+  // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
   if (!baseUrl) return null;
 

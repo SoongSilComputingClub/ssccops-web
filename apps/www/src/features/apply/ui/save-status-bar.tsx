@@ -15,10 +15,10 @@ import type { ApplySaveStatus } from "../model/use-apply-form";
 export function SaveStatusBar({
   save,
   onRetry,
-}: {
+}: Readonly<{
   save: ApplySaveStatus;
   onRetry: () => void;
-}) {
+}>) {
   if (save.state === "clean") return null;
 
   if (save.state === "failed") {

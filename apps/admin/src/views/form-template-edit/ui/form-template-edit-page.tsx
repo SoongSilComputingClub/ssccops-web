@@ -43,7 +43,7 @@ import {
  * 눌러야 저장된다"는 원래 뜻을 갖고, 저장하지 않고 나가면 브라우저가 이탈을 경고한다.
  */
 
-export function FormTemplateEditPage({ formTmplId }: { formTmplId?: number }) {
+export function FormTemplateEditPage({ formTmplId }: Readonly<{ formTmplId?: number }>) {
   const editor = useFormTemplateEditor(formTmplId);
   const canWrite = useCan(CAPABILITY.FORM_WRITE);
   const isNew = formTmplId === undefined;
@@ -92,10 +92,10 @@ export function FormTemplateEditPage({ formTmplId }: { formTmplId?: number }) {
 function FormTemplateEditContent({
   editor,
   title,
-}: {
+}: Readonly<{
   editor: FormTemplateEditor;
   title: string;
-}) {
+}>) {
   const router = useRouter();
   const { draft, setDraft, issues } = editor;
 
@@ -118,16 +118,14 @@ function FormTemplateEditContent({
     if (await save()) router.push(ROUTES.formTemplates);
   };
 
+  const creatorSuffix = editor.creatrMbrNm ? ` · 만든 사람 ${editor.creatrMbrNm}` : "";
+
   return (
     <>
       <PageHeader
         title={title}
         /* 첫 저장으로 번호가 생기는 순간 "저장 전"에서 템플릿 번호로 바뀐다 */
-        subtitle={
-          editor.formTmplId
-            ? `템플릿 #${editor.formTmplId}${editor.creatrMbrNm ? ` · 만든 사람 ${editor.creatrMbrNm}` : ""}`
-            : "저장 전"
-        }
+        subtitle={editor.formTmplId ? `템플릿 #${editor.formTmplId}${creatorSuffix}` : "저장 전"}
         showBack
       />
       <PageBody>

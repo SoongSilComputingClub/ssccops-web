@@ -25,10 +25,10 @@ export function hasNotice(registration: EventParticipantRegistration): boolean {
 export function RegistrationNotice({
   registration,
   onDismiss,
-}: {
+}: Readonly<{
   registration: EventParticipantRegistration;
   onDismiss: () => void;
-}) {
+}>) {
   const { confirmedCount, ptcpLmtCnt, overCapacity, warnings } = registration;
 
   return (

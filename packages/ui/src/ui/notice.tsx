@@ -17,11 +17,11 @@ export function Notice({
   title,
   description,
   children,
-}: {
+}: Readonly<{
   title: string;
   description?: string;
   children?: ReactNode;
-}) {
+}>) {
   return (
     <Card className="flex flex-col items-center gap-[10px] px-[18px] py-[46px] text-center">
       <div className="text-[15px] text-n300">{title}</div>

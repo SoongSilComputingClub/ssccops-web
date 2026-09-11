@@ -8,13 +8,13 @@ export function StatBox({
   tone = "default",
   size = "md",
   className,
-}: {
+}: Readonly<{
   label: ReactNode;
   value: ReactNode;
   tone?: "default" | "accent" | "danger";
   size?: "md" | "lg";
   className?: string;
-}) {
+}>) {
   return (
     <div className={cn("rounded-[12px] border border-line p-3", className)}>
       <div className="text-[13px] text-n500">{label}</div>

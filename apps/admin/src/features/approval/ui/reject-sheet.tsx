@@ -15,12 +15,12 @@ export function RejectSheet({
   onClose,
   onReject,
   maxLength,
-}: {
+}: Readonly<{
   open: boolean;
   onClose: () => void;
   onReject: (reason: string) => void;
   maxLength?: number;
-}) {
+}>) {
   const [reason, setReason] = useState("");
 
   if (!open) return null;

@@ -174,6 +174,7 @@ export function studioMembersUrl(academicProgramId: number): string {
  * 값이 비어 있으면 링크 없이 문구만 안내한다 — 없는 화면으로 보내지 않기 위한 기본값이다.
  */
 export function signupUrl(): string | null {
+  // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
   const origin = process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.replace(/\/+$/, "");
   return origin ? `${origin}/signup` : null;
 }

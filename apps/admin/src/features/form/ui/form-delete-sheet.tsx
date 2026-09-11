@@ -38,7 +38,7 @@ export function FormDeleteSheet({
   pending,
   onClose,
   onConfirm,
-}: {
+}: Readonly<{
   open: boolean;
   formTtlNm: string;
   /** 서버 집계 — 제출 이상만 세고 작성 중 응답은 빠진다 */
@@ -47,7 +47,7 @@ export function FormDeleteSheet({
   pending: boolean;
   onClose: () => void;
   onConfirm: () => void;
-}) {
+}>) {
   return (
     <Sheet
       open={open}

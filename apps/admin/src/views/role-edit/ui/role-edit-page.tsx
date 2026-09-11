@@ -54,7 +54,7 @@ import type { RoleMember } from "@/entities/role";
 const NO_MANAGE =
   "역할을 다룰 권한(ROLE_MANAGE)이 없습니다 — 최고관리자에게 요청해주세요";
 
-export function RoleEditPage({ roleId }: { roleId?: number }) {
+export function RoleEditPage({ roleId }: Readonly<{ roleId?: number }>) {
   const canManageRole = useCan(CAPABILITY.ROLE_MANAGE);
 
   // 훅을 조건부로 부를 수 없으므로 본문을 별도 컴포넌트로 뺀다 — 조회 자체가 나가지 않는다
@@ -72,7 +72,7 @@ export function RoleEditPage({ roleId }: { roleId?: number }) {
   return <RoleEditorView roleId={roleId} />;
 }
 
-function RoleEditorView({ roleId }: { roleId?: number }) {
+function RoleEditorView({ roleId }: Readonly<{ roleId?: number }>) {
   const router = useRouter();
   const editor = useRoleEditor(roleId);
 
@@ -194,10 +194,10 @@ function RoleEditorView({ roleId }: { roleId?: number }) {
 function HoldersCard({
   members,
   editing,
-}: {
+}: Readonly<{
   members: readonly RoleMember[];
   editing: boolean;
-}) {
+}>) {
   const router = useRouter();
 
   return (
@@ -211,10 +211,12 @@ function HoldersCard({
       ) : (
         <div className="flex flex-col">
           {members.map((m) => (
-            <div
+            /* 키보드 접근(#403) */
+            <button
+              type="button"
               key={`${m.mbrId}-${m.roleBgngYmd}-${m.roleEndYmd ?? ""}`}
               onClick={() => router.push(ROUTES.memberDetail(m.mbrId))}
-              className="cursor-pointer border-t border-hairline py-3 first:border-t-0"
+              className="block w-full cursor-pointer border-t border-hairline py-3 text-left first:border-t-0"
             >
               <div className="flex items-center gap-[6px]">
                 <span className="text-[15.5px] font-semibold hover:text-accent">
@@ -227,7 +229,7 @@ function HoldersCard({
               <div className="mt-[2px] text-[13.5px] text-n500">
                 {m.stdntNo} · {m.roleBgngYmd} ~ {m.roleEndYmd ?? "무기한"}
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}

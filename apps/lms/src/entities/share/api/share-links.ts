@@ -79,6 +79,7 @@ export class ShareOriginMissingError extends Error {
  * 남아 있는 빚이다(ADR-0017 — 바꾸려면 배포 시크릿을 함께 옮겨야 해서 별도로 다룬다).
  */
 function toShareLink(token: string): ShareLink {
+  // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
   const configured = process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN?.replace(/\/+$/, "");
   if (!configured) throw new ShareOriginMissingError();
   return { token, url: `${configured}${shareLandingPath(token)}` };

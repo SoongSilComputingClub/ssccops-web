@@ -11,7 +11,7 @@ import { Sidebar } from "./_shell/sidebar";
  * 높이는 h-screen이 아니라 h-dvh다. 모바일 브라우저의 주소창이 접히고 펴질 때 100vh는
  * 큰 쪽으로 고정돼 하단이 잘린다.
  */
-export default function AdminLayout({ children }: LayoutProps<"/">) {
+export default function AdminLayout({ children }: Readonly<LayoutProps<"/">>) {
   return (
     <div className="flex h-dvh overflow-hidden bg-bg">
       <div className="hidden lg:flex">

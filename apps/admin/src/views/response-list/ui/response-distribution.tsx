@@ -37,11 +37,11 @@ function ratio(count: number, denominator: number): number {
 export function ResponseDistribution({
   distributions,
   totalCount,
-}: {
+}: Readonly<{
   distributions: QitemDistribution[];
   /** 지금 목록에 있는 응답 수 — 문항별 답한 사람 수와 견주는 기준 */
   totalCount: number;
-}) {
+}>) {
   if (distributions.length === 0) {
     return <div className="py-6 text-[14px] text-n500">문항이 없는 폼입니다.</div>;
   }

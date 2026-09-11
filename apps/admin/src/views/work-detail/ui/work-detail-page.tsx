@@ -74,7 +74,7 @@ function DetailSkeleton() {
   );
 }
 
-export function WorkDetailPage({ workId }: { workId: number }) {
+export function WorkDetailPage({ workId }: Readonly<{ workId: number }>) {
   const router = useRouter();
   const { work, status, errorMessage, reload } = useWorkDetail(workId);
   /* 하위 업무 등록도 WORK_MANAGE 다 (서버 SubWorkController 전체) */

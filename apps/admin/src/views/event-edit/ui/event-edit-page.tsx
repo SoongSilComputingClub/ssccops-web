@@ -71,7 +71,7 @@ function EditSkeleton() {
   );
 }
 
-export function EventEditPage({ eventId }: { eventId: number }) {
+export function EventEditPage({ eventId }: Readonly<{ eventId: number }>) {
   const router = useRouter();
   const { event, status, errorMessage, reload } = useEventDetail(eventId);
   const canManage = useCan(CAPABILITY.EVENT_MANAGE);
@@ -112,11 +112,11 @@ function EventEditView({
   event,
   canManage,
   reload,
-}: {
+}: Readonly<{
   event: EventDetail;
   canManage: boolean;
   reload: () => void;
-}) {
+}>) {
   const router = useRouter();
   const save = useSaveEvent();
   const statusControl = useEventStatus();

@@ -17,7 +17,7 @@ import { BootstrapError, BootstrapPending } from "./bootstrap-fallback";
  * 이미 가입한 사용자를 되돌릴 때도 `?next=` 를 존중한다 — 뒤로가기로 가입 화면에 다시
  * 들어온 경우까지 대시보드로 밀어 버리면, 원래 열려던 폼으로 가는 길이 끊긴다.
  */
-export function SignupGate({ children }: { children: ReactNode }) {
+export function SignupGate({ children }: Readonly<{ children: ReactNode }>) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status, errorMessage, retry } = useAuthBootstrap();

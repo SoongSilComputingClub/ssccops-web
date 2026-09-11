@@ -101,7 +101,7 @@ function EventCard({
   deleting,
   onDuplicated,
   onDelete,
-}: {
+}: Readonly<{
   event: EventSummary;
   canManage: boolean;
   /** 삭제 요구 권한 보유 여부 — 지금은 EVENT_MANAGE와 같은 값이지만 판단의 출처가 다르다 */
@@ -110,7 +110,7 @@ function EventCard({
   deleting: boolean;
   onDuplicated: () => void;
   onDelete: () => void;
-}) {
+}>) {
   const router = useRouter();
   const { pending, duplicate } = useDuplicateEvent();
   /** 두 단계 확인의 첫 단계 — 권한 트리 삭제(views/authority-tree)와 같은 방식이다 */
@@ -148,16 +148,17 @@ function EventCard({
           {event.ptcpLmtCnt != null && `/${event.ptcpLmtCnt}`}
         </div>
       </div>
-      <div
+      {/* 키보드 접근(#403) */}
+      <button
+        type="button"
         onClick={() => router.push(ROUTES.eventEdit(event.eventId))}
-        className="mt-2 cursor-pointer text-[18px] leading-[1.35] font-semibold hover:text-accent"
+        className="mt-2 block w-full cursor-pointer text-left text-[18px] leading-[1.35] font-semibold hover:text-accent"
       >
         {event.eventTtl}
-      </div>
+      </button>
       <div className="mt-1 text-[13.5px] text-n500">
-        {event.eventBgngDt
-          ? `${formatDt(event.eventBgngDt)}${event.eventEndDt ? ` ~ ${formatDt(event.eventEndDt)}` : ""}`
-          : "일시 미설정"}
+        {event.eventBgngDt ? formatDt(event.eventBgngDt) : "일시 미설정"}
+        {event.eventBgngDt && event.eventEndDt && ` ~ ${formatDt(event.eventEndDt)}`}
         {event.plcNm && ` · ${event.plcNm}`}
       </div>
       <div className="mt-2 flex flex-wrap gap-[6px]">

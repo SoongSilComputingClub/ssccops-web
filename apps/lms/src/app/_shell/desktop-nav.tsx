@@ -14,7 +14,7 @@ import { visibleNavLinks } from "./nav-links";
  * 내려보낸다 — 여기서 직접 조회하면 `authed-client`(`next/headers`)가 클라이언트 번들로 끌려와
  * 빌드가 깨지고, 드로어까지 각자 조회하면 같은 요청이 두 번 나간다.
  */
-export function DesktopNav({ isLeader }: { isLeader: boolean }) {
+export function DesktopNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
   const pathname = usePathname();
 
   return (

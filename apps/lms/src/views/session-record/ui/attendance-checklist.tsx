@@ -19,13 +19,13 @@ export function AttendanceChecklist({
   present,
   onToggle,
   disabled,
-}: {
+}: Readonly<{
   members: AcademicProgramMember[];
   /** eventPtcpId → 참석 여부 */
   present: Record<number, boolean>;
   onToggle: (eventPtcpId: number) => void;
   disabled?: boolean;
-}) {
+}>) {
   const presentCount = members.filter((m) => present[m.eventPtcpId]).length;
 
   if (members.length === 0) {

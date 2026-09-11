@@ -69,7 +69,7 @@ function parseRspnsSttsCd(value: string | null): RspnsSttsCd | null {
  * 폼이 들어 있는 환경에서는 아무 경고 없이 **남의 폼 응답이 검토 목록에 뜬다.** 그래서 코드가
  * 폼을 가리키는 값은 `sys_form_cd`뿐이고 번호는 진입할 때 찾는다(#163의 `useProposalForm`).
  */
-function ProposalReviewList({ formId }: { formId: number }) {
+function ProposalReviewList({ formId }: Readonly<{ formId: number }>) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -107,9 +107,11 @@ function ProposalReviewList({ formId }: { formId: number }) {
       header: "활동명",
       width: "1.6fr",
       render: (r) => (
-        <span
+        /* 키보드 접근(#403) — 셀이 nowrap+ellipsis라 버튼도 스스로 잘라야 말줄임이 남는다 */
+        <button
+          type="button"
           onClick={() => router.push(ROUTES.proposalReviewDetail(r.formRspnsId))}
-          className="cursor-pointer font-semibold hover:text-accent"
+          className="max-w-full cursor-pointer overflow-hidden text-left text-ellipsis font-semibold hover:text-accent"
         >
           {r.responseTitle ?? (r.rspnsSeq === null ? "기획안" : `${r.rspnsSeq}번째 기획안`)}
           {/* 활동명이 있을 때만 순번을 곁들인다 — 없으면 위 문구가 이미 순번을 말한다 */}
@@ -118,7 +120,7 @@ function ProposalReviewList({ formId }: { formId: number }) {
               {r.rspnsSeq}번째
             </span>
           )}
-        </span>
+        </button>
       ),
     },
     {

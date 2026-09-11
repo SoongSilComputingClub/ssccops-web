@@ -25,13 +25,13 @@ export function SignInButton({
   label = "로그인",
   variant = "primary",
   className,
-}: {
+}: Readonly<{
   /** 로그인 후 돌아갈 경로. 생략하면 지금 화면 */
   next?: string;
   label?: string;
   variant?: "primary" | "ghost";
   className?: string;
-}) {
+}>) {
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
 

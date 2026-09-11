@@ -35,7 +35,7 @@ function MeetingCardSkeleton() {
   );
 }
 
-function MeetingCard({ meeting, onClick }: { meeting: MeetingListItem; onClick: () => void }) {
+function MeetingCard({ meeting, onClick }: Readonly<{ meeting: MeetingListItem; onClick: () => void }>) {
   return (
     <Card onClick={onClick}>
       <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">

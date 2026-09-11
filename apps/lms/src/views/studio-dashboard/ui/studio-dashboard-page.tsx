@@ -79,7 +79,7 @@ function deriveStats(
 }
 
 /** 활동 카드 우상단의 바로가기 링크 — 회차 기록·내 활동·출석부·팀원 관리가 같은 모양이다 */
-function DashLink({ href, children }: { href: string; children: ReactNode }) {
+function DashLink({ href, children }: Readonly<{ href: string; children: ReactNode }>) {
   return (
     <Link
       href={href}
@@ -95,12 +95,12 @@ function StatBox({
   value,
   hint,
   tone,
-}: {
+}: Readonly<{
   label: string;
   value: string;
   hint?: string;
   tone?: "default" | "accent" | "warn";
-}) {
+}>) {
   const valueColor =
     tone === "accent" ? "text-accent" : tone === "warn" ? "text-amber" : "text-ink";
   return (
@@ -115,10 +115,10 @@ function StatBox({
 function CurriculumStrip({
   program,
   curriculum,
-}: {
+}: Readonly<{
   program: AcademicProgramSummary;
   curriculum: CurriculumItemWithSession[];
-}) {
+}>) {
   return (
     <div className="flex flex-wrap gap-[6px]">
       {curriculum.map((item) => {
@@ -159,10 +159,10 @@ function CurriculumStrip({
 function ThisWeekList({
   program,
   items,
-}: {
+}: Readonly<{
   program: AcademicProgramSummary;
   items: CurriculumItemWithSession[];
-}) {
+}>) {
   if (items.length === 0) {
     return (
       <div className="text-[14px] text-n500">이번 주에 계획된 회차가 없습니다.</div>
@@ -210,7 +210,7 @@ function approvalStatusView(code: string): { label: string; tone: "blue" | "ambe
   return { label: code, tone: "grey" };
 }
 
-function ApprovalFeed({ approvals }: { approvals: AcademicProgramApproval[] }) {
+function ApprovalFeed({ approvals }: Readonly<{ approvals: AcademicProgramApproval[] }>) {
   if (approvals.length === 0) {
     return (
       <div className="text-[14px] text-n500">
@@ -248,7 +248,7 @@ function ApprovalFeed({ approvals }: { approvals: AcademicProgramApproval[] }) {
   );
 }
 
-function DashboardBody({ data }: { data: LeaderDashboardReady }) {
+function DashboardBody({ data }: Readonly<{ data: LeaderDashboardReady }>) {
   const { program, allPrograms, curriculum, approvals, otherPrograms, thisWeekItems } =
     data;
   const today = todayInSeoul();
@@ -348,8 +348,7 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
                 <span className="h-[10px] w-[10px] rounded-[3px] bg-accent-soft" />제출
               </span>
               <span className="flex items-center gap-[6px]">
-                <span className="h-[10px] w-[10px] rounded-[3px] shadow-[inset_0_0_0_1px_var(--color-line-strong)]" />
-                승인
+                <span className="h-[10px] w-[10px] rounded-[3px] shadow-[inset_0_0_0_1px_var(--color-line-strong)]" />승인
               </span>
             </div>
           </div>
@@ -436,10 +435,10 @@ function DashboardBody({ data }: { data: LeaderDashboardReady }) {
 
 export async function StudioDashboardPage({
   academicProgramId = null,
-}: {
+}: Readonly<{
   /** 주소의 ?programId= — 드롭다운이 고른 활동. 없으면 로더가 기본값을 고른다 */
   academicProgramId?: number | null;
-}) {
+}>) {
   const result = await loadLeaderDashboard(academicProgramId);
 
   return (

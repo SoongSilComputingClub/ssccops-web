@@ -71,10 +71,10 @@ function ProgramCardSkeleton() {
 function ProgramCard({
   program,
   onClick,
-}: {
+}: Readonly<{
   program: AcademicProgramSummary;
   onClick: () => void;
-}) {
+}>) {
   // 진행률은 서버가 계산한 값이다(#125) — 화면은 반올림해 보여 주기만 한다
   const ratio = Math.round(program.progressRatio);
 

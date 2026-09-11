@@ -52,13 +52,13 @@ function DeletedEventCard({
   restoring,
   canRestore,
   onRestore,
-}: {
+}: Readonly<{
   event: EventSummary;
   /** 이 카드의 복구가 진행 중인가 — 연타로 요청이 두 번 나가는 것을 막는다 */
   restoring: boolean;
   canRestore: boolean;
   onRestore: () => void;
-}) {
+}>) {
   return (
     <Card>
       <div className="flex flex-wrap items-center gap-2">
@@ -79,9 +79,8 @@ function DeletedEventCard({
       */}
       <div className="mt-2 text-[18px] leading-[1.35] font-semibold">{event.eventTtl}</div>
       <div className="mt-1 text-[13.5px] text-n500">
-        {event.eventBgngDt
-          ? `${formatDt(event.eventBgngDt)}${event.eventEndDt ? ` ~ ${formatDt(event.eventEndDt)}` : ""}`
-          : "일시 미설정"}
+        {event.eventBgngDt ? formatDt(event.eventBgngDt) : "일시 미설정"}
+        {event.eventBgngDt && event.eventEndDt && ` ~ ${formatDt(event.eventEndDt)}`}
         {event.plcNm && ` · ${event.plcNm}`}
       </div>
       <div className="mt-2 flex flex-wrap gap-[6px]">

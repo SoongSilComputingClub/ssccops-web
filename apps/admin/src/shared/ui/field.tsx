@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentPropsWithRef, SelectHTMLAttributes } from "react";
-import { cn, Field, TextField } from "@ssccops/ui";
+import { cn } from "@ssccops/ui";
 
 /*
  * 입력 컴포넌트 — `TextField`·`Field`는 `@ssccops/ui`에서 온다 (ssccops#243).
@@ -16,7 +16,7 @@ import { cn, Field, TextField } from "@ssccops/ui";
 const INPUT_BASE =
   "w-full rounded-[12px] border text-[16px] text-ink outline-none placeholder:text-n500 focus:border-accent disabled:cursor-not-allowed disabled:opacity-45 lg:text-[15.5px]";
 
-export { Field, TextField };
+export { Field, TextField } from "@ssccops/ui";
 
 /*
  * props에 ref가 들어 있는 것은 React 19에서 함수 컴포넌트가 ref를 평범한 prop으로 받기
@@ -27,7 +27,7 @@ export function TextArea({
   inset,
   className,
   ...rest
-}: ComponentPropsWithRef<"textarea"> & { inset?: boolean }) {
+}: Readonly<ComponentPropsWithRef<"textarea"> & { inset?: boolean }>) {
   return (
     <textarea
       className={cn(
@@ -41,7 +41,7 @@ export function TextArea({
   );
 }
 
-export function SelectField({ className, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
+export function SelectField({ className, ...rest }: Readonly<SelectHTMLAttributes<HTMLSelectElement>>) {
   return (
     <select
       className={cn(

@@ -19,7 +19,7 @@ import { EventCard } from "./event-card";
  * 조회 실패를 던지지 않고 화면 안에서 안내로 그리는 것은, 서버가 잠깐 닿지 않을 때 공개
  * 도메인이 통째로 오류 화면이 되는 편보다 낫기 때문이다.
  */
-export async function EventListPage({ eventClsfCd }: { eventClsfCd: string | null }) {
+export async function EventListPage({ eventClsfCd }: Readonly<{ eventClsfCd: string | null }>) {
   let events: PublicEventSummary[] = [];
   let all: PublicEventSummary[] = [];
   let errorMessage: string | null = null;

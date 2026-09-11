@@ -22,7 +22,7 @@ import { Notice } from "@/shared/ui";
  * 누를 수 있는 버튼을 두면 거절만 받게 되지만, 여러 건을 받는 폼에서는 또 내는 것이 정상이라
  * 제출 직후가 다음 건을 시작하기 가장 자연스러운 자리다.
  */
-export function PublicFormDonePage({ formId }: { formId: number }) {
+export function PublicFormDonePage({ formId }: Readonly<{ formId: number }>) {
   const { status, form } = useApplyForm(formId);
 
   const description =

@@ -50,7 +50,7 @@ export function ApplicationsPanel({
   lockedHint,
   actions,
   onRegister,
-}: {
+}: Readonly<{
   eventId: number;
   /** 연결된 폼 — 응답 상세로 가는 경로에 필요하다. 폼 미연결이면 null */
   formId: number | null;
@@ -61,7 +61,7 @@ export function ApplicationsPanel({
   actions: ParticipantActions;
   /** 등록 요청 — 성공·실패 처리는 화면 전체를 쥔 쪽(페이지)이 한다 */
   onRegister: (formRspnsId: number, ptcpSttsCd: PtcpSttsCd) => void;
-}) {
+}>) {
   const router = useRouter();
   const { applications, status, errorMessage, reload } = useEventApplications(
     eventId,
@@ -100,12 +100,14 @@ export function ApplicationsPanel({
         formId === null ? (
           <span>{r.member.mbrNm || "-"}</span>
         ) : (
-          <span
+          /* 키보드 접근(#403) */
+          <button
+            type="button"
             onClick={() => router.push(ROUTES.responseDetail(formId, r.formRspnsId))}
-            className="cursor-pointer font-semibold hover:text-accent"
+            className="max-w-full cursor-pointer overflow-hidden text-left text-ellipsis font-semibold hover:text-accent"
           >
             {r.member.mbrNm || "-"}
-          </span>
+          </button>
         ),
     },
     {

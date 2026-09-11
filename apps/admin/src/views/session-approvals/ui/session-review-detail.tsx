@@ -63,7 +63,7 @@ export function SessionReviewDetail({
   onApprove,
   onRequestRevision,
   onReload,
-}: SessionReviewDetailProps) {
+}: Readonly<SessionReviewDetailProps>) {
   const [revisionOpen, setRevisionOpen] = useState(false);
   const [reason, setReason] = useState("");
 

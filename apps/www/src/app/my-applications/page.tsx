@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function Page({ searchParams }: PageProps<"/my-applications">) {
+export default async function Page({ searchParams }: Readonly<PageProps<"/my-applications">>) {
   const params = await searchParams;
   const raw = params[LOGIN_ERROR_QUERY];
   // 같은 키가 두 번 실리면 배열로 온다 — 사유는 하나뿐이므로 첫 값만 읽는다

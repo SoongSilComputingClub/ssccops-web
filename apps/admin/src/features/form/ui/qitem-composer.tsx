@@ -29,7 +29,7 @@ import { nextQitemId, parseMaxSlctCnt } from "../model/form-draft";
  * 매번 펼쳐야 하기 때문이다. 비어 있으면 FormDescription이 아무것도 그리지 않아 자리도
  * 차지하지 않는다.
  */
-function DescriptionPreview({ value }: { value?: string }) {
+function DescriptionPreview({ value }: Readonly<{ value?: string }>) {
   if (!value?.trim()) {
     return null;
   }
@@ -62,7 +62,7 @@ export function QitemComposer({
   issues,
   inUseQitemIds,
   systemRequiredQitemIds,
-}: {
+}: Readonly<{
   cpst: QitemCpstCn;
   /** 문항 구성만 바꾼다 — 무엇이 언제 저장되는지는 호출부가 정한다 */
   onChange: (updater: (cpst: QitemCpstCn) => QitemCpstCn) => void;
@@ -81,7 +81,7 @@ export function QitemComposer({
    * 그쪽 호출부는 넘기지 않는다.
    */
   systemRequiredQitemIds?: string[];
-}) {
+}>) {
   /* 셋 다 저장 대상이 아니다 — 화면에서 어디를 보고 있는지일 뿐이다 */
   const [page, setPage] = useState(0);
   const [openQ, setOpenQ] = useState<string | null>(null);
@@ -263,6 +263,13 @@ export function QitemComposer({
         </button>
       </div>
       <div className="mb-3 flex flex-wrap gap-[6px]">
+        {/*
+          페이지 칩의 key가 index인 것은 index가 곧 페이지의 식별자이기 때문이다 (#401 · S6479).
+          저장 형식(qitem_cpst_cn)의 페이지에는 id가 없고 문항의 `pageSeq`·분기의 목적지가 전부
+          이 index를 가리킨다 — 옮기고 지워도 "n번째 칸"이 같은 칸이다. Chip은 props만으로
+          그리는 버튼이라 옮겨 붙을 로컬 상태도 없다. 아래 `문항 이동`·`선택지별 페이지 이동`의
+          페이지 칩도 같다.
+        */}
         {pages.map((p, i) => (
           <Chip key={i} active={page === i} onClick={() => setPage(i)}>
             {i + 1}. {p.pageTtl || "(제목 없음)"} (
@@ -358,9 +365,12 @@ export function QitemComposer({
             const systemLocked = systemRequired.includes(q.qitemId);
             return (
               <div key={q.qitemId} className={cardBorder(qIssues.length > 0)}>
-                <div
+                {/* 키보드 접근(#403) — 머리글 안에 버튼이 없어 <button>으로 */}
+                <button
+                  type="button"
+                  aria-expanded={open}
                   onClick={() => setOpenQ(open ? null : q.qitemId)}
-                  className="flex cursor-pointer items-center gap-2 p-3"
+                  className="flex w-full cursor-pointer items-center gap-2 p-3 text-left"
                 >
                   <div className="text-[14.5px] font-semibold">
                     {qi + 1}. {q.qitemLblNm || "(제목 없음)"}
@@ -380,7 +390,7 @@ export function QitemComposer({
                     </div>
                   )}
                   <div className="text-[11px] text-n500">{open ? "▲" : "▼"}</div>
-                </div>
+                </button>
 
                 {qIssues.length > 0 && (
                   <div className="border-t border-danger/25 bg-danger/8 px-3 py-2">
@@ -460,6 +470,14 @@ export function QitemComposer({
                       <div className="mt-3">
                         <div className="mb-[6px] text-[13.5px] text-n400">선택지</div>
                         <div className="flex flex-col gap-[6px]">
+                          {/*
+                            선택지 행의 key도 index다 (#401 · S6479). 선택지는 저장 형식에서
+                            `string[]`이고 그 글자가 응답값이자 `branchMap`의 key라 id를 끼울
+                            자리가 없으며, 글자는 겹칠 수 있어(`선택지 1`이 둘) key로 못 쓴다.
+                            행은 controlled `TextField` + 삭제 버튼뿐이라 붙어 다닐 로컬 상태가
+                            없고, 이 목록은 재정렬이 없다 — 지우면 뒤 행이 당겨지지만 값은
+                            props가 다시 채운다.
+                          */}
                           {q.optionList.map((o, oi) => (
                             <div key={oi} className="flex items-center gap-2">
                               <TextField
@@ -514,6 +532,7 @@ export function QitemComposer({
                         <div>
                           <div className="mb-[6px] text-[13.5px] text-n400">문항 이동</div>
                           <div className="flex flex-wrap gap-[6px]">
+                            {/* key=index — index가 곧 pageSeq다 (위 페이지 칩의 주석) */}
                             {pages.map((p, i) => (
                               <Chip
                                 key={i}
@@ -648,6 +667,7 @@ export function QitemComposer({
                                     >
                                       다음 페이지
                                     </Chip>
+                                    {/* key=index — branchMap의 값이 곧 이 index다 (위 페이지 칩의 주석) */}
                                     {pages.map((p, i) => (
                                       <Chip
                                         key={i}

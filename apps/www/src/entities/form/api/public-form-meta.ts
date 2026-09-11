@@ -39,6 +39,7 @@ export interface PublicFormMeta {
  * 여기서도 둘을 가르지 않는다.
  */
 export async function fetchPublicFormMeta(formId: number): Promise<PublicFormMeta | null> {
+  // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
   if (!baseUrl) return null;
 

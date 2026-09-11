@@ -30,10 +30,10 @@ import { SignInButton } from "./sign-in-button";
 export function LoginGate({
   title = "로그인이 필요합니다",
   description = "학술 활동 화면은 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요",
-}: {
+}: Readonly<{
   title?: string;
   description?: string;
-}) {
+}>) {
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
   useEffect(() => {

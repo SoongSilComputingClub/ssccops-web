@@ -1,6 +1,7 @@
 "use client";
 
 import type { BadgeTone } from "./badge";
+import { onKeyActivate } from "@ssccops/ui";
 import { cn } from "@/shared/lib/cn";
 
 /** 월요일 시작 (한국식). 두 보기가 같은 요일로 시작해야 같은 주가 같은 모양이 된다 */
@@ -8,6 +9,8 @@ const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"];
 
 /** 막대 한 줄의 높이(px). 레인이 깊어질수록 주 줄이 이만큼씩 자란다 */
 const LANE_H = 20;
+/** grid-template-rows에 레인 수만큼 반복해 넣는 한 줄 */
+const LANE_ROW = `${LANE_H}px `;
 
 /*
  * 항목 색. Badge의 톤 이름을 빌리되 배지를 그리지는 않는다 — 칸이 좁아 테두리·패딩이 들어간
@@ -89,7 +92,9 @@ function weeksOf(mode: CalendarMode, anchor: string): string[] {
  */
 export function visibleRange(mode: CalendarMode, anchor: string): [string, string] {
   const weeks = weeksOf(mode, anchor);
-  return [weeks[0], addDays(weeks[weeks.length - 1], 6)];
+  // weeksOf는 비지 않는다 — `?? weeks[0]`은 `.at()`의 undefined를 타입에서 걷는 것뿐이다
+  const lastWeek = weeks.at(-1) ?? weeks[0];
+  return [weeks[0], addDays(lastWeek, 6)];
 }
 
 /**
@@ -125,7 +130,7 @@ export function Calendar({
   selected,
   onSelect,
   maxPointsPerDay,
-}: {
+}: Readonly<{
   mode: CalendarMode;
   /** 보고 있는 범위를 정하는 기준일 "YYYY-MM-DD" */
   anchor: string;
@@ -135,7 +140,7 @@ export function Calendar({
   onSelect: (ymd: string) => void;
   /** 한 칸에 접지 않고 보여줄 점의 수. 주 보기는 칸이 높아 넉넉하다 */
   maxPointsPerDay?: number;
-}) {
+}>) {
   const weeks = weeksOf(mode, anchor);
   const monthPrefix = anchor.slice(0, 7);
   const maxPoints = maxPointsPerDay ?? (mode === "week" ? 8 : 3);
@@ -185,18 +190,30 @@ export function Calendar({
             key={ws}
             className="grid grid-cols-7 border-b border-line last:border-b-0"
             style={{
-              gridTemplateRows: `auto ${`${LANE_H}px `.repeat(laneCount)}1fr`,
+              gridTemplateRows: `auto ${LANE_ROW.repeat(laneCount)}1fr`,
               minHeight: mode === "week" ? 220 : 96,
             }}
           >
-            {/* 배경 · 클릭 — 전체 행에 걸쳐 깔고 그 위에 내용을 얹는다 */}
+            {/*
+              배경 · 클릭 — 전체 행에 걸쳐 깔고 그 위에 내용을 얹는다.
+
+              키보드로도 날짜를 고를 수 있게 role·tabIndex를 붙인다 (ssccops-web#403 · 공용
+              컴포넌트는 role 방식). 칸 자체는 비어 있고 날짜 숫자는 다른 층에 있어 보조기기가
+              읽을 이름이 없다 — `aria-label`로 날짜를 준다. 막대·점도 같은 방식이되 `onClick`이
+              있을 때만 붙인다(GridTable과 같은 판단 — 누를 수 없는 것이 Tab에 잡히면 더 나쁘다).
+            */}
             {Array.from({ length: 7 }, (_, c) => {
               const ymd = addDays(ws, c);
               const outside = mode === "month" && !ymd.startsWith(monthPrefix);
               return (
                 <div
                   key={`bg-${c}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={ymd}
+                  aria-pressed={ymd === selected}
                   onClick={() => onSelect(ymd)}
+                  onKeyDown={onKeyActivate(() => onSelect(ymd))}
                   style={{ gridColumn: c + 1, gridRow: "1 / -1" }}
                   className={cn(
                     "cursor-pointer shadow-[0_0_0_.5px_var(--color-hairline)]",
@@ -236,6 +253,8 @@ export function Calendar({
               <div
                 key={b.item.key}
                 title={b.item.title}
+                role={b.item.onClick ? "button" : undefined}
+                tabIndex={b.item.onClick ? 0 : undefined}
                 onClick={
                   b.item.onClick
                     ? (ev) => {
@@ -245,6 +264,7 @@ export function Calendar({
                       }
                     : undefined
                 }
+                onKeyDown={b.item.onClick ? onKeyActivate(() => b.item.onClick?.()) : undefined}
                 style={{
                   gridColumn: `${b.from + 1} / ${b.to + 2}`,
                   gridRow: lanes[i] + 2,
@@ -280,6 +300,8 @@ export function Calendar({
                     <div
                       key={p.key}
                       title={p.title}
+                      role={p.onClick ? "button" : undefined}
+                      tabIndex={p.onClick ? 0 : undefined}
                       onClick={
                         p.onClick
                           ? (ev) => {
@@ -288,6 +310,7 @@ export function Calendar({
                             }
                           : undefined
                       }
+                      onKeyDown={p.onClick ? onKeyActivate(() => p.onClick?.()) : undefined}
                       className={cn(
                         "overflow-hidden rounded-[3px] px-1 py-[2px] text-[12px] text-ellipsis whitespace-nowrap",
                         TONE[p.tone ?? ""] ?? TONE_FALLBACK,

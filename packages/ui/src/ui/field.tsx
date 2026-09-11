@@ -33,7 +33,7 @@ export function TextField({
   invalid,
   className,
   ...rest
-}: InputHTMLAttributes<HTMLInputElement> & { inset?: boolean; invalid?: boolean }) {
+}: Readonly<InputHTMLAttributes<HTMLInputElement> & { inset?: boolean; invalid?: boolean }>) {
   return (
     <input
       // 색만으로 오류를 알리면 스크린리더·색각 이상 사용자가 놓친다 — 상태를 함께 노출한다
@@ -62,13 +62,13 @@ export function Field({
   error,
   children,
   className,
-}: {
+}: Readonly<{
   label: ReactNode;
   required?: boolean;
   error?: string | null;
   children: ReactNode;
   className?: string;
-}) {
+}>) {
   return (
     <div className={className}>
       <div className="mb-[6px] text-[13.5px] text-n400">

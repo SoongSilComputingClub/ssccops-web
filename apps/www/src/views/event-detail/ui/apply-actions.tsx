@@ -38,13 +38,13 @@ export function ApplyActions({
   formId,
   receiptStatus,
   mltplRspnsYn,
-}: {
+}: Readonly<{
   eventId: number;
   /** 연결 폼 — 없으면 이 컴포넌트가 그려지지 않는다(패널이 먼저 거른다) */
   formId: number;
   receiptStatus: EventReceiptStatus;
   mltplRspnsYn: boolean | null;
-}) {
+}>) {
   const { status, responses } = useMyResponses(formId);
   const open = receiptStatus === "ACCEPTING";
 
@@ -145,8 +145,6 @@ const SECONDARY =
 function pickMine(responses: MyFormResponse[]): MyFormResponse | null {
   const submitted = responses.filter((r) => r.rspnsSttsCd !== "DRAFT");
   return (
-    submitted.find((r) => r.rspnsSttsCd === "CHANGES_REQUESTED") ??
-    submitted[submitted.length - 1] ??
-    null
+    submitted.find((r) => r.rspnsSttsCd === "CHANGES_REQUESTED") ?? submitted.at(-1) ?? null
   );
 }

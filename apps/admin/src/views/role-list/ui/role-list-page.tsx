@@ -235,7 +235,7 @@ function RoleListView() {
 }
 
 /** 역할 목록 ↔ 역할 분류. 권한이 없어 목록을 못 여는 사람도 분류는 볼 수 있어 함께 그린다 */
-function RoleTabs({ value }: { value: "역할 목록" | "역할 분류" }) {
+function RoleTabs({ value }: Readonly<{ value: "역할 목록" | "역할 분류" }>) {
   const router = useRouter();
   return (
     <Segmented

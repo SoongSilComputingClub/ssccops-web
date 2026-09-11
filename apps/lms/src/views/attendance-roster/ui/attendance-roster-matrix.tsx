@@ -71,11 +71,11 @@ export function AttendanceRosterMatrix({
   academicProgramId,
   members,
   columns: initialColumns,
-}: {
+}: Readonly<{
   academicProgramId: number;
   members: AcademicProgramMember[];
   columns: RosterSessionColumn[];
-}) {
+}>) {
   const { rows, columns, periodAverage, sessionRangeLabel, error, toggleCell, clearError } =
     useAttendanceRoster(academicProgramId, initialColumns, members);
 
