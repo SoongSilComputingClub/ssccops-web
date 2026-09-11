@@ -7,7 +7,7 @@ import {
   generationText,
   mbrGrdTone,
   mbrSttsTone,
-  MEMBER_CHANGE_WARNING,
+  changeWarningLabel,
   type MemberChange,
   type MemberChangeWarning,
   type MemberRoleAssignment,
@@ -701,7 +701,7 @@ function ChangeWarningPanel({
           <div className="mt-[10px] flex flex-col gap-[7px]">
             {warnings.map((warning) => (
               <div key={warning.code} className="flex items-baseline gap-2 text-[14.5px]">
-                <Badge tone="grey">{warningLabel(warning.code)}</Badge>
+                <Badge tone="grey">{changeWarningLabel(warning.code)}</Badge>
                 <span>{warning.message}</span>
                 <span className="text-[13px] text-n400">({warning.count}건)</span>
               </div>
@@ -723,18 +723,6 @@ function ChangeWarningPanel({
       </div>
     </div>
   );
-}
-
-/** 경고 코드 → 무엇이 남았는지를 가리키는 짧은 이름. 모르는 코드는 서버 문장만 보여 준다 */
-function warningLabel(code: string): string {
-  switch (code) {
-    case MEMBER_CHANGE_WARNING.CURRENT_ROLES_REMAIN:
-      return "역할";
-    case MEMBER_CHANGE_WARNING.ASSIGNED_SUB_WORKS_REMAIN:
-      return "하위 업무";
-    default:
-      return "확인 필요";
-  }
 }
 
 /**

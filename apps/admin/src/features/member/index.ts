@@ -1,5 +1,12 @@
 export { useMemberActions, type MemberActions } from "./model/use-member-actions";
 export { GradeStatusSheet } from "./ui/grade-status-sheet";
+/* 등급·상태 일괄 변경 (#382 · 서버 #338) — 선택은 목록 조건 위에서만 뜻이 있다 */
+export { BulkGradeStatusSheet } from "./ui/bulk-grade-status-sheet";
+export {
+  useMemberSelection,
+  type MemberSelection,
+  type SelectableMember,
+} from "./model/use-member-selection";
 export { RoleSheet } from "./ui/role-sheet";
 /* 서버 조회 (#46 · 서버 #76) */
 export { useMembers, type MemberList, type MemberListQuery } from "./model/use-members";

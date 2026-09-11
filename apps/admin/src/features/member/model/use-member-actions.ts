@@ -2,8 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  bulkChangeMemberGrade,
+  bulkChangeMemberStatus,
   changeMemberGrade,
   changeMemberStatus,
+  type MemberBulkChangeResult,
+  type MemberBulkGradeChangeInput,
+  type MemberBulkStatusChangeInput,
   type MemberChangeResult,
   type MemberGradeChangeInput,
   type MemberStatusChangeInput,
@@ -33,6 +38,14 @@ import { toMemberChangeErrorMessage } from "./member-error";
  * `use-member-roles.ts`이고 훅을 나눈 것은 **요구 권한이 다르기 때문**이다 — 등급·상태는
  * `MEMBER_MANAGE`, 역할 부여·종료는 `ROLE_MANAGE`다. 한 훅에 두면 화면이 어느 권한으로
  * 잠가야 하는지가 호출부마다 흐려진다.
+ *
+ * ── 일괄 변경은 반대로 여기 있다 (#382 · 서버 #338) ─────────────
+ * 훅을 나누는 기준이 권한이었고, 일괄 변경은 한 명짜리와 **같은 `MEMBER_MANAGE`**다. 거절
+ * 사유의 어휘도 같다 — 서버가 일괄 요청의 400(대상 초과·기준 코드 밖)에 한 명짜리와 같은
+ * 코드를 내리므로 `toMemberChangeErrorMessage`를 그대로 쓴다. 다른 것은 응답 모양뿐이라
+ * `run`이 결과 타입만 제네릭으로 받는다. 한 요청이 나가 있는 동안 다른 요청을 막는
+ * `busyRef`도 넷이 공유한다 — 같은 화면에서 한 명짜리와 일괄이 동시에 나갈 일은 없고,
+ * 있다면 그것이 막아야 할 일이다.
  */
 
 export interface MemberActions {
@@ -51,6 +64,16 @@ export interface MemberActions {
     memberId: number,
     input: MemberStatusChangeInput,
   ) => Promise<MemberChangeResult | null>;
+  /**
+   * 여러 명을 같은 값으로. 성공하면 회원별 결과, 실패하면 null (사유는 `changeErrorMessage`).
+   *
+   * **200이 곧 전원 성공이 아니다** — 회원마다 트랜잭션이 따로라 결과의 `rows`를 읽어야
+   * 누가 바뀌었는지 안다. null은 요청 자체가 거절된 것(400·403)이며 그때는 한 명도 안 바뀐다.
+   */
+  bulkChangeGrade: (input: MemberBulkGradeChangeInput) => Promise<MemberBulkChangeResult | null>;
+  bulkChangeStatus: (
+    input: MemberBulkStatusChangeInput,
+  ) => Promise<MemberBulkChangeResult | null>;
 }
 
 export function useMemberActions(): MemberActions {
@@ -73,7 +96,7 @@ export function useMemberActions(): MemberActions {
    * 뒤 setState 방지가 등급과 상태에서 갈릴 이유가 없다.
    */
   const run = useCallback(
-    async (call: () => Promise<MemberChangeResult>): Promise<MemberChangeResult | null> => {
+    async <T>(call: () => Promise<T>): Promise<T | null> => {
       if (busyRef.current) return null;
 
       busyRef.current = true;
@@ -109,11 +132,23 @@ export function useMemberActions(): MemberActions {
     [run],
   );
 
+  const bulkChangeGrade = useCallback(
+    (input: MemberBulkGradeChangeInput) => run(() => bulkChangeMemberGrade(input)),
+    [run],
+  );
+
+  const bulkChangeStatus = useCallback(
+    (input: MemberBulkStatusChangeInput) => run(() => bulkChangeMemberStatus(input)),
+    [run],
+  );
+
   return {
     changing,
     changeErrorMessage,
     clearChangeError,
     changeGrade,
     changeStatus,
+    bulkChangeGrade,
+    bulkChangeStatus,
   };
 }
