@@ -54,7 +54,12 @@ export function MobileNav() {
 
       {open && (
         <div className="fixed inset-0 z-[80] lg:hidden">
+          {/*
+            스크림 — 클릭으로 닫히지만 키보드로 «누르는» 대상이 아니다. Esc는 위 effect가
+            document에서 받는다. 보조기기에서는 치운다 (ssccops-web#403 · Sheet와 같은 판단).
+          */}
           <div
+            aria-hidden="true"
             onClick={() => setOpen(false)}
             className="absolute inset-0 animate-fade-in bg-black/40"
           />

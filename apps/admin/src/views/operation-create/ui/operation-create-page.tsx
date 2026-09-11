@@ -404,13 +404,16 @@ export function OperationCreatePage({
           */}
           <div className={kinds.length > 1 ? "grid gap-3 lg:grid-cols-2" : "grid gap-3"}>
             {kinds.map((cd) => (
-              <div
+              /* 키보드 접근(#403) — grid 항목이라 늘어난 높이에서 내용이 가운데로 몰리지 않게 content-start */
+              <button
+                type="button"
                 key={cd}
+                aria-pressed={operTypeCd === cd}
                 onClick={() => setOperTypeCd(cd)}
                 className={
                   operTypeCd === cd
-                    ? "cursor-pointer rounded-[12px] bg-accent/8 p-[14px] shadow-[inset_0_0_0_1px_var(--color-accent)]"
-                    : "cursor-pointer rounded-[12px] border border-line p-[14px] hover:border-accent"
+                    ? "block w-full cursor-pointer content-start rounded-[12px] bg-accent/8 p-[14px] text-left shadow-[inset_0_0_0_1px_var(--color-accent)]"
+                    : "block w-full cursor-pointer content-start rounded-[12px] border border-line p-[14px] text-left hover:border-accent"
                 }
               >
                 <div className="flex items-center gap-2">
@@ -422,7 +425,7 @@ export function OperationCreatePage({
                 <div className="mt-1 text-[13px] leading-[1.5] text-n500">
                   {KIND_META[cd].note}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </Card>

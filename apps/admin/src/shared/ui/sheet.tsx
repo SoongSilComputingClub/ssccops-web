@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Button } from "./button";
 
 /** 중앙 모달 시트 — 등급/상태/역할 변경, 반려 사유 입력 등 */
@@ -42,10 +42,29 @@ export function Sheet({
   onCancel?: () => void;
   children?: ReactNode;
 }) {
+  /*
+   * Esc로 닫는다 (ssccops-web#403).
+   *
+   * 스크림(아래 배경 div)은 클릭으로 닫히지만 키보드로 «누르는» 대상이 아니다 — 화면 전체를
+   * 덮는 배경에 `role="button"`·`tabIndex`를 붙이면 Tab 정거장이 하나 늘 뿐 뜻이 없다. 모달을
+   * 키보드로 나가는 규약은 Esc이고, 시트가 열릴 때 초점을 안으로 옮기지 않으므로 시트
+   * 컨테이너의 `onKeyDown`은 초점이 밖에 있으면 받지 못한다 — 드로어(mobile-nav)와 같이
+   * document에서 받는다. 배경은 `aria-hidden`으로 보조기기에서 치운다.
+   */
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
   return (
     <>
       <div
+        aria-hidden="true"
         className="fixed inset-0 z-[90] animate-fade-in bg-scrim"
         onClick={onClose}
       />

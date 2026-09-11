@@ -278,6 +278,9 @@ importers:
 
   packages/form-renderer:
     dependencies:
+      '@ssccops/ui':
+        specifier: workspace:*
+        version: link:../ui
       react:
         specifier: ^19.2.0
         version: 19.2.8

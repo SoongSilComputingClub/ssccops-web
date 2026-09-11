@@ -211,10 +211,12 @@ function HoldersCard({
       ) : (
         <div className="flex flex-col">
           {members.map((m) => (
-            <div
+            /* 키보드 접근(#403) */
+            <button
+              type="button"
               key={`${m.mbrId}-${m.roleBgngYmd}-${m.roleEndYmd ?? ""}`}
               onClick={() => router.push(ROUTES.memberDetail(m.mbrId))}
-              className="cursor-pointer border-t border-hairline py-3 first:border-t-0"
+              className="block w-full cursor-pointer border-t border-hairline py-3 text-left first:border-t-0"
             >
               <div className="flex items-center gap-[6px]">
                 <span className="text-[15.5px] font-semibold hover:text-accent">
@@ -227,7 +229,7 @@ function HoldersCard({
               <div className="mt-[2px] text-[13.5px] text-n500">
                 {m.stdntNo} · {m.roleBgngYmd} ~ {m.roleEndYmd ?? "무기한"}
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}

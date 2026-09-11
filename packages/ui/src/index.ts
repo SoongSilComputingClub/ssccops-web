@@ -24,6 +24,7 @@
  */
 
 export { cn } from "./lib/cn";
+export { onKeyActivate } from "./lib/key-activate";
 export {
   THEMES,
   THEME_LABEL,

@@ -100,12 +100,14 @@ export function ApplicationsPanel({
         formId === null ? (
           <span>{r.member.mbrNm || "-"}</span>
         ) : (
-          <span
+          /* 키보드 접근(#403) */
+          <button
+            type="button"
             onClick={() => router.push(ROUTES.responseDetail(formId, r.formRspnsId))}
-            className="cursor-pointer font-semibold hover:text-accent"
+            className="max-w-full cursor-pointer overflow-hidden text-left text-ellipsis font-semibold hover:text-accent"
           >
             {r.member.mbrNm || "-"}
-          </span>
+          </button>
         ),
     },
     {

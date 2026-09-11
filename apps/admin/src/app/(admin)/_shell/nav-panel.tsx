@@ -7,6 +7,7 @@
  * 그래프에 딸려 들어간다 — 서버 컴포넌트에서 직접 import하지 말 것.
  */
 import { useState } from "react";
+import { onKeyActivate } from "@ssccops/ui";
 import { cn } from "@/shared/lib/cn";
 import { ThemeToggle } from "@/shared/ui";
 import { NAV_FOOT, type NavGroup, type NavItem } from "./nav";
@@ -26,8 +27,17 @@ function NavRow({
   const childActive = item.children?.some((k) => k.isActive(pathname)) ?? false;
   return (
     <>
+      {/*
+        메뉴 행은 `<a>`가 아니라 div다 — `onNavigate`가 드로어를 닫고 router로 가는 콜백이라
+        href를 그대로 링크로 못 준다. Tab으로 닿고 Enter·Space로 눌리게 role 방식으로 둔다
+        (ssccops-web#403). `aria-current`는 현재 화면을 보조기기에 알린다 — 색만으로는 모른다.
+      */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-current={active ? "page" : undefined}
         onClick={() => onNavigate(item.href)}
+        onKeyDown={onKeyActivate(() => onNavigate(item.href))}
         className={cn(
           "flex cursor-pointer items-center hover:bg-accent/6",
           child
@@ -91,8 +101,15 @@ export function NavPanel({
       <div className="flex-1 overflow-y-auto">
         {groups.map((g) => (
           <div key={g.label}>
+            {/* 묶음 머리글 — 접기·펼치기. 키보드 접근(#403), 접힘 상태는 aria-expanded로 */}
             <div
+              role="button"
+              tabIndex={0}
+              aria-expanded={!closed[g.label]}
               onClick={() => setClosed((c) => ({ ...c, [g.label]: !c[g.label] }))}
+              onKeyDown={onKeyActivate(() =>
+                setClosed((c) => ({ ...c, [g.label]: !c[g.label] })),
+              )}
               className="flex cursor-pointer items-center justify-between px-[18px] pt-3 pb-1 text-[12.5px] tracking-[1px] text-n400 hover:text-accent"
             >
               {g.label}

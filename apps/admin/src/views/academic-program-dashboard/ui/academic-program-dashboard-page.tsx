@@ -90,9 +90,11 @@ function OngoingProgramCard({
   const delayed = program.sttsCd === "ONGOING" && ratio < 40;
 
   return (
-    <div
+    /* 키보드 접근(#403) — grid 항목이라 늘어난 높이에서 내용이 가운데로 몰리지 않게 content-start */
+    <button
+      type="button"
       onClick={onClick}
-      className="cursor-pointer rounded-[12px] border border-line p-[14px] transition-colors hover:border-accent"
+      className="block w-full cursor-pointer content-start rounded-[12px] border border-line p-[14px] text-left transition-colors hover:border-accent"
     >
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={delayed ? "outline-red" : acdmActvSttsTone(program.sttsCd)}>
@@ -117,7 +119,7 @@ function OngoingProgramCard({
         <ProgressBar value={ratio} danger={delayed} />
         <div className="w-[38px] text-right text-[14px] text-n500">{ratio}%</div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -134,9 +136,11 @@ function ThisWeekRow({
   const near = dday === "D-DAY" || /^D-[0-3]$/.test(dday);
 
   return (
-    <div
+    /* 키보드 접근(#403) */
+    <button
+      type="button"
       onClick={onClick}
-      className="flex cursor-pointer items-start gap-3 hover:opacity-80"
+      className="flex w-full cursor-pointer items-start gap-3 text-left hover:opacity-80"
     >
       <div className="w-[56px] flex-none pt-[2px] text-[14px] text-n500">
         {formatMd(session.actualYmd) || "-"}
@@ -151,7 +155,7 @@ function ThisWeekRow({
           {session.curriculumTitle ? ` ${session.curriculumTitle}` : ""}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -218,12 +222,14 @@ export function AcademicProgramDashboardPage() {
             <Card>
               <CardTitle
                 right={
-                  <span
+                  /* 키보드 접근(#403) */
+                  <button
+                    type="button"
                     onClick={() => goPrograms()}
                     className="cursor-pointer text-[14px] text-accent hover:underline"
                   >
                     전체보기
-                  </span>
+                  </button>
                 }
               >
                 진행 중 활동
@@ -292,12 +298,14 @@ export function AcademicProgramDashboardPage() {
               <Card>
                 <CardTitle
                   right={
-                    <span
+                    /* 키보드 접근(#403) */
+                    <button
+                      type="button"
                       onClick={() => goPrograms()}
                       className="cursor-pointer text-[14px] text-accent hover:underline"
                     >
                       전체보기
-                    </span>
+                    </button>
                   }
                 >
                   최근 활동
@@ -309,14 +317,16 @@ export function AcademicProgramDashboardPage() {
                 ) : (
                   <div className="flex flex-col gap-[14px]">
                     {data.recentPrograms.map((program) => (
-                      <div
+                      /* 키보드 접근(#403) */
+                      <button
+                        type="button"
                         key={program.academicProgramId}
                         onClick={() =>
                           router.push(
                             ROUTES.academicProgramDetail(program.academicProgramId),
                           )
                         }
-                        className="cursor-pointer hover:opacity-80"
+                        className="block w-full cursor-pointer text-left hover:opacity-80"
                       >
                         <div className="flex items-center gap-[7px]">
                           <Badge tone={acdmActvSttsTone(program.sttsCd)}>
@@ -327,7 +337,7 @@ export function AcademicProgramDashboardPage() {
                         <div className="mt-[5px] text-[14.5px] text-n400">
                           {program.title || "-"} · 스터디장 {program.leaderName || "-"}
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}

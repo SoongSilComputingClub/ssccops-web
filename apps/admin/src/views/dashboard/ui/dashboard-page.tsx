@@ -116,12 +116,14 @@ export function DashboardPage() {
       width: "2fr",
       render: (item) => (
         <span className="flex flex-wrap items-center gap-[6px]">
-          <span
+          {/* 키보드 접근(#403) */}
+          <button
+            type="button"
             onClick={() => goToSubWorkApproval(item.subWorkId)}
-            className="cursor-pointer font-semibold hover:text-accent"
+            className="max-w-full cursor-pointer overflow-hidden text-left text-ellipsis font-semibold hover:text-accent"
           >
             {item.title}
-          </span>
+          </button>
           {/* 요청이 올라온 지 3일이 지났다는 서버 판정 — 승인자가 먼저 볼 자리다 */}
           {item.isReviewStale && (
             <Badge
@@ -160,12 +162,14 @@ export function DashboardPage() {
       header: "하위 업무명",
       width: "2fr",
       render: (sw) => (
-        <span
+        /* 키보드 접근(#403) — 셀이 nowrap+ellipsis라 버튼도 스스로 잘라야 말줄임이 남는다 */
+        <button
+          type="button"
           onClick={() => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
-          className="cursor-pointer font-semibold hover:text-accent"
+          className="max-w-full cursor-pointer overflow-hidden text-left text-ellipsis font-semibold hover:text-accent"
         >
           {sw.title}
-        </span>
+        </button>
       ),
     },
     {
@@ -247,12 +251,14 @@ export function DashboardPage() {
               <Card>
                 <CardTitle
                   right={
-                    <span
+                    /* 키보드 접근(#403) */
+                    <button
+                      type="button"
                       onClick={() => router.push(ROUTES.approvals)}
                       className="cursor-pointer text-[14px] text-accent hover:underline"
                     >
                       전체보기
-                    </span>
+                    </button>
                   }
                 >
                   승인 대기 목록
@@ -289,10 +295,12 @@ export function DashboardPage() {
                     data.upcomingDeadlines.map((sw) => {
                       const flag = flagOf(sw);
                       return (
-                        <div
+                        /* 키보드 접근(#403) */
+                        <button
+                          type="button"
                           key={sw.subWorkId}
                           onClick={() => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
-                          className="flex cursor-pointer items-start gap-3 hover:opacity-80"
+                          className="flex w-full cursor-pointer items-start gap-3 text-left hover:opacity-80"
                         >
                           <div className="w-[64px] flex-none pt-[2px] text-[14px] text-n500">
                             {formatMd(sw.dueAt)}
@@ -311,7 +319,7 @@ export function DashboardPage() {
                             </Badge>
                             <div className="mt-[6px] text-[15.5px]">{sw.title}</div>
                           </div>
-                        </div>
+                        </button>
                       );
                     })
                   )}

@@ -1,6 +1,7 @@
 "use client";
 
 import type { BadgeTone } from "./badge";
+import { onKeyActivate } from "@ssccops/ui";
 import { cn } from "@/shared/lib/cn";
 
 /** 월요일 시작 (한국식). 두 보기가 같은 요일로 시작해야 같은 주가 같은 모양이 된다 */
@@ -189,14 +190,26 @@ export function Calendar({
               minHeight: mode === "week" ? 220 : 96,
             }}
           >
-            {/* 배경 · 클릭 — 전체 행에 걸쳐 깔고 그 위에 내용을 얹는다 */}
+            {/*
+              배경 · 클릭 — 전체 행에 걸쳐 깔고 그 위에 내용을 얹는다.
+
+              키보드로도 날짜를 고를 수 있게 role·tabIndex를 붙인다 (ssccops-web#403 · 공용
+              컴포넌트는 role 방식). 칸 자체는 비어 있고 날짜 숫자는 다른 층에 있어 보조기기가
+              읽을 이름이 없다 — `aria-label`로 날짜를 준다. 막대·점도 같은 방식이되 `onClick`이
+              있을 때만 붙인다(GridTable과 같은 판단 — 누를 수 없는 것이 Tab에 잡히면 더 나쁘다).
+            */}
             {Array.from({ length: 7 }, (_, c) => {
               const ymd = addDays(ws, c);
               const outside = mode === "month" && !ymd.startsWith(monthPrefix);
               return (
                 <div
                   key={`bg-${c}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={ymd}
+                  aria-pressed={ymd === selected}
                   onClick={() => onSelect(ymd)}
+                  onKeyDown={onKeyActivate(() => onSelect(ymd))}
                   style={{ gridColumn: c + 1, gridRow: "1 / -1" }}
                   className={cn(
                     "cursor-pointer shadow-[0_0_0_.5px_var(--color-hairline)]",
@@ -236,6 +249,8 @@ export function Calendar({
               <div
                 key={b.item.key}
                 title={b.item.title}
+                role={b.item.onClick ? "button" : undefined}
+                tabIndex={b.item.onClick ? 0 : undefined}
                 onClick={
                   b.item.onClick
                     ? (ev) => {
@@ -245,6 +260,7 @@ export function Calendar({
                       }
                     : undefined
                 }
+                onKeyDown={b.item.onClick ? onKeyActivate(() => b.item.onClick?.()) : undefined}
                 style={{
                   gridColumn: `${b.from + 1} / ${b.to + 2}`,
                   gridRow: lanes[i] + 2,
@@ -280,6 +296,8 @@ export function Calendar({
                     <div
                       key={p.key}
                       title={p.title}
+                      role={p.onClick ? "button" : undefined}
+                      tabIndex={p.onClick ? 0 : undefined}
                       onClick={
                         p.onClick
                           ? (ev) => {
@@ -288,6 +306,7 @@ export function Calendar({
                             }
                           : undefined
                       }
+                      onKeyDown={p.onClick ? onKeyActivate(() => p.onClick?.()) : undefined}
                       className={cn(
                         "overflow-hidden rounded-[3px] px-1 py-[2px] text-[12px] text-ellipsis whitespace-nowrap",
                         TONE[p.tone ?? ""] ?? TONE_FALLBACK,
