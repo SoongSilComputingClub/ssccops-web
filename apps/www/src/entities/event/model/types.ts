@@ -62,6 +62,14 @@ export interface PublicEventDetail extends PublicEventSummary {
    * 곧바로 "폼을 찾을 수 없습니다"로 끝나는 길을 만들지 않기 위해서다.
    */
   formId: number | null;
+  /**
+   * 연결 폼이 한 사람에게서 여러 건을 받는가 — 폼이 없으면 null (ssccops#278).
+   *
+   * 상세의 신청 버튼이 «추가 제출»을 그릴지 정하는 값이다. 폼 전체를 받아 꺼내지 않고 상세에
+   * 실려 오는 것은, 상세가 익명 SSR이라 폼을 조회할 수 없고 이 값 하나는 접수 상태처럼 공개해도
+   * 새는 것이 없기 때문이다.
+   */
+  mltplRspnsYn: boolean | null;
   /** 본문_내용 (Markdown) — 원시 HTML은 렌더러가 해석하지 않는다 (D12) */
   mtxtCn: string;
   /** 참가_제한_수 — 정원 없음이면 null */

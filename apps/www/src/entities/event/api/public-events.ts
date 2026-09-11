@@ -55,6 +55,12 @@ interface PublicEventDetailResponse extends PublicEventSummaryResponse {
    * 못하는" 상태가 된다. 없으면 아래 변환기가 null로 굳혀 화면이 신청 버튼을 열지 않는다.
    */
   formId?: number | null;
+  /**
+   * 연결 폼이 여러 건을 받는가 (ssccops#278). `formId`와 같은 이유로 옵셔널이다 — 이 필드를
+   * 모르는 서버 배포에서는 오지 않고, 그때는 «한 건만 받는다»로 굳힌다(추가 제출 버튼을 안
+   * 그릴 뿐 신청은 막히지 않는다).
+   */
+  mltplRspnsYn?: boolean | null;
   mtxtCn: string;
   ptcpLmtCnt: number | null;
   confirmedCount: number;
@@ -69,7 +75,11 @@ function toDetail(response: PublicEventDetailResponse): PublicEventDetail {
    * 폼 연결은 **서버가 값을 줬을 때만** 있는 것으로 본다. 없는 값을 만들어 내지 않는다는 규칙의
    * 한 자리이고(파일 머리말), 여기서 짐작하면 신청 화면이 열린 뒤에야 폼이 없다는 것을 알게 된다.
    */
-  return { ...response, formId: response.formId ?? null };
+  return {
+    ...response,
+    formId: response.formId ?? null,
+    mltplRspnsYn: response.mltplRspnsYn ?? null,
+  };
 }
 
 /**
