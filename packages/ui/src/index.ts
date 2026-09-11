@@ -24,6 +24,13 @@
  */
 
 export { cn } from "./lib/cn";
+export {
+  deployEnv,
+  deployMarks,
+  type DeployEnv,
+  type DeployMarks,
+  type ManifestIcon,
+} from "./lib/deploy-env";
 export { onKeyActivate } from "./lib/key-activate";
 export {
   THEMES,
