@@ -271,6 +271,7 @@ function IssueTable({
                 kind === "error" ? "text-danger" : "text-amber"
               }`}
             >
+              {/* key=index — 서버 검증 결과를 그대로 나열하는 읽기 전용 목록이다 (#401 · S6479) */}
               {(kind === "error" ? row.reasons : row.warnings).map((issue, index) => (
                 <div key={index}>
                   {issue.field && (

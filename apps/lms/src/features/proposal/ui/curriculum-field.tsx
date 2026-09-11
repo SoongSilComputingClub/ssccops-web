@@ -74,6 +74,12 @@ export function CurriculumField({
       </FormDescription>
 
       <div className="mt-3 flex flex-col gap-[8px]">
+        {/*
+          key=index로 둔다 (#401 · S6479). 회차는 곧 행의 위치라(아래 `{index + 1}회차`) index가
+          이 목록의 식별자이고, 행은 재정렬이 없다. 지우면 뒤 행이 한 회차씩 당겨지는 것이
+          의도한 동작이며 칸은 전부 controlled라 값은 props가 다시 채운다. 저장 형식은 문자열
+          한 칸(`toCurriculumText`)이라 행에 id를 두어도 남지 않는다.
+        */}
         {shown.map((row, index) => (
           <div key={index} className="flex items-center gap-[6px]">
             {/*

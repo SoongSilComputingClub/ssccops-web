@@ -133,6 +133,10 @@ export function MappingStep({ wizard }: { wizard: MemberImportWizard }) {
               </tr>
             </thead>
             <tbody>
+              {/*
+                key=index로 둔다 (#401 · S6479). 서버가 읽어 준 미리보기 행·칸은 여기서 옮기거나
+                지우지 않는 읽기 전용 목록이고, 셀 값은 겹칠 수 있어 값으로는 key를 못 만든다.
+              */}
               {preview.sampleRows.map((row, rowIndex) => (
                 <tr key={rowIndex}>
                   {row.map((value, cellIndex) => (

@@ -18,6 +18,11 @@ import remarkGfm from "remark-gfm";
  * 신청 안내·지도라 현재 탭을 뺏지 않는 편이 낫고, 새 탭은 opener 를 끊어 두는 것이 기본이다.
  */
 
+/*
+ * 제목 요소가 비어 보이는 것은 오탐이다 (#401 · S6850). react-markdown이 `props.children`으로
+ * 제목 글자를 넘기고 `{...props}`가 그것을 그대로 펼친다 — 정적 분석은 펼침 안의 children을
+ * 보지 못한다. 마크다운의 `#`이 `<h2>`부터 시작하는 것은 화면 제목(`<h1>`)이 본문 밖에 있어서다.
+ */
 const COMPONENTS: Components = {
   h1: (props) => <h2 className="mt-[26px] mb-[8px] text-[20px] font-semibold" {...props} />,
   h2: (props) => <h3 className="mt-[24px] mb-[8px] text-[18px] font-semibold" {...props} />,
