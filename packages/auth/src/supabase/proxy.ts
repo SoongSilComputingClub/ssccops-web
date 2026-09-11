@@ -78,7 +78,7 @@ export async function updateSession(request: NextRequest, guard?: SessionGuard) 
     const url = request.nextUrl.clone();
     url.pathname = guard.loginPath;
     // 재로그인 후 원래 가려던 곳으로 돌아가도록 쿼리스트링까지 함께 실어 준다
-    url.search = `?next=${encodeURIComponent(`${pathname}${search}`)}`;
+    url.search = `?next=${encodeURIComponent(pathname + search)}`;
     return NextResponse.redirect(url);
   }
 

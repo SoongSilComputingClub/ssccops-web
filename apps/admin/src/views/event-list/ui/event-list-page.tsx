@@ -157,9 +157,8 @@ function EventCard({
         {event.eventTtl}
       </button>
       <div className="mt-1 text-[13.5px] text-n500">
-        {event.eventBgngDt
-          ? `${formatDt(event.eventBgngDt)}${event.eventEndDt ? ` ~ ${formatDt(event.eventEndDt)}` : ""}`
-          : "일시 미설정"}
+        {event.eventBgngDt ? formatDt(event.eventBgngDt) : "일시 미설정"}
+        {event.eventBgngDt && event.eventEndDt && ` ~ ${formatDt(event.eventEndDt)}`}
         {event.plcNm && ` · ${event.plcNm}`}
       </div>
       <div className="mt-2 flex flex-wrap gap-[6px]">
