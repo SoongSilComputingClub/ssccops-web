@@ -13,6 +13,7 @@ export function Sheet({
   okLabel = "확인",
   okDisabled,
   okTitle,
+  okVariant = "primary",
   cancelLabel = "취소",
   onCancel,
   children,
@@ -31,6 +32,14 @@ export function Sheet({
    */
   okDisabled?: boolean;
   okTitle?: string;
+  /**
+   * 확인 버튼의 색. 기본은 accent다.
+   *
+   * 되돌릴 수 없는 삭제(회원 하드 삭제 #411)만 `danger`를 쓴다 — 폼·행사 삭제는 되살릴 수
+   * 있어 기본색으로 두었고, 이쪽은 누르는 순간까지 위험이 눈에 남아야 한다. `ghost` 계열은
+   * 여기 없다 — 확인 버튼이 흐려지면 취소와 구분되지 않는다.
+   */
+  okVariant?: "primary" | "danger";
   /**
    * 왼쪽 버튼의 글자와 동작. 기본은 «취소 → onClose»다.
    *
@@ -82,7 +91,7 @@ export function Sheet({
             {cancelLabel}
           </Button>
           {onOk && (
-            <Button onClick={onOk} disabled={okDisabled} title={okTitle}>
+            <Button variant={okVariant} onClick={onOk} disabled={okDisabled} title={okTitle}>
               {okLabel}
             </Button>
           )}

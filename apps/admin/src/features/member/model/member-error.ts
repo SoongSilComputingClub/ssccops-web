@@ -257,3 +257,46 @@ export function toAssignableMemberErrorMessage(error: unknown): string {
       return error.message;
   }
 }
+
+/**
+ * 회원 삭제 미리보기·삭제 실패 → 구역·시트에 띄울 한 줄 (임시 · ADR-0021 · #411 · 서버 #361).
+ *
+ * ── 404가 둘이다 ────────────────────────────────────────────────
+ * 없는 회원(`NOT_FOUND`)과 **꺼진 기능**(`FEATURE_DISABLED`)이 같은 상태로 온다. 후자는
+ * 사용자의 잘못도 서버의 고장도 아니라 배포 설정이다 — 웹 플래그(`NEXT_PUBLIC_MEMBER_HARD_DELETE`)만
+ * 켜고 서버 플래그를 안 켠 배포에서 정확히 이 문장이 뜬다. "회원을 찾을 수 없습니다"로 뭉개면
+ * 운영진이 방금 본 회원이 사라졌다고 믿고 목록을 뒤진다.
+ *
+ * ── 409는 실패가 아니라 사실이다 ────────────────────────────────
+ * 미리보기가 비어 있었는데 삭제가 409면 그 사이에 이 회원이 폼을 만들거나 승인을 한 것이다.
+ * 문장이 다음 행동(다시 열어 무엇으로 남았는지 본다)을 짚는다 — 시트는 닫히지 않고 이 문장을
+ * 그 자리에 둔다(행사 삭제 시트와 같은 판단).
+ *
+ * 400(본인)은 서버 코드 이름이 계약에 없어 짐작한 상수로 잡고, 안 맞으면 서버 문장이 그대로
+ * 나간다(default) — 어느 쪽이든 "자기 자신"이라는 뜻은 전달된다.
+ */
+export function toMemberDeleteErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "회원을 지우지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case MEMBER_ERROR.FEATURE_DISABLED:
+      return "이 기능은 꺼져 있습니다 — 배포 설정을 확인해주세요";
+    case MEMBER_ERROR.MEMBER_REFERENCED:
+      return "지울 수 없습니다 — 미리보기 뒤에 이 회원이 남긴 기록이 생겼습니다. 닫고 다시 열면 무엇으로 남아 있는지 보입니다";
+    case MEMBER_ERROR.CANNOT_DELETE_SELF:
+      return "자기 자신은 지울 수 없습니다 — 다른 운영진에게 요청해주세요";
+    case MEMBER_ERROR.MEMBER_NOT_FOUND:
+      return "회원을 찾을 수 없습니다 — 이미 삭제되었거나 잘못된 주소입니다";
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "회원을 지울 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}

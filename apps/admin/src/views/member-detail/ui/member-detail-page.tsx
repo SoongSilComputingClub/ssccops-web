@@ -17,7 +17,13 @@ import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import {
   GradeStatusSheet,
+  MEMBER_DELETE_DESCRIPTION,
+  MEMBER_DELETE_TITLE,
+  MEMBER_DELETED_MESSAGE,
+  MEMBER_HARD_DELETE_ENABLED,
+  MemberDeleteSheet,
   RoleSheet,
+  useMemberDelete,
   useMemberDetail,
   useMemberRoles,
   type MemberRoles,
@@ -309,6 +315,15 @@ function MemberDetailView({ mbrId }: Readonly<{ mbrId: number }>) {
             </Card>
           </div>
         </div>
+
+        {/*
+          회원 삭제 구역 (임시 · ADR-0021 · #411). 플래그가 꺼진 배포에서는 **버튼이 아니라
+          구역 자체가 없다** — 잠긴 버튼을 남기는 다른 자리와 다른 판단인데, 이 기능은 권한이
+          없어서가 아니라 존재하지 않아야 하는 것이라서다(중복 계정 정리가 끝나면 끈다).
+        */}
+        {MEMBER_HARD_DELETE_ENABLED && (
+          <MemberDeleteZone memberId={member.memberId} memberName={member.name} />
+        )}
       </PageBody>
 
       {/*
@@ -326,6 +341,75 @@ function MemberDetailView({ mbrId }: Readonly<{ mbrId: number }>) {
           /* 성공 사실만 토스트로 알린다 — 처리가 남았다는 사실은 아래 패널이 붙들고 있는다 */
           flash(sheet === "grd" ? "등급을 변경했습니다" : "상태를 변경했습니다");
           setWarnings(result.warnings);
+        }}
+      />
+    </>
+  );
+}
+
+/**
+ * 회원 삭제 구역 (임시 · ADR-0021 · #411 · 서버 #361).
+ *
+ * ── 왜 다른 버튼과 떨어져 있는가 ────────────────────────────────
+ * 이 화면의 다른 조작(등급·상태·역할)은 전부 이력이 남고 되돌릴 수 있다. 삭제만 되돌릴 수 없고
+ * 본인 기록이 딸려 간다. 그 하나를 같은 카드 안 ghost 버튼으로 두면 «상태 변경» 옆에서
+ * 같은 무게로 보인다 — 화면 맨 아래에 붉은 테두리로 따로 두어 눌러야 할 자리가 아니라는 것을
+ * 모양으로 말한다. 버튼도 hover에서만 붉어지는 ghost-danger가 아니라 늘 붉은 danger다.
+ *
+ * ── 왜 임시인가 · 왜 회원명을 쓰게 하는가 · 왜 구글 안내가 필수인가 ──
+ * features/member/model/member-delete-copy.ts와 ui/member-delete-sheet.tsx 머리 주석에
+ * 있다. 여기는 흐름만 — 버튼 → 미리보기 → 시트 → 삭제 → 목록.
+ *
+ * 성공하면 목록으로 **replace**한다. 이 화면은 방금 지운 회원의 주소라 뒤로 가기로 돌아오면
+ * 404이고, 그 주소가 히스토리에 남을 이유가 없다.
+ */
+function MemberDeleteZone({
+  memberId,
+  memberName,
+}: Readonly<{
+  memberId: number;
+  memberName: string;
+}>) {
+  const router = useRouter();
+  const del = useMemberDelete(memberId);
+
+  return (
+    <>
+      {/* Card가 아니다 — Card의 테두리(shadow ring)는 line 색으로 못 박혀 있어 붉게 바꿀 수 없다 */}
+      <div className="mt-4 rounded-2xl border border-danger/40 bg-surface p-[18px]">
+        <div className="text-[13px] tracking-[.3px] text-danger">{MEMBER_DELETE_TITLE}</div>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <div className="text-[13.5px] leading-[1.6] text-n500">{MEMBER_DELETE_DESCRIPTION}</div>
+          <Button
+            variant="danger"
+            size="sm"
+            disabled={del.previewing}
+            onClick={() => void del.begin()}
+          >
+            {del.previewing ? "확인 중…" : MEMBER_DELETE_TITLE}
+          </Button>
+        </div>
+        {/* 미리보기가 실패하면 시트가 열리지 않으므로 사유를 붙일 자리가 여기뿐이다 */}
+        {del.previewErrorMessage && (
+          <div
+            role="alert"
+            className="mt-3 rounded-[12px] border border-danger/40 bg-danger/5 px-3 py-[9px] text-[13.5px] text-danger"
+          >
+            {del.previewErrorMessage}
+          </div>
+        )}
+      </div>
+
+      <MemberDeleteSheet
+        preview={del.preview}
+        memberName={memberName}
+        blockedMessage={del.deleteErrorMessage}
+        pending={del.deleting}
+        onClose={del.close}
+        onConfirm={async () => {
+          if (!(await del.confirm())) return;
+          flash(MEMBER_DELETED_MESSAGE);
+          router.replace(ROUTES.members);
         }}
       />
     </>
