@@ -51,7 +51,7 @@ export async function generateMetadata({
   }
 }
 
-export default async function Page({ params }: PageProps<"/events/[eventId]">) {
+export default async function Page({ params }: Readonly<PageProps<"/events/[eventId]">>) {
   const { eventId } = await params;
 
   /*

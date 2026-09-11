@@ -38,7 +38,7 @@ import { PublicFormFlow } from "./public-form-flow";
  * 세로 나열이라(`QitemCard`가 2단 배치를 하지 않는다) 폭만 넓히면 짧은 입력칸이 화면 끝까지
  * 늘어나 오히려 읽기 나빠진다. max-w는 상한이라 좁은 화면에서는 px-4가 그대로 지배한다.
  */
-export async function PublicFormPage({ formId }: { formId: number }) {
+export async function PublicFormPage({ formId }: Readonly<{ formId: number }>) {
   if (!Number.isInteger(formId) || formId <= 0) {
     return (
       <PublicFormShell>
@@ -74,7 +74,7 @@ export async function PublicFormPage({ formId }: { formId: number }) {
  * `/v1/auth/session`은 **미가입자에게도 200**을 준다(`signedUp: false`). 그래서 가입이
  * 필요하다는 것을 폼 조회가 403으로 깨지고 나서 배우지 않아도 된다 — 세션이 곧바로 답한다.
  */
-async function SignedInBody({ formId }: { formId: number }) {
+async function SignedInBody({ formId }: Readonly<{ formId: number }>) {
   let session: AuthSession;
   try {
     session = await fetchAuthSession();
@@ -103,7 +103,7 @@ async function SignedInBody({ formId }: { formId: number }) {
 }
 
 /** 어느 단계에 서 있든 같은 폭·여백을 두른다 — 돌아갈 행사가 없어 머리말은 두지 않는다 */
-function PublicFormShell({ children }: { children: ReactNode }) {
+function PublicFormShell({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <div className="mx-auto flex max-w-[860px] flex-col gap-[14px]">{children}</div>
   );

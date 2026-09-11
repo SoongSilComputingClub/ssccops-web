@@ -21,12 +21,12 @@ export function Chip({
   onClick,
   disabled,
   children,
-}: {
+}: Readonly<{
   active?: boolean;
   onClick?: () => void;
   disabled?: boolean;
   children: ReactNode;
-}) {
+}>) {
   return (
     <button
       type="button"

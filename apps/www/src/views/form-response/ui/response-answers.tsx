@@ -22,10 +22,10 @@ import { Card } from "@/shared/ui";
 export function ResponseAnswers({
   composition,
   answers,
-}: {
+}: Readonly<{
   composition: QitemCpstCn;
   answers: RspnsCn;
-}) {
+}>) {
   const answered = composition.qitems.filter((qitem) => hasAnswer(answers[qitem.qitemId]));
 
   if (answered.length === 0) {

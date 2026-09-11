@@ -39,7 +39,7 @@ import {
 export function MemberLinkStep({
   initialValues,
   onLinked,
-}: {
+}: Readonly<{
   /**
    * 가입 폼에서 방금 친 값 — **첫 렌더의 초깃값으로만 쓴다.**
    *
@@ -51,7 +51,7 @@ export function MemberLinkStep({
   initialValues: MemberLinkFormValues;
   /** 연결이 끝났다 — 부모가 같은 자리에서 신청서로 잇는다(가입 성공과 같은 신호다) */
   onLinked: () => void;
-}) {
+}>) {
   const [values, setValues] = useState<MemberLinkFormValues>(() => initialValues);
   /* 누르기 전부터 붉은 글씨를 띄우지 않는다 — 가입 폼과 같은 규칙이다 */
   const [attempted, setAttempted] = useState(false);

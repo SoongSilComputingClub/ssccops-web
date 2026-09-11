@@ -12,7 +12,7 @@ import { Notice } from "@/shared/ui";
  * 대기 순번도 말하지 않는다(D5 — 비공개). 서버가 순번을 주지도 않지만, 없는 값을 짐작해 쓰면
  * 그것대로 약속이 된다.
  */
-export function ApplyDone({ eventId }: { eventId: number }) {
+export function ApplyDone({ eventId }: Readonly<{ eventId: number }>) {
   return (
     <Notice
       title="신청이 접수되었습니다"

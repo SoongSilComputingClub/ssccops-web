@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function Page({ params }: PageProps<"/f/[formId]/done">) {
+export default async function Page({ params }: Readonly<PageProps<"/f/[formId]/done">>) {
   const { formId } = await params;
   return <PublicFormDonePage formId={Number(formId)} />;
 }

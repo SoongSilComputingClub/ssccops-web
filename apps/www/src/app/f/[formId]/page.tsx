@@ -60,7 +60,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function Page({ params }: PageProps<"/f/[formId]">) {
+export default async function Page({ params }: Readonly<PageProps<"/f/[formId]">>) {
   const { formId } = await params;
   return <PublicFormPage formId={Number(formId)} />;
 }

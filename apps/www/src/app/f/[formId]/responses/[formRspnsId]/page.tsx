@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default async function Page({
   params,
-}: PageProps<"/f/[formId]/responses/[formRspnsId]">) {
+}: Readonly<PageProps<"/f/[formId]/responses/[formRspnsId]">>) {
   const { formId, formRspnsId } = await params;
   return <FormResponsePage formId={Number(formId)} formRspnsId={Number(formRspnsId)} />;
 }

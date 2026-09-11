@@ -27,7 +27,7 @@ import { Badge, Pill } from "@/shared/ui";
  *
  * `formId`가 없는(옛 서버) 항목에는 링크를 그리지 않는다 — 주소를 만들 수 없다.
  */
-export function ApplicationCard({ application }: { application: MyApplication }) {
+export function ApplicationCard({ application }: Readonly<{ application: MyApplication }>) {
   const status = applicationStatusBadge(application.applicationStatus);
   const period = formatEventPeriod(application.eventBgngDt, application.eventEndDt);
 
