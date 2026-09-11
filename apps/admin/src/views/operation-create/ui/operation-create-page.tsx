@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSessionStore } from "@/entities/session";
-import { CAPABILITY } from "@/entities/session";
+import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useCreateMeeting } from "@/features/meeting";
 import { assignableMemberLabel, useAssignableMembers } from "@/features/member";
