@@ -36,6 +36,12 @@ export interface MyApplication {
   eventEndDt: string | null;
   plcNm: string | null;
   applicationStatus: ApplicationStatus;
+  /**
+   * 신청서(연결 폼) 식별자 (ssccops#278). 제출 내용을 보는 주소가 `/f/{formId}/mine/{formRspnsId}`
+   * 라 `formRspnsId`만으로는 만들 수 없다. 서버가 이 값을 주기 전 배포에서는 null이고, 그때는
+   * 카드에 «제출 내용 보기»가 없을 뿐이다.
+   */
+  formId: number | null;
   /** 제출한 폼 응답 식별자 — 응답이 아직 없으면 null */
   formRspnsId: number | null;
   /** 참가자 행 식별자 — 선발 전이면 null */
