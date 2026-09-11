@@ -1,10 +1,19 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { deployMarks } from "@ssccops/ui";
 import { AuthNav } from "@/features/auth";
 import { ROUTES } from "@/shared/config/routes";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
 import "./globals.css";
+
+/*
+ * 배포 환경 표식 (ssccops#291 · #413) — 파비콘·apple-touch-icon·`[DEV] ` 제목.
+ * `process.env.NEXT_PUBLIC_DEPLOY_ENV`는 **이 파일에 글자 그대로 적혀 있어야** 빌드 때 값이
+ * 인라인된다 — `@ssccops/ui` 안에서 읽으면 빈 값이 되어 dev도 prod로 보인다. 그래서 값만
+ * 넘기고 판정은 패키지가 한다. dev 워커의 Cloudflare 빌드 변수에만 `dev`, 없으면 prod.
+ */
+const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
 
 /**
  * 공개 웹사이트 루트 메타 (#167).
@@ -15,9 +24,10 @@ import "./globals.css";
  * 않으므로**(og:title은 별도 필드다) 상세 화면이 openGraph.title을 직접 적는 구조도 유지한다.
  */
 export const metadata: Metadata = {
+  // `[DEV] `는 default와 template 둘 다에 붙는다 — 화면 제목이 있는 페이지도 접두가 살아야 한다
   title: {
-    default: "SSCC 숭실컴퓨팅클럽",
-    template: "%s · SSCC",
+    default: DEPLOY.title("SSCC 숭실컴퓨팅클럽"),
+    template: DEPLOY.title("%s · SSCC"),
   },
   description:
     "숭실대학교 컴퓨팅 동아리 SSCC — 동아리 소개와 모집 · 세미나 · 프로젝트 · 행사 안내",
@@ -37,12 +47,13 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
   /*
-   * iOS는 manifest의 icons도 보지 않는다 — 이 링크가 없으면 홈 화면 아이콘 자리에 페이지
-   * 스크린샷이 들어간다. 파일은 어드민과 같은 임시 S 마크다(정식 로고가 나오면 두 앱을 함께 교체).
+   * `icon`은 탭 파비콘이다 — `src/app/favicon.ico` 파일 규약을 걷어냈다(#413). 파일 규약은
+   * 환경으로 갈릴 수 없고, 남겨 두면 `metadata.icons`와 둘이 `/favicon.ico`를 다툰다.
+   *
+   * `apple`: iOS는 manifest의 icons도 보지 않는다 — 이 링크가 없으면 홈 화면 아이콘 자리에
+   * 페이지 스크린샷이 들어간다. 파일은 세 앱이 같은 마크를 색만 달리한 것이다(manifest.ts 주석).
    */
-  icons: {
-    apple: "/icons/apple-touch-icon.png",
-  },
+  icons: DEPLOY.icons,
 };
 
 /*

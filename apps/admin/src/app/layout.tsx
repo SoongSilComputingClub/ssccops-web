@@ -1,10 +1,20 @@
 import type { Metadata, Viewport } from "next";
+import { deployMarks } from "@ssccops/ui";
 import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { ToastViewport } from "@/shared/ui";
 import "./globals.css";
 
+/*
+ * 배포 환경 표식 (ssccops#291 · #413) — 파비콘·apple-touch-icon·`[DEV] ` 제목.
+ * `process.env.NEXT_PUBLIC_DEPLOY_ENV`는 **이 파일에 글자 그대로 적혀 있어야** 빌드 때 값이
+ * 인라인된다 — `@ssccops/ui` 안에서 읽으면 빈 값이 되어 dev도 prod로 보인다. 그래서 값만
+ * 넘기고 판정은 패키지가 한다. dev 워커의 Cloudflare 빌드 변수에만 `dev`, 없으면 prod.
+ */
+const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
+
 export const metadata: Metadata = {
-  title: "SSCC 운영관리",
+  // 문자열 하나라 접두를 바로 붙인다 — www·lms는 `{ default, template }`이라 둘 다에 붙는다
+  title: DEPLOY.title("SSCC 운영관리"),
   description: "SSCC 운영관리시스템",
   /*
    * iOS Safari는 manifest를 보지 않는다 (#108) — 홈 화면에 추가했을 때 전체 화면으로 뜨게
@@ -21,13 +31,14 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
   /*
-   * iOS는 manifest의 icons를 보지 않는다 — 이 링크가 없으면 홈 화면 아이콘 자리에
+   * `icon`은 탭 파비콘이다 — `src/app/favicon.ico` 파일 규약을 걷어냈다(#413). 파일 규약은
+   * 환경으로 갈릴 수 없고, 남겨 두면 `metadata.icons`와 둘이 `/favicon.ico`를 다툰다.
+   *
+   * `apple`: iOS는 manifest의 icons를 보지 않는다 — 이 링크가 없으면 홈 화면 아이콘 자리에
    * 페이지 스크린샷이 들어간다. 투명도를 지원하지 않고 모서리는 iOS가 알아서 깎으므로
-   * 배경을 가장자리까지 채운 이미지를 쓴다 (#106 임시 아이콘).
+   * 배경을 가장자리까지 채운 이미지를 쓴다.
    */
-  icons: {
-    apple: "/icons/apple-touch-icon.png",
-  },
+  icons: DEPLOY.icons,
 };
 
 /*
