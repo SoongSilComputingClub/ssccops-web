@@ -88,7 +88,7 @@ interface OperationHubResponse {
 
 /** 담당자 요약. 값이 없으면(이관 데이터 등) null로 떨어뜨린다 — 표시 폴백은 뷰의 몫 */
 function toMemberRef(member: MemberSummaryResponse | null) {
-  if (!member || member.memberId == null) return null;
+  if (member?.memberId == null) return null;
   return { memberId: member.memberId, name: member.name ?? "" };
 }
 
@@ -113,7 +113,7 @@ function toWorkListItem(res: WorkListItemResponse): WorkListItem {
 
 function toSubWorkListItem(res: SubWorkSummaryResponse): SubWorkListItem {
   const work =
-    res.work && res.work.workId != null
+    res.work?.workId != null
       ? { workId: res.work.workId, title: res.work.title ?? "" }
       : null;
   return {

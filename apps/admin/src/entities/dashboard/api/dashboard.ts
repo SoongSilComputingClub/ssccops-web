@@ -133,12 +133,12 @@ function toApprovalInboxItem(res: ApprovalInboxItemResponse): ApprovalInboxItem 
 }
 
 function toMemberRef(member: SubWorkSummaryMemberResponse | null): SubWorkMemberRef | null {
-  if (!member || member.memberId == null) return null;
+  if (member?.memberId == null) return null;
   return { memberId: member.memberId, name: member.name ?? "" };
 }
 
 function toWorkRef(work: SubWorkSummaryWorkResponse | null): SubWorkWorkRef | null {
-  if (!work || work.workId == null) return null;
+  if (work?.workId == null) return null;
   return { workId: work.workId, title: work.title ?? "" };
 }
 
