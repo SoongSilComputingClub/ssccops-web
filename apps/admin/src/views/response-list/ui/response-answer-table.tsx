@@ -33,14 +33,14 @@ export function ResponseAnswerTable({
   columns,
   answers,
   onRowClick,
-}: {
+}: Readonly<{
   rows: FormResponseItem[];
   /** 보이기로 한 열만 넘어온다 — 끄고 켜는 판단은 부르는 쪽이 한다 */
   columns: AnswerColumn[];
   /** formRspnsId → 답. 아직 안 왔거나 실패한 건은 없다 */
   answers: Record<number, RspnsCn>;
   onRowClick: (formRspnsId: number) => void;
-}) {
+}>) {
   /*
    * 펼친 칸은 한 번에 하나다. 여러 칸을 동시에 펼치면 행 높이가 제각각이 되어 표로 훑는 이점이
    * 사라진다 — 자르는 이유와 같은 이유로 펼침도 하나로 묶는다.

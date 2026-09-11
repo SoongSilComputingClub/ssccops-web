@@ -20,10 +20,10 @@ export function BootstrapPending() {
 export function BootstrapError({
   message,
   onRetry,
-}: {
+}: Readonly<{
   message: string | null;
   onRetry: () => void;
-}) {
+}>) {
   return (
     <div className="flex h-full flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
       <div className="text-[16px] font-medium">세션을 불러오지 못했습니다</div>

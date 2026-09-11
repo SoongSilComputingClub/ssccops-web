@@ -10,7 +10,7 @@ export function Toggle({
   disabled,
   title,
   className,
-}: {
+}: Readonly<{
   on: boolean;
   onChange: (on: boolean) => void;
   size?: "md" | "sm";
@@ -19,7 +19,7 @@ export function Toggle({
   /** 잠긴 이유 — 툴팁으로 붙는다 */
   title?: string;
   className?: string;
-}) {
+}>) {
   const md = size === "md";
   return (
     <button

@@ -81,12 +81,12 @@ function ProposalReviewDetail({
   form,
   response,
   reload,
-}: {
+}: Readonly<{
   formId: number;
   form: FormDetail;
   response: FormResponseDetail;
   reload: () => void;
-}) {
+}>) {
   const router = useRouter();
 
   const { member } = response;
@@ -248,10 +248,10 @@ function ProposalReviewDetail({
 function ProposalReviewDetailContent({
   formId,
   formRspnsId,
-}: {
+}: Readonly<{
   formId: number;
   formRspnsId: number;
-}) {
+}>) {
   const rspns = useResponseDetail(formId, formRspnsId);
   const formQuery = useFormDetail(formId);
 
@@ -299,7 +299,7 @@ function ProposalReviewDetailContent({
   );
 }
 
-export function ProposalReviewDetailPage({ formRspnsId }: { formRspnsId: number }) {
+export function ProposalReviewDetailPage({ formRspnsId }: Readonly<{ formRspnsId: number }>) {
   const proposalForm = useProposalForm();
 
   /*

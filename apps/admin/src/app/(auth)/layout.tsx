@@ -1,4 +1,4 @@
-export default function AuthLayout({ children }: LayoutProps<"/">) {
+export default function AuthLayout({ children }: Readonly<LayoutProps<"/">>) {
   return (
     <div
       className="flex min-h-dvh flex-col items-center justify-center"

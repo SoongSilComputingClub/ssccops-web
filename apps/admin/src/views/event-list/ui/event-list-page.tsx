@@ -101,7 +101,7 @@ function EventCard({
   deleting,
   onDuplicated,
   onDelete,
-}: {
+}: Readonly<{
   event: EventSummary;
   canManage: boolean;
   /** 삭제 요구 권한 보유 여부 — 지금은 EVENT_MANAGE와 같은 값이지만 판단의 출처가 다르다 */
@@ -110,7 +110,7 @@ function EventCard({
   deleting: boolean;
   onDuplicated: () => void;
   onDelete: () => void;
-}) {
+}>) {
   const router = useRouter();
   const { pending, duplicate } = useDuplicateEvent();
   /** 두 단계 확인의 첫 단계 — 권한 트리 삭제(views/authority-tree)와 같은 방식이다 */

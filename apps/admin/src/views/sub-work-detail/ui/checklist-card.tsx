@@ -77,14 +77,14 @@ function ChecklistRow({
   onToggle,
   onRename,
   onRemove,
-}: {
+}: Readonly<{
   item: SubWorkChecklistItem;
   editing: boolean;
   disabled: boolean;
   onToggle: () => void;
   onRename: (article: string) => Promise<boolean>;
   onRemove: () => void;
-}) {
+}>) {
   const [draft, setDraft] = useState<string | null>(null);
   const isDrafting = draft !== null;
 
@@ -176,7 +176,7 @@ export function ChecklistCard({
   onAdd,
   onRename,
   onRemove,
-}: ChecklistCardProps) {
+}: Readonly<ChecklistCardProps>) {
   const [editing, setEditing] = useState(false);
   const [newArticle, setNewArticle] = useState("");
 

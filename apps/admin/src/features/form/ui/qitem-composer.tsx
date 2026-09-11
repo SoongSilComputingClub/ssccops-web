@@ -29,7 +29,7 @@ import { nextQitemId, parseMaxSlctCnt } from "../model/form-draft";
  * 매번 펼쳐야 하기 때문이다. 비어 있으면 FormDescription이 아무것도 그리지 않아 자리도
  * 차지하지 않는다.
  */
-function DescriptionPreview({ value }: { value?: string }) {
+function DescriptionPreview({ value }: Readonly<{ value?: string }>) {
   if (!value?.trim()) {
     return null;
   }
@@ -62,7 +62,7 @@ export function QitemComposer({
   issues,
   inUseQitemIds,
   systemRequiredQitemIds,
-}: {
+}: Readonly<{
   cpst: QitemCpstCn;
   /** 문항 구성만 바꾼다 — 무엇이 언제 저장되는지는 호출부가 정한다 */
   onChange: (updater: (cpst: QitemCpstCn) => QitemCpstCn) => void;
@@ -81,7 +81,7 @@ export function QitemComposer({
    * 그쪽 호출부는 넘기지 않는다.
    */
   systemRequiredQitemIds?: string[];
-}) {
+}>) {
   /* 셋 다 저장 대상이 아니다 — 화면에서 어디를 보고 있는지일 뿐이다 */
   const [page, setPage] = useState(0);
   const [openQ, setOpenQ] = useState<string | null>(null);

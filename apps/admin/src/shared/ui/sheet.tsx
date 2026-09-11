@@ -16,7 +16,7 @@ export function Sheet({
   cancelLabel = "취소",
   onCancel,
   children,
-}: {
+}: Readonly<{
   open: boolean;
   title: string;
   hint?: string;
@@ -41,7 +41,7 @@ export function Sheet({
   cancelLabel?: string;
   onCancel?: () => void;
   children?: ReactNode;
-}) {
+}>) {
   /*
    * Esc로 닫는다 (ssccops-web#403).
    *

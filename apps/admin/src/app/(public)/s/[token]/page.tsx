@@ -106,7 +106,7 @@ export async function generateMetadata({ params }: PageProps<"/s/[token]">): Pro
   };
 }
 
-export default async function Page({ params }: PageProps<"/s/[token]">) {
+export default async function Page({ params }: Readonly<PageProps<"/s/[token]">>) {
   const { token } = await params;
   const preview = await fetchSharePreview(token);
 

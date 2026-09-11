@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
  * 링크를 함께 두는 것은 자동 이동이 막히는 자리가 있어서다 — 자바스크립트가 꺼져 있거나
  * 인앱 브라우저가 이동을 삼키면 사람이 직접 누를 것이 필요하다.
  */
-export function ShareLanding({ title, href }: { title: string; href: string }) {
+export function ShareLanding({ title, href }: Readonly<{ title: string; href: string }>) {
   const router = useRouter();
 
   useEffect(() => {

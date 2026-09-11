@@ -56,7 +56,7 @@ function EditSkeleton() {
   );
 }
 
-export function WorkEditPage({ workId }: { workId: number }) {
+export function WorkEditPage({ workId }: Readonly<{ workId: number }>) {
   const router = useRouter();
   const { work, status, errorMessage, reload } = useWorkDetail(workId);
   const canManage = useCan(CAPABILITY.WORK_MANAGE);
@@ -95,10 +95,10 @@ export function WorkEditPage({ workId }: { workId: number }) {
 function WorkEditForm({
   work,
   canManage,
-}: {
+}: Readonly<{
   work: WorkDetail;
   canManage: boolean;
-}) {
+}>) {
   const router = useRouter();
   const { pending, update } = useUpdateWork();
 

@@ -49,14 +49,14 @@ export function GridTable<T>({
   onRowClick,
   dense,
   empty,
-}: {
+}: Readonly<{
   columns: GridColumn<T>[];
   rows: T[];
   rowKey: (row: T, index: number) => string;
   onRowClick?: (row: T) => void;
   dense?: boolean;
   empty?: ReactNode;
-}) {
+}>) {
   const primary = columns.find((c) => c.mobilePrimary) ?? columns[0];
   const secondary = columns.filter((c) => c !== primary && !c.mobileHide);
 

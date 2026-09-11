@@ -105,7 +105,7 @@ function DetailSkeleton() {
   );
 }
 
-export function SubWorkDetailPage({ subWorkId }: { subWorkId: number }) {
+export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>) {
   const router = useRouter();
   const {
     subWork,

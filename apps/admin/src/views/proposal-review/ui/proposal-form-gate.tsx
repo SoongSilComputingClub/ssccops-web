@@ -26,13 +26,13 @@ export function ProposalFormGate({
   title,
   showBack,
   query,
-}: {
+}: Readonly<{
   /** 화면 제목 — 목록과 상세가 서로 다른 제목으로 기다린다 */
   title: string;
   /** 상세는 목록으로 돌아갈 곳이 있고 목록에는 없다 */
   showBack?: boolean;
   query: ProposalFormQuery;
-}) {
+}>) {
   return (
     <>
       <PageHeader title={title} showBack={showBack} />

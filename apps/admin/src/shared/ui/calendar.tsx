@@ -126,7 +126,7 @@ export function Calendar({
   selected,
   onSelect,
   maxPointsPerDay,
-}: {
+}: Readonly<{
   mode: CalendarMode;
   /** 보고 있는 범위를 정하는 기준일 "YYYY-MM-DD" */
   anchor: string;
@@ -136,7 +136,7 @@ export function Calendar({
   onSelect: (ymd: string) => void;
   /** 한 칸에 접지 않고 보여줄 점의 수. 주 보기는 칸이 높아 넉넉하다 */
   maxPointsPerDay?: number;
-}) {
+}>) {
   const weeks = weeksOf(mode, anchor);
   const monthPrefix = anchor.slice(0, 7);
   const maxPoints = maxPointsPerDay ?? (mode === "week" ? 8 : 3);

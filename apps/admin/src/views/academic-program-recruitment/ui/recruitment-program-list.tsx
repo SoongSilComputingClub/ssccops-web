@@ -58,7 +58,7 @@ export function RecruitmentProgramList({
   onSelect,
   onLoadMore,
   onReload,
-}: RecruitmentProgramListProps) {
+}: Readonly<RecruitmentProgramListProps>) {
   const rows = useMemo(
     () => programs.filter((p) => MANAGEABLE.has(p.sttsCd)),
     [programs],

@@ -77,7 +77,7 @@ export function BulkGradeStatusSheet({
   targets,
   onClose,
   onSaved,
-}: {
+}: Readonly<{
   kind: "grd" | "stts" | null;
   /** memberId → 이름. 미리보기가 이름을 펼치고, 저장 시점에 id 목록으로 굳힌다 */
   targets: ReadonlyMap<number, string>;
@@ -87,7 +87,7 @@ export function BulkGradeStatusSheet({
    * 에만 부르지 않는다. 부모는 여기서 목록을 다시 부르고 선택을 비운다.
    */
   onSaved: (result: MemberBulkChangeResult) => void;
-}) {
+}>) {
   const { grades, statuses, loading } = useMemberCodes();
   const { bulkChangeGrade, bulkChangeStatus, changing, changeErrorMessage, clearChangeError } =
     useMemberActions();
@@ -362,7 +362,7 @@ export function BulkGradeStatusSheet({
  * 회원별 결과 한 줄. 경고는 **그 회원 줄 아래**에 붙는다 — 요약으로 합치면 누구 것인지가
  * 사라지고, 경고의 쓸모는 사람이 가서 정리하는 것이다(상세의 경고 패널과 같은 배지·문구).
  */
-function ResultRow({ row }: { row: MemberBulkChangeRow }) {
+function ResultRow({ row }: Readonly<{ row: MemberBulkChangeRow }>) {
   return (
     <div className="border-t border-hairline py-[9px] first:border-t-0">
       <div className="flex items-center gap-2">

@@ -102,11 +102,11 @@ function CancelSheet({
   open,
   onClose,
   onCancel,
-}: {
+}: Readonly<{
   open: boolean;
   onClose: () => void;
   onCancel: (reason: string) => void;
-}) {
+}>) {
   const [reason, setReason] = useState("");
 
   if (!open) return null;
@@ -150,14 +150,14 @@ function AgendaCard({
   onUpdate,
   onWithdraw,
   withdrawable,
-}: {
+}: Readonly<{
   agenda: MeetingAgenda;
   editable: boolean;
   pending: boolean;
   onUpdate: (content: string, resultContent: string, processStatus: AgndPrcsSeCd) => void;
   onWithdraw: () => void;
   withdrawable: boolean;
-}) {
+}>) {
   const router = useRouter();
   const [content, setContent] = useState(agenda.content ?? "");
   const [resultContent, setResultContent] = useState(agenda.resultContent ?? "");
@@ -256,7 +256,7 @@ function AgendaCard({
   );
 }
 
-export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
+export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
   const router = useRouter();
   const { meeting, status, errorMessage, reload, applyAgendaUpsert, applyAgendaRemoval } =
     useMeetingDetail(mtgId);

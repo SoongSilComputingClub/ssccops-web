@@ -25,7 +25,7 @@ export function FormCloseSheet({
   pending,
   onClose,
   onConfirm,
-}: {
+}: Readonly<{
   open: boolean;
   formTtlNm: string;
   rcptEndDt: string | null;
@@ -33,7 +33,7 @@ export function FormCloseSheet({
   pending: boolean;
   onClose: () => void;
   onConfirm: () => void;
-}) {
+}>) {
   return (
     <Sheet
       open={open}

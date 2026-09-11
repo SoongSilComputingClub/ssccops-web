@@ -36,7 +36,7 @@ const STATUS_TONE: Record<string, BadgeTone> = {
   FAILED: "red",
 };
 
-export function ResultStep({ wizard }: { wizard: MemberImportWizard }) {
+export function ResultStep({ wizard }: Readonly<{ wizard: MemberImportWizard }>) {
   const router = useRouter();
   const { execution } = wizard;
 

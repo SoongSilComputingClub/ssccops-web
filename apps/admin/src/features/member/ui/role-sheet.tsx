@@ -46,7 +46,7 @@ export function RoleSheet({
   roles,
   onClose,
   onAssigned,
-}: {
+}: Readonly<{
   memberId: number;
   /** 누구에게 붙이는지를 시트 제목 아래에 남긴다 — 목록에서 잘못 누른 것을 여기서 알아채야 한다 */
   memberName: string;
@@ -61,7 +61,7 @@ export function RoleSheet({
   onClose: () => void;
   /** 부여 성공 — 상세 화면이 토스트를 띄운다 (목록 갱신은 훅이 이미 끝냈다) */
   onAssigned: (assignment: MemberRoleAssignment) => void;
-}) {
+}>) {
   /* 시트가 닫혀 있는 동안에는 역할 목록을 받지 않는다 — 열 때 한 번만 나간다 */
   const { roles: options, loading, errorMessage: optionsError } = useAssignableRoles(open);
 

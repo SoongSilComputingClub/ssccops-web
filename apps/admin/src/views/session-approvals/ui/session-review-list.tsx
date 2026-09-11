@@ -52,7 +52,7 @@ export function SessionReviewList({
   onSelect,
   onLoadMore,
   onReload,
-}: SessionReviewListProps) {
+}: Readonly<SessionReviewListProps>) {
   if (status === "loading") return <ListSkeleton />;
 
   if (status === "error") {

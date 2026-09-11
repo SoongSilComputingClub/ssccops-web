@@ -6,12 +6,12 @@ export function ProgressBar({
   danger,
   className,
   height = 5,
-}: {
+}: Readonly<{
   value: number;
   danger?: boolean;
   className?: string;
   height?: number;
-}) {
+}>) {
   return (
     <div
       className={cn("flex-1 overflow-hidden rounded-full bg-line", className)}

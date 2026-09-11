@@ -27,9 +27,9 @@ import { Badge, Card, EmptyState, SectionLabel } from "@/shared/ui";
  */
 export function ResponseReviewTimeline({
   histories,
-}: {
+}: Readonly<{
   histories: FormResponseReviewHistory[];
-}) {
+}>) {
   return (
     <Card>
       <SectionLabel className="mb-1">처리 이력</SectionLabel>

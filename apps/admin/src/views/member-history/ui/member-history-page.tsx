@@ -127,7 +127,7 @@ const NONE_LABEL: Record<MemberHistoryChangeType, string> = {
   PROFILE: "없음",
 };
 
-export function MemberHistoryPage({ mbrId }: { mbrId: number }) {
+export function MemberHistoryPage({ mbrId }: Readonly<{ mbrId: number }>) {
   const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
 
   /* 훅을 조건부로 부를 수 없으므로 본문을 별도 컴포넌트로 뺀다 (views/role-authorities 와 같다) */
@@ -145,7 +145,7 @@ export function MemberHistoryPage({ mbrId }: { mbrId: number }) {
   return <MemberHistoryView mbrId={mbrId} />;
 }
 
-function MemberHistoryView({ mbrId }: { mbrId: number }) {
+function MemberHistoryView({ mbrId }: Readonly<{ mbrId: number }>) {
   const router = useRouter();
 
   /**
@@ -304,7 +304,7 @@ function HistorySkeleton() {
  * 없는 값을 만들어 내지 않는다는 규칙이 여기서는 칸을 지우는 모양이 된다
  * ({@link PROFILE_BLANK_NOTE}). 대신 **무슨 항목이 바뀌었는지**를 그 자리에 세운다.
  */
-function HistoryRow({ entry, last }: { entry: MemberHistoryEntry; last: boolean }) {
+function HistoryRow({ entry, last }: Readonly<{ entry: MemberHistoryEntry; last: boolean }>) {
   const from = entry.previousName ?? NONE_LABEL[entry.changeType];
   const to = entry.newName ?? NONE_LABEL[entry.changeType];
   const isRole = historyTypeOf(entry.changeType) === "ROLE";

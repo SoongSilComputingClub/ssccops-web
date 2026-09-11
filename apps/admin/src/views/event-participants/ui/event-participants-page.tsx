@@ -78,7 +78,7 @@ function parsePtcpSttsCd(value: string | null): PtcpSttsCd | null {
     : null;
 }
 
-export function EventParticipantsPage({ eventId }: { eventId: number }) {
+export function EventParticipantsPage({ eventId }: Readonly<{ eventId: number }>) {
   const router = useRouter();
   const { event, status, errorMessage, reload } = useEventDetail(eventId);
   const canManage = useCan(CAPABILITY.EVENT_MANAGE);
@@ -125,11 +125,11 @@ function EventParticipantsView({
   event,
   canManage,
   reloadEvent,
-}: {
+}: Readonly<{
   event: EventDetail;
   canManage: boolean;
   reloadEvent: () => void;
-}) {
+}>) {
   const router = useRouter();
   const searchParams = useSearchParams();
 

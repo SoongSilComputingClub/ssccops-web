@@ -33,12 +33,12 @@ export function ManualRegisterSheet({
   busy,
   onClose,
   onSubmit,
-}: {
+}: Readonly<{
   open: boolean;
   busy: boolean;
   onClose: () => void;
   onSubmit: (mbrId: number, ptcpSttsCd: PtcpSttsCd) => void;
-}) {
+}>) {
   const assignable = useAssignableMembers();
   const [keyword, setKeyword] = useState("");
   const [selected, setSelected] = useState<number | null>(null);

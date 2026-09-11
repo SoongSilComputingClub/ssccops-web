@@ -59,7 +59,7 @@ function StatsSkeleton() {
   );
 }
 
-function ProgramRateRow({ row }: { row: ProgramAttendanceRate }) {
+function ProgramRateRow({ row }: Readonly<{ row: ProgramAttendanceRate }>) {
   const value = row.rate ?? 0;
   const low = row.rate !== null && row.rate < LOW_ATTENDANCE_RATE;
   return (

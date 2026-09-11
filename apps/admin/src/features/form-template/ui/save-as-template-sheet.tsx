@@ -23,14 +23,14 @@ export function SaveAsTemplateSheet({
   pending,
   onClose,
   onSave,
-}: {
+}: Readonly<{
   open: boolean;
   /** 이름을 비웠을 때 무엇이 될지 보여 주기 위한 폼 제목 */
   formTtlNm: string;
   pending: boolean;
   onClose: () => void;
   onSave: (input: { tmplNm: string; tmplExpln: string }) => void;
-}) {
+}>) {
   const [tmplNm, setTmplNm] = useState("");
   const [tmplExpln, setTmplExpln] = useState("");
 

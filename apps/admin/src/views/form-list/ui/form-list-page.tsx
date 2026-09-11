@@ -120,7 +120,7 @@ function FormCard({
   canDelete,
   onDuplicate,
   onDelete,
-}: {
+}: Readonly<{
   form: FormSummary;
   /** 이 카드의 복제가 진행 중인가 — 연타로 사본이 여러 장 생기는 것을 막는다 */
   duplicating: boolean;
@@ -132,7 +132,7 @@ function FormCard({
   canDelete: boolean;
   onDuplicate: () => void;
   onDelete: () => void;
-}) {
+}>) {
   const router = useRouter();
   /*
    * 배지는 formSttsCd가 아니라 서버 파생값(receiptStatus)으로 그린다 — 접수 기간이 끝나도

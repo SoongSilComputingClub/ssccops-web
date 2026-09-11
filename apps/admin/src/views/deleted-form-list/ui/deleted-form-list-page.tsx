@@ -56,13 +56,13 @@ function DeletedFormCard({
   restoring,
   canRestore,
   onRestore,
-}: {
+}: Readonly<{
   form: FormSummary;
   /** 이 카드의 복구가 진행 중인가 — 연타로 요청이 두 번 나가는 것을 막는다 */
   restoring: boolean;
   canRestore: boolean;
   onRestore: () => void;
-}) {
+}>) {
   return (
     <Card>
       <div className="flex flex-wrap items-center gap-2">

@@ -68,11 +68,11 @@ export function EventShareButton({
   eventId,
   eventSttsCd,
   title,
-}: {
+}: Readonly<{
   eventId: number;
   eventSttsCd: EventSttsCd;
   title: string;
-}) {
+}>) {
   /*
    * 게시된 행사에서만 공개 주소를 건넨다. 오리진 설정이 비면 `null`이고, 그때는 발급으로
    * 떨어지지 않고 버튼을 아예 그리지 않는다 — 떨어뜨리면 서버가 409로 막아 사람이 영문

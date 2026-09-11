@@ -7,12 +7,12 @@ export function EmptyState({
   action,
   className,
   padding = "lg",
-}: {
+}: Readonly<{
   message: ReactNode;
   action?: { label: string; onClick: () => void };
   className?: string;
   padding?: "sm" | "lg";
-}) {
+}>) {
   return (
     <div
       className={cn(

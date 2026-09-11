@@ -48,7 +48,7 @@ function WorkCardSkeleton() {
   );
 }
 
-function WorkCard({ work, onClick }: { work: WorkListItem; onClick: () => void }) {
+function WorkCard({ work, onClick }: Readonly<{ work: WorkListItem; onClick: () => void }>) {
   // 진행률은 서버가 계산한 값이다 — 화면은 반올림해 보여 주기만 한다
   const prgrs = Math.round(work.progressRate);
 
