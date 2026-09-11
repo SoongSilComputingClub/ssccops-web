@@ -41,12 +41,12 @@ function ResponseDetailContent({
   form,
   response,
   reload,
-}: {
+}: Readonly<{
   formId: number;
   form: FormDetail;
   response: FormResponseDetail;
   reload: () => void;
-}) {
+}>) {
   const router = useRouter();
 
   const { member } = response;
@@ -219,10 +219,10 @@ function ResponseDetailContent({
 export function ResponseDetailPage({
   formId,
   formRspnsId,
-}: {
+}: Readonly<{
   formId: number;
   formRspnsId: number;
-}) {
+}>) {
   const rspns = useResponseDetail(formId, formRspnsId);
   const formQuery = useFormDetail(formId);
 

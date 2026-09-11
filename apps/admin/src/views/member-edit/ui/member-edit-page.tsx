@@ -71,7 +71,7 @@ const NO_MEMBER_MANAGE =
 const UNLINKED_STUDENT_NUMBER_NOTE =
   "이 회원은 아직 계정을 연결하지 않았습니다. 학번을 바꾸면 예전 학번으로는 계정을 연결할 수 없습니다 — 계정 연결은 학번 · 회원명 · 연락처가 모두 맞아야 합니다.";
 
-export function MemberEditPage({ mbrId }: { mbrId: number }) {
+export function MemberEditPage({ mbrId }: Readonly<{ mbrId: number }>) {
   const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
 
   /* 훅을 조건부로 부를 수 없으므로 본문을 별도 컴포넌트로 뺀다 (views/role-authorities 와 같다) */
@@ -89,7 +89,7 @@ export function MemberEditPage({ mbrId }: { mbrId: number }) {
   return <MemberEditForm mbrId={mbrId} />;
 }
 
-function MemberEditForm({ mbrId }: { mbrId: number }) {
+function MemberEditForm({ mbrId }: Readonly<{ mbrId: number }>) {
   const router = useRouter();
   const editor = useMemberEdit(mbrId);
   const { member, values, errors, academicRequired } = editor;

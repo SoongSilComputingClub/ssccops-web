@@ -59,10 +59,10 @@ import { Card } from "@/shared/ui";
 export function ProposalForm({
   formId,
   composition,
-}: {
+}: Readonly<{
   formId: number;
   composition: QitemCpstCn;
-}) {
+}>) {
   const router = useRouter();
   const form = useProposalForm(formId, composition);
   const [page, setPage] = useState(0);
@@ -228,12 +228,12 @@ function ProposalQitems({
   answers,
   errors,
   onChange,
-}: {
+}: Readonly<{
   qitems: Qitem[];
   answers: RspnsCn;
   errors: Record<string, string>;
   onChange: (qitemId: string, value: AnswerValue) => void;
-}) {
+}>) {
   const curriculum = useCurriculumRows(answers[CURRICULUM_QITEM_ID]);
   const schedule = useScheduleParts(answers[SCHEDULE_QITEM_ID]);
 
@@ -288,10 +288,10 @@ function ProposalQitems({
 function SaveLine({
   save,
   onRetry,
-}: {
+}: Readonly<{
   save: ReturnType<typeof useProposalForm>["save"];
   onRetry: () => void;
-}) {
+}>) {
   if (save.state === "failed") {
     return (
       <div className="flex flex-wrap items-center gap-x-[8px] gap-y-[2px] rounded-2xl border border-amber/35 bg-amber/10 px-[14px] py-[10px] text-[12.5px] text-amber">

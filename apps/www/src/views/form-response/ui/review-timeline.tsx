@@ -30,9 +30,9 @@ const NEEDS_ATTENTION: ReviewProcessCode = "REQUEST_CHANGES";
 
 export function ReviewTimeline({
   histories,
-}: {
+}: Readonly<{
   histories: FormResponseReviewHistory[];
-}) {
+}>) {
   if (histories.length === 0) return null;
 
   return (

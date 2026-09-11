@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function Page({ params }: PageProps<"/events/[eventId]/apply">) {
+export default async function Page({ params }: Readonly<PageProps<"/events/[eventId]/apply">>) {
   const { eventId } = await params;
 
   // 숫자가 아닌 주소는 서버에 물어볼 것 없이 404다 — 상세 화면과 같은 규칙이다

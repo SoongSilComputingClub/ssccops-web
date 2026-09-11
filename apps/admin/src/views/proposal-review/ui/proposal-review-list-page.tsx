@@ -69,7 +69,7 @@ function parseRspnsSttsCd(value: string | null): RspnsSttsCd | null {
  * 폼이 들어 있는 환경에서는 아무 경고 없이 **남의 폼 응답이 검토 목록에 뜬다.** 그래서 코드가
  * 폼을 가리키는 값은 `sys_form_cd`뿐이고 번호는 진입할 때 찾는다(#163의 `useProposalForm`).
  */
-function ProposalReviewList({ formId }: { formId: number }) {
+function ProposalReviewList({ formId }: Readonly<{ formId: number }>) {
   const router = useRouter();
   const searchParams = useSearchParams();
 

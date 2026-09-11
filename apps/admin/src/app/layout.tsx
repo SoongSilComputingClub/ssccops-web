@@ -49,7 +49,7 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
   return (
     <html lang="ko">
       <head>

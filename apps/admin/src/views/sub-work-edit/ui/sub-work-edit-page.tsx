@@ -51,7 +51,7 @@ function EditSkeleton() {
   );
 }
 
-export function SubWorkEditPage({ subWorkId }: { subWorkId: number }) {
+export function SubWorkEditPage({ subWorkId }: Readonly<{ subWorkId: number }>) {
   const router = useRouter();
   const { subWork, status, errorMessage, reload } = useSubWorkDetail(subWorkId);
   const canManage = useCan(CAPABILITY.WORK_MANAGE);
@@ -93,10 +93,10 @@ export function SubWorkEditPage({ subWorkId }: { subWorkId: number }) {
 function SubWorkEditForm({
   subWork,
   canManage,
-}: {
+}: Readonly<{
   subWork: SubWorkDetail;
   canManage: boolean;
-}) {
+}>) {
   const router = useRouter();
   const { pending, update } = useUpdateSubWork();
 

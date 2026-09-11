@@ -13,7 +13,7 @@ import { Badge } from "@/shared/ui";
  * 합류일도 값이 없으면 그 칸을 비운다("미정" 같은 문구를 만들어 넣지 않는다).
  */
 
-export function MemberRowDesktop({ member }: { member: AcademicProgramMember }) {
+export function MemberRowDesktop({ member }: Readonly<{ member: AcademicProgramMember }>) {
   const role = memberRoleBadge(member.isLeader);
   const status = ptcpSttsBadge(member.ptcpSttsCd);
   const joined = formatYmd(member.joinedAt);
@@ -34,7 +34,7 @@ export function MemberRowDesktop({ member }: { member: AcademicProgramMember }) 
   );
 }
 
-export function MemberCardMobile({ member }: { member: AcademicProgramMember }) {
+export function MemberCardMobile({ member }: Readonly<{ member: AcademicProgramMember }>) {
   const role = memberRoleBadge(member.isLeader);
   const status = ptcpSttsBadge(member.ptcpSttsCd);
   const joined = formatYmd(member.joinedAt);

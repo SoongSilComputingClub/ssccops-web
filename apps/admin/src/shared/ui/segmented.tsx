@@ -8,12 +8,12 @@ export function Segmented<T extends string>({
   value,
   onChange,
   className,
-}: {
+}: Readonly<{
   options: readonly T[];
   value: T;
   onChange: (value: T) => void;
   className?: string;
-}) {
+}>) {
   return (
     <div
       className={cn(

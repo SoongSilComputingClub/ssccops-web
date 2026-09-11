@@ -20,7 +20,7 @@ import { ApplyDone } from "./apply-done";
  * 갈 곳이 다르고(여기서는 '내 신청'과 행사 안내로 잇는다), 공유해야 하는 것은 이미 패키지에
  * 있다. 문항 카드를 여기서 다시 그리는 순간 선택 토글·최대 선택 수 규칙이 두 벌이 된다.
  */
-export function FormStep({ formId, eventId }: { formId: number; eventId: number }) {
+export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId: number }>) {
   const apply = useApplyForm(formId);
   const [page, setPage] = useState(0);
   const [done, setDone] = useState(false);
@@ -251,7 +251,7 @@ export function FormStep({ formId, eventId }: { formId: number; eventId: number 
   );
 }
 
-function BackToEvent({ eventId }: { eventId: number }) {
+function BackToEvent({ eventId }: Readonly<{ eventId: number }>) {
   return (
     <Link
       href={ROUTES.eventDetail(eventId)}

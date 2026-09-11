@@ -17,12 +17,12 @@ function NavRow({
   pathname,
   onNavigate,
   child,
-}: {
+}: Readonly<{
   item: NavItem;
   pathname: string;
   onNavigate: (href: string) => void;
   child?: boolean;
-}) {
+}>) {
   const active = item.isActive(pathname);
   const childActive = item.children?.some((k) => k.isActive(pathname)) ?? false;
   return (
@@ -87,13 +87,13 @@ export function NavPanel({
   onNavigate,
   meName,
   meLabel,
-}: {
+}: Readonly<{
   groups: NavGroup[];
   pathname: string;
   onNavigate: (href: string) => void;
   meName: string;
   meLabel: string;
-}) {
+}>) {
   const [closed, setClosed] = useState<Record<string, boolean>>({});
 
   return (

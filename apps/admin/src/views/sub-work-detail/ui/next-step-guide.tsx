@@ -133,11 +133,11 @@ export function NextStepGuide({
   subWork,
   canActOnOwnerTasks,
   className,
-}: {
+}: Readonly<{
   subWork: SubWorkDetail;
   canActOnOwnerTasks: boolean;
   className?: string;
-}) {
+}>) {
   const step = nextStepOf(subWork, { canActOnOwnerTasks });
 
   if (step.next === null) {

@@ -23,7 +23,7 @@ function toId(raw: string | string[] | undefined): number | null {
 
 export default async function Page({
   searchParams,
-}: PageProps<"/studio/programs">) {
+}: Readonly<PageProps<"/studio/programs">>) {
   const params = await searchParams;
   return <MyProgramsPage academicProgramId={toId(params.programId)} />;
 }

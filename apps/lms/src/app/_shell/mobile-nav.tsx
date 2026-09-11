@@ -18,7 +18,7 @@ import { visibleNavLinks } from "./nav-links";
  *
  * 열렸을 때 본문 스크롤을 잠그고, ESC·바깥 클릭·항목 이동으로 닫는 규약도 어드민과 같다.
  */
-export function MobileNav({ isLeader }: { isLeader: boolean }) {
+export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);

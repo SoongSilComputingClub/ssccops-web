@@ -75,7 +75,7 @@ const NO_MEMBER_MANAGE =
 const NO_ROLE_MANAGE =
   "역할을 다루려면 권한 관리(ROLE_MANAGE) 권한이 필요합니다 — 회원 관리 권한과는 별개입니다";
 
-export function MemberDetailPage({ mbrId }: { mbrId: number }) {
+export function MemberDetailPage({ mbrId }: Readonly<{ mbrId: number }>) {
   const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
 
   /* 훅을 조건부로 부를 수 없으므로 본문을 별도 컴포넌트로 뺀다 (views/role-authorities 와 같다) */
@@ -93,7 +93,7 @@ export function MemberDetailPage({ mbrId }: { mbrId: number }) {
   return <MemberDetailView mbrId={mbrId} />;
 }
 
-function MemberDetailView({ mbrId }: { mbrId: number }) {
+function MemberDetailView({ mbrId }: Readonly<{ mbrId: number }>) {
   const router = useRouter();
   const { member, status, errorMessage, reload, apply } = useMemberDetail(mbrId);
 
@@ -355,14 +355,14 @@ function MemberRoleCard({
   fallbackRoles,
   canManage,
   roles,
-}: {
+}: Readonly<{
   memberId: number;
   memberName: string;
   /** 회원 상세 응답의 현재 역할 — ROLE_MANAGE 가 없을 때 그리는 값이다 */
   fallbackRoles: MemberRoleRef[];
   canManage: boolean;
   roles: MemberRoles;
-}) {
+}>) {
   const [assignOpen, setAssignOpen] = useState(false);
   /** 종료 확인을 기다리는 배정 — null이면 확인 창이 닫혀 있다 */
   const [ending, setEnding] = useState<MemberRoleAssignment | null>(null);
@@ -504,13 +504,13 @@ function AssignmentRow({
   busy,
   onEnd,
   onRepresent,
-}: {
+}: Readonly<{
   assignment: MemberRoleAssignment;
   ended?: boolean;
   busy?: boolean;
   onEnd?: () => void;
   onRepresent?: () => void;
-}) {
+}>) {
   return (
     <div
       className={cn(
@@ -577,12 +577,12 @@ function EndRoleSheet({
   assignment,
   roles,
   onClose,
-}: {
+}: Readonly<{
   /** null이면 닫혀 있다 */
   assignment: MemberRoleAssignment | null;
   roles: MemberRoles;
   onClose: () => void;
-}) {
+}>) {
   const [endDate, setEndDate] = useState("");
 
   if (!assignment) return null;
@@ -677,10 +677,10 @@ function EndRoleSheet({
 function ChangeWarningPanel({
   warnings,
   onDismiss,
-}: {
+}: Readonly<{
   warnings: MemberChangeWarning[];
   onDismiss: () => void;
-}) {
+}>) {
   return (
     <div
       role="alert"
@@ -734,7 +734,7 @@ function ChangeWarningPanel({
  * 날짜는 `appliedDate`(언제부터 적용되는가)를 쓴다. 정렬 기준인 `createdAt`은 UTC 기준
  * 일시라 시:분을 그대로 잘라 보여 주면 아홉 시간 어긋난 시각이 화면에 뜬다.
  */
-function ChangeRow({ change }: { change: MemberChange }) {
+function ChangeRow({ change }: Readonly<{ change: MemberChange }>) {
   const kind = change.changeType === "GRADE" ? "등급" : "상태";
   const by = change.changedByName ?? "-";
 

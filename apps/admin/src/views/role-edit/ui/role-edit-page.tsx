@@ -54,7 +54,7 @@ import type { RoleMember } from "@/entities/role";
 const NO_MANAGE =
   "역할을 다룰 권한(ROLE_MANAGE)이 없습니다 — 최고관리자에게 요청해주세요";
 
-export function RoleEditPage({ roleId }: { roleId?: number }) {
+export function RoleEditPage({ roleId }: Readonly<{ roleId?: number }>) {
   const canManageRole = useCan(CAPABILITY.ROLE_MANAGE);
 
   // 훅을 조건부로 부를 수 없으므로 본문을 별도 컴포넌트로 뺀다 — 조회 자체가 나가지 않는다
@@ -72,7 +72,7 @@ export function RoleEditPage({ roleId }: { roleId?: number }) {
   return <RoleEditorView roleId={roleId} />;
 }
 
-function RoleEditorView({ roleId }: { roleId?: number }) {
+function RoleEditorView({ roleId }: Readonly<{ roleId?: number }>) {
   const router = useRouter();
   const editor = useRoleEditor(roleId);
 
@@ -194,10 +194,10 @@ function RoleEditorView({ roleId }: { roleId?: number }) {
 function HoldersCard({
   members,
   editing,
-}: {
+}: Readonly<{
   members: readonly RoleMember[];
   editing: boolean;
-}) {
+}>) {
   const router = useRouter();
 
   return (

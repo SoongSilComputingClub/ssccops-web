@@ -47,7 +47,7 @@ function issueText(issues: MemberImportRowIssue[]): string {
     .join(" / ");
 }
 
-export function ValidationStep({ wizard }: { wizard: MemberImportWizard }) {
+export function ValidationStep({ wizard }: Readonly<{ wizard: MemberImportWizard }>) {
   const { validation, executing, executionErrorMessage, validating } = wizard;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
@@ -234,10 +234,10 @@ export function ValidationStep({ wizard }: { wizard: MemberImportWizard }) {
 function IssueTable({
   rows,
   kind,
-}: {
+}: Readonly<{
   rows: MemberImportRowResult[];
   kind: "error" | "warning";
-}) {
+}>) {
   /*
    * 좁은 화면에서는 가로로도 스크롤한다 (#96). 행 번호·대상·사유는 세 값이 한 줄로 붙어야
    * "몇 번째 줄의 누구를 왜 못 넣는지"가 되는 목록이라, 카드로 쪼개면 파일을 고치는 사람이

@@ -73,12 +73,12 @@ function QitemPreview({
   sel,
   onPick,
   pages,
-}: {
+}: Readonly<{
   qitem: Qitem;
   sel: string[];
   onPick: (option: string) => void;
   pages: FormPage[];
-}) {
+}>) {
   const isChoice = isChoiceQitemType(qitem.qitemTypeCd);
   return (
     <div className="border-t border-hairline py-3 first:border-t-0">
@@ -154,7 +154,7 @@ function QitemPreview({
  * 의미가 있기** 때문이다. 한 컴포넌트에 두면 로딩 중에도 페이지 인덱스를 들고 있게 되고,
  * 폼이 바뀌었을 때 초기화를 따로 챙겨야 한다.
  */
-function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => void }) {
+function FormDetailContent({ form, reload }: Readonly<{ form: FormDetail; reload: () => void }>) {
   const router = useRouter();
   const status = useFormStatus();
   const duplication = useDuplicateForm();
@@ -627,7 +627,7 @@ function FormDetailContent({ form, reload }: { form: FormDetail; reload: () => v
  * 실리지 않으므로 그 방식은 서버 연동에서 성립하지 않고, URL로 바로 들어온 경우 목록 자체가
  * 없어 "폼을 찾을 수 없습니다"가 떴다.
  */
-export function FormDetailPage({ formId }: { formId: number }) {
+export function FormDetailPage({ formId }: Readonly<{ formId: number }>) {
   const { form, status, errorMessage, reload } = useFormDetail(formId);
 
   // 상태 전이·복제 후 최신 값을 다시 받아 오는 통로 — 낙관적 업데이트를 쓰지 않는 이유는 위 주석

@@ -220,11 +220,11 @@ function AuthorityList({
   admin,
   selected,
   onSelect,
-}: {
+}: Readonly<{
   admin: AuthorityTreeAdmin;
   selected: string | null;
   onSelect: (authrtCd: string) => void;
-}) {
+}>) {
   const rows = flattenAuthorities(admin.tree);
 
   return (
@@ -274,7 +274,7 @@ function AuthorityForm({
   onAskDelete,
   onCancelDelete,
   onDelete,
-}: {
+}: Readonly<{
   admin: AuthorityTreeAdmin;
   /** null 이면 새 권한 */
   node: AuthorityNode | null;
@@ -286,7 +286,7 @@ function AuthorityForm({
   onAskDelete: () => void;
   onCancelDelete: () => void;
   onDelete: () => void;
-}) {
+}>) {
   const isNew = node === null;
   const sys = node?.sysYn ?? false;
   const candidates = parentCandidates(admin.tree, node?.authrtCd ?? null);

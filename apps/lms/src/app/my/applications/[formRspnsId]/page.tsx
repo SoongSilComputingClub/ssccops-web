@@ -23,7 +23,7 @@ function toId(raw: string | string[] | undefined): number | null {
 
 export default async function Page({
   params,
-}: PageProps<"/my/applications/[formRspnsId]">) {
+}: Readonly<PageProps<"/my/applications/[formRspnsId]">>) {
   const { formRspnsId } = await params;
   return <ProposalDetailPage formRspnsId={toId(formRspnsId)} />;
 }

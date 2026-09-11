@@ -27,7 +27,7 @@ export function TextArea({
   inset,
   className,
   ...rest
-}: ComponentPropsWithRef<"textarea"> & { inset?: boolean }) {
+}: Readonly<ComponentPropsWithRef<"textarea"> & { inset?: boolean }>) {
   return (
     <textarea
       className={cn(
@@ -41,7 +41,7 @@ export function TextArea({
   );
 }
 
-export function SelectField({ className, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
+export function SelectField({ className, ...rest }: Readonly<SelectHTMLAttributes<HTMLSelectElement>>) {
   return (
     <select
       className={cn(

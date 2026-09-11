@@ -39,10 +39,10 @@ import { MemberCardMobile, MemberRowDesktop } from "./member-row";
 
 export async function ProgramMembersPage({
   academicProgramId,
-}: {
+}: Readonly<{
   /** 주소의 ?programId= 값. 숫자가 아니거나 없으면 null → 목록 맨 위 */
   academicProgramId: number | null;
-}) {
+}>) {
   const selection = await selectProgram(academicProgramId);
 
   return (
@@ -84,7 +84,7 @@ export async function ProgramMembersPage({
   );
 }
 
-async function MembersBody({ academicProgramId }: { academicProgramId: number }) {
+async function MembersBody({ academicProgramId }: Readonly<{ academicProgramId: number }>) {
   const result = await loadAcademicProgramMembers(academicProgramId);
 
   if (result.outcome === "unauthenticated") {

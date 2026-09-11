@@ -52,7 +52,7 @@ export function RosterPanel({
   actions,
   onTransition,
   onManualAdd,
-}: {
+}: Readonly<{
   event: { ptcpLmtCnt: number | null; confirmedCount: number };
   roster: EventParticipants;
   ptcpSttsCd: PtcpSttsCd | null;
@@ -62,7 +62,7 @@ export function RosterPanel({
   actions: ParticipantActions;
   onTransition: (participant: EventParticipant, to: PtcpSttsCd) => void;
   onManualAdd: () => void;
-}) {
+}>) {
   /* 취소는 되돌릴 수 없는 전이라 확인을 받는다 — 승격은 다시 취소할 수 있어 묻지 않는다 */
   const [cancelTarget, setCancelTarget] = useState<EventParticipant | null>(null);
 

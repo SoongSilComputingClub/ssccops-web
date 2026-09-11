@@ -22,7 +22,7 @@ import { closedMessage } from "./closed-message";
  * "이 회원이 이미 냈는가"를 알 수 없고, 그것을 모르면 낸 사람에게도 '신청하기'만 보여 자기가
  * 무엇을 냈는지 볼 길이 없다. 일시·장소·인원은 크롤러도 읽는 값이라 여기 남는다.
  */
-export function ApplyPanel({ event }: { event: PublicEventDetail }) {
+export function ApplyPanel({ event }: Readonly<{ event: PublicEventDetail }>) {
   const period = formatEventPeriod(event.eventBgngDt, event.eventEndDt);
   const receipt = eventReceiptBadge(event.receiptStatus);
 
@@ -69,7 +69,7 @@ export function ApplyPanel({ event }: { event: PublicEventDetail }) {
   );
 }
 
-function PanelRow({ label, value }: { label: string; value: string }) {
+function PanelRow({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="flex items-start justify-between gap-[12px] text-[14.5px]">
       <span className="shrink-0 text-n500">{label}</span>

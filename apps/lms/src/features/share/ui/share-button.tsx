@@ -37,11 +37,11 @@ export function ShareButton({
   targetType,
   targetId,
   title,
-}: {
+}: Readonly<{
   targetType: LmsShareTargetType;
   targetId: number;
   title: string;
-}) {
+}>) {
   const { link, ready, pending, error, notice, share, revoke } = useShareLink(
     targetType,
     targetId,

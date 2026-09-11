@@ -33,12 +33,12 @@ export function ProgramSwitcher({
   programs,
   selectedId,
   basePath,
-}: {
+}: Readonly<{
   programs: AcademicProgramSummary[];
   selectedId: number;
   /** `?programId=`를 붙일 경로 — 예: `/studio/roster` */
   basePath: string;
-}) {
+}>) {
   const router = useRouter();
   const selected = programs.find((p) => p.academicProgramId === selectedId);
 

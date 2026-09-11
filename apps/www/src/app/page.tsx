@@ -1,7 +1,7 @@
 import { EVENT_CLSF_QUERY } from "@/shared/config/routes";
 import { EventListPage } from "@/views/event-list";
 
-export default async function Page({ searchParams }: PageProps<"/">) {
+export default async function Page({ searchParams }: Readonly<PageProps<"/">>) {
   const params = await searchParams;
   const raw = params[EVENT_CLSF_QUERY];
   /*

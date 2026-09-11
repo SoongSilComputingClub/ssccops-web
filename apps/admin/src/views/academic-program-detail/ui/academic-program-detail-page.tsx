@@ -71,9 +71,9 @@ function DetailSkeleton() {
 
 export function AcademicProgramDetailPage({
   academicProgramId,
-}: {
+}: Readonly<{
   academicProgramId: number;
-}) {
+}>) {
   const router = useRouter();
   const { program, status, errorMessage, reload } =
     useAcademicProgramDetail(academicProgramId);

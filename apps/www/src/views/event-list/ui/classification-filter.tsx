@@ -13,11 +13,11 @@ import { eventsPath } from "@/shared/config/routes";
 export function ClassificationFilter({
   classifications,
   selected,
-}: {
+}: Readonly<{
   classifications: EventClassification[];
   /** 지금 고른 분류 코드 — 없으면 '전체' */
   selected: string | null;
-}) {
+}>) {
   // 분류가 하나뿐이면 고를 것이 없다 — '전체'와 그 하나가 언제나 같은 목록을 보여 준다
   if (classifications.length < 2) return null;
 
@@ -43,11 +43,11 @@ function FilterChip({
   href,
   active,
   children,
-}: {
+}: Readonly<{
   href: string;
   active: boolean;
   children: string;
-}) {
+}>) {
   return (
     <Link
       href={href}

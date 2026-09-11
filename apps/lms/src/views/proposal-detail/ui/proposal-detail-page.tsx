@@ -38,9 +38,9 @@ import { ResubmitForm } from "./resubmit-form";
 
 export async function ProposalDetailPage({
   formRspnsId,
-}: {
+}: Readonly<{
   formRspnsId: number | null;
-}) {
+}>) {
   if (formRspnsId === null) {
     return (
       <div className="flex flex-col gap-[16px]">
@@ -76,9 +76,9 @@ function BackLink() {
 
 function Body({
   result,
-}: {
+}: Readonly<{
   result: Awaited<ReturnType<typeof loadProposalDetail>>;
-}) {
+}>) {
   if (result.outcome === "unauthenticated") {
     return (
       <LoginGate
@@ -180,10 +180,10 @@ function Body({
 function SubmittedContent({
   detail,
   qitemCpstCn,
-}: {
+}: Readonly<{
   detail: MyFormResponseDetail;
   qitemCpstCn: QitemCpstCn;
-}) {
+}>) {
   const answered = qitemCpstCn.qitems
     .map((q) => ({
       qitemId: q.qitemId,
@@ -225,12 +225,12 @@ function ProcessArea({
   formId,
   qitemCpstCn,
   rspnsCn,
-}: {
+}: Readonly<{
   status: MyFormResponseDetail["rspnsSttsCd"];
   formId: number;
   qitemCpstCn: QitemCpstCn;
   rspnsCn: MyFormResponseDetail["rspnsCn"];
-}) {
+}>) {
   if (status === "CHANGES_REQUESTED") {
     return (
       <section className="flex flex-col gap-[10px]">

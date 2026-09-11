@@ -25,7 +25,7 @@ function toId(raw: string | string[] | undefined): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-export default async function Page({ searchParams }: PageProps<"/studio">) {
+export default async function Page({ searchParams }: Readonly<PageProps<"/studio">>) {
   const params = await searchParams;
   const raw = params[LOGIN_ERROR_QUERY];
   const loginError = (Array.isArray(raw) ? raw[0] : raw) || null;

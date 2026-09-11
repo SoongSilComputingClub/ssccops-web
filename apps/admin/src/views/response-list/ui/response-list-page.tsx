@@ -81,7 +81,7 @@ function parseRspnsSttsCd(value: string | null): RspnsSttsCd | null {
     : null;
 }
 
-export function ResponseListPage({ formId }: { formId: number }) {
+export function ResponseListPage({ formId }: Readonly<{ formId: number }>) {
   const router = useRouter();
   const searchParams = useSearchParams();
 

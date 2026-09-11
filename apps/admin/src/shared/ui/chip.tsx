@@ -11,7 +11,7 @@ export function Chip({
   title,
   children,
   className,
-}: {
+}: Readonly<{
   active?: boolean;
   onClick?: () => void;
   /**
@@ -26,7 +26,7 @@ export function Chip({
   title?: string;
   children: ReactNode;
   className?: string;
-}) {
+}>) {
   return (
     <button
       type="button"
@@ -53,12 +53,12 @@ export function ChipGroup<T extends string>({
   value,
   onChange,
   className,
-}: {
+}: Readonly<{
   options: readonly T[];
   value: T;
   onChange: (value: T) => void;
   className?: string;
-}) {
+}>) {
   return (
     <div className={cn("flex flex-wrap items-center gap-[7px]", className)}>
       {options.map((option) => (

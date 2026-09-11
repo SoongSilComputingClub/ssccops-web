@@ -69,11 +69,11 @@ const NO_MANAGE_REASON: Record<OperTypeCd, string> = {
 export function OperationCreatePage({
   workId: fixedWorkId,
   kind: fixedKind,
-}: {
+}: Readonly<{
   workId?: number;
   /** 특정 운영_유형 화면(예: 회의 목록의 '+ 등록')에서 들어온 경우 선택 카드를 그 유형 하나로 고정한다 */
   kind?: OperTypeCd;
-}) {
+}>) {
   const router = useRouter();
   /* 업무(WORK)·하위 업무(SUB_WORK)·회의(MEETING)가 모두 서버로 나간다 (#30 · #36 · #83) */
   const sessionMember = useSessionStore((s) => s.member);

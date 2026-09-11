@@ -46,10 +46,10 @@ function statusText(save: FormSaveStatus): string {
 export function FormSaveStatusBar({
   save,
   onRetry,
-}: {
+}: Readonly<{
   save: FormSaveStatus;
   onRetry: () => void;
-}) {
+}>) {
   return (
     <div
       // 저장 상태는 포커스를 뺏지 않고 알려야 한다 — 스크린리더는 polite 로 읽는다

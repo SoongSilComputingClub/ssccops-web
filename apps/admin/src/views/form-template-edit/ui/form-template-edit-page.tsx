@@ -43,7 +43,7 @@ import {
  * 눌러야 저장된다"는 원래 뜻을 갖고, 저장하지 않고 나가면 브라우저가 이탈을 경고한다.
  */
 
-export function FormTemplateEditPage({ formTmplId }: { formTmplId?: number }) {
+export function FormTemplateEditPage({ formTmplId }: Readonly<{ formTmplId?: number }>) {
   const editor = useFormTemplateEditor(formTmplId);
   const canWrite = useCan(CAPABILITY.FORM_WRITE);
   const isNew = formTmplId === undefined;
@@ -92,10 +92,10 @@ export function FormTemplateEditPage({ formTmplId }: { formTmplId?: number }) {
 function FormTemplateEditContent({
   editor,
   title,
-}: {
+}: Readonly<{
   editor: FormTemplateEditor;
   title: string;
-}) {
+}>) {
   const router = useRouter();
   const { draft, setDraft, issues } = editor;
 

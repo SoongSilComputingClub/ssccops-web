@@ -23,14 +23,14 @@ export function TemplateStartSheet({
   pending,
   onClose,
   onStart,
-}: {
+}: Readonly<{
   open: boolean;
   /** 폼을 만드는 중 — 확인 버튼 문구가 바뀐다 */
   pending: boolean;
   onClose: () => void;
   /** 고른 템플릿으로 폼을 만든다. 제목이 비어 있으면 서버가 템플릿 이름을 쓴다 */
   onStart: (formTmplId: number, formTtlNm: string) => void;
-}) {
+}>) {
   const options = useFormTemplateOptions();
   const [picked, setPicked] = useState<number | null>(null);
   const [formTtlNm, setFormTtlNm] = useState("");

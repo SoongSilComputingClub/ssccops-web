@@ -23,7 +23,7 @@ const REQUIRED_LABELS = MEMBER_IMPORT_FIELDS.filter((f) => f.mappingRequired)
   .map((f) => f.label)
   .join(" · ");
 
-export function MappingStep({ wizard }: { wizard: MemberImportWizard }) {
+export function MappingStep({ wizard }: Readonly<{ wizard: MemberImportWizard }>) {
   const { preview, mapping, mapHeader, mappingProblem, validating, validationErrorMessage } =
     wizard;
 

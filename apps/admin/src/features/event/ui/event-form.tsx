@@ -86,13 +86,13 @@ function ImagePickButton({
   disabled,
   hint,
   onPick,
-}: {
+}: Readonly<{
   label: string;
   disabled: boolean;
   /** 잠겼을 때의 사유 — 버튼을 감추지 않고 이유를 붙인다(AGENTS.md) */
   hint?: string;
   onPick: (file: File) => void;
-}) {
+}>) {
   const pickerRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -129,7 +129,7 @@ export function EventForm({
   lockedHint,
   submitLabel,
   onSubmit,
-}: {
+}: Readonly<{
   /** 수정이면 현재 값 전부(전체 교체 폼) · 등록이면 null */
   initial: EventDetail | null;
   /**
@@ -146,7 +146,7 @@ export function EventForm({
   lockedHint: string;
   submitLabel: string;
   onSubmit: (input: EventSaveInput) => void;
-}) {
+}>) {
   const { categories, errorMessage: categoryError } = useEventCategoryOptions();
   const { forms, errorMessage: formError } = useFormLinkOptions();
   const imageUpload = useEventImageUpload();

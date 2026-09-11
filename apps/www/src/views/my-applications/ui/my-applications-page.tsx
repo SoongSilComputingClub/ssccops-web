@@ -39,7 +39,7 @@ import { FormResponsesSection } from "./form-responses-section";
  * 미로그인·미가입 모두 **이 화면 안에서** 안내한다. 이 앱에는 로그인 화면도 가입 폼도 없어
  * 보낼 곳이 없고, 억지로 어딘가로 보내면 되돌아올 곳이 없어 왕복만 도는 길이 생긴다.
  */
-export async function MyApplicationsPage({ loginError }: { loginError: string | null }) {
+export async function MyApplicationsPage({ loginError }: Readonly<{ loginError: string | null }>) {
   const token = await currentAccessToken();
 
   return (
@@ -167,7 +167,7 @@ async function SignedInBody() {
  * 사유 조회가 실패해도 카드는 선다 — 사유를 못 읽는 것과 수정요청을 받았다는 사실을 모르는
  * 것은 다른 일이고, 후자만 막으면 이 화면은 제 몫을 한다.
  */
-async function FormResponses({ responses }: { responses: MyFormResponseOverview[] | null }) {
+async function FormResponses({ responses }: Readonly<{ responses: MyFormResponseOverview[] | null }>) {
   if (responses === null) {
     return (
       <section className="flex flex-col gap-[10px]">
@@ -207,17 +207,17 @@ async function FormResponses({ responses }: { responses: MyFormResponseOverview[
   );
 }
 
-function SectionHeading({ title }: { title: string }) {
+function SectionHeading({ title }: Readonly<{ title: string }>) {
   return <h2 className="text-[16px] font-semibold tracking-[-.2px]">{title}</h2>;
 }
 
 function ApplicationList({
   applications,
   session,
-}: {
+}: Readonly<{
   applications: MyApplication[];
   session: AuthSession | null;
-}) {
+}>) {
   /*
    * 어느 계정으로 보고 있는지 밝힌다. 구글 계정을 둘 이상 쓰는 사람이 빈 목록을 보고 "신청이
    * 사라졌다"고 읽는 것을 막는 것이 목적이라, 목록이 비었을 때도 함께 남긴다.

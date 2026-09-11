@@ -39,11 +39,11 @@ export function ResubmitForm({
   formId,
   composition,
   initialAnswers,
-}: {
+}: Readonly<{
   formId: number;
   composition: QitemCpstCn;
   initialAnswers: RspnsCn;
-}) {
+}>) {
   const router = useRouter();
   const form = useResubmitForm(formId, composition, initialAnswers);
   const [page, setPage] = useState(0);

@@ -10,7 +10,7 @@ export function PageHeader({
   subtitle,
   showBack,
   action,
-}: {
+}: Readonly<{
   title: ReactNode;
   subtitle?: ReactNode;
   showBack?: boolean;
@@ -19,7 +19,7 @@ export function PageHeader({
    * 이유를 툴팁으로 붙인다. 근거는 features/auth/model/use-can.ts.
    */
   action?: { label: string; onClick: () => void; disabled?: boolean; title?: string };
-}) {
+}>) {
   const router = useRouter();
   return (
     <div className="flex flex-none items-center gap-[14px] border-b border-hairline-strong bg-gradient-to-b from-surface to-bg px-8 py-5">
@@ -57,10 +57,10 @@ export function PageHeader({
 export function PageBody({
   children,
   maxWidth = 1000,
-}: {
+}: Readonly<{
   children: ReactNode;
   maxWidth?: number;
-}) {
+}>) {
   return (
     <div className="flex-1 overflow-y-auto px-8 pt-6 pb-[60px]">
       <div style={{ maxWidth }}>{children}</div>

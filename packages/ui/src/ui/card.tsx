@@ -25,13 +25,13 @@ export function Card({
   children,
   onClick,
   id,
-}: {
+}: Readonly<{
   className?: string;
   children: ReactNode;
   onClick?: () => void;
   /** 목록에서 특정 카드로 스크롤·강조할 때만 필요하다(승인함의 대시보드 딥링크 등) */
   id?: string;
-}) {
+}>) {
   return (
     <div
       id={id}
@@ -56,11 +56,11 @@ export function CardTitle({
   children,
   right,
   className,
-}: {
+}: Readonly<{
   children: ReactNode;
   right?: ReactNode;
   className?: string;
-}) {
+}>) {
   return (
     <div className={cn("mb-[14px] flex items-baseline gap-[10px]", className)}>
       <div className="text-[18px] font-medium">{children}</div>
@@ -74,9 +74,9 @@ export function CardTitle({
 export function SectionLabel({
   children,
   className,
-}: {
+}: Readonly<{
   children: ReactNode;
   className?: string;
-}) {
+}>) {
   return <div className={cn("text-[13px] tracking-[.3px] text-n400", className)}>{children}</div>;
 }

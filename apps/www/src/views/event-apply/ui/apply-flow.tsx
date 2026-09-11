@@ -19,13 +19,13 @@ export function ApplyFlow({
   signedUp,
   authUserEmail,
   authUserName,
-}: {
+}: Readonly<{
   formId: number;
   eventId: number;
   signedUp: boolean;
   authUserEmail: string | null;
   authUserName: string | null;
-}) {
+}>) {
   const [member, setMember] = useState(signedUp);
 
   if (!member) {

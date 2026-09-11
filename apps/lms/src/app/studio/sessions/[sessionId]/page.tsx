@@ -22,7 +22,7 @@ function toId(raw: string | string[] | undefined): number | null {
 
 export default async function Page({
   params,
-}: PageProps<"/studio/sessions/[sessionId]">) {
+}: Readonly<PageProps<"/studio/sessions/[sessionId]">>) {
   const { sessionId } = await params;
   return <SessionLandingPage sessionId={toId(sessionId)} />;
 }

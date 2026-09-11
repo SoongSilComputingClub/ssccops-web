@@ -22,7 +22,7 @@ function toId(raw: string | string[] | undefined): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-export default async function Page({ searchParams }: PageProps<"/studio/record">) {
+export default async function Page({ searchParams }: Readonly<PageProps<"/studio/record">>) {
   const params = await searchParams;
   return (
     <SessionRecordPage

@@ -5,11 +5,11 @@ export function CircleStepper({
   steps,
   current,
   className,
-}: {
+}: Readonly<{
   steps: readonly string[];
   current: number; // 1-based
   className?: string;
-}) {
+}>) {
   return (
     <div className={cn("flex justify-between px-10", className)}>
       {steps.map((label, i) => {
@@ -48,11 +48,11 @@ export function BarStepper({
   steps,
   current,
   className,
-}: {
+}: Readonly<{
   steps: readonly string[];
   current: number; // 1-based
   className?: string;
-}) {
+}>) {
   return (
     <div className={cn("grid max-w-[640px] gap-2", className)} style={{ gridTemplateColumns: `repeat(${steps.length},1fr)` }}>
       {steps.map((label, i) => (

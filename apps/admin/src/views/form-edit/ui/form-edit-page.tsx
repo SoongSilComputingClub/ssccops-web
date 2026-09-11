@@ -71,7 +71,7 @@ import {
  * 줄 알고 처음부터 다시 만든다.
  */
 
-export function FormEditPage({ formId }: { formId?: number }) {
+export function FormEditPage({ formId }: Readonly<{ formId?: number }>) {
   const editor = useFormEditor(formId);
   const canWrite = useCan(CAPABILITY.FORM_WRITE);
 
@@ -115,7 +115,7 @@ export function FormEditPage({ formId }: { formId?: number }) {
   );
 }
 
-function FormEditContent({ editor }: { editor: FormEditor }) {
+function FormEditContent({ editor }: Readonly<{ editor: FormEditor }>) {
   const router = useRouter();
   const { draft, labelIds, assignedLabels, setDraft, setLabelIds, issues } = editor;
   const labelOptions = useFormLabelOptions();

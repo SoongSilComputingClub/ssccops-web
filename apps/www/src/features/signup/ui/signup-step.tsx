@@ -31,13 +31,13 @@ export function SignupStep({
   authUserEmail,
   authUserName,
   onSignedUp,
-}: {
+}: Readonly<{
   /** 구글 계정 이메일 — 무엇으로 가입하는지 보여 주기만 한다(서버가 토큰에서 다시 읽는다) */
   authUserEmail: string | null;
   /** 구글 계정 이름 — 이름 칸의 초깃값. 틀리면 고칠 수 있다 */
   authUserName: string | null;
   onSignedUp: () => void;
-}) {
+}>) {
   const [statusCode, setStatusCode] = useState<SignupStatusCode>("ENROLLED");
   const [values, setValues] = useState<SignupFormValues>({
     ...EMPTY_SIGNUP_VALUES,

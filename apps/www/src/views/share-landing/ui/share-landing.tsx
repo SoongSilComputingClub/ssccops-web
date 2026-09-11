@@ -27,7 +27,7 @@ import { useEffect } from "react";
  * 이동도 링크도 없이 제목만 남긴다. **카드는 그대로 만들어지고**(메타는 이 컴포넌트와 무관하다)
  * 사람에게는 죽은 주소 대신 이유를 보여 준다.
  */
-export function ShareLanding({ title, href }: { title: string; href: string | null }) {
+export function ShareLanding({ title, href }: Readonly<{ title: string; href: string | null }>) {
   useEffect(() => {
     if (href) window.location.replace(href);
   }, [href]);

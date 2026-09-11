@@ -62,9 +62,9 @@ export async function MyApplicationsPage() {
 
 function Body({
   result,
-}: {
+}: Readonly<{
   result: Awaited<ReturnType<typeof loadMyApplications>>;
-}) {
+}>) {
   if (result.outcome === "unauthenticated") {
     return (
       <LoginGate

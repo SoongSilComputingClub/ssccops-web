@@ -11,11 +11,11 @@ export function KeyValueGrid({
   items,
   labelWidth = 84,
   className,
-}: {
+}: Readonly<{
   items: KeyValueItem[];
   labelWidth?: number;
   className?: string;
-}) {
+}>) {
   return (
     <div
       className={cn("grid gap-y-[9px] text-[15px]", className)}

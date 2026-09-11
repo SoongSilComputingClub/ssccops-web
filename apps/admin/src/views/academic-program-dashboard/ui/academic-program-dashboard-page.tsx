@@ -64,13 +64,13 @@ function StatCard({
   hint,
   tone,
   onClick,
-}: {
+}: Readonly<{
   label: string;
   value: number;
   hint: string;
   tone?: "default" | "accent" | "danger";
   onClick: () => void;
-}) {
+}>) {
   return (
     <Card onClick={onClick}>
       <StatBox label={label} value={value} size="lg" tone={tone} className="border-0 p-0" />
@@ -82,10 +82,10 @@ function StatCard({
 function OngoingProgramCard({
   program,
   onClick,
-}: {
+}: Readonly<{
   program: AcademicProgramSummary;
   onClick: () => void;
-}) {
+}>) {
   const ratio = Math.round(program.progressRatio);
   const delayed = program.sttsCd === "ONGOING" && ratio < 40;
 
@@ -127,11 +127,11 @@ function ThisWeekRow({
   session,
   today,
   onClick,
-}: {
+}: Readonly<{
   session: SessionCrossListItem;
   today: string;
   onClick: () => void;
-}) {
+}>) {
   const dday = session.actualYmd ? ddayText(session.actualYmd, today) : "";
   const near = dday === "D-DAY" || /^D-[0-3]$/.test(dday);
 

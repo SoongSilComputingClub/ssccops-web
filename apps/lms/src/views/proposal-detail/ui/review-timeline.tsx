@@ -27,9 +27,9 @@ import { formatDt } from "@/shared/lib/date";
  */
 export function ReviewTimeline({
   histories,
-}: {
+}: Readonly<{
   histories: FormResponseReviewHistory[];
-}) {
+}>) {
   return (
     <Card>
       <div className="text-[13px] tracking-[.3px] text-n400">처리 이력</div>

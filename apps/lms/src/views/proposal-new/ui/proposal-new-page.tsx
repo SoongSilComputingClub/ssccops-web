@@ -52,9 +52,9 @@ export async function ProposalNewPage() {
 
 function Body({
   result,
-}: {
+}: Readonly<{
   result: Awaited<ReturnType<typeof loadProposalForm>>;
-}) {
+}>) {
   if (result.outcome === "unauthenticated") {
     return (
       <LoginGate

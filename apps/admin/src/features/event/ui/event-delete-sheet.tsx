@@ -42,7 +42,7 @@ export function EventDeleteSheet({
   pending,
   onClose,
   onConfirm,
-}: {
+}: Readonly<{
   open: boolean;
   eventTtl: string;
   /** 서버 집계 — 확정 참가자만 센다(심사 중 응답은 목록에 오지 않는다) */
@@ -53,7 +53,7 @@ export function EventDeleteSheet({
   pending: boolean;
   onClose: () => void;
   onConfirm: () => void;
-}) {
+}>) {
   return (
     <Sheet
       open={open}

@@ -27,10 +27,10 @@ import { Card, EmptyState, SectionLabel } from "@/shared/ui";
  */
 export function ProposalCurriculumCard({
   preview,
-}: {
+}: Readonly<{
   /** 기획안이 아니거나 미리보기를 받지 못했으면 null */
   preview: AcademicProgramPreview | null;
-}) {
+}>) {
   /* 375px에서는 한 줄씩 쌓이고 lg 이상에서 회차·주제·계획일이 열로 선다 */
   const ROW = "lg:grid lg:grid-cols-[88px_1fr_128px] lg:gap-3";
 

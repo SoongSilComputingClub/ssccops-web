@@ -22,7 +22,7 @@ function toProgramId(raw: string | string[] | undefined): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-export default async function Page({ searchParams }: PageProps<"/studio/members">) {
+export default async function Page({ searchParams }: Readonly<PageProps<"/studio/members">>) {
   const params = await searchParams;
   return <ProgramMembersPage academicProgramId={toProgramId(params.programId)} />;
 }
