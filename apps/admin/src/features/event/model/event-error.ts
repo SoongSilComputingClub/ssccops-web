@@ -38,8 +38,9 @@ export function toEventErrorMessage(error: unknown): string {
 /**
  * 저장(생성·수정) 실패.
  *
- * 폼 연결의 두 409는 서버만 아는 사실이다 — 화면이 들고 있는 폼 목록으로는 다른 행사에 이미
- * 전속됐는지(D11), 신청이 방금 생겼는지 알 수 없다. 문구에 다음 행동을 담는다.
+ * 폼 연결의 409는 서버만 아는 사실이다 — 화면이 들고 있는 폼 목록으로는 다른 행사에 이미
+ * 전속됐는지(D11) 알 수 없다. 문구에 다음 행동을 담는다. 신청 뒤의 연결 변경을 막던
+ * `EVENT_FORM_IN_USE` 분기는 서버가 그 가드를 걷어(ssccops-server#336) 함께 걷었다.
  */
 export function toEventSaveErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
@@ -47,8 +48,6 @@ export function toEventSaveErrorMessage(error: unknown): string {
   }
 
   switch (error.code) {
-    case EVENT_ERROR.EVENT_FORM_IN_USE:
-      return "신청이 접수된 행사라 폼 연결을 바꾸거나 해제할 수 없습니다 — 폼은 그대로 두고 저장해주세요";
     case EVENT_ERROR.FORM_ALREADY_LINKED:
       return "이미 다른 행사에 연결된 폼입니다 — 다른 폼을 고르거나 그쪽 연결을 먼저 해제해주세요";
     case EVENT_ERROR.EVENT_CLASSIFICATION_NOT_FOUND:

@@ -92,9 +92,13 @@ export const EVENT_ERROR = {
   EVENT_CLASSIFICATION_NOT_FOUND: "EVENT_CLASSIFICATION_NOT_FOUND",
   /** 400 — 전이표에 없는 상태 전이. 화면이 들고 있는 상태가 서버와 어긋났다는 뜻이다 */
   INVALID_EVENT_STATUS_TRANSITION: "INVALID_EVENT_STATUS_TRANSITION",
-  /** 409 — 신청이 발생한 뒤의 폼 연결 변경·해제 (D11) */
-  EVENT_FORM_IN_USE: "EVENT_FORM_IN_USE",
-  /** 409 — 이미 다른 행사에 전속 연결된 폼 (D11) */
+  /**
+   * 409 — 이미 다른 행사에 전속 연결된 폼 (D11).
+   *
+   * **폼 연결에 남은 409는 이것 하나다.** 신청이 발생한 뒤의 연결 변경을 막던
+   * `EVENT_FORM_IN_USE`는 서버가 걷었다(ssccops-server#336 · v0.2.4) — 이제 신청 뒤에도 연결을
+   * 바꿀 수 있고, 무엇이 끊기는지는 저장 전 확인 시트가 알린다(ssccops-web#378).
+   */
   FORM_ALREADY_LINKED: "FORM_ALREADY_LINKED",
   /** 413 — 본문 10만 자 상한 초과 */
   EVENT_CONTENT_TOO_LARGE: "EVENT_CONTENT_TOO_LARGE",
@@ -200,8 +204,10 @@ export async function createEvent(input: EventSaveInput): Promise<EventDetail> {
 /**
  * PUT /v1/events/{eventId} — 수정 (전체 교체 · 상태 필드 없음).
  *
- * 폼 연결 변경·해제는 신청이 발생한 뒤에는 409 EVENT_FORM_IN_USE로, 다른 행사에 전속된 폼은
- * 409 FORM_ALREADY_LINKED로 거절된다 — 판정 근거는 서버다(화면이 들고 있는 목록은 낡을 수 있다).
+ * 폼 연결은 신청이 발생한 뒤에도 바꾸거나 해제할 수 있다 — 서버가 그 가드를 걷었고
+ * (ssccops-server#336), 대신 무엇이 끊기는지를 저장 전 확인 시트가 알린다(ssccops-web#378).
+ * 다른 행사에 전속된 폼은 409 FORM_ALREADY_LINKED로 거절된다 — 판정 근거는 서버다(화면이
+ * 들고 있는 목록은 낡을 수 있다).
  */
 export async function updateEvent(
   eventId: number,
