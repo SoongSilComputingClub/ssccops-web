@@ -116,7 +116,7 @@ const INDCT_SEQNO_MAX = 9999;
 /** 표시 순번 검증. 빈 칸은 "안 바꾼다"는 뜻이라 오류가 아니다 */
 function validateDisplayOrder(indctSeqno: string): FieldError | null {
   if (!indctSeqno) return null;
-  if (!/^[0-9]+$/.test(indctSeqno) || Number(indctSeqno) > INDCT_SEQNO_MAX) {
+  if (!/^\d+$/.test(indctSeqno) || Number(indctSeqno) > INDCT_SEQNO_MAX) {
     return {
       field: "indctSeqno",
       message: `표시 순번은 0~${INDCT_SEQNO_MAX} 사이의 숫자여야 합니다 — 비워 두면 지금 순번을 그대로 씁니다`,

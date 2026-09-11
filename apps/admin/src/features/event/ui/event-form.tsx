@@ -287,7 +287,7 @@ export function EventForm({
     if (eventBgngDt && eventEndDt && eventEndDt < eventBgngDt) {
       next.eventPeriod = "종료 일시가 시작 일시보다 빠릅니다";
     }
-    if (ptcpLmtCnt && (!/^[0-9]+$/.test(ptcpLmtCnt) || Number(ptcpLmtCnt) < 1)) {
+    if (ptcpLmtCnt && (!/^\d+$/.test(ptcpLmtCnt) || Number(ptcpLmtCnt) < 1)) {
       next.ptcpLmtCnt = "정원은 1 이상의 숫자여야 합니다 — 비워 두면 정원 없음입니다";
     }
 
