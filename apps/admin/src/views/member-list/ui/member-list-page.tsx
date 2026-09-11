@@ -94,7 +94,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 /** URL은 사용자가 손으로 고칠 수 있다 — 모르는 정렬은 첫 번째로 떨어뜨린다 */
 function parseSortIdx(value: string | null): number {
   const idx = SORTS.findIndex((s) => s.param === value);
-  return idx < 0 ? 0 : idx;
+  return Math.max(0, idx);
 }
 
 export function MemberListPage() {
