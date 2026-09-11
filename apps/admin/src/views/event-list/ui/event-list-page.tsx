@@ -36,6 +36,7 @@ import {
  */
 
 const ALL = "전체";
+const EXCEPT_ARCHIVED = "보관 제외";
 
 /** 잠긴 버튼에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
 const NO_MANAGE = "행사를 다룰 권한이 없습니다 — 행사 관리(EVENT_MANAGE) 권한이 필요합니다";
@@ -43,11 +44,31 @@ const NO_MANAGE = "행사를 다룰 권한이 없습니다 — 행사 관리(EVE
 const QUERY_STATUS = "eventSttsCd";
 const QUERY_CATEGORY = "eventClsfCd";
 
-/** URL은 사용자가 손으로 고칠 수 있다 — 모르는 값은 필터 없음으로 떨어뜨린다 */
-function parseEventSttsCd(value: string | null): EventSttsCd | null {
-  return value && EVENT_STTS_CDS.includes(value as EventSttsCd)
-    ? (value as EventSttsCd)
-    : null;
+/** 상태 축의 '전체'. 기본값이 좁힌 목록이라 파라미터를 지우는 것으로는 넓힐 수 없다 */
+const QUERY_STATUS_ALL = "ALL";
+
+/*
+ * 상태 축이 고를 수 있는 것 — 저장 상태 셋에 두 가지가 더 있다.
+ *
+ * `EXCEPT_ARCHIVED`가 **파라미터가 없을 때의 기본값**이다 (ssccops#267). 치우려고 보관을 눌러도
+ * 목록에서 사라지지 않아, 지난 행사가 쌓일수록 지금 것을 찾기 어려웠다.
+ *
+ * ADR-0014가 삭제를 걷어내며 "보관된 행사가 운영진에게는 계속 보인다"를 근거의 하나로 적었는데,
+ * 그 문장이 지키려던 것은 **보관해도 데이터가 사라지지 않고 찾아볼 수 있다**이다. 칩으로 볼 수
+ * 있으면 그것은 그대로다.
+ */
+type EventStatusFilter = EventSttsCd | "ALL" | "EXCEPT_ARCHIVED";
+
+/*
+ * URL은 사용자가 손으로 고칠 수 있다 — 모르는 값은 필터 없음(전체)으로 떨어뜨린다.
+ *
+ * 파라미터가 **없는 것**과 **전체**가 다른 뜻이다. 없으면 기본값(보관 제외)이고, 전체는
+ * `ALL`이라는 값으로 적는다.
+ */
+function parseEventStatusFilter(value: string | null): EventStatusFilter {
+  if (value === null) return "EXCEPT_ARCHIVED";
+  if (value === QUERY_STATUS_ALL) return "ALL";
+  return EVENT_STTS_CDS.includes(value as EventSttsCd) ? (value as EventSttsCd) : "ALL";
 }
 
 function EventCardSkeleton() {
@@ -189,10 +210,26 @@ export function EventListPage() {
   const searchParams = useSearchParams();
   const canManage = useCan(CAPABILITY.EVENT_MANAGE);
 
-  const eventSttsCd = parseEventSttsCd(searchParams.get(QUERY_STATUS));
+  const statusFilter = parseEventStatusFilter(searchParams.get(QUERY_STATUS));
   const eventClsfCd = searchParams.get(QUERY_CATEGORY);
 
-  const { events, status, errorMessage, reload } = useEventList({ eventClsfCd, eventSttsCd });
+  /*
+   * 단일 상태만 서버가 좁힌다. 기본(보관 제외)과 전체는 상태를 보내지 않고, 받아 온 뒤 화면에서
+   * 판단한다 — 상태 파라미터가 단일 값이라 "보관만 빼고 나머지"를 서버로 보낼 수 없다.
+   *
+   * 화면에서 걸러도 되는 것은 **이 조회에 페이징이 없기 때문**이다. GET /v1/events는 조건에 맞는
+   * 행사를 전량 List로 내려준다(서버 EventServiceImpl.getEvents). 커서 페이징이었다면 걸러낸
+   * 만큼 한 페이지에 남는 개수가 흔들렸을 자리다.
+   */
+  const eventSttsCd =
+    statusFilter === "ALL" || statusFilter === "EXCEPT_ARCHIVED" ? null : statusFilter;
+
+  const fetched = useEventList({ eventClsfCd, eventSttsCd });
+  const { status, errorMessage, reload } = fetched;
+  const events =
+    statusFilter === "EXCEPT_ARCHIVED"
+      ? fetched.events.filter((e) => e.eventSttsCd !== "ARCHIVED")
+      : fetched.events;
   const { categories } = useEventCategoryOptions();
 
   /** 누른 축만 바꾸고 나머지 필터는 URL에 남겨 둔다 (상태·분류는 AND로 함께 걸린다) */
@@ -220,9 +257,16 @@ export function EventListPage() {
       />
       <PageBody>
         <div className="mb-4 flex flex-wrap items-center gap-[7px]">
+          {/* 기본값이라 파라미터를 지운다 — 값을 남기지 않는 쪽이 이 칩이고, 전체는 값을 남긴다 */}
           <Chip
-            active={eventSttsCd === null}
+            active={statusFilter === "EXCEPT_ARCHIVED"}
             onClick={() => applyFilter(QUERY_STATUS, null)}
+          >
+            {EXCEPT_ARCHIVED}
+          </Chip>
+          <Chip
+            active={statusFilter === "ALL"}
+            onClick={() => applyFilter(QUERY_STATUS, QUERY_STATUS_ALL)}
           >
             {ALL}
           </Chip>
@@ -230,7 +274,7 @@ export function EventListPage() {
           {EVENT_STTS_CDS.map((cd) => (
             <Chip
               key={cd}
-              active={eventSttsCd === cd}
+              active={statusFilter === cd}
               onClick={() => applyFilter(QUERY_STATUS, cd)}
             >
               {EVENT_STTS_NM[cd]}
@@ -274,7 +318,8 @@ export function EventListPage() {
           (events.length === 0 ? (
             <EmptyState
               message={
-                eventSttsCd || eventClsfCd
+                /* 기본값도 좁힌 조건이다 — 보관된 행사만 있을 때 "등록된 행사가 없습니다"는 거짓이다 */
+                statusFilter !== "ALL" || eventClsfCd
                   ? "조건에 맞는 행사가 없습니다."
                   : "등록된 행사가 없습니다."
               }

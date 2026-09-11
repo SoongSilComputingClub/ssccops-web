@@ -17,13 +17,15 @@ interface MyApplicationResponse {
   eventEndDt: string | null;
   plcNm: string | null;
   applicationStatus: ApplicationStatus;
+  /** 옵셔널 — 이 필드를 모르는 서버 배포에서는 오지 않는다 (ssccops#278). 없으면 null로 굳힌다 */
+  formId?: number | null;
   formRspnsId: number | null;
   eventPtcpId: number | null;
   submittedAt: string | null;
 }
 
 function toMyApplication(response: MyApplicationResponse): MyApplication {
-  return { ...response };
+  return { ...response, formId: response.formId ?? null };
 }
 
 /**

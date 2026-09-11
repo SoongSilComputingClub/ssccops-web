@@ -213,6 +213,15 @@ export interface MemberListPage {
   /** 다음 페이지 커서 — 마지막 페이지면 null */
   nextCursor: string | null;
   hasNext: boolean;
+  /**
+   * 서버가 실제로 적용한 페이지 크기.
+   *
+   * 화면이 «21–40번째»를 그리려면 이 값이 필요하다 — 커서 페이징에는 페이지 번호가 없으므로
+   * 시작 번호를 `(지나온 페이지 수) × size + 1`로 계산한다. 요청에 size를 싣지 않으면 서버
+   * 기본값이 그대로 실려 오므로, 화면이 20을 넣어 두고 짐작하면 그 기본값이 바뀌는 날
+   * 조용히 어긋난다.
+   */
+  size: number;
   /** 필터를 적용한 건수 */
   totalCount: number;
   /** 필터 이전 전체 건수 — 화면의 "N명 · 전체 M명"에서 M이다 */
@@ -245,6 +254,8 @@ export async function fetchMembers(filter: MemberListFilter = {}): Promise<Membe
     members: data,
     nextCursor: page?.nextCursor ?? null,
     hasNext: page?.hasNext ?? false,
+    /* 봉투가 없으면 이번에 받은 건수를 페이지 크기로 본다 — 한 페이지뿐인 목록과 같은 뜻이다 */
+    size: page?.size ?? data.length,
     totalCount: page?.totalCount ?? data.length,
     /*
      * 전체 건수는 필터를 걸지 않았을 때의 수라 걸린 건수보다 작을 수 없다. 봉투가 없으면
@@ -643,6 +654,150 @@ export async function changeMemberStatus(
     body: JSON.stringify(input),
   });
   return toChangeResult(raw);
+}
+
+/* ── 등급·상태 일괄 변경 (#382 · 서버 #338) ─────────────────── */
+
+/**
+ * 한 요청에 실을 수 있는 대상 상한 — 서버 `MemberBulkGradeChangeRequest.MAX_TARGETS`.
+ *
+ * 회원 목록 한 페이지의 최대 크기(AP-13)와 같은 값이다. 넘기면 400 `VALIDATION_FAILED`이고
+ * **그때는 한 명도 바뀌지 않는다.** 화면은 이 수에 닿으면 체크박스를 더 고를 수 없게 잠근다 —
+ * 고르게 두고 저장에서 막으면 100번째 이후로 고른 사람을 어디서 빼야 하는지 화면이 말해 줄 수
+ * 없다. 판정 근거는 서버이며 여기 숫자가 낡으면 화면이 먼저 잠글 뿐이다.
+ */
+export const BULK_CHANGE_MAX_TARGETS = 100;
+
+/**
+ * 일괄 변경의 회원별 결과 (서버 `MemberBulkChangeStatus`).
+ *
+ * 성공·실패 둘이 아니라 셋인 이유는 **SKIPPED가 실패가 아니기 때문**이다. 한 명짜리 API는 같은
+ * 값으로의 변경을 400 `NO_CHANGE`로 막지만, 명부에서 30명을 골라 정회원으로 올릴 때 몇이 이미
+ * 정회원인 것은 정상이다 — 실패로 세면 운영자가 그 줄을 하나씩 열어 본 뒤에야 "손볼 것이
+ * 없다"를 알게 되고, 그 순간부터 실패 건수는 아무도 믿지 않는 숫자가 된다. 그렇다고 성공으로
+ * 세면 이력이 남지 않은 사람이 성공 건수에 섞인다. CSV 이관의 `MemberImportExecutionStatus`
+ * (CREATED·SKIPPED·FAILED)와 같은 어휘다.
+ */
+export type MemberBulkChangeStatus = "CHANGED" | "SKIPPED" | "FAILED";
+
+/**
+ * 일괄 변경 결과 한 줄 (`MemberBulkChangeRow`).
+ *
+ * **회원 상세가 실리지 않는다.** 한 명짜리 응답은 변경 후 상세를 통째로 돌려주지만 여기서 같은
+ * 것을 하면 100명분 상세가 한 응답에 들어간다 — 일괄 변경 뒤 화면이 돌아가는 곳은 상세가
+ * 아니라 목록이고 목록은 어차피 다시 조회한다. 그래서 결과 표에 필요한 것만 온다.
+ *
+ * - `memberId`는 요청에 실은 값 그대로다. FAILED여도 채워진다 — 실패 줄이야말로 누구인지
+ *   가리켜야 한다
+ * - `name`은 **없는 회원이면 null**이다. 빈 문자열로 채우지 않는 것은 화면이 "이름을 알 수
+ *   없다"와 "이름이 빈 회원"을 구별해야 하기 때문이며, 화면은 그 자리에 회원 번호를 그린다
+ * - `code`·`reason`은 SKIPPED·FAILED에만 있다. 한 명짜리 API가 오류 응답의 `code`로 내리던
+ *   바로 그 문자열(`NO_CHANGE`·`NOT_FOUND` …)이라 {@link MEMBER_ERROR}로 분기할 수 있다
+ * - `warnings`는 CHANGED 줄에만 실린다. 요약으로 합치지 않고 **회원마다 그 줄에** 두는 것은
+ *   경고의 쓸모가 사람이 가서 정리하는 것이기 때문이다 — "역할 7건이 남았습니다"를 한 줄로
+ *   합치면 그 7건이 누구 것인지가 사라진다
+ */
+export interface MemberBulkChangeRow {
+  memberId: number;
+  name: string | null;
+  status: MemberBulkChangeStatus;
+  code: string | null;
+  reason: string | null;
+  warnings: MemberChangeWarning[];
+}
+
+/**
+ * 일괄 변경 요약 (`MemberBulkChangeSummary`). 세 건수는 겹치지 않고 합이 `totalCount`다.
+ *
+ * `totalCount`는 요청한 id 수가 아니라 **같은 회원을 접은 뒤의 인원**이다 — 화면의 선택이
+ * Map이라 중복이 생길 일은 없지만, 화면이 보낸 수와 이 값이 다를 수 있다는 것은 계약이다.
+ */
+export interface MemberBulkChangeSummary {
+  totalCount: number;
+  changedCount: number;
+  skippedCount: number;
+  failedCount: number;
+}
+
+/**
+ * 일괄 변경 응답 (`MemberBulkChangeResponse`) — 등급·상태가 **같은 모양**이다.
+ *
+ * `rows`에는 요청한 모든 회원이 요청 순서대로 온다(CHANGED 포함). 바뀌지 않은 회원만 내리면
+ * 화면이 "이 사람은 바뀐 건가 결과에서 빠진 건가"를 알 수 없다.
+ */
+export interface MemberBulkChangeResult {
+  summary: MemberBulkChangeSummary;
+  rows: MemberBulkChangeRow[];
+}
+
+/**
+ * POST /v1/members/grade-changes 요청 본문 (서버 `MemberBulkGradeChangeRequest`).
+ *
+ * 대상 목록과 **바꿀 값 하나**다. 회원마다 다른 값을 지정하는 모양(행 배열)이 아닌 것은 이
+ * API가 나온 자리가 "명부에서 10명을 골라 정회원으로 올린다"이기 때문이다 — 회원마다 값이
+ * 다르면 그것은 한 명짜리 API를 여러 번 부르는 일이고 그 경로는 이미 있다. 값 필드의 이름과
+ * 규칙은 한 명짜리 {@link MemberGradeChangeInput}과 글자 그대로 같아 그대로 확장한다 —
+ * 서버도 이 요청을 한 명짜리 record로 옮겨 담아 같은 로직에 넘긴다.
+ */
+export interface MemberBulkGradeChangeInput extends MemberGradeChangeInput {
+  /** 1~{@link BULK_CHANGE_MAX_TARGETS}명. 비거나 넘기면 400이며 한 명도 바뀌지 않는다 */
+  mbrIds: number[];
+}
+
+/** POST /v1/members/status-changes 요청 본문 — 규칙은 등급과 같다 ({@link MemberStatusChangeInput}) */
+export interface MemberBulkStatusChangeInput extends MemberStatusChangeInput {
+  mbrIds: number[];
+}
+
+const EMPTY_BULK_SUMMARY: MemberBulkChangeSummary = {
+  totalCount: 0,
+  changedCount: 0,
+  skippedCount: 0,
+  failedCount: 0,
+};
+
+/** 서버가 `warnings`·`rows`를 빠뜨렸어도 화면이 `.map`에서 터지지 않게 배열로 굳힌다 */
+function toBulkChangeResult(raw: MemberBulkChangeResult): MemberBulkChangeResult {
+  return {
+    summary: raw.summary ?? EMPTY_BULK_SUMMARY,
+    rows: (raw.rows ?? []).map((row) => ({ ...row, warnings: row.warnings ?? [] })),
+  };
+}
+
+/**
+ * POST /v1/members/grade-changes — 여러 회원의 등급을 같은 값으로 바꾼다 (`MEMBER_MANAGE`).
+ *
+ * 경로에 `bulk`가 없다 — 한 명짜리(`/{memberId}/grade-changes`)와는 세그먼트 수만으로
+ * 갈리고, 그 낱말이 이 저장소의 어휘에 없다는 것이 서버의 판단이다.
+ *
+ * **회원마다 트랜잭션이 따로다.** 한 명의 실패가 앞서 바뀐 회원을 되돌리지 않으므로 응답이
+ * 200이어도 `rows`를 읽어야 무엇이 됐는지 안다 — 성공 한 줄로 끝내지 않는 이유다. 400
+ * (`VALIDATION_FAILED` — 대상이 비었거나 100명을 넘음)·403만이 "한 명도 바뀌지 않았다"이다.
+ */
+export async function bulkChangeMemberGrade(
+  input: MemberBulkGradeChangeInput,
+): Promise<MemberBulkChangeResult> {
+  const raw = await apiFetch<MemberBulkChangeResult>("/v1/members/grade-changes", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return toBulkChangeResult(raw);
+}
+
+/**
+ * POST /v1/members/status-changes — 여러 회원의 상태를 같은 값으로 바꾼다 (`MEMBER_MANAGE`).
+ *
+ * 규칙은 등급과 같다. 탈퇴·제명으로 옮기면 남은 역할·하위 업무의 경고가 **회원별 줄에**
+ * 실려 온다({@link MemberBulkChangeRow}).
+ */
+export async function bulkChangeMemberStatus(
+  input: MemberBulkStatusChangeInput,
+): Promise<MemberBulkChangeResult> {
+  const raw = await apiFetch<MemberBulkChangeResult>("/v1/members/status-changes", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return toBulkChangeResult(raw);
 }
 
 /* ── 기준 코드 ─────────────────────────────────────────────── */

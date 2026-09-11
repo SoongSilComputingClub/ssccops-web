@@ -12,6 +12,7 @@
  */
 
 import { MBR_GRD_NM, MBR_STTS_NM, type MbrGrdCd, type MbrSttsCd } from "@/shared/config/codes";
+import { MEMBER_CHANGE_WARNING } from "../api/members";
 
 /* ── 코드 → 표시명 ─────────────────────────────────────────── */
 
@@ -46,6 +47,25 @@ export function mbrGrdTone(cd: MbrGrdCd): "grey" | "blue" {
 /** 상태 배지 톤: 탈퇴·제명=red, 그 외=grey */
 export function mbrSttsTone(cd: MbrSttsCd): "red" | "grey" {
   return cd === "WITHDRAWN" || cd === "EXPELLED" ? "red" : "grey";
+}
+
+/**
+ * 등급·상태 변경 경고 코드 → 무엇이 남았는지를 가리키는 짧은 이름 (#48 · 서버 #78).
+ *
+ * 상세의 경고 패널과 일괄 변경의 행별 결과(#382)가 같은 배지를 그린다 — 한 곳이 "역할"이고
+ * 다른 곳이 "현재 역할"이면 같은 경고가 화면마다 다른 것처럼 읽힌다. 모르는 코드는
+ * "확인 필요"로 두고 서버 문장을 그대로 보여 준다 — 화면이 모르는 경고를 삼키면 그 사실만
+ * 조용히 사라진다.
+ */
+export function changeWarningLabel(code: string): string {
+  switch (code) {
+    case MEMBER_CHANGE_WARNING.CURRENT_ROLES_REMAIN:
+      return "역할";
+    case MEMBER_CHANGE_WARNING.ASSIGNED_SUB_WORKS_REMAIN:
+      return "하위 업무";
+    default:
+      return "확인 필요";
+  }
 }
 
 /* ── 파생 표기 ─────────────────────────────────────────────── */

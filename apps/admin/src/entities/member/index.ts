@@ -14,6 +14,7 @@ export {
   mbrSttsTone,
   generationText,
   clubJoinPeriodText,
+  changeWarningLabel,
 } from "./model/display";
 /* 서버 계약 (ssccops-server #76) */
 export {
@@ -50,6 +51,20 @@ export type {
   MemberChangeWarning,
   MemberGradeChangeInput,
   MemberStatusChangeInput,
+} from "./api/members";
+/* 등급·상태 일괄 변경 (#382 · 서버 #338) — 회원별 결과가 CHANGED·SKIPPED·FAILED 셋으로 온다 */
+export {
+  bulkChangeMemberGrade,
+  bulkChangeMemberStatus,
+  BULK_CHANGE_MAX_TARGETS,
+} from "./api/members";
+export type {
+  MemberBulkChangeStatus,
+  MemberBulkChangeRow,
+  MemberBulkChangeSummary,
+  MemberBulkChangeResult,
+  MemberBulkGradeChangeInput,
+  MemberBulkStatusChangeInput,
 } from "./api/members";
 /*
  * 회원 역할 부여·종료 (#50 · 서버 #81).
