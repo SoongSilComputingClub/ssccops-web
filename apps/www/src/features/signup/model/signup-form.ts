@@ -37,8 +37,12 @@ export const EMPTY_SIGNUP_VALUES: SignupFormValues = {
   academicYear: "",
 };
 
-/* 학번은 입학연도 4자리 + 일련번호 형태다. 오래된 학번은 8자리도 있어 숫자 8~10자리로만 거른다 */
-const STUDENT_NUMBER_PATTERN = /^\d{8,10}$/;
+/*
+ * 학번은 입학연도 4자리 + 일련번호 4자리, **8자리**다 (ssccops#268). 전에는 8~10으로 열어
+ * 두었는데 9·10자리는 목 데이터에만 있던 값이었다. 어드민 가입 폼·서버와 같은 자릿수다.
+ * 연결 폼(link-form.ts)에는 이 규칙이 없다 — 명부에 있는 값을 맞추는 자리다.
+ */
+const STUDENT_NUMBER_PATTERN = /^\d{8}$/;
 /** 휴대전화만 받는다 — 선발·확정 안내가 개인 번호로 나간다 */
 const PHONE_NUMBER_PATTERN = /^01[016-9]-?\d{3,4}-?\d{4}$/;
 const DIGITS_ONLY = /^\d+$/;
@@ -81,7 +85,7 @@ export function validateSignup(
   if (!studentNumber) {
     if (academic) errors.studentNumber = "학번을 입력해 주세요";
   } else if (!STUDENT_NUMBER_PATTERN.test(studentNumber)) {
-    errors.studentNumber = "학번은 숫자 8~10자리입니다";
+    errors.studentNumber = "학번은 숫자 8자리입니다";
   }
 
   if (academic && !values.departmentName.trim()) {

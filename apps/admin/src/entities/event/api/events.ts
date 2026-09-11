@@ -40,6 +40,14 @@ interface EventSummaryResponse {
   confirmedCount: number | null;
   crtDt: string;
   mdfcnDt: string;
+  /*
+   * 지운 일시 (ssccops-server#347 · `del_dt` · ADR-0020). 폼의 `delDt`와 같은 이름·같은 자리다 —
+   * 살아 있는 행사에서는 언제나 `null`이고, 휴지통(`GET /v1/events/deleted`)에서만 값이 온다.
+   *
+   * 옵셔널인 것은 폼과 같은 이유다. 이 필드를 모르는 배포(#347 이전)에서는 통째로 빠지는데,
+   * 그때는 `?? null`이 "지운 적 없음"으로 굳혀 화면이 삭제 표시를 그리지 않는다.
+   */
+  delDt?: string | null;
 }
 
 interface EventDetailResponse extends EventSummaryResponse {
@@ -71,6 +79,7 @@ function toEventSummary(res: EventSummaryResponse): EventSummary {
     confirmedCount: res.confirmedCount ?? 0,
     crtDt: res.crtDt,
     mdfcnDt: res.mdfcnDt,
+    delDt: res.delDt ?? null,
   };
 }
 
@@ -92,9 +101,13 @@ export const EVENT_ERROR = {
   EVENT_CLASSIFICATION_NOT_FOUND: "EVENT_CLASSIFICATION_NOT_FOUND",
   /** 400 — 전이표에 없는 상태 전이. 화면이 들고 있는 상태가 서버와 어긋났다는 뜻이다 */
   INVALID_EVENT_STATUS_TRANSITION: "INVALID_EVENT_STATUS_TRANSITION",
-  /** 409 — 신청이 발생한 뒤의 폼 연결 변경·해제 (D11) */
-  EVENT_FORM_IN_USE: "EVENT_FORM_IN_USE",
-  /** 409 — 이미 다른 행사에 전속 연결된 폼 (D11) */
+  /**
+   * 409 — 이미 다른 행사에 전속 연결된 폼 (D11).
+   *
+   * **폼 연결에 남은 409는 이것 하나다.** 신청이 발생한 뒤의 연결 변경을 막던
+   * `EVENT_FORM_IN_USE`는 서버가 걷었다(ssccops-server#336 · v0.2.4) — 이제 신청 뒤에도 연결을
+   * 바꿀 수 있고, 무엇이 끊기는지는 저장 전 확인 시트가 알린다(ssccops-web#378).
+   */
   FORM_ALREADY_LINKED: "FORM_ALREADY_LINKED",
   /** 413 — 본문 10만 자 상한 초과 */
   EVENT_CONTENT_TOO_LARGE: "EVENT_CONTENT_TOO_LARGE",
@@ -105,6 +118,33 @@ export const EVENT_ERROR = {
    * 되돌린다. 화면은 "일부만 만들어졌을지 모른다"고 안내하지 않는다.
    */
   EVENT_IMAGE_COPY_FAILED: "EVENT_IMAGE_COPY_FAILED",
+  /*
+   * ── 소프트 삭제 (ADR-0020 · ssccops-server#347) ─────────────────
+   *
+   * **아래 세 문자열은 서버 PR과 같은 시점에 짓고 있어 아직 확정 전이다.** 서버가 다른 이름을
+   * 쓰면 고칠 자리는 이 셋뿐이다 — 화면·훅·문구는 전부 이 상수로만 분기한다(폼이 `FORM_ERROR`를
+   * 두고 한 판단과 같다). 짐작한 코드가 빗나가면 화면은 조용히 `default`로 떨어져 서버 문장을
+   * 그대로 보여 주므로 고장이 아니라 문구가 덜 친절해지는 정도다.
+   */
+  /**
+   * 409 — 학술 활동이 딸린 행사를 지우려 함.
+   *
+   * `acdm_actv.event_id`가 NOT NULL이라 행사가 사라지면 학술 프로그램이 고아가 된다. 학술 쪽에서
+   * 프로그램을 정리한 뒤에야 지울 수 있다 — 화면은 이 거절을 **확인 시트 안에** 남긴다(토스트로
+   * 날리면 왜 안 되는지 다시 볼 수 없다). 서버 이슈(#347)가 "`EVENT_HAS_ACADEMIC_PROGRAM` 같은
+   * 이름"이라고 적어 그 이름을 그대로 잡았다.
+   */
+  EVENT_HAS_ACADEMIC_PROGRAM: "EVENT_HAS_ACADEMIC_PROGRAM",
+  /**
+   * 409 — 이미 지워진 행사를 또 지우려 함. 화면이 낡았다는 뜻이라(다른 탭에서 이미 지웠다)
+   * 사과하지 않고 목록을 다시 부른다.
+   *
+   * 문자열이 `EVENT_` 접두 없이 `"ALREADY_DELETED"`인 것은 운영(서버 #125)·폼(서버 #329) 두
+   * 도메인이 같은 상황에 이 문자열을 쓰고 있고, 서버 #347이 폼 형판을 그대로 따르기 때문이다.
+   */
+  EVENT_ALREADY_DELETED: "ALREADY_DELETED",
+  /** 409 — 지워지지 않은 행사를 되살리려 함. `ALREADY_DELETED`의 짝이며 같은 처리를 받는다 */
+  EVENT_NOT_DELETED: "NOT_DELETED",
 } as const;
 
 /* ── 조회 ──────────────────────────────────────────────────── */
@@ -113,15 +153,32 @@ export const EVENT_ERROR = {
 export interface EventListFilter {
   eventClsfCd?: string | null;
   eventSttsCd?: EventSttsCd | null;
+  /**
+   * 지운 행사만 본다 (ADR-0020 · ssccops-server#347).
+   *
+   * 분류·상태와 달리 같은 집합을 좁히는 조건이 아니라 **다른 모집단으로 갈아타는 스위치**다 —
+   * 그래서 `null`(거르지 않음)이 없고, 쿼리 파라미터가 아니라 **경로를 고른다**(폼의
+   * `FormListFilter.deleted`와 같은 판단 · 근거는 그쪽 주석). 켜면 분류·상태는 보내지 않는다.
+   */
+  deleted?: boolean;
 }
 
 /**
  * GET /v1/events — 목록 (페이징 없음 · 페이지 봉투가 없어 apiFetch로 받는다).
+ * **지운 행사는 GET /v1/events/deleted로 나간다.**
  *
  * 분류·상태 필터를 쿼리로 보낸다 — 쿼리 파라미터 이름은 서버 계약(eventClsfCd·eventSttsCd)
  * 그대로다. URL 쿼리스트링과 요청이 1:1이 되게 화면도 같은 이름을 쓴다(폼 목록과 같은 판단).
  */
 export async function fetchEvents(filter: EventListFilter = {}): Promise<EventSummary[]> {
+  /*
+   * 휴지통은 같은 목록의 조건이 아니라 **별도 자원**이다. `?deleted=true`로 보내지 않는 것은
+   * 폼이 실제로 겪은 일 때문이다(ssccops-web#362) — 스프링은 모르는 쿼리 파라미터를 조용히
+   * 무시하므로 그 호출은 오류가 아니라 **살아 있는 행사 목록을 200으로** 돌려준다. 경로를 고르는
+   * 자리를 응답을 아는 이 파일 하나로 둔다. 정렬은 지운 시각 역순으로 서버가 정한다.
+   */
+  if (filter.deleted) return fetchDeletedEvents();
+
   const query = new URLSearchParams();
   if (filter.eventClsfCd) query.set("eventClsfCd", filter.eventClsfCd);
   if (filter.eventSttsCd) query.set("eventSttsCd", filter.eventSttsCd);
@@ -200,8 +257,10 @@ export async function createEvent(input: EventSaveInput): Promise<EventDetail> {
 /**
  * PUT /v1/events/{eventId} — 수정 (전체 교체 · 상태 필드 없음).
  *
- * 폼 연결 변경·해제는 신청이 발생한 뒤에는 409 EVENT_FORM_IN_USE로, 다른 행사에 전속된 폼은
- * 409 FORM_ALREADY_LINKED로 거절된다 — 판정 근거는 서버다(화면이 들고 있는 목록은 낡을 수 있다).
+ * 폼 연결은 신청이 발생한 뒤에도 바꾸거나 해제할 수 있다 — 서버가 그 가드를 걷었고
+ * (ssccops-server#336), 대신 무엇이 끊기는지를 저장 전 확인 시트가 알린다(ssccops-web#378).
+ * 다른 행사에 전속된 폼은 409 FORM_ALREADY_LINKED로 거절된다 — 판정 근거는 서버다(화면이
+ * 들고 있는 목록은 낡을 수 있다).
  */
 export async function updateEvent(
   eventId: number,
@@ -280,3 +339,50 @@ export async function changeEventStatus(
 }
 
 /* ── 삭제 ──────────────────────────────────────────────────── */
+
+/**
+ * GET /v1/events/deleted — 지운 행사 목록 (ADR-0020 · ssccops-server#347 · EVENT_MANAGE).
+ *
+ * 목록 항목과 같은 모양에 `delDt`가 채워져 온다. 분류·상태 필터를 받지 않는다 — 지운 행사는
+ * 치우려고 지운 것이라 좁혀 볼 일이 없고, 할 수 있는 일도 되살리기 하나다.
+ */
+export async function fetchDeletedEvents(): Promise<EventSummary[]> {
+  const events = await apiFetch<EventSummaryResponse[] | null>("/v1/events/deleted");
+  return (events ?? []).map(toEventSummary);
+}
+
+/**
+ * DELETE /v1/events/{eventId} — 소프트 삭제 (ADR-0020 · ssccops-server#347 · EVENT_MANAGE).
+ *
+ * **ADR-0014가 걷어냈던 경로가 되살아난 것이다 — 이번에는 소프트다.** 보관과 뜻이 다르다:
+ * 보관은 끝난 행사를 공개에서 내리되 운영 기록으로 남기는 것이고, 삭제는 잘못 만든 것을
+ * 목록에서 치우되 되돌릴 수 있게 두는 것이다. 지울 수 있는 상태는 전부다(DRAFT·PUBLISHED·
+ * ARCHIVED) — 게시 중인 행사를 지우면 공개에서도 사라진다.
+ *
+ * **참가자가 있는 행사도 지운다.** 데이터(event_ptcp·응답)는 남고, 참가자의 «내 신청»에서 그
+ * 항목이 사라진다 — 되돌릴 수 있다는 것이 그 대가를 감당 가능하게 만드는 유일한 조건이라, 이
+ * 함수는 `restoreEvent`와 **반드시 같은 화면에서** 쓰인다(폼 `deleteForm`과 같은 판단).
+ * R2 이미지는 지우지 않는다 — 복구하면 그대로 붙는다.
+ *
+ * 학술 활동이 딸린 행사는 409 `EVENT_HAS_ACADEMIC_PROGRAM`으로 거절된다 — 화면이 미리 잠글
+ * 근거(목록에 학술 연결 여부)가 없어 거절이 유일한 방어선이다. 이미 지워진 행사는 409
+ * `ALREADY_DELETED`, 없는 행사는 404 `EVENT_NOT_FOUND`다.
+ */
+export async function deleteEvent(eventId: number): Promise<void> {
+  await apiFetch<void>(`/v1/events/${eventId}`, { method: "DELETE" });
+}
+
+/**
+ * POST /v1/events/{eventId}/restore — 지운 행사 되살리기 (ADR-0020 · ssccops-server#347).
+ *
+ * 권한은 지우기와 같은 `EVENT_MANAGE`다 — 지울 수 있는 사람이 되돌릴 수 없으면 자기가 저지른
+ * 것을 스스로 수습하지 못한다. `POST .../restore` 모양은 상태 전이(`.../status`)·복제
+ * (`.../duplicate`)와 같은 이 도메인의 관례이고 폼 복구와도 같다.
+ *
+ * 복구는 **지우기 전 상태를 그대로 되돌린다** — 게시 상태도 참가자도 연결 폼도 그대로다(복제와
+ * 다르다). 돌려받을 값이 없어 반환이 없다: 화면은 목록을 다시 부른다.
+ * 지워지지 않은 행사는 409 `NOT_DELETED`, 없는 행사는 404 `EVENT_NOT_FOUND`다.
+ */
+export async function restoreEvent(eventId: number): Promise<void> {
+  await apiFetch<void>(`/v1/events/${eventId}/restore`, { method: "POST" });
+}
