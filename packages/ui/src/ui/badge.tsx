@@ -40,13 +40,13 @@ export function Badge({
   className,
   title,
   children,
-}: {
+}: Readonly<{
   tone?: BadgeTone;
   className?: string;
   /** 배지가 짧게만 말하고 나머지를 마우스 위에서 알릴 때 쓴다 (예: 시스템 폼의 잠금 사유) */
   title?: string;
   children: ReactNode;
-}) {
+}>) {
   return (
     <span
       title={title}
@@ -71,11 +71,11 @@ export function Pill({
   tone = "blue",
   className,
   children,
-}: {
+}: Readonly<{
   tone?: "blue" | "red" | "outline";
   className?: string;
   children: ReactNode;
-}) {
+}>) {
   const tones = {
     blue: "bg-accent-soft text-accent",
     red: "bg-danger/10 text-danger",

@@ -68,7 +68,7 @@ const COMPONENTS: Components = {
   ),
 };
 
-export function Markdown({ children }: { children: string }) {
+export function Markdown({ children }: Readonly<{ children: string }>) {
   return (
     <div className="text-ink">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={COMPONENTS}>

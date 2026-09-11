@@ -27,7 +27,7 @@ import { cn } from "../lib/cn";
  * 삭제된 `ThemeCycleButton`은 이 자리에 3버튼이 **안 들어간다**는 계산(`828 + 144 > 960`)을
  * 근거로 두고 있었는데, 그 숫자가 실측과 맞지 않았다.
  */
-export function ThemeToggle({ className, fit }: { className?: string; fit?: boolean }) {
+export function ThemeToggle({ className, fit }: Readonly<{ className?: string; fit?: boolean }>) {
   const { theme, setTheme } = useTheme();
 
   return (

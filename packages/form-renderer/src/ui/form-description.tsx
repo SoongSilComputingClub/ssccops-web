@@ -73,10 +73,10 @@ const COMPONENTS: Components = {
 export function FormDescription({
   children,
   className,
-}: {
+}: Readonly<{
   children: string | null | undefined;
   className?: string;
-}) {
+}>) {
   if (!children || !children.trim()) {
     return null;
   }

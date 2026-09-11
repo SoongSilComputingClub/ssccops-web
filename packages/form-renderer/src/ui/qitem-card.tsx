@@ -30,12 +30,12 @@ export function QitemCard({
   value,
   error,
   onChange,
-}: {
+}: Readonly<{
   qitem: Qitem;
   value: AnswerValue | undefined;
   error?: string;
   onChange: (value: AnswerValue) => void;
-}) {
+}>) {
   const selected = selectedOptions(value);
   const text = typeof value === "string" ? value : "";
 
