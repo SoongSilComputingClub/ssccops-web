@@ -13,6 +13,8 @@ export function Sheet({
   okLabel = "확인",
   okDisabled,
   okTitle,
+  cancelLabel = "취소",
+  onCancel,
   children,
 }: {
   open: boolean;
@@ -29,6 +31,15 @@ export function Sheet({
    */
   okDisabled?: boolean;
   okTitle?: string;
+  /**
+   * 왼쪽 버튼의 글자와 동작. 기본은 «취소 → onClose»다.
+   *
+   * 단계가 있는 시트(회원 일괄 변경 #382 — 입력 → 미리보기 → 결과)가 미리보기에서 «이전»,
+   * 결과에서 «닫기»를 쓴다. 시트 밖(스크림)을 누르는 것은 여전히 `onClose`다 — 바깥을 누르는
+   * 뜻은 "이 시트에서 나간다"이지 "한 단계 앞으로"가 아니다.
+   */
+  cancelLabel?: string;
+  onCancel?: () => void;
   children?: ReactNode;
 }) {
   if (!open) return null;
@@ -48,8 +59,8 @@ export function Sheet({
         {hint && <div className="mt-[5px] mb-[18px] text-[14px] text-n500">{hint}</div>}
         {children}
         <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
-            취소
+          <Button variant="ghost" onClick={onCancel ?? onClose}>
+            {cancelLabel}
           </Button>
           {onOk && (
             <Button onClick={onOk} disabled={okDisabled} title={okTitle}>
