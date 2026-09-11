@@ -217,7 +217,7 @@ function StartRecruitmentCard({
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-[13px] text-n500">
-          모집 시작 일시
+          <span>모집 시작 일시</span>
           <input
             type="datetime-local"
             value={startAt}
@@ -226,7 +226,7 @@ function StartRecruitmentCard({
           />
         </label>
         <label className="flex flex-col gap-1 text-[13px] text-n500">
-          모집 종료 일시
+          <span>모집 종료 일시</span>
           <input
             type="datetime-local"
             value={endAt}

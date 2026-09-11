@@ -348,8 +348,7 @@ function DashboardBody({ data }: Readonly<{ data: LeaderDashboardReady }>) {
                 <span className="h-[10px] w-[10px] rounded-[3px] bg-accent-soft" />제출
               </span>
               <span className="flex items-center gap-[6px]">
-                <span className="h-[10px] w-[10px] rounded-[3px] shadow-[inset_0_0_0_1px_var(--color-line-strong)]" />
-                승인
+                <span className="h-[10px] w-[10px] rounded-[3px] shadow-[inset_0_0_0_1px_var(--color-line-strong)]" />승인
               </span>
             </div>
           </div>
