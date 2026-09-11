@@ -55,10 +55,16 @@ export const EMPTY_SIGNUP_VALUES: SignupFormValues = {
 };
 
 /*
- * 학번은 mbr.stdnt_no(V20)이고 입학연도 4자리 + 일련번호 형태다. 목 데이터에는 9자리,
- * 오래된 학번은 8자리도 있어 자릿수를 하나로 못 박지 않고 숫자 8~10자리로만 거른다.
+ * 학번은 mbr.stdnt_no(V20)이고 입학연도 4자리 + 일련번호 4자리, **8자리**다 (ssccops#268).
+ *
+ * 전에는 8~10자리로 넓게 열어 두었다 — "목 데이터에는 9자리"가 근거였는데 그것은 목 데이터였지
+ * 실제 학번이 아니었다. 폼 빌더의 학번 프리셋(ssccops#220)이 이미 8자리라 이제 한 시스템 안에서
+ * 학번의 뜻이 한 벌이다. 서버(MemberSignupRequest)도 같은 자릿수를 본다.
+ *
+ * **연결 폼(member-link-page)에는 이 규칙이 없다** — 명부에 있는 값을 맞추는 자리라 형식으로
+ * 거르면 명부에 실재하는 값을 화면이 먼저 거절한다.
  */
-const STUDENT_NUMBER_PATTERN = /^\d{8,10}$/;
+const STUDENT_NUMBER_PATTERN = /^\d{8}$/;
 /** 휴대전화만 받는다 — 가입 안내·알림이 개인 번호로 나간다 */
 const PHONE_NUMBER_PATTERN = /^01[016-9]-?\d{3,4}-?\d{4}$/;
 const DIGITS_ONLY = /^\d+$/;
@@ -102,7 +108,7 @@ export function validateSignup(
   if (!studentNumber) {
     if (academic) errors.studentNumber = "학번을 입력하세요";
   } else if (!STUDENT_NUMBER_PATTERN.test(studentNumber)) {
-    errors.studentNumber = "학번은 숫자 8~10자리입니다";
+    errors.studentNumber = "학번은 숫자 8자리입니다";
   }
 
   if (academic && !values.departmentName.trim()) {
