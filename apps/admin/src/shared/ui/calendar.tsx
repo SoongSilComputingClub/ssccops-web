@@ -92,7 +92,9 @@ function weeksOf(mode: CalendarMode, anchor: string): string[] {
  */
 export function visibleRange(mode: CalendarMode, anchor: string): [string, string] {
   const weeks = weeksOf(mode, anchor);
-  return [weeks[0], addDays(weeks[weeks.length - 1], 6)];
+  // weeksOf는 비지 않는다 — `?? weeks[0]`은 `.at()`의 undefined를 타입에서 걷는 것뿐이다
+  const lastWeek = weeks.at(-1) ?? weeks[0];
+  return [weeks[0], addDays(lastWeek, 6)];
 }
 
 /**
