@@ -9,6 +9,8 @@ const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"];
 
 /** 막대 한 줄의 높이(px). 레인이 깊어질수록 주 줄이 이만큼씩 자란다 */
 const LANE_H = 20;
+/** grid-template-rows에 레인 수만큼 반복해 넣는 한 줄 */
+const LANE_ROW = `${LANE_H}px `;
 
 /*
  * 항목 색. Badge의 톤 이름을 빌리되 배지를 그리지는 않는다 — 칸이 좁아 테두리·패딩이 들어간
@@ -90,7 +92,9 @@ function weeksOf(mode: CalendarMode, anchor: string): string[] {
  */
 export function visibleRange(mode: CalendarMode, anchor: string): [string, string] {
   const weeks = weeksOf(mode, anchor);
-  return [weeks[0], addDays(weeks[weeks.length - 1], 6)];
+  // weeksOf는 비지 않는다 — `?? weeks[0]`은 `.at()`의 undefined를 타입에서 걷는 것뿐이다
+  const lastWeek = weeks.at(-1) ?? weeks[0];
+  return [weeks[0], addDays(lastWeek, 6)];
 }
 
 /**
@@ -186,7 +190,7 @@ export function Calendar({
             key={ws}
             className="grid grid-cols-7 border-b border-line last:border-b-0"
             style={{
-              gridTemplateRows: `auto ${`${LANE_H}px `.repeat(laneCount)}1fr`,
+              gridTemplateRows: `auto ${LANE_ROW.repeat(laneCount)}1fr`,
               minHeight: mode === "week" ? 220 : 96,
             }}
           >

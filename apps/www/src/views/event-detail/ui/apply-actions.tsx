@@ -145,8 +145,6 @@ const SECONDARY =
 function pickMine(responses: MyFormResponse[]): MyFormResponse | null {
   const submitted = responses.filter((r) => r.rspnsSttsCd !== "DRAFT");
   return (
-    submitted.find((r) => r.rspnsSttsCd === "CHANGES_REQUESTED") ??
-    submitted[submitted.length - 1] ??
-    null
+    submitted.find((r) => r.rspnsSttsCd === "CHANGES_REQUESTED") ?? submitted.at(-1) ?? null
   );
 }

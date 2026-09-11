@@ -81,12 +81,9 @@ export function ShareButton({
        * 공유 기능이 앱 전체의 알림 규약을 정하는 것이 된다 — 그 판단은 위 주석에 있다.
        */}
       {(error || notice) && (
-        <div
-          className={`text-right text-[12.5px] ${error ? "text-danger" : "text-n500"}`}
-          role="status"
-        >
+        <output className={`block text-right text-[12.5px] ${error ? "text-danger" : "text-n500"}`}>
           {error ?? notice}
-        </div>
+        </output>
       )}
     </div>
   );

@@ -127,7 +127,8 @@ export function responseCsvFilename(
     .replace(/[\\/:*?"<>|]/g, " ")
     .replace(/\s+/g, " ");
   const safe = trimEdges(collapsed, isSpaceOrDot);
-  return `${safe || `폼_${formId}`}_응답_${today}.csv`;
+  const name = safe || `폼_${formId}`;
+  return `${name}_응답_${today}.csv`;
 }
 
 /*

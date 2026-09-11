@@ -60,9 +60,10 @@ export function QitemCard({
       </FormDescription>
       {isChoiceQitemType(qitem.qitemTypeCd) && (
         <div className="mt-[2px] text-[12.5px] text-n500">
-          {qitem.qitemTypeCd === "SINGLE_CHOICE"
-            ? "하나만 선택"
-            : `여러 개 선택 가능${qitem.maxSlctCnt ? ` · 최대 ${qitem.maxSlctCnt}개` : ""}`}
+          {qitem.qitemTypeCd === "SINGLE_CHOICE" ? "하나만 선택" : "여러 개 선택 가능"}
+          {qitem.qitemTypeCd !== "SINGLE_CHOICE" && qitem.maxSlctCnt
+            ? ` · 최대 ${qitem.maxSlctCnt}개`
+            : null}
         </div>
       )}
       {qitem.ptrnCn && (

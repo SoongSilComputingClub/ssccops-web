@@ -58,7 +58,7 @@ interface ShareLinkState {
  * 고칠 때 한쪽만 고쳐지므로 이름에서 구한다. 한글이 아닌 이름은 `를`로 둔다.
  */
 function withObjectParticle(label: string): string {
-  const code = label.charCodeAt(label.length - 1);
+  const code = label.codePointAt(label.length - 1) ?? 0;
   const isHangulSyllable = code >= 0xac00 && code <= 0xd7a3;
   const hasFinalConsonant = isHangulSyllable && (code - 0xac00) % 28 !== 0;
   return `${label}${hasFinalConsonant ? "을" : "를"}`;

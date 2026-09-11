@@ -106,8 +106,7 @@ function RoleAuthoritiesEditorView({ roleId }: Readonly<{ roleId: number }>) {
                 className="cursor-pointer text-accent"
               >
                 권한 관리
-              </button>
-              에서 다룹니다.
+              </button>에서 다룹니다.
             </div>
           </>
         )}
