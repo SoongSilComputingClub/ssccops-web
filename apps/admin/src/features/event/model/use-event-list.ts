@@ -31,17 +31,21 @@ export interface EventList {
 }
 
 export function useEventList(filter: EventListFilter = {}): EventList {
-  const { eventClsfCd = null, eventSttsCd = null } = filter;
+  /*
+   * `deleted`는 필터가 아니라 **다른 모집단**이다(entities/event의 EventListFilter 주석) — «지운
+   * 행사» 화면이 켠다. 키에 함께 실어 살아 있는 목록의 늦은 응답이 휴지통을 덮지 못하게 한다.
+   */
+  const { eventClsfCd = null, eventSttsCd = null, deleted = false } = filter;
   const [loaded, setLoaded] = useState<LoadedEventList | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const requestKey = `${eventClsfCd ?? ""}|${eventSttsCd ?? ""}|${reloadKey}`;
+  const requestKey = `${deleted ? "deleted" : ""}|${eventClsfCd ?? ""}|${eventSttsCd ?? ""}|${reloadKey}`;
 
   /* 의존성은 필터 객체가 아니라 원시값이다 — 인라인 객체를 의존성에 두면 무한 재조회가 된다 */
   useEffect(() => {
     let alive = true;
 
-    fetchEvents({ eventClsfCd, eventSttsCd })
+    fetchEvents({ eventClsfCd, eventSttsCd, deleted })
       .then((next) => {
         if (alive) setLoaded({ key: requestKey, events: next, errorMessage: "" });
       })
@@ -54,7 +58,7 @@ export function useEventList(filter: EventListFilter = {}): EventList {
     return () => {
       alive = false;
     };
-  }, [eventClsfCd, eventSttsCd, requestKey]);
+  }, [eventClsfCd, eventSttsCd, deleted, requestKey]);
 
   const current = loaded?.key === requestKey ? loaded : null;
   const status: EventListStatus =

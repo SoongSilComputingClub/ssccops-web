@@ -51,6 +51,11 @@ export interface EventSummary {
   confirmedCount: number;
   crtDt: string;
   mdfcnDt: string;
+  /**
+   * 지운 일시 (ADR-0020 · ssccops-server#347). 살아 있는 행사는 `null`이고 «지운 행사» 화면에서만
+   * 값이 온다 — 그 화면의 핵심 값이다(방금 실수로 지운 것과 지난 학기에 치운 것을 가르는 단서).
+   */
+  delDt: string | null;
 }
 
 /** GET /v1/events/{eventId} 항목 — 목록 항목 + 본문(Markdown) + 대표 이미지 URL */

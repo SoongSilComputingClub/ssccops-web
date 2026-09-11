@@ -8,6 +8,7 @@ export type {
   EventSummary,
 } from "./model/types";
 export {
+  DELETED_EVENT_BADGE,
   EVENT_PHASE_BADGE,
   EVENT_RECEIPT_BADGE,
   EVENT_STTS_BADGE_TONE,
@@ -18,9 +19,12 @@ export {
   EVENT_ERROR,
   changeEventStatus,
   createEvent,
+  deleteEvent,
   duplicateEvent,
+  fetchDeletedEvents,
   fetchEvent,
   fetchEvents,
+  restoreEvent,
   updateEvent,
 } from "./api/events";
 export type { EventListFilter, EventSaveInput, EventStatusAction } from "./api/events";

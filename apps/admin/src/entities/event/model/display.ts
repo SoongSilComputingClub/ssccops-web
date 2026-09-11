@@ -78,3 +78,16 @@ export const PTCP_STTS_BADGE: Record<PtcpSttsCd, { label: string; tone: BadgeTon
   WAITLISTED: { label: PTCP_STTS_NM.WAITLISTED, tone: "amber" },
   CANCELLED: { label: PTCP_STTS_NM.CANCELLED, tone: "grey" },
 };
+
+/**
+ * 지워진 행사의 배지 (ADR-0020 · ssccops-web#391) — «지운 행사» 화면에서 저장 상태 배지 **대신**
+ * 선다. 폼의 DELETED_FORM_BADGE와 같은 판단이다: 지워진 행사의 '게시'는 이미 사실이 아니라
+ * (공개에서도 사라졌다), 그 배지를 보고 아직 회원에게 보이는 중이라고 읽으면 되살릴지 판단하는
+ * 기준이 통째로 어긋난다. 지워졌다는 것이 그 행사에 관한 유일하게 참인 상태다.
+ *
+ * 톤은 저장 상태(outline·blue·grey)·단계(outline-accent)·모집(amber)이 쓰지 않는 나머지 하나다.
+ */
+export const DELETED_EVENT_BADGE: { label: string; tone: BadgeTone } = {
+  label: "삭제됨",
+  tone: "outline-red",
+};
