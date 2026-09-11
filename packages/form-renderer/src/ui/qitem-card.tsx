@@ -1,5 +1,6 @@
 "use client";
 
+import { onKeyActivate } from "@ssccops/ui";
 import { cn } from "../lib/cn";
 import { isChoiceQitemType } from "../model/qitem-type";
 import { selectedOptions, toggleOption } from "../model/answers";
@@ -87,9 +88,19 @@ export function QitemCard({
           {qitem.optionList.map((o) => {
             const picked = selected.includes(o);
             return (
+              /*
+               * 선택지는 키보드로도 고를 수 있어야 한다 (ssccops-web#403). 안에 버튼은 없지만
+               * 공용 패키지의 다른 자리(Card·GridTable)와 같은 role 방식으로 맞춘다 — 판정은
+               * `@ssccops/ui`의 `onKeyActivate` 한 벌이다. 골라진 상태는 색뿐이라
+               * `aria-pressed`로도 알린다.
+               */
               <div
                 key={o}
+                role="button"
+                tabIndex={0}
+                aria-pressed={picked}
                 onClick={() => onChange(toggleOption(qitem, value, o))}
+                onKeyDown={onKeyActivate(() => onChange(toggleOption(qitem, value, o)))}
                 className={cn(
                   "flex cursor-pointer items-center gap-[10px] rounded-[12px] px-[10px] py-[13px] text-[15px] lg:py-[11px]",
                   picked ? "bg-accent/8" : "hover:bg-fill-soft",

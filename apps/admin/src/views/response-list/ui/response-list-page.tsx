@@ -236,9 +236,11 @@ export function ResponseListPage({ formId }: { formId: number }) {
       header: FIELD_LABEL.memberName,
       width: "1fr",
       render: (r) => (
-        <span
+        /* 키보드 접근(#403) — 셀이 nowrap+ellipsis라 버튼도 스스로 잘라야 말줄임이 남는다 */
+        <button
+          type="button"
           onClick={() => router.push(ROUTES.responseDetail(formId, r.formRspnsId))}
-          className="cursor-pointer font-semibold hover:text-accent"
+          className="max-w-full cursor-pointer overflow-hidden text-left text-ellipsis font-semibold hover:text-accent"
         >
           {/* 응답자는 전원 회원이다 — 서버가 조인해 준 mbr_nm을 그대로 쓴다 */}
           {r.member.mbrNm || "-"}
@@ -252,7 +254,7 @@ export function ResponseListPage({ formId }: { formId: number }) {
               {r.rspnsSeq}번째
             </span>
           )}
-        </span>
+        </button>
       ),
     },
     {

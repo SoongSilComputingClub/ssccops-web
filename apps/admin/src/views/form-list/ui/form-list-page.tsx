@@ -158,12 +158,14 @@ function FormCard({
         {/* 서버가 집계한 값 — 제출 이상만 세고 작성 중 응답은 빠진다 */}
         <div className="text-[13.5px] text-n500">응답 {form.responseCount}</div>
       </div>
-      <div
+      {/* 키보드 접근(#403) */}
+      <button
+        type="button"
         onClick={() => router.push(ROUTES.formDetail(form.formId))}
-        className="mt-2 cursor-pointer text-[18px] leading-[1.35] font-semibold hover:text-accent"
+        className="mt-2 block w-full cursor-pointer text-left text-[18px] leading-[1.35] font-semibold hover:text-accent"
       >
         {form.formTtlNm}
-      </div>
+      </button>
       <div className="mt-1 text-[13.5px] text-n500">
         {form.rcptBgngDt
           ? `${formatDt(form.rcptBgngDt)} ~ ${formatDt(form.rcptEndDt)}`

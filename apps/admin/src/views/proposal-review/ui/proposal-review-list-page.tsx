@@ -107,9 +107,11 @@ function ProposalReviewList({ formId }: { formId: number }) {
       header: "활동명",
       width: "1.6fr",
       render: (r) => (
-        <span
+        /* 키보드 접근(#403) — 셀이 nowrap+ellipsis라 버튼도 스스로 잘라야 말줄임이 남는다 */
+        <button
+          type="button"
           onClick={() => router.push(ROUTES.proposalReviewDetail(r.formRspnsId))}
-          className="cursor-pointer font-semibold hover:text-accent"
+          className="max-w-full cursor-pointer overflow-hidden text-left text-ellipsis font-semibold hover:text-accent"
         >
           {r.responseTitle ?? (r.rspnsSeq === null ? "기획안" : `${r.rspnsSeq}번째 기획안`)}
           {/* 활동명이 있을 때만 순번을 곁들인다 — 없으면 위 문구가 이미 순번을 말한다 */}
@@ -118,7 +120,7 @@ function ProposalReviewList({ formId }: { formId: number }) {
               {r.rspnsSeq}번째
             </span>
           )}
-        </span>
+        </button>
       ),
     },
     {

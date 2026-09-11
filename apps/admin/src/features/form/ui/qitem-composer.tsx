@@ -365,9 +365,12 @@ export function QitemComposer({
             const systemLocked = systemRequired.includes(q.qitemId);
             return (
               <div key={q.qitemId} className={cardBorder(qIssues.length > 0)}>
-                <div
+                {/* 키보드 접근(#403) — 머리글 안에 버튼이 없어 <button>으로 */}
+                <button
+                  type="button"
+                  aria-expanded={open}
                   onClick={() => setOpenQ(open ? null : q.qitemId)}
-                  className="flex cursor-pointer items-center gap-2 p-3"
+                  className="flex w-full cursor-pointer items-center gap-2 p-3 text-left"
                 >
                   <div className="text-[14.5px] font-semibold">
                     {qi + 1}. {q.qitemLblNm || "(제목 없음)"}
@@ -387,7 +390,7 @@ export function QitemComposer({
                     </div>
                   )}
                   <div className="text-[11px] text-n500">{open ? "▲" : "▼"}</div>
-                </div>
+                </button>
 
                 {qIssues.length > 0 && (
                   <div className="border-t border-danger/25 bg-danger/8 px-3 py-2">

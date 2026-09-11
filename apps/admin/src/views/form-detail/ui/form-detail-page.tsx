@@ -105,10 +105,13 @@ function QitemPreview({
             const picked = sel.includes(o);
             const branch = qitem.branchMap?.[o];
             return (
-              <div
+              /* 키보드 접근(#403) */
+              <button
+                type="button"
                 key={o}
+                aria-pressed={picked}
                 onClick={() => onPick(o)}
-                className="flex cursor-pointer items-center gap-2 text-[14.5px]"
+                className="flex w-full cursor-pointer items-center gap-2 text-left text-[14.5px]"
               >
                 <div
                   className={cn(
@@ -126,7 +129,7 @@ function QitemPreview({
                     → {branch + 1}. {pages[branch]?.pageTtl ?? ""}
                   </span>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>

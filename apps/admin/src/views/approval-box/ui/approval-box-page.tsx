@@ -169,12 +169,14 @@ export function ApprovalBoxPage() {
                       </div>
                     </div>
 
-                    <div
+                    {/* 키보드 접근(#403) */}
+                    <button
+                      type="button"
                       onClick={() => router.push(ROUTES.subWorkDetail(item.subWorkId))}
-                      className="mt-2 cursor-pointer text-[17px] font-semibold hover:text-accent"
+                      className="mt-2 block w-full cursor-pointer text-left text-[17px] font-semibold hover:text-accent"
                     >
                       {item.title}
-                    </div>
+                    </button>
 
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-[13.5px] text-n500 lg:flex-nowrap">
                       <span>등록자 {item.registrantName || "-"}</span>

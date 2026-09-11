@@ -182,7 +182,9 @@ function AgendaCard({
         )}
       </div>
       {agenda.targetOperation ? (
-        <div
+        /* 키보드 접근(#403) */
+        <button
+          type="button"
           onClick={() =>
             router.push(
               agenda.targetOperation!.operationType === "WORK"
@@ -190,7 +192,7 @@ function AgendaCard({
                 : ROUTES.subWorkDetail(agenda.targetOperation!.operationId),
             )
           }
-          className="mt-3 cursor-pointer rounded-[10px] bg-bg p-3 transition-opacity hover:opacity-80"
+          className="mt-3 block w-full cursor-pointer rounded-[10px] bg-bg p-3 text-left transition-opacity hover:opacity-80"
         >
           <div className="flex items-center gap-2">
             <Badge tone={agenda.targetOperation.operationType === "WORK" ? "blue" : "grey"}>
@@ -201,7 +203,7 @@ function AgendaCard({
             </span>
           </div>
           <div className="mt-1 text-[15.5px] font-semibold">{agenda.targetOperation.title}</div>
-        </div>
+        </button>
       ) : (
         <div className="mt-3 rounded-[10px] bg-bg p-3 text-[14px] text-n500">
           {agenda.agendaName ?? "제목 없음"} · 연결된 운영 없음
@@ -635,13 +637,16 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                       </div>
                     ))}
                   {targetOptions.map((ref) => (
-                    <div
+                    /* 키보드 접근(#403) */
+                    <button
+                      type="button"
                       key={`${ref.kind}-${ref.refId}`}
+                      aria-pressed={!!selectedTarget && isSameTarget(selectedTarget, ref)}
                       onClick={() => setSelectedTarget(ref)}
                       className={
                         selectedTarget && isSameTarget(selectedTarget, ref)
-                          ? "cursor-pointer rounded-[10px] bg-accent/8 p-3 shadow-[inset_0_0_0_1px_var(--color-accent)]"
-                          : "cursor-pointer rounded-[10px] border border-line p-3 hover:border-accent"
+                          ? "w-full cursor-pointer rounded-[10px] bg-accent/8 p-3 text-left shadow-[inset_0_0_0_1px_var(--color-accent)]"
+                          : "w-full cursor-pointer rounded-[10px] border border-line p-3 text-left hover:border-accent"
                       }
                     >
                       <div className="flex items-center gap-2">
@@ -651,7 +656,7 @@ export function MeetingDetailPage({ mtgId }: { mtgId: number }) {
                       </div>
                       <div className="mt-1 text-[15px] font-semibold">{ref.ttl}</div>
                       <div className="mt-[2px] text-[13px] text-n500">{ref.meta}</div>
-                    </div>
+                    </button>
                   ))}
                   {showWorks && workList.hasNext && (
                     <button
