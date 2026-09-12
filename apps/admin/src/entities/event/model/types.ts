@@ -74,6 +74,10 @@ export interface EventDetail extends EventSummary {
  *
  * **삭제가 없다**(D16). 취소도 행을 지우지 않고 `ptcpSttsCd`를 옮기는 것뿐이라, 명단은
  * "지금 확정된 사람"이 아니라 "이 행사를 거쳐 간 사람 전부"를 담는다.
+ *
+ * **등록자(rgtrMbrId)는 없다** — 계약이 싣지 않는다(감사용 저장값이고 명단 표가 그리는 값이
+ * 아니다). 회원명·학번은 서버 응답에서 `member`에 중첩이지만 화면이 쓰는 두 값만 평면으로
+ * 옮긴다 — 옮기는 곳은 entities/event/api/event-participants.ts 하나다.
  */
 export interface EventParticipant {
   eventPtcpId: number;
@@ -83,8 +87,6 @@ export interface EventParticipant {
   ptcpSttsCd: PtcpSttsCd;
   /** 응답 기반 등록의 근거가 된 폼 응답. 수동 등록이면 null */
   formRspnsId: number | null;
-  /** 명단에 올린 운영자. 이름은 계약에 없다(서버가 조인하지 않는다) */
-  rgtrMbrId: number;
   /** 등록 일시 — 서버가 이 순서로 내려준다(신청 순서 참고 표시의 근거 · D5) */
   crtDt: string;
 }

@@ -2,6 +2,7 @@ import type { RspnsCn } from "@ssccops/form-renderer";
 import type {
   MbrGrdCd,
   MbrSttsCd,
+  PtcpSttsCd,
   RspnsSttsCd,
   RvwPrcsSeCd,
 } from "@/shared/config/codes";
@@ -9,6 +10,7 @@ import { apiFetch } from "@/shared/lib/api/client";
 import type {
   AcademicProgramPreview,
   CurriculumItemPreview,
+  EventApplication,
   FormResponseDetail,
   FormResponseItem,
   FormResponseReviewHistory,
@@ -53,6 +55,25 @@ interface FormResponseSummaryResponse {
   rspnsSttsCd: RspnsSttsCd;
   sbmsnDt: string | null;
   member: ResponseMemberResponse | null;
+}
+
+/**
+ * 행사 신청 목록 항목 (서버 `EventApplicationResponse` · ssccops-server#378).
+ *
+ * 폼 응답 요약을 `application`으로 **감싸고** 명단 등록 여부를 `participant`로 나란히 싣는다.
+ * 서버가 요약의 필드를 옮겨 적지 않고 감싸는 것은, 폼 요약에 필드가 늘어도 여기와 짝을 맞출
+ * 일이 없게 하려는 선택이다 — 웹도 같은 이유로 `toFormResponseItem`을 그대로 재사용한다.
+ */
+interface EventApplicationParticipantResponse {
+  eventPtcpId: number;
+  ptcpSttsCd: PtcpSttsCd;
+}
+
+interface EventApplicationResponse {
+  /** 계약상 필수다 — 옵셔널은 봉투 없이 요약을 평면으로 내리던 옛 서버 호환(`toEventApplication`) */
+  application?: FormResponseSummaryResponse;
+  /** 명단에 없으면 null. 옛 서버에서는 필드 자체가 없다 */
+  participant?: EventApplicationParticipantResponse | null;
 }
 
 interface FormResponseReviewHistoryResponse {
@@ -137,6 +158,31 @@ function toFormResponseItem(res: FormResponseSummaryResponse): FormResponseItem 
     rspnsSttsCd: res.rspnsSttsCd,
     sbmsnDt: res.sbmsnDt,
     member: toMember(res.member),
+  };
+}
+
+/**
+ * 신청 한 줄 — 응답 요약 + 명단 등록 여부.
+ *
+ * `participant`가 **없거나 null이면 미등록**이다. 옵셔널 체이닝으로 읽는 것은 이 봉투를 아직
+ * 싣지 않는 서버(ssccops-server#378 배포 전)를 만나도 목록이 죽지 않게 하기 위해서다 — 그때는
+ * 전부 미등록으로 보이고 확정/대기 버튼이 남는데, 중복은 여전히 서버가 409로 막는다.
+ * `ptcpSttsCd`가 비어 온 행도 같은 이유로 미등록으로 떨어뜨린다 — 상태를 모르는 배지를
+ * 그릴 수 없다.
+ *
+ * 같은 이유로 `application` 봉투가 없는 행(옛 서버 — 요약이 평면으로 온다)은 행 자체를 요약으로
+ * 읽는다. 서버 #378이 prod까지 나간 뒤에는 지워도 되는 호환 경로다.
+ */
+function toEventApplication(res: EventApplicationResponse): EventApplication {
+  const participant = res.participant;
+  const application =
+    res.application ?? (res as unknown as FormResponseSummaryResponse);
+  return {
+    response: toFormResponseItem(application),
+    participant:
+      participant?.eventPtcpId != null && participant.ptcpSttsCd
+        ? { eventPtcpId: participant.eventPtcpId, ptcpSttsCd: participant.ptcpSttsCd }
+        : null,
   };
 }
 
@@ -286,15 +332,17 @@ export async function fetchFormResponses(
 }
 
 /**
- * GET /v1/events/{eventId}/applications — 행사에 들어온 신청 (#145 · 서버 #158).
+ * GET /v1/events/{eventId}/applications — 행사에 들어온 신청 (#145 · 서버 #158 · #378).
  *
- * **행사 API인데 이 파일에 있는 이유**는 돌려주는 것이 참가자가 아니라 폼 응답이기 때문이다.
- * 서버도 새 규칙을 만들지 않고 폼 응답 조회에 위임할 뿐이라 응답 DTO가 위의 것과 같다 —
- * `entities/event` 쪽에 같은 모양을 한 번 더 옮겨 적으면 계약이 바뀌는 날 한쪽만 고쳐진다.
- * (엔티티 슬라이스끼리는 서로 참조하지 않으므로, 모양을 아는 파일에 호출을 둔다.)
+ * **행사 API인데 이 파일에 있는 이유**는 돌려주는 것의 몸통이 참가자가 아니라 폼 응답이기
+ * 때문이다. 서버도 폼 응답 조회에 위임한 요약을 `application`으로 감싸 내려줄 뿐이라 그 안의
+ * DTO가 위의 것과 같다 — `entities/event` 쪽에 같은 모양을 한 번 더 옮겨 적으면 계약이 바뀌는
+ * 날 한쪽만 고쳐진다. (엔티티 슬라이스끼리는 서로 참조하지 않으므로, 모양을 아는 파일에
+ * 호출을 둔다.)
  *
- * 다른 점은 **권한이 `EVENT_MANAGE`라는 것**뿐이다(D8). 폼 전체 권한(`RESPONSE_REVIEW`)이
- * 없는 행사 운영자도 자기 행사의 신청은 볼 수 있어야 한다.
+ * 폼 응답 목록과 다른 점은 **권한이 `EVENT_MANAGE`라는 것**(D8 — 폼 전체 권한 `RESPONSE_REVIEW`가
+ * 없는 행사 운영자도 자기 행사의 신청은 볼 수 있어야 한다)과, 행마다 **명단 등록 여부
+ * (`participant`)가 함께 온다는 것**이다(ssccops#307).
  *
  * 폼이 연결되지 않은 행사는 빈 배열이 아니라 409 `EVENT_HAS_NO_FORM`으로 온다 — 빈 목록은
  * "아직 신청이 없다"로 읽히지만 실제로는 신청을 받을 수단 자체가 없는 상태라, 운영자가 해야
@@ -303,16 +351,16 @@ export async function fetchFormResponses(
 export async function fetchEventApplications(
   eventId: number,
   filter: FormResponseListFilter = {},
-): Promise<FormResponseItem[]> {
+): Promise<EventApplication[]> {
   const query = new URLSearchParams();
   if (filter.rspnsSttsCd) query.set("statusCode", filter.rspnsSttsCd);
 
   const qs = query.toString();
   const base = `/v1/events/${eventId}/applications`;
-  const items = await apiFetch<FormResponseSummaryResponse[] | null>(
+  const items = await apiFetch<EventApplicationResponse[] | null>(
     qs ? `${base}?${qs}` : base,
   );
-  return (items ?? []).map(toFormResponseItem);
+  return (items ?? []).map(toEventApplication);
 }
 
 /**

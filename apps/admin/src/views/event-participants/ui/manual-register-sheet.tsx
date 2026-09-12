@@ -1,15 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { registerableStatuses } from "@/entities/event";
 import {
   assignableMemberLabel,
   useAssignableMembers,
 } from "@/features/member";
-import {
-  PTCP_RGST_STTS_CDS,
-  PTCP_STTS_NM,
-  type PtcpSttsCd,
-} from "@/shared/config/codes";
+import { PTCP_STTS_NM, type PtcpSttsCd } from "@/shared/config/codes";
 import { cn } from "@/shared/lib/cn";
 import { SearchInput, Segmented, Sheet } from "@/shared/ui";
 
@@ -26,16 +23,22 @@ import { SearchInput, Segmented, Sheet } from "@/shared/ui";
  *
  * 학번·연락처로는 찾을 수 없다. `/assignable`이 그 값을 아예 내리지 않기 때문이고, 화면이
  * 없는 값을 찾는 척하면 "학번으로 검색했는데 안 나온다"가 고장으로 읽힌다.
+ *
+ * 정원이 없는 행사에서는 확정·대기 선택을 그리지 않는다(ssccops#308 — 대기로 **보내는** 조작만
+ * 감춘다). 고를 것이 하나뿐인 선택 UI는 질문처럼 보여서, 대신 한 줄로 확정으로 올라간다고 적는다.
  */
 
 export function ManualRegisterSheet({
   open,
   busy,
+  ptcpLmtCnt,
   onClose,
   onSubmit,
 }: Readonly<{
   open: boolean;
   busy: boolean;
+  /** 정원 — null이면 «대기»를 고를 수 없다 */
+  ptcpLmtCnt: number | null;
   onClose: () => void;
   onSubmit: (mbrId: number, ptcpSttsCd: PtcpSttsCd) => void;
 }>) {
@@ -43,6 +46,7 @@ export function ManualRegisterSheet({
   const [keyword, setKeyword] = useState("");
   const [selected, setSelected] = useState<number | null>(null);
   const [sttsLabel, setSttsLabel] = useState<string>(PTCP_STTS_NM.CONFIRMED);
+  const registerStatuses = registerableStatuses(ptcpLmtCnt);
 
   const matched = useMemo(() => {
     const q = keyword.trim().toLowerCase();
@@ -52,9 +56,12 @@ export function ManualRegisterSheet({
     );
   }, [assignable.members, keyword]);
 
-  /* 표시명 → 코드. 화면에는 코드값을 내보내지 않으므로 되돌리는 자리가 한 곳 필요하다 */
+  /*
+   * 표시명 → 코드. 화면에는 코드값을 내보내지 않으므로 되돌리는 자리가 한 곳 필요하다.
+   * 고를 수 있는 목록에서 찾으므로 정원이 없으면 «대기»가 남아 있어도 확정으로 떨어진다.
+   */
   const ptcpSttsCd =
-    PTCP_RGST_STTS_CDS.find((cd) => PTCP_STTS_NM[cd] === sttsLabel) ?? "CONFIRMED";
+    registerStatuses.find((cd) => PTCP_STTS_NM[cd] === sttsLabel) ?? "CONFIRMED";
 
   const close = () => {
     setKeyword("");
@@ -84,11 +91,17 @@ export function ManualRegisterSheet({
       }}
     >
       <div className="flex flex-col gap-3">
-        <Segmented
-          options={PTCP_RGST_STTS_CDS.map((cd) => PTCP_STTS_NM[cd])}
-          value={sttsLabel}
-          onChange={setSttsLabel}
-        />
+        {registerStatuses.length > 1 ? (
+          <Segmented
+            options={registerStatuses.map((cd) => PTCP_STTS_NM[cd])}
+            value={sttsLabel}
+            onChange={setSttsLabel}
+          />
+        ) : (
+          <div className="text-[13px] leading-[1.7] text-n500">
+            정원이 없는 행사라 확정으로 올라갑니다.
+          </div>
+        )}
         <SearchInput
           value={keyword}
           onChange={setKeyword}
