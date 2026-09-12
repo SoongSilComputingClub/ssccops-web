@@ -7,6 +7,7 @@ export type {
   EventReceiptStatus,
   EventSummary,
 } from "./model/types";
+export { PTCP_STATUS_HINT, registerableStatuses } from "./model/participant-rules";
 export {
   DELETED_EVENT_BADGE,
   EVENT_PHASE_BADGE,

@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type {
-  EventDetail,
-  EventParticipant,
-  EventParticipantRegistration,
+import {
+  PTCP_STATUS_HINT,
+  type EventDetail,
+  type EventParticipant,
+  type EventParticipantRegistration,
 } from "@/entities/event";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
@@ -248,6 +249,8 @@ function EventParticipantsView({
               className="col-span-2 lg:col-span-1"
             />
           </div>
+          {/* 확정·대기가 무엇인지 — 운영자가 물었던 것(ssccops#308). 정원 없음이면 대기 조작은 감춘다 */}
+          <div className="mt-3 text-[13px] leading-[1.7] text-n500">{PTCP_STATUS_HINT}</div>
         </Card>
 
         <Segmented
@@ -261,6 +264,7 @@ function EventParticipantsView({
           <ApplicationsPanel
             eventId={event.eventId}
             formId={event.formId}
+            ptcpLmtCnt={event.ptcpLmtCnt}
             applications={applications}
             rspnsSttsCd={rspnsSttsCd}
             onFilter={(value) => setQuery(QUERY_RSPNS_STTS, value)}
@@ -287,6 +291,7 @@ function EventParticipantsView({
         <ManualRegisterSheet
           open={manualOpen}
           busy={actions.pending}
+          ptcpLmtCnt={event.ptcpLmtCnt}
           onClose={() => setManualOpen(false)}
           onSubmit={registerManually}
         />
