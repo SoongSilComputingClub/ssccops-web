@@ -11,6 +11,12 @@ export const ROUTES = {
    */
   signupLink: "/signup/link",
   signupComplete: "/signup/complete",
+  /**
+   * OAuth 동의 (ssccops#315 · ADR-0026) — Supabase OAuth 2.1 서버가 `?authorization_id=`를
+   * 붙여 보내는 Authorization Path. 대시보드(Authentication → OAuth Server)에 이 값을 적는다.
+   * 화면 안에서 이 주소로 이동할 일은 없고, 상수는 그 설정값이 어디서 왔는지 남기기 위한 것이다.
+   */
+  oauthConsent: "/oauth/consent",
 
   dashboard: "/dashboard",
   operations: "/operations",

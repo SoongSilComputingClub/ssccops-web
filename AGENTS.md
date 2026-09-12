@@ -78,11 +78,12 @@ app → views → features → entities → shared     (단방향)
 - 같은 레이어의 슬라이스끼리 참조하지 않는다. 여러 엔티티를 함께 바꾸는 로직은 `features`에 둔다.
 - `views`가 FSD의 pages 레이어다(Next.js 예약어 충돌 회피). widgets 레이어는 생략했다.
 - `app/`은 라우팅 전용 — 각 `page.tsx`는 `views`를 얇게 감싼다. 라우트 그룹은 `(admin)`(운영
-  화면) · `(auth)`(로그인·가입) · `(public)`(로그인 없이 열리는 착지 화면 — 지금은 공유 링크
-  `/s/{token}` 하나다) · `auth/`(OAuth 콜백 라우트 핸들러)다. **공개 폼 `/f/{formId}`는 여기
-  있다가 `apps/www`로 옮겨 갔다**(ssccops#214) — 응답자에게 뿌리는 링크가 운영 시스템 도메인을
-  가리키면 어드민이 크롤링 대상이 되기 때문이다. 어드민에 남은 것은 폼 상세의 링크 복사뿐이며
-  그 주소는 `publicFormUrl()`이 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`으로 만든다.
+  화면) · `(auth)`(로그인·가입·OAuth 동의 — 사이드바 없는 단독 레이아웃) · `(public)`(로그인
+  없이 열리는 착지 화면 — 지금은 공유 링크 `/s/{token}` 하나다) · `auth/`(OAuth 콜백 라우트
+  핸들러)다. **공개 폼 `/f/{formId}`는 여기 있다가 `apps/www`로 옮겨 갔다**(ssccops#214) —
+  응답자에게 뿌리는 링크가 운영 시스템 도메인을 가리키면 어드민이 크롤링 대상이 되기 때문이다.
+  어드민에 남은 것은 폼 상세의 링크 복사뿐이며 그 주소는 `publicFormUrl()`이
+  `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`으로 만든다.
 - 슬라이스 내부: `entities/<slice>/{api,model}` · `features/<slice>/{model,ui}` · `views/<slice>/ui`.
 - 화면 경로를 문자열로 적지 않고 `shared/config/routes.ts`의 `ROUTES`를 쓴다.
 
@@ -239,6 +240,19 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
   줄의 «확정으로 올리기»는 남긴다. 고를 수 있는 등록 상태는 `registerableStatuses(ptcpLmtCnt)`
   (`entities/event`) 한 곳이 정한다 — 신청 목록 버튼과 회원 직접 추가 시트가 같이 쓴다.
   명단 표에는 «대기로» 전이 자체가 없다(계약은 대기→확정 · 확정→취소뿐).
+- **OAuth 동의 화면(`/oauth/consent`)은 Supabase를 직접 부른다**(#430 · ssccops#315 · ADR-0026).
+  Claude(MCP) 연결의 인가 요청은 ssccops-server가 아니라 Supabase OAuth 2.1 서버가 들고
+  있어, `entities/oauth-authorization`이 supabase-js `auth.oauth`(`getAuthorizationDetails` ·
+  `approveAuthorization` · `denyAuthorization`)를 감싼다 — `apiFetch` 봉투 규약이 아니다.
+  응답의 돌아갈 주소 필드는 **`redirect_url`**(공식 문서·SDK 타입 둘 다 — `redirect_to`가 아니다).
+  SDK 기본값은 승인·거절 응답으로 스스로 `window.location.assign`을 하므로
+  `skipBrowserRedirect: true`를 주고 화면이 이동한다(«돌아가는 중»을 그릴 수 있게, 주소가
+  없을 때 조용히 멈추지 않게). 클라이언트 이름·redirect 호스트·scope는 **감추지 않는다** —
+  DCR을 켜면 아무나 클라이언트를 등록할 수 있어 이 화면이 방어선이다. 미가입 사용자에게는
+  «회원 가입 뒤에 사용할 수 있습니다» 한 줄만 보이고 **승인은 막지 않는다**(판정은 서버의
+  SIGNUP_REQUIRED 한 곳). 미인증은 미들웨어의 `/login?next=` 규약이 그대로 받아 같은 주소로
+  돌아온다. Supabase 대시보드(Authentication → OAuth Server)의 Authorization Path에 적을 값이
+  `ROUTES.oauthConsent`다.
 - **색을 화면에 직접 적지 않는다**(ssccops#226 · `apps/admin`). 다크모드는 `dark:` 유틸리티가
   아니라 **`globals.css`의 토큰 값을 갈아 끼우는 것**으로 되어 있다 — 화면 97개가 이미
   `text-n500`·`border-line` 같은 이름을 쓰고 있어 변수만 바꾸면 전부 따라온다. 그래서
@@ -300,6 +314,12 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
   필드만 조용히 빈다. 값 하나가 안 보이면 서버 브랜치를 먼저 확인할 것.
 - **`shared/config/codes.ts`는 서버 표준코드와 함께 움직인다.** 서버가 코드를 추가하면 여기도
   더해야 하고, 한글 표시명은 이 파일에서만 만든다.
+- **supabase-js `auth.oauth`는 2.112.3에 이미 있다**(#430). `getAuthorizationDetails`의 응답은
+  두 모양이다 — 동의가 필요하면 `authorization_id`·`client`·`redirect_uri`·`scope`, **이미 동의한
+  적이 있으면 `redirect_url` 하나뿐**이라 화면을 그리지 않고 그 주소로 보내야 한다. `in`으로
+  가르지 않고 `data.client.name`을 바로 읽으면 두 번째 연결부터 죽는다. 4xx는 전부 «요청이
+  유효하지 않습니다»(없음·만료·처리됨 — 다시 시도해도 살아나지 않아 «다시 시도» 버튼을 두지
+  않는다)이고, 401·`AuthSessionMissingError`만 로그인으로 보낸다.
 - **행사 참가자 명단의 회원 값은 `member`에 중첩이다**(#421). 서버 `EventParticipantResponse`는
   폼 응답 목록과 같은 `ResponseMemberSummary` record를 `member`로 싣고 `rgtrMbrId`는 싣지
   않는다. 변환기(`entities/event/api/event-participants.ts`)가 평면으로 읽으면 이름·학번이
