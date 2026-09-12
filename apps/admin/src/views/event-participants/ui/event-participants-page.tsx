@@ -10,6 +10,7 @@ import type {
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import {
+  useEventApplications,
   useEventDetail,
   useEventParticipants,
   useParticipantActions,
@@ -48,9 +49,11 @@ import { RosterPanel } from "./roster-panel";
  * 심사는 목록↔응답 상세를 수십 번 오가는 작업이라, state로 들고 있으면 돌아올 때마다 탭이
  * 신청 목록으로 리셋된다.
  *
- * 등록·전이가 끝나면 **명단과 행사 상세를 함께 다시 부른다.** 확정 인원(confirmedCount)은
- * 행사 상세가 들고 있는 서버 집계라 명단만 갈아 끼우면 머리말의 수가 옛것으로 남는다
- * (AGENTS.md — 화면이 그리는 다른 값까지 함께 움직이면 통째로 다시 부른다).
+ * 등록·전이가 끝나면 **명단·신청 목록·행사 상세를 함께 다시 부른다.** 확정 인원(confirmedCount)은
+ * 행사 상세가 들고 있는 서버 집계라 명단만 갈아 끼우면 머리말의 수가 옛것으로 남고, 신청
+ * 목록의 등록 배지(`participant` · ssccops#307)도 서버 판정이라 다시 불러야 바뀐다
+ * (AGENTS.md — 화면이 그리는 다른 값까지 함께 움직이면 통째로 다시 부른다). 그래서 두 목록의
+ * 조회 훅을 모두 이 페이지가 쥔다.
  */
 
 const NO_MANAGE = "행사를 다룰 권한이 없습니다 — 행사 관리(EVENT_MANAGE) 권한이 필요합니다";
@@ -138,22 +141,30 @@ function EventParticipantsView({
   const ptcpSttsCd = parsePtcpSttsCd(searchParams.get(QUERY_PTCP_STTS));
 
   const roster = useEventParticipants(event.eventId, ptcpSttsCd);
+  const applications = useEventApplications(event.eventId, rspnsSttsCd);
   const actions = useParticipantActions();
 
   const [notice, setNotice] = useState<EventParticipantRegistration | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
 
   /** 누른 축만 바꾸고 나머지는 URL에 남겨 둔다 — 탭을 옮겨도 그쪽 필터가 살아 있다 */
-  const setQuery = (key: string, value: string | null) => {
+  const setQueries = (entries: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (value === null) params.delete(key);
-    else params.set(key, value);
+    for (const [key, value] of Object.entries(entries)) {
+      if (value === null) params.delete(key);
+      else params.set(key, value);
+    }
 
     const qs = params.toString();
     const base = ROUTES.eventParticipants(event.eventId);
     // push라서 뒤로가기로 직전 상태가 되살아난다. scroll:false — 칩만 눌렀는데 맨 위로 튀지 않게
     router.push(qs ? `${base}?${qs}` : base, { scroll: false });
   };
+  const setQuery = (key: string, value: string | null) => setQueries({ [key]: value });
+
+  /** 신청 목록의 «명단에서 보기» — 명단 탭을 그 참가 상태 필터로 연다(두 축을 한 번에 바꾼다) */
+  const viewRoster = (ptcpStts: PtcpSttsCd) =>
+    setQueries({ [QUERY_TAB]: "roster", [QUERY_PTCP_STTS]: ptcpStts });
 
   /**
    * 등록·전이 뒤의 뒤처리 한 곳.
@@ -175,6 +186,7 @@ function EventParticipantsView({
     }
     if (result.outcome !== "failed") {
       roster.reload();
+      applications.reload();
       reloadEvent();
     }
   };
@@ -249,12 +261,14 @@ function EventParticipantsView({
           <ApplicationsPanel
             eventId={event.eventId}
             formId={event.formId}
+            applications={applications}
             rspnsSttsCd={rspnsSttsCd}
             onFilter={(value) => setQuery(QUERY_RSPNS_STTS, value)}
             canManage={canManage}
             lockedHint={NO_MANAGE}
             actions={actions}
             onRegister={registerFromApplication}
+            onViewRoster={viewRoster}
           />
         ) : (
           <RosterPanel
