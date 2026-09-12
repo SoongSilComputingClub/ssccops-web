@@ -288,6 +288,11 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
   필드만 조용히 빈다. 값 하나가 안 보이면 서버 브랜치를 먼저 확인할 것.
 - **`shared/config/codes.ts`는 서버 표준코드와 함께 움직인다.** 서버가 코드를 추가하면 여기도
   더해야 하고, 한글 표시명은 이 파일에서만 만든다.
+- **행사 참가자 명단의 회원 값은 `member`에 중첩이다**(#421). 서버 `EventParticipantResponse`는
+  폼 응답 목록과 같은 `ResponseMemberSummary` record를 `member`로 싣고 `rgtrMbrId`는 싣지
+  않는다. 변환기(`entities/event/api/event-participants.ts`)가 평면으로 읽으면 이름·학번이
+  전부 비어 보인다 — 값이 비면 계약을 서버 DTO에서 다시 확인하고, 변환기를 평면으로 되돌리지
+  않는다. `entities/response`의 같은 모양 타입은 가져오지 않는다(entities 슬라이스끼리 참조 금지).
 
 ## 커밋 · 브랜치 · PR
 

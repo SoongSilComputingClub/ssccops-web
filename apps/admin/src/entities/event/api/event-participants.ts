@@ -20,17 +20,37 @@ import type { EventParticipant } from "../model/types";
 
 /* ── 서버 응답(Response DTO) ────────────────────────────────── */
 
-interface EventParticipantResponse {
-  eventPtcpId: number;
-  mbrId: number;
+/**
+ * 명단 행에 중첩된 회원 요약 — 서버 `ResponseMemberSummary`(폼 응답 목록과 **같은 record**).
+ *
+ * `entities/response`의 `ResponseMemberResponse`와 모양이 같지만 가져오지 않는다 — entities
+ * 슬라이스끼리는 참조하지 않는다(FSD · `EventReceiptStatus`가 폼의 타입을 공유하지 않는 것과
+ * 같은 판단). 서버가 record에 필드를 더하면 두 파일을 함께 고친다.
+ */
+interface EventParticipantMemberResponse {
+  mbrId: number | null;
   mbrNm: string | null;
   stdntNo: string | null;
+  scsbjtNm: string | null;
+  mbrGrdCd: string | null;
+  mbrSttsCd: string | null;
+}
+
+/**
+ * 서버 `EventParticipantResponse` (ssccops#305).
+ *
+ * **회원 정보는 `member`에 중첩이다** — 평면(`mbrNm`·`stdntNo`)이 아니다. 서버가 명단 행에
+ * 회원 값을 복사하지 않고 mbr을 조인해 폼 응답 목록과 같은 record로 내려주기 때문이다.
+ * `rgtrMbrId`는 싣지 않는다(감사용 저장값이고 명단 표가 그리는 값이 아니다).
+ */
+interface EventParticipantResponse {
+  eventPtcpId: number;
   ptcpSttsCd: PtcpSttsCd;
   /** 응답 기반 등록의 근거. 수동 등록이면 null */
   formRspnsId: number | null;
-  /** 등록자 — 이름은 계약에 없다(서버가 조인하지 않는다) */
-  rgtrMbrId: number;
+  member: EventParticipantMemberResponse | null;
   crtDt: string;
+  mdfcnDt: string | null;
 }
 
 /**
@@ -50,22 +70,21 @@ interface EventParticipantRegistrationResponse {
 /* ── 응답 → 도메인 ─────────────────────────────────────────── */
 
 /**
- * 이름·학번이 비어 오는 경우의 방어.
+ * **계약이 중첩이다** — 이름·학번은 `res.member` 안에 있다. 평면(`res.mbrNm`)으로 읽으면
+ * 명단의 회원명·학번이 전부 비어 보인다(ssccops#305가 그 버그였다). 되돌리지 말 것.
  *
- * 계약상 서버가 mbr을 조인해 채우지만, 조인이 빠진 배포를 만났을 때 명단 전체가 하얗게
- * 죽는 대신 **그 행만 비어 보이게** 한다. 빈 값을 `"-"`로 메우지 않는 것은 표시 규칙이
- * 그리는 쪽의 몫이기 때문이다(AGENTS.md — 변환기가 채우면 "값이 없다"와 "서버가 -를 줬다"를
- * 구별할 수 없다).
+ * `member`가 비어 오는 배포를 만나도 명단 전체가 하얗게 죽는 대신 **그 행만 비어 보이게**
+ * 한다. 빈 값을 `"-"`로 메우지 않는 것은 표시 규칙이 그리는 쪽의 몫이기 때문이다(AGENTS.md —
+ * 변환기가 채우면 "값이 없다"와 "서버가 -를 줬다"를 구별할 수 없다).
  */
 function toEventParticipant(res: EventParticipantResponse): EventParticipant {
   return {
     eventPtcpId: res.eventPtcpId,
-    mbrId: res.mbrId,
-    mbrNm: res.mbrNm ?? "",
-    stdntNo: res.stdntNo ?? "",
+    mbrId: res.member?.mbrId ?? 0,
+    mbrNm: res.member?.mbrNm ?? "",
+    stdntNo: res.member?.stdntNo ?? "",
     ptcpSttsCd: res.ptcpSttsCd,
     formRspnsId: res.formRspnsId,
-    rgtrMbrId: res.rgtrMbrId,
     crtDt: res.crtDt,
   };
 }
