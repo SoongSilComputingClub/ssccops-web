@@ -1,13 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PTCP_STTS_BADGE } from "@/entities/event";
+import { PTCP_STTS_BADGE, registerableStatuses } from "@/entities/event";
 import { mbrGrdNm, mbrSttsNm } from "@/entities/member";
 import { RSPNS_STTS_BADGE, type EventApplication } from "@/entities/response";
 import type { EventApplications, ParticipantActions } from "@/features/event";
 import {
   RSPNS_RVW_STTS_CDS,
-  PTCP_RGST_STTS_CDS,
   PTCP_STTS_NM,
   type PtcpSttsCd,
   type RspnsSttsCd,
@@ -50,6 +49,7 @@ const ALL = "전체";
 export function ApplicationsPanel({
   eventId,
   formId,
+  ptcpLmtCnt,
   applications,
   rspnsSttsCd,
   onFilter,
@@ -62,6 +62,8 @@ export function ApplicationsPanel({
   eventId: number;
   /** 연결된 폼 — 응답 상세로 가는 경로에 필요하다. 폼 미연결이면 null */
   formId: number | null;
+  /** 정원 — null이면 «대기» 등록 버튼을 그리지 않는다(ssccops#308) */
+  ptcpLmtCnt: number | null;
   applications: EventApplications;
   rspnsSttsCd: RspnsSttsCd | null;
   onFilter: (value: RspnsSttsCd | null) => void;
@@ -75,6 +77,7 @@ export function ApplicationsPanel({
 }>) {
   const router = useRouter();
   const { applications: rows, status, errorMessage, reload } = applications;
+  const registerStatuses = registerableStatuses(ptcpLmtCnt);
 
   if (status === "no-form") {
     return (
@@ -181,7 +184,7 @@ export function ApplicationsPanel({
         }
         return (
           <div className="flex gap-[6px]">
-            {PTCP_RGST_STTS_CDS.map((cd) => (
+            {registerStatuses.map((cd) => (
               <Button
                 key={cd}
                 variant={cd === "CONFIRMED" ? "primary" : "ghost"}
