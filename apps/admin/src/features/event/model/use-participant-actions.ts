@@ -70,6 +70,27 @@ const BUSY: ParticipantActionResult = {
 };
 
 /**
+ * 등록 성공 문구.
+ *
+ * 신청에서 올렸을 때는 **신청 상태가 그대로라는 것을 함께 말한다**(ssccops#307) — 운영자가
+ * "명단에 올리면 승인이 확정으로 바뀌나"를 물었다. 참가 상태(명단)와 응답 상태(심사)는 다른
+ * 축이고 등록은 심사 결과를 건드리지 않는다. 수동 등록(회원 직접 추가)에는 신청이 없으므로
+ * 그 절을 붙이지 않는다. 받침에 따라 조사가 갈리므로(확정으로 · 대기로) 상태명 뒤에
+ * '(으)로'를 세우지 않고 «~으로 올렸습니다» 꼴을 상태별로 적는다.
+ */
+function registerMessage(input: EventParticipantRegisterInput): string {
+  const target =
+    input.ptcpSttsCd === "CONFIRMED"
+      ? "명단에 확정으로 올렸습니다"
+      : input.ptcpSttsCd === "WAITLISTED"
+        ? "명단에 대기로 올렸습니다"
+        : `명단에 ${PTCP_STTS_NM[input.ptcpSttsCd]} 상태로 올렸습니다`;
+  return "formRspnsId" in input
+    ? `${target} — 신청 상태(승인)는 그대로입니다`
+    : target;
+}
+
+/**
  * 전이 성공 문구.
  *
  * 코드값이 아니라 무슨 일이 일어났는지를 적는다 — '대기 → 확정'은 승격이고 '확정 → 취소'는
@@ -136,8 +157,7 @@ export function useParticipantActions(): ParticipantActions {
     (eventId: number, input: EventParticipantRegisterInput) =>
       run(
         () => registerEventParticipant(eventId, input),
-        /* 받침에 따라 조사가 갈리므로(확정으로 · 대기로) 상태명 뒤에 '상태로'를 세운다 */
-        `${PTCP_STTS_NM[input.ptcpSttsCd]} 상태로 명단에 올렸습니다`,
+        registerMessage(input),
         toEventParticipantRegisterErrorMessage,
       ),
     [run],

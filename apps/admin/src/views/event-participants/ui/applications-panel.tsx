@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { PTCP_STTS_BADGE } from "@/entities/event";
 import { mbrGrdNm, mbrSttsNm } from "@/entities/member";
-import { RSPNS_STTS_BADGE, type FormResponseItem } from "@/entities/response";
-import { useEventApplications, type ParticipantActions } from "@/features/event";
+import { RSPNS_STTS_BADGE, type EventApplication } from "@/entities/response";
+import type { EventApplications, ParticipantActions } from "@/features/event";
 import {
   RSPNS_RVW_STTS_CDS,
   PTCP_RGST_STTS_CDS,
@@ -33,10 +34,15 @@ import {
  * 결론과 검토 의견을 함께 남기는 한 번의 조작이고(#133), 무엇을 고치라고 적을지 볼 수 없는
  * 목록에서 사유를 쓰게 하면 "확인 바랍니다" 같은 빈 문장이 이력에 남는다.
  *
- * ── 이미 등록된 신청을 미리 잠그지 않는다 ─────────────────────
- * 명단은 상태 필터가 걸린 채로 조회되므로, 화면이 들고 있는 명단만으로는 "이 응답이 이미
- * 올라갔는가"를 답할 수 없다(취소된 줄도 같은 회원이다). 판정 근거는 서버이며 중복은 409
- * EVENT_PARTICIPANT_DUPLICATED로 온다 — 그 문구가 다음 행동까지 말한다.
+ * ── 서버가 등록 여부를 준다 (ssccops#307) ─────────────────────
+ * 명단은 상태 필터가 걸린 채로 조회되므로 화면이 들고 있는 명단만으로는 "이 응답이 이미
+ * 올라갔는가"를 답할 수 없다(취소된 줄도 같은 회원이다). 그래서 행마다 서버가 판정한
+ * `participant`를 싣고, 화면은 그 값이 있으면 참가 상태 배지와 «명단에서 보기»를, 없으면
+ * 확정/대기 버튼을 그린다. 판정을 웹에서 다시 하지 않는다 — 중복은 여전히 서버가 409
+ * EVENT_PARTICIPANT_DUPLICATED로 막고, 그 문구가 다음 행동까지 말한다.
+ *
+ * 목록 조회(`useEventApplications`)는 페이지가 쥔다 — 등록이 끝난 뒤 배지를 갈아 끼우려면
+ * 명단·행사 상세와 함께 이 목록도 다시 불러야 하고, 그 뒤처리는 페이지 한 곳(`settle`)에 있다.
  */
 
 const ALL = "전체";
@@ -44,16 +50,19 @@ const ALL = "전체";
 export function ApplicationsPanel({
   eventId,
   formId,
+  applications,
   rspnsSttsCd,
   onFilter,
   canManage,
   lockedHint,
   actions,
   onRegister,
+  onViewRoster,
 }: Readonly<{
   eventId: number;
   /** 연결된 폼 — 응답 상세로 가는 경로에 필요하다. 폼 미연결이면 null */
   formId: number | null;
+  applications: EventApplications;
   rspnsSttsCd: RspnsSttsCd | null;
   onFilter: (value: RspnsSttsCd | null) => void;
   canManage: boolean;
@@ -61,12 +70,11 @@ export function ApplicationsPanel({
   actions: ParticipantActions;
   /** 등록 요청 — 성공·실패 처리는 화면 전체를 쥔 쪽(페이지)이 한다 */
   onRegister: (formRspnsId: number, ptcpSttsCd: PtcpSttsCd) => void;
+  /** 이미 명단에 있는 신청 — 명단 탭을 그 참가 상태 필터로 연다 */
+  onViewRoster: (ptcpSttsCd: PtcpSttsCd) => void;
 }>) {
   const router = useRouter();
-  const { applications, status, errorMessage, reload } = useEventApplications(
-    eventId,
-    rspnsSttsCd,
-  );
+  const { applications: rows, status, errorMessage, reload } = applications;
 
   if (status === "no-form") {
     return (
@@ -90,12 +98,12 @@ export function ApplicationsPanel({
     );
   }
 
-  const columns: GridColumn<FormResponseItem>[] = [
+  const columns: GridColumn<EventApplication>[] = [
     {
       key: "mbrNm",
       header: FIELD_LABEL.memberName,
       width: "1fr",
-      render: (r) =>
+      render: ({ response: r }) =>
         /* 심사는 응답 상세에서 한다 — 폼을 모르면 그 주소를 만들 수 없다(계약상 오지 않는다) */
         formId === null ? (
           <span>{r.member.mbrNm || "-"}</span>
@@ -114,26 +122,27 @@ export function ApplicationsPanel({
       key: "stdntNo",
       header: FIELD_LABEL.studentNumber,
       width: ".9fr",
-      render: (r) => r.member.stdntNo || "-",
+      render: ({ response: r }) => r.member.stdntNo || "-",
     },
     {
       key: "meta",
       header: "등급 · 상태",
       width: "1.1fr",
       mobileHide: true,
-      render: (r) => `${mbrGrdNm(r.member.mbrGrdCd)} · ${mbrSttsNm(r.member.mbrSttsCd)}`,
+      render: ({ response: r }) =>
+        `${mbrGrdNm(r.member.mbrGrdCd)} · ${mbrSttsNm(r.member.mbrSttsCd)}`,
     },
     {
       key: "sbmsnDt",
       header: FIELD_LABEL.submittedAt,
       width: "1fr",
-      render: (r) => formatDt(r.sbmsnDt) || "-",
+      render: ({ response: r }) => formatDt(r.sbmsnDt) || "-",
     },
     {
       key: "rspnsSttsCd",
       header: FIELD_LABEL.responseStatus,
       width: "110px",
-      render: (r) => {
+      render: ({ response: r }) => {
         const badge = RSPNS_STTS_BADGE[r.rspnsSttsCd];
         return <Badge tone={badge.tone}>{badge.label}</Badge>;
       },
@@ -142,7 +151,26 @@ export function ApplicationsPanel({
       key: "register",
       header: "명단 등록",
       width: "190px",
-      render: (r) => {
+      render: ({ response: r, participant }) => {
+        /*
+         * 이미 명단에 있으면 등록 버튼 대신 지금 상태와 «명단에서 보기»다 — 취소된 참가자도
+         * 행이 남아 있으므로(D16) 다시 올리는 길은 명단 쪽 전이가 아니라 서버의 409로 막힌다.
+         */
+        if (participant) {
+          const badge = PTCP_STTS_BADGE[participant.ptcpSttsCd];
+          return (
+            <div className="flex items-center gap-[8px]">
+              <Badge tone={badge.tone}>{badge.label}</Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onViewRoster(participant.ptcpSttsCd)}
+              >
+                명단에서 보기
+              </Button>
+            </div>
+          );
+        }
         /*
          * 승인된 신청만 명단에 올릴 수 있다 — 계약이 그렇고(ACCEPTED가 아니면 서버가 거절),
          * 심사 전에 올릴 수 있게 두면 심사라는 단계 자체가 있으나 마나 해진다.
@@ -186,13 +214,13 @@ export function ApplicationsPanel({
         <div className="flex-1" />
         {/* 건수는 서버가 걸러 준 결과 그대로 — 화면에서 다시 세지 않는다 */}
         <div className="text-[14px] text-n500">
-          {status === "ready" ? `${applications.length}건` : ""}
+          {status === "ready" ? `${rows.length}건` : ""}
         </div>
       </div>
 
       <div className="mb-[14px] text-[13px] leading-[1.7] text-n500">
         심사(승인·수정요청·반려)는 이름을 눌러 응답 상세에서 합니다. 승인된 신청만 명단에
-        올릴 수 있습니다.
+        올릴 수 있고, 명단에 올려도 신청 상태(승인)는 바뀌지 않습니다.
       </div>
 
       {status === "error" ? (
@@ -204,8 +232,8 @@ export function ApplicationsPanel({
         <Card className="px-5 pt-4 pb-[6px]">
           <GridTable
             columns={columns}
-            rows={status === "ready" ? applications : []}
-            rowKey={(r) => String(r.formRspnsId)}
+            rows={status === "ready" ? rows : []}
+            rowKey={(a) => String(a.response.formRspnsId)}
             dense
             empty={
               <EmptyState

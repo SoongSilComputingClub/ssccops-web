@@ -2,6 +2,7 @@ import type { RspnsCn } from "@ssccops/form-renderer";
 import type {
   MbrGrdCd,
   MbrSttsCd,
+  PtcpSttsCd,
   RspnsSttsCd,
   RvwPrcsSeCd,
 } from "@/shared/config/codes";
@@ -83,6 +84,33 @@ export interface FormResponseItem {
   /** 작성 중(DRAFT)은 아직 제출 전이라 값이 없다 */
   sbmsnDt: string | null;
   member: ResponseMember;
+}
+
+/**
+ * 신청이 명단에 올라 있을 때의 참가 상태 (ssccops#307 · 서버 `EventApplicationParticipant`).
+ *
+ * 두 값뿐이다 — 화면이 필요한 것은 "올라 있는가"와 "어느 상태로"이고, 명단 행의 나머지
+ * (등록 일시·등록 경로)는 «명단에서 보기»로 명단 탭에 가서 본다.
+ */
+export interface EventApplicationParticipant {
+  eventPtcpId: number;
+  ptcpSttsCd: PtcpSttsCd;
+}
+
+/**
+ * GET /v1/events/{eventId}/applications 항목 — 신청(폼 응답) + 명단 등록 여부 (ssccops#307).
+ *
+ * **서버가 등록 여부를 준다.** 명단은 상태 필터가 걸린 채로 조회되어 화면이 들고 있는 명단만
+ * 으로는 "이 응답이 이미 올라갔는가"를 답할 수 없었다(취소된 줄도 같은 회원이다) — 서버가
+ * 응답마다 한 번 판정해 `participant`로 싣는다. **명단에 없으면 `null`이다**(취소된 참가자는
+ * 행이 남으므로 CANCELLED로 온다 — 없는 것과 다르다).
+ *
+ * 응답 요약(`response`)은 폼 응답 목록과 같은 모양이다 — 서버도 `FormResponseSummaryResponse`
+ * 를 옮겨 적지 않고 감싼다.
+ */
+export interface EventApplication {
+  response: FormResponseItem;
+  participant: EventApplicationParticipant | null;
 }
 
 /**

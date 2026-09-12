@@ -1,6 +1,8 @@
 export type {
   AcademicProgramPreview,
   CurriculumItemPreview,
+  EventApplication,
+  EventApplicationParticipant,
   FormResponseDetail,
   FormResponseItem,
   FormResponseReviewHistory,
