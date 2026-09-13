@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import { CAPABILITY } from "@/entities/session";
 import type { SubWorkDetail } from "@/entities/sub-work";
 import { useCan } from "@/features/auth";
+import {
+  AssignableMemberSelect,
+  assignableBlockReason,
+  assignableEditHint,
+  isAssignablePick,
+  useAssignableMembers,
+} from "@/features/member";
 import { useSubWorkDetail, useUpdateSubWork } from "@/features/sub-work";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { PRRTY_RNK_CDS, PRRTY_RNK_NM, type PrrtyRnkCd } from "@/shared/config/codes";
@@ -35,8 +42,15 @@ import {
  * 승인 필요 여부·승인자·정족수·완료 점검 항목이 통째로 달라지는데 그 값들은 등록 시점에
  * 이미 복사돼 있다, #43 소급 금지). 유형은 읽기 전용 배지로만 보여준다.
  *
- * **담당자·상위 업무도 여기서 바꿀 수 없다.** 담당자는 회원 목록 API가 없어서(등록 화면과
- * 같은 제약), 상위 업무는 진행률 집계 경계를 다시 정의하는 별개의 결정이라 이 화면 범위 밖이다.
+ * **담당자는 등록 화면과 같은 셀렉트로 바꾼다**(#435 · ssccops#333). 후보는 같은 훅
+ * (`useAssignableMembers` · GET /v1/members/assignable)에서 받고, 하위 업무는 등록과 같이
+ * authority를 주지 않는다(국원도 담당자가 될 수 있다). 기본값은 현재 담당자이고 요청 본문의
+ * ownerId는 고른 값이다. 후보 조회가 실패하면 저장 버튼을 잠근다(등록 규칙). 현재 담당자가
+ * 후보에서 빠졌으면 «현재: 이름»으로 남겨 두고 그대로 저장할 수 있게 한다 — 거절은 서버가
+ * 한다(OWNER_NOT_ACTIVE_MEMBER → VALIDATION_FAILED, 문구는 서버 것을 그대로 띄운다).
+ *
+ * **상위 업무는 여기서 바꿀 수 없다** — 진행률 집계 경계를 다시 정의하는 별개의 결정이라
+ * 이 화면 범위 밖이다.
  *
  * 상태(workStatus)·승인_상태도 이 폼에 없다 — 서버 요청 DTO에 그 필드가 없어(POL-003) 상태는
  * 상세 화면의 전이 버튼으로만 바뀐다.
@@ -99,8 +113,11 @@ function SubWorkEditForm({
 }>) {
   const router = useRouter();
   const { pending, update } = useUpdateSubWork();
+  const assignable = useAssignableMembers();
 
   const [title, setTitle] = useState(subWork.title);
+  /* 담당자 — 기본값은 현재 담당자. 서버는 담당자 없는 하위 업무를 만들지 않으므로 null은 정상 경로가 아니다 */
+  const [ownerId, setOwnerId] = useState<number | null>(subWork.owner?.memberId ?? null);
   const [startAt, setStartAt] = useState(toInput(subWork.startAt, true));
   /*
    * 등록 화면과 같은 규칙이다 — 화면의 '마감_일시' 한 칸이 endAt(oper 종료)과 dueAt(sub_work
@@ -114,21 +131,25 @@ function SubWorkEditForm({
   );
   const [externalLink, setExternalLink] = useState(subWork.externalLink ?? "");
 
+  const ownerReady = isAssignablePick(assignable, ownerId, subWork.owner);
+  /** 담당자를 확정하지 못한 이유 — 빈 문자열이면 확정됐다. 저장 버튼의 잠금 근거이자 title이다 */
+  const ownerBlockReason = assignableBlockReason(assignable, ownerReady);
+
   const save = async () => {
     if (!title.trim() || !startAt) {
       flash("운영 제목 · 시작 일시는 필수입니다");
       return;
     }
-    if (!subWork.owner) {
-      // 서버는 담당자 없는 하위 업무를 만들지 않으므로 정상 경로로는 나오지 않는다
-      flash("담당자 정보를 확인할 수 없어 저장할 수 없습니다. 화면을 새로고침해주세요");
+    if (ownerId === null || !ownerReady) {
+      // 버튼이 이미 잠겨 있어 정상 경로로는 나오지 않는다
+      flash(ownerBlockReason || "담당자를 선택하세요");
       return;
     }
 
     const ddlnDt = dueAt ? fromInput(dueAt, true) : null;
     const { subWork: updated, message } = await update(subWork.subWorkId, {
       title: title.trim(),
-      ownerId: subWork.owner.memberId,
+      ownerId,
       startAt: fromInput(startAt, true),
       endAt: ddlnDt,
       dueAt: ddlnDt,
@@ -158,13 +179,15 @@ function SubWorkEditForm({
               >
                 <TextField value={title} onChange={(e) => setTitle(e.target.value)} />
               </Field>
-              <Field label="담당자">
-                <div className="pt-[6px]">
-                  <div className="text-[15px]">{subWork.owner?.name ?? "-"}</div>
-                  <div className="mt-1 text-[13px] text-n500">
-                    담당자 위임은 추후 지원 — 지금은 바꿀 수 없습니다
-                  </div>
-                </div>
+              <Field label="담당자" required>
+                <AssignableMemberSelect
+                  assignable={assignable}
+                  value={ownerId}
+                  onChange={setOwnerId}
+                  current={subWork.owner}
+                  blockReason={ownerBlockReason}
+                  hint={assignableEditHint(assignable, ownerId, subWork.owner)}
+                />
               </Field>
               <Field label={FIELD_LABEL.priority}>
                 <div className="flex flex-wrap gap-[7px] pt-[6px]">
@@ -233,9 +256,11 @@ function SubWorkEditForm({
           <Button
             className="px-[26px] py-[11px]"
             onClick={() => void save()}
-            disabled={pending || !canManage}
+            disabled={pending || !canManage || ownerBlockReason !== ""}
             title={
-              canManage ? undefined : "하위 업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다"
+              canManage
+                ? ownerBlockReason || undefined
+                : "하위 업무를 수정할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다"
             }
           >
             {pending ? "저장하는 중…" : "저장"}
