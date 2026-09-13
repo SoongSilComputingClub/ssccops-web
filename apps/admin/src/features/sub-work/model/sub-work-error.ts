@@ -147,7 +147,7 @@ export function toSubWorkDeleteErrorMessage(error: unknown): string {
 }
 
 /**
- * 하위 업무 등록 실패 → 화면에 띄울 한 줄 (OPS-007).
+ * 하위 업무 등록·수정 실패 → 화면에 띄울 한 줄 (OPS-007 · OPS-030).
  *
  * 401(재로그인)·403 SIGNUP_REQUIRED(가입 화면)는 apiFetch가 이미 리다이렉트까지 끝내므로
  * 여기서 다루지 않는다. 남은 403은 **권한 부족**이다 — 하위 업무 등록은 상위 업무와 같은
@@ -164,6 +164,9 @@ export function toSubWorkDeleteErrorMessage(error: unknown): string {
  *   찾을 수 없습니다")
  *
  * 여기서 한 문장으로 뭉개면 어느 칸을 고쳐야 하는지가 사라진다 (업무 등록이 같은 판단을 했다).
+ *
+ * 담당자 부적격은 수정 화면에서도 같은 길로 온다(#435) — 서버 `OWNER_NOT_ACTIVE_MEMBER`는
+ * 이름과 달리 **400 `VALIDATION_FAILED`**라 전용 case를 둘 수 없다(toWorkCreateErrorMessage).
  */
 export function toSubWorkCreateErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {

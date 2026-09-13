@@ -67,6 +67,12 @@ export {
 export {
   useAssignableMembers,
   assignableMemberLabel,
+  isAssignablePick,
+  assignableBlockReason,
+  assignableEditHint,
+  type AssignableCurrent,
   type AssignableMembers,
   type AssignableMembersStatus,
 } from "./model/use-assignable-members";
+/* 담당자 셀렉트 — 등록(#53)과 수정(#435)이 같은 것을 그린다 */
+export { AssignableMemberSelect } from "./ui/assignable-member-select";

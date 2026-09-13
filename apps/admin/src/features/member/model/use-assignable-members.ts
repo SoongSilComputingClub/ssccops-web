@@ -132,3 +132,65 @@ export function assignableMemberLabel(member: AssignableMember): string {
     member.representativeRoleName ?? member.membershipGradeName,
   ].join(" · ");
 }
+
+/** 이미 배정돼 있는 담당자(수정 화면) — 후보 목록에 없어도 셀렉트에 그대로 남긴다 */
+export interface AssignableCurrent {
+  memberId: number;
+  name: string;
+}
+
+/**
+ * 셀렉트가 보여 주고 폼이 서버로 보내도 되는 값인가 (#435).
+ *
+ * 후보 목록에 있으면 그대로 참이다. **수정 화면의 현재 담당자는 목록에 없어도 참으로 본다** —
+ * 탈퇴·제명·등급 변경으로 후보에서 빠진 회원이 이미 담당자인 건은 있고, 그 건의 제목·기간만
+ * 고치려는 사람까지 담당자를 갈아 끼우게 만들면 수정 화면이 "담당자 교체 화면"이 된다.
+ * 서버가 거절하면(`OWNER_NOT_ACTIVE_MEMBER` → 400 VALIDATION_FAILED) 그 문구가 그대로 뜬다.
+ *
+ * 목록이 아직 안 왔거나 실패했으면 현재 담당자라도 거짓이다 — 등록 화면과 같은 이유로
+ * (`includes` 주석) 그 상태에서는 저장이 나가면 안 된다.
+ */
+export function isAssignablePick(
+  assignable: AssignableMembers,
+  memberId: number | null,
+  current?: AssignableCurrent | null,
+): boolean {
+  if (memberId === null) return false;
+  if (assignable.includes(memberId)) return true;
+  return assignable.status === "ready" && current?.memberId === memberId;
+}
+
+/**
+ * 담당자를 확정하지 못한 이유 — 빈 문자열이면 확정됐다. 등록·수정 버튼의 잠금 근거이자
+ * 버튼 `title`이다(등록 화면 규칙 · #53). `pickable`은 `isAssignablePick`의 결과다.
+ *
+ * 순서가 뜻이다 — 조회 중·실패는 값과 무관하게 잠그고, 그다음에야 값을 본다. 후보가 비어도
+ * 현재 담당자를 그대로 두는 수정은 통과해야 하므로 "후보 없음"보다 `pickable`을 먼저 본다.
+ */
+export function assignableBlockReason(assignable: AssignableMembers, pickable: boolean): string {
+  if (assignable.status === "loading") return "담당자 목록을 불러오는 중입니다";
+  if (assignable.status === "error") return assignable.errorMessage;
+  if (pickable) return "";
+  if (assignable.members.length === 0) return "담당자로 지정할 수 있는 활동 회원이 없습니다";
+  return "담당자를 선택하세요";
+}
+
+/**
+ * 수정 화면의 담당자 셀렉트 아래 안내 — 잠금 사유가 없을 때만 보인다(등록 화면의 «본인으로
+ * 등록됩니다» 자리). 업무·하위 업무 수정이 같은 문구·같은 판단을 쓴다(#435).
+ *
+ * 현재 담당자가 후보에서 빠진 경우를 먼저 말한다 — 그대로 저장하면 서버가 거절하므로, 그
+ * 사람이 담당자였다는 사실과 다음 행동을 같은 줄에 둔다.
+ */
+export function assignableEditHint(
+  assignable: AssignableMembers,
+  memberId: number | null,
+  current: AssignableCurrent | null,
+): string {
+  if (current && memberId === current.memberId) {
+    return assignable.includes(current.memberId)
+      ? "현재 담당자 그대로 저장됩니다 · 다른 회원으로 바꿀 수 있습니다"
+      : "현재 담당자는 더 이상 담당자로 지정할 수 없는 회원입니다 — 그대로 저장하면 거절되므로 다른 회원으로 바꿔주세요";
+  }
+  return "선택한 회원이 담당자로 저장됩니다";
+}
