@@ -555,8 +555,6 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
                   k: FIELD_LABEL.attendeeTarget,
                   v: meeting.attendeeScope ? ATND_TRGT_NM[meeting.attendeeScope] : "-",
                 },
-                { k: FIELD_LABEL.internalMeetingDetail, v: meeting.internalDetail ?? "-" },
-                { k: FIELD_LABEL.externalMeetingSummary, v: meeting.externalSummary ?? "-" },
               ]}
             />
           </Card>
