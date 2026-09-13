@@ -267,18 +267,20 @@ jobs:
           APPS='[]'
           BUILD_TIME=""
 
-          declare -A DONE
+          # 빈 연관 배열의 ${#DONE[@]} 는 set -u 에서 unbound 로 죽는다(첫 실측 run) — 개수는 따로 센다
+          declare -A DONE=()
+          DONE_COUNT=0
           for app in admin www lms; do
             var="${PREFIX}_$(printf '%s' "$app" | tr '[:lower:]' '[:upper:]')_URL"
             url="${!var:-}"
             if [ -z "$url" ]; then
               echo "::warning::$var 가 없어 $app 은 unverified로 남긴다"
               APPS=$(jq -c --arg a "$app" '. + [{app:$a, sha:null, deployed_at:null, status:"unverified"}]' <<<"$APPS")
-              DONE[$app]=1
+              DONE[$app]=1; DONE_COUNT=$((DONE_COUNT + 1))
             fi
           done
 
-          while [ ${#DONE[@]} -lt 3 ]; do
+          while [ "$DONE_COUNT" -lt 3 ]; do
             for app in admin www lms; do
               [ -n "${DONE[$app]:-}" ] && continue
               var="${PREFIX}_$(printf '%s' "$app" | tr '[:lower:]' '[:upper:]')_URL"
@@ -291,18 +293,18 @@ jobs:
                 [ -z "$BUILD_TIME" ] && BUILD_TIME="$bt"
                 echo "$app: $SHA 확인 ($now)"
                 APPS=$(jq -c --arg a "$app" --arg s "$got" --arg d "$now" '. + [{app:$a, sha:$s, deployed_at:$d, status:"verified"}]' <<<"$APPS")
-                DONE[$app]=1
+                DONE[$app]=1; DONE_COUNT=$((DONE_COUNT + 1))
               else
                 echo "$app: 아직 ${got:-응답 없음} (기대 $SHA)"
               fi
             done
-            [ ${#DONE[@]} -ge 3 ] && break
+            [ "$DONE_COUNT" -ge 3 ] && break
             if [ "$(date +%s)" -ge "$DEADLINE" ]; then
               for app in admin www lms; do
                 [ -n "${DONE[$app]:-}" ] && continue
                 echo "::warning::$app 은 10분 안에 $SHA 를 돌려주지 않았다 — unverified"
                 APPS=$(jq -c --arg a "$app" '. + [{app:$a, sha:null, deployed_at:null, status:"unverified"}]' <<<"$APPS")
-                DONE[$app]=1
+                DONE[$app]=1; DONE_COUNT=$((DONE_COUNT + 1))
               done
               break
             fi
