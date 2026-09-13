@@ -9,6 +9,17 @@
 
 - closed: #
 
+## 🧭 근거
+
+<!--
+이 변경이 **어느 결정에서 나왔는가** — 메타 이슈 `SoongSilComputingClub/ssccops#N` 또는
+`ADR-NNNN`. deploy-history 워크플로(ssccops#340)가 배포 레코드에서 PR → Sub-task → 메타 이슈
+→ ADR을 거슬러 올라가므로, 여기 없으면 그 배포에 «왜»가 빠진다. `pr-guard.yml`이 이 패턴을
+검사한다(릴리스 PR·dependabot 면제).
+-->
+
+- 근거: SoongSilComputingClub/ssccops#
+
 ---
 
 ## 📦 대상
