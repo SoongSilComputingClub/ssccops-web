@@ -150,9 +150,9 @@ export interface MeetingDetail {
   endAt: string | null;
   priority: PrrtyRnkCd;
   location: string | null;
-  /** 내부 상세본 — 채우는 API가 아직 없어 지금은 늘 NULL */
+  /** 내부 상세본 — 화면은 그리지 않는다 — 서버에 쓰는 경로가 없다(ssccops#334). 복구는 회의 수정 API부터 */
   internalDetail: string | null;
-  /** 제출 요약본 — 채우는 API가 아직 없어 지금은 늘 NULL */
+  /** 제출 요약본 — 화면은 그리지 않는다 — 서버에 쓰는 경로가 없다(ssccops#334). 복구는 회의 수정 API부터 */
   externalSummary: string | null;
   agendas: MeetingAgenda[];
   createdAt: string | null;
