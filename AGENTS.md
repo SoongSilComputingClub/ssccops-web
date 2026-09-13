@@ -12,7 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 SSCC(숭실컴퓨팅클럽) 운영관리 어드민 웹 — Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4 / pnpm.
 백엔드는 별도 저장소 **`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth),
-배포는 Cloudflare Workers(OpenNext).
+배포는 **prod = Vercel Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아래 «배포 — 두 플랫폼» 절.
 
 > 위의 `nextjs-agent-rules` 블록은 `next dev`가 스스로 써넣는다. 지우면 uncommitted 변경으로
 > 되살아나므로 **그대로 두고 그 바깥에** 쓴다. 개인 로컬 메모(포트·`.env.local`·증상별 원인
@@ -196,6 +196,28 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
 이 저장소의 판단 중 ADR로 올라갈 것과 여기 남을 것을 가른다 — **ADR은 '왜', 코드 주석은
 '어떻게'**다. 주석에서 ADR을 가리키면(`ADR-0003 참고`) 둘이 갈라지지 않는다. 아래 절들은
 여전히 이 저장소의 규칙이며 ADR로 옮기지 않는다.
+
+## 배포 — 두 플랫폼 ([ADR-0030](https://github.com/SoongSilComputingClub/ssccops/blob/develop/docs/decisions/0030-prod-web-on-vercel-hobby-dev-on-cloudflare-free.md))
+
+| | dev | prod |
+|---|---|---|
+| 플랫폼 | Cloudflare Workers 무료(OpenNext) | Vercel Hobby |
+| 브랜치 | `develop` 푸시 → dev 워커 자동 빌드 | `main` 푸시 → Production. **Production Branch를 `main`으로 명시**했다 — 레포 기본 브랜치가 `develop`이라 기본값이 틀리고, 실제로 develop이 prod로 나간 뒤 잡았다 |
+| 빌드 변수 | 대시보드 «Build → Variables»(`NEXT_PUBLIC_*`는 빌드 인라인) | 프로젝트 Environment Variables(Production). **두 곳을 같이 고친다** — 릴리스 «배포 시 주의»에 대조 항목 |
+| 리전 | — | 서울. 미들웨어가 Supabase·API를 왕복하므로 기본값(미국)이면 요청마다 두 번 건넌다 |
+| 로그 | Workers Observability(켜 둠) | Vercel 런타임 로그 **1시간** 보존 — 장애는 그 안에 본다 |
+| 요청당 CPU | **10ms 한도 → 1102**가 날 수 있다. dev에서 보이면 «dev만 그렇다» | 상한 없음(월 총량만) |
+
+2026-09-13 실측으로 무료 Workers에서 성공 요청 CPU P50이 20ms(한도 2배)·콜드 스타트 200~600ms였고 prod에서 1102가 나고 있었다. 결제 승인이 안 되어 prod만 Vercel로 옮겼다(ADR-0030 «검토한 선택지»에 Workers Paid·Pages·Vercel Pro 비교).
+
+**코드는 두 플랫폼에서 같은 뜻이어야 한다** — Vercel에만 있는 기능을 쓰면 dev에서 못 보는 버그가 생긴다:
+
+- ISR(`revalidate`)·`use cache`·PPR **금지** — Cloudflare dev는 R2 캐시가 없어 매번 렌더한다. 지금 구조(정적 셸 + 브라우저 fetch)를 유지한다.
+- `middleware.ts`를 `proxy.ts`로 바꾸지 않는다(«인증 · 권한» 절).
+- `next/image` 최적화에 기대지 않는다 — `<img>` + 직접 URL.
+- 미들웨어에 Node 전용 API를 쓰지 않는다(Workers 런타임에 없다).
+- OpenNext 파일(`wrangler.jsonc`·`open-next.config.ts`)은 dev용이라 지우지 않는다. Vercel 빌드는 `next build`만 돌리므로 있어도 무방하다.
+- Cloudflare의 prod 워커 3개는 DNS 롤백용으로 남겨 둔다(ADR-0030). 지우려면 ADR을 뒤집는다.
 
 ## 주요 결정 (왜 그렇게 돼 있는가)
 
