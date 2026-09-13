@@ -20,7 +20,10 @@ name: Deploy History
 # 포함 변경은 직전 지점과의 compare로 자동 산출한다: 커밋 → 그 커밋을 담은 PR(`commits/{sha}/pulls`
 # — squash 커밋도 PR에 연결돼 있다) → 제목 `[#N]`의 Sub-task → cross-repo Parent(GraphQL
 # `parent`, `GraphQL-Features: sub_issues`) → Parent 본문의 `ADR-NNNN`. develop→main 릴리스 PR은
-# head가 develop이라 걸러 낸다.
+# head가 develop이라 걸러 낸다. **메타 레포(ssccops)는 private이라 `GITHUB_TOKEN`으로는 Parent가
+# null로 온다** — 그래서 PR 본문의 «근거» 칸(`ssccops#N`·`ADR-NNNN`, pr-guard가 강제)을 대신
+# 읽는다. 메타 레포 read 권한이 있는 PAT를 `DEPLOY_HISTORY_TOKEN` 시크릿으로 주면 GraphQL
+# Parent와 그 본문의 ADR까지 붙는다(없어도 된다).
 #   - prod: 직전 태그 … 이번 태그
 #   - dev : 직전 dev 레코드의 git_sha … 이번 푸시(첫 레코드는 최신 태그부터)
 #
@@ -112,7 +115,7 @@ jobs:
       - name: Collect PRs, sub-tasks, parents and ADR refs
         id: prs
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.DEPLOY_HISTORY_TOKEN || github.token }}
           REPO: ${{ github.repository }}
           BASE: ${{ steps.target.outputs.base }}
           SHA: ${{ steps.target.outputs.sha }}
@@ -134,7 +137,9 @@ jobs:
             NUMBERS=$(printf '%s\n' $NUMBERS | grep -E '^[0-9]+$' | sort -un || true)
 
             for n in $NUMBERS; do
-              TITLE=$(gh pr view "$n" --repo "$REPO" --json title --jq .title)
+              PRJ=$(gh pr view "$n" --repo "$REPO" --json title,body)
+              TITLE=$(printf '%s' "$PRJ" | jq -r .title)
+              BODY=$(printf '%s' "$PRJ" | jq -r '.body // ""')
               ISSUE=$(printf '%s' "$TITLE" | grep -oE '^\[#[0-9]+\]' | grep -oE '[0-9]+' || true)
               PARENT=null; ADRS='[]'
               if [ -n "$ISSUE" ]; then
@@ -150,6 +155,13 @@ jobs:
                   ADRS=$(printf '%s' "$PJ" | jq -c '[.data.repository.issue.parent.body // "" | scan("ADR-[0-9]{4}")] | unique')
                 fi
               fi
+              # Parent를 못 읽었으면(메타 레포 private) PR 본문 «근거»의 ssccops#N을 쓴다
+              if [ "$PARENT" = null ]; then
+                BN=$(printf '%s' "$BODY" | grep -oE '(SoongSilComputingClub/)?ssccops#[0-9]+' | head -1 | grep -oE '[0-9]+$' || true)
+                [ -n "$BN" ] && PARENT=$(jq -cn --arg n "$BN" '"SoongSilComputingClub/ssccops#\($n)"')
+              fi
+              # PR 본문에 적힌 ADR도 합친다 — 근거가 ADR인 PR은 Parent 없이 이것만 있다
+              ADRS=$(printf '%s' "$BODY" | jq -Rs --argjson a "$ADRS" '($a + [scan("ADR-[0-9]{4}")]) | unique')
               PRS=$(jq -c --argjson prs "$PRS" --argjson n "$n" --arg t "$TITLE" --arg i "$ISSUE" \
                 --argjson p "$PARENT" --argjson a "$ADRS" \
                 -n '$prs + [{number:$n, title:$t, issue:(if $i=="" then null else ($i|tonumber) end), parent_issue:$p, adr_refs:$a}]')
