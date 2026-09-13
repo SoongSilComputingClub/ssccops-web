@@ -23,6 +23,7 @@ export async function middleware(request: NextRequest) {
  * 제외 대상:
  * - _next/*, favicon, 정적 자산 — 인증과 무관
  * - auth/* — OAuth 콜백. 라우트 핸들러가 직접 코드를 교환하며 가드 대상이 아니다
+ * - version — 배포 확인용 `GET /version`(#442). deploy-history 워크플로가 인증 없이 폴링한다
  *
  * f/* 는 예전에 여기서 빠져 있었다. 공개 폼을 로그인 없이 열게 하려던 것인데, 응답자를
  * 회원으로 식별하기로 하면서(form_rspns_hstry.mbr_id NOT NULL) 전제가 뒤집혔다.
@@ -45,6 +46,6 @@ export async function middleware(request: NextRequest) {
  */
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|auth/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|auth/|version$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest)$).*)",
   ],
 };

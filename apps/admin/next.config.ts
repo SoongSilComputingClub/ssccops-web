@@ -1,7 +1,28 @@
+import { execSync } from "node:child_process";
 import type { NextConfig } from "next";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
 import { version } from "./package.json";
+
+/*
+ * 빌드된 커밋 sha (ssccops#340 · #442). `/version`이 돌려주고 deploy-history 워크플로가 «이
+ * sha가 실제로 떠 있는가»를 폴링한다. 플랫폼마다 주는 변수가 달라 순서대로 본다 —
+ * Vercel `VERCEL_GIT_COMMIT_SHA` → Cloudflare Workers Builds `WORKERS_CI_COMMIT_SHA` →
+ * 로컬·CI는 git. git이 없거나(.git 없이 복사한 트리) 실패하면 "unknown"으로 두고 빌드는 막지
+ * 않는다 — 배포 확인은 워크플로가 `unverified`로 남기면 되지 빌드가 죽을 일은 아니다.
+ */
+function resolveGitSha(): string {
+  const fromPlatform =
+    process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.WORKERS_CI_COMMIT_SHA;
+  if (fromPlatform) return fromPlatform;
+  try {
+    return execSync("git rev-parse HEAD", { stdio: ["ignore", "pipe", "ignore"] })
+      .toString()
+      .trim();
+  } catch {
+    return "unknown";
+  }
+}
 
 /*
  * 공유 폼 렌더러(#152)는 빌드 산출물이 아니라 **소스를 그대로 export** 한다 — 패키지에 번들
@@ -30,7 +51,11 @@ const nextConfig: NextConfig = {
    *
    * 그래서 릴리스에서 고칠 곳은 `package.json` 하나이고, 여기서 화면까지 저절로 따라온다.
    */
-  env: { NEXT_PUBLIC_APP_VERSION: version },
+  env: {
+    NEXT_PUBLIC_APP_VERSION: version,
+    NEXT_PUBLIC_GIT_SHA: resolveGitSha(),
+    NEXT_PUBLIC_BUILT_AT: new Date().toISOString(),
+  },
 };
 
 export default nextConfig;

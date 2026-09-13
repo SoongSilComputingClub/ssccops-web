@@ -218,6 +218,7 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
 - 미들웨어에 Node 전용 API를 쓰지 않는다(Workers 런타임에 없다).
 - OpenNext 파일(`wrangler.jsonc`·`open-next.config.ts`)은 dev용이라 지우지 않는다. Vercel 빌드는 `next build`만 돌리므로 있어도 무방하다.
 - Cloudflare의 prod 워커 3개는 DNS 롤백용으로 남겨 둔다(ADR-0030). 지우려면 ADR을 뒤집는다.
+- **배포 이력은 `deploy-history.yml`이 남긴다**(ssccops#340 · #442) — 릴리스 게시(prod)·`develop` 푸시(dev)마다 세 앱의 `GET /version`(`{version, sha, builtAt}` — `next.config.ts`가 빌드 때 인라인, `middleware.ts` 매처에서 제외)을 최대 10분 폴링해 orphan 브랜치 `deploy-history`의 `prod.jsonl`·`dev.jsonl`에 한 줄 append. 도메인은 repo variables `PROD_ADMIN_URL`·`PROD_WWW_URL`·`PROD_LMS_URL`·`DEV_*`에서만 오고 없으면 `unverified`로 남는다. PR 본문의 «근거»(`ssccops#N`·`ADR-NNNN`)가 레코드의 PR → 메타 이슈 → ADR 사슬의 출발점이라 `pr-guard.yml`이 검사한다.
 
 ## 주요 결정 (왜 그렇게 돼 있는가)
 
