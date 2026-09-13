@@ -1,35 +1,44 @@
 name: Deploy History
 
-# 배포 이력을 파이프라인이 남긴다 (ssccops#340 · #442).
+# 배포 이력을 파이프라인이 남긴다 (ssccops#340 · ssccops#344 · #442 · #445).
 #
 # «어느 환경에 어떤 sha가 언제 올라갔고 무엇이 들었나»를 사람이 쓰지 않고 레코드로 남긴다.
 # 배포 주체(dev = Cloudflare Workers Builds · prod = Vercel Git)는 건드리지 않는다 — 릴리스
 # 이벤트(prod)와 develop 푸시(dev)에 **기록만 얹는** 워크플로다. 서버 레포에도 같은 설계의
 # 워크플로가 있고 레코드 필드 이름은 ssccops#340의 목록을 함께 따른다.
 #
-# 무엇을 남기나 — orphan 브랜치 `deploy-history`의 `prod.jsonl`·`dev.jsonl`에 JSON 한 줄:
+# 무엇을 남기나 — **메타 레포(ssccops) orphan 브랜치 `deploy-history`**의 `web-prod.jsonl`·
+# `web-dev.jsonl`에 JSON 한 줄(ADR-0033 · #445. 서버는 같은 브랜치의 `server-*.jsonl`):
 #   recorded_at · deployed_at · environment · service("web") · version · git_sha · build_time
 #   · prs[{number,title,issue,parent_issue,adr_refs}] · actor · workflow_run_url · status
 #   · apps[{app,sha,deployed_at,status}]  ← 웹은 앱이 셋이라 한 레코드에 앱별 확인 결과를 싣는다
 #
+# 쓰기 토큰은 조직 GitHub App `sscc-devops`의 설치 토큰이다(actions/create-github-app-token,
+# `repositories: ssccops`로 좁힘 · 1시간). 처음(#442)에는 이 레포의 orphan 브랜치에 썼다 —
+# 교차 레포 PAT를 두 레포에 두기 싫어서였는데, 조직 앱 토큰은 사람에 안 묶이고 비밀이 조직
+# 시크릿 하나라 저울이 바뀌었다. 같은 토큰이 **메타 레포(private)의 sub-issue Parent도 읽으므로**
+# `GITHUB_TOKEN`으로 null이던 parent_issue·adr_refs가 직접 채워진다(«근거» fallback은 남긴다).
+#
+# 조직 변수·시크릿 (두 개발 레포에 공유 · 레포에는 아무것도 없다):
+#   vars.SSCCOPS_DEPLOY_HISTORY_APP_ID     — sscc-devops 의 App ID
+#   secrets.SSCCOPS_DEPLOY_HISTORY_APP_KEY — 그 앱의 개인키(PEM). Actions 전용으로 하나 더 발급한 것
+#   vars.SSCCOPS_DEPLOY_HISTORY_ENV        — .env 모양 여러 줄. 이 워크플로는
+#                                            WEB_{DEV,PROD}_{ADMIN,WWW,LMS}_URL 여섯 개만 읽는다(끝 슬래시 없이)
+# 도메인을 **하드코딩하지 않는다** — 변수가 없으면 그 앱은 `unverified`로 남기고 워크플로는
+# 성공한다(기록이 목적이지 배포를 막는 게이트가 아니다). 앱 변수·시크릿이 없으면 실패한다 —
+# 자기 레포에 쓰는 fallback을 두면 «두 곳» 상태로 돌아간다.
+#
 # «배포됨»은 실제 응답으로 확인한다 — 앱별 `GET /version`의 `sha`가 이 sha가 될 때까지 최대
-# 10분 폴링. 도메인은 repo variables(`PROD_ADMIN_URL`·`PROD_WWW_URL`·`PROD_LMS_URL` · `DEV_*`)로
-# 받고 **하드코딩하지 않는다** — 변수가 없으면 그 앱은 `unverified`로 남기고 워크플로는 성공한다
-# (기록이 목적이지 배포를 막는 게이트가 아니다).
+# 10분 폴링.
 #
 # 포함 변경은 직전 지점과의 compare로 자동 산출한다: 커밋 → 그 커밋을 담은 PR(`commits/{sha}/pulls`
 # — squash 커밋도 PR에 연결돼 있다) → 제목 `[#N]`의 Sub-task → cross-repo Parent(GraphQL
 # `parent`, `GraphQL-Features: sub_issues`) → Parent 본문의 `ADR-NNNN`. develop→main 릴리스 PR은
-# head가 develop이라 걸러 낸다. **메타 레포(ssccops)는 private이라 `GITHUB_TOKEN`으로는 Parent가
-# null로 온다** — 그래서 PR 본문의 «근거» 칸(`ssccops#N`·`ADR-NNNN`, pr-guard가 강제)을 대신
-# 읽는다. 메타 레포 read 권한이 있는 PAT를 `DEPLOY_HISTORY_TOKEN` 시크릿으로 주면 GraphQL
-# Parent와 그 본문의 ADR까지 붙는다(없어도 된다).
+# head가 develop이라 걸러 낸다.
 #   - prod: 직전 태그 … 이번 태그
 #   - dev : 직전 dev 레코드의 git_sha … 이번 푸시(첫 레코드는 최신 태그부터)
 #
-# orphan 브랜치에 append하는 것은 `GITHUB_TOKEN`만으로 되고 develop·main 이력을 더럽히지 않기
-# 때문이다(메타 레포로 모으는 안은 교차 레포 PAT가 필요해 기각 — ssccops#340). 동시에 두 번
-# 돌면 push가 거절되므로 concurrency로 직렬화하고 push도 몇 번 다시 시도한다.
+# 두 레포가 같은 브랜치에 쓰므로 push가 거절되면 다시 받아서 다시 붙인다(파일이 달라 충돌은 없다).
 
 on:
   release:
@@ -48,10 +57,16 @@ concurrency:
   group: deploy-history
   cancel-in-progress: false
 
+# 이 레포에는 쓰지 않는다 — 메타 레포 쓰기는 App 토큰이 한다
 permissions:
-  contents: write
+  contents: read
   pull-requests: read
   issues: read
+
+env:
+  SERVICE_KEY: web
+  META_REPO: SoongSilComputingClub/ssccops
+  HISTORY_BRANCH: deploy-history
 
 jobs:
   record:
@@ -62,6 +77,66 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Check org configuration
+        env:
+          APP_ID: ${{ vars.SSCCOPS_DEPLOY_HISTORY_APP_ID }}
+          HAS_KEY: ${{ secrets.SSCCOPS_DEPLOY_HISTORY_APP_KEY != '' }}
+        run: |
+          if [ -z "$APP_ID" ] || [ "$HAS_KEY" != true ]; then
+            echo "::error::조직 변수 SSCCOPS_DEPLOY_HISTORY_APP_ID 와 조직 시크릿 SSCCOPS_DEPLOY_HISTORY_APP_KEY 가 있어야 한다 (ssccops#344)"
+            exit 1
+          fi
+
+      - name: Mint sscc-devops token for the meta repo
+        id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.SSCCOPS_DEPLOY_HISTORY_APP_ID }}
+          private-key: ${{ secrets.SSCCOPS_DEPLOY_HISTORY_APP_KEY }}
+          owner: SoongSilComputingClub
+          repositories: ssccops
+
+      # .env 모양의 조직 변수에서 이 레포 몫(WEB_*)만 꺼낸다. CR·주석·빈 줄·따옴표는 무시한다.
+      - name: Load hosts from SSCCOPS_DEPLOY_HISTORY_ENV
+        id: hosts
+        env:
+          DOTENV: ${{ vars.SSCCOPS_DEPLOY_HISTORY_ENV }}
+        run: |
+          set -euo pipefail
+          declare -A H=()
+          while IFS= read -r line; do
+            line="${line%$'\r'}"
+            case "$line" in ''|'#'*) continue ;; esac
+            key="${line%%=*}"; val="${line#*=}"
+            key="$(printf '%s' "$key" | tr -d '[:space:]')"
+            val="$(printf '%s' "$val" | sed -E 's/^[[:space:]]*"?//; s/"?[[:space:]]*$//')"
+            case "$key" in WEB_*_URL) H[$key]="${val%/}" ;; esac
+          done <<< "$DOTENV"
+          for env in DEV PROD; do for app in ADMIN WWW LMS; do
+            k="WEB_${env}_${app}_URL"
+            [ -n "${H[$k]:-}" ] || echo "::warning::SSCCOPS_DEPLOY_HISTORY_ENV 에 $k 가 없다 — 그 앱은 unverified 로 남는다"
+            echo "$(printf '%s' "$k" | tr '[:upper:]' '[:lower:]')=${H[$k]:-}" >> "$GITHUB_OUTPUT"
+          done; done
+
+      # 메타 레포의 이력 브랜치를 App 토큰으로 받는다 — 직전 dev 지점도 여기서 읽는다.
+      - name: Checkout meta history branch
+        env:
+          TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          REMOTE="https://x-access-token:${TOKEN}@github.com/${META_REPO}.git"
+          if git ls-remote --exit-code --heads "$REMOTE" "$HISTORY_BRANCH" >/dev/null 2>&1; then
+            git clone -q --depth 1 --branch "$HISTORY_BRANCH" "$REMOTE" history
+          else
+            git init -q history
+            git -C history remote add origin "$REMOTE"
+            git -C history checkout -q --orphan "$HISTORY_BRANCH"
+            printf '# deploy-history\n\n배포 이력 레코드 (ssccops#344 · ADR-0033). 개발 레포 두 곳의 `deploy-history.yml`이 `server-*.jsonl` / `web-*.jsonl`에 JSON 한 줄씩 append한다 — 손으로 고치지 않는다.\n' > history/README.md
+            git -C history add README.md
+          fi
+          git -C history config user.name 'sscc-devops[bot]'
+          git -C history config user.email '272459506+sscc-devops[bot]@users.noreply.github.com'
 
       - name: Resolve environment, sha and compare base
         id: target
@@ -81,7 +156,6 @@ jobs:
           esac
 
           git fetch -q origin 'refs/tags/*:refs/tags/*' develop
-          git fetch -q origin deploy-history:refs/remotes/origin/deploy-history 2>/dev/null || true
 
           if [ "$ENVIRONMENT" = prod ]; then
             TAG="${RELEASE_TAG:-$(git tag --sort=-v:refname | head -1)}"
@@ -93,8 +167,9 @@ jobs:
           else
             if [ "$EVENT_NAME" = push ]; then SHA="$PUSH_SHA"; else SHA=$(git rev-parse origin/develop); fi
             BASE=""
-            if git rev-parse -q --verify origin/deploy-history >/dev/null; then
-              LAST=$(git show origin/deploy-history:dev.jsonl 2>/dev/null | tail -1 | jq -r '.git_sha // empty' || true)
+            FILE="history/$SERVICE_KEY-dev.jsonl"
+            if [ -s "$FILE" ]; then
+              LAST=$(tail -1 "$FILE" | jq -r '.git_sha // empty' || true)
               if [ -n "$LAST" ] && git cat-file -e "${LAST}^{commit}" 2>/dev/null; then BASE="$LAST"; fi
             fi
             if [ -z "$BASE" ]; then
@@ -115,7 +190,8 @@ jobs:
       - name: Collect PRs, sub-tasks, parents and ADR refs
         id: prs
         env:
-          GH_TOKEN: ${{ secrets.DEPLOY_HISTORY_TOKEN || github.token }}
+          # App 토큰 — 메타 레포 issues:read 가 있어 private 메타의 Parent 와 그 본문을 직접 읽는다
+          GH_TOKEN: ${{ steps.app.outputs.token }}
           REPO: ${{ github.repository }}
           BASE: ${{ steps.target.outputs.base }}
           SHA: ${{ steps.target.outputs.sha }}
@@ -155,7 +231,7 @@ jobs:
                   ADRS=$(printf '%s' "$PJ" | jq -c '[.data.repository.issue.parent.body // "" | scan("ADR-[0-9]{4}")] | unique')
                 fi
               fi
-              # Parent를 못 읽었으면(메타 레포 private) PR 본문 «근거»의 ssccops#N을 쓴다
+              # 그래도 Parent를 못 읽었으면 PR 본문 «근거»의 ssccops#N을 쓴다
               if [ "$PARENT" = null ]; then
                 BN=$(printf '%s' "$BODY" | grep -oE '(SoongSilComputingClub/)?ssccops#[0-9]+' | head -1 | grep -oE '[0-9]+$' || true)
                 [ -n "$BN" ] && PARENT=$(jq -cn --arg n "$BN" '"SoongSilComputingClub/ssccops#\($n)"')
@@ -176,13 +252,13 @@ jobs:
         env:
           ENVIRONMENT: ${{ steps.target.outputs.environment }}
           SHA: ${{ steps.target.outputs.sha }}
-          # 도메인은 repo variables에서만 온다 — 하드코딩 금지(#442). 없으면 unverified.
-          PROD_ADMIN_URL: ${{ vars.PROD_ADMIN_URL }}
-          PROD_WWW_URL: ${{ vars.PROD_WWW_URL }}
-          PROD_LMS_URL: ${{ vars.PROD_LMS_URL }}
-          DEV_ADMIN_URL: ${{ vars.DEV_ADMIN_URL }}
-          DEV_WWW_URL: ${{ vars.DEV_WWW_URL }}
-          DEV_LMS_URL: ${{ vars.DEV_LMS_URL }}
+          # 도메인은 조직 변수(.env)에서만 온다 — 하드코딩 금지. 없으면 unverified.
+          PROD_ADMIN_URL: ${{ steps.hosts.outputs.web_prod_admin_url }}
+          PROD_WWW_URL: ${{ steps.hosts.outputs.web_prod_www_url }}
+          PROD_LMS_URL: ${{ steps.hosts.outputs.web_prod_lms_url }}
+          DEV_ADMIN_URL: ${{ steps.hosts.outputs.web_dev_admin_url }}
+          DEV_WWW_URL: ${{ steps.hosts.outputs.web_dev_www_url }}
+          DEV_LMS_URL: ${{ steps.hosts.outputs.web_dev_lms_url }}
         run: |
           set -euo pipefail
 
@@ -196,7 +272,7 @@ jobs:
             var="${PREFIX}_$(printf '%s' "$app" | tr '[:lower:]' '[:upper:]')_URL"
             url="${!var:-}"
             if [ -z "$url" ]; then
-              echo "::warning::$var 변수가 없어 $app 은 unverified로 남긴다"
+              echo "::warning::$var 가 없어 $app 은 unverified로 남긴다"
               APPS=$(jq -c --arg a "$app" '. + [{app:$a, sha:null, deployed_at:null, status:"unverified"}]' <<<"$APPS")
               DONE[$app]=1
             fi
@@ -237,9 +313,8 @@ jobs:
           echo "apps=$APPS" >> "$GITHUB_OUTPUT"
           echo "build_time=$BUILD_TIME" >> "$GITHUB_OUTPUT"
 
-      - name: Append record to deploy-history branch
+      - name: Append record to meta deploy-history branch
         env:
-          GH_TOKEN: ${{ github.token }}
           ENVIRONMENT: ${{ steps.target.outputs.environment }}
           SHA: ${{ steps.target.outputs.sha }}
           VERSION: ${{ steps.target.outputs.version }}
@@ -272,27 +347,14 @@ jobs:
             }')
           echo "$RECORD" | jq .
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          WT=$(mktemp -d)
-          if git ls-remote --exit-code --heads origin deploy-history >/dev/null; then
-            git fetch -q origin deploy-history
-            TIP=$(git rev-parse FETCH_HEAD)   # FETCH_HEAD는 워크트리마다 따로라 sha로 넘긴다
-            git worktree add -q --detach "$WT" "$TIP"   # detached로 두고 HEAD:deploy-history로 push
-          else
-            git worktree add -q --detach "$WT"
-            (cd "$WT" && git checkout -q --orphan deploy-history && git rm -rfq . >/dev/null 2>&1 || true)
-            printf '# deploy-history\n\n배포 이력 레코드 (ssccops#340). `prod.jsonl`·`dev.jsonl`에 워크플로가 JSON 한 줄씩 append한다 — 손으로 고치지 않는다.\n' > "$WT/README.md"
-          fi
-
-          FILE="$WT/${ENVIRONMENT}.jsonl"
+          FILE="$SERVICE_KEY-$ENVIRONMENT.jsonl"
+          MSG="record($SERVICE_KEY/$ENVIRONMENT): $VERSION ${SHA:0:7}"
           for attempt in 1 2 3 4 5; do
-            printf '%s\n' "$RECORD" >> "$FILE"
-            (cd "$WT" && git add -A && git commit -qm "record($ENVIRONMENT): $VERSION ${SHA:0:7}" && git push -q origin HEAD:deploy-history) && { echo "appended → $ENVIRONMENT.jsonl"; exit 0; }
+            printf '%s\n' "$RECORD" >> "history/$FILE"
+            (cd history && git add -A && git commit -qm "$MSG" && git push -q origin "HEAD:$HISTORY_BRANCH") && { echo "appended → $META_REPO@$HISTORY_BRANCH/$FILE"; exit 0; }
             echo "push 거절 — 다시 받아서 재시도 ($attempt)"
-            (cd "$WT" && git reset -q --hard && git fetch -q origin deploy-history && git reset -q --hard FETCH_HEAD)
+            (cd history && git reset -q --hard && git fetch -q origin "$HISTORY_BRANCH" && git reset -q --hard FETCH_HEAD)
             sleep $((attempt * 5))
           done
-          echo "::error::deploy-history 브랜치에 push하지 못했다"
+          echo "::error::$META_REPO 의 $HISTORY_BRANCH 브랜치에 push하지 못했다"
           exit 1
