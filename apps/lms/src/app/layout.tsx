@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
-import { deployMarks } from "@ssccops/ui";
+import { BrandMark, deployMarks } from "@ssccops/ui";
 import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { ThemeToggle } from "@/shared/ui";
 import { AuthNav } from "@/features/auth";
@@ -113,9 +113,7 @@ export default async function RootLayout({ children }: Readonly<LayoutProps<"/">
           <div className="mx-auto flex max-w-[1000px] items-center justify-between gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
             {/* 로고는 첫 화면(`/`)으로 — 스터디장은 거기서 대시보드로 곧장 넘어간다 (#228) */}
             <Link href={ROUTES.home} className="flex items-center gap-[8px]">
-              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[7px] border border-accent text-[13px] text-accent">
-                S
-              </span>
+              <BrandMark src={DEPLOY.mark} size={26} />
               <b className="text-[15px]">SSCC 학술</b>
             </Link>
             <div className="flex items-center gap-[6px]">
