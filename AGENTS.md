@@ -10,9 +10,28 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENTS.md
 
-SSCC(숭실컴퓨팅클럽) 운영관리 어드민 웹 — Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4 / pnpm.
-백엔드는 별도 저장소 **`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth),
-배포는 **prod = Vercel Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아래 «배포 — 두 플랫폼» 절.
+SSCC(숭실컴퓨팅클럽) 운영 시스템의 웹 — **pnpm workspace + Turborepo 모노레포**(앱 3 · 패키지 6).
+Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4. 백엔드는 별도 저장소
+**`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth), 배포는 **prod = Vercel
+Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아래 «배포 — 두 플랫폼» 절.
+
+## 영역 — 앱 3 · 패키지 6
+
+영역 고유 규칙(화면·인증 방식·주요 결정·함정)은 **각 영역의 `AGENTS.md`가 정본**이다(ssccops#349 —
+서버가 도메인별로 한 것과 같다). 여기서는 가리키기만 하고 `@`로 끌어오지 않는다 — 끌어오면 분리한
+이유가 사라진다. 이 파일에 남은 것은 세 앱에 **함께** 적용되는 규칙뿐이다.
+
+| 영역 | 한 줄 | 정본 |
+|---|---|---|
+| `apps/admin` | 운영진 어드민 — 회원·업무·회의·승인함·폼·행사·학술·공유 링크·OAuth 동의. **유일하게 401·403 리다이렉트를 끝내고 `SessionGuard`를 주는 앱** | [apps/admin/AGENTS.md](apps/admin/AGENTS.md) |
+| `apps/www` | 공개 웹사이트 — 행사(익명)·신청(가입 임베드)·내 신청·공개 폼 `/f`·공유 착지 `/s`. 전 화면 SSR, 리다이렉트 없음 | [apps/www/AGENTS.md](apps/www/AGENTS.md) |
+| `apps/lms` | 학술 공개 앱 — 스터디장 스튜디오·기획안·내 신청. 로그인 필수, 역할별 상단 바, 공유 링크 발급(착지는 www) | [apps/lms/AGENTS.md](apps/lms/AGENTS.md) |
+| `packages/ui` | 세 앱 공용 표시 요소·테마·배포 표식(`deployMarks`)·`BrandMark` — 둘 이상이 실제로 쓰던 것만 | [packages/ui/AGENTS.md](packages/ui/AGENTS.md) |
+| `packages/auth` | Supabase 클라이언트·세션 갱신(`updateSession` + 앱이 주입하는 `SessionGuard`)·`?next=` 검증·OAuth 목적지 쿠키 | [packages/auth/AGENTS.md](packages/auth/AGENTS.md) |
+| `packages/form-renderer` | 폼 문항 렌더링·응답 검증 — 전송 계층을 모른다 | [packages/form-renderer/AGENTS.md](packages/form-renderer/AGENTS.md) |
+| `packages/share-meta` | 공유 카드 문구·공유 대상 → 착지 앱 규칙(ADR-0017) | [packages/share-meta/AGENTS.md](packages/share-meta/AGENTS.md) |
+| `packages/codes` | admin·lms가 함께 쓰는 서버 표준코드·표시명(계약) | [packages/codes/AGENTS.md](packages/codes/AGENTS.md) |
+| `packages/date` | 서버 일시 문자열 → 표기(잘라 쓴다 · `todayInSeoul`) | [packages/date/AGENTS.md](packages/date/AGENTS.md) |
 
 > 위의 `nextjs-agent-rules` 블록은 `next dev`가 스스로 써넣는다. 지우면 uncommitted 변경으로
 > 되살아나므로 **그대로 두고 그 바깥에** 쓴다. 개인 로컬 메모(포트·`.env.local`·증상별 원인
@@ -77,25 +96,27 @@ app → views → features → entities → shared     (단방향)
 
 - 같은 레이어의 슬라이스끼리 참조하지 않는다. 여러 엔티티를 함께 바꾸는 로직은 `features`에 둔다.
 - `views`가 FSD의 pages 레이어다(Next.js 예약어 충돌 회피). widgets 레이어는 생략했다.
-- `app/`은 라우팅 전용 — 각 `page.tsx`는 `views`를 얇게 감싼다. 라우트 그룹은 `(admin)`(운영
-  화면) · `(auth)`(로그인·가입·OAuth 동의 — 사이드바 없는 단독 레이아웃) · `(public)`(로그인
-  없이 열리는 착지 화면 — 지금은 공유 링크 `/s/{token}` 하나다) · `auth/`(OAuth 콜백 라우트
-  핸들러)다. **공개 폼 `/f/{formId}`는 여기 있다가 `apps/www`로 옮겨 갔다**(ssccops#214) —
-  응답자에게 뿌리는 링크가 운영 시스템 도메인을 가리키면 어드민이 크롤링 대상이 되기 때문이다.
-  어드민에 남은 것은 폼 상세의 링크 복사뿐이며 그 주소는 `publicFormUrl()`이
-  `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`으로 만든다.
+- `app/`은 라우팅 전용 — 각 `page.tsx`는 `views`를 얇게 감싼다. 라우트 그룹·공개 경로는 앱마다
+  다르다(각 앱 `AGENTS.md`). 세 앱 모두 `version/`(배포 이력 확인용 `GET /version`)과
+  `auth/`(OAuth 콜백)를 가진다.
 - 슬라이스 내부: `entities/<slice>/{api,model}` · `features/<slice>/{model,ui}` · `views/<slice>/ui`.
 - 화면 경로를 문자열로 적지 않고 `shared/config/routes.ts`의 `ROUTES`를 쓴다.
+- **FSD 레이어는 앱마다 갖는다** — 앱끼리 소스를 공유하지 않는다. 둘 이상이 같은 것을 쓰게 되면
+  `packages/`로 올린다(«둘 이상» 규칙 — `packages/ui/AGENTS.md`). 사본을 두면 갈린 것을 타입도
+  린트도 못 잡는다.
 
 ## 서버 연동 규약
 
 - 모든 응답은 `{ success, code, message, data }` 봉투다. `apiFetch`가 벗겨 `data`만 돌려주고,
   실패는 전부 `ApiError`(`code` + `status`)로 통일된다. **호출부는 `message`가 아니라 `code`로
   분기한다** — 문구는 서버에서 바뀌지만 코드는 계약이다.
-- 커서 페이징 목록은 `page` 봉투가 함께 오므로 `apiFetchList`(배열 + `page`)를 쓴다. 페이지
-  번호는 없고 `nextCursor`·`hasNext`로 이어 받는다. 파일 업로드는 `apiUpload`.
-- 401(재로그인)·403 `SIGNUP_REQUIRED`(가입 화면)는 `apiFetch`가 리다이렉트까지 끝낸다 —
-  화면이 다시 다루지 않는다. 남은 403은 화면이 문구로 안내한다.
+- 커서 페이징 목록은 `page` 봉투가 함께 오므로 `apiFetchList`(배열 + `page`)를 쓴다(admin·lms).
+  페이지 번호는 없고 `nextCursor`·`hasNext`로 이어 받는다 — 페이지네이터를 그리지 않고 «더 보기».
+  파일 업로드는 admin `apiUpload`, 이미지·인증사진은 presigned PUT.
+- **401·403의 처리는 앱마다 다르다.** admin의 `apiFetch`만 401(재로그인)·403 `SIGNUP_REQUIRED`
+  (가입 화면)의 리다이렉트까지 끝낸다. www·lms는 밀어낼 로그인 화면이 없어 오류로 올려 보내고
+  화면이 안내로 그린다 — 미가입은 같은 자리에서 가입 폼을 연다(www #451 · lms #453). 남은
+  403은 어느 앱이든 화면이 문구로 안내한다.
 - `NEXT_PUBLIC_API_BASE_URL` 미설정은 `CLIENT_CONFIG_MISSING`, 서버에 닿지 못한 요청은
   `CLIENT_NETWORK_ERROR`로 온다(CORS 미등록도 같은 코드로 보인다 — 서버가 꺼진 것과 증상이 같다).
 
@@ -119,51 +140,31 @@ app → views → features → entities → shared     (단방향)
 | 필드 | DB 컬럼ID의 lowerCamelCase (`mbr_id` → `mbrId`) |
 | 타입명 | 테이블ID의 PascalCase (`sub_work_aprv` → `SubWorkAprv`) |
 | 식별자 | `number` 단일 PK. URL도 숫자 (`/members/1`) |
-| 코드값 | **코드로 비교한다** — 한글 표시 문자열 비교 금지 (`shared/config/codes.ts`) |
+| 코드값 | **코드로 비교한다** — 한글 표시 문자열 비교 금지 (`@ssccops/codes` + 앱 `shared/config/codes.ts`) |
 | 날짜·일시 | 일자 `YYYY-MM-DD` · 일시 ISO-8601 |
 | 불리언 | `*Yn` 접미사 |
 
-D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/lib/date.ts`). 서버 데이터의
-기준일은 `todayInSeoul()`이다 — PoC 시절의 고정 기준일을 쓰면 이미 지난 마감이 미래로 보인다.
+D-day·마감 임박·진행률은 **저장하지 않고 파생한다**. 서버 데이터의 기준일은 `@ssccops/date`의
+`todayInSeoul()`이다 — PoC 시절의 고정 기준일을 쓰면 이미 지난 마감이 미래로 보인다.
 
-## 인증 · 권한
+## 인증 — 세 앱이 같은 것과 다른 것
 
-- 세션 갱신·가드는 `src/middleware.ts`가 한다. Next 16의 컨벤션은 `proxy.ts`지만
-  `@opennextjs/cloudflare`가 아직 인식하지 못해 빌드가 깨진다 — **함부로 옮기지 말 것**
-  (한 번 옮겼다 되돌린 이력이 있다). 매처는 좁게 잡는다(요청마다 Supabase 왕복이 붙는다).
-- **세션 갱신 코드 자체는 `@ssccops/auth`에 있다**(ssccops-web#329) — 세 앱이 같은 사본을
-  들고 있었다. 진입점은 `@ssccops/auth/supabase/{client,server,proxy}`이고 `?next=` 검증·
-  OAuth 목적지 쿠키는 `@ssccops/auth` 배럴이다.
-  - **`updateSession`은 기본이 갱신기다.** 미인증 요청을 로그인 화면으로 밀어내는 것은
-    두 번째 인자 `SessionGuard`를 줄 때뿐이고, **주는 앱은 admin 하나다**
-    (`shared/lib/supabase/guard.ts`). www·lms에는 밀어낼 로그인 화면이 없어 인자를 비운다 —
-    로그인은 지금 보고 있는 화면 위에서 시작한다.
-  - **공개 경로 목록(`PUBLIC_PATHS`)은 공유하지 않는다.** admin에 `/s`(공유 링크 착지 ·
-    ssccops#200)가 있는 것은 크롤러가 정의상 미인증이라 리다이렉트되면 `generateMetadata`가
-    아예 돌지 않기 때문이다. 앱마다 다른 값이지 함께 볼 규칙이 아니다.
-- 권한은 서버가 `GET /v1/auth/session`의 `member.capabilities` 배열로 내려준다. 화면이 권한을
-  묻는 **유일한 통로는 `useCan(CAPABILITY.X)`**다.
-- **역할 이름·서열(`indct_seqno`)·권한 트리 펼침을 웹에서 다시 계산하지 않는다.** 판정 규칙은
-  서버 `AuthorityPolicy` 한 곳에만 있고 웹은 배열에 코드가 있는지만 본다(규칙이 두 벌이 되어
-  실제 버그가 났던 전례가 있다).
-- **묶음 코드로 판정하지 않는다.** 어떤 역할에 `FORM_WRITE`만 직접 부여하면 그 회원의 배열에
-  `FORM_MANAGE`는 없다 — 화면이 묶음 코드를 찾으면 서버가 허용하는 버튼을 감춘다.
-- **조회 권한과 쓰기 권한이 갈린 자리가 있다**(서버 #101): `WORK_READ`/`WORK_MANAGE` ·
-  `MEETING_READ`/`MEETING_MANAGE` · `MEETING_AGENDA_WRITE` · `SUB_WORK_TYPE_READ`/`_MANAGE`.
-  자리마다 **서버가 그 엔드포인트에 요구하는 코드**를 본다. 예: 회의 상세에서 개회·종료·취소는
-  `MEETING_MANAGE`지만 안건 추가·수정·철회는 `MEETING_AGENDA_WRITE`다(국원도 갖는다).
-- **승인·투표 자격도 권한이다**(서버 #123 — 직위 코드 `role_pstn_cd`와 웹의 `AUTZR_ROLE_NM`
-  하드코딩은 사라졌다). 투표는 `useCan(CAPABILITY.APPROVAL_VOTE)`로 사전 잠금하고, 승인·반려는
-  유형마다 요구 결재 권한이 달라 지금처럼 서버가 건별로 내려주는 `canApprove`·`canReject`를
-  쓴다. 승인자 **표시명**은 응답의 `authorizerAuthorityName`(권한 이름 — 운영 데이터)이고,
-  유형 폼의 선택지는 `GET /v1/sub-work-types/authorizer-authorities`가 준다 — 코드 → 이름
-  사전을 웹에 다시 만들지 말 것.
-- **이동은 감추고, 동작은 잠근다.** 사이드바 메뉴는 권한이 없으면 감추고(갈 수 없는 곳을
-  목차에 남기면 목차 전체를 믿을 수 없다), 화면 안의 버튼은 남긴 채 잠그고 사유를 `title`로
-  붙인다(이미 그 화면을 보고 있는 사람에게서 버튼만 소리 없이 사라지면 기능이 없어진 것인지
-  권한 문제인지 알 수 없다).
-- 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 —
-  `syncSessionOnForbidden`으로 세션을 다시 맞춘다.
+- 세션 갱신 코드는 `@ssccops/auth`(ssccops-web#329) 한 벌이고 각 앱 `src/middleware.ts`가 부른다.
+  Next 16의 컨벤션은 `proxy.ts`지만 `@opennextjs/cloudflare`가 아직 인식하지 못해 빌드가 깨진다 —
+  **함부로 옮기지 말 것**(admin이 한 번 옮겼다 되돌렸다). 매처는 좁게 잡는다(요청마다 Supabase
+  왕복이 붙는다).
+- **`updateSession`은 기본이 갱신기다.** 미인증을 로그인으로 밀어내는 `SessionGuard`를 주는 앱은
+  **admin 하나**이고, www·lms는 로그인이 지금 보고 있는 화면 위에서 시작한다. 공개 경로 목록
+  (`PUBLIC_PATHS`)은 admin의 값이지 공유 규칙이 아니다 — 자세한 것은 `packages/auth/AGENTS.md`.
+
+| | admin | www | lms |
+|---|---|---|---|
+| 미들웨어 | 가드 + 갱신, 정적 자산만 제외 | 갱신만, 세 경로만 매치 | 갱신만, 정적 자산만 제외 |
+| 401·403 | `apiFetch`가 리다이렉트 | 오류 → 화면 안내 | 오류 → 화면 안내 |
+| 미가입 | `/signup` 화면 | 같은 자리 `SignupStep` | 같은 자리 `SignupRequiredNotice` |
+| 권한 | `useCan(CAPABILITY.X)` — 서버 `capabilities` 배열만 본다 | 회원 여부만 | 스터디장 여부(서버 `mine=leader`) |
+
+권한 판정 규칙(역할 서열·묶음 코드·조회/쓰기 분리·승인 자격)은 `apps/admin/AGENTS.md`에 있다.
 
 ## 화면 문구 (#117)
 
@@ -182,7 +183,7 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
   것이다(#343 · lms에서 붙임 53 대 띄움 28이었다). 어느 쪽이든 뜻은 같으므로 **다수 쪽으로
   통일하는 것 자체가 목적**이다.
 - **존댓말·평서형**, 느낌표와 이모지는 쓰지 않는다. 버튼·칩·표 헤더는 좁은 화면(375px)에서 깨지므로 길이를 늘리지 않는다.
-- **`shared/config/codes.ts`의 표시명은 문구가 아니라 계약이다** — 서버 `data.sql` 시드와 글자까지 맞춰져 있어 여기서 다듬으면 화면이 조용히 빈 라벨로 깨진다. 바꾸려면 서버 시드와 함께 바꾼다. `FIELD_LABEL`의 데이터사전 표기(`유형_명`)도 같다.
+- **코드 표시명은 문구가 아니라 계약이다** — 서버 시드(`V3__seed_reference_data.sql`)와 글자까지 맞춰져 있어 여기서 다듬으면 화면이 조용히 빈 라벨로 깨진다(`packages/codes/AGENTS.md`). `FIELD_LABEL`의 데이터사전 표기(`유형_명`)도 같다.
 - 서버가 내려주는 문구(권한명·경고)는 서버 소관이라 화면에서 고치지 않는다.
 
 ## 결정 기록 (ADR)
@@ -220,101 +221,6 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
 - Cloudflare의 prod 워커 3개는 DNS 롤백용으로 남겨 둔다(ADR-0030). 지우려면 ADR을 뒤집는다.
 - **배포 이력은 `deploy-history.yml`이 남긴다**(ssccops#340 · ssccops#344 · #442 · #445) — 릴리스 게시(prod)·`develop` 푸시(dev)마다 세 앱의 `GET /version`(`{version, sha, builtAt}` — `next.config.ts`가 빌드 때 인라인, `middleware.ts` 매처에서 제외)을 최대 10분 폴링해 **메타 레포(`ssccops`) orphan 브랜치 `deploy-history`**의 `web-prod.jsonl`·`web-dev.jsonl`에 한 줄 append([ADR-0033](https://github.com/SoongSilComputingClub/ssccops/blob/develop/docs/decisions/0033-deploy-history-in-meta-repo-via-app-token.md) — 서버는 같은 브랜치의 `server-*.jsonl`, 조회는 서버 레포 `scripts/deploy-history.sh current web prod`). 쓰기 토큰은 조직 GitHub App `sscc-devops`의 설치 토큰(`actions/create-github-app-token`, `repositories: ssccops`)이고 같은 토큰이 **private 메타 레포의 sub-issue Parent도 읽어** `parent_issue`·`adr_refs`가 직접 채워진다(PR 본문의 «근거» `ssccops#N`·`ADR-NNNN`은 fallback이자 `pr-guard.yml` 검사 대상으로 남는다). 이 레포에는 쓰지 않는다(`permissions.contents: read`). 도메인·앱 정보는 **조직 변수·시크릿**에서만 온다 — `SSCCOPS_DEPLOY_HISTORY_APP_ID` · `SSCCOPS_DEPLOY_HISTORY_APP_KEY` · `SSCCOPS_DEPLOY_HISTORY_ENV`(.env 모양 여러 줄, 이 레포는 `WEB_{DEV,PROD}_{ADMIN,WWW,LMS}_URL` 여섯 개만 읽는다). URL이 없으면 그 앱은 `unverified`, 앱 변수·시크릿이 없으면 워크플로가 실패한다(자기 레포에 쓰는 fallback을 두면 «두 곳» 상태로 돌아간다).
 
-## 주요 결정 (왜 그렇게 돼 있는가)
-
-- **버튼은 '지금 할 수 있는 전이' 하나만 그린다.** 두 단계를 건너뛰려고 요청을 이어 보내면
-  앞만 성공한 채 끊겼을 때 사용자가 누른 적 없는 상태로 남는다. 스테퍼가 가리키는 단계와
-  버튼이 언제나 같은 것을 말하게 한다.
-- **권한과 선행 조건을 나눠서 본다.** 서버가 주는 `canApprove`·`canReject`는 **권한만** 답한다.
-  누를 수 있는지는 업무 상태·완료 점검 목록·정족수로 화면이 따로 판단한다 — 섞으면 정족수가
-  모자란 승인자와 권한이 아예 없는 사람이 같은 대접을 받아 승인자에게도 버튼이 사라진다.
-- **정족수 투표는 하위 업무 상세에서 한다**(#82). 승인함(`/approvals`)은 서버가 `WORK_MANAGE`로
-  좁혔는데 투표 자격은 그보다 넓어, 국원은 자격만 갖고 투표할 화면이 없었다. 두 화면의 찬반
-  버튼은 같은 훅(`useApprovalDecisions`)을 쓴다. **정족수는 승인자를 대체하지 않는다** — 표가
-  다 모여도 완료는 승인자가 누르고, 승인자라도 정족수 전에는 누를 수 없다.
-- **부분 갱신과 재조회를 가른다.** 응답이 바뀐 값을 **다시 세어** 주면 그것만 갈아 끼우고
-  (완료 점검 체크), 화면이 그리는 다른 값까지 함께 움직이면 통째로 다시 부른다(상태 전이·투표).
-  전이 응답으로 부분 갱신하면 반려 직후 화면에 이전 반려 사유가 남는다.
-- **서버의 PATCH는 대개 전체 교체다.** 선택 입력도 생략하면 지운 것으로 본다 — 화면은 현재
-  값을 전부 입력란에 채워 보여주고 부분 입력 폼을 만들지 않는다.
-- **단건 수정은 등록 화면을 재사용하지 않고 `views/<slice>-edit`로 따로 둔다.** 등록 화면은
-  여러 종류를 한 상태 기계로 다뤄, 수정을 얹으려면 그 분기 속에 '종류 고정·기존 값 불러오기·
-  제출 대상 교체'를 끼워 넣어야 한다. 상세 조회가 `ready`가 되기 전에는 폼을 마운트하지 않는다
-  — 그러면 `useState` 초깃값이 곧 폼 초깃값이라 동기화용 `useEffect`가 필요 없다.
-- **업무·하위 업무 수정 화면에서 담당자를 바꿀 수 있다 — 등록과 같은 선택 UI다**(#435 ·
-  ssccops#333). 셀렉트는 `features/member`의 `AssignableMemberSelect` 한 벌이고 잠금 판정은
-  `isAssignablePick`·`assignableBlockReason`이 한다 — 화면마다 복사하지 않는다. 기본값은 현재
-  담당자, 후보 조회 실패면 저장 버튼을 잠근다. 현재 담당자가 후보에서 빠졌으면(탈퇴·제명)
-  «현재: 이름»으로 남겨 두고 저장은 막지 않는다 — 거절은 서버가 하며 그 코드는
-  `OWNER_NOT_ACTIVE_MEMBER`라는 이름과 달리 **400 `VALIDATION_FAILED`**라 전용 오류 매핑이 없다.
-- **하위 업무 유형은 수정 화면에서 바꿀 수 없다.** 바뀌면 승인 필요 여부·승인자·정족수·완료
-  점검 항목이 통째로 달라지는데 그 값들은 등록 시점에 이미 복사돼 있고(소급 금지) 재지정을
-  반영할 방법이 없다. 서버 요청도 이 값을 받지 않는다.
-- **화면에 없는 입력란은 만들지 않는다.** 서버가 받지 않는 값(하위 업무 유형의 기준 금액 등)에
-  입력란만 두면 사용자가 넣은 값이 저장 없이 사라진다.
-- **끌 수 있는 기준정보는 꺼진 것도 관리 목록에 싣는다**(취소선). 안 그러면 끈 것을 되돌릴 길이
-  없다. 반대로 **등록 폼의 선택지에는 켜진 것만** 싣는다 — 목록에 있던 것을 골랐을 뿐인데
-  400이 나면 사용자는 이유를 알 수 없다.
-- **목록은 커서 페이징이라 '더 보기'가 붙는다.** 페이지 번호가 없으므로 페이지네이터를 그리지
-  않는다.
-- **행사 신청의 명단 등록 여부는 서버가 준다**(#422 · ssccops#307). `GET /v1/events/{id}/applications`
-  행은 `{ application: <폼 응답 요약>, participant: {eventPtcpId, ptcpSttsCd} | null }` 봉투이고
-  웹은 `participant`가 있으면 배지 + «명단에서 보기», 없으면 확정/대기 버튼을 그린다. 명단은
-  상태 필터가 걸린 채 조회되어 웹이 스스로 판정할 수 없다 — 판정을 웹에서 다시 만들지 말 것.
-  등록·전이 뒤에는 명단·신청 목록·행사 상세를 **함께** 다시 부른다(페이지가 세 훅을 다 쥔다).
-  참가 상태(명단)와 응답 상태(심사)는 다른 축이라 등록해도 «승인»은 그대로다 — 성공 문구가 그것을
-  말한다.
-- **정원(`ptcpLmtCnt`)이 없는 행사에는 «대기»로 보내는 조작을 그리지 않는다**(#423 · ssccops#308).
-  넘길 선이 없어 대기가 뜻을 잃는다. 서버는 거절하지 않고(D5) 화면이 감출 뿐이며, 이미 대기인
-  줄의 «확정으로 올리기»는 남긴다. 고를 수 있는 등록 상태는 `registerableStatuses(ptcpLmtCnt)`
-  (`entities/event`) 한 곳이 정한다 — 신청 목록 버튼과 회원 직접 추가 시트가 같이 쓴다.
-  명단 표에는 «대기로» 전이 자체가 없다(계약은 대기→확정 · 확정→취소뿐).
-- **OAuth 동의 화면(`/oauth/consent`)은 Supabase를 직접 부른다**(#430 · ssccops#315 · ADR-0026).
-  Claude(MCP) 연결의 인가 요청은 ssccops-server가 아니라 Supabase OAuth 2.1 서버가 들고
-  있어, `entities/oauth-authorization`이 supabase-js `auth.oauth`(`getAuthorizationDetails` ·
-  `approveAuthorization` · `denyAuthorization`)를 감싼다 — `apiFetch` 봉투 규약이 아니다.
-  응답의 돌아갈 주소 필드는 **`redirect_url`**(공식 문서·SDK 타입 둘 다 — `redirect_to`가 아니다).
-  SDK 기본값은 승인·거절 응답으로 스스로 `window.location.assign`을 하므로
-  `skipBrowserRedirect: true`를 주고 화면이 이동한다(«돌아가는 중»을 그릴 수 있게, 주소가
-  없을 때 조용히 멈추지 않게). 클라이언트 이름·redirect 호스트·scope는 **감추지 않는다** —
-  DCR을 켜면 아무나 클라이언트를 등록할 수 있어 이 화면이 방어선이다. 미가입 사용자에게는
-  «회원 가입 뒤에 사용할 수 있습니다» 한 줄만 보이고 **승인은 막지 않는다**(판정은 서버의
-  SIGNUP_REQUIRED 한 곳). 미인증은 미들웨어의 `/login?next=` 규약이 그대로 받아 같은 주소로
-  돌아온다. Supabase 대시보드(Authentication → OAuth Server)의 Authorization Path에 적을 값이
-  `ROUTES.oauthConsent`다.
-- **색을 화면에 직접 적지 않는다**(ssccops#226 · `apps/admin`). 다크모드는 `dark:` 유틸리티가
-  아니라 **`globals.css`의 토큰 값을 갈아 끼우는 것**으로 되어 있다 — 화면 97개가 이미
-  `text-n500`·`border-line` 같은 이름을 쓰고 있어 변수만 바꾸면 전부 따라온다. 그래서
-  `bg-black/5`·`bg-[#f9fafb]`처럼 뜻 없는 값을 쓰면 **그것만 다크에서 밝은 채로 남는다.**
-  - 쓸 수 있는 이름: 면은 `bg`·`surface`·`fill`·`fill-soft`·`fill-strong`·`subtle`,
-    선은 `line`·`line-strong`·`hairline`·`hairline-strong`, 글자는 `ink`·`n300`·`n400`·`n500`,
-    강조·상태는 `accent(-strong/-soft)`·`danger(-strong)`·`success`·`amber(-soft)`,
-    모달 뒤는 `scrim`, **진한 면 위 글자는 `on-solid`**(라이트에서 흰색, 다크에서 어두운 잉크).
-  - `--color-*: initial`로 **Tailwind 기본 팔레트를 지웠다.** `bg-red-50` 같은 이름은 클래스가
-    아예 생성되지 않아 색이 조용히 빠진다(달력의 승인 대기 막대가 실제로 그랬다).
-  - `fill`·`hairline`·`scrim`은 값에 알파가 들어 있다(깔린 배경 위에 얹히는 색이라 불투명으로
-    바꾸면 겹치는 자리마다 달라진다) — 그래서 `bg-fill/50` 같은 알파 수정자는 쓸 수 없다.
-  - 테마 선택은 `localStorage`이고(서버에 회원 설정 컬럼이 없다) 첫 페인트 전에
-    `layout.tsx`의 동기 스크립트가 `<html data-theme>`에 박는다. **그 스크립트를 걷어내면
-    밝은 화면이 한 번 번쩍인다.**
-- **반응형은 `lg`(1024px) 한 경계로만 가른다**(#85). 예전에는 데스크톱 전용이었고
-  `body { min-width: 1024px }`가 그것을 강제했다 — 그 값을 그대로 브레이크포인트로 삼았으므로
-  **`lg` 이상은 정의상 예전과 같은 화면**이다. 새 화면을 만들 때도 기본값을 모바일로,
-  `lg:`를 데스크톱으로 쓰고, 기존 클래스를 지우는 대신 `lg:`를 덧붙인다.
-  - 관리자 셸은 `lg` 미만에서 사이드바 대신 드로어를 쓴다(`_shell/mobile-nav.tsx`).
-    메뉴 목차·권한 판정은 `_shell/use-shell-nav.ts`, 마크업은 `_shell/nav-panel.tsx`
-    **한 벌뿐이다** — 사이드바에만 메뉴를 더하면 드로어에서 빠진다.
-  - `GridTable`은 `lg` 미만에서 카드로 바뀐다. 열이 많아 카드가 길어지면 `mobileHide`,
-    제목 줄을 바꾸려면 `mobilePrimary`를 열에 붙인다(기본은 첫 열이 제목).
-  - **입력란 글자는 좁은 화면에서 16px 아래로 내리지 않는다**(#105). iOS Safari는 16px
-    미만인 `input`·`textarea`·`select`에 포커스하면 화면을 자동 확대하고 **그 확대는 스스로
-    돌아오지 않는다** — 첫 칸에 입력하는 순간 폼 전체가 커진 채로 남는다. 미관이 아니라
-    동작 문제이므로 `text-[16px] lg:text-[원래값]` 형태로 쓴다. 공용 입력은
-    `shared/ui/field.tsx`의 `INPUT_BASE`·`SelectField`와 `shared/ui/search-input.tsx`에
-    이미 걸려 있다 — 새 입력 컴포넌트를 만들 때 이 규칙을 빠뜨리기 쉽다.
-  - **아직 전 화면이 대응된 것은 아니다.** `min-width` 제거로 드러난 나머지 화면은 후속
-    이슈로 남아 있다 — 좁은 폭에서 깨지는 화면을 만나면 그것부터 확인할 것.
-
 ## 함정
 
 - **공유 패키지를 새로 만들면 세 앱의 `globals.css`에 `@source`를 더한다.** Tailwind v4는
@@ -329,6 +235,8 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
   확인은 앱이 작은 www·lms에서 한다.
 - **`CLAUDE.md`와 `AGENTS.md`의 자동 생성 블록은 `next dev`가 다시 써넣는다.** diff에서 지워도
   되살아나므로 그대로 두고 커밋한다.
+- **서버 표준코드가 바뀌면 `@ssccops/codes`와 각 앱 `shared/config/codes.ts`를 함께 본다** —
+  표시명은 서버 시드와 글자까지 계약이다(`packages/codes/AGENTS.md`).
 - **`.env*`는 통째로 ignore되고 `.env.example`만 예외다.** `NEXT_PUBLIC_*`은 빌드 타임에
   인라인되므로 **값을 바꾸면 `pnpm dev`를 재시작해야** 반영된다.
 - **`NEXT_PUBLIC_DEPLOY_ENV`는 dev 워커의 Cloudflare 빌드 변수에만 `dev`다**(#413). 없으면
@@ -336,24 +244,8 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
   `@ssccops/ui`에 있지만 **`process.env.NEXT_PUBLIC_DEPLOY_ENV`는 각 앱 `layout.tsx`·`manifest.ts`가
   글자 그대로 읽어 넘긴다** — 패키지 안에서 읽으면 인라인을 못 받아 빈 값이 된다. 아이콘
   파일은 `pnpm icons`(`scripts/icons/generate-icons.py`)의 산출물이라 손으로 고치지 않는다.
-- **`README.md`에는 PoC 시절 서술이 남아 있다**("API 미연동 PoC", zustand 시드). 지금은 대부분의
-  도메인이 서버 연동이고 목 스토어는 `features/approval/model/use-approval-actions.ts`(어디서도
-  쓰지 않는다)에만 잔재로 남아 있다 — 승인함은 `useApprovalDecisions`를 쓴다.
 - **서버와 버전을 맞춰 띄워야 채워지는 화면이 있다.** 서버가 옛 버전이면 나중에 추가된 응답
   필드만 조용히 빈다. 값 하나가 안 보이면 서버 브랜치를 먼저 확인할 것.
-- **`shared/config/codes.ts`는 서버 표준코드와 함께 움직인다.** 서버가 코드를 추가하면 여기도
-  더해야 하고, 한글 표시명은 이 파일에서만 만든다.
-- **supabase-js `auth.oauth`는 2.112.3에 이미 있다**(#430). `getAuthorizationDetails`의 응답은
-  두 모양이다 — 동의가 필요하면 `authorization_id`·`client`·`redirect_uri`·`scope`, **이미 동의한
-  적이 있으면 `redirect_url` 하나뿐**이라 화면을 그리지 않고 그 주소로 보내야 한다. `in`으로
-  가르지 않고 `data.client.name`을 바로 읽으면 두 번째 연결부터 죽는다. 4xx는 전부 «요청이
-  유효하지 않습니다»(없음·만료·처리됨 — 다시 시도해도 살아나지 않아 «다시 시도» 버튼을 두지
-  않는다)이고, 401·`AuthSessionMissingError`만 로그인으로 보낸다.
-- **행사 참가자 명단의 회원 값은 `member`에 중첩이다**(#421). 서버 `EventParticipantResponse`는
-  폼 응답 목록과 같은 `ResponseMemberSummary` record를 `member`로 싣고 `rgtrMbrId`는 싣지
-  않는다. 변환기(`entities/event/api/event-participants.ts`)가 평면으로 읽으면 이름·학번이
-  전부 비어 보인다 — 값이 비면 계약을 서버 DTO에서 다시 확인하고, 변환기를 평면으로 되돌리지
-  않는다. `entities/response`의 같은 모양 타입은 가져오지 않는다(entities 슬라이스끼리 참조 금지).
 
 ## 커밋 · 브랜치 · PR
 
@@ -398,9 +290,8 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**(`shared/
   보지 않는다. 그 뒤 태그(`v0.2.1`)와 GitHub 릴리스를 만든다.
   - **서버(`ssccops-server`)도 같은 시점에 같은 숫자로 오른다.** 두 레포가 함께 배포되므로
     한쪽만 올리면 "어느 쪽이 맞는 버전인가"가 갈린다.
-  - 어드민 화면 왼쪽 메뉴 맨 아래에 버전이 보인다. 값은 `next.config.ts`가 `package.json`에서
-    주입하므로 **따로 넣을 것이 없다** — `.env`로 받지 않는 이유는 배포 설정에 넣는 것을
-    잊으면 조용히 비기 때문이다.
+  - 버전은 `next.config.ts`가 `package.json`에서 주입한다(어드민 사이드바 · 세 앱 `/version`) —
+    **따로 넣을 것이 없다.**
   - `v0.1.0`·`v0.1.1`·`v0.2.0` 세 번은 **태그만 오르고 `package.json`은 `0.1.0`에 머물렀다.**
     이 절이 없어서 세 번을 놓쳤다.
 - **머지 전략은 둘이다.** 기능·수정 PR은 **Squash and merge**로 develop에 한 커밋으로 들어가고,
