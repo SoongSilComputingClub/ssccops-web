@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { loadSessionLanding } from "@/features/academic-session";
 import { LoginGate } from "@/features/auth";
-import { signupUrl, studioProgramSessionUrl } from "@/shared/config/routes";
-import { EmptyState, Notice } from "@/shared/ui";
+import { studioProgramSessionUrl } from "@/shared/config/routes";
+import { EmptyState } from "@/shared/ui";
+import { SignupRequiredNotice } from "@/features/signup";
 
 /*
  * 회차 공유 링크의 착지 해석기 (`/studio/sessions/{sessionId}` · #335 · 서버 #316·#319).
@@ -48,22 +49,7 @@ export async function SessionLandingPage({
   }
 
   if (result.outcome === "signup-required") {
-    const signup = signupUrl();
-    return (
-      <Notice
-        title="회원 가입을 마쳐야 학술 활동 화면을 볼 수 있습니다"
-        description="로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다."
-      >
-        {signup && (
-          <a
-            href={signup}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
-          >
-            회원 가입하기
-          </a>
-        )}
-      </Notice>
-    );
+    return <SignupRequiredNotice title="회원 가입을 마쳐야 학술 활동 화면을 볼 수 있습니다" />;
   }
 
   if (result.outcome === "not-found") {

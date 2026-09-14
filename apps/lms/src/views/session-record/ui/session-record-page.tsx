@@ -9,7 +9,7 @@ import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher
 import { loadRecordTargets, loadSessionRecord } from "@/features/academic-session";
 import { sesnSttsBadge } from "@/entities/academic-session";
 import { LoginGate } from "@/features/auth";
-import { ROUTES, signupUrl, studioRecordUrl } from "@/shared/config/routes";
+import { ROUTES, studioRecordUrl } from "@/shared/config/routes";
 import { Badge, EmptyState } from "@/shared/ui";
 import { SessionRecordForm } from "./session-record-form";
 
@@ -60,7 +60,7 @@ export async function SessionRecordPage({
         />
       )}
       {selection.outcome === "signup-required" && (
-        <ProgramSignupNotice signupHref={signupUrl()} />
+        <ProgramSignupNotice />
       )}
       {selection.outcome === "none" && <NoProgramNotice />}
       {selection.outcome === "error" && (
@@ -113,7 +113,7 @@ async function CurriculumPicker({
     );
   }
   if (result.outcome === "signup-required") {
-    return <ProgramSignupNotice signupHref={signupUrl()} />;
+    return <ProgramSignupNotice />;
   }
   if (result.outcome === "error") {
     return (
@@ -198,7 +198,7 @@ async function RecordBody({
   }
 
   if (result.outcome === "signup-required") {
-    return <ProgramSignupNotice signupHref={signupUrl()} />;
+    return <ProgramSignupNotice />;
   }
 
   if (result.outcome === "not-leader") {

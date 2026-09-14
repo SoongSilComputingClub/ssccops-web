@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { signupUrl } from "@/shared/config/routes";
+import { SignupRequiredNotice } from "@/features/signup";
 import { createClient } from "@ssccops/auth/supabase/client";
 import { Notice } from "@/shared/ui";
 import { SignInButton } from "./sign-in-button";
@@ -17,12 +17,11 @@ import { SignInButton } from "./sign-in-button";
  * 그리고, 로그인이 끝나면 `router.refresh()`로 원래 내용이 채워진다.
  *
  * ── 미가입(SIGNUP_REQUIRED) 처리 ─────────────────────────────
- * 학술 공개 앱에는 신청(참여) 흐름이 없어(참여 신청은 시스템 폼 · 2026-08-28 확정) apps/www처럼
- * 간편 가입 폼을 임베드할 자리가 없다. 그래서 미가입 사용자는 어드민의 `/signup`으로 보낸다
- * (`NEXT_PUBLIC_ADMIN_ORIGIN` — `signupUrl()`). 이 게이트는 **로그인 여부만** 본다. 로그인은
- * 됐지만 미가입인 사람은 서버 조회가 403 `SIGNUP_REQUIRED`로 오므로, 그 판정과 안내는 각
- * 화면(과 화면 이슈가 붙일 세션 슬라이스)이 맡는다 — 여기서는 로그인한 사람에게도 가입
- * 안내로 갈 수 있는 링크를 함께 둔다.
+ * 간편 가입 폼은 www에서 가져와 이 앱 안에서 연다(#453 · `features/signup`). 처음엔 «학술 앱에는
+ * 신청 흐름이 없어 임베드할 자리가 없다»며 어드민 `/signup`으로 보냈는데, 그건 부원에게 운영
+ * 도메인을 드러내는 길이었고 폼 자체는 흐름과 무관했다. 이 게이트는 **로그인 여부만** 본다.
+ * 로그인은 됐지만 미가입인 사람은 서버 조회가 403 `SIGNUP_REQUIRED`로 오므로, 그 판정과 안내는
+ * 각 화면이 `SignupRequiredNotice`로 맡는다 — 여기서는 로그인한 사람에게 같은 안내를 둔다.
  *
  * 지금은 화면이 없어(#169) 라우트 플레이스홀더가 이 게이트를 그대로 쓴다. 화면 이슈가
  * 세션·역할 판정을 붙이면 로그인한 사용자에게 실제 내용을 그리게 된다.
@@ -66,20 +65,10 @@ export function LoginGate({
     );
   }
 
-  const signup = signupUrl();
   return (
-    <Notice
+    <SignupRequiredNotice
       title="아직 준비 중인 화면입니다"
-      description="학술 활동 화면은 후속 작업으로 추가됩니다. 회원이 아니라면 먼저 가입해주세요."
-    >
-      {signup && (
-        <a
-          href={signup}
-          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
-        >
-          회원 가입하기
-        </a>
-      )}
-    </Notice>
+      description="학술 활동 화면은 후속 작업으로 추가됩니다. 회원이 아니라면 여기서 먼저 가입할 수 있습니다."
+    />
   );
 }

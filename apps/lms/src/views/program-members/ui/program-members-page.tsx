@@ -7,7 +7,7 @@ import {
 } from "@/features/academic-program";
 import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher";
 import { LoginGate } from "@/features/auth";
-import { ROUTES, signupUrl } from "@/shared/config/routes";
+import { ROUTES } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui";
 import { MemberCardMobile, MemberRowDesktop } from "./member-row";
 
@@ -61,7 +61,7 @@ export async function ProgramMembersPage({
         />
       )}
       {selection.outcome === "signup-required" && (
-        <ProgramSignupNotice signupHref={signupUrl()} />
+        <ProgramSignupNotice />
       )}
       {selection.outcome === "none" && <NoProgramNotice />}
       {selection.outcome === "error" && (
@@ -97,7 +97,7 @@ async function MembersBody({ academicProgramId }: Readonly<{ academicProgramId: 
   }
 
   if (result.outcome === "signup-required") {
-    return <ProgramSignupNotice signupHref={signupUrl()} />;
+    return <ProgramSignupNotice />;
   }
 
   if (result.outcome === "error") {

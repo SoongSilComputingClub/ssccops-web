@@ -14,12 +14,12 @@ import { LoginGate } from "@/features/auth";
 import { ShareButton } from "@/features/share";
 import {
   ROUTES,
-  signupUrl,
   studioRecordUrl,
   studioRosterUrl,
 } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
-import { Badge, Card, EmptyState, Notice } from "@/shared/ui";
+import { Badge, Card, EmptyState } from "@/shared/ui";
+import { SignupRequiredNotice } from "@/features/signup";
 
 /*
  * 활동 상세 (`/studio/programs/{id}` · #188 · SSR).
@@ -98,22 +98,7 @@ function Body({
   }
 
   if (result.outcome === "signup-required") {
-    const signup = signupUrl();
-    return (
-      <Notice
-        title="회원 가입을 마쳐야 학술 활동 화면을 볼 수 있습니다"
-        description="로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다."
-      >
-        {signup && (
-          <a
-            href={signup}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
-          >
-            회원 가입하기
-          </a>
-        )}
-      </Notice>
-    );
+    return <SignupRequiredNotice title="회원 가입을 마쳐야 학술 활동 화면을 볼 수 있습니다" />;
   }
 
   if (result.outcome === "not-found") {

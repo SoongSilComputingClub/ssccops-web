@@ -6,7 +6,7 @@ import {
 } from "@/features/academic-program";
 import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher";
 import { LoginGate } from "@/features/auth";
-import { ROUTES, signupUrl } from "@/shared/config/routes";
+import { ROUTES } from "@/shared/config/routes";
 import { MyProgramDetailPage } from "@/views/my-program-detail";
 
 /*
@@ -53,7 +53,7 @@ export async function MyProgramsPage({
         />
       )}
       {selection.outcome === "signup-required" && (
-        <ProgramSignupNotice signupHref={signupUrl()} />
+        <ProgramSignupNotice />
       )}
       {selection.outcome === "none" && <NoProgramNotice />}
       {selection.outcome === "error" && (
