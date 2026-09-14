@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   fetchMyApplications,
   myApplicationsErrorMessage,
@@ -15,9 +14,10 @@ import {
   isUnauthenticated,
 } from "@/shared/api/authed-client";
 import { SignInButton } from "@/features/auth";
-import { ROUTES, signupUrl } from "@/shared/config/routes";
+import { ROUTES } from "@/shared/config/routes";
 import { EmptyState, Notice } from "@/shared/ui";
 import { ApplicationCard } from "./application-card";
+import { InlineSignup } from "./inline-signup";
 import { FormResponsesSection } from "./form-responses-section";
 
 /*
@@ -36,8 +36,9 @@ import { FormResponsesSection } from "./form-responses-section";
  * 보내므로 왕복 시간이 늘지 않는다(목록 화면이 필터 칩을 위해 두 번 조회하는 것과 같은 방식).
  *
  * ── 리다이렉트를 하지 않는다 ────────────────────────────────────
- * 미로그인·미가입 모두 **이 화면 안에서** 안내한다. 이 앱에는 로그인 화면도 가입 폼도 없어
- * 보낼 곳이 없고, 억지로 어딘가로 보내면 되돌아올 곳이 없어 왕복만 도는 길이 생긴다.
+ * 미로그인·미가입 모두 **이 화면 안에서** 안내하고, 가입도 이 자리에서 한다(#451 —
+ * `InlineSignup`). 억지로 어딘가로 보내면 되돌아올 곳이 없어 왕복만 도는 길이 생기고, 어드민
+ * 도메인으로 보내던 링크는 부원에게 운영 도메인을 드러냈다.
  */
 export async function MyApplicationsPage({ loginError }: Readonly<{ loginError: string | null }>) {
   const token = await currentAccessToken();
@@ -75,34 +76,16 @@ function SignedOutNotice() {
 }
 
 /**
- * 인증은 됐지만 아직 회원이 아니다.
- *
- * **이 화면에서는 가입 폼을 열지 않는다.** 간편 가입은 신청 흐름 안에 있고(#154) 그 흐름은
- * 행사 하나를 전제로 선다 — 여기에는 태울 행사가 없다. 그래서 신청할 행사를 고르러 목록으로
- * 보내거나, 어드민 오리진이 설정돼 있으면 그쪽 가입 화면을 링크로 열어 준다.
+ * 인증은 됐지만 아직 회원이 아니다 — 안내와 가입 폼은 `InlineSignup`(클라이언트)이 든다.
+ * 어드민 가입 화면으로 보내던 링크는 #451에서 걷어냈다(부원에게 운영 도메인이 노출됐다).
+ * 세션을 못 읽은 채 목록만 403으로 온 경우엔 이메일·이름 없이 연다 — 폼이 초깃값만 비운다.
  */
-function SignupRequiredNotice() {
-  const signup = signupUrl();
-
+function SignupRequiredNotice({ session }: Readonly<{ session: AuthSession | null }>) {
   return (
-    <Notice
-      title="회원 가입을 마쳐야 신청 현황을 볼 수 있습니다"
-      description="로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다. 모집 중인 행사에 신청하면 그 화면에서 가입까지 함께 마칠 수 있습니다."
-    >
-      <div className="flex flex-wrap items-center justify-center gap-[8px]">
-        <Link
-          href={ROUTES.events}
-          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
-        >
-          모집 중인 행사 보기
-        </Link>
-        {signup && (
-          <a href={signup} className="px-[14px] py-[12px] text-[14.5px] text-n300 hover:text-ink">
-            가입 화면에서 먼저 가입하기
-          </a>
-        )}
-      </div>
-    </Notice>
+    <InlineSignup
+      authUserEmail={session?.authUser.email ?? null}
+      authUserName={session?.authUser.name ?? null}
+    />
   );
 }
 
@@ -132,11 +115,11 @@ async function SignedInBody() {
   const session: AuthSession | null =
     sessionResult.status === "fulfilled" ? sessionResult.value : null;
 
-  if (session && !session.signedUp) return <SignupRequiredNotice />;
+  if (session && !session.signedUp) return <SignupRequiredNotice session={session} />;
 
   if (applicationsResult.status === "rejected") {
     const reason = applicationsResult.reason;
-    if (isSignupRequired(reason)) return <SignupRequiredNotice />;
+    if (isSignupRequired(reason)) return <SignupRequiredNotice session={session} />;
     if (isUnauthenticated(reason)) return <SessionExpiredNotice />;
     return <EmptyState title={myApplicationsErrorMessage(reason)} />;
   }
