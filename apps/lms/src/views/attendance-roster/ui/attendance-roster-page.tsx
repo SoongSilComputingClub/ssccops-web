@@ -7,7 +7,7 @@ import {
 import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher";
 import { loadAttendanceRoster } from "@/features/academic-session";
 import { LoginGate } from "@/features/auth";
-import { ROUTES, signupUrl } from "@/shared/config/routes";
+import { ROUTES } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui";
 import { AttendanceRosterMatrix } from "./attendance-roster-matrix";
 
@@ -53,7 +53,7 @@ export async function AttendanceRosterPage({
         />
       )}
       {selection.outcome === "signup-required" && (
-        <ProgramSignupNotice signupHref={signupUrl()} />
+        <ProgramSignupNotice />
       )}
       {selection.outcome === "none" && <NoProgramNotice />}
       {selection.outcome === "error" && (
@@ -89,7 +89,7 @@ async function RosterBody({ academicProgramId }: Readonly<{ academicProgramId: n
   }
 
   if (result.outcome === "signup-required") {
-    return <ProgramSignupNotice signupHref={signupUrl()} />;
+    return <ProgramSignupNotice />;
   }
 
   if (result.outcome === "error") {

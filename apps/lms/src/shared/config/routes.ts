@@ -164,17 +164,8 @@ export function studioMembersUrl(academicProgramId: number): string {
   return `${ROUTES.studioMembers}?programId=${academicProgramId}`;
 }
 
-/**
- * 어드민(가입 화면이 있는 앱)의 오리진.
- *
- * 학술 공개 앱에는 **신청(참여) 흐름이 없다** — 참여 신청은 시스템 폼으로 처리하기로 2026-08-28
- * 확정됐고 신청 화면을 학술 쪽에 따로 만들지 않는다(#169). 그래서 apps/www처럼 간편 가입 폼을
- * 임베드하지 않고, 미가입(`SIGNUP_REQUIRED`) 사용자는 이 오리진의 `/signup`으로 보낸다.
- *
- * 값이 비어 있으면 링크 없이 문구만 안내한다 — 없는 화면으로 보내지 않기 위한 기본값이다.
+/*
+ * 어드민 오리진(`NEXT_PUBLIC_ADMIN_ORIGIN` · `signupUrl()`)은 #453에서 걷어냈다 — 미가입 안내가
+ * 어드민 `/signup`으로 보내던 열두 자리가 이제 같은 자리에서 `SignupRequiredNotice`(www에서
+ * 가져온 `SignupStep`)를 연다. 부원에게 나가는 화면이 운영 도메인을 가리키지 않는다.
  */
-export function signupUrl(): string | null {
-  // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
-  const origin = process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.replace(/\/+$/, "");
-  return origin ? `${origin}/signup` : null;
-}
