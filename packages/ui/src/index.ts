@@ -40,6 +40,7 @@ export {
   type Theme,
 } from "./lib/theme";
 export { Badge, Pill, type BadgeTone } from "./ui/badge";
+export { BrandMark } from "./ui/brand-mark";
 export { Card, CardTitle, SectionLabel } from "./ui/card";
 export { Markdown } from "./ui/markdown";
 export { Notice } from "./ui/notice";

@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
+import { BrandMark, deployMarks } from "@ssccops/ui";
 import type { OAuthAuthorization } from "@/entities/oauth-authorization";
 import {
   type ConsentDecision,
@@ -29,13 +30,14 @@ import { Button } from "@/shared/ui";
  * 있게 한다 — 이름이 «Claude»인데 호스트가 낯선 곳이면 거절해야 한다.
  */
 
+// 값은 이 파일에서 읽어 넘긴다 — 패키지 안에서 읽으면 NEXT_PUBLIC 인라인을 못 받는다(deploy-env.ts)
+const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
+
 /** 로그인 화면과 같은 폭·같은 머리(로고·제목) — 두 화면이 한 흐름으로 읽히게 */
 function Frame({ title, children }: Readonly<{ title: ReactNode; children: ReactNode }>) {
   return (
     <div className="w-full max-w-[392px] px-4">
-      <div className="flex size-[34px] items-center justify-center rounded-[12px] border border-accent text-[16px] text-accent">
-        S
-      </div>
+      <BrandMark src={DEPLOY.mark} size={34} radius={12} />
       <h1 className="mt-[22px] text-[26px] leading-[1.25] font-medium tracking-[-.5px]">
         {title}
       </h1>
