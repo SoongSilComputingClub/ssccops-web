@@ -98,12 +98,11 @@ export function RagSettingsPage() {
             {d.name || d.originalFileName || "-"}
           </div>
           {/*
-           * 판본 번호와 유형은 이름 아래에 붙인다. 같은 문서의 판본이 여러 줄로 서는 표라
-           * 번호가 없으면 어느 줄이 최신인지 이름만으로는 갈리지 않는다.
+           * **판본 번호와 문서 코드가 붙던 자리다** (#460 · 서버 ADR-0034). 문서 한 건이 곧 그
+           * 규정이라 묶어서 셀 판본이 없다 — 유형만 남는다.
            */}
           <div className="mt-[2px] truncate text-[12.5px] text-n500">
-            {`v${d.version} · ${RAG_DOCUMENT_TYPE_NM[d.docType]}`}
-            {d.documentCode ? ` · ${d.documentCode}` : ""}
+            {RAG_DOCUMENT_TYPE_NM[d.docType]}
           </div>
         </div>
       ),
@@ -184,9 +183,9 @@ export function RagSettingsPage() {
         const applyTitle = !canManage
           ? NO_RAG_DOCUMENT_MANAGE
           : d.applyStatus === "SUPERSEDED"
-            ? "옛 판본은 되돌릴 수 없습니다 — 같은 파일을 새 판본으로 올려주세요"
+            ? "내려둔 문서는 되돌릴 수 없습니다 — 같은 파일을 다시 올려주세요"
             : notIndexed && d.applyStatus === "DRAFT"
-              ? "색인이 끝난 판본만 시행 중으로 올릴 수 있습니다"
+              ? "색인이 끝난 문서만 시행 중으로 올릴 수 있습니다"
               : undefined;
 
         return (
@@ -306,8 +305,9 @@ export function RagSettingsPage() {
 
             <div className="mt-3 text-[13px] leading-[1.8] text-n500">
               올린 문서는 «개정안»으로 들어와 색인이 끝나도 답변에 쓰이지 않습니다 — «시행»을
-              눌러야 도우미가 그 판본을 근거로 답합니다. 같은 문서의 새 판본을 시행하면 이전
-              판본은 «옛 판본»으로 내려갑니다.
+              눌러야 도우미가 그 문서를 근거로 답합니다. 시행 중인 문서는 여러 건일 수 있으며,
+              개정된 규정을 올릴 때는 옛 문서를 지워주세요 — 지우지 않으면 도우미가 옛 조항과 새
+              조항을 함께 근거로 답할 수 있습니다.
               {/*
                * 폴링 중이라는 사실을 알린다 — 배지가 «대기»인 채로 멈춰 보이면 운영진이 새로고침을
                * 누르거나 재색인을 다시 누른다(그쪽은 400이다).

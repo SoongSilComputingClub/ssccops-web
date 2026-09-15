@@ -39,15 +39,15 @@ export function toRagDocumentErrorMessage(error: unknown): string {
     case RAG_DOCUMENT_ERROR.NOT_FOUND:
       return "규정 문서를 찾을 수 없습니다 — 목록을 새로고침한 뒤 다시 시도해주세요";
     /*
-     * 색인이 끝나지 않은 판본을 올리려 한 경우. 화면이 버튼을 미리 잠그므로 여기까지 오는 것은
+     * 색인이 끝나지 않은 문서를 올리려 한 경우. 화면이 버튼을 미리 잠그므로 여기까지 오는 것은
      * 잠근 뒤 색인이 되돌아간 경우(재색인)뿐이라, 다음에 할 일을 그대로 적는다.
      */
     case RAG_DOCUMENT_ERROR.NOT_INDEXED:
-      return "색인이 끝난 판본만 시행 중으로 올릴 수 있습니다 — 색인이 끝난 뒤 다시 시도해주세요";
+      return "색인이 끝난 문서만 시행 중으로 올릴 수 있습니다 — 색인이 끝난 뒤 다시 시도해주세요";
     case RAG_DOCUMENT_ERROR.INVALID_APPLY_TRANSITION:
       return "적용 상태를 그렇게 바꿀 수 없습니다 — 목록을 새로고침한 뒤 다시 시도해주세요";
     /*
-     * 이미 대기 중인 판본에 재색인을 부른 경우다. 폴링이 곧 상태를 갱신하므로 «기다리라»가
+     * 이미 대기 중인 문서에 재색인을 부른 경우다. 폴링이 곧 상태를 갱신하므로 «기다리라»가
      * 정확한 다음 행동이다 — 다시 누르게 하면 같은 400을 받는다.
      */
     case RAG_DOCUMENT_ERROR.INVALID_INDEX_TRANSITION:

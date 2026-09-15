@@ -34,10 +34,10 @@ import { toRagDocumentErrorMessage } from "./rag-document-error";
  * 규칙). 검색어가 바뀔 때만 키가 오른다 — 그때는 다른 모집단이라 로딩을 보여 주는 것이 맞다.
  *
  * ── 변이 뒤에는 목록을 다시 받는다 ──────────────────────────────
- * 응답이 바뀐 행 하나를 주지만 부분 갱신하지 않는다. «시행 중»으로 올리면 같은 문서의 기존
- * 시행본이 **같은 트랜잭션에서** 옛 판본으로 내려가고(서버 #401), 재색인은 요약의 «색인 완료»
- * 수를 움직이며, 삭제는 총 청크를 바꾼다 — 화면이 그리는 다른 값까지 함께 움직이므로 통째로
- * 다시 부른다(AGENTS.md「부분 갱신과 재조회를 가른다」).
+ * 응답이 바뀐 행 하나를 주지만 부분 갱신하지 않는다. 시행 전환은 그 문서 하나만 바꾸지만
+ * (서버 ADR-0034 — 예전에는 같은 문서의 기존 시행본이 함께 내려갔다), 재색인은 요약의
+ * «색인 완료» 수를 움직이고 삭제는 총 청크를 바꾼다 — 화면이 그리는 다른 값까지 함께 움직이므로
+ * 통째로 다시 부른다(AGENTS.md「부분 갱신과 재조회를 가른다」).
  */
 
 /** 색인이 끝나기를 기다리는 동안의 재조회 주기 (ms) — 서버 워커 주기(10초)의 절반 */
@@ -83,7 +83,7 @@ export interface RagDocumentAdmin {
 
   reindex: (doc: RagDocument) => Promise<void>;
   remove: (doc: RagDocument) => Promise<void>;
-  /** `DRAFT → EFFECTIVE`(시행 중으로 올리기) · `EFFECTIVE → SUPERSEDED`(옛 판본으로 내리기) */
+  /** `DRAFT → EFFECTIVE`(시행 중으로 올리기) · `EFFECTIVE → SUPERSEDED`(내려두기) */
   makeEffective: (doc: RagDocument) => Promise<void>;
   supersede: (doc: RagDocument) => Promise<void>;
   /** 업로드 직후 — 응답이 목록 한 행과 같은 모양이라 그대로 꽂고 요약은 다시 받는다 */
