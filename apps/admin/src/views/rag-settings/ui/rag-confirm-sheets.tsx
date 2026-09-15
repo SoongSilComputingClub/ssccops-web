@@ -1,6 +1,6 @@
 "use client";
 
-import { RAG_APPLY_STATUS_NM, type RagDocument } from "@/entities/rag-document";
+import { type RagDocument } from "@/entities/rag-document";
 import { Sheet } from "@/shared/ui";
 
 /*
@@ -10,10 +10,15 @@ import { Sheet } from "@/shared/ui";
  * (삭제) 그 사이의 답변이 바뀌는(시행 전환) 조작 둘뿐이다.
  */
 
-/** 문서를 한 줄로 가리킨다 — 판본이 여러 줄인 표라 이름만으로는 어느 줄인지 갈리지 않는다 */
+/**
+ * 문서를 한 줄로 가리킨다.
+ *
+ * **판본 번호를 붙이던 자리다**(서버 ADR-0034). 표가 «문서 종류 × 판본»이던 시절에는 이름만으로
+ * 어느 줄인지 갈리지 않아 `v1`을 함께 찍었는데, 문서 한 건이 곧 그 규정이 되며 그 구분이 필요
+ * 없어졌다. 이름이 겹치면 원본 파일명이 그 자리를 맡는다.
+ */
 function describe(doc: RagDocument): string {
-  const name = doc.name || doc.originalFileName || "이름 없는 문서";
-  return `${name} (v${doc.version})`;
+  return doc.name || doc.originalFileName || "이름 없는 문서";
 }
 
 /**
@@ -21,7 +26,7 @@ function describe(doc: RagDocument): string {
  * 올리는 것뿐이다.
  *
  * **«시행 중» 문서면 문구를 달리한다**(#432). 지우는 순간 그 규정에 대한 답이 사라지는데,
- * 개정안·옛 판본을 지우는 것과 같은 문장으로 물으면 그 차이가 화면에서 드러나지 않는다.
+ * 개정안·내려둔 문서를 지우는 것과 같은 문장으로 물으면 그 차이가 화면에서 드러나지 않는다.
  */
 export function RagDeleteConfirm({
   target,
@@ -48,8 +53,8 @@ export function RagDeleteConfirm({
       <div className="text-[14px] leading-[1.8] text-n400">
         {effective ? (
           <>
-            <span className="text-danger">지금 시행 중인 판본입니다.</span> 지우면 도우미가 이
-            규정에 대해 더 이상 답하지 못합니다 — 대신할 판본을 먼저 시행한 뒤 지우는 것을
+            <span className="text-danger">지금 시행 중인 문서입니다.</span> 지우면 도우미가 이
+            규정에 대해 더 이상 답하지 못합니다 — 대신할 문서를 먼저 올려 시행한 뒤 지우는 것을
             권합니다.
           </>
         ) : (
@@ -57,9 +62,7 @@ export function RagDeleteConfirm({
             문서와 색인된 내용, 올린 원본 파일이 함께 사라집니다.
           </>
         )}
-        <div className="mt-2">
-          되살리는 길은 같은 파일을 새 판본으로 다시 올리는 것뿐입니다.
-        </div>
+        <div className="mt-2">되살리는 길은 같은 파일을 다시 올리는 것뿐입니다.</div>
       </div>
     </Sheet>
   );
@@ -69,8 +72,10 @@ export function RagDeleteConfirm({
  * 적용 전환 — `DRAFT → EFFECTIVE`(시행) · `EFFECTIVE → SUPERSEDED`(내리기).
  *
  * 시행 전환에 확인을 받는 것은 **되돌릴 수는 있지만 그 사이의 답변이 바뀌기** 때문이다.
- * 같은 문서에 이미 시행본이 있으면 그것이 같은 트랜잭션에서 옛 판본으로 내려간다 — 한 번의
- * 확인이 두 행을 움직이므로 그 사실을 문구가 밝힌다.
+ *
+ * **다른 행은 움직이지 않는다**(서버 ADR-0034). 예전에는 시행 전환 하나가 같은 문서의 기존
+ * 시행본을 함께 내려서 «한 번의 확인이 두 행을 움직인다»를 문구가 밝혀야 했는데, 판본 관리를
+ * 걷어내며 그 연쇄가 사라졌다.
  */
 export function RagApplyConfirm({
   target,
@@ -87,7 +92,7 @@ export function RagApplyConfirm({
   return (
     <Sheet
       open
-      title={down ? "옛 판본으로 내릴까요?" : "시행 중으로 올릴까요?"}
+      title={down ? "내려둘까요?" : "시행 중으로 올릴까요?"}
       hint={describe(target)}
       onClose={onClose}
       onOk={() => onConfirm(target)}
@@ -96,13 +101,13 @@ export function RagApplyConfirm({
       <div className="text-[14px] leading-[1.8] text-n400">
         {down ? (
           <>
-            내리면 이 판본은 답변 근거에서 빠지고 색인된 내용도 지워집니다. 다시 시행할 수는
-            없으므로, 되돌리려면 같은 파일을 새 판본으로 올려야 합니다.
+            내리면 이 문서는 답변 근거에서 빠지고 색인된 내용도 지워집니다. 다시 시행할 수는
+            없으므로, 되돌리려면 같은 파일을 다시 올려야 합니다.
           </>
         ) : (
           <>
-            오늘부터 이 판본이 답변의 근거가 됩니다. 같은 문서에 이미 시행 중인 판본이 있으면
-            그 판본은 «{RAG_APPLY_STATUS_NM.SUPERSEDED}»으로 함께 내려갑니다.
+            오늘부터 이 문서가 답변의 근거가 됩니다. 이미 시행 중인 다른 문서는 그대로
+            남습니다 — 개정된 규정이라면 옛 문서를 따로 지워주세요.
           </>
         )}
       </div>

@@ -1,5 +1,5 @@
 /*
- * 규정 도우미 코퍼스의 문서 판본 (#432 · 서버 #399·#400·#401).
+ * 규정 도우미 코퍼스의 문서 (#432 · #460 · 서버 #399·#400·#401 · ADR-0034로 판본 개념이 없어졌다).
  *
  * **상태가 두 축이다.** 색인 상태(`indexStatus`)는 워커가 적는 값이고 적용 상태(`applyStatus`)는
  * 사람이 정하는 값이다 — 섞어 한 열로 그리면 「색인은 끝났지만 아직 시행 전인 개정안」을
@@ -9,7 +9,7 @@
 /** 색인 진행 — 워커가 적는다. 화면은 읽기만 하고 PATCH로 바꾸지 않는다 */
 export type RagIndexStatus = "PENDING" | "INDEXING" | "INDEXED" | "FAILED";
 
-/** 적용 여부 — 사람이 정한다. `EFFECTIVE`인 판본만 도우미의 답변 근거가 된다 */
+/** 적용 여부 — 사람이 정한다. `EFFECTIVE`인 문서만 도우미의 답변 근거가 되며 여러 건일 수 있다 */
 export type RagApplyStatus = "DRAFT" | "EFFECTIVE" | "SUPERSEDED";
 
 /**
@@ -24,11 +24,8 @@ export type RagDocumentType = "STRUCTURED" | "GENERIC";
  */
 export interface RagDocument {
   ragDocId: number;
-  /** 판본을 가로지르는 열쇠 — 같은 값으로 다시 올리면 `version`이 1 는다 */
-  documentCode: string;
   name: string;
   docType: RagDocumentType;
-  version: number;
   indexStatus: RagIndexStatus;
   applyStatus: RagApplyStatus;
   originalFileName: string;
@@ -52,7 +49,7 @@ export interface RagDocument {
 export interface RagCorpusSummary {
   registeredCount: number;
   indexedCount: number;
-  /** 활성 청크(색인 완료이고 옛 판본이 아닌 것)의 합 — 워커가 상한 3,000을 볼 때와 같은 수 */
+  /** 활성 청크(색인 완료이고 내려두지 않은 것)의 합 — 워커가 상한 3,000을 볼 때와 같은 수 */
   totalChunkCount: number;
 }
 

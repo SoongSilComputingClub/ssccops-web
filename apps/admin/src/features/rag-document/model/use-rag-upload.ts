@@ -40,8 +40,6 @@ export interface RagUpload {
   file: File | null;
   /** 표시명 — 비우면 서버가 파일명에서 확장자를 뗀 것을 쓴다 */
   name: string;
-  /** 판본을 가로지르는 열쇠 — 비우면 서버가 정한다 */
-  documentCode: string;
   /** 파일 선택 단계에서 걸린 사유(확장자·크기). 비어 있으면 정상 */
   fileErrorMessage: string;
   /** 서버가 거절한 사유. `.md` 파싱 실패는 몇째 줄이 왜 걸렸는지가 여기 실린다 */
@@ -53,7 +51,6 @@ export interface RagUpload {
   selectFile: (file: File) => void;
   clearFile: () => void;
   setName: (value: string) => void;
-  setDocumentCode: (value: string) => void;
   /** 성공하면 올라간 행을, 실패하면 null을 돌려준다 (문구는 `errorMessage`에 남는다) */
   submit: () => Promise<RagDocument | null>;
 }
@@ -62,7 +59,6 @@ export function useRagUpload(): RagUpload {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState("");
-  const [documentCode, setDocumentCode] = useState("");
   const [fileErrorMessage, setFileErrorMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -73,7 +69,6 @@ export function useRagUpload(): RagUpload {
   const reset = useCallback(() => {
     setFile(null);
     setName("");
-    setDocumentCode("");
     setFileErrorMessage("");
     setErrorMessage("");
   }, []);
@@ -117,7 +112,7 @@ export function useRagUpload(): RagUpload {
     setErrorMessage("");
 
     try {
-      const uploaded = await uploadRagDocument({ file, name, documentCode });
+      const uploaded = await uploadRagDocument({ file, name });
       setOpen(false);
       reset();
       return uploaded;
@@ -129,13 +124,12 @@ export function useRagUpload(): RagUpload {
       busyRef.current = false;
       setUploading(false);
     }
-  }, [file, name, documentCode, reset]);
+  }, [file, name, reset]);
 
   return {
     open,
     file,
     name,
-    documentCode,
     fileErrorMessage,
     errorMessage,
     uploading,
@@ -144,7 +138,6 @@ export function useRagUpload(): RagUpload {
     selectFile,
     clearFile,
     setName,
-    setDocumentCode,
     submit,
   };
 }

@@ -30,15 +30,7 @@ export function RagUploadDialog({
   const inputId = useId();
   const [dragging, setDragging] = useState(false);
 
-  const {
-    open,
-    file,
-    name,
-    documentCode,
-    fileErrorMessage,
-    errorMessage,
-    uploading,
-  } = upload;
+  const { open, file, name, fileErrorMessage, errorMessage, uploading } = upload;
 
   const onPick = (event: ChangeEvent<HTMLInputElement>) => {
     const picked = event.target.files?.[0];
@@ -126,6 +118,11 @@ export function RagUploadDialog({
           </button>
         )}
 
+        {/*
+         * **「문서 코드」 칸이 있던 자리다** (#460 · 서버 ADR-0034). 「비우면 서버가 정합니다」라고
+         * 안내했지만 서버에 그 경로가 없어 비우면 400이었고, 자동 생성은 그 값의 존재 이유(판본을
+         * 묶는다)와 모순이라 만들 수도 없었다. 판본 관리를 걷어내며 칸 자체가 사라졌다.
+         */}
         <Field label="표시명">
           <TextField
             value={name}
@@ -133,16 +130,8 @@ export function RagUploadDialog({
             placeholder="비우면 파일 이름을 씁니다"
             disabled={uploading}
           />
-        </Field>
-        <Field label="문서 코드">
-          <TextField
-            value={documentCode}
-            onChange={(e) => upload.setDocumentCode(e.target.value)}
-            placeholder="비우면 서버가 정합니다"
-            disabled={uploading}
-          />
           <div className="mt-[5px] text-[12.5px] text-n500">
-            같은 코드로 다시 올리면 새 판본이 됩니다 — 기존 판본은 그대로 남습니다
+            문서 하나가 규정 하나입니다 — 개정된 규정을 올릴 때는 옛 문서를 지우고 새로 올려주세요
           </div>
         </Field>
 

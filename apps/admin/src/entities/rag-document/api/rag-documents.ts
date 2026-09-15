@@ -14,7 +14,7 @@ import type {
  * 목록 조회도 예외가 아니라서 라벨 관리처럼 "목록은 누구나"가 성립하지 않는다 — 메뉴를 감추는
  * 근거가 된다(nav.ts · 템플릿 관리와 같은 자리).
  *
- * 목록에 `page` 봉투가 없다. 이 표는 «문서 종류 × 판본»이라 행이 수십 단위라고 서버가 정했고
+ * 목록에 `page` 봉투가 없다. 이 표는 규정 문서 한 건씩이라 행이 수십 단위라고 서버가 정했고
  * 그래서 `apiFetchList`가 아니라 `apiFetch`로 받는다 — '더 보기'도 없다.
  */
 
@@ -31,13 +31,13 @@ export const RAG_DOCUMENT_ERROR = {
   PARSE_FAILED: "RAG_DOCUMENT_PARSE_FAILED",
   /** 활성 청크 총량 3,000 초과 (409) */
   LIMIT_EXCEEDED: "RAG_DOCUMENT_LIMIT_EXCEEDED",
-  /** 색인이 끝나지 않은 판본을 «시행 중»으로 올리려 했다 (409) — 화면이 버튼을 미리 잠근다 */
+  /** 색인이 끝나지 않은 문서를 «시행 중»으로 올리려 했다 (409) — 화면이 버튼을 미리 잠근다 */
   NOT_INDEXED: "RAG_DOCUMENT_NOT_INDEXED",
   /** 성립하지 않는 적용 상태 전이 (400) */
   INVALID_APPLY_TRANSITION: "INVALID_RAG_APPLY_STATUS_TRANSITION",
-  /** 이미 대기 중인 판본에 재색인을 불렀다 (400) */
+  /** 이미 대기 중인 문서에 재색인을 불렀다 (400) */
   INVALID_INDEX_TRANSITION: "INVALID_RAG_INDEX_STATUS_TRANSITION",
-  /** 없는 판본 (404) — 삭제가 하드라 «없음»이 정상 상태다 */
+  /** 없는 문서 (404) — 삭제가 하드라 «없음»이 정상 상태다 */
   NOT_FOUND: "RAG_DOCUMENT_NOT_FOUND",
   /** 적재 레이트 리밋 — 회원당 하루 10건 (429) */
   RATE_LIMITED: "ASSISTANT_RATE_LIMITED",
@@ -60,10 +60,8 @@ export const RAG_DOCUMENT_EXTENSIONS = [".md", ".pdf", ".docx"] as const;
 
 interface RagDocumentResponse {
   ragDocId: number;
-  documentCode: string | null;
   name: string | null;
   docType: RagDocumentType | null;
-  version: number | null;
   indexStatus: RagIndexStatus | null;
   applyStatus: RagApplyStatus | null;
   originalFileName: string | null;
@@ -98,10 +96,8 @@ interface RagDocumentListResponse {
 function toRagDocument(res: RagDocumentResponse): RagDocument {
   return {
     ragDocId: res.ragDocId,
-    documentCode: res.documentCode ?? "",
     name: res.name ?? "",
     docType: res.docType ?? "GENERIC",
-    version: res.version ?? 1,
     indexStatus: res.indexStatus ?? "PENDING",
     applyStatus: res.applyStatus ?? "DRAFT",
     originalFileName: res.originalFileName ?? "",
@@ -144,8 +140,6 @@ export interface RagDocumentUploadInput {
   file: File;
   /** 비우면 서버가 파일명에서 확장자를 뗀 것을 표시명으로 쓴다 */
   name?: string;
-  /** 비우면 서버가 정한다. 같은 값으로 다시 올리는 것이 «새 판본»이다 */
-  documentCode?: string;
 }
 
 /**
@@ -154,9 +148,12 @@ export interface RagDocumentUploadInput {
  * **응답은 201 + `indexStatus: PENDING`이고 목록 한 행과 같은 모양이다.** 그래서 호출부는 이
  * 값으로 표에 «대기» 행을 곧바로 그린다 — 202였다면 그릴 것이 없었다(서버 #399).
  *
- * `documentCode`·`name`을 파트가 아니라 **폼 필드로** 보낸다(서버 컨트롤러가 `@RequestParam`으로
- * 받는다 · CSV 이관과 같은 모양). 파싱은 이 요청 안에서 끝나므로 계약 위반은 그 자리에서
- * 400이고, 오래 걸리는 임베딩만 워커가 뒤에서 집어 간다.
+ * `name`을 파트가 아니라 **폼 필드로** 보낸다(서버 컨트롤러가 `@RequestParam`으로 받는다 ·
+ * CSV 이관과 같은 모양). 파싱은 이 요청 안에서 끝나므로 계약 위반은 그 자리에서 400이고,
+ * 오래 걸리는 임베딩만 워커가 뒤에서 집어 간다.
+ *
+ * **문서 식별자를 보내지 않는다**(서버 ADR-0034). 문서 한 건이 곧 그 규정이라 묶을 것이 없고,
+ * 규정을 갱신할 때는 옛 문서를 지우고 새로 올린다.
  */
 export async function uploadRagDocument(
   input: RagDocumentUploadInput,
@@ -166,8 +163,6 @@ export async function uploadRagDocument(
 
   const name = input.name?.trim() ?? "";
   if (name) form.append("name", name);
-  const documentCode = input.documentCode?.trim() ?? "";
-  if (documentCode) form.append("documentCode", documentCode);
 
   const res = await apiUpload<RagDocumentResponse | null>(
     "/v1/assistant/documents",
@@ -207,9 +202,11 @@ export async function reindexRagDocument(ragDocId: number): Promise<RagDocument 
 /**
  * PATCH /v1/assistant/documents/{id}/apply-status — 적용 상태 전환.
  *
- * 성립하는 전이는 `DRAFT → EFFECTIVE`와 `EFFECTIVE → SUPERSEDED` 둘뿐이다. 앞쪽을 부르면 같은
- * `documentCode`의 기존 시행본이 **같은 트랜잭션에서** 옛 판본으로 내려간다 — 그래서 호출부는
- * 응답 한 행으로 부분 갱신하지 않고 목록을 다시 받는다(다른 행도 함께 움직인다 · AGENTS.md).
+ * 성립하는 전이는 `DRAFT → EFFECTIVE`와 `EFFECTIVE → SUPERSEDED` 둘뿐이다.
+ *
+ * **다른 행은 움직이지 않는다**(서버 ADR-0034). 예전에는 «시행 중으로 올리기»가 같은 문서 식별자의
+ * 기존 시행본을 함께 내려서 목록을 다시 받아야 했는데, 판본 관리를 걷어내며 그 연쇄가 사라졌다.
+ * 그래도 목록을 다시 받는 것은 그대로 둔다 — 갱신 경로를 둘로 가르지 않기 위해서다.
  *
  * `effectiveFrom`을 비우면 서버가 오늘을 넣는다.
  */

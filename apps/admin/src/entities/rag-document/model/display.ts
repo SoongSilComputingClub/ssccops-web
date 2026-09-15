@@ -37,7 +37,7 @@ export const RAG_INDEX_STATUS_TONE: Record<RagIndexStatus, BadgeTone> = {
 export const RAG_APPLY_STATUS_NM: Record<RagApplyStatus, string> = {
   DRAFT: "개정안",
   EFFECTIVE: "시행 중",
-  SUPERSEDED: "옛 판본",
+  SUPERSEDED: "내려둠",
 };
 
 export const RAG_APPLY_STATUS_TONE: Record<RagApplyStatus, BadgeTone> = {
