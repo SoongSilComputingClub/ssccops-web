@@ -62,3 +62,21 @@ export function toAssistantErrorMessage(error: unknown): string {
       return "답변을 가져오지 못했습니다 — 잠시 후 다시 시도해주세요";
   }
 }
+
+/**
+ * 초기화 실패 → 말풍선 자리에 띄울 한 줄 (#434).
+ *
+ * **질의 실패와 문구를 나눈다.** 사용자가 방금 한 일이 «물었다»가 아니라 «지웠다»라, 같은
+ * 문장을 쓰면 «답변을 가져오지 못했습니다»가 지우기 버튼 아래에 붙어 무엇이 실패했는지가
+ * 화면에서 사라진다. 다음 행동은 어느 코드든 하나라 — 다시 누르는 것 — 갈래를 두지 않는다.
+ *
+ * 403 `CONVERSATION_FORBIDDEN`이 여기 없는 것은 **그것이 실패가 아니기** 때문이다. 지우려던
+ * 대화에 이미 닿을 수 없다는 뜻이고, 그 결과는 사용자가 바란 것과 같아 store가 성공으로
+ * 받는다(`reset` 주석).
+ */
+export function toAssistantResetErrorMessage(error: unknown): string {
+  if (error instanceof ApiError && error.code === API_ERROR.NETWORK_ERROR) {
+    return "서버에 연결할 수 없어 대화를 지우지 못했습니다 — 잠시 후 다시 시도해주세요";
+  }
+  return "대화를 지우지 못했습니다 — 잠시 후 다시 시도해주세요";
+}

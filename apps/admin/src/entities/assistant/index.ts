@@ -1,5 +1,6 @@
 export {
   askAssistant,
+  deleteAssistantConversation,
   fetchAssistantSuggestions,
   ASSISTANT_ERROR,
   ASSISTANT_QUESTION_MAX_LENGTH,

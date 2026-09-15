@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { ASSISTANT_QUESTION_MAX_LENGTH } from "@/entities/assistant";
-import { Button } from "@/shared/ui";
+import { Button, Sheet } from "@/shared/ui";
 import { useAssistantStore } from "../model/use-assistant-store";
 import { AssistantEmpty } from "./assistant-empty";
 import { AssistantMessageItem } from "./assistant-message";
@@ -30,9 +30,22 @@ export function AssistantPanel() {
   const asking = useAssistantStore((s) => s.asking);
   const suggestions = useAssistantStore((s) => s.suggestions);
   const suggestionsLoaded = useAssistantStore((s) => s.suggestionsLoaded);
+  const resetting = useAssistantStore((s) => s.resetting);
+  /*
+   * 확인 시트가 떠 있는가 — 대화를 지우는 것은 되돌릴 수 없어서 묻는다(#432의 기준: 되돌릴 수
+   * 없거나 그 사이의 답이 바뀌는 조작만 확인을 받는다). **말풍선의 정본이 store 하나라** 서버가
+   * 지운 뒤에는 화면에도 어디에도 남지 않는다.
+   *
+   * 이 값이 패널의 `useState`가 아닌 이유는 store 쪽 주석에 있다 — 닫는 길 중 FAB가 이
+   * 컴포넌트 밖이다.
+   */
+  const confirmingReset = useAssistantStore((s) => s.confirmingReset);
   const closePanel = useAssistantStore((s) => s.closePanel);
   const loadSuggestions = useAssistantStore((s) => s.loadSuggestions);
   const ask = useAssistantStore((s) => s.ask);
+  const reset = useAssistantStore((s) => s.reset);
+  const askResetConfirm = useAssistantStore((s) => s.askResetConfirm);
+  const cancelResetConfirm = useAssistantStore((s) => s.cancelResetConfirm);
 
   const [draft, setDraft] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
@@ -54,17 +67,24 @@ export function AssistantPanel() {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Escape") closePanel();
+      if (e.key !== "Escape") return;
+      /*
+       * 확인 시트가 떠 있으면 그것만 닫는다 (#434). `Sheet`도 document에서 Esc를 받으므로
+       * 여기서 함께 닫으면 한 번 누른 Esc가 시트와 패널을 같이 접는다 — 확인을 물은 자리에서
+       * 취소했을 뿐인데 읽던 대화까지 사라진 것처럼 보인다.
+       */
+      if (confirmingReset) return;
+      closePanel();
     };
     document.addEventListener("keydown", onKey);
     inputRef.current?.focus();
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, closePanel]);
+  }, [open, closePanel, confirmingReset]);
 
   /* 새 말풍선이 붙으면 끝으로 따라간다 — 답이 화면 아래에 숨은 채 도착하지 않게 한다 */
   useEffect(() => {
     if (open) tailRef.current?.scrollIntoView({ block: "end" });
-  }, [open, messages, asking]);
+  }, [open, messages, asking, resetting]);
 
   if (!open) return null;
 
@@ -106,7 +126,15 @@ export function AssistantPanel() {
         role="dialog"
         aria-modal="true"
         aria-labelledby={TITLE_ID}
-        onKeyDown={(e) => trapFocus(e, panelRef.current)}
+        onKeyDown={(e) => {
+          /*
+            확인 시트가 떠 있는 동안에는 가두지 않는다 (#434). 시트는 패널 밖(형제)에 그려지고
+            `z-[90]`으로 그 위에 있으므로, 여기서 계속 Tab을 패널 안으로 되돌리면 초점이
+            «지우기»·«취소»에 닿지 못한다 — 확인을 물어 놓고 키보드로는 답할 수 없게 된다.
+          */
+          if (confirmingReset) return;
+          trapFocus(e, panelRef.current);
+        }}
         className="fixed inset-0 z-[89] flex animate-fade-in flex-col border-line-strong bg-surface outline-none lg:inset-auto lg:right-6 lg:bottom-[92px] lg:h-[min(620px,calc(100dvh-140px))] lg:w-[380px] lg:animate-pop-in lg:rounded-2xl lg:border lg:shadow-[0_16px_40px_rgb(0_0_0/.28)]"
       >
         <header className="flex flex-none items-center gap-[9px] border-b border-hairline-strong px-[16px] py-[13px]">
@@ -120,9 +148,25 @@ export function AssistantPanel() {
             규정 도우미
           </h2>
           {/*
-            `↺` 초기화 버튼을 Phase 1에 그리지 않는다 — 그려 놓고 아무 일도 하지 않으면
-            사용자는 초기화됐다고 믿는다(이슈 · §13.1).
+            `↺` 초기화 (#434) — **대화가 있을 때만 그린다.** 지울 것이 없는 자리에 두면 누른
+            사람이 무엇이 지워졌는지 알 수 없고, 이미 «처음 상태»인 화면은 눌러도 바뀌지
+            않는다. Phase 1이 이 버튼을 아예 그리지 않은 이유(아무 일도 하지 않는 버튼)가
+            빈 대화에서는 여전히 그대로다.
+
+            초기화가 도는 동안 잠근다 — 두 번 눌러 봐야 두 번째는 이미 지워진 값을 지운다.
           */}
+          {messages.length > 0 && (
+            <button
+              type="button"
+              onClick={askResetConfirm}
+              disabled={asking || resetting}
+              aria-label="대화 지우기"
+              title="대화 지우기"
+              className="flex size-7 flex-none cursor-pointer items-center justify-center rounded-[9px] border border-line text-[14px] text-n400 hover:border-accent hover:text-accent disabled:cursor-default disabled:opacity-50 disabled:hover:border-line disabled:hover:text-n400"
+            >
+              <span aria-hidden="true">↺</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={closePanel}
@@ -140,7 +184,7 @@ export function AssistantPanel() {
         */}
         <div
           aria-live="polite"
-          aria-busy={asking}
+          aria-busy={asking || resetting}
           className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-[16px] py-[14px]"
         >
           {messages.length === 0 ? (
@@ -154,6 +198,17 @@ export function AssistantPanel() {
           {asking && (
             <div className="self-start rounded-2xl rounded-bl-md border border-line bg-surface px-[14px] py-[10px] text-[13.5px] text-n500">
               답변을 찾는 중입니다…
+            </div>
+          )}
+
+          {/*
+            지우는 동안의 안내 (#434). **화면은 서버 응답을 기다린 뒤에 비운다**(store 주석) —
+            그 사이 말풍선이 그대로 남아 있어, 이것이 없으면 누른 뒤 아무 일도 일어나지 않는
+            것처럼 보인다.
+          */}
+          {resetting && (
+            <div className="self-start rounded-2xl rounded-bl-md border border-line bg-surface px-[14px] py-[10px] text-[13.5px] text-n500">
+              대화를 지우는 중입니다…
             </div>
           )}
           <div ref={tailRef} />
@@ -196,6 +251,28 @@ export function AssistantPanel() {
           )}
         </form>
       </div>
+
+      {/*
+        초기화 확인 (#434) — **되돌릴 수 없어서 묻는다**(#432의 기준). 말풍선의 정본이 store
+        하나라 서버 대화를 지우고 나면 되살릴 곳이 없다.
+
+        `Sheet`가 `z-[90]`이라 패널(`z-[89]`) 위에 온전히 뜬다 — 여기서만은 저 컴포넌트를 쓰는
+        것이 맞다. 패널이 `Sheet`를 쓰지 않은 이유는 «확인·취소로 끝나지 않아서»였는데, 이
+        물음은 정확히 확인·취소로 끝난다.
+      */}
+      <Sheet
+        open={confirmingReset}
+        title="대화를 지울까요?"
+        onClose={cancelResetConfirm}
+        onOk={() => void reset()}
+        okLabel="지우기"
+        okVariant="danger"
+      >
+        <div className="text-[14px] leading-[1.8] text-n400">
+          지금까지 주고받은 질문과 답변이 사라지고 다음 질문은 새 대화로 시작합니다. 되살리는
+          길은 없으니, 남겨야 할 조항이 있으면 먼저 옮겨 적어주세요.
+        </div>
+      </Sheet>
     </>
   );
 }
