@@ -3,12 +3,13 @@
 import { create } from "zustand";
 import {
   askAssistant,
+  deleteAssistantConversation,
   fetchAssistantSuggestions,
   ASSISTANT_ERROR,
   type AssistantAnswer,
 } from "@/entities/assistant";
 import { ApiError } from "@/shared/lib/api/client";
-import { toAssistantErrorMessage } from "./assistant-error";
+import { toAssistantErrorMessage, toAssistantResetErrorMessage } from "./assistant-error";
 
 /*
  * 규정 도우미의 상태 (#433 · 기획안 §7.4 · §13.1).
@@ -24,11 +25,17 @@ import { toAssistantErrorMessage } from "./assistant-error";
  * store가 유일한 정본이고, 새로고침하면 사라지는 것이 정상이다 — 서버도 질문·답변을 어디에도
  * 남기지 않는다(§11).
  *
- * ── `↺`가 없는 이유 ────────────────────────────────────────────
- * Phase 1에 초기화 버튼을 그리지 않는다(이슈). 서버에 `DELETE .../conversations/{id}`가 생겼지만
- * 그것은 Phase 2의 자리이고, **아무 일도 하지 않는 버튼은 사용자가 초기화됐다고 믿게 만든다**.
- * 지울 상태가 화면에 쌓이는 지금은 store만 비우고 서버 대화는 24시간 만료에 맡기는 반쪽짜리가
- * 되는데, 그 반쪽은 «초기화했다»는 믿음과 어긋난다.
+ * ── `↺`가 이제 서는 자리 (#434) ────────────────────────────────
+ * Phase 1이 초기화 버튼을 그리지 않은 것은 **아무 일도 하지 않는 버튼이 사용자를 초기화됐다고
+ * 믿게 만들기** 때문이었다 — 서버에 대화 메모리가 없어 지울 것이 화면 쪽에만 있었다. 서버
+ * #406이 `AssistantMemoryStore`를 세우면서 양쪽에 지울 것이 생겼고, 그래서 **버튼이 하는 일이
+ * 믿음과 같아진다**: 서버 대화를 지우고 화면을 처음 상태로 되돌린다.
+ *
+ * ── 대화는 이어 간다 ───────────────────────────────────────────
+ * 후속 질문은 같은 `conversationId`로 나가고 **앞선 말풍선을 지우지 않는다**. 24시간 슬라이딩
+ * 만료로 서버 이력이 비어도 마찬가지다 — 그때 서버는 빈 이력 위에서 답할 뿐 오류를 내지
+ * 않으므로 화면에는 **새 대화처럼 보이는 것이 맞다**(이슈). 이 store가 값의 나이를 재지 않는
+ * 이유가 그것이다.
  */
 
 /** 화면에 그리는 말풍선 하나 */
@@ -61,12 +68,32 @@ interface AssistantState {
    * 보이는 것이 정상이라, 화면은 이 값의 나이를 재지 않는다.
    */
   conversationId: string | null;
+  /**
+   * 초기화가 도는 중 — `↺`를 잠근다.
+   *
+   * `asking`과 갈라 두는 것은 둘이 함께 돌 수 있어서가 아니라(서로 막는다) **잠기는 버튼이
+   * 다르기** 때문이다. 한 값으로 뭉치면 질문을 보내는 동안 `↺`가 «초기화 중»으로 보인다.
+   */
+  resetting: boolean;
+  /**
+   * 초기화 확인 시트가 떠 있는가 (#434).
+   *
+   * **패널의 `useState`가 아니라 여기 둔다.** 패널은 `open`이 false일 때 언마운트되지 않고
+   * null만 그리므로 그쪽 state는 닫아도 살아남는다 — 확인을 띄운 채 FAB로 닫았다 다시 열면
+   * 묻지도 않은 «대화를 지울까요?»가 먼저 떠 있다. 닫는 길이 셋(FAB · ✕ · Esc · 스크림)인데
+   * **그중 FAB는 패널 밖**이라, 닫는 동작을 쥔 이 store에서 함께 접는 것이 빠짐없는 유일한
+   * 자리다.
+   */
+  confirmingReset: boolean;
 
   openPanel: () => void;
   closePanel: () => void;
   togglePanel: () => void;
+  askResetConfirm: () => void;
+  cancelResetConfirm: () => void;
   loadSuggestions: () => Promise<void>;
   ask: (question: string) => Promise<void>;
+  reset: () => Promise<void>;
 }
 
 let nextId = 0;
@@ -80,10 +107,15 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
   suggestionsLoaded: false,
   suggestionsLoading: false,
   conversationId: null,
+  resetting: false,
+  confirmingReset: false,
 
   openPanel: () => set({ open: true }),
-  closePanel: () => set({ open: false }),
-  togglePanel: () => set((s) => ({ open: !s.open })),
+  /* 닫을 때 확인도 함께 접는다 — 위 `confirmingReset` 주석 */
+  closePanel: () => set({ open: false, confirmingReset: false }),
+  togglePanel: () => set((s) => ({ open: !s.open, confirmingReset: false })),
+  askResetConfirm: () => set({ confirmingReset: true }),
+  cancelResetConfirm: () => set({ confirmingReset: false }),
 
   /**
    * 추천 질문을 한 번만 받아 온다.
@@ -112,7 +144,13 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
 
   ask: async (question: string) => {
     const trimmed = question.trim();
-    if (!trimmed || get().asking) return;
+    const { asking, resetting } = get();
+    /*
+     * 초기화가 도는 중에는 묻지 않는다 — 지우기 요청이 날아가는 사이에 보낸 질문은 방금 지운
+     * 대화를 되살리거나(서버가 지우기 전에 도착) 지워진 자리에 홀로 남는다(뒤에 도착). 어느
+     * 쪽이든 «초기화했다»와 화면이 어긋난다.
+     */
+    if (!trimmed || asking || resetting) return;
 
     set((s) => ({
       messages: [...s.messages, { kind: "question", id: newId(), text: trimmed }],
@@ -138,6 +176,59 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
           { kind: "error", id: newId(), text: toAssistantErrorMessage(error) },
         ],
         asking: false,
+      }));
+    }
+  },
+
+  /**
+   * `↺` 초기화 — **서버 대화를 지우고 화면을 처음 상태로 되돌린다**.
+   *
+   * ── 화면을 언제 비우는가 ───────────────────────────────────────
+   * **서버 응답을 기다린 뒤에 비운다.** 먼저 비우면 지우기가 실패했을 때 되돌릴 말풍선이
+   * 우리 손에 없고(이 store가 이력의 정본이다), 사용자는 지워진 화면을 보며 초기화됐다고
+   * 믿는데 서버에는 대화가 그대로 남는다 — Phase 1이 `↺`를 그리지 않은 이유가 바로 그
+   * 어긋남이었다.
+   *
+   * ── 실패를 어떻게 다루는가 ─────────────────────────────────────
+   * 실패하면 **화면을 그대로 두고 오류 말풍선만 붙인다.** 지우지 못했는데 비우면 같은 어긋남이
+   * 생긴다. 다만 403 `CONVERSATION_FORBIDDEN`은 실패가 아니다 — 지우려던 대화에 이미 닿을 수
+   * 없다는 뜻이고 그것은 사용자가 바란 결과와 같다(만료·재로그인이 이 코드를 만든다).
+   *
+   * ── 추천 질문은 다시 받지 않는다 ───────────────────────────────
+   * `suggestions`·`suggestionsLoaded`를 남긴다. 코퍼스가 이 몇 초 사이에 바뀌지 않으므로
+   * 왕복만 늘고, 비워 두면 초기 화면이 고지 문구만으로 한 번 그려졌다가 추천 질문이 뒤늦게
+   * 끼어든다 — 되돌아간 «처음 상태»가 처음과 다르게 보인다.
+   */
+  reset: async () => {
+    const { asking, resetting, conversationId } = get();
+    if (asking || resetting) return;
+
+    /*
+     * 서버가 발급한 대화가 아직 없다 — 첫 질문 전이거나 모든 질의가 실패한 뒤다. 지울 것이
+     * 서버에 없으므로 왕복 없이 화면만 되돌린다.
+     */
+    if (conversationId === null) {
+      set({ messages: [], confirmingReset: false });
+      return;
+    }
+
+    set({ resetting: true, confirmingReset: false });
+    try {
+      await deleteAssistantConversation(conversationId);
+      set({ messages: [], conversationId: null, resetting: false });
+    } catch (error) {
+      const gone =
+        error instanceof ApiError && error.code === ASSISTANT_ERROR.CONVERSATION_FORBIDDEN;
+      if (gone) {
+        set({ messages: [], conversationId: null, resetting: false });
+        return;
+      }
+      set((s) => ({
+        messages: [
+          ...s.messages,
+          { kind: "error", id: newId(), text: toAssistantResetErrorMessage(error) },
+        ],
+        resetting: false,
       }));
     }
   },

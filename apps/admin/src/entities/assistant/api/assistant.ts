@@ -145,3 +145,19 @@ export async function fetchAssistantSuggestions(): Promise<string[]> {
   const response = await apiFetch<AssistantSuggestionsResponse>("/v1/assistant/suggestions");
   return response.questions ?? [];
 }
+
+/**
+ * 대화 지우기 — `DELETE /v1/assistant/conversations/{id}` (서버 #406).
+ *
+ * **`{memberId}:` 앞부분을 서버가 검증한다** — 남의 대화를 지우는 길이 없어야 하므로 질의와
+ * 같은 규칙이 여기에도 걸린다. 모양이 틀리거나 남의 것이면 403 `ASSISTANT_CONVERSATION_FORBIDDEN`인데,
+ * **그 거절은 지우는 쪽에서 실패가 아니다** — 지우려던 대화에 이미 닿을 수 없다는 뜻이라
+ * 사용자가 바라던 결과(그 대화가 더는 이어지지 않는다)와 같다(호출부 주석).
+ *
+ * 응답 본문이 없다(`data: null`). `apiFetch`가 봉투의 `success`만 보므로 그대로 쓴다.
+ */
+export async function deleteAssistantConversation(conversationId: string): Promise<void> {
+  await apiFetch<null>(`/v1/assistant/conversations/${encodeURIComponent(conversationId)}`, {
+    method: "DELETE",
+  });
+}
