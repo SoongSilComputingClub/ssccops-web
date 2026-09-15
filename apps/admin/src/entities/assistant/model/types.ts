@@ -1,0 +1,76 @@
+/*
+ * 규정 도우미 도메인 타입 (#433 · 서버 #403·#406 · 기획안 §6.3 · §13.1).
+ *
+ * **`entities/rag-document`와 나눈다.** 서버가 컨트롤러를 둘로 나눈 이유와 같다 — 코퍼스를
+ * 바꾸는 쪽은 `RAG_DOCUMENT_MANAGE`이고 여기 묻는 쪽은 **인증만**이다. 한 슬라이스에 두면
+ * 도우미 패널이 코퍼스 타입을 끌어오고, 그러면 «패널을 여는 데도 그 권한이 필요한가»가
+ * 코드에서 흐려진다.
+ */
+
+/** 인용이 어느 모양인가 — **어느 필드가 채워졌는지를 이 값이 말한다**(서버 `CitationType`) */
+export type CitationType = "ARTICLE" | "PAGE";
+
+/**
+ * 답변이 기댄 판본의 적용 상태 (서버 `RagApplyStatus`).
+ *
+ * 판본 배지가 쓰는 값이다. Phase 1의 검색 조건이 `EFFECTIVE`뿐이라 지금 내려오는 값은 언제나
+ * 그것이지만 **화면 계약을 여기서 좁히지 않는다** — 좁히면 개정안을 상대로 묻는 길이 열릴 때
+ * 「지금 회칙」과 「의결 전 개정안」의 답이 화면에서 같아 보인다(서버 DTO 주석과 같은 판단).
+ */
+export type AssistantApplyStatus = "DRAFT" | "EFFECTIVE" | "SUPERSEDED";
+
+/**
+ * 답변이 기댄 근거 하나.
+ *
+ * **두 모양이 한 타입에 있다.** `citationType`이 `ARTICLE`이면 `chapter`·`article`·`clause`·
+ * `supplementary`가, `PAGE`면 `page`가 채워지고 **반대쪽은 `null`이다** — 서버가 대체값을
+ * 만들지 않으므로 화면도 만들지 않는다(«없는 값을 지어내지 않는다» · AGENTS.md).
+ *
+ * `PAGE`인데 `page`가 비는 것도 **정상**이다 — DOCX에는 페이지가 없다(서버 #398). 그때 인용
+ * 카드는 문서명까지만 그린다.
+ */
+export interface AssistantCitation {
+  citationType: CitationType;
+  docTitle: string | null;
+  docVer: number | null;
+  /** ARTICLE 전용 — `제2장 회원` */
+  chapter: string | null;
+  /**
+   * ARTICLE 전용 — 부칙 여부.
+   *
+   * **이것이 없으면 `제1조`가 두 곳을 가리킨다**(부칙에서 조번호가 1로 리셋된다). `article`
+   * 문자열에 «부칙 »이 붙어 있더라도 화면이 그 문자열을 파싱해 판단하지 않는다(서버 주석).
+   */
+  supplementary: boolean | null;
+  /** ARTICLE 전용 — `제7조 (회원의 구분)` */
+  article: string | null;
+  /** ARTICLE 전용 — `6항` */
+  clause: string | null;
+  /** PAGE 전용 — `12`. **null이면 DOCX라 페이지가 없다는 뜻**이다 */
+  page: number | null;
+  /** 원문 발췌 — 인용이 이 기능의 값이라 카드마다 함께 그린다 */
+  snippet: string | null;
+}
+
+/**
+ * 질의 한 건의 답.
+ *
+ * **`answered`가 가장 중요한 필드다.** `false`면 서버가 모델을 부르지 않았거나 그 답을
+ * 버렸다는 뜻이고, `answer`는 정해진 안내 문구, `citations`는 **빈 배열(null 아님)**,
+ * 판본 값 둘은 `null`이다 — 기댄 판본이 없다.
+ */
+export interface AssistantAnswer {
+  answer: string;
+  citations: AssistantCitation[];
+  /** 거절(`answered: false`)일 때는 null이다 */
+  applyStatus: AssistantApplyStatus | null;
+  /** 거절일 때, 그리고 `DRAFT`일 때 null이다(개정안에는 시행일이 없다) */
+  effectiveDate: string | null;
+  answered: boolean;
+  /**
+   * 이어 갈 대화 — **서버가 발급한다.** 화면은 받은 값을 다음 질문에 그대로 실을 뿐 만들지
+   * 않는다. **거절일 때도 실려 온다** — 근거를 찾지 못한 첫 질문 뒤에 다시 묻는 것이 이
+   * 기능의 흔한 사용이다.
+   */
+  conversationId: string | null;
+}
