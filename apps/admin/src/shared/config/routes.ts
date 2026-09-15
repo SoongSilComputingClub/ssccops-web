@@ -182,6 +182,15 @@ export const ROUTES = {
     sessionId: number,
   ) => `/academic-programs/sessions/${academicProgramId}/${sessionId}`,
   academicProgramAttendance: "/academic-programs/attendance",
+
+  /**
+   * RAG 설정 (#432) — 규정 도우미가 참조할 문서를 올리고 색인·적용 상태를 관리한다.
+   *
+   * 주소가 `/rag/settings`가 아니라 한 조각인 것은 이슈가 지정한 값(`app/(admin)/ragsettings`)
+   * 이기 때문이다. 아래에 화면이 더 붙으면 그때 묶음을 만든다 — 지금 나누면 조각 하나짜리
+   * 그룹이 된다.
+   */
+  ragSettings: "/ragsettings",
 } as const;
 
 /**
