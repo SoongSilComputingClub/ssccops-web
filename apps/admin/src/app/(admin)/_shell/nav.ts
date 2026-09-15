@@ -381,6 +381,31 @@ export const NAV_GROUPS: NavGroup[] = [
       },
     ],
   },
+  {
+    /*
+     * RAG (#432 · 서버 #399·#401).
+     *
+     * 항목이 «설정» 하나뿐인데도 묶음을 새로 여는 것은, 이 화면이 다루는 것이 다른 묶음 어디에도
+     * 속하지 않기 때문이다 — 폼·행사·학술은 운영 데이터를 다루지만 여기는 **도우미가 무엇을 근거로
+     * 답하는가**를 정한다. 기존 묶음에 끼워 넣으면 그 묶음의 뜻이 흐려지고, 뒤이어 붙을 화면
+     * (질의 이력·프롬프트 설정)이 갈 자리도 없어진다.
+     */
+    label: "RAG",
+    mono: "R",
+    items: [
+      /*
+       * 코퍼스 API는 **목록 조회까지 전부** RAG_DOCUMENT_MANAGE다(서버 클래스 레벨
+       * `@RequireAuthority`). 권한이 없으면 첫 조회부터 403이라 감추지 않으면 갈 수 없는 곳이
+       * 목차에 남는다 — 템플릿 관리·권한 관리와 같은 판단이다.
+       */
+      {
+        label: "설정",
+        href: ROUTES.ragSettings,
+        isActive: starts("/ragsettings"),
+        requires: CAPABILITY.RAG_DOCUMENT_MANAGE,
+      },
+    ],
+  },
 ];
 
 export const NAV_FOOT: NavGroup = {

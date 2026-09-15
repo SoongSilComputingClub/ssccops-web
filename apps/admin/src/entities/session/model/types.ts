@@ -125,6 +125,18 @@ export const CAPABILITY = {
    * 지금처럼 서버가 건별로 내려주는 canApprove·canReject를 쓴다.
    */
   APPROVAL_VOTE: "APPROVAL_VOTE",
+  /**
+   * 규정 도우미 코퍼스 관리 (#432 · 서버 #399·#401).
+   *
+   * 코퍼스 API(`/v1/assistant/documents`)는 **목록 조회까지 전부** 이 코드 하나로 잠긴다 —
+   * 서버가 클래스 레벨 `@RequireAuthority`로 걸어 두었고, 코퍼스에 무엇이 올라와 있는지도
+   * 코퍼스 조작의 정보라는 판단이다. ROLE_MANAGE·MEMBER_MANAGE·EVENT_MANAGE와 같은 자리라
+   * 화면은 이 코드가 없으면 메뉴를 아예 감춘다(열어 봐야 첫 조회부터 403이다).
+   *
+   * **도우미에게 묻는 것은 이 코드가 아니다** — 질의(`/v1/assistant/…`)는 인증만 요구한다
+   * (규정은 회원에게 공개된 문서다). 서버가 두 컨트롤러를 나눠 둔 이유가 그것이다.
+   */
+  RAG_DOCUMENT_MANAGE: "RAG_DOCUMENT_MANAGE",
 } as const;
 
 export type Capability = (typeof CAPABILITY)[keyof typeof CAPABILITY];
