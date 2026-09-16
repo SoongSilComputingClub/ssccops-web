@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { RspnsCn } from "@ssccops/form-renderer";
 import { answerText, type AnswerColumn, type FormResponseItem } from "@/entities/response";
+import { onKeyActivate } from "@ssccops/ui";
 import { cn } from "@/shared/lib/cn";
 
 /*
@@ -79,11 +80,15 @@ export function ResponseAnswerTable({
                   이름과 학번은 상세로 가는 자리다 — 목록의 이름 열이 하던 일을 표에서도 유지한다
                   (심사 흐름이 끊기지 않는다). 답 칸은 펼침이 걸려 있어 이동에 쓰지 않는다.
                 */}
-                <td
-                  onClick={() => onRowClick(r.formRspnsId)}
-                  className="sticky left-0 z-10 w-[140px] max-w-[140px] cursor-pointer truncate bg-surface px-3 py-2 font-semibold hover:text-accent"
-                >
-                  {r.member.mbrNm || "-"}
+                <td className="sticky left-0 z-10 w-[140px] max-w-[140px] bg-surface px-3 py-2 font-semibold">
+                  {/* td onClick 은 키보드로 못 연다 — 안에 버튼을 둔다 (UI 감사 D8 · #473). 저장소의 다른 셀(#403)과 같은 규약 */}
+                  <button
+                    type="button"
+                    onClick={() => onRowClick(r.formRspnsId)}
+                    className="block w-full cursor-pointer truncate rounded-[4px] text-left hover:text-accent focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none"
+                  >
+                    {r.member.mbrNm || "-"}
+                  </button>
                 </td>
                 <td className="sticky left-[140px] z-10 w-[110px] max-w-[110px] truncate bg-surface px-3 py-2 text-n400">
                   {r.member.stdntNo || "-"}
@@ -102,10 +107,17 @@ export function ResponseAnswerTable({
                       onClick={
                         text ? () => setExpanded(open ? null : cellKey) : undefined
                       }
+                      // 키보드로도 펼친다 — 답이 있는 칸만 Tab 정거장이 된다 (D8)
+                      role={text ? "button" : undefined}
+                      tabIndex={text ? 0 : undefined}
+                      aria-expanded={text ? open : undefined}
+                      onKeyDown={
+                        text ? onKeyActivate(() => setExpanded(open ? null : cellKey)) : undefined
+                      }
                       /* 마우스로 잠깐 올려도 전문이 보이게 — 누르는 것과 두 경로를 준다 */
                       title={text || undefined}
                       className={cn(
-                        "px-3 py-2 align-top",
+                        "px-3 py-2 align-top focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none",
                         text && "cursor-pointer",
                         open ? "whitespace-pre-wrap" : "truncate",
                       )}
