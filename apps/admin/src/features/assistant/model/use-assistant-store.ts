@@ -7,6 +7,7 @@ import {
   fetchAssistantSuggestions,
   ASSISTANT_ERROR,
   type AssistantAnswer,
+  type AssistantCorpusState,
 } from "@/entities/assistant";
 import { ApiError } from "@/shared/lib/api/client";
 import { toAssistantErrorMessage, toAssistantResetErrorMessage } from "./assistant-error";
@@ -58,12 +59,21 @@ interface AssistantState {
   messages: AssistantMessage[];
   /** 질의가 도는 중 — 입력과 전송을 잠그고 «답변을 찾는 중» 말풍선을 그린다 */
   asking: boolean;
-  /** 서버가 내린 추천 질문(최대 3개). **빈 배열이 새 환경의 정상 상태다** */
+  /** 서버가 내린 추천 질문(최대 3개). **빈 배열이 `READY`가 아닌 동안의 정상 상태다** */
   suggestions: string[];
   /**
-   * 조회가 **끝났는가**(성공이든 실패든). 화면은 이 값이 참이 된 뒤에야 빈 배열을 «코퍼스가
-   * 비었다»로 읽는다 — 조회 중에도 배열은 비어 있어서, 이것 없이 그리면 문서가 있는
-   * 환경에서도 «등록된 규정 문서가 없습니다»가 한 번 번쩍인다.
+   * 코퍼스가 지금 답할 수 있는가 (#463) — 빈 상태 안내가 이 값으로 갈린다.
+   *
+   * **`suggestions.length === 0`으로는 갈리지 않는다.** 그 빈 배열은 «코퍼스가 비었다»와
+   * «문서는 있는데 시행 중인 것이 없다» 둘 다였고, 앞쪽으로만 읽은 탓에 화면이 이미 올린
+   * 문서를 올리라고 말했다. 조회 전 초깃값이 `EMPTY`인 것은 무해하다 — `suggestionsLoaded`가
+   * 참이 되기 전에는 어떤 안내도 그리지 않는다.
+   */
+  corpusState: AssistantCorpusState;
+  /**
+   * 조회가 **끝났는가**(성공이든 실패든). 화면은 이 값이 참이 된 뒤에야 안내를 그린다 —
+   * 조회 중에도 상태는 초깃값이라, 이것 없이 그리면 문서가 있는 환경에서도 «등록된 규정
+   * 문서가 없습니다»가 한 번 번쩍인다.
    */
   suggestionsLoaded: boolean;
   /** 조회가 **도는 중인가** — 재진입을 막는 값이라 `suggestionsLoaded`와 갈린다 */
@@ -111,6 +121,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
   messages: [],
   asking: false,
   suggestions: [],
+  corpusState: "EMPTY",
   suggestionsLoaded: false,
   suggestionsLoading: false,
   conversationId: null,
@@ -125,25 +136,44 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
   cancelResetConfirm: () => set({ confirmingReset: false }),
 
   /**
-   * 추천 질문을 한 번만 받아 온다.
+   * 추천 질문과 코퍼스 상태를 받아 온다 — **`READY`가 되기 전까지는 열 때마다 다시**(#463).
    *
-   * 실패해도 다시 시도하지 않는다 — 추천 질문이 없는 것은 **새 환경의 정상 상태**와 같은
-   * 모양이고(빈 배열), 그때 화면은 고지 문구만 그리므로 사용자가 잃는 것이 없다. 실패를
-   * 오류로 그리면 «답을 물을 수는 있는데 화면은 빨간» 상태가 된다.
+   * ── 왜 한 번으로는 안 되는가 ───────────────────────────────────
+   * 한 번만 받으면 «시행을 누르세요»를 읽고 → RAG › 설정에서 시행하고 → 패널을 다시 연
+   * 운영진에게 **여전히 «시행을 누르세요»**가 뜬다. 옛 문구에서는 «한 번 틀린다»였지만 새
+   * 문구는 사용자가 방금 한 행동을 부정하는 말이라 그대로 둘 수 없다. 다시 받는 것은 싸다 —
+   * 이 엔드포인트는 DB만 읽고 모델에 닿지 않아 질의 한도를 세지 않는다(서버 §11).
+   *
+   * ── `READY`가 된 뒤에는 다시 받지 않는다 ───────────────────────
+   * 그 상태에서 바뀔 것은 추천 질문 문구뿐이고, 그것 때문에 패널을 열 때마다 왕복을 붙일
+   * 이유가 없다. `suggestionsLoading`은 그대로 재진입만 막는다.
+   *
+   * **옛 서버(`corpusState`를 내리지 않는다)에서도 이 규칙이 옳다.** 그때 값은 폴백으로
+   * 정해지는데, 질문이 있으면 `READY`라 종전처럼 한 번만 받고, 없으면 `EMPTY`라 열 때마다
+   * 다시 받는다 — 문서가 생기면 알아차려야 하는 바로 그 상태다.
+   *
+   * 실패해도 오류로 그리지 않는다 — 추천 질문이 없는 것은 코퍼스가 빈 것과 화면에서 같은
+   * 모양이라 사용자가 잃는 것이 없고, 실패를 빨갛게 그리면 «답을 물을 수는 있는데 화면은
+   * 빨간» 상태가 된다. 대신 `READY`가 아닌 채로 남으므로 **다음에 열 때 다시 시도한다**.
    */
   loadSuggestions: async () => {
-    const { suggestionsLoaded, suggestionsLoading } = get();
-    if (suggestionsLoaded || suggestionsLoading) return;
+    const { corpusState, suggestionsLoaded, suggestionsLoading } = get();
+    if (suggestionsLoading) return;
+    if (suggestionsLoaded && corpusState === "READY") return;
     set({ suggestionsLoading: true });
     try {
-      set({ suggestions: await fetchAssistantSuggestions() });
+      const { corpusState: state, questions } = await fetchAssistantSuggestions();
+      set({ suggestions: questions, corpusState: state });
     } catch {
-      set({ suggestions: [] });
+      /*
+       * 조회하지 못했으면 **직전 값을 그대로 둔다.** 비우면 시행을 누른 뒤 열었다가 조회가
+       * 한 번 실패했을 때 «문서가 없습니다»로 되돌아가는데, 그것은 방금 본 것보다 나쁜
+       * 거짓말이다. 초회 실패라면 초깃값(`EMPTY` · 빈 배열)이 그대로 남는다.
+       */
     } finally {
       /*
-       * 실패해도 «끝났다»로 둔다 — 추천 질문이 없는 것과 코퍼스가 빈 것은 화면에서 같은
-       * 모양이고(고지 문구만), 실패를 이유로 계속 「불러오는 중」에 머무르면 안내가 영영
-       * 그려지지 않는다.
+       * 실패해도 «끝났다»로 둔다 — 실패를 이유로 계속 「불러오는 중」에 머무르면 안내가 영영
+       * 그려지지 않는다. `READY`가 아니므로 다음에 열 때 다시 시도한다.
        */
       set({ suggestionsLoaded: true, suggestionsLoading: false });
     }
@@ -253,9 +283,11 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
    * 없다는 뜻이고 그것은 사용자가 바란 결과와 같다(만료·재로그인이 이 코드를 만든다).
    *
    * ── 추천 질문은 다시 받지 않는다 ───────────────────────────────
-   * `suggestions`·`suggestionsLoaded`를 남긴다. 코퍼스가 이 몇 초 사이에 바뀌지 않으므로
-   * 왕복만 늘고, 비워 두면 초기 화면이 고지 문구만으로 한 번 그려졌다가 추천 질문이 뒤늦게
-   * 끼어든다 — 되돌아간 «처음 상태»가 처음과 다르게 보인다.
+   * `suggestions`·`corpusState`·`suggestionsLoaded`를 남긴다. 코퍼스가 이 몇 초 사이에 바뀌지
+   * 않으므로 왕복만 늘고, 비워 두면 초기 화면이 안내만으로 한 번 그려졌다가 추천 질문이
+   * 뒤늦게 끼어든다 — 되돌아간 «처음 상태»가 처음과 다르게 보인다. **#463의 재조회와
+   * 어긋나지 않는다**: 그쪽은 «패널을 닫았다 여는 사이에 코퍼스가 바뀔 수 있다»를 다루고
+   * 이쪽은 그 사이가 몇 초인 경우다.
    */
   reset: async () => {
     const { asking, resetting, conversationId } = get();

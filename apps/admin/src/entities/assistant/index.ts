@@ -17,5 +17,7 @@ export type {
   AssistantAnswer,
   AssistantApplyStatus,
   AssistantCitation,
+  AssistantCorpusState,
+  AssistantSuggestions,
   CitationType,
 } from "./model/types";
