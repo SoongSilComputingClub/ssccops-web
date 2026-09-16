@@ -7,16 +7,7 @@ import { useCan } from "@/features/auth";
 import { useRoleList } from "@/features/role";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
-import {
-  Card,
-  Chip,
-  EmptyState,
-  GridTable,
-  PageBody,
-  PageHeader,
-  Segmented,
-  type GridColumn,
-} from "@/shared/ui";
+import { Card, Chip, EmptyState, GridTable, PageBody, PageHeader, Segmented, type GridColumn, Button } from "@/shared/ui";
 import type { RoleSummary } from "@/entities/role";
 
 /*
@@ -130,16 +121,15 @@ function RoleListView() {
       header: "권한",
       width: "90px",
       render: (r) => (
-        <button
-          type="button"
+        <Button
+          variant="link"
           onClick={(e) => {
             e.stopPropagation();
             router.push(ROUTES.roleAuthorities(r.roleId));
           }}
-          className="cursor-pointer text-[14px] text-accent"
         >
           권한 부여 ›
-        </button>
+        </Button>
       ),
     },
     {
