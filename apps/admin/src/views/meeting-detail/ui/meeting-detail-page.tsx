@@ -26,23 +26,7 @@ import {
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
-import {
-  Badge,
-  Button,
-  Card,
-  Chip,
-  ChipGroup,
-  EmptyState,
-  KeyValueGrid,
-  PageBody,
-  PageHeader,
-  SearchInput,
-  SectionLabel,
-  Sheet,
-  TextArea,
-  TextField,
-  flash,
-} from "@/shared/ui";
+import { Badge, Button, Card, Chip, ChipGroup, EmptyState, KeyValueGrid, PageBody, PageHeader, SearchInput, SectionLabel, Sheet, TextArea, TextField, flash } from "@/shared/ui";
 
 /*
  * 회의 상세 (ssccops-server OPS-025 조회 · OPS-026 전이 · OPS-027~029 안건, #83 ·
@@ -170,14 +154,14 @@ function AgendaCard({
         <div className="flex-1" />
         <span className="text-[12.5px] text-n500">제출 {agenda.submitter?.name || "-"}</span>
         {editable && withdrawable && (
-          <button
-            type="button"
+          <Button
+            variant="link-danger"
             disabled={pending}
             onClick={onWithdraw}
-            className="cursor-pointer text-[13.5px] text-n400 hover:text-danger disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-[13.5px] text-n400"
           >
             삭제
-          </button>
+          </Button>
         )}
       </div>
       {agenda.targetOperation ? (
@@ -680,7 +664,7 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
                   <div className="mt-3 text-[13.5px] text-accent">선택됨 · {selectedTarget.ttl}</div>
                 )}
 
-                <div className="mt-3 flex gap-[7px]">
+                <div className="mt-3 flex flex-wrap gap-[7px]">
                   {AGND_PRCS_SE_CDS.map((cd) => (
                     <Chip
                       key={cd}
