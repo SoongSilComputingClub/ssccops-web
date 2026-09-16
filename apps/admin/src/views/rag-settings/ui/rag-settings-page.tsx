@@ -236,7 +236,12 @@ export function RagSettingsPage() {
          * 막는 자리이고, 받고 나서 안내하는 것보다 미리 잠그고 이유를 붙이는 편이 낫다(#432).
          */
         const notIndexed = d.indexStatus !== "INDEXED";
-        const applyLabel = d.applyStatus === "EFFECTIVE" ? "답변에서 제외" : "답변에 사용";
+        /*
+         * 제외 쪽만 «영구»를 단다 (#468). 두 이름이 대칭이면 서로의 반대말로 읽히는데
+         * `SUPERSEDED → EFFECTIVE` 전이가 없어 **한쪽만 되돌아온다** — 그 비대칭을 누르기
+         * 전에 알리는 자리가 여기다(확인 시트는 이미 누른 뒤에 뜬다).
+         */
+        const applyLabel = d.applyStatus === "EFFECTIVE" ? "답변에서 영구 제외" : "답변에 사용";
         const applyTitle = !canManage
           ? NO_RAG_DOCUMENT_MANAGE
           : d.applyStatus === "SUPERSEDED"

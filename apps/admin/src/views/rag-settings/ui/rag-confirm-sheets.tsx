@@ -70,9 +70,17 @@ export function RagDeleteConfirm({
 }
 
 /**
- * 적용 전환 — `DRAFT → EFFECTIVE`(답변에 사용) · `EFFECTIVE → SUPERSEDED`(답변에서 제외).
+ * 적용 전환 — `DRAFT → EFFECTIVE`(답변에 사용) · `EFFECTIVE → SUPERSEDED`(답변에서 영구 제외).
  *
- * 사용 전환에 확인을 받는 것은 **되돌릴 수는 있지만 그 사이의 답변이 바뀌기** 때문이다.
+ * ── 두 방향의 무게가 다르다 (#468) ────────────────────────────
+ * **성립하는 전이는 위 둘뿐이고 `SUPERSEDED → EFFECTIVE`는 없다.** 제외하는 순간 색인된
+ * 내용이 지워지므로 되돌리려면 같은 파일을 다시 올려 처음부터 색인해야 한다 — 상태만 되돌리는
+ * 길이 없다.
+ *
+ * 그래서 제외 쪽만 `danger`로 세우고 첫 문장에서 그 사실을 말한다. 두 버튼 이름이
+ * «답변에 사용 ↔ 답변에서 제외»로 **완벽히 대칭이라** 서로의 반대말로 읽히는데, 실제로는 한쪽만
+ * 되돌아오기 때문이다(«내리기 ↔ 시행»이던 시절에도 같은 오해가 있었고, 어휘를 고르며 오히려
+ * 짙어졌다). 버튼 이름에 «영구»가 들어간 것도 **누르기 전에** 그 비대칭을 알리기 위해서다.
  *
  * **다른 행은 움직이지 않는다**(서버 ADR-0034). 예전에는 사용 전환 하나가 같은 문서의 기존
  * 사용본을 함께 내려서 «한 번의 확인이 두 행을 움직인다»를 문구가 밝혀야 했는데, 판본 관리를
@@ -93,17 +101,19 @@ export function RagApplyConfirm({
   return (
     <Sheet
       open
-      title={down ? "답변에서 제외할까요?" : "답변에 사용할까요?"}
+      title={down ? "답변에서 영구 제외할까요?" : "답변에 사용할까요?"}
       hint={describe(target)}
       onClose={onClose}
       onOk={() => onConfirm(target)}
-      okLabel={down ? "제외" : "사용"}
+      okLabel={down ? "영구 제외" : "사용"}
+      okVariant={down ? "danger" : undefined}
     >
       <div className="text-[14px] leading-[1.8] text-n400">
         {down ? (
           <>
-            제외하면 이 문서는 답변 근거에서 빠지고 색인된 내용도 지워집니다. 다시 사용할 수는
-            없으므로, 되돌리려면 같은 파일을 다시 올려야 합니다.
+            <span className="text-danger">한 번 제외하면 다시 사용할 수 없습니다.</span> 이 문서는
+            답변 근거에서 빠지고 색인된 내용도 지워집니다.
+            <div className="mt-2">되돌리는 길은 같은 파일을 다시 올리는 것뿐입니다.</div>
           </>
         ) : (
           <>
