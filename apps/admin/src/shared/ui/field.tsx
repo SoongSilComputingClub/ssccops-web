@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentPropsWithRef, SelectHTMLAttributes } from "react";
-import { cn } from "@ssccops/ui";
+import { cn, INPUT_BASE } from "@ssccops/ui";
 
 /*
  * 입력 컴포넌트 — `TextField`·`Field`는 `@ssccops/ui`에서 온다 (ssccops#243).
@@ -9,13 +9,10 @@ import { cn } from "@ssccops/ui";
  * `Field`는 세 앱이 글자까지 같았고, `TextField`는 이쪽이 자라 있어(`inset`) 그것을 올렸다.
  * **`TextArea`·`SelectField`는 이 앱에만 있어 여기 남는다** — 중복이 아니다.
  *
- * 좁은 화면 16px 규칙(#105)은 패키지의 `INPUT_BASE`가 갖는다. 아래 둘은 그 규칙을 **각자
- * 적어 두고 있으므로** 패키지 쪽을 고칠 때 여기도 함께 본다 — 그때 이 둘도 패키지로 올릴지
- * 판단하면 된다(지금은 쓰는 앱이 하나라 올릴 이유가 없다).
+ * 좁은 화면 16px 규칙(#105)과 포커스 링(#469)은 패키지의 `INPUT_BASE` **한 벌**이다 — 아래 둘이
+ * 같은 문자열을 각자 적어 두고 있어 패키지를 고칠 때 여기가 빠졌던 자리라(#469에서 실제로 빠질
+ * 뻔했다) 패키지가 내보내는 것을 가져다 쓴다. 둘을 패키지로 올릴지는 쓰는 앱이 둘이 되면 판단한다.
  */
-const INPUT_BASE =
-  "w-full rounded-[12px] border text-[16px] text-ink outline-none placeholder:text-n500 focus:border-accent disabled:cursor-not-allowed disabled:opacity-45 lg:text-[15.5px]";
-
 export { Field, TextField } from "@ssccops/ui";
 
 /*
@@ -46,7 +43,7 @@ export function SelectField({ className, ...rest }: Readonly<SelectHTMLAttribute
     <select
       className={cn(
         // 16px는 iOS 자동 확대 방지다 — INPUT_BASE의 주석 참조 (#105)
-        "w-full cursor-pointer rounded-[8px] border border-line bg-surface px-[10px] py-[8px] text-[16px] text-ink outline-none focus:border-accent lg:text-[15px]",
+        "w-full cursor-pointer rounded-[8px] border border-line bg-surface px-[10px] py-[8px] text-[16px] text-ink outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/40 lg:text-[15px]",
         className,
       )}
       {...rest}
