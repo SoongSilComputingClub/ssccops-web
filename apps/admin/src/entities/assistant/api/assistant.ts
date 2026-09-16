@@ -52,7 +52,6 @@ export const ASSISTANT_QUESTION_MAX_LENGTH = 1000;
 interface AssistantCitationResponse {
   citationType: CitationType | null;
   docTitle: string | null;
-  docVer: number | null;
   chapter: string | null;
   supplementary: boolean | null;
   article: string | null;
@@ -87,7 +86,6 @@ function toCitation(response: AssistantCitationResponse): AssistantCitation {
   return {
     citationType: response.citationType ?? "PAGE",
     docTitle: response.docTitle,
-    docVer: response.docVer,
     chapter: response.chapter,
     supplementary: response.supplementary,
     article: response.article,

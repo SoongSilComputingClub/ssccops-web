@@ -1,9 +1,9 @@
 "use client";
 
 import {
+  basisBadgeLabel,
   citationLabel,
   citationSource,
-  versionBadgeLabel,
   type AssistantAnswer,
   type AssistantCitation,
 } from "@/entities/assistant";
@@ -45,14 +45,14 @@ export function AssistantMessageItem({ message }: Readonly<{ message: Message }>
 }
 
 function AnswerBubble({ answer }: Readonly<{ answer: AssistantAnswer }>) {
-  const badge = versionBadgeLabel(answer);
+  const badge = basisBadgeLabel(answer);
 
   return (
     <div className="flex flex-col gap-2">
       {/*
-        판본 배지 — 답변 **위**에 둔다. 「지금 회칙」과 「의결 전 개정안」의 답이 화면에서
+        근거 배지 — 답변 **위**에 둔다. 「지금 회칙」과 「의결 전 개정안」의 답이 화면에서
         같아 보이면 안 되는데, 읽고 난 뒤에 붙은 꼬리표는 이미 읽은 문장을 되돌리지 못한다.
-        거절이면 기댄 판본이 없으므로 그리지 않는다(versionBadgeLabel이 null을 준다).
+        거절이면 기댄 문서가 없으므로 그리지 않는다(basisBadgeLabel이 null을 준다).
       */}
       {badge && (
         <div className="self-start rounded-full border border-line bg-fill px-[10px] py-[3px] text-[12px] text-n400">
