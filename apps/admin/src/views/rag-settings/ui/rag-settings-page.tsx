@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   RAG_APPLY_STATUS_NM,
@@ -8,6 +9,7 @@ import {
   RAG_INDEX_STATUS_NM,
   RAG_INDEX_STATUS_TONE,
   formatFileSize,
+  type RagApplyStatus,
   type RagDocument,
 } from "@/entities/rag-document";
 import { CAPABILITY } from "@/entities/session";
@@ -18,10 +20,12 @@ import {
   useRagDocuments,
   useRagUpload,
 } from "@/features/rag-document";
+import { RAG_APPLY_QUERY, ROUTES } from "@/shared/config/routes";
 import { formatYmd } from "@/shared/lib/date";
 import {
   Badge,
   Card,
+  Chip,
   EmptyState,
   GridTable,
   PageBody,
@@ -53,7 +57,33 @@ import { RagApplyConfirm, RagDeleteConfirm } from "./rag-confirm-sheets";
 /** 검색 디바운스 — 서버 `q`를 부르므로 글자마다 보내지 않는다 (회의 안건 검색과 같은 값) */
 const SEARCH_DEBOUNCE_MS = 300;
 
+/** URL이 고를 수 있는 값 — 모르는 문자열을 상태로 삼지 않기 위한 대조표 */
+const RAG_APPLY_STATUSES: readonly RagApplyStatus[] = ["DRAFT", "EFFECTIVE", "SUPERSEDED"];
+
+/**
+ * 적용 상태 필터를 URL에서 읽는다 (#463).
+ *
+ * **주소는 사용자가 손으로 고칠 수 있다** — 파라미터가 없거나 모르는 값이면 `null`(전량)로
+ * 떨어뜨린다. 잘못된 링크 하나로 화면이 비어 «문서가 사라졌다»로 읽히는 것이 더 나쁘다.
+ */
+function parseApplyFilter(value: string | null): RagApplyStatus | null {
+  return value !== null && RAG_APPLY_STATUSES.includes(value as RagApplyStatus)
+    ? (value as RagApplyStatus)
+    : null;
+}
+
+/** 표가 빈 이유 — 걸려 있는 축을 빠짐없이 말한다(검색 · 적용 상태 필터) */
+function emptyMessage(keyword: string, applyFilter: RagApplyStatus | null): string {
+  const filtered = applyFilter === null ? null : `${RAG_APPLY_STATUS_NM[applyFilter]} 상태`;
+  if (keyword && filtered) return `${filtered}인 문서 중 검색 결과가 없습니다.`;
+  if (keyword) return "검색 결과가 없습니다.";
+  if (filtered) return `${filtered}인 문서가 없습니다.`;
+  return "등록된 문서가 없습니다.";
+}
+
 export function RagSettingsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
@@ -65,6 +95,32 @@ export function RagSettingsPage() {
 
   const admin = useRagDocuments(debouncedQuery);
   const upload = useRagUpload();
+
+  /*
+   * 적용 상태 필터 (#463) — 도우미 패널의 «시행 전입니다» 링크가 `?apply=DRAFT`로 데려온다.
+   *
+   * **클라이언트 쪽 필터다.** 서버 질의는 `q`(문서명) 하나뿐이고 이 조회는 전량을 받으므로
+   * (커서 페이징이 아니다) 받아 온 뒤 화면에서 고른다 — 페이징이었다면 걸러낸 만큼 한 페이지에
+   * 남는 개수가 흔들렸을 자리다(행사 목록과 같은 판단).
+   *
+   * **카드 셋은 걸러지지 않는다** — 목록 응답의 요약은 언제나 코퍼스 전체다(서버 계약).
+   * 검색이 이미 같은 어긋남을 만들고 있고, 화면 하단 문구가 그 사실을 밝힌다.
+   */
+  const applyFilter = parseApplyFilter(searchParams.get(RAG_APPLY_QUERY));
+  const documents =
+    applyFilter === null
+      ? admin.documents
+      : admin.documents.filter((d) => d.applyStatus === applyFilter);
+
+  /** 필터를 지운다 — 파라미터를 빼는 쪽이 «전체»다(값을 남기는 «전체»를 따로 두지 않는다) */
+  const clearApplyFilter = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(RAG_APPLY_QUERY);
+    const qs = params.toString();
+    // scroll:false — 칩만 눌렀는데 맨 위로 튀지 않게 (행사 목록과 같은 규약)
+    router.push(qs ? `${ROUTES.ragSettings}?${qs}` : ROUTES.ragSettings, { scroll: false });
+  };
+
   /* 업로드·재색인·삭제·적용 전환이 전부 같은 권한 하나다 — 서버가 그렇게 걸어 두었다 */
   const canManage = useCan(CAPABILITY.RAG_DOCUMENT_MANAGE);
 
@@ -277,6 +333,16 @@ export function RagSettingsPage() {
             <Card className="mt-4 px-5 pt-4 pb-[6px]">
               <div className="mb-4 flex flex-wrap items-center gap-3">
                 <div className="text-[17px] font-medium">지식 문서</div>
+                {/*
+                 * 걸린 필터를 **보여 준다** (#463). 아무 표시 없이 목록이 줄면 운영진이 문서가
+                 * 사라졌다고 읽는다 — 누르면 지워지는 칩 하나가 그 오해를 막고 되돌림도 된다.
+                 * 필터가 없을 때는 칩 자체를 그리지 않는다(고를 축이 아니라 «걸려 있다»는 표시다).
+                 */}
+                {applyFilter !== null && (
+                  <Chip active onClick={clearApplyFilter} title="필터를 지우고 전체를 봅니다">
+                    {RAG_APPLY_STATUS_NM[applyFilter]}만 보는 중 ✕
+                  </Chip>
+                )}
                 <div className="flex-1" />
                 {/* 검색은 서버 q 파라미터다 — 클라이언트 필터가 아니라 (#432) */}
                 <SearchInput
@@ -289,14 +355,22 @@ export function RagSettingsPage() {
 
               <GridTable
                 columns={columns}
-                rows={admin.documents}
+                rows={documents}
                 rowKey={(d) => String(d.ragDocId)}
                 empty={
                   <EmptyState
-                    message={
-                      debouncedQuery
-                        ? "검색 결과가 없습니다."
-                        : "등록된 문서가 없습니다."
+                    /*
+                     * 왜 비었는지를 말한다 — 필터 때문에 빈 것을 «등록된 문서가 없습니다»로
+                     * 그리면 도우미 링크를 타고 온 운영진이 올린 문서를 잃었다고 읽는다.
+                     * 검색과 함께 걸려 있으면 **둘 다** 말한다: 하나만 밝히면 나머지 하나를
+                     * 풀어야 하는 줄 모른 채 지운 검색어를 다시 친다.
+                     */
+                    message={emptyMessage(debouncedQuery, applyFilter)}
+                    /* 필터는 이 화면 밖(도우미 링크)에서 걸리기도 하므로 푸는 길을 여기 둔다 */
+                    action={
+                      applyFilter !== null
+                        ? { label: "전체 보기", onClick: clearApplyFilter }
+                        : undefined
                     }
                   />
                 }
