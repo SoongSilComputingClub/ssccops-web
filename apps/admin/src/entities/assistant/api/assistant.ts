@@ -3,6 +3,8 @@ import type {
   AssistantAnswer,
   AssistantApplyStatus,
   AssistantCitation,
+  AssistantCorpusState,
+  AssistantSuggestions,
   CitationType,
 } from "../model/types";
 
@@ -70,6 +72,14 @@ interface AssistantQueryResponse {
 }
 
 interface AssistantSuggestionsResponse {
+  /**
+   * 코퍼스가 지금 답할 수 있는 상태인가 (#463 · 서버 #449).
+   *
+   * **옛 서버는 이 필드를 내리지 않는다** — prod 가 아직 릴리스 대기다. `apiFetch`는 본문을
+   * 검사하지 않고 캐스팅하므로(`envelope.data as T`) 그때 실제 값은 `undefined`이고, 위의
+   * `| null`은 «그렇다더라»일 뿐이다(#462가 같은 자리에서 `vundefined`를 만들었다).
+   */
+  corpusState: AssistantCorpusState | null;
   questions: string[] | null;
 }
 
@@ -138,16 +148,34 @@ export async function askAssistant(
   return toAnswer(response);
 }
 
+/** 서버가 내리는 세 값 — 모르는 문자열을 그대로 상태로 삼지 않기 위한 대조표 */
+const CORPUS_STATES: readonly AssistantCorpusState[] = ["EMPTY", "NONE_EFFECTIVE", "READY"];
+
 /**
- * 추천 질문 — `GET /v1/assistant/suggestions`. 최대 3개.
+ * 추천 질문 — `GET /v1/assistant/suggestions`. 최대 3개 + 코퍼스 상태(#463).
  *
  * **웹에 하드코딩하지 않는다**(§13.3). 코퍼스가 이제 화면에서 바뀌므로 문구를 고정하면 업로드
- * 다음 날부터 거짓말을 한다. **빈 배열이 새 환경의 정상 상태다** — 그때 화면은 고지 문구만
- * 그린다.
+ * 다음 날부터 거짓말을 한다. **빈 배열이 새 환경의 정상 상태다** — 그때 화면은 상태에 맞는
+ * 안내만 그린다.
+ *
+ * ── 값이 비어 올 때 (#463) ─────────────────────────────────────
+ * `corpusState`가 없거나 모르는 값이면 **옛 규칙으로 떨어뜨린다** — 질문이 있으면 `READY`,
+ * 없으면 `EMPTY`. prod 서버가 아직 이 필드를 내리지 않으므로 그때도 화면이 종전과 똑같이
+ * 성립해야 한다. `NONE_EFFECTIVE`로 떨어뜨리지 않는 것은, 그쪽이 틀리면 **문서를 올린 적도
+ * 없는 새 환경에 «시행을 누르세요»**라고 말하기 때문이다(고치려던 오류의 거울상이다).
  */
-export async function fetchAssistantSuggestions(): Promise<string[]> {
+export async function fetchAssistantSuggestions(): Promise<AssistantSuggestions> {
   const response = await apiFetch<AssistantSuggestionsResponse>("/v1/assistant/suggestions");
-  return response.questions ?? [];
+  const questions = response.questions ?? [];
+  const received = response.corpusState;
+  const corpusState =
+    received !== null && received !== undefined && CORPUS_STATES.includes(received)
+      ? received
+      : questions.length > 0
+        ? "READY"
+        : "EMPTY";
+
+  return { corpusState, questions };
 }
 
 /**
