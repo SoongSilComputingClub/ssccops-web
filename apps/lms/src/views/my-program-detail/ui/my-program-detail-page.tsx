@@ -76,7 +76,7 @@ function BackLink() {
   return (
     <Link
       href={ROUTES.studioPrograms}
-      className="text-[13.5px] text-n300 hover:text-accent"
+      className="-my-1 inline-flex min-h-6 items-center self-start py-1 text-[13.5px] text-n300 hover:text-accent"
     >
       ← 내 활동
     </Link>

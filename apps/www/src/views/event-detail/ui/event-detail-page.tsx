@@ -85,7 +85,10 @@ export async function EventDetailPage({ eventId }: Readonly<{ eventId: number }>
 
 function BackLink() {
   return (
-    <Link href={ROUTES.events} className="text-[13.5px] text-accent-strong">
+    <Link
+      href={ROUTES.events}
+      className="-my-1 inline-flex min-h-6 items-center self-start py-1 text-[13.5px] text-accent-strong"
+    >
       ‹ 행사 목록
     </Link>
   );
