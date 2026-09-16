@@ -431,6 +431,7 @@ export function QitemComposer({
                     <div className="mt-3 flex items-center gap-2">
                       <Toggle
                         size="sm"
+                        label={`${q.qitemLblNm || "(제목 없음)"} 필수 응답`}
                         on={q.reqYn}
                         onChange={(on) => patchQ(q.qitemId, { reqYn: on })}
                       />

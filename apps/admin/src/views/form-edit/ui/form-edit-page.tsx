@@ -353,6 +353,7 @@ function FormEditContent({ editor }: Readonly<{ editor: FormEditor }>) {
                 <div className="flex items-start gap-[10px]">
                   <Toggle
                     size="sm"
+                    label={FIELD_LABEL.multipleResponse}
                     className="mt-[3px] flex-none"
                     on={draft.mltplRspnsYn}
                     onChange={(on) => setDraft((d) => ({ ...d, mltplRspnsYn: on }))}
