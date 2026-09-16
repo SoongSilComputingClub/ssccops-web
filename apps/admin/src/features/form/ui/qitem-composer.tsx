@@ -16,7 +16,7 @@ import {
   type QitemTypeCd,
 } from "@/shared/config/codes";
 import { FormDescription } from "@ssccops/form-renderer";
-import { Badge, Card, Chip, SectionLabel, TextArea, TextField, Toggle, flash } from "@/shared/ui";
+import { Badge, Card, Chip, SectionLabel, TextArea, TextField, Toggle, flash, Button } from "@/shared/ui";
 import { nextQitemId, parseMaxSlctCnt } from "../model/form-draft";
 
 /*
@@ -254,13 +254,9 @@ export function QitemComposer({
       <div className="mb-3 flex items-center">
         <SectionLabel>페이지</SectionLabel>
         <div className="flex-1" />
-        <button
-          type="button"
-          onClick={addPage}
-          className="cursor-pointer text-[14px] text-accent"
-        >
+        <Button variant="link" onClick={addPage}>
           + 페이지 추가
-        </button>
+        </Button>
       </div>
       <div className="mb-3 flex flex-wrap gap-[6px]">
         {/*
@@ -282,24 +278,28 @@ export function QitemComposer({
         <div className="flex items-center gap-2 text-[13.5px] text-n500">
           페이지 {page + 1} / {pages.length}
           <div className="flex-1" />
-          <button
-            type="button"
+          {/* 화살표 글자 하나는 12×20 이라 빗나가고 이름도 없다 — 뜻을 aria-label 로, 히트는 24px (UI 감사 D5 · #473) */}
+          <Button
+            variant="link"
+            aria-label="페이지 위로 이동"
             onClick={() => movePage(page, -1)}
-            className="cursor-pointer hover:text-accent"
+            className="text-n500"
           >
             ↑
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="link"
+            aria-label="페이지 아래로 이동"
             onClick={() => movePage(page, 1)}
-            className="cursor-pointer hover:text-accent"
+            className="text-n500"
           >
             ↓
-          </button>
+          </Button>
           <button
             type="button"
             onClick={() => removePage(page)}
-            className="cursor-pointer hover:text-danger"
+            aria-label="페이지 삭제"
+            className="-my-1 min-h-6 cursor-pointer px-1 py-1 hover:text-danger"
           >
             삭제
           </button>
@@ -437,20 +437,22 @@ export function QitemComposer({
                       />
                       <span className="text-[14px]">필수 응답</span>
                       <div className="flex-1" />
-                      <button
-                        type="button"
+                      <Button
+                        variant="link"
+                        aria-label="문항 위로 이동"
                         onClick={() => moveQitem(q.qitemId, -1)}
-                        className="cursor-pointer text-[14px] text-n400 hover:text-accent"
+                        className="text-n400"
                       >
                         ↑
-                      </button>
-                      <button
-                        type="button"
+                      </Button>
+                      <Button
+                        variant="link"
+                        aria-label="문항 아래로 이동"
                         onClick={() => moveQitem(q.qitemId, 1)}
-                        className="cursor-pointer text-[14px] text-n400 hover:text-accent"
+                        className="text-n400"
                       >
                         ↓
-                      </button>
+                      </Button>
                       {/*
                         시스템이 요구하는 문항의 삭제는 감추지 않고 잠근다 — 버튼이 사라지면
                         이 문항만 못 지우는 것인지 편집기에 삭제가 없는 것인지 알 수 없다.
