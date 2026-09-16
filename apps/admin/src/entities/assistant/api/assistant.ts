@@ -290,7 +290,7 @@ const CORPUS_STATES: readonly AssistantCorpusState[] = ["EMPTY", "NONE_EFFECTIVE
  * `corpusState`가 없거나 모르는 값이면 **옛 규칙으로 떨어뜨린다** — 질문이 있으면 `READY`,
  * 없으면 `EMPTY`. prod 서버가 아직 이 필드를 내리지 않으므로 그때도 화면이 종전과 똑같이
  * 성립해야 한다. `NONE_EFFECTIVE`로 떨어뜨리지 않는 것은, 그쪽이 틀리면 **문서를 올린 적도
- * 없는 새 환경에 «시행을 누르세요»**라고 말하기 때문이다(고치려던 오류의 거울상이다).
+ * 없는 새 환경에 «답변에 사용을 누르세요»**라고 말하기 때문이다(고치려던 오류의 거울상이다).
  */
 export async function fetchAssistantSuggestions(): Promise<AssistantSuggestions> {
   const response = await apiFetch<AssistantSuggestionsResponse>("/v1/assistant/suggestions");

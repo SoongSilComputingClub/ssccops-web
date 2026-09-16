@@ -34,8 +34,8 @@ import { toRagDocumentErrorMessage } from "./rag-document-error";
  * 규칙). 검색어가 바뀔 때만 키가 오른다 — 그때는 다른 모집단이라 로딩을 보여 주는 것이 맞다.
  *
  * ── 변이 뒤에는 목록을 다시 받는다 ──────────────────────────────
- * 응답이 바뀐 행 하나를 주지만 부분 갱신하지 않는다. 시행 전환은 그 문서 하나만 바꾸지만
- * (서버 ADR-0034 — 예전에는 같은 문서의 기존 시행본이 함께 내려갔다), 재색인은 요약의
+ * 응답이 바뀐 행 하나를 주지만 부분 갱신하지 않는다. 사용 전환은 그 문서 하나만 바꾸지만
+ * (서버 ADR-0034 — 예전에는 같은 문서의 기존 사용본이 함께 내려갔다), 재색인은 요약의
  * «색인 완료» 수를 움직이고 삭제는 총 청크를 바꾼다 — 화면이 그리는 다른 값까지 함께 움직이므로
  * 통째로 다시 부른다(AGENTS.md「부분 갱신과 재조회를 가른다」).
  */
@@ -83,7 +83,7 @@ export interface RagDocumentAdmin {
 
   reindex: (doc: RagDocument) => Promise<void>;
   remove: (doc: RagDocument) => Promise<void>;
-  /** `DRAFT → EFFECTIVE`(시행 중으로 올리기) · `EFFECTIVE → SUPERSEDED`(내려두기) */
+  /** `DRAFT → EFFECTIVE`(답변에 사용) · `EFFECTIVE → SUPERSEDED`(답변에서 제외) */
   makeEffective: (doc: RagDocument) => Promise<void>;
   supersede: (doc: RagDocument) => Promise<void>;
   /** 업로드 직후 — 응답이 목록 한 행과 같은 모양이라 그대로 꽂고 요약은 다시 받는다 */
@@ -242,7 +242,7 @@ export function useRagDocuments(keyword = ""): RagDocumentAdmin {
   /*
    * 발효일을 실어 보내지 않는다 — 비우면 서버가 오늘을 넣는다(#401). 의결일이 따로 있는
    * 경우를 위해 API는 날짜를 받지만, 이 화면에 그 입력란을 만들지 않았다: 화면에 없는 값을
-   * 입력란만 두면 사용자가 넣은 값이 저장 없이 사라지고, 반대로 지금은 «오늘부터 시행»이
+   * 입력란만 두면 사용자가 넣은 값이 저장 없이 사라지고, 반대로 지금은 «오늘부터 사용»이
    * 언제나 참이다.
    */
   const makeEffective = useCallback(

@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { ASSISTANT_QUESTION_MAX_LENGTH } from "@/entities/assistant";
 import { Button, Sheet } from "@/shared/ui";
 import { useAssistantStore } from "../model/use-assistant-store";
@@ -23,6 +30,44 @@ import { AssistantMessageItem } from "./assistant-message";
  */
 
 const TITLE_ID = "assistant-panel-title";
+
+/**
+ * 기다리는 동안의 말풍선 (#468).
+ *
+ * ── 왜 글자만으로는 모자랐나 ──────────────────────────────────
+ * 첫 조각이 오기 전까지는 화면에 움직이는 것이 하나도 없었다. 멈춘 글자는 «도는 중»과 «멈춘
+ * 것»을 구별해 주지 못해서, 몇 초가 걸리는 이 구간에 사용자가 같은 질문을 다시 누르게 된다.
+ * 흘려 받기 시작한 뒤에는 글자 자체가 진행 표시라(#464) 이 말풍선을 걷는다.
+ *
+ * ── 두 자리가 같은 것을 쓴다 ──────────────────────────────────
+ * 답을 기다리는 동안과 대화를 지우는 동안은 **같은 성격의 기다림**이다. 한쪽만 움직이면
+ * 사용자는 그 차이를 «이쪽은 돌고 저쪽은 멈췄다»로 읽는다.
+ *
+ * ── 점은 읽어 주지 않는다 ────────────────────────────────────
+ * `aria-hidden`인 것은 점이 글자가 아니라 표시라서다 — 진행 중이라는 사실은 패널의
+ * `aria-busy`가 이미 말하고 있고(#464), 문구도 그대로 남아 읽힌다.
+ */
+function WaitingBubble({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <div className="flex items-center gap-2 self-start rounded-2xl rounded-bl-md border border-line bg-surface px-[14px] py-[10px] text-[13.5px] text-n500">
+      <span aria-hidden="true" className="flex flex-none items-center gap-[3px]">
+        {/*
+          지연만 다르고 나머지는 같다. 인라인 `style`로 주는 것은 `animation-delay`가 Tailwind의
+          임의 값으로는 세 번 다른 클래스를 만들어야 하는 값이라서다 — 세 점을 위해 유틸리티
+          세 개를 만드느니 여기서 세 자리만 다르게 적는 편이 읽힌다.
+        */}
+        {[0, 0.2, 0.4].map((delay) => (
+          <span
+            key={delay}
+            style={{ animationDelay: `${delay}s` }}
+            className="size-[5px] animate-blink rounded-full bg-n500"
+          />
+        ))}
+      </span>
+      {children}
+    </div>
+  );
+}
 
 export function AssistantPanel() {
   const open = useAssistantStore((s) => s.open);
@@ -64,8 +109,8 @@ export function AssistantPanel() {
   /*
    * 추천 질문은 패널을 열 때 받아 온다 — 열지 않는 사람에게 왕복을 붙이지 않는다.
    *
-   * **`READY`가 되기 전에는 열 때마다 다시 받는다**(#463 · 판정은 store에 있다). «시행을
-   * 누르세요»를 읽고 시행한 뒤 다시 연 운영진에게 같은 문구가 또 뜨면, 그 말이 사용자가 방금
+   * **`READY`가 되기 전에는 열 때마다 다시 받는다**(#463 · 판정은 store에 있다). «답변에
+   * 사용을 누르세요»를 읽고 그렇게 한 뒤 다시 연 운영진에게 같은 문구가 또 뜨면, 그 말이 방금
    * 한 행동을 부정한다.
    */
   useEffect(() => {
@@ -226,22 +271,14 @@ export function AssistantPanel() {
             무엇이 도는 중인지가 흐려진다. 문구가 «찾는» 중인 것은 실제로 그 단계라서다 —
             서버가 검색과 임계값 판정을 끝내기 전에는 첫 조각이 나오지 않는다.
           */}
-          {asking && !streaming && (
-            <div className="self-start rounded-2xl rounded-bl-md border border-line bg-surface px-[14px] py-[10px] text-[13.5px] text-n500">
-              답변을 찾는 중입니다…
-            </div>
-          )}
+          {asking && !streaming && <WaitingBubble>답변을 찾는 중입니다…</WaitingBubble>}
 
           {/*
             지우는 동안의 안내 (#434). **화면은 서버 응답을 기다린 뒤에 비운다**(store 주석) —
             그 사이 말풍선이 그대로 남아 있어, 이것이 없으면 누른 뒤 아무 일도 일어나지 않는
             것처럼 보인다.
           */}
-          {resetting && (
-            <div className="self-start rounded-2xl rounded-bl-md border border-line bg-surface px-[14px] py-[10px] text-[13.5px] text-n500">
-              대화를 지우는 중입니다…
-            </div>
-          )}
+          {resetting && <WaitingBubble>대화를 지우는 중입니다…</WaitingBubble>}
           <div ref={tailRef} />
         </div>
 

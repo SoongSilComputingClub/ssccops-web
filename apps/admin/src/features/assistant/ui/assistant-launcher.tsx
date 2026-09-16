@@ -42,8 +42,59 @@ export function AssistantLauncher() {
           open ? "hidden lg:flex" : ""
         }`}
       >
-        <span aria-hidden="true">{open ? "✕" : "⚖"}</span>
+        {open ? <span aria-hidden="true">✕</span> : <AssistantMark />}
       </button>
     </>
+  );
+}
+
+/**
+ * FAB의 표식 (#468).
+ *
+ * ── 저울(`⚖`)에서 말풍선으로 ─────────────────────────────────
+ * 저울은 «규정»을 가리키려던 표식이었지만, 우측 하단에 떠 있는 동그란 버튼에서 사람이 기대하는
+ * 것은 «말을 걸 수 있는 곳»이다. 게다가 이 앱에는 실제로 승인함이 있어 저울이 심사 기능으로
+ * 읽힌다. 말풍선 안의 점 셋은 대화를, 오른쪽 위의 반짝임은 «사람이 아니라 도우미가 답한다»는
+ * 것을 함께 말한다.
+ *
+ * ── 글리프가 아니라 인라인 SVG다 ─────────────────────────────
+ * `⚖`가 그랬듯 글리프는 **OS·브라우저마다 다르게 그려지고 이모지 색이 입혀진다** — 파란 FAB
+ * 위에서 제 색을 가진 그림이 떠 버리면 버튼이 아니라 스티커로 보인다. `currentColor`로 그리면
+ * 버튼의 `text-on-solid`를 그대로 따르므로 테마가 바뀌어도 함께 간다(`shared/ui/search-input`·
+ * `page-header`가 같은 방식이다).
+ *
+ * 닫기(`✕`)는 글리프로 둔다 — 그것은 어느 환경에서나 같은 모양으로 그려지는 기호이고, 이
+ * 앱의 다른 닫기 버튼들과 같은 것을 써야 한다.
+ */
+function AssistantMark() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 22 22"
+      fill="none"
+      aria-hidden="true"
+      className="flex-none"
+    >
+      {/* 말풍선 — 왼쪽 아래로 꼬리가 난 둥근 사각형 */}
+      <path
+        d="M3.6 4.4h11.2a1.8 1.8 0 0 1 1.8 1.8v6.6a1.8 1.8 0 0 1-1.8 1.8H8.1l-3.4 3.2a.5.5 0 0 1-.84-.36v-2.84h-.26a1.8 1.8 0 0 1-1.8-1.8V6.2a1.8 1.8 0 0 1 1.8-1.8Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      {/* 대화를 뜻하는 점 셋 */}
+      <circle cx="6.4" cy="9.5" r="1.1" fill="currentColor" />
+      <circle cx="9.2" cy="9.5" r="1.1" fill="currentColor" />
+      <circle cx="12" cy="9.5" r="1.1" fill="currentColor" />
+      {/*
+        반짝임 — «사람이 아니라 도우미가 답한다»를 말하는 부분이다. 네 꼭짓점이 오목하게
+        들어간 별로, 말풍선 바깥 오른쪽 위에 겹쳐 둔다.
+      */}
+      <path
+        d="M17.6 2.6c.33 1.63.64 1.94 2.27 2.27-1.63.33-1.94.64-2.27 2.27-.33-1.63-.64-1.94-2.27-2.27 1.63-.33 1.94-.64 2.27-2.27Z"
+        fill="currentColor"
+      />
+    </svg>
   );
 }

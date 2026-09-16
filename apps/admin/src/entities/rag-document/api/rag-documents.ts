@@ -31,7 +31,7 @@ export const RAG_DOCUMENT_ERROR = {
   PARSE_FAILED: "RAG_DOCUMENT_PARSE_FAILED",
   /** 활성 청크 총량 3,000 초과 (409) */
   LIMIT_EXCEEDED: "RAG_DOCUMENT_LIMIT_EXCEEDED",
-  /** 색인이 끝나지 않은 문서를 «시행 중»으로 올리려 했다 (409) — 화면이 버튼을 미리 잠근다 */
+  /** 색인이 끝나지 않은 문서를 «답변에 사용»하려 했다 (409) — 화면이 버튼을 미리 잠근다 */
   NOT_INDEXED: "RAG_DOCUMENT_NOT_INDEXED",
   /** 성립하지 않는 적용 상태 전이 (400) */
   INVALID_APPLY_TRANSITION: "INVALID_RAG_APPLY_STATUS_TRANSITION",
@@ -204,8 +204,8 @@ export async function reindexRagDocument(ragDocId: number): Promise<RagDocument 
  *
  * 성립하는 전이는 `DRAFT → EFFECTIVE`와 `EFFECTIVE → SUPERSEDED` 둘뿐이다.
  *
- * **다른 행은 움직이지 않는다**(서버 ADR-0034). 예전에는 «시행 중으로 올리기»가 같은 문서 식별자의
- * 기존 시행본을 함께 내려서 목록을 다시 받아야 했는데, 판본 관리를 걷어내며 그 연쇄가 사라졌다.
+ * **다른 행은 움직이지 않는다**(서버 ADR-0034). 예전에는 «답변에 사용»이 같은 문서 식별자의
+ * 기존 사용본을 함께 내려서 목록을 다시 받아야 했는데, 판본 관리를 걷어내며 그 연쇄가 사라졌다.
  * 그래도 목록을 다시 받는 것은 그대로 둔다 — 갱신 경로를 둘로 가르지 않기 위해서다.
  *
  * `effectiveFrom`을 비우면 서버가 오늘을 넣는다.
@@ -232,7 +232,7 @@ export async function changeRagDocumentApplyStatus(
  *
  * 행·청크·R2 원본을 함께 지우며 되살리는 길이 없다(되돌리려면 같은 파일을 새 판본으로 올린다).
  * 폼·행사의 소프트 삭제와 갈리는 것은 그쪽이 «치우기»이고 이쪽은 «잘못 올린 파일을 없었던
- * 것으로 만들기»이기 때문이다 — 그래서 화면이 확인을 받고, 시행 중인 판본이면 문구를 달리한다.
+ * 것으로 만들기»이기 때문이다 — 그래서 화면이 확인을 받고, 답변에 쓰이는 문서면 문구를 달리한다.
  */
 export async function deleteRagDocument(ragDocId: number): Promise<void> {
   await apiFetch<null>(`/v1/assistant/documents/${ragDocId}`, { method: "DELETE" });
