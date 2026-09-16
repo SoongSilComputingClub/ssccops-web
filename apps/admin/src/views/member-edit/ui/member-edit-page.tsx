@@ -7,18 +7,7 @@ import { useCan } from "@/features/auth";
 import { useMemberEdit } from "@/features/member";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
-import {
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  Field,
-  PageBody,
-  PageHeader,
-  SectionLabel,
-  TextField,
-  flash,
-} from "@/shared/ui";
+import { Badge, Button, Card, EmptyState, Field, PageBody, PageHeader, SectionLabel, TextField, flash } from "@/shared/ui";
 
 /*
  * 회원 정보 수정 (/members/{mbrId}/edit · #47 · 서버 #77 · PATCH /v1/members/{memberId}).
@@ -307,13 +296,12 @@ function MemberEditForm({ mbrId }: Readonly<{ mbrId: number }>) {
                   저장과 섞지 않고 상세 화면의 변경 시트로 보낸다 — 사유와 적용 일자를 받아야
                   하는 조작이라 입력칸도 다르다.
                 */}
-                <button
-                  type="button"
+                <Button
+                  variant="link"
                   onClick={() => router.push(ROUTES.memberDetail(member.memberId))}
-                  className="cursor-pointer text-[14px] text-accent"
                 >
                   상세에서 변경 ›
-                </button>
+                </Button>
               </div>
               <div className="flex flex-wrap items-center gap-[7px]">
                 {/* 색은 코드로 고르고 글자는 서버가 준 명칭을 쓴다 (entities/member/api/members.ts) */}

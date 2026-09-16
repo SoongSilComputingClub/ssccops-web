@@ -19,3 +19,4 @@ export { PageHeader, PageBody } from "./page-header";
 export { ThemeToggle } from "./theme-toggle";
 export { Markdown } from "./markdown";
 export { FilterBar } from "./filter-bar";
+export { ScrollX } from "./scroll-x";

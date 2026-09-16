@@ -68,13 +68,9 @@ export function MemberNewPage() {
           </div>
           <div className="mt-5 flex items-center gap-[10px]">
             <Button onClick={() => router.push(ROUTES.csvImport)}>CSV 회원 이관</Button>
-            <button
-              type="button"
-              onClick={() => router.push(ROUTES.members)}
-              className="cursor-pointer text-[14px] text-accent"
-            >
+            <Button variant="link" onClick={() => router.push(ROUTES.members)}>
               회원 목록으로
-            </button>
+            </Button>
           </div>
         </Card>
       </PageBody>

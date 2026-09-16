@@ -21,19 +21,7 @@ import {
 import { FIELD_LABEL } from "@/shared/config/labels";
 import type { MbrGrdCd, MbrSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
-import {
-  Badge,
-  Button,
-  Card,
-  Chip,
-  EmptyState,
-  GridTable,
-  PageBody,
-  PageHeader,
-  Pill,
-  SearchInput,
-  type GridColumn,
-} from "@/shared/ui";
+import { Badge, Button, Card, Chip, EmptyState, GridTable, PageBody, PageHeader, Pill, SearchInput, type GridColumn } from "@/shared/ui";
 
 /*
  * 회원 명부 (#46 · 서버 #76 · GET /v1/members).
@@ -308,8 +296,9 @@ function MemberListView() {
        * (CSV 결과의 '회원 보기' 등)의 동작이 함께 달라진다. 끊는 자리를 이 열에 두면 그 판단이
        * 여기에만 갇힌다. 키보드(스페이스)도 click으로 오므로 같은 길로 막힌다.
        */
+      // label 로 감싸 글자까지 히트 영역 — 체크박스 16px 만으로는 빗나간다 (UI 감사 D12 · #472)
       header: (
-        <span className="flex items-center gap-[10px]">
+        <label className="-m-1 flex cursor-pointer items-center gap-[10px] p-1">
           <input
             type="checkbox"
             aria-label={selectAllTitle}
@@ -331,7 +320,7 @@ function MemberListView() {
             className="size-[16px] flex-none cursor-pointer accent-accent disabled:cursor-not-allowed disabled:opacity-45"
           />
           {FIELD_LABEL.memberName}
-        </span>
+        </label>
       ),
       width: "1.2fr",
       render: (m) => {
@@ -342,12 +331,11 @@ function MemberListView() {
           <span className="flex items-center gap-[10px]">
             {/*
               행 클릭을 여기서 끊는다 — 근거는 이 열의 첫 주석. 누르는 것은 안의 체크박스이고
-              이 span은 울타리일 뿐이라 role="presentation"으로 둔다(#403). 키는 행의
+              이 label 은 울타리이자 히트 영역(p-2 -m-2 → 32px, UI 감사 D12)이다. 키는 행의
               onKeyActivate가 자기 자신에서 난 것만 받으므로 여기서 끊을 것이 없다.
             */}
-            <span
-              role="presentation"
-              className="flex flex-none"
+            <label
+              className="-m-2 flex flex-none cursor-pointer p-2"
               onClick={(e) => e.stopPropagation()}
             >
               <input
@@ -363,7 +351,7 @@ function MemberListView() {
                 onChange={() => selection.toggle(m)}
                 className="size-[16px] cursor-pointer accent-accent disabled:cursor-not-allowed disabled:opacity-45"
               />
-            </span>
+            </label>
             <span className="truncate font-semibold hover:text-accent">{m.name}</span>
             {/*
               이관 회원 — 아직 한 번도 로그인하지 않아 계정이 연결되지 않은 사람이다(#85).
@@ -461,17 +449,16 @@ function MemberListView() {
             <div className="text-[14px] text-n500">
               {status === "ready" ? `${totalCount}명 · 전체 ${overallCount}명` : " "}
             </div>
-            <button
-              type="button"
+            <Button
+              variant="link"
               onClick={() =>
                 applyCondition((params) =>
                   params.set(QUERY_SORT, SORTS[(sortIdx + 1) % SORTS.length].param),
                 )
               }
-              className="cursor-pointer text-[14px] whitespace-nowrap text-accent"
             >
               {SORTS[sortIdx].label} ⇅
-            </button>
+            </Button>
           </div>
         </div>
 
