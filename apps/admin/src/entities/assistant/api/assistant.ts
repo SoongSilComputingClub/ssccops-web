@@ -1,4 +1,4 @@
-import { apiFetch } from "@/shared/lib/api/client";
+import { ApiError, API_ERROR, apiFetch, apiFetchStream } from "@/shared/lib/api/client";
 import type {
   AssistantAnswer,
   AssistantApplyStatus,
@@ -50,11 +50,20 @@ export const ASSISTANT_QUESTION_MAX_LENGTH = 1000;
 /* ── 서버 응답(Response DTO) ────────────────────────────────── */
 
 interface AssistantCitationResponse {
+  /** 본문의 `[3]`과 짝인 발췌 번호 (서버 #447) */
+  ref: number | null;
+  /** 서버가 만든 짧은 표기 — `제7조` · `p.12` · 문서명 */
+  marker: string | null;
   citationType: CitationType | null;
   docTitle: string | null;
   chapter: string | null;
   supplementary: boolean | null;
   article: string | null;
+  /**
+   * **언제나 `null`이다**(서버 #447). DTO에 남아 있는 것은 응답 필드 삭제가 OpenAPI 하위 호환
+   * 게이트에 막히기 때문이며, 도메인 타입은 이 필드를 갖지 않는다 — 여기 적어 두는 것은
+   * «빠뜨린 것이 아니라 버린 것»을 다음 사람이 알아보게 하기 위해서다.
+   */
   clause: string | null;
   page: number | null;
   snippet: string | null;
@@ -90,12 +99,18 @@ interface AssistantSuggestionsResponse {
  */
 function toCitation(response: AssistantCitationResponse): AssistantCitation {
   return {
+    /*
+     * `ref`가 비어 올 자리는 계약상 없지만(서버가 언제나 싣는다) 0으로 떨어뜨린다 — 본문에
+     * `[0]`이 박힐 일이 없으므로 **어느 대괄호와도 짝이 되지 않는** 값이고, 그러면 표기 치환이
+     * 그 인용만 건너뛴다. `NaN`이나 배열 인덱스로 메우면 엉뚱한 대괄호를 갈아 그린다.
+     */
+    ref: response.ref ?? 0,
+    marker: response.marker ?? null,
     citationType: response.citationType ?? "PAGE",
     docTitle: response.docTitle ?? null,
     chapter: response.chapter ?? null,
     supplementary: response.supplementary ?? null,
     article: response.article ?? null,
-    clause: response.clause ?? null,
     page: response.page ?? null,
     snippet: response.snippet ?? null,
   };
@@ -136,6 +151,119 @@ export async function askAssistant(
     body: JSON.stringify({ question, conversationId: conversationId ?? undefined }),
   });
   return toAnswer(response);
+}
+
+/* ── 흘려 받는 질의 (SSE) ──────────────────────────────────── */
+
+/** 흘려 받는 동안 화면에 올라오는 것 — 조각이 이어지다 답 하나로 확정된다 */
+export type AssistantStreamEvent =
+  /** 본문 조각. 이어 붙이면 `done`의 `answer`와 글자 하나까지 같다 */
+  | { kind: "delta"; text: string }
+  /** 답·인용·판본이 확정됐다. 거절도 이것 하나로 끝난다 */
+  | { kind: "done"; answer: AssistantAnswer };
+
+/** SSE `delta` 이벤트의 본문 (서버 `AssistantAnswerDeltaResponse`) */
+interface AssistantAnswerDeltaResponse {
+  text: string | null;
+}
+
+/**
+ * SSE `error` 이벤트의 본문 (서버 `AssistantStreamErrorResponse`).
+ *
+ * **필드 이름이 `ApiResponse`의 오류와 같다**(`code`·`message`) — 서버가 일부러 맞춘 것이라
+ * 화면의 오류 처리가 두 벌이 되지 않는다. 여기서도 그대로 `ApiError`로 세워 올린다.
+ */
+interface AssistantStreamErrorResponse {
+  code: string | null;
+  message: string | null;
+}
+
+/**
+ * 흘려 받는 질의 — `POST /v1/assistant/queries/stream` (#464 · 서버 #447).
+ *
+ * **화면이 쓰는 경로다.** 답 한 건이 실측 7.5~12.2초인데 한 번에 받으면 그동안 화면이 비어
+ * 있다 — 흘려보내면 같은 생성 시간에 첫 글자가 1~2초에 닿는다. 한 번에 받는
+ * {@link askAssistant}는 **그대로 남는다**: 도구·스크립트가 «질문 하나에 JSON 하나»로 부를
+ * 자리이고 골든셋이 그 길로 지표를 재며, 되돌릴 자리를 없애지 않기 위해서다(서버 주석).
+ *
+ * ⚠️ **이 경로의 이벤트에는 `ApiResponse` 봉투가 없다 — 전역 규약의 유일한 예외다.** 그래서
+ * `apiFetch`가 아니라 `apiFetchStream`을 쓴다.
+ *
+ * ── 실패가 두 자리로 갈린다 ─────────────────────────────────
+ * **첫 바이트 전의 거절은 종전 그대로 상태 코드 + 봉투다**(404·413·503·403·429·400) — 그것은
+ * `apiFetchStream`이 `ApiError`로 던지므로 **지금의 오류 처리가 그대로 선다**. 흘려보내기
+ * 시작한 뒤의 실패만 `error` 이벤트로 오는데, 그때는 상태 코드를 바꿀 수 없어 서버가 그렇게
+ * 내리는 것이다. 이쪽도 같은 `ApiError`로 세워 던지되 **이미 그려진 글자는 호출부가 남긴다** —
+ * 이 함수가 그것을 판단하지 않는 것은 글자를 들고 있는 쪽이 호출부라서다.
+ *
+ * ── 근거를 찾지 못한 거절은 오류가 아니다 ───────────────────
+ * `delta`가 한 번도 오지 않고 `done` 하나가 `answered: false`를 싣는다 — 그것은 정상 응답이라
+ * 여기서 던지지 않는다.
+ */
+export async function* askAssistantStreaming(
+  question: string,
+  conversationId: string | null,
+  signal?: AbortSignal,
+): AsyncGenerator<AssistantStreamEvent> {
+  const stream = apiFetchStream("/v1/assistant/queries/stream", {
+    method: "POST",
+    body: JSON.stringify({ question, conversationId: conversationId ?? undefined }),
+    signal,
+  });
+
+  for await (const event of stream) {
+    /*
+     * 본문을 읽지 못하는 이벤트는 **버리지 않고 끊는다.** 조각 하나를 조용히 건너뛰면 답변에
+     * 구멍이 난 채로 그려지고, 읽는 사람에게는 그것이 모델의 문장으로 보인다.
+     */
+    const payload = parseEventData(event.data);
+
+    if (event.event === "delta") {
+      const delta = payload as AssistantAnswerDeltaResponse;
+      /* 빈 조각은 이어 붙일 것이 없다 — 화면을 다시 그리지 않고 넘긴다 */
+      if (delta.text) yield { kind: "delta", text: delta.text };
+      continue;
+    }
+
+    if (event.event === "done") {
+      yield { kind: "done", answer: toAnswer(payload as AssistantQueryResponse) };
+      /*
+       * 서버가 여기서 스트림을 닫지만 우리도 읽기를 멈춘다 — `done` 뒤에 무엇이 오든 답은
+       * 이미 확정됐고, 남은 이벤트를 계속 읽으면 «확정된 답을 뒤늦게 고치는» 길이 열린다.
+       */
+      return;
+    }
+
+    if (event.event === "error") {
+      const failure = payload as AssistantStreamErrorResponse;
+      throw new ApiError(
+        failure.code ?? API_ERROR.NETWORK_ERROR,
+        failure.message ?? "답변을 받는 중 연결이 끊어졌습니다",
+        /*
+         * 상태 코드는 200이다 — 이미 헤더가 나간 뒤의 실패라서 서버가 바꿀 수 없었고, 그것이
+         * 이 오류가 이벤트로 오는 이유다. `0`을 쓰면 «서버에 닿지 못했다»(CLIENT_*)로 읽히므로
+         * 실제 값을 그대로 둔다.
+         */
+        200,
+      );
+    }
+
+    /* 모르는 이름의 이벤트는 건너뛴다 — 서버가 이벤트를 더해도 화면이 깨지지 않는다 */
+  }
+}
+
+/**
+ * 이벤트 본문 → 객체. **파싱 실패를 조용히 넘기지 않는다**.
+ *
+ * 조각 하나를 버리면 답변에 구멍이 난 채 그려지는데, 읽는 사람에게는 그것이 모델의 문장으로
+ * 보인다 — 규정 답변에서 그 종류의 손실은 틀린 답과 같다.
+ */
+function parseEventData(data: string): unknown {
+  try {
+    return JSON.parse(data);
+  } catch {
+    throw new ApiError(API_ERROR.NETWORK_ERROR, "답변을 읽는 중 응답이 깨졌습니다");
+  }
 }
 
 /**

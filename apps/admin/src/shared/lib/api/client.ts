@@ -132,16 +132,17 @@ async function readEnvelope<T>(response: Response): Promise<ApiResponse<T> | nul
 }
 
 /**
- * ssccops-server 호출. Supabase access token을 실어 보내고 성공한 ApiResponse 봉투를 돌려준다.
+ * 인증을 실어 요청을 보내고 **`Response`를 그대로** 돌려준다 — 본문을 읽지 않는다.
  *
- * 실패는 모두 {@link ApiError}로 통일한다 — 호출부가 HTTP 상태와 응답 스키마를 다시 해석하지
- * 않게 하려는 것이다. 401(갱신 후 재로그인)과 403 SIGNUP_REQUIRED(가입 화면)처럼 화면 전환이
- * 정해져 있는 두 경우는 여기서 리다이렉트까지 끝내고, 호출부에는 오류만 던진다.
+ * {@link request}(봉투를 읽는다)와 {@link apiFetchStream}(본문을 흘려 읽는다)이 여기서 갈린다.
+ * **갈리기 전까지가 같아야 하는 것**이 이 함수를 뽑은 이유다: 토큰 주입, 401 갱신 후 한 번
+ * 재시도, 그래도 401이면 로그아웃 후 재로그인. 스트리밍만 자기 fetch를 직접 부르면 그 경로에서만
+ * 세션 만료가 다르게 다뤄지고, 하필 그 화면은 오래 열어 두는 패널이라 만료를 가장 잘 만난다.
  *
- * 봉투째 돌려주는 것은 목록 응답의 `page`가 `data` 옆에 오기 때문이다 — 호출부는 대개
- * {@link apiFetch}(data만)나 {@link apiFetchList}(data + page)를 쓴다.
+ * 본문을 읽지 않으므로 **봉투 판정(`success`·403 SIGNUP_REQUIRED)은 호출부의 몫**이다 — 한쪽은
+ * JSON 한 덩이를 기다리고 다른 쪽은 이벤트 흐름을 받는데, 그 둘을 한 함수가 할 수는 없다.
  */
-async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
+async function sendAuthed(path: string, init?: RequestInit): Promise<Response> {
   if (!API_BASE_URL) {
     /*
      * 예전에는 값이 없으면 `undefined/v1/...`로 요청이 나가 404·CORS 오류로 둔갑했다.
@@ -205,21 +206,47 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse
     }
   }
 
+  return response;
+}
+
+/**
+ * ssccops-server 호출. Supabase access token을 실어 보내고 성공한 ApiResponse 봉투를 돌려준다.
+ *
+ * 실패는 모두 {@link ApiError}로 통일한다 — 호출부가 HTTP 상태와 응답 스키마를 다시 해석하지
+ * 않게 하려는 것이다. 401(갱신 후 재로그인)과 403 SIGNUP_REQUIRED(가입 화면)처럼 화면 전환이
+ * 정해져 있는 두 경우는 여기서 리다이렉트까지 끝내고, 호출부에는 오류만 던진다.
+ *
+ * 봉투째 돌려주는 것은 목록 응답의 `page`가 `data` 옆에 오기 때문이다 — 호출부는 대개
+ * {@link apiFetch}(data만)나 {@link apiFetchList}(data + page)를 쓴다.
+ */
+async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
+  const response = await sendAuthed(path, init);
   const envelope = await readEnvelope<T>(response);
 
   if (!response.ok || envelope?.success !== true) {
-    const code = envelope?.code ?? `HTTP_${response.status}`;
-    if (response.status === 403 && code === API_ERROR.SIGNUP_REQUIRED) {
-      redirectToSignup();
-    }
-    throw new ApiError(
-      code,
-      envelope?.message ?? `요청이 실패했습니다 (HTTP ${response.status})`,
-      response.status,
-    );
+    throw toApiError(response, envelope?.code ?? null, envelope?.message ?? null);
   }
 
   return envelope;
+}
+
+/**
+ * 실패한 응답 → {@link ApiError}. **403 SIGNUP_REQUIRED의 리다이렉트까지 여기서 끝낸다.**
+ *
+ * 봉투를 읽는 경로와 스트리밍 경로가 함께 쓴다 — 스트리밍의 **첫 바이트 전** 거절은 종전
+ * 그대로 상태 코드 + 봉투이므로(서버 #447), 그 판정이 두 벌이 되면 «패널에서만 가입 화면으로
+ * 가지 않는» 상태가 생긴다.
+ */
+function toApiError(response: Response, code: string | null, message: string | null): ApiError {
+  const resolved = code ?? `HTTP_${response.status}`;
+  if (response.status === 403 && resolved === API_ERROR.SIGNUP_REQUIRED) {
+    redirectToSignup();
+  }
+  return new ApiError(
+    resolved,
+    message ?? `요청이 실패했습니다 (HTTP ${response.status})`,
+    response.status,
+  );
 }
 
 /** 단건 호출 — 봉투를 벗겨 data만 돌려준다 */
@@ -262,4 +289,141 @@ export async function apiFetchList<T>(
 ): Promise<ApiListResult<T>> {
   const envelope = await request<T[]>(path, init);
   return { data: envelope.data ?? [], page: envelope.page ?? null };
+}
+
+/* ── 흘려 받기 (SSE) ───────────────────────────────────────── */
+
+/**
+ * 이벤트를 가르는 빈 줄 — `\n\n` 또는 `\r\n\r\n`.
+ *
+ * `g` 플래그를 쓰지 않는다. 그것을 붙이면 정규식이 `lastIndex`를 들고 다니는데, 여기서는 같은
+ * 값을 **버퍼가 바뀔 때마다 처음부터** 다시 찾아야 한다 — 그 상태가 남으면 두 번째 호출이
+ * 버퍼 중간부터 훑어 앞의 이벤트를 건너뛴다.
+ */
+const SSE_EVENT_SEPARATOR = /\r?\n\r?\n/;
+
+/** SSE 이벤트 하나 — 이름과 `data:` 줄을 이어 붙인 본문 */
+export interface SseEvent {
+  /** 서버가 붙인 이벤트 이름. 안 붙였으면 `"message"`(SSE 기본값) */
+  event: string;
+  data: string;
+}
+
+/**
+ * `text/event-stream` 응답을 **이벤트 단위로 흘려 받는다** (서버 #447 · #464).
+ *
+ * ⚠️ **이 경로에만 `ApiResponse` 봉투가 없다 — 전역 규약의 유일한 예외다.** 봉투는 «요청 하나에
+ * 응답 하나»를 전제로 `success`·`code`·`message`를 매기는데 SSE는 한 응답 안에서 이벤트가 여러 번
+ * 나가므로 그 셋이 조각마다 되풀이될 뿐 아무것도 말하지 않는다(서버 `AssistantController` 주석).
+ * 그래서 `apiFetch`를 그대로 쓸 수 없고, **`data`를 무엇으로 읽을지는 호출부가 정한다** — 여기서는
+ * 이름과 문자열까지만 올린다.
+ *
+ * **첫 바이트 전의 거절은 종전 그대로다.** 서버가 404·413·503·403·429·400을 상태 코드 + 봉투로
+ * 내리고 `SseEmitter`는 그 뒤에야 열리므로, 여기서도 응답이 성공이 아니면 **한 글자도 내보내지
+ * 않고** `ApiError`를 던진다 — 호출부의 오류 처리가 비스트리밍 경로와 같은 한 벌로 선다.
+ * 흘려보내기 **시작한 뒤의** 실패는 상태 코드를 바꿀 수 없어 서버가 `error` 이벤트로 내리며,
+ * 그것은 오류가 아니라 **이벤트로** 여기를 지나간다.
+ *
+ * `EventSource`를 쓰지 않은 이유는 그것이 **GET 전용**이라서다 — 질문 본문을 POST로 보내야 하고
+ * `Authorization` 헤더도 실을 수 없다(쿼리스트링에 토큰을 얹는 것은 로그에 남는다).
+ *
+ * `signal`로 끊으면 `fetch`가 던지는 `AbortError`를 **삼킨다** — 끊은 쪽이 이미 아는 사실이라
+ * 오류로 올리면 호출부마다 «내가 끊은 것인가»를 다시 가려야 한다.
+ */
+export async function* apiFetchStream(
+  path: string,
+  init?: RequestInit,
+): AsyncGenerator<SseEvent> {
+  const headers = new Headers(init?.headers);
+  headers.set("Accept", "text/event-stream");
+
+  const response = await sendAuthed(path, { ...init, headers });
+
+  /*
+   * 성공이 아니면 본문은 이벤트 흐름이 아니라 **봉투 하나**다 — 서버가 첫 바이트 전에 끊은
+   * 것이므로 종전 경로와 똑같이 읽어 `ApiError`로 던진다.
+   */
+  if (!response.ok) {
+    const envelope = await readEnvelope<unknown>(response);
+    throw toApiError(response, envelope?.code ?? null, envelope?.message ?? null);
+  }
+
+  /*
+   * 본문이 없는 200 — 프록시가 이벤트 흐름을 이해하지 못하고 끊은 모양이다. 이벤트를 하나도
+   * 받지 못한 것이 «답이 비었다»로 조용히 흐르지 않게 네트워크 오류로 세운다.
+   */
+  if (!response.body) {
+    throw new ApiError(API_ERROR.NETWORK_ERROR, "서버 응답을 읽을 수 없습니다");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  /*
+   * 아직 이벤트 하나를 이루지 못한 꼬리. **청크 경계는 이벤트 경계와 무관하다** — 한 청크에
+   * 이벤트가 여럿 들어오기도, 이벤트 하나가 청크 여럿에 걸치기도 한다.
+   */
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      /* `stream: true` — 멀티바이트 글자가 청크 경계에 걸려 잘리는 것을 디코더가 이어 준다 */
+      buffer += decoder.decode(value, { stream: true });
+
+      /*
+       * 이벤트는 빈 줄로 갈린다. `\r\n`은 프로토콜이 허용하는 줄바꿈이라 함께 받는다 —
+       * 지금 서버는 `\n`만 쓰지만 사이에 프록시가 끼면 바뀔 수 있는 종류의 값이다.
+       *
+       * **구분자의 길이를 실제로 재서 건너뛴다**(`\n\n`은 2, `\r\n\r\n`은 4). 고정 길이로
+       * 두면 `\r\n`을 쓰는 프록시 뒤에서 남은 `\r`이 다음 이벤트의 첫 글자로 붙어, 그 줄의
+       * `event`·`data` 이름이 통째로 어긋난다.
+       */
+      let separator = SSE_EVENT_SEPARATOR.exec(buffer);
+      while (separator !== null) {
+        const raw = buffer.slice(0, separator.index);
+        buffer = buffer.slice(separator.index + separator[0].length);
+        const parsed = parseSseEvent(raw);
+        if (parsed) yield parsed;
+        separator = SSE_EVENT_SEPARATOR.exec(buffer);
+      }
+    }
+  } catch (failure) {
+    /* 우리가 끊었다 — 호출부가 이미 아는 사실이라 오류로 올리지 않는다 */
+    if (init?.signal?.aborted) return;
+    if (failure instanceof ApiError) throw failure;
+    throw new ApiError(API_ERROR.NETWORK_ERROR, "서버와의 연결이 끊어졌습니다");
+  } finally {
+    /*
+     * 다 읽지 못하고 나가는 길(호출부의 `break`·예외·중단)에서 연결을 놓는다. 이것이 없으면
+     * 사용자가 패널을 닫아도 서버는 끝까지 생성하며 무료 쿼터를 쓴다(서버 §11).
+     */
+    void reader.cancel().catch(() => {});
+  }
+}
+
+/**
+ * 이벤트 한 덩이 → `{event, data}`.
+ *
+ * `data:` 줄이 여럿이면 **줄바꿈으로 이어 붙인다**(SSE 규약). 주석 줄(`:`로 시작)은 버린다 —
+ * 연결을 살려 두는 heartbeat이 그 모양으로 온다.
+ */
+function parseSseEvent(raw: string): SseEvent | null {
+  let event = "message";
+  const data: string[] = [];
+
+  for (const line of raw.split(/\r?\n/)) {
+    if (line === "" || line.startsWith(":")) continue;
+    const colon = line.indexOf(":");
+    const field = colon === -1 ? line : line.slice(0, colon);
+    /* `field: value` — 콜론 뒤 공백 하나는 규약상 구분자라 값에 넣지 않는다 */
+    const value = colon === -1 ? "" : line.slice(colon + 1).replace(/^ /, "");
+
+    if (field === "event") event = value;
+    else if (field === "data") data.push(value);
+  }
+
+  /* `data:`가 한 줄도 없으면 이벤트가 아니다(주석·`id:`만 온 덩이) */
+  return data.length === 0 ? null : { event, data: data.join("\n") };
 }

@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import {
-  askAssistant,
+  askAssistantStreaming,
   deleteAssistantConversation,
   fetchAssistantSuggestions,
   ASSISTANT_ERROR,
@@ -41,6 +41,13 @@ import { toAssistantErrorMessage, toAssistantResetErrorMessage } from "./assista
 /** 화면에 그리는 말풍선 하나 */
 export type AssistantMessage =
   | { kind: "question"; id: number; text: string }
+  /**
+   * 흘러 들어오는 중인 답 (#464). **`answer`와 다른 종류로 둔다** — 아직 인용도 판본도
+   * 확정되지 않았고, 본문의 `[3]`을 표기로 갈아 그릴 수도 없다(그러려면 인용이 있어야 한다).
+   * 한 종류로 뭉쳐 «인용이 아직 비었을 뿐»으로 다루면 **거절(`citations`가 빈 배열)과 구별되지
+   * 않아** 흘러 들어오는 문장 옆에 «근거 없음»이 먼저 뜬다.
+   */
+  | { kind: "streaming"; id: number; text: string }
   /** 서버가 답했거나(`answered`) 근거를 찾지 못했다(거절) — 둘 다 정상 응답이다 */
   | { kind: "answer"; id: number; answer: AssistantAnswer }
   /** 오류 — 거절과 다르다. 거절은 «답이 없다»이고 이것은 «묻지 못했다»다 */
@@ -142,6 +149,21 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
     }
   },
 
+  /**
+   * 질문 하나 — **답을 흘려 받는다** (#464 · 서버 #447).
+   *
+   * ── 말풍선이 두 단계를 지난다 ─────────────────────────────────
+   * 첫 조각이 닿으면 `streaming` 말풍선을 붙여 글자를 이어 붙이고, `done`이 오면 **같은
+   * 자리를** `answer`로 갈아 끼운다(뒤에 새로 붙이지 않는다 — 그러면 같은 문장이 두 번 그려진
+   * 뒤 하나가 사라진다). 그 교체 시점에 인용·판본 배지가 확정되고 본문의 `[3]`이 표기로
+   * 바뀐다(`withCitationMarkers` — 그리는 쪽에서 한다).
+   *
+   * ── 흘려보내기 시작한 뒤의 실패는 글자를 남긴다 ───────────────
+   * 서버가 `error` 이벤트로 내리는 실패다(상태 코드를 바꿀 수 없는 자리). 그때 **이미 그려진
+   * 글자를 지우지 않는다** — 읽던 문장을 화면에서 빼앗지 않는 것이 서버가 «사후 철회»를 기각한
+   * 이유와 같고, 대신 오류 말풍선을 그 아래에 덧붙여 «여기서 끊겼다»를 밝힌다. 한 글자도
+   * 받지 못한 실패(첫 바이트 전의 거절)는 종전처럼 오류 말풍선 하나로 끝난다.
+   */
   ask: async (question: string) => {
     const trimmed = question.trim();
     const { asking, resetting } = get();
@@ -157,10 +179,41 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
       asking: true,
     }));
 
+    /*
+     * 흘러 들어오는 말풍선의 식별자. **첫 조각이 닿을 때 붙인다** — 미리 빈 말풍선을 두면
+     * 근거를 찾지 못한 거절(조각이 한 번도 오지 않고 `done` 하나만 온다)에서 빈 상자가
+     * 잠깐 그려진다.
+     */
+    let streamingId: number | null = null;
+
+    const appendDelta = (text: string) => {
+      set((s) => {
+        if (streamingId === null) {
+          streamingId = newId();
+          return { messages: [...s.messages, { kind: "streaming", id: streamingId, text }] };
+        }
+        return {
+          messages: s.messages.map((message) =>
+            message.id === streamingId && message.kind === "streaming"
+              ? { ...message, text: message.text + text }
+              : message,
+          ),
+        };
+      });
+    };
+
     try {
-      const answer = await send(trimmed, get().conversationId);
+      const answer = await send(trimmed, get().conversationId, appendDelta);
       set((s) => ({
-        messages: [...s.messages, { kind: "answer", id: newId(), answer }],
+        /* 흘러 들어오던 자리를 확정된 답으로 갈아 끼운다 — 없었으면(거절) 뒤에 붙인다 */
+        messages:
+          streamingId === null
+            ? [...s.messages, { kind: "answer", id: newId(), answer }]
+            : s.messages.map((message) =>
+                message.id === streamingId
+                  ? { kind: "answer", id: message.id, answer }
+                  : message,
+              ),
         asking: false,
         /*
          * 발급된 값을 갱신한다 — 거절일 때도 실려 오므로 근거를 찾지 못한 첫 질문 뒤에 이어
@@ -170,6 +223,11 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
         conversationId: answer.conversationId ?? s.conversationId,
       }));
     } catch (error) {
+      /*
+       * **그리다 끊긴 글자는 그대로 둔다.** `streaming` 말풍선을 `answer`로 세우지 않는 것은
+       * 인용도 판본도 확정되지 않았기 때문이다 — 그 자리에 «근거 없음»을 그리면 서버가 실제로
+       * 그렇게 판정한 답과 구별되지 않는다.
+       */
       set((s) => ({
         messages: [
           ...s.messages,
@@ -244,14 +302,46 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
  *
  * 재시도는 **한 번뿐이다.** 새 대화로 보낸 요청이 또 같은 코드로 거절당하면 우리가 고칠 수
  * 있는 것이 아니다.
+ *
+ * ⚠️ **한 글자라도 그린 뒤에는 다시 보내지 않는다** (#464). 403 `CONVERSATION_FORBIDDEN`은
+ * 대화 식별자를 검증하는 자리에서 나므로 **첫 바이트 전에** 온다 — 그 뒤에 이 코드가 오는
+ * 길은 계약에 없다. 그래도 조건에 못 박아 두는 것은, 만약 온다면 재시도가 **이미 읽힌 문장
+ * 뒤에 답을 처음부터 다시 이어 붙이기** 때문이다. 같은 문단이 두 번 적힌 답변은 끊긴 답변보다
+ * 나쁘다.
  */
-async function send(question: string, conversationId: string | null): Promise<AssistantAnswer> {
+async function send(
+  question: string,
+  conversationId: string | null,
+  onDelta: (text: string) => void,
+): Promise<AssistantAnswer> {
+  /* 이번 시도에서 화면에 내보낸 글자가 있는가 — 재시도를 막는 값이다 */
+  let streamed = false;
+
+  const run = async (id: string | null): Promise<AssistantAnswer> => {
+    for await (const event of askAssistantStreaming(question, id)) {
+      if (event.kind === "delta") {
+        streamed = true;
+        onDelta(event.text);
+        continue;
+      }
+      return event.answer;
+    }
+    /*
+     * `done` 없이 흐름이 끝났다 — 서버가 답을 확정하지 못한 채 닫혔다는 뜻이다. 조용히 넘기면
+     * 흘러 들어오던 말풍선이 인용도 배지도 없이 «흘러 들어오는 중» 모양으로 굳는다.
+     */
+    throw new ApiError(
+      ASSISTANT_ERROR.UPSTREAM_FAILED,
+      "답변이 끝나기 전에 연결이 끊어졌습니다",
+    );
+  };
+
   try {
-    return await askAssistant(question, conversationId);
+    return await run(conversationId);
   } catch (error) {
     const forbidden =
       error instanceof ApiError && error.code === ASSISTANT_ERROR.CONVERSATION_FORBIDDEN;
-    if (!forbidden || conversationId === null) throw error;
-    return await askAssistant(question, null);
+    if (!forbidden || conversationId === null || streamed) throw error;
+    return await run(null);
   }
 }
