@@ -1,6 +1,7 @@
 "use client";
 
-import { onKeyActivate } from "@ssccops/ui";
+import { INPUT_BASE, onKeyActivate } from "@ssccops/ui";
+import { useId } from "react";
 import { cn } from "../lib/cn";
 import { isChoiceQitemType } from "../model/qitem-type";
 import { selectedOptions, toggleOption } from "../model/answers";
@@ -38,6 +39,13 @@ export function QitemCard({
 }>) {
   const selected = selectedOptions(value);
   const text = typeof value === "string" ? value : "";
+  /*
+   * 문항 제목이 입력의 이름이다 (ssccops-web#469 · UI 감사 D16). 제목은 `div`로 두고(설명·형식
+   * 안내가 그 아래 따로 붙는다) 입력에 `aria-labelledby`로 잇는다 — www 공개 폼·신청서 11개,
+   * lms 기획안 8개가 보조기기에서 이름 없는 칸이었다. 선택형은 선택지가 각각 버튼이라 제목을
+   * 묶음(`role="group"`)의 이름으로 건다.
+   */
+  const titleId = useId();
 
   return (
     <div
@@ -46,7 +54,7 @@ export function QitemCard({
         error ? "shadow-[0_0_0_1px_var(--color-danger)]" : "shadow-[0_0_0_1px_var(--color-line)]",
       )}
     >
-      <div className="text-[16px] font-semibold">
+      <div id={titleId} className="text-[16px] font-semibold">
         {qitem.qitemLblNm}
         {qitem.reqYn && <span className="ml-1 text-danger">*</span>}
       </div>
@@ -72,20 +80,22 @@ export function QitemCard({
 
       {qitem.qitemTypeCd === "LONG_TEXT" ? (
         <textarea
+          aria-labelledby={titleId}
           value={text}
           onChange={(e) => onChange(e.target.value)}
           placeholder="자유롭게 작성해주세요"
-          className="mt-3 min-h-[104px] w-full resize-y rounded-[12px] border border-line px-[11px] py-[9px] text-[16px] outline-none placeholder:text-n500 focus:border-accent lg:text-[15.5px]"
+          className={cn(INPUT_BASE, "mt-3 min-h-[104px] resize-y border-line px-[11px] py-[9px]")}
         />
       ) : qitem.qitemTypeCd === "SHORT_TEXT" || qitem.qitemTypeCd === "DATE" ? (
         <input
+          aria-labelledby={titleId}
           type={qitem.qitemTypeCd === "DATE" ? "date" : "text"}
           value={text}
           onChange={(e) => onChange(e.target.value)}
-          className="mt-3 w-full rounded-[12px] border border-line px-[11px] py-[9px] text-[16px] outline-none placeholder:text-n500 focus:border-accent lg:text-[15.5px]"
+          className={cn(INPUT_BASE, "mt-3 border-line px-[11px] py-[9px]")}
         />
       ) : (
-        <div className="mt-3 flex flex-col gap-1">
+        <div role="group" aria-labelledby={titleId} className="mt-3 flex flex-col gap-1">
           {qitem.optionList.map((o) => {
             const picked = selected.includes(o);
             return (
