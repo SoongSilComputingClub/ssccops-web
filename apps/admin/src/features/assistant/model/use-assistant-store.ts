@@ -59,7 +59,8 @@ interface AssistantState {
   messages: AssistantMessage[];
   /** 질의가 도는 중 — 입력과 전송을 잠그고 «답변을 찾는 중» 말풍선을 그린다 */
   asking: boolean;
-  /** 서버가 내린 추천 질문(최대 3개). **빈 배열이 `READY`가 아닌 동안의 정상 상태다** */
+  /** 서버가 내린 추천 질문(최대 3개). **빈 배열이 `READY`가 아닌 동안의 정상 상태다.** 패널을
+   * 열 때마다 다시 받는다 — 문서를 제외하면 그 문서에 걸린 질문이 빠져야 한다(#468) */
   suggestions: string[];
   /**
    * 코퍼스가 지금 답할 수 있는가 (#463) — 빈 상태 안내가 이 값으로 갈린다.
@@ -136,7 +137,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
   cancelResetConfirm: () => set({ confirmingReset: false }),
 
   /**
-   * 추천 질문과 코퍼스 상태를 받아 온다 — **`READY`가 되기 전까지는 열 때마다 다시**(#463).
+   * 추천 질문과 코퍼스 상태를 받아 온다 — **패널을 열 때마다 다시**(#463 · #468).
    *
    * ── 왜 한 번으로는 안 되는가 ───────────────────────────────────
    * 한 번만 받으면 «답변에 사용을 누르세요»를 읽고 → RAG › 설정에서 그렇게 하고 → 패널을 다시
@@ -144,22 +145,29 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
    * 문구는 사용자가 방금 한 행동을 부정하는 말이라 그대로 둘 수 없다. 다시 받는 것은 싸다 —
    * 이 엔드포인트는 DB만 읽고 모델에 닿지 않아 질의 한도를 세지 않는다(서버 §11).
    *
-   * ── `READY`가 된 뒤에는 다시 받지 않는다 ───────────────────────
-   * 그 상태에서 바뀔 것은 추천 질문 문구뿐이고, 그것 때문에 패널을 열 때마다 왕복을 붙일
-   * 이유가 없다. `suggestionsLoading`은 그대로 재진입만 막는다.
+   * ── `READY`에서도 다시 받는다 (#468에서 가드를 걷었다) ─────────
+   * 예전에는 `READY`가 되면 멈췄다. 「그 상태에서 바뀔 것은 문구뿐」이라는 전제였는데 **틀렸다**
+   * — 바뀌는 것은 문구가 아니라 **물을 수 있는 질문의 집합**이다. 추천은 «어느 문서가 있어야
+   * 답할 수 있는가»로 묶여 있어, 문서를 하나 «답변에서 제외»하면 그 문서에 걸린 질문이
+   * 내려오지 않아야 한다.
    *
-   * **옛 서버(`corpusState`를 내리지 않는다)에서도 이 규칙이 옳다.** 그때 값은 폴백으로
-   * 정해지는데, 질문이 있으면 `READY`라 종전처럼 한 번만 받고, 없으면 `EMPTY`라 열 때마다
-   * 다시 받는다 — 문서가 생기면 알아차려야 하는 바로 그 상태다.
+   * 실제로 이렇게 어긋났다: 회칙을 제외했는데 **「회칙을 개정하려면…」이 패널에 그대로 남았고**,
+   * 누르면 서버가 「찾지 못했습니다」로 답했다(제외와 함께 색인이 지워지므로 서버는 옳게 답한
+   * 것이다). 화면만 물을 수 없는 것을 권하고 있었다.
+   *
+   * 문서가 **하나도 없어지는** 경우(`READY → EMPTY`)도 같은 가드에 막혀 있었다 — 한 번
+   * `READY`였던 패널은 코퍼스가 빈 뒤에도 옛 질문 셋을 계속 그렸다.
+   *
+   * 남은 것은 재진입 방지(`suggestionsLoading`)뿐이다. 열 때마다 왕복이 한 번 붙지만, 그
+   * 왕복이 막는 것은 «지금 물을 수 있는 것»에 대한 거짓말이라 값이 있다.
    *
    * 실패해도 오류로 그리지 않는다 — 추천 질문이 없는 것은 코퍼스가 빈 것과 화면에서 같은
    * 모양이라 사용자가 잃는 것이 없고, 실패를 빨갛게 그리면 «답을 물을 수는 있는데 화면은
-   * 빨간» 상태가 된다. 대신 `READY`가 아닌 채로 남으므로 **다음에 열 때 다시 시도한다**.
+   * 빨간» 상태가 된다. 직전 값이 남고 **다음에 열 때 다시 시도한다**.
    */
   loadSuggestions: async () => {
-    const { corpusState, suggestionsLoaded, suggestionsLoading } = get();
+    const { suggestionsLoading } = get();
     if (suggestionsLoading) return;
-    if (suggestionsLoaded && corpusState === "READY") return;
     set({ suggestionsLoading: true });
     try {
       const { corpusState: state, questions } = await fetchAssistantSuggestions();
