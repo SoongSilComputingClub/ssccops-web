@@ -28,11 +28,14 @@ export type AssistantApplyStatus = "DRAFT" | "EFFECTIVE" | "SUPERSEDED";
  *
  * `PAGE`인데 `page`가 비는 것도 **정상**이다 — DOCX에는 페이지가 없다(서버 #398). 그때 인용
  * 카드는 문서명까지만 그린다.
+ *
+ * **판본 번호(`docVer`)가 있던 자리다**(#462 · 서버 ADR-0034). 문서 한 건이 곧 그 규정이라
+ * 카드에 「v1」을 그릴 것이 없고, 서버 DTO에도 그 필드가 없다 — 남겨 두었더니 `v${docVer}`가
+ * `vundefined`로 굳어 화면에 찍혔다.
  */
 export interface AssistantCitation {
   citationType: CitationType;
   docTitle: string | null;
-  docVer: number | null;
   /** ARTICLE 전용 — `제2장 회원` */
   chapter: string | null;
   /**

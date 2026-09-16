@@ -52,7 +52,6 @@ export const ASSISTANT_QUESTION_MAX_LENGTH = 1000;
 interface AssistantCitationResponse {
   citationType: CitationType | null;
   docTitle: string | null;
-  docVer: number | null;
   chapter: string | null;
   supplementary: boolean | null;
   article: string | null;
@@ -82,18 +81,23 @@ interface AssistantSuggestionsResponse {
  *
  * `citationType`만은 기본값을 정한다 — 없는 유형은 그릴 모양이 없는데, 조항 필드가 전부 비면
  * 조항 카드가 문서명만 그려 페이지 카드와 같아지므로 덜 주장하는 쪽(`PAGE`)으로 떨어뜨린다.
+ *
+ * ⚠️ **없는 필드를 `?? null`로 옮긴다 — `vundefined`가 이것을 빠뜨려 생겼다**(#462).
+ * `apiFetch`는 본문을 **검사하지 않고 캐스팅**하므로(`envelope.data as T`) 위 인터페이스의
+ * `| null`은 «그렇다더라»이고, 서버가 필드를 빼면 실제 값은 `undefined`다. 그러면 그리는 쪽의
+ * `x === null` 검사가 통과해 `` `p.${undefined}` `` 같은 문자열이 화면에 굳는다 — 판본이 사라진
+ * 자리에서 실제로 그랬다. 여기서 한 번 눌러 두면 그리는 쪽이 «null 아니면 값»만 보면 된다.
  */
 function toCitation(response: AssistantCitationResponse): AssistantCitation {
   return {
     citationType: response.citationType ?? "PAGE",
-    docTitle: response.docTitle,
-    docVer: response.docVer,
-    chapter: response.chapter,
-    supplementary: response.supplementary,
-    article: response.article,
-    clause: response.clause,
-    page: response.page,
-    snippet: response.snippet,
+    docTitle: response.docTitle ?? null,
+    chapter: response.chapter ?? null,
+    supplementary: response.supplementary ?? null,
+    article: response.article ?? null,
+    clause: response.clause ?? null,
+    page: response.page ?? null,
+    snippet: response.snippet ?? null,
   };
 }
 
@@ -108,10 +112,10 @@ function toAnswer(response: AssistantQueryResponse): AssistantAnswer {
   return {
     answer: response.answer ?? "",
     citations: (response.citations ?? []).map(toCitation),
-    applyStatus: answered ? response.applyStatus : null,
-    effectiveDate: answered ? response.effectiveDate : null,
+    applyStatus: answered ? (response.applyStatus ?? null) : null,
+    effectiveDate: answered ? (response.effectiveDate ?? null) : null,
     answered,
-    conversationId: response.conversationId,
+    conversationId: response.conversationId ?? null,
   };
 }
 
