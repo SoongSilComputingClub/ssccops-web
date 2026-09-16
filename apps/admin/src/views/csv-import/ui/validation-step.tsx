@@ -8,7 +8,7 @@ import {
 } from "@/entities/member";
 import type { MemberImportWizard } from "@/features/member";
 import { downloadCsv, toCsvText } from "@/shared/lib/download-csv";
-import { Badge, Button, Card, SectionLabel, Sheet, StatBox } from "@/shared/ui";
+import { Badge, Button, Card, SectionLabel, Sheet, StatBox, ScrollX } from "@/shared/ui";
 
 /*
  * 3단계 — 사전 검증 (#57 · 서버 #84).
@@ -245,7 +245,7 @@ function IssueTable({
    * 화면 밖으로 밀려나지 않는다는 성질도 유지된다.
    */
   return (
-    <div className="max-h-[360px] overflow-x-auto overflow-y-auto">
+    <ScrollX maxHeightClassName="max-h-[360px]">
       <div className="grid min-w-[520px] grid-cols-[90px_1fr_1.4fr] lg:min-w-0">
         {["행", "대상", kind === "error" ? "사유" : "경고"].map((h) => (
           <div
@@ -286,6 +286,6 @@ function IssueTable({
           </div>
         ))}
       </div>
-    </div>
+    </ScrollX>
   );
 }

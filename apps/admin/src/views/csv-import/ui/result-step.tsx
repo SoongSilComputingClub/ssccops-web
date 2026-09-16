@@ -5,7 +5,7 @@ import type { MemberImportExecutionRow } from "@/entities/member";
 import type { MemberImportWizard } from "@/features/member";
 import { ROUTES } from "@/shared/config/routes";
 import { downloadCsv, toCsvText } from "@/shared/lib/download-csv";
-import { Badge, Button, Card, SectionLabel, StatBox } from "@/shared/ui";
+import { Badge, Button, Card, SectionLabel, StatBox, ScrollX } from "@/shared/ui";
 import type { BadgeTone } from "@/shared/ui";
 
 /*
@@ -110,7 +110,7 @@ export function ResultStep({ wizard }: Readonly<{ wizard: MemberImportWizard }>)
           "어느 줄이 어떻게 됐는지"가 되고, 이 응답은 되돌릴 수도 다시 받을 수도 없어
           읽는 순간의 정확함이 중요하다. 전량이 필요하면 CSV 내려받기가 따로 있다.
         */}
-        <div className="max-h-[420px] overflow-x-auto overflow-y-auto">
+        <ScrollX maxHeightClassName="max-h-[420px]">
           <div className="grid min-w-[560px] grid-cols-[90px_1fr_110px_1.2fr] lg:min-w-0">
             {["행", "대상", "결과", "비고"].map((h) => (
               <div
@@ -149,7 +149,7 @@ export function ResultStep({ wizard }: Readonly<{ wizard: MemberImportWizard }>)
               );
             })}
           </div>
-        </div>
+        </ScrollX>
       </Card>
 
       <div>
