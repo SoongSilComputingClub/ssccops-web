@@ -20,6 +20,33 @@ export type CitationType = "ARTICLE" | "PAGE";
 export type AssistantApplyStatus = "DRAFT" | "EFFECTIVE" | "SUPERSEDED";
 
 /**
+ * 코퍼스가 지금 답할 수 있는 상태인가 (#463 · 서버 `AssistantCorpusState`).
+ *
+ * **추천 질문이 빈 배열인 것만으로는 갈리지 않던 두 상태를 서버가 갈라 준다.** 빈 배열은
+ * «코퍼스가 정말 비었다»와 «문서는 있는데 시행 중인 것이 없다» 둘 다였고, 화면은 앞쪽으로만
+ * 읽어 **이미 올린 문서를 올리라고** 말했다. 이 값을 목록이 아니라 추천 질문 응답에 실은 것은
+ * 그쪽이 **인증만** 요구해서다 — 문서 목록·요약은 `RAG_DOCUMENT_MANAGE` 뒤에 있는데 패널은
+ * 어디서나 열린다.
+ *
+ * ⚠️ **`NONE_EFFECTIVE`는 이름보다 넓다.** 검색 조건이 `INDEXED && EFFECTIVE` 두 축이라
+ * «색인 중»·«색인 실패»·«내려둔 문서뿐»·«시행 중이지만 재색인 중»이 모두 이 값으로 온다.
+ * 서버가 넷을 쪼개지 않은 것은 패널이 묻는 것이 «지금 물어도 되는가» 하나이기 때문이고
+ * («왜 없는가»는 관리 목록이 문서마다 말한다), **그래서 화면 문구도 그 넷을 가르지 않는다.**
+ */
+export type AssistantCorpusState = "EMPTY" | "NONE_EFFECTIVE" | "READY";
+
+/**
+ * 추천 질문 조회의 결과 — **상태와 질문을 함께 받는다.**
+ *
+ * 질문만 돌려주면 부르는 쪽이 빈 배열의 뜻을 다시 유추해야 하고, 그 유추가 틀렸던 것이
+ * #463이다. `READY`가 아닌 동안 `questions`는 언제나 빈 배열이다(서버 계약).
+ */
+export interface AssistantSuggestions {
+  corpusState: AssistantCorpusState;
+  questions: string[];
+}
+
+/**
  * 답변이 기댄 근거 하나.
  *
  * **두 모양이 한 타입에 있다.** `citationType`이 `ARTICLE`이면 `chapter`·`article`·`clause`·

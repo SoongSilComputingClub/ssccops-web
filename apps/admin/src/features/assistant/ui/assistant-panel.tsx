@@ -29,6 +29,8 @@ export function AssistantPanel() {
   const messages = useAssistantStore((s) => s.messages);
   const asking = useAssistantStore((s) => s.asking);
   const suggestions = useAssistantStore((s) => s.suggestions);
+  /* 빈 상태 안내가 이 값으로 갈린다 (#463) — 추천 질문의 빈 배열로는 두 상태가 갈리지 않는다 */
+  const corpusState = useAssistantStore((s) => s.corpusState);
   const suggestionsLoaded = useAssistantStore((s) => s.suggestionsLoaded);
   const resetting = useAssistantStore((s) => s.resetting);
   /*
@@ -52,7 +54,13 @@ export function AssistantPanel() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const tailRef = useRef<HTMLDivElement>(null);
 
-  /* 추천 질문은 패널을 처음 열 때 한 번만 받아 온다 — 열지 않는 사람에게 왕복을 붙이지 않는다 */
+  /*
+   * 추천 질문은 패널을 열 때 받아 온다 — 열지 않는 사람에게 왕복을 붙이지 않는다.
+   *
+   * **`READY`가 되기 전에는 열 때마다 다시 받는다**(#463 · 판정은 store에 있다). «시행을
+   * 누르세요»를 읽고 시행한 뒤 다시 연 운영진에게 같은 문구가 또 뜨면, 그 말이 사용자가 방금
+   * 한 행동을 부정한다.
+   */
   useEffect(() => {
     if (open) void loadSuggestions();
   }, [open, loadSuggestions]);
@@ -188,7 +196,12 @@ export function AssistantPanel() {
           className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-[16px] py-[14px]"
         >
           {messages.length === 0 ? (
-            <AssistantEmpty suggestions={suggestions} loaded={suggestionsLoaded} onPick={submit} />
+            <AssistantEmpty
+              suggestions={suggestions}
+              corpusState={corpusState}
+              loaded={suggestionsLoaded}
+              onPick={submit}
+            />
           ) : (
             messages.map((message) => (
               <AssistantMessageItem key={message.id} message={message} />

@@ -194,6 +194,34 @@ export const ROUTES = {
 } as const;
 
 /**
+ * RAG 설정의 적용 상태 필터 파라미터 (#463) — **주소와 읽는 쪽이 이 상수 하나를 함께 본다.**
+ *
+ * 문자열을 양쪽에 적으면 한쪽만 고쳐도 아무것도 깨지지 않고 **필터만 조용히 풀린다**(타입도
+ * 린트도 잡지 않는다).
+ */
+export const RAG_APPLY_QUERY = "apply";
+
+/**
+ * RAG 설정 주소 — 적용 상태로 목록을 걸러 연다 (#463).
+ *
+ * 도우미 패널이 «시행을 누르세요»라고 말하면서 데려가는 곳이 걸러지지 않은 전체 목록이면,
+ * 문서가 수십 건일 때 그 말이 다시 헛돈다. **한 «행»을 가리키지는 못한다** — 패널이 받는
+ * 것은 코퍼스 상태 하나뿐이고(추천 질문 응답에 문서 식별자가 없다) 시행 전 문서가 여러 건이면
+ * «그 행»이 하나로 정해지지도 않는다.
+ *
+ * 값이 없으면 종전 그대로 전량을 그리는 주소다.
+ *
+ * **값의 정본은 `entities/rag-document`의 `RagApplyStatus`인데 여기서 그것을 가져올 수 없다**
+ * (FSD 단방향 — `shared`는 `entities`를 모른다). 그래서 같은 세 값을 여기 적어 두고 타입으로
+ * 좁힌다 — `string`으로 열어 두면 오타가 조용히 «모르는 값»이 되어 필터만 풀린다.
+ */
+export function ragSettingsUrl(applyStatus?: "DRAFT" | "EFFECTIVE" | "SUPERSEDED"): string {
+  return applyStatus
+    ? `${ROUTES.ragSettings}?${RAG_APPLY_QUERY}=${encodeURIComponent(applyStatus)}`
+    : ROUTES.ragSettings;
+}
+
+/**
  * 공개 폼의 절대 URL — 운영진이 복사해 외부에 뿌리는 값이라 상대 경로로는 쓸 수 없다.
  *
  * **`/f/{formId}`는 이제 이 앱의 화면이 아니다**(ssccops#214 — `apps/www`로 옮겼다). 그래서
