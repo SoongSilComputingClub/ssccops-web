@@ -27,6 +27,7 @@ export function Sidebar() {
         <button
           type="button"
           onClick={() => setCollapsed(false)}
+          aria-label="메뉴 펼치기"
           className="flex size-8 flex-none cursor-pointer items-center justify-center rounded-[10px] border border-line text-[15px] text-n400 hover:border-accent hover:text-accent"
         >
           ›
@@ -80,6 +81,7 @@ export function Sidebar() {
         <button
           type="button"
           onClick={() => setCollapsed(true)}
+          aria-label="메뉴 접기"
           className="flex size-7 flex-none cursor-pointer items-center justify-center rounded-[9px] border border-line text-[14px] text-n400 hover:border-accent hover:text-accent"
         >
           ‹
