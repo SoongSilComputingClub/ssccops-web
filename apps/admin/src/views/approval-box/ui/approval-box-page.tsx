@@ -12,17 +12,7 @@ import { RejectSheet, useApprovalDecisions, useApprovalInbox } from "@/features/
 import { APRV_STTS_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { ddayText, formatDt, todayInSeoul } from "@/shared/lib/date";
-import {
-  Badge,
-  Button,
-  Card,
-  Chip,
-  EmptyState,
-  PageBody,
-  PageHeader,
-  ProgressBar,
-  flash,
-} from "@/shared/ui";
+import { Badge, Button, Card, Chip, EmptyState, PageBody, PageHeader, ProgressBar, flash, FilterBar } from "@/shared/ui";
 
 /*
  * 승인함 (ssccops-server OPS-017 조회 · OPS-010 승인·반려 · OPS-015 투표 · ssccops-web#45).
@@ -110,15 +100,13 @@ export function ApprovalBoxPage() {
     <>
       <PageHeader title="승인함" subtitle="대기 · 정족수 · 반려" />
       <PageBody>
-        <div className="mb-[14px] flex items-center gap-[7px]">
+        <FilterBar trailing={status === "ready" ? <>{totalCount}건</> : null}>
           {TABS.map((cd) => (
             <Chip key={cd} active={tab === cd} onClick={() => setTab(cd)}>
               {APRV_STTS_NM[cd]}
             </Chip>
           ))}
-          <div className="flex-1" />
-          {status === "ready" && <div className="text-[14px] text-n500">{totalCount}건</div>}
-        </div>
+        </FilterBar>
 
         {status === "loading" && <ApprovalBoxSkeleton />}
 

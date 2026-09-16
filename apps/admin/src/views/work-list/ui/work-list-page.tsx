@@ -9,17 +9,7 @@ import { useWorkList } from "@/features/work";
 import { WORK_STTS_NM, WORK_TYPE_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { formatYmd } from "@/shared/lib/date";
-import {
-  Badge,
-  Button,
-  Card,
-  Chip,
-  EmptyState,
-  PageBody,
-  PageHeader,
-  ProgressBar,
-  flash,
-} from "@/shared/ui";
+import { Badge, Button, Card, Chip, EmptyState, PageBody, PageHeader, ProgressBar, flash, FilterBar } from "@/shared/ui";
 
 /*
  * 운영 통합 › 업무 (ssccops-server OPS-020 · GET /v1/works).
@@ -120,13 +110,11 @@ export function WorkListPage() {
         }}
       />
       <PageBody>
-        <div className="mb-[14px] flex items-center gap-[7px]">
+        <FilterBar trailing={status === "ready" ? <>{totalCount}건</> : null}>
           <Chip active={mine} onClick={() => setMine((on) => !on)} title={MINE_HINT}>
             내 업무
           </Chip>
-          <div className="flex-1" />
-          {status === "ready" && <div className="text-[14px] text-n500">{totalCount}건</div>}
-        </div>
+        </FilterBar>
 
         {status === "loading" && (
           <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
