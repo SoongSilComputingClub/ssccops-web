@@ -11,17 +11,7 @@ import {
   type ProgramAttendanceRate,
 } from "@/features/academic-session";
 import { ROUTES } from "@/shared/config/routes";
-import {
-  Card,
-  EmptyState,
-  GridTable,
-  PageBody,
-  PageHeader,
-  ProgressBar,
-  SectionLabel,
-  StatBox,
-  type GridColumn,
-} from "@/shared/ui";
+import { Card, EmptyState, GridTable, PageBody, PageHeader, ProgressBar, SectionLabel, StatBox, type GridColumn, Button } from "@/shared/ui";
 
 /*
  * 출석 통계 (#130).
@@ -204,13 +194,14 @@ export function AttendanceStatsPage() {
 
             <div className="text-[13px] text-n500">
               회차 진행 내역은{" "}
-              <button
-                type="button"
+              <Button
+                variant="link"
                 onClick={() => router.push(ROUTES.academicProgramSessions)}
-                className="cursor-pointer text-accent underline"
+                className="text-[13px] underline"
               >
                 회차 이력
-              </button>에서 확인합니다.
+              </Button>
+              에서 확인합니다.
             </div>
           </div>
         )}
