@@ -22,17 +22,7 @@ import {
 import { EVENT_STTS_CDS, EVENT_STTS_NM, type EventSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
-import {
-  Badge,
-  Button,
-  Card,
-  Chip,
-  EmptyState,
-  PageBody,
-  PageHeader,
-  Pill,
-  flash,
-} from "@/shared/ui";
+import { Badge, Button, Card, Chip, EmptyState, PageBody, PageHeader, Pill, flash } from "@/shared/ui";
 
 /*
  * 행사 목록 (#136 · GET /v1/events).
@@ -165,53 +155,50 @@ function EventCard({
         <Pill tone="blue">{event.eventClsfNm}</Pill>
         {event.formId === null && <Pill tone="outline">폼 없음 · 공지형</Pill>}
       </div>
-      <div className="mt-3 flex items-center gap-3 border-t border-hairline pt-3 text-[14px]">
+      {/*
+       * flex-wrap + Button link(whitespace-nowrap) — 375에서 버튼 넷과 날짜가 한 줄에 눌려 «수/정»·«복/제»처럼
+       * 글자 단위로 줄바꿈되던 자리다 (UI 감사 D2 · #475). 날짜·안내는 ml-auto 로 오른쪽에.
+       */}
+      <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-hairline pt-3 text-[14px]">
         {/* 권한이 없으면 감추지 않고 잠근다 — 사라지면 기능이 없어진 것인지 고장인지 알 수 없다 */}
-        <button
-          type="button"
+        <Button
+          variant="link"
           disabled={!canManage}
           title={canManage ? undefined : NO_MANAGE}
           onClick={() => router.push(ROUTES.eventEdit(event.eventId))}
-          className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           수정
-        </button>
+        </Button>
         {/*
          * 신청·참가자로 가는 길 (#145). 폼 없는 공지형 행사에도 남긴다 — 폼 없이도 회원을
          * 직접 명단에 올릴 수 있고(D5 수동 등록), 감추면 그 길이 화면에서 사라진다.
          */}
-        <button
-          type="button"
+        <Button
+          variant="link"
           disabled={!canManage}
           title={canManage ? undefined : NO_MANAGE}
           onClick={() => router.push(ROUTES.eventParticipants(event.eventId))}
-          className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           신청 · 참가자
-        </button>
+        </Button>
         {/*
          * 복제 (ssccops#198). 한 번 더 묻는 것은 **신청서 사본이 함께 생기기 때문**이다 —
          * 폼 목록에 (복사본)이 하나 늘어나는 것은 사용자가 이 화면에서 보지 못하는 변화이고,
          * 되돌리려면 행사와 폼을 각각 치워야 한다. 확인 방식은 권한 트리 삭제와 같은 자리에서
          * 쓰는 두 단계 인라인 확인이다(이 저장소에는 모달이 없다).
          */}
-        <button
-          type="button"
+        <Button
+          variant="link"
           disabled={!canManage || pending}
           title={canManage ? undefined : NO_MANAGE}
           onClick={() => (asking ? void runDuplicate() : setAsking(true))}
-          className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "복제 중…" : asking ? "복제할까요? 예" : "복제"}
-        </button>
+        </Button>
         {asking && !pending && (
-          <button
-            type="button"
-            onClick={() => setAsking(false)}
-            className="cursor-pointer text-n500"
-          >
+          <Button variant="link" onClick={() => setAsking(false)} className="text-n500">
             아니오
-          </button>
+          </Button>
         )}
         {/*
          * 삭제 (ADR-0020). 삭제만 danger 색이다 — 다른 버튼과 같은 accent로 두면 좁은 화면에서
@@ -222,23 +209,23 @@ function EventCard({
          * 권한이 없으면 감추지 않고 잠근다 — 잠긴 채 사유를 `title`에 둔다. 학술 활동이 딸린
          * 행사는 여기서 잠그지 못한다(목록 응답에 그 사실이 없다) — 거절은 시트가 받는다.
          */}
-        <button
-          type="button"
+        <Button
+          variant="link-danger"
           disabled={deleting || !canDelete}
           title={canDelete ? undefined : NO_EVENT_DELETE}
           onClick={onDelete}
-          className="cursor-pointer text-danger disabled:cursor-not-allowed disabled:opacity-50"
         >
           {deleting ? "지우는 중…" : "삭제"}
-        </button>
-        <div className="flex-1" />
+        </Button>
         {/* 되돌리기 번거로운 부수효과는 누르기 전에 말한다 — 신청서가 하나 더 생긴다 */}
         {asking && !pending && (
-          <div className="text-[13px] text-n500">
+          <div className="ml-auto text-[13px] text-n500">
             {event.formId === null ? "사본은 작성 중으로 만들어집니다" : "신청서 사본도 함께 생깁니다"}
           </div>
         )}
-        {!asking && <div className="text-[13px] text-n500">수정 {formatYmd(event.mdfcnDt)}</div>}
+        {!asking && (
+          <div className="ml-auto text-[13px] text-n500">수정 {formatYmd(event.mdfcnDt)}</div>
+        )}
       </div>
     </Card>
   );

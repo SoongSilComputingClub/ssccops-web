@@ -6,15 +6,7 @@ import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useEventCategories, type EventCategoryField } from "@/features/event";
 import { FIELD_LABEL } from "@/shared/config/labels";
-import {
-  Button,
-  Card,
-  EmptyState,
-  PageBody,
-  PageHeader,
-  TextField,
-  flash,
-} from "@/shared/ui";
+import { Button, Card, EmptyState, PageBody, PageHeader, TextField, flash, ScrollX } from "@/shared/ui";
 
 /*
  * 행사 분류 관리 (/events/categories · #136 · D13).
@@ -182,7 +174,7 @@ export function EventCategoriesPage() {
                   직접 그린다 — 인라인 편집 때문이기도 하다. 좁은 화면에서는 이 표만 가로로
                   스크롤시킨다 (role-labels와 같은 판단).
                 */}
-                <div className="overflow-x-auto">
+                <ScrollX>
                 <div className="grid min-w-[600px] grid-cols-[100px_180px_1fr_130px] lg:min-w-0">
                   {[
                     FIELD_LABEL.displayOrder,
@@ -214,7 +206,7 @@ export function EventCategoriesPage() {
                                 invalidField(rowError, "indctSeqno") || undefined
                               }
                               aria-describedby={rowError ? ROW_ERROR_ID : undefined}
-                              className="w-[64px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none lg:text-[14.5px]"
+                              className="w-[64px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none focus-visible:ring-2 focus-visible:ring-accent/40 lg:text-[14.5px]"
                             />
                           ) : (
                             c.indctSeqno
@@ -240,7 +232,7 @@ export function EventCategoriesPage() {
                                 invalidField(rowError, "eventClsfNm") || undefined
                               }
                               aria-describedby={rowError ? ROW_ERROR_ID : undefined}
-                              className="w-[200px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none lg:text-[14.5px]"
+                              className="w-[200px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none focus-visible:ring-2 focus-visible:ring-accent/40 lg:text-[14.5px]"
                             />
                           ) : (
                             <span className="font-semibold">{c.eventClsfNm}</span>
@@ -296,7 +288,7 @@ export function EventCategoriesPage() {
                     );
                   })}
                 </div>
-                </div>
+                </ScrollX>
               </Card>
             </>
           ))}
