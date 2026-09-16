@@ -11,20 +11,7 @@ import {
 } from "@/features/sub-work";
 import { ROUTES } from "@/shared/config/routes";
 import { formatMd } from "@/shared/lib/date";
-import {
-  Badge,
-  type BadgeTone,
-  Button,
-  Card,
-  Chip,
-  EmptyState,
-  GridTable,
-  PageBody,
-  PageHeader,
-  ProgressBar,
-  flash,
-  type GridColumn,
-} from "@/shared/ui";
+import { Badge, type BadgeTone, Button, Card, Chip, EmptyState, GridTable, PageBody, PageHeader, ProgressBar, flash, type GridColumn, FilterBar } from "@/shared/ui";
 
 /*
  * 운영 통합 › 하위 업무 (ssccops-server OPS-008 · GET /v1/sub-works · #28·#74·#41).
@@ -193,7 +180,16 @@ export function SubWorkListPage() {
     <>
       <PageHeader title="하위 업무" subtitle="실행 단위 · 승인 · 진행률" />
       <PageBody>
-        <div className="mb-[14px] flex items-center gap-[7px]">
+        {/* flex-wrap 인 FilterBar — 375 에서 이 줄이 651px 로 늘어나 본문 가로 스크롤과 «헤더~칩 150px 빈 공간»을 만들었다 (UI 감사 D1 · #471) */}
+        <FilterBar
+          trailing={
+            status === "ready" ? (
+              <>
+                {totalCount}건 · 전체 {overallCount}건
+              </>
+            ) : null
+          }
+        >
           {SUB_WORK_LIST_TABS.map((t) => (
             <Chip
               key={t}
@@ -212,13 +208,7 @@ export function SubWorkListPage() {
           <Chip active={mine} onClick={() => setMine((on) => !on)} title={MINE_HINT}>
             내 업무
           </Chip>
-          <div className="flex-1" />
-          {status === "ready" && (
-            <div className="text-[14px] text-n500">
-              {totalCount}건 · 전체 {overallCount}건
-            </div>
-          )}
-        </div>
+        </FilterBar>
 
         {status === "loading" && <SubWorkTableSkeleton />}
 

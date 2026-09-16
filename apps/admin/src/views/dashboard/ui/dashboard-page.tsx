@@ -11,18 +11,7 @@ import { FIELD_LABEL } from "@/shared/config/labels";
 import { WORK_STTS_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { ddayText, deadlineFlag, formatMd, todayInSeoul } from "@/shared/lib/date";
-import {
-  Badge,
-  Card,
-  CardTitle,
-  Chip,
-  EmptyState,
-  GridTable,
-  PageBody,
-  PageHeader,
-  ProgressBar,
-  type GridColumn,
-} from "@/shared/ui";
+import { Badge, Card, CardTitle, Chip, EmptyState, GridTable, PageBody, PageHeader, ProgressBar, type GridColumn, Button } from "@/shared/ui";
 
 /*
  * 운영 대시보드 (ssccops-server OPS-038 · GET /v1/dashboard · ssccops-web#60).
@@ -252,13 +241,9 @@ export function DashboardPage() {
                 <CardTitle
                   right={
                     /* 키보드 접근(#403) */
-                    <button
-                      type="button"
-                      onClick={() => router.push(ROUTES.approvals)}
-                      className="cursor-pointer text-[14px] text-accent hover:underline"
-                    >
+                    <Button variant="link" onClick={() => router.push(ROUTES.approvals)}>
                       전체보기
-                    </button>
+                    </Button>
                   }
                 >
                   승인 대기 목록

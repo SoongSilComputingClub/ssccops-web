@@ -5,21 +5,7 @@ import { CAPABILITY } from "@/entities/session";
 import type { SubWorkTypeSaveInput, SubWorkTypeSummary } from "@/entities/sub-work-type";
 import { useCan } from "@/features/auth";
 import { useSubWorkTypes } from "@/features/sub-work-type";
-import {
-  Badge,
-  Button,
-  Card,
-  Chip,
-  EmptyState,
-  Field,
-  PageBody,
-  PageHeader,
-  SectionLabel,
-  TextArea,
-  TextField,
-  Toggle,
-  flash,
-} from "@/shared/ui";
+import { Badge, Button, Card, Chip, EmptyState, Field, PageBody, PageHeader, SectionLabel, TextArea, TextField, Toggle, flash } from "@/shared/ui";
 
 /*
  * 하위 업무 유형 관리 (ssccops-server OPS-018 · OPS-019 · #34).
@@ -381,15 +367,14 @@ export function SubWorkTypeListPage() {
                         />
                       </div>
                       <div className="border-t border-hairline py-3">
-                        <button
-                          type="button"
+                        <Button
+                          variant="link"
                           disabled={!canManage}
                           title={canManage ? undefined : NO_MANAGE}
                           onClick={() => startEdit(t)}
-                          className="cursor-pointer text-[14px] text-accent disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           수정
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ))}
