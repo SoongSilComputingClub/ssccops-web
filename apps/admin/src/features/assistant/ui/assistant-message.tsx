@@ -90,9 +90,10 @@ function AnswerBubble({ answer }: Readonly<{ answer: AssistantAnswer }>) {
   return (
     <div className="flex flex-col gap-2">
       {/*
-        근거 배지 — 답변 **위**에 둔다. 「지금 회칙」과 「의결 전 개정안」의 답이 화면에서
-        같아 보이면 안 되는데, 읽고 난 뒤에 붙은 꼬리표는 이미 읽은 문장을 되돌리지 못한다.
-        거절이면 기댄 문서가 없으므로 그리지 않는다(basisBadgeLabel이 null을 준다).
+        근거 배지 — 답변 **위**에 둔다. 「지금 쓰이는 회칙」과 「아직 쓰이지 않는 문서」의 답이
+        화면에서 같아 보이면 안 되는데, 읽고 난 뒤에 붙은 꼬리표는 이미 읽은 문장을 되돌리지
+        못한다. 거절이면 기댄 문서가 없으므로 그리지 않는다(`basisBadgeLabel`이 null을 준다 —
+        `toAnswer`가 `applyStatus`를 눌러 두는 것과 한 쌍이다).
       */}
       {badge && (
         <div className="self-start rounded-full border border-line bg-fill px-[10px] py-[3px] text-[12px] text-n400">
@@ -122,23 +123,45 @@ function AnswerBubble({ answer }: Readonly<{ answer: AssistantAnswer }>) {
       </div>
 
       {/*
-        `answered: false`면 인용 영역을 비운다 — `citations`는 빈 배열이지 null이 아니므로
-        길이만 보면 된다. 거절에 «출처 없음» 같은 빈 상자를 그리지 않는 것은, 없는 것이
-        정상인 자리에 자리를 만들면 무언가 실패한 것처럼 읽히기 때문이다.
+        근거는 **접어 둔다** (#468).
+
+        발췌 카드가 여러 장이면 답변보다 길어져, 다 읽고 스크롤해 내려온 사람이 다음 질문을
+        하려면 그 카드들을 다시 지나야 했다. 접어 두면 답이 먼저 읽히고, 「어디에 그렇게
+        적혀 있나」를 확인하려는 사람만 편다.
+
+        `<details>`를 쓰는 것은 여는 상태를 이 컴포넌트가 들지 않기 위해서다 — 말풍선은 대화가
+        길어지면 여러 개가 함께 있고, 각자의 열림을 store에 두면 대화를 지울 때 따라 지울 것이
+        하나 늘어난다. 키보드 조작과 보조기기 안내도 브라우저가 이미 한다.
+
+        `answered: false`면 애초에 `citations`가 비어 온다(`toAnswer`가 #468에서 버린다) —
+        거절에 «근거 보기»를 달면 눌러서 빈 곳을 확인하게 만든다.
       */}
       {answer.citations.length > 0 && (
-        <ul className="flex list-none flex-col gap-[6px]">
-          {answer.citations.map((citation, index) => (
-            /*
-              `ref`가 키다 — 서버가 발췌마다 매긴 번호라 한 답변 안에서 겹치지 않는다. 문서명과
-              표기를 이어 붙이던 옛 키는 같은 조를 두 번 인용하면 부딪혔다. **`ref`가 0인 것은
-              서버가 그 값을 빠뜨렸다는 뜻**이라(`toCitation`) 그때만 인덱스로 떨어뜨린다.
-            */
-            <li key={citation.ref || `fallback-${index}`}>
-              <CitationCard citation={citation} />
-            </li>
-          ))}
-        </ul>
+        <details className="group self-start">
+          <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-lg px-[9px] py-[5px] text-[12.5px] text-n400 transition-colors hover:bg-fill hover:text-n300 [&::-webkit-details-marker]:hidden">
+            {/* 열리면 돌아가는 홑화살괄호 — 표식이라 읽어 주지 않는다 */}
+            <span
+              aria-hidden="true"
+              className="text-[10px] transition-transform group-open:rotate-90"
+            >
+              ▶
+            </span>
+            답변 근거 보기 ({answer.citations.length})
+          </summary>
+
+          <ul className="mt-[6px] flex list-none flex-col gap-[6px]">
+            {answer.citations.map((citation, index) => (
+              /*
+                `ref`가 키다 — 서버가 발췌마다 매긴 번호라 한 답변 안에서 겹치지 않는다. 문서명과
+                표기를 이어 붙이던 옛 키는 같은 조를 두 번 인용하면 부딪혔다. **`ref`가 0인 것은
+                서버가 그 값을 빠뜨렸다는 뜻**이라(`toCitation`) 그때만 인덱스로 떨어뜨린다.
+              */
+              <li key={citation.ref || `fallback-${index}`}>
+                <CitationCard citation={citation} />
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   );

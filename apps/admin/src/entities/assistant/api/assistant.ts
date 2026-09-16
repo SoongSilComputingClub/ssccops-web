@@ -136,7 +136,20 @@ function toAnswer(response: AssistantQueryResponse): AssistantAnswer {
 
   return {
     answer: response.answer ?? "",
-    citations: (response.citations ?? []).map(toCitation),
+    /*
+     * **거절이면 인용을 버린다** (#468).
+     *
+     * 화면은 「`answered: false`면 `citations`는 빈 배열」을 전제로 쓰여 있는데(`AnswerBubble`
+     * 주석) 그 전제를 여기서 강제하지 않아, 서버가 후보 청크를 실어 보내면 **«근거를 찾지
+     * 못했습니다»라고 말하면서 그 아래 인용 카드가 붙었다.** 실제로 그렇게 나왔다 — 검토목록
+     * 하나만 쓰이는 상태에서 「회칙 제3조를 인용해줘」를 물었더니 거절 문구와 함께 그 문서의
+     * 발췌 두 장이 그려졌다.
+     *
+     * 검색이 끌어온 후보와 **답의 근거로 삼은 것**은 다르다. 거절은 «쓸 만한 근거가 없었다»는
+     * 판정이므로, 그때 후보를 «근거»라는 이름으로 보여 주면 판정을 뒤집어 읽게 만든다.
+     * `applyStatus`·`effectiveDate`를 같은 이유로 누르고 있던 자리에 함께 둔다.
+     */
+    citations: answered ? (response.citations ?? []).map(toCitation) : [],
     applyStatus: answered ? (response.applyStatus ?? null) : null,
     effectiveDate: answered ? (response.effectiveDate ?? null) : null,
     answered,
