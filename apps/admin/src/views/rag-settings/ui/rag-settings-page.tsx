@@ -44,8 +44,9 @@ import { RagApplyConfirm, RagDeleteConfirm } from "./rag-confirm-sheets";
  * 반영하는 사람이 «권한을 가진 운영진»이 되는 것이 이 화면에 달려 있다.
  *
  * ── 상태가 두 축이다 ────────────────────────────────────────────
- * 색인 진행(대기·색인 중·색인 완료·실패)과 적용 여부(개정안·시행 중·옛 판본)를 **다른 열로**
- * 그린다. 한 열에 섞으면 「색인은 끝났지만 아직 시행 전인 개정안」을 표현할 수 없는데, 올린
+ * 색인 진행(대기·색인 중·색인 완료·실패)과 적용 여부(미사용·답변에 사용 중·제외됨)를 **다른
+ * 열로** 그린다. 한 열에 섞으면 「색인은 끝났지만 아직 답변에 쓰이지 않는 문서」를 표현할 수
+ * 없는데, 올린
  * 문서는 전부 그 상태로 들어온다 — 첫 업로드 대상이 바로 그것이다.
  *
  * ── 권한 (서버 클래스 레벨 @RequireAuthority) ──────────────────
@@ -97,7 +98,7 @@ export function RagSettingsPage() {
   const upload = useRagUpload();
 
   /*
-   * 적용 상태 필터 (#463) — 도우미 패널의 «시행 전입니다» 링크가 `?apply=DRAFT`로 데려온다.
+   * 적용 상태 필터 (#463) — 도우미 패널의 «아직 쓰이지 않습니다» 링크가 `?apply=DRAFT`로 데려온다.
    *
    * **클라이언트 쪽 필터다.** 서버 질의는 `q`(문서명) 하나뿐이고 이 조회는 전량을 받으므로
    * (커서 페이징이 아니다) 받아 온 뒤 화면에서 고른다 — 페이징이었다면 걸러낸 만큼 한 페이지에
@@ -137,7 +138,7 @@ export function RagSettingsPage() {
 
   /*
    * 재색인은 **확인 없이 바로**다 — 되돌릴 것이 없고 결과가 같다(#432). 삭제·적용 전환만
-   * 확인을 받는다: 삭제는 되살리는 길이 없고, 시행 전환은 되돌릴 수는 있지만 그 사이의
+   * 확인을 받는다: 삭제는 되살리는 길이 없고, 사용 전환은 되돌릴 수는 있지만 그 사이의
    * 답변이 바뀐다.
    */
   const lockReason = canManage ? undefined : NO_RAG_DOCUMENT_MANAGE;
@@ -215,7 +216,7 @@ export function RagSettingsPage() {
           tone={RAG_APPLY_STATUS_TONE[d.applyStatus]}
           title={
             d.applyStatus === "EFFECTIVE" && d.effectiveFrom
-              ? `${formatYmd(d.effectiveFrom)} 시행`
+              ? `${formatYmd(d.effectiveFrom)}부터 사용`
               : undefined
           }
         >
@@ -231,17 +232,22 @@ export function RagSettingsPage() {
       render: (d) => {
         const busy = admin.isBusy(d.ragDocId);
         /*
-         * «시행 중으로»는 색인 완료가 아니면 잠근다 — 서버가 409 RAG_DOCUMENT_NOT_INDEXED로
+         * «답변에 사용»은 색인 완료가 아니면 잠근다 — 서버가 409 RAG_DOCUMENT_NOT_INDEXED로
          * 막는 자리이고, 받고 나서 안내하는 것보다 미리 잠그고 이유를 붙이는 편이 낫다(#432).
          */
         const notIndexed = d.indexStatus !== "INDEXED";
-        const applyLabel = d.applyStatus === "EFFECTIVE" ? "내리기" : "시행";
+        /*
+         * 제외 쪽만 «영구»를 단다 (#468). 두 이름이 대칭이면 서로의 반대말로 읽히는데
+         * `SUPERSEDED → EFFECTIVE` 전이가 없어 **한쪽만 되돌아온다** — 그 비대칭을 누르기
+         * 전에 알리는 자리가 여기다(확인 시트는 이미 누른 뒤에 뜬다).
+         */
+        const applyLabel = d.applyStatus === "EFFECTIVE" ? "답변에서 영구 제외" : "답변에 사용";
         const applyTitle = !canManage
           ? NO_RAG_DOCUMENT_MANAGE
           : d.applyStatus === "SUPERSEDED"
-            ? "내려둔 문서는 되돌릴 수 없습니다 — 같은 파일을 다시 올려주세요"
+            ? "제외한 문서는 되돌릴 수 없습니다 — 같은 파일을 다시 올려주세요"
             : notIndexed && d.applyStatus === "DRAFT"
-              ? "색인이 끝난 문서만 시행 중으로 올릴 수 있습니다"
+              ? "색인이 끝난 문서만 답변에 사용할 수 있습니다"
               : undefined;
 
         return (
@@ -378,8 +384,8 @@ export function RagSettingsPage() {
             </Card>
 
             <div className="mt-3 text-[13px] leading-[1.8] text-n500">
-              올린 문서는 «개정안»으로 들어와 색인이 끝나도 답변에 쓰이지 않습니다 — «시행»을
-              눌러야 도우미가 그 문서를 근거로 답합니다. 시행 중인 문서는 여러 건일 수 있으며,
+              올린 문서는 «미사용»으로 들어와 색인이 끝나도 답변에 쓰이지 않습니다 — «답변에
+              사용»을 눌러야 도우미가 그 문서를 근거로 답합니다. 사용 중인 문서는 여러 건일 수 있으며,
               개정된 규정을 올릴 때는 옛 문서를 지워주세요 — 지우지 않으면 도우미가 옛 조항과 새
               조항을 함께 근거로 답할 수 있습니다.
               {/*

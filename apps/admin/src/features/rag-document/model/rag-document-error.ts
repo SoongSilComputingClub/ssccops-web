@@ -43,7 +43,7 @@ export function toRagDocumentErrorMessage(error: unknown): string {
      * 잠근 뒤 색인이 되돌아간 경우(재색인)뿐이라, 다음에 할 일을 그대로 적는다.
      */
     case RAG_DOCUMENT_ERROR.NOT_INDEXED:
-      return "색인이 끝난 문서만 시행 중으로 올릴 수 있습니다 — 색인이 끝난 뒤 다시 시도해주세요";
+      return "색인이 끝난 문서만 답변에 사용할 수 있습니다 — 색인이 끝난 뒤 다시 시도해주세요";
     case RAG_DOCUMENT_ERROR.INVALID_APPLY_TRANSITION:
       return "적용 상태를 그렇게 바꿀 수 없습니다 — 목록을 새로고침한 뒤 다시 시도해주세요";
     /*

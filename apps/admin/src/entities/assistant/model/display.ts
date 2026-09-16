@@ -66,7 +66,7 @@ export function citationSource(citation: AssistantCitation): string | null {
 }
 
 /**
- * 답변 위의 근거 배지 — «2026-03-24 시행 회칙 기준» · «의결 전 개정안 기준».
+ * 답변 위의 근거 배지 — «2026-03-24부터 쓰이는 회칙 기준» · «아직 쓰이지 않는 문서 기준».
  *
  * **두 답이 화면에서 같아 보이면 안 된다**(§13.1). 거절이면 기댄 문서가 없으므로 null이고,
  * 그때 화면은 배지를 그리지 않는다.
@@ -75,8 +75,8 @@ export function citationSource(citation: AssistantCitation): string | null {
  * 배지가 답하는 물음이 «무엇을 근거로 읽었나» 하나이기 때문이다.
  *
  * **«판본 배지»였다**(#462 · 서버 ADR-0034). 판본 개념이 없어진 뒤 이 배지가 답하는 것은
- * «몇 번째 판이냐»가 아니라 **문서의 적용 상태**(개정안 · 시행 중 · 내려둠)다 — 이름에 판본이
- * 남아 있으면 없어진 축을 되살리는 코드가 다시 붙는다.
+ * «몇 번째 판이냐»가 아니라 **문서의 적용 상태**(미사용 · 답변에 사용 중 · 제외됨)다 — 이름에
+ * 판본이 남아 있으면 없어진 축을 되살리는 코드가 다시 붙는다.
  */
 export function basisBadgeLabel(answer: AssistantAnswer): string | null {
   if (!answer.answered || answer.applyStatus === null) return null;
@@ -84,27 +84,27 @@ export function basisBadgeLabel(answer: AssistantAnswer): string | null {
   const docTitle = answer.citations[0]?.docTitle ?? null;
 
   /*
-   * DRAFT는 시행일이 없다. 날짜 자리를 비운 «시행 기준»으로 흘리지 않고 문장을 통째로 바꾸는
-   * 것은, 「지금 회칙」과 「의결 전 개정안」이 한눈에 갈려야 하기 때문이다.
+   * DRAFT는 쓰이기 시작한 날이 없다. 날짜 자리를 비운 문장으로 흘리지 않고 통째로 바꾸는
+   * 것은, 「지금 쓰이는 회칙」과 「아직 쓰이지 않는 문서」가 한눈에 갈려야 하기 때문이다.
    */
   if (answer.applyStatus === "DRAFT") {
-    return [docTitle, "의결 전 개정안 기준"].filter(Boolean).join(" ");
+    return [docTitle, "아직 쓰이지 않는 문서 기준"].filter(Boolean).join(" ");
   }
 
   /*
-   * 내려둔 문서다. Phase 1의 검색 조건이 `EFFECTIVE`뿐이라 지금 이 값은 내려오지 않지만,
-   * `EFFECTIVE`와 같은 문장으로 흘리면 **내려둔 회칙의 답이 지금 회칙의 답처럼 보인다** —
-   * DRAFT를 가르는 이유와 같은 이유라 같은 자리에서 가른다.
+   * 답변에서 제외한 문서다. Phase 1의 검색 조건이 `EFFECTIVE`뿐이라 지금 이 값은 내려오지
+   * 않지만, `EFFECTIVE`와 같은 문장으로 흘리면 **제외한 회칙의 답이 지금 회칙의 답처럼
+   * 보인다** — DRAFT를 가르는 이유와 같은 이유라 같은 자리에서 가른다.
    *
-   * 문구는 규정 설정 화면의 상태 표시명과 같은 말을 쓴다(«내려둠» — `entities/rag-document`).
-   * «옛 판본»이라고 적던 자리인데, 그 말은 ADR-0034가 걷어낸 축을 가리킨다.
+   * 문구는 규정 설정 화면의 상태 표시명과 같은 말을 쓴다(«제외됨» — `entities/rag-document`).
+   * 그 화면이 «시행/내리기»에서 «답변에 사용/제외»로 옮겨 갈 때(#468) 이 배지도 함께 옮겼다.
    */
   if (answer.applyStatus === "SUPERSEDED") {
-    const superseded = answer.effectiveDate ? `${answer.effectiveDate} 시행 ` : "";
-    return `${superseded}${docTitle ?? ""} 내려둔 문서 기준`.replace(/\s+/g, " ").trim();
+    const superseded = answer.effectiveDate ? `${answer.effectiveDate}부터 쓰던 ` : "";
+    return `${superseded}${docTitle ?? ""} 제외된 문서 기준`.replace(/\s+/g, " ").trim();
   }
 
-  const effective = answer.effectiveDate ? `${answer.effectiveDate} 시행` : null;
+  const effective = answer.effectiveDate ? `${answer.effectiveDate}부터 쓰이는` : null;
   return [effective, docTitle, "기준"].filter(Boolean).join(" ");
 }
 
