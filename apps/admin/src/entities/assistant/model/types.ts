@@ -49,7 +49,7 @@ export interface AssistantSuggestions {
 /**
  * 답변이 기댄 근거 하나.
  *
- * **두 모양이 한 타입에 있다.** `citationType`이 `ARTICLE`이면 `chapter`·`article`·`clause`·
+ * **두 모양이 한 타입에 있다.** `citationType`이 `ARTICLE`이면 `chapter`·`article`·
  * `supplementary`가, `PAGE`면 `page`가 채워지고 **반대쪽은 `null`이다** — 서버가 대체값을
  * 만들지 않으므로 화면도 만들지 않는다(«없는 값을 지어내지 않는다» · AGENTS.md).
  *
@@ -59,8 +59,34 @@ export interface AssistantSuggestions {
  * **판본 번호(`docVer`)가 있던 자리다**(#462 · 서버 ADR-0034). 문서 한 건이 곧 그 규정이라
  * 카드에 「v1」을 그릴 것이 없고, 서버 DTO에도 그 필드가 없다 — 남겨 두었더니 `v${docVer}`가
  * `vundefined`로 굳어 화면에 찍혔다.
+ *
+ * **`clause`가 있던 자리이기도 하다**(#464 · 서버 #447). 항 표기는 모델이 `[제7조 6항]`이라고
+ * 써 줄 때만 알 수 있던 값인데, 대괄호에 번호만 들어오면서 서버가 알 길이 없어져 **언제나
+ * `null`**이 되었다 — 서버 DTO에는 하위 호환 때문에 남아 있지만 여기서는 걷어낸다. «값이
+ * 있을 때만» 조건으로 남기지 않는 것은 `docVer`와 같은 이유로 그 값이 **영영 없기** 때문이고,
+ * 항이 실제로 무엇을 말하는지는 `snippet`이 그대로 보여 준다.
  */
 export interface AssistantCitation {
+  /**
+   * 본문의 `[3]`과 짝인 번호 (#464 · 서버 #447).
+   *
+   * **순서가 아니라 번호다** — 발췌 여덟 개 중 3번과 7번만 인용되면 배열에는 둘이 들어오고
+   * 그 `ref`는 3과 7이다. 다시 1·2로 매기지 않는 것은 그러려면 **이미 흘려보낸 본문을 고쳐
+   * 써야 하기** 때문이다(서버 주석). 그래서 카드 번호를 배열 인덱스로 그리면 본문의 번호와
+   * 어긋난다 — 그리는 쪽은 언제나 이 값을 쓴다.
+   */
+  ref: number;
+  /**
+   * **서버가 만든 짧은 표기** — `제7조` · `부칙 제3조` · `p.12` · 문서명.
+   *
+   * 모델이 이 문자열을 쓰지 않는다는 것이 서버 #447의 요점이며, 그래서 **틀린 조 번호가
+   * 발생할 수 없다.** 본문의 `[3]`을 이 표기로 갈아 그릴 때 쓰는 값이다
+   * (`markerByRef`·`display.ts`).
+   *
+   * **카드 제목을 이것으로 대신하지 않는다** — 일부러 짧아서 장(`제2장 회원`)도 조 제목
+   * (`(회원의 구분)`)도 들어 있지 않다. 카드는 넓고 본문의 대괄호는 좁다.
+   */
+  marker: string | null;
   citationType: CitationType;
   docTitle: string | null;
   /** ARTICLE 전용 — `제2장 회원` */
@@ -74,8 +100,6 @@ export interface AssistantCitation {
   supplementary: boolean | null;
   /** ARTICLE 전용 — `제7조 (회원의 구분)` */
   article: string | null;
-  /** ARTICLE 전용 — `6항` */
-  clause: string | null;
   /** PAGE 전용 — `12`. **null이면 DOCX라 페이지가 없다는 뜻**이다 */
   page: number | null;
   /** 원문 발췌 — 인용이 이 기능의 값이라 카드마다 함께 그린다 */
@@ -86,8 +110,14 @@ export interface AssistantCitation {
  * 질의 한 건의 답.
  *
  * **`answered`가 가장 중요한 필드다.** `false`면 서버가 모델을 부르지 않았거나 그 답을
- * 버렸다는 뜻이고, `answer`는 정해진 안내 문구, `citations`는 **빈 배열(null 아님)**,
- * 판본 값 둘은 `null`이다 — 기댄 판본이 없다.
+ * 버렸다는 뜻이고, `citations`는 **빈 배열(null 아님)**, 판본 값 둘은 `null`이다 — 기댄
+ * 판본이 없다.
+ *
+ * ⚠️ **`answer`가 무엇인지는 전송 경로에 따라 다르다** (#464 · 서버 #447). 한 번에 받는
+ * 경로에서는 언제나 정해진 안내 문구이지만, **흘려 받는 경로에서 «모델이 출처를 하나도 달지
+ * 않은 답»은 흘려보낸 문장 그대로**가 실린다 — 이미 읽힌 문장을 다른 문장으로 갈아치우는
+ * 것이 서버가 기각한 «사후 철회»라서다. 그래서 화면은 `answered: false`를 «정해진 문구가
+ * 왔다»로 읽지 않고 **«근거 없음»을 표시하는 신호**로 읽는다.
  */
 export interface AssistantAnswer {
   answer: string;

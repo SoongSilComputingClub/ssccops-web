@@ -49,6 +49,13 @@ export function AssistantPanel() {
   const askResetConfirm = useAssistantStore((s) => s.askResetConfirm);
   const cancelResetConfirm = useAssistantStore((s) => s.cancelResetConfirm);
 
+  /*
+   * 흘려 받는 중인 말풍선이 있는가 (#464). `asking`과 갈리는 것은 그 값이 «요청이 도는
+   * 중»이고 이것은 «글자가 오기 시작했다»이기 때문이다 — 둘 사이에 검색·임계값 판정이 있어
+   * 실제로 몇 초가 흐른다.
+   */
+  const streaming = messages.some((message) => message.kind === "streaming");
+
   const [draft, setDraft] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -189,9 +196,14 @@ export function AssistantPanel() {
           답변 영역 — `aria-live="polite"`. 답은 사용자가 누른 뒤 비동기로 도착하므로 화면을
           보지 않는 사람에게는 도착 자체가 전해지지 않는다. `assertive`가 아닌 것은 읽던 것을
           끊을 만큼 급한 소식이 아니기 때문이다.
+
+          ⚠️ **흘려 받는 동안에는 알림을 끈다** (#464). 조각이 붙을 때마다 이 영역이 바뀌므로
+          켜 둔 채로 두면 보조기기가 **답변을 몇 글자씩 수십 번 되읽는다** — 도착을 알리려던
+          것이 오히려 문장을 듣지 못하게 만든다. `done`으로 말풍선이 확정되는 순간 `polite`로
+          돌아오고, 그때 완성된 답이 한 번 읽힌다. 진행 중이라는 사실은 `aria-busy`가 말한다.
         */}
         <div
-          aria-live="polite"
+          aria-live={streaming ? "off" : "polite"}
           aria-busy={asking || resetting}
           className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-[16px] py-[14px]"
         >
@@ -208,7 +220,13 @@ export function AssistantPanel() {
             ))
           )}
 
-          {asking && (
+          {/*
+            «찾는 중»은 **한 글자도 오지 않은 동안만** 그린다 (#464). 흘려 받기 시작하면 그
+            글자 자체가 진행 표시라, 말풍선을 함께 두면 답변 아래에 «아직 찾는 중»이 매달려
+            무엇이 도는 중인지가 흐려진다. 문구가 «찾는» 중인 것은 실제로 그 단계라서다 —
+            서버가 검색과 임계값 판정을 끝내기 전에는 첫 조각이 나오지 않는다.
+          */}
+          {asking && !streaming && (
             <div className="self-start rounded-2xl rounded-bl-md border border-line bg-surface px-[14px] py-[10px] text-[13.5px] text-n500">
               답변을 찾는 중입니다…
             </div>
