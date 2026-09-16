@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Button } from "./button";
 
 /** 중앙 모달 시트 — 등급/상태/역할 변경, 반려 사유 입력 등 */
@@ -56,9 +56,9 @@ export function Sheet({
    *
    * 스크림(아래 배경 div)은 클릭으로 닫히지만 키보드로 «누르는» 대상이 아니다 — 화면 전체를
    * 덮는 배경에 `role="button"`·`tabIndex`를 붙이면 Tab 정거장이 하나 늘 뿐 뜻이 없다. 모달을
-   * 키보드로 나가는 규약은 Esc이고, 시트가 열릴 때 초점을 안으로 옮기지 않으므로 시트
-   * 컨테이너의 `onKeyDown`은 초점이 밖에 있으면 받지 못한다 — 드로어(mobile-nav)와 같이
-   * document에서 받는다. 배경은 `aria-hidden`으로 보조기기에서 치운다.
+   * 키보드로 나가는 규약은 Esc다. 초점은 열릴 때 안으로 옮기지만(아래) 사용자가 밖을 눌러
+   * 초점을 빼낼 수 있으므로 시트 컨테이너가 아니라 드로어(mobile-nav)와 같이 document에서
+   * 받는다. 배경은 `aria-hidden`으로 보조기기에서 치운다.
    */
   useEffect(() => {
     if (!open) return;
@@ -68,6 +68,23 @@ export function Sheet({
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  /*
+   * 초점을 안으로 옮기고, 닫히면 열었던 자리로 돌려놓는다 (UI 감사 D7 · #470).
+   *
+   * 그전에는 열려도 초점이 `body`에 남아 Tab이 시트 뒤의 화면을 돌았고, 보조기기는 시트가 열린
+   * 것을 알 수 없었다(`role`·`aria-modal`이 없었다). 드로어(mobile-nav)와 같은 방식이다 —
+   * 패널에 `tabIndex={-1}`을 주고 거기에 초점을 두면 안의 첫 입력이 무엇이든 다음 Tab이 그것으로
+   * 간다. 위의 Esc 처리는 그대로 두었다 — 초점이 안에 있어도 document 리스너가 먼저 받는다.
+   */
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement as HTMLElement | null;
+    panelRef.current?.focus();
+    return () => opener?.focus?.();
+  }, [open]);
 
   if (!open) return null;
   return (
@@ -82,8 +99,17 @@ export function Sheet({
         max-w로 바꾸고 좌우 여백을 빼 좁은 화면에서는 화면에 맞추고, 440px 이상에서는
         예전과 같은 크기를 유지한다.
       */}
-      <div className="fixed top-1/2 left-1/2 z-[91] max-h-[78%] w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 animate-pop-in overflow-y-auto rounded-2xl bg-surface p-[22px] shadow-[0_0_0_1px_var(--color-line-strong),0_16px_40px_rgb(0_0_0/.56)]">
-        <div className="text-[20px] font-medium">{title}</div>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="fixed top-1/2 left-1/2 z-[91] max-h-[78%] w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 animate-pop-in overflow-y-auto rounded-2xl bg-surface p-[22px] shadow-[0_0_0_1px_var(--color-line-strong),0_16px_40px_rgb(0_0_0/.56)] outline-none"
+      >
+        <h2 id={titleId} className="text-[20px] font-medium">
+          {title}
+        </h2>
         {hint && <div className="mt-[5px] mb-[18px] text-[14px] text-n500">{hint}</div>}
         {children}
         <div className="mt-5 flex justify-end gap-2">

@@ -189,6 +189,7 @@ export function RoleSheet({
       <Field label="대표 역할로 지정">
         <div className="flex items-start gap-[10px]">
           <Toggle
+            label="대표 역할로 지정"
             on={representative}
             onChange={(on) => {
               setRepresentative(on);

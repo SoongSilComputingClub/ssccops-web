@@ -145,6 +145,7 @@ export function FormLabelsPage() {
                           진행 중에는 훅이 요청을 막고, 여기서는 그 사실을 흐리게 보여 준다
                         */}
                         <Toggle
+                          label={`${l.lblNm} 사용 여부`}
                           on={l.useYn}
                           onChange={() => void admin.toggle(l)}
                           disabled={!canManage}

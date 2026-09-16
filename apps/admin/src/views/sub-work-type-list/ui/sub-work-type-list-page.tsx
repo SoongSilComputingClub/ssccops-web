@@ -370,6 +370,7 @@ export function SubWorkTypeListPage() {
                           진행 중에는 훅이 요청을 막고, 여기서는 그 사실을 흐리게 보여 준다
                         */}
                         <Toggle
+                          label={`${t.typeName} 사용 여부`}
                           on={t.useYn}
                           onChange={() => void admin.toggle(t)}
                           disabled={!canManage}
@@ -413,6 +414,7 @@ export function SubWorkTypeListPage() {
                         {t.typeName}
                       </div>
                       <Toggle
+                        label={`${t.typeName} 사용 여부`}
                         on={t.useYn}
                         onChange={() => void admin.toggle(t)}
                         disabled={!canManage}

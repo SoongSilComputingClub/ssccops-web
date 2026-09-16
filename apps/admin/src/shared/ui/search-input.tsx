@@ -6,17 +6,20 @@ export function SearchInput({
   value,
   onChange,
   placeholder,
+  label,
   className,
 }: Readonly<{
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  /** 입력의 이름(`aria-label`). placeholder는 값을 치는 순간 사라져 이름이 못 된다 — 없으면 placeholder를 쓴다 (UI 감사 D10 · #470) */
+  label?: string;
   className?: string;
 }>) {
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-[12px] border border-line bg-surface px-[11px]",
+        "flex items-center gap-2 rounded-[12px] border border-line bg-surface px-[11px] focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/40",
         className,
       )}
     >
@@ -25,6 +28,8 @@ export function SearchInput({
         <path d="M9.5 9.5L13 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
       <input
+        type="search"
+        aria-label={label ?? placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
