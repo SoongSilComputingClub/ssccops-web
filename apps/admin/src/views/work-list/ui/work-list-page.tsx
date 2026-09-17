@@ -24,7 +24,7 @@ import { Badge, Button, Card, Chip, EmptyState, PageBody, PageHeader, ProgressBa
 const NO_WORK_MANAGE = "업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
 
 /** 칩 이름만으로는 무엇을 거르는지 알기 어렵다 — 담당이지 등록이 아니라는 것을 말한다 */
-const MINE_HINT = "담당자가 나인 업무만 봅니다 — 내가 등록했지만 남이 담당하는 건은 빠집니다";
+const MINE_HINT = "내가 담당인 것만 보입니다. 등록만 한 건은 빠집니다.";
 
 function WorkCardSkeleton() {
   return (
@@ -101,7 +101,7 @@ export function WorkListPage() {
     <>
       <PageHeader
         title="업무"
-        subtitle="행사 · 상시 · 정례 운영"
+        subtitle="행사·상시·정례 운영"
         action={{
           label: "+ 등록",
           onClick: openCreate,

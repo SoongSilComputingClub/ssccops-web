@@ -67,7 +67,7 @@ type ViewMode = (typeof VIEWS)[number];
  * 무엇보다 **이 범위를 가로지르는 업무가 통째로 사라졌다**(8/1~10/30 업무가 9월 달력에
  * 없었다). 가장 오래 끄는 업무일수록 안 보이는 셈이라 #247에서 막대로 바꿨다.
  */
-const CALENDAR_NOTE = "업무는 기간 막대 · 하위 업무는 마감일 · 회의는 시작 일시에 놓입니다";
+const CALENDAR_NOTE = "업무는 기간, 하위 업무는 마감일, 회의는 시작 시각 자리에 표시됩니다";
 
 interface OperRow {
   operTypeCd: OperTypeCd;
@@ -273,30 +273,27 @@ export function OperationsHubPage() {
   const kindCards = [
     {
       cd: "WORK" as const,
-      table: "work",
       count: data.works.length,
-      note: "행사·상시·정례 운영 단위. 업무 유형·업무 상태·총평·진행률 보유",
+      note: "행사·상시·정례 운영처럼 여러 하위 업무를 묶는 단위",
       href: ROUTES.works,
     },
     {
       cd: "SUB_WORK" as const,
-      table: "sub_work",
       count: data.subWorks.length,
-      note: "실제 실행 단위. 상태 전이·승인·점검 목록의 대상",
+      note: "실제로 하는 일 하나. 상태·승인·점검 목록이 여기에 있습니다",
       href: ROUTES.subWorks,
     },
     {
       cd: "MEETING" as const,
-      table: "mtg",
       count: data.meetings.length,
-      note: "정례·주제 회의. 안건(mtg_dtl)과 결과 내용을 기록",
+      note: "정례·주제 회의. 안건과 결과를 기록합니다",
       href: ROUTES.meetings,
     },
   ];
 
   return (
     <>
-      <PageHeader title="운영 통합" subtitle="oper · work · sub_work · mtg" />
+      <PageHeader title="운영 통합" subtitle="업무·하위 업무·회의를 한 화면에서" />
       <PageBody>
         {status === "loading" && <OperationsHubSkeleton />}
 
@@ -314,7 +311,6 @@ export function OperationsHubPage() {
                 <Card key={k.cd} onClick={() => router.push(k.href)}>
                   <div className="flex items-center gap-2">
                     <Badge tone={kindTone(k.cd)}>{OPER_TYPE_NM[k.cd]}</Badge>
-                    <span className="font-mono text-[12.5px] text-n500">{k.table}</span>
                     <div className="flex-1" />
                     <div className="text-[14px] text-accent">{k.count}건</div>
                   </div>

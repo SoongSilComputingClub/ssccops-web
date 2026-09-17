@@ -96,7 +96,7 @@ export function useCreateSubWork(): SubWorkCreateControl {
         return {
           subWorkId: created.subWorkId,
           message: pendingApproval
-            ? "하위 업무를 등록했습니다 · 승인 대기 상태입니다"
+            ? "하위 업무를 등록했습니다. 승인 대기 상태입니다"
             : "하위 업무를 등록했습니다",
         };
       } catch (error: unknown) {

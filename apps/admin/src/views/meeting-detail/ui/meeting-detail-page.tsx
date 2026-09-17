@@ -103,11 +103,11 @@ function CancelSheet({
     <Sheet
       open
       title="회의 취소"
-      hint="취소 사유를 입력하세요 (필수)"
+      hint="취소 사유(필수)"
       onClose={close}
       onOk={() => {
         if (!reason.trim()) {
-          flash("취소 사유를 입력해야 합니다");
+          flash("취소 사유를 입력해주세요");
           return;
         }
         onCancel(reason.trim());
@@ -305,7 +305,7 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
           {status === "loading" && <DetailSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="회의를 찾을 수 없습니다 — 이미 삭제된 회의일 수 있습니다."
+              message="없는 회의입니다. 목록으로 돌아가주세요."
               action={{ label: "회의 목록", onClick: () => router.replace(ROUTES.meetings) }}
             />
           )}
@@ -361,7 +361,7 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
     const targetOperationId = await resolveTargetOperationId(selectedTarget);
     setResolvingTarget(false);
     if (targetOperationId === null) {
-      flash("선택한 항목을 다시 불러오지 못했습니다. 목록을 새로고침한 뒤 다시 시도해주세요");
+      flash("선택한 항목을 불러오지 못했습니다 — 새로고침해주세요");
       return;
     }
 
@@ -521,7 +521,7 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
               ]}
             />
 
-            <SectionLabel className="mt-4 mb-[10px]">확장 속성 · mtg</SectionLabel>
+            <SectionLabel className="mt-4 mb-[10px]">추가 정보</SectionLabel>
             <KeyValueGrid
               labelWidth={88}
               items={[
@@ -610,11 +610,11 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
                     /* 결과 없음은 두 가지다 — 다음에 할 행동이 다르므로 문구를 나눈다 */
                     (targetQuery.trim() ? (
                       <div className="p-3 text-[13.5px] text-n500">
-                        검색 결과가 없습니다 — 검색어를 지우면 전체 목록으로 돌아갑니다.
+                        검색 결과가 없습니다.
                       </div>
                     ) : (
                       <div className="p-3 text-[13.5px] text-n500">
-                        연결할 수 있는 업무·하위 업무가 없습니다.
+                        연결할 업무·하위 업무가 없습니다.
                       </div>
                     ))}
                   {targetOptions.map((ref) => (

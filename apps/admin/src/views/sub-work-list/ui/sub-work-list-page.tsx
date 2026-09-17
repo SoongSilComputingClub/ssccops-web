@@ -44,20 +44,20 @@ function stallBadge(sw: SubWorkListItem): { label: string; title: string } | nul
   if (sw.isReadyForReview) {
     return {
       label: "요청 전",
-      title: "완료 점검을 모두 마쳤습니다 — 완료 승인 요청을 하면 승인자에게 넘어갑니다",
+      title: "완료 점검이 끝났습니다. 완료 승인을 요청해주세요.",
     };
   }
   if (sw.isReviewStale) {
     return {
       label: "승인 정체",
-      title: "완료 승인 요청 후 3일이 지났습니다 — 승인자의 승인·반려를 기다리고 있습니다",
+      title: "완료 승인을 요청한 지 3일이 지났습니다. 아직 승인·반려가 없습니다.",
     };
   }
   return null;
 }
 
 /** 칩 이름만으로는 무엇을 거르는지 알기 어렵다 — 담당이지 등록이 아니라는 것을 말한다 */
-const MINE_HINT = "담당자가 나인 하위 업무만 봅니다 — 내가 등록했지만 남이 담당하는 건은 빠집니다";
+const MINE_HINT = "내가 담당인 것만 보입니다. 등록만 한 건은 빠집니다.";
 
 function SubWorkTableSkeleton() {
   return (
@@ -178,7 +178,7 @@ export function SubWorkListPage() {
 
   return (
     <>
-      <PageHeader title="하위 업무" subtitle="실행 단위 · 승인 · 진행률" />
+      <PageHeader title="하위 업무" subtitle="실제로 하는 일 하나하나" />
       <PageBody>
         {/* flex-wrap 인 FilterBar — 375 에서 이 줄이 651px 로 늘어나 본문 가로 스크롤과 «헤더~칩 150px 빈 공간»을 만들었다 (UI 감사 D1 · #471) */}
         <FilterBar

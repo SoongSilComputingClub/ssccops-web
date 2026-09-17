@@ -59,7 +59,7 @@ function editLockReason(
   canActOnOwnerTasks: boolean,
 ): string {
   if (!canActOnOwnerTasks) {
-    return `점검 항목은 ${OWNER_OR_MANAGER}이 더하고 고치고 지울 수 있습니다.`;
+    return `점검 항목은 ${OWNER_OR_MANAGER}이 고칩니다.`;
   }
   if (subWork.isChecklistItemEditable) return "";
   /*
@@ -67,7 +67,7 @@ function editLockReason(
    * 여기 적지 않는 이유는 그것이 서버의 판정 기준이라 바뀌면 화면 문구만 낡기 때문이다 —
    * 지금 단계를 말하고 무엇이 막혔는지만 밝힌다.
    */
-  return `${WORK_STTS_NM[subWork.workStatus]} 단계에서는 점검 항목을 더하거나 고치거나 지울 수 없습니다 — 체크·해제만 할 수 있습니다.`;
+  return `${WORK_STTS_NM[subWork.workStatus]} 단계에서는 체크·해제만 됩니다.`;
 }
 
 function ChecklistRow({
@@ -262,12 +262,12 @@ export function ChecklistCard({
       {locked && <div className="mt-3 text-[13px] text-n400">{lockReason}</div>}
       {isEditing && checkedLocked && (
         <div className="mt-3 text-[13px] text-n400">
-          체크된 항목에는 삭제 버튼이 없습니다 — 체크를 해제하면 지울 수 있습니다.
+          체크를 해제하면 지울 수 있습니다.
         </div>
       )}
       {isEditing && otherLocked && (
         <div className="mt-[6px] text-[13px] text-n400">
-          지금 지울 수 없는 항목이 있습니다 — 화면을 다시 불러오면 달라질 수 있습니다.
+          지금은 지울 수 없는 항목이 있습니다. 새로고침해주세요.
         </div>
       )}
 

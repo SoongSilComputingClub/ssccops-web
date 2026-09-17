@@ -72,7 +72,7 @@ import { NextStepGuide } from "./next-step-guide";
 const STAGE_LABELS = WORK_STTS_CDS.map((cd) => WORK_STTS_NM[cd]);
 
 /** 잠긴 투표 버튼에 붙는 사유 — 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
-const NO_VOTE = "찬반 투표 권한이 없습니다 — 역할별 권한 화면에서 부여할 수 있습니다";
+const NO_VOTE = "찬반 투표 권한이 없습니다 — 찬반 투표(APPROVAL_VOTE) 권한이 필요합니다";
 
 /**
  * 완료 점검 목록을 다 채웠는가.
@@ -157,7 +157,7 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
           {status === "loading" && <DetailSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="하위 업무를 찾을 수 없습니다 — 이미 삭제된 하위 업무일 수 있습니다."
+              message="없는 하위 업무입니다. 목록으로 돌아가주세요."
               action={{
                 label: "하위 업무 목록",
                 onClick: () => router.replace(ROUTES.subWorks),
@@ -299,14 +299,14 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
   const approveBlockReason = !checklistDone
     ? "완료 점검 목록을 모두 체크해야 완료 승인할 수 있습니다"
     : quorumUnmet
-      ? "정족수를 채워야 완료 승인할 수 있습니다"
+      ? "정족수가 아직 안 찼습니다 — 승인함에서 찬성 표를 더 받아야 합니다"
       : "";
 
   const dday = ddayText(subWork.dueAt, todayInSeoul());
 
   return (
     <>
-      <PageHeader title="하위 업무 상세" subtitle="상태 · 점검 목록 · 승인" showBack />
+      <PageHeader title="하위 업무 상세" subtitle="상태와 승인 진행" showBack />
       <PageBody>
         <Card className="mb-4">
           <div className="flex flex-wrap items-center gap-[10px] lg:flex-nowrap">
@@ -455,7 +455,7 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
                    * 것을 여기서 말해 두지 않으면 표를 다 모은 뒤 화면이 멈춘 것처럼 보인다.
                    */}
                   <div className="text-center text-[12.5px] text-n400">
-                    동의가 다 모여도 완료 전환은 승인자가 눌러야 합니다.
+                    완료 승인은 승인자가 합니다.
                   </div>
                 </>
               )}
@@ -497,7 +497,7 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
                 },
               ]}
             />
-            <SectionLabel className="mt-4 mb-[10px]">확장 속성 · sub_work</SectionLabel>
+            <SectionLabel className="mt-4 mb-[10px]">추가 정보</SectionLabel>
             <KeyValueGrid
               items={[
                 {
