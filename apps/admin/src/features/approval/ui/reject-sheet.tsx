@@ -34,11 +34,11 @@ export function RejectSheet({
     <Sheet
       open
       title="반려"
-      hint="반려 사유를 입력하세요 (필수)"
+      hint="반려 사유(필수)"
       onClose={close}
       onOk={() => {
         if (!reason.trim()) {
-          flash("반려 사유를 입력해야 합니다");
+          flash("반려 사유를 입력해주세요");
           return;
         }
         onReject(reason.trim());

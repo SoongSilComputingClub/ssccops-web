@@ -75,13 +75,13 @@ export function DashboardPage() {
     if (sw.isReadyForReview) {
       return {
         label: "요청 전",
-        title: "완료 점검을 모두 마쳤습니다 — 완료 승인 요청을 하면 승인자에게 넘어갑니다",
+        title: "완료 점검이 끝났습니다. 완료 승인을 요청해주세요.",
       };
     }
     if (sw.isReviewStale) {
       return {
         label: "승인 정체",
-        title: "완료 승인 요청 후 3일이 지났습니다 — 승인자의 승인·반려를 기다리고 있습니다",
+        title: "완료 승인을 요청한 지 3일이 지났습니다. 아직 승인·반려가 없습니다.",
       };
     }
     return null;
@@ -117,7 +117,7 @@ export function DashboardPage() {
           {item.isReviewStale && (
             <Badge
               tone="outline-red"
-              title="완료 승인 요청 후 3일이 지났습니다 — 승인·반려를 기다리고 있습니다"
+              title="완료 승인을 요청한 지 3일이 지났습니다. 아직 승인·반려가 없습니다."
             >
               승인 정체
             </Badge>
@@ -214,7 +214,7 @@ export function DashboardPage() {
     <>
       <PageHeader
         title="운영 대시보드"
-        subtitle="승인 대기 · 다가오는 마감 · 내 업무"
+        subtitle="오늘 챙길 것"
         action={{
           label: "+ 등록",
           onClick: () => router.push(ROUTES.operationNew),

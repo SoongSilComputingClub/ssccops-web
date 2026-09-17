@@ -24,7 +24,7 @@ export function toWorkErrorMessage(error: unknown): string {
      */
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "업무를 볼 권한이 없습니다 — 운영진 권한(WORK_MANAGE)이 필요합니다";
+      return "업무를 볼 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
@@ -52,11 +52,11 @@ export function toWorkCreateErrorMessage(error: unknown): string {
   }
 
   if (error.code === API_ERROR.FORBIDDEN || error.code === API_ERROR.ACCESS_DENIED) {
-    return "업무를 등록할 권한이 없습니다 — 운영진 권한(WORK_MANAGE)이 필요합니다";
+    return "업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
   }
 
   if (error.code === WORK_ERROR.INVALID_CODE_VALUE) {
-    return "업무 유형·우선순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+    return "선택지가 바뀌었습니다 — 새로고침해주세요";
   }
 
   return toWorkErrorMessage(error);
@@ -79,7 +79,7 @@ export function toWorkDeleteErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return "업무를 삭제할 권한이 없습니다 — 업무 삭제(WORK_DELETE) 권한이 필요합니다";
     case WORK_ERROR.WORK_NOT_FOUND:
-      return "업무를 찾을 수 없습니다. 이미 삭제됐을 수 있습니다";
+      return "업무가 없습니다 — 목록을 새로고침해주세요";
     case WORK_ERROR.ALREADY_DELETED:
       return "이미 삭제된 업무입니다";
     case API_ERROR.CONFIG_MISSING:

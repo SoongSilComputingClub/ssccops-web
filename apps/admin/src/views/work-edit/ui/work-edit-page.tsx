@@ -80,7 +80,7 @@ export function WorkEditPage({ workId }: Readonly<{ workId: number }>) {
           {status === "loading" && <EditSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="업무를 찾을 수 없습니다 — 이미 삭제된 업무일 수 있습니다."
+              message="없는 업무입니다. 목록으로 돌아가주세요."
               action={{ label: "업무 목록", onClick: () => router.replace(ROUTES.works) }}
             />
           )}
@@ -129,7 +129,7 @@ function WorkEditForm({
 
   const save = async () => {
     if (!title.trim() || !startAt) {
-      flash("운영 제목 · 시작 일시는 필수입니다");
+      flash("제목과 시작 일시는 필수입니다");
       return;
     }
     if (ownerId === null || !ownerReady) {
@@ -205,7 +205,7 @@ function WorkEditForm({
           </Card>
 
           <Card>
-            <SectionLabel className="mb-3">확장 속성 · work</SectionLabel>
+            <SectionLabel className="mb-3">추가 정보</SectionLabel>
             <div className="mb-2 text-[13.5px] text-n400">{FIELD_LABEL.workType}</div>
             <div className="mb-4 flex flex-wrap gap-[7px]">
               {WORK_TYPE_CDS.map((cd) => (
@@ -218,7 +218,7 @@ function WorkEditForm({
               <TextArea
                 value={generalReview}
                 onChange={(e) => setGeneralReview(e.target.value)}
-                placeholder="운영 종료 후 회고 · 비워도 됩니다"
+                placeholder="운영이 끝난 뒤 쓰는 회고 (비워도 됩니다)"
               />
             </Field>
           </Card>

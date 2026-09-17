@@ -297,7 +297,7 @@ export async function createMeeting(input: MeetingCreateInput): Promise<MeetingD
   if (!res?.meetingId) {
     throw new ApiError(
       MEETING_ERROR.VALIDATION_FAILED,
-      "회의는 등록됐지만 서버가 회의_ID를 돌려주지 않았습니다. 목록에서 확인해주세요",
+      "등록됐습니다 — 목록에서 확인해주세요",
     );
   }
 

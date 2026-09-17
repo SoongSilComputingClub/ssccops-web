@@ -47,8 +47,8 @@ export type SubWorkListTab = (typeof SUB_WORK_LIST_TABS)[number];
 
 /** 칩에 마우스를 올렸을 때의 설명 — 칩 이름만으로는 무엇을 거르는지 알기 어렵다 */
 export const SUB_WORK_LIST_TAB_HINTS: Partial<Record<SubWorkListTab, string>> = {
-  "요청 전": "완료 점검을 모두 마쳤지만 아직 완료 승인 요청을 하지 않은 하위 업무입니다",
-  "승인 정체": "완료 승인 요청 후 3일이 지났지만 아직 승인·반려되지 않은 하위 업무입니다",
+  "요청 전": "점검은 끝났는데 아직 승인을 요청하지 않은 하위 업무",
+  "승인 정체": "승인을 요청한 지 3일이 지나도록 답이 없는 하위 업무",
 };
 
 /**

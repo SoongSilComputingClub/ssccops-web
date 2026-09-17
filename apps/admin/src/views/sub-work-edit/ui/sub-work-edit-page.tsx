@@ -78,7 +78,7 @@ export function SubWorkEditPage({ subWorkId }: Readonly<{ subWorkId: number }>) 
           {status === "loading" && <EditSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="하위 업무를 찾을 수 없습니다 — 이미 삭제된 하위 업무일 수 있습니다."
+              message="없는 하위 업무입니다. 목록으로 돌아가주세요."
               action={{
                 label: "하위 업무 목록",
                 onClick: () => router.replace(ROUTES.subWorks),
@@ -137,7 +137,7 @@ function SubWorkEditForm({
 
   const save = async () => {
     if (!title.trim() || !startAt) {
-      flash("운영 제목 · 시작 일시는 필수입니다");
+      flash("제목과 시작 일시는 필수입니다");
       return;
     }
     if (ownerId === null || !ownerReady) {
@@ -216,7 +216,7 @@ function SubWorkEditForm({
           </Card>
 
           <Card>
-            <SectionLabel className="mb-3">확장 속성 · sub_work</SectionLabel>
+            <SectionLabel className="mb-3">추가 정보</SectionLabel>
             <div className="mb-4 flex flex-wrap items-center gap-[8px]">
               <div className="text-[13.5px] text-n400">{FIELD_LABEL.subWorkType}</div>
               <Badge tone="outline">{subWork.subWorkTypeName}</Badge>
@@ -238,7 +238,7 @@ function SubWorkEditForm({
                 <TextArea
                   value={completionCriteria}
                   onChange={(e) => setCompletionCriteria(e.target.value)}
-                  placeholder="완료로 인정하는 기준 · 비워도 됩니다"
+                  placeholder="완료로 인정하는 기준 (비워도 됩니다)"
                 />
               </Field>
               <Field label={FIELD_LABEL.externalUrl}>

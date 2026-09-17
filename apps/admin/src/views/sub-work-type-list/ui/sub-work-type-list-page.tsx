@@ -249,8 +249,7 @@ export function SubWorkTypeListPage() {
                     정족수 1은 다른 한 명의 찬성이 먼저 있어야 한다 (POL-007)
                   */}
                   <div className="mt-[6px] text-[12.5px] text-n500">
-                    정족수는 승인자를 대체하지 않습니다. 찬성이 모여도 최종 승인은 승인자가
-                    합니다.
+                    찬성이 다 모여도 완료 승인은 승인자가 합니다.
                   </div>
                 </div>
               </>
@@ -438,8 +437,7 @@ export function SubWorkTypeListPage() {
             </>
           ))}
         <div className="mt-3 text-[13.5px] text-n500">
-          유형별 승인 규칙은 하위 업무 등록 시 자동 적용되며, 기존 하위 업무에는 소급되지
-          않습니다.
+          승인 규칙은 새로 등록하는 하위 업무에만 적용됩니다. 이미 있는 것은 그대로입니다.
         </div>
       </PageBody>
     </>

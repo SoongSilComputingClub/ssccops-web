@@ -19,7 +19,7 @@ export function toMeetingErrorMessage(error: unknown): string {
   switch (error.code) {
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "회의를 볼 권한이 없습니다 — 운영진 권한(MEETING_MANAGE)이 필요합니다";
+      return "회의를 볼 권한이 없습니다 — 회의 관리(MEETING_MANAGE) 권한이 필요합니다";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
@@ -46,7 +46,7 @@ export function toMeetingDeleteErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return "회의를 삭제할 권한이 없습니다 — 회의 삭제(MEETING_DELETE) 권한이 필요합니다";
     case MEETING_ERROR.NOT_FOUND:
-      return "회의를 찾을 수 없습니다. 이미 삭제됐을 수 있습니다";
+      return "회의가 없습니다 — 목록을 새로고침해주세요";
     case MEETING_ERROR.ALREADY_DELETED:
       return "이미 삭제된 회의입니다";
     case API_ERROR.CONFIG_MISSING:
@@ -72,11 +72,11 @@ export function toMeetingCreateErrorMessage(error: unknown): string {
   }
 
   if (error.code === API_ERROR.FORBIDDEN || error.code === API_ERROR.ACCESS_DENIED) {
-    return "회의를 등록할 권한이 없습니다 — 운영진 권한(MEETING_MANAGE)이 필요합니다";
+    return "회의를 등록할 권한이 없습니다 — 회의 관리(MEETING_MANAGE) 권한이 필요합니다";
   }
 
   if (error.code === MEETING_ERROR.INVALID_CODE_VALUE) {
-    return "회의 구분·참석 대상·우선순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+    return "선택지가 바뀌었습니다 — 새로고침해주세요";
   }
 
   return toMeetingErrorMessage(error);
@@ -103,17 +103,17 @@ export function toMeetingActionErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return "회의 책임자만 할 수 있는 작업입니다";
     case MEETING_ERROR.NOT_FOUND:
-      return "대상을 찾을 수 없습니다. 이미 삭제됐을 수 있으니 화면을 다시 불러와주세요";
+      return "없는 건입니다 — 새로고침해주세요";
     case MEETING_ERROR.TRANSITION_NOT_ALLOWED:
-      return "지금 상태에서는 할 수 없는 작업입니다. 그 사이 상태가 바뀌었을 수 있으니 다시 불러와주세요";
+      return "지금 상태에서는 할 수 없습니다 — 새로고침해주세요";
     case MEETING_ERROR.AGENDA_UNRESOLVED:
-      return "처리하지 않은(미처리) 안건이 있습니다 — 보류로 표시하거나 처리한 뒤 종료해주세요";
+      return "처리하지 않은 안건이 있습니다 — 보류로 돌리거나 처리한 뒤 종료해주세요";
     case MEETING_ERROR.MEETING_CLOSED:
-      return "이미 종료되었거나 취소된 회의입니다";
+      return "이미 끝났거나 취소된 회의입니다";
     case MEETING_ERROR.REASON_REQUIRED:
       return "취소 사유를 입력해주세요";
     case MEETING_ERROR.VALIDATION_FAILED:
-      return "연결할 운영 건 또는 안건명 중 하나만 입력해야 합니다";
+      return "운영 건 연결과 안건명 중 하나만 넣어주세요";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
