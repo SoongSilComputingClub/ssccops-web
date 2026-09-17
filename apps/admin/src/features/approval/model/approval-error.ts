@@ -44,11 +44,11 @@ export function toApprovalVoteErrorMessage(error: unknown): string {
   switch (error.code) {
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "투표할 수 있는 운영진 권한이 없습니다";
+      return "찬반 투표 권한이 없습니다 — 찬반 투표(APPROVAL_VOTE) 권한이 필요합니다";
     case SUB_WORK_ERROR.NOT_FOUND:
-      return "대상을 찾을 수 없습니다. 이미 삭제됐을 수 있으니 승인함을 다시 불러와주세요";
+      return "없는 건입니다 — 승인함을 새로고침해주세요";
     case SUB_WORK_ERROR.TRANSITION_NOT_ALLOWED:
-      return "지금은 투표할 수 없는 상태입니다. 그 사이 상태가 바뀌었을 수 있으니 다시 불러와주세요";
+      return "지금은 투표할 수 없습니다 — 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:

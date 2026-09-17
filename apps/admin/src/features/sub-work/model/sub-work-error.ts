@@ -22,7 +22,7 @@ export function toSubWorkErrorMessage(error: unknown): string {
     // 상태(403)가 아니라 코드로 본다(#29) — 403에는 미가입(SIGNUP_REQUIRED)도 실려 온다
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "하위 업무를 볼 권한이 없습니다 — 운영진 권한(WORK_MANAGE)이 필요합니다";
+      return "하위 업무를 볼 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
@@ -56,15 +56,15 @@ export function toSubWorkActionErrorMessage(error: unknown): string {
   switch (error.code) {
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "이 하위 업무의 승인자가 아닙니다 — 유형이 지정한 승인자만 승인·반려할 수 있습니다";
+      return "이 하위 업무의 승인자가 아닙니다 — 유형이 정한 승인자만 승인·반려합니다";
     case SUB_WORK_ERROR.NOT_FOUND:
-      return "대상을 찾을 수 없습니다. 이미 삭제됐을 수 있으니 화면을 다시 불러와주세요";
+      return "없는 건입니다 — 새로고침해주세요";
     case SUB_WORK_ERROR.TRANSITION_NOT_ALLOWED:
-      return "지금 상태에서는 할 수 없는 작업입니다. 그 사이 상태가 바뀌었을 수 있으니 다시 불러와주세요";
+      return "지금 상태에서는 할 수 없습니다 — 새로고침해주세요";
     case SUB_WORK_ERROR.COMPLETION_CRITERIA_UNMET:
       return "완료 점검 목록을 모두 체크해야 완료 승인할 수 있습니다";
     case SUB_WORK_ERROR.QUORUM_NOT_MET:
-      return "정족수를 채워야 완료 승인할 수 있습니다 — 승인함에서 찬성 표를 받아야 합니다";
+      return "정족수가 아직 안 찼습니다 — 승인함에서 찬성 표를 더 받아야 합니다";
     case SUB_WORK_ERROR.REASON_REQUIRED:
       return "반려 사유를 입력해주세요";
     case API_ERROR.CONFIG_MISSING:
@@ -103,11 +103,11 @@ export function toSubWorkChecklistItemErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return "점검 항목을 바꿀 권한이 없습니다 — 담당자이거나 업무 관리(WORK_MANAGE) 권한이 필요합니다";
     case SUB_WORK_ERROR.TRANSITION_NOT_ALLOWED:
-      return "지금 단계에서는 점검 항목을 바꿀 수 없습니다 — 그 사이 다른 사람이 상태를 옮긴 것일 수 있어 목록을 다시 불러왔습니다";
+      return "지금 단계에서는 점검 항목을 바꿀 수 없습니다 — 목록을 다시 불러왔습니다";
     case SUB_WORK_ERROR.CHECKLIST_ITEM_COMPLETED:
       return "체크된 항목은 지울 수 없습니다 — 체크를 해제한 뒤 지워주세요";
     case SUB_WORK_ERROR.NOT_FOUND:
-      return "점검 항목을 찾을 수 없습니다. 이미 지워졌을 수 있으니 화면을 다시 불러와주세요";
+      return "없는 항목입니다 — 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
@@ -134,7 +134,7 @@ export function toSubWorkDeleteErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return "하위 업무를 삭제할 권한이 없습니다 — 하위 업무 삭제(SUB_WORK_DELETE) 권한이 필요합니다";
     case SUB_WORK_ERROR.NOT_FOUND:
-      return "하위 업무를 찾을 수 없습니다. 이미 삭제됐을 수 있습니다";
+      return "하위 업무가 없습니다 — 목록을 새로고침해주세요";
     case SUB_WORK_ERROR.ALREADY_DELETED:
       return "이미 삭제된 하위 업무입니다";
     case API_ERROR.CONFIG_MISSING:
@@ -176,9 +176,9 @@ export function toSubWorkCreateErrorMessage(error: unknown): string {
   switch (error.code) {
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "하위 업무를 등록할 권한이 없습니다 — 운영진 권한(WORK_MANAGE)이 필요합니다";
+      return "하위 업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
     case SUB_WORK_ERROR.INVALID_CODE_VALUE:
-      return "우선순위 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+      return "선택지가 바뀌었습니다 — 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:

@@ -52,14 +52,14 @@ export function toSubWorkTypeSaveErrorMessage(error: unknown): string {
   switch (error.code) {
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "하위 업무 유형을 관리할 권한이 없습니다 — 회장·부회장·총무만 할 수 있습니다";
+      return "하위 업무 유형을 관리할 권한이 없습니다 — 하위 업무 유형 관리(SUB_WORK_TYPE_MANAGE) 권한이 필요합니다";
     // 클라이언트 선검사와 같은 문구를 쓴다 — 어디서 걸렸든 사용자에게는 같은 말이어야 한다
     case SUB_WORK_TYPE_ERROR.DUPLICATE_SUB_WORK_TYPE_NAME:
-      return "이미 있는 유형_명입니다";
+      return "같은 유형_명이 이미 있습니다";
     case SUB_WORK_TYPE_ERROR.SUB_WORK_TYPE_NOT_FOUND:
-      return "이미 없는 유형입니다. 목록을 다시 불러옵니다";
+      return "없는 유형입니다 — 목록을 다시 불러왔습니다";
     case SUB_WORK_TYPE_ERROR.INVALID_CODE_VALUE:
-      return "승인자_역할_코드가 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+      return "선택지가 바뀌었습니다 — 새로고침해주세요";
     default:
       return toSubWorkTypeErrorMessage(error);
   }

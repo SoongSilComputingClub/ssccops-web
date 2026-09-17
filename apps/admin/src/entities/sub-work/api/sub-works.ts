@@ -194,7 +194,7 @@ export async function createSubWork(
   if (!res?.subWorkId) {
     throw new ApiError(
       SUB_WORK_ERROR.VALIDATION_FAILED,
-      "하위 업무는 등록됐지만 서버가 하위_업무_ID를 돌려주지 않았습니다. 상위 업무 상세에서 확인해주세요",
+      "등록됐습니다 — 상위 업무 상세에서 확인해주세요",
     );
   }
 
@@ -631,7 +631,7 @@ export async function transitionSubWork(
   if (!res?.workStatus) {
     throw new ApiError(
       SUB_WORK_ERROR.VALIDATION_FAILED,
-      "상태는 바뀌었지만 서버가 전이 결과를 돌려주지 않았습니다. 화면을 새로고침해주세요",
+      "저장됐습니다 — 새로고침하면 반영됩니다",
     );
   }
 
@@ -679,7 +679,7 @@ export async function voteOnSubWork(
   if (!res?.myVote) {
     throw new ApiError(
       SUB_WORK_ERROR.VALIDATION_FAILED,
-      "투표는 반영됐지만 서버가 결과를 돌려주지 않았습니다. 화면을 새로고침해주세요",
+      "저장됐습니다 — 새로고침하면 반영됩니다",
     );
   }
 
@@ -715,7 +715,7 @@ export async function updateSubWorkChecklistItem(
   if (!res?.item) {
     throw new ApiError(
       SUB_WORK_ERROR.VALIDATION_FAILED,
-      "체크는 저장됐지만 서버가 결과를 돌려주지 않았습니다. 화면을 새로고침해주세요",
+      "저장됐습니다 — 새로고침하면 반영됩니다",
     );
   }
 
@@ -763,7 +763,7 @@ export async function addSubWorkChecklistItem(
   if (!res?.item) {
     throw new ApiError(
       SUB_WORK_ERROR.VALIDATION_FAILED,
-      "항목은 추가됐지만 서버가 결과를 돌려주지 않았습니다. 화면을 새로고침해주세요",
+      "저장됐습니다 — 새로고침하면 반영됩니다",
     );
   }
 
@@ -793,7 +793,7 @@ export async function renameSubWorkChecklistItem(
   if (!res?.item) {
     throw new ApiError(
       SUB_WORK_ERROR.VALIDATION_FAILED,
-      "문구는 저장됐지만 서버가 결과를 돌려주지 않았습니다. 화면을 새로고침해주세요",
+      "저장됐습니다 — 새로고침하면 반영됩니다",
     );
   }
 

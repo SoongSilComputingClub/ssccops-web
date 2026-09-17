@@ -204,7 +204,7 @@ export function useSubWorkTypes(): SubWorkTypeAdmin {
           (t) => t.typeName === typeName && t.subWorkTypeId !== subWorkTypeId,
         )
       ) {
-        setSaveErrorMessage("이미 있는 유형_명입니다");
+        setSaveErrorMessage("같은 유형_명이 이미 있습니다");
         return false;
       }
       /*
