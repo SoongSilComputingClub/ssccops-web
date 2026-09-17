@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
-import { deployMarks } from "@ssccops/ui";
+import { BrandMark, deployMarks } from "@ssccops/ui";
 import { AuthNav } from "@/features/auth";
 import { ROUTES } from "@/shared/config/routes";
 import { DesktopNav } from "./_shell/desktop-nav";
@@ -89,9 +89,7 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
         <header className="border-b border-line bg-surface">
           <div className="mx-auto flex max-w-[1000px] items-center justify-between gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
             <Link href={ROUTES.events} className="flex items-center gap-[8px]">
-              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[7px] border border-accent text-[13px] text-accent">
-                S
-              </span>
+              <BrandMark src={DEPLOY.mark} size={26} />
               <b className="text-[15px]">SSCC</b>
             </Link>
             <div className="flex items-center gap-[6px]">

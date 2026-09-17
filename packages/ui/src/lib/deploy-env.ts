@@ -35,6 +35,8 @@ export interface DeployMarks {
   isDev: boolean;
   /** `metadata.icons`에 그대로. `icon`이 있어야 `src/app/favicon.ico` 파일 규약 없이 탭 아이콘이 뜬다 */
   icons: { icon: string; apple: string };
+  /** 화면 안 브랜드 마크(`BrandMark`)가 쓰는 192px 아이콘 — 탭·홈 화면과 같은 파일이라 갈리지 않는다 (#449) */
+  mark: string;
   /** manifest `icons`에 그대로 — 192·512·maskable·ico */
   manifestIcons: ManifestIcon[];
   /** `<title>` — dev면 `[DEV] ` 접두. `title.template`의 `%s`는 그대로 두면 된다 */
@@ -55,6 +57,7 @@ export function deployMarks(raw: string | undefined): DeployMarks {
     env,
     isDev,
     icons: { icon: `${dir}/favicon.ico`, apple: `${dir}/apple-touch-icon.png` },
+    mark: `${dir}/icon-192.png`,
     manifestIcons: [
       { src: `${dir}/icon-192.png`, sizes: "192x192", type: "image/png", purpose: "any" },
       { src: `${dir}/icon-512.png`, sizes: "512x512", type: "image/png", purpose: "any" },

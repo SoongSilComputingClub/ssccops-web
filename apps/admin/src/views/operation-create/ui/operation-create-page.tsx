@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useCreateMeeting } from "@/features/meeting";
-import { assignableMemberLabel, useAssignableMembers } from "@/features/member";
+import {
+  AssignableMemberSelect,
+  assignableBlockReason,
+  isAssignablePick,
+  useAssignableMembers,
+} from "@/features/member";
 import { useCreateSubWork } from "@/features/sub-work";
 import { useActiveSubWorkTypes } from "@/features/sub-work-type";
 import { useCreateWork, useWorkDetail } from "@/features/work";
@@ -37,7 +42,6 @@ import {
   PageBody,
   PageHeader,
   SectionLabel,
-  SelectField,
   TextArea,
   TextField,
   flash,
@@ -171,19 +175,10 @@ export function OperationCreatePage({
    * 아직 안 왔거나 조회에 실패한 상태에서 등록이 그대로 나가면 이 화면을 고친 이유가 사라지기
    * 때문이다. 탈퇴·제명된 본인처럼 서버가 후보에서 뺀 회원도 여기서 걸린다.
    */
-  const picReady = assignable.includes(picId);
+  const picReady = isAssignablePick(assignable, picId);
 
   /** 담당자를 확정하지 못한 이유 — 빈 문자열이면 확정됐다. 등록 버튼의 잠금 근거이기도 하다 */
-  const picBlockReason =
-    assignable.status === "loading"
-      ? "담당자 목록을 불러오는 중입니다"
-      : assignable.status === "error"
-        ? assignable.errorMessage
-        : assignable.members.length === 0
-          ? "담당자로 지정할 수 있는 활동 회원이 없습니다"
-          : picReady
-            ? ""
-            : "담당자를 선택하세요";
+  const picBlockReason = assignableBlockReason(assignable, picReady);
 
   // work 확장
   const [workTypeCd, setWorkTypeCd] = useState<WorkTypeCd>("EVENT");
@@ -449,55 +444,22 @@ export function OperationCreatePage({
                 />
               </Field>
               {/*
-                담당자는 서버 후보 목록(GET /v1/members/assignable)에서 고른다 (#53).
-                고르지 않았을 때 목록의 첫 회원으로 떨어지지 않도록 **빈 값을 실제 선택지로
-                둔다** — 아직 목록이 없거나 세션 본인이 후보에서 빠진 경우, 셀렉트가 말없이
-                첫 항목을 보여 주면 화면에 뜬 이름과 서버로 나가는 값이 갈린다.
-
-                연락처·이메일·학번은 그리지 않는다 — 이 목록은 권한 없이 열리므로 서버가 그
-                값을 내리지 않는다. 여기 필요한 것은 동명이인을 가르는 기수·역할까지다.
+                담당자는 서버 후보 목록(GET /v1/members/assignable)에서 고른다 (#53). 셀렉트
+                자체는 수정 화면과 같은 것이다(features/member · #435) — 빈 값을 실제 선택지로
+                두는 이유와 그리지 않는 값은 그 컴포넌트 주석에 있다.
               */}
               <Field label="담당자" required>
-                <SelectField
-                  value={picReady && picId !== null ? String(picId) : ""}
-                  disabled={assignable.status !== "ready"}
-                  onChange={(e) =>
-                    setPickedPicId(e.target.value ? Number(e.target.value) : null)
-                  }
-                >
-                  <option value="">
-                    {assignable.status === "loading"
-                      ? "담당자 목록을 불러오는 중…"
-                      : "담당자 선택"}
-                  </option>
-                  {assignable.members.map((m) => (
-                    <option key={m.memberId} value={m.memberId}>
-                      {assignableMemberLabel(m)}
-                    </option>
-                  ))}
-                </SelectField>
-                <div
-                  className={
-                    picBlockReason
-                      ? "mt-[5px] text-[12.5px] text-danger"
-                      : "mt-[5px] text-[12.5px] text-n500"
-                  }
-                >
-                  {picBlockReason ||
-                    (picId === sessionMember?.memberId
+                <AssignableMemberSelect
+                  assignable={assignable}
+                  value={picId}
+                  onChange={setPickedPicId}
+                  blockReason={picBlockReason}
+                  hint={
+                    picId === sessionMember?.memberId
                       ? "본인으로 등록됩니다 · 다른 회원을 담당자로 지정할 수 있습니다"
-                      : "선택한 회원이 담당자로 등록됩니다")}
-                </div>
-                {/* 조회 실패는 등록 자체를 막는 상태라 다시 시도할 길을 그 자리에 둔다 */}
-                {assignable.status === "error" && (
-                  <button
-                    type="button"
-                    onClick={assignable.reload}
-                    className="mt-[5px] cursor-pointer text-[12.5px] underline"
-                  >
-                    다시 시도
-                  </button>
-                )}
+                      : "선택한 회원이 담당자로 등록됩니다"
+                  }
+                />
               </Field>
               <Field label={FIELD_LABEL.priority}>
                 <div className="flex flex-wrap gap-[7px] pt-[6px]">

@@ -2,7 +2,7 @@
 
 import { MEMBER_IMPORT_FIELDS } from "@/entities/member";
 import type { MemberImportWizard } from "@/features/member";
-import { Button, Card, SectionLabel, SelectField } from "@/shared/ui";
+import { Button, Card, SectionLabel, SelectField, ScrollX } from "@/shared/ui";
 
 /*
  * 2단계 — 컬럼 매핑 (#57).
@@ -118,7 +118,7 @@ export function MappingStep({ wizard }: Readonly<{ wizard: MemberImportWizard }>
           서버가 읽은 앞 {preview.sampleRows.length}행입니다 (전체 {preview.totalRowCount}행).
           값이 밀려 보인다면 매핑이 아니라 파일의 쉼표·따옴표를 확인해주세요.
         </div>
-        <div className="overflow-x-auto">
+        <ScrollX>
           <table className="min-w-full border-collapse text-left">
             <thead>
               <tr>
@@ -151,7 +151,7 @@ export function MappingStep({ wizard }: Readonly<{ wizard: MemberImportWizard }>
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollX>
       </Card>
 
       {mappingProblem && (

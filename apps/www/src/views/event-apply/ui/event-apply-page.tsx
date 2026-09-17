@@ -137,7 +137,10 @@ function ApplyShell({
 }>) {
   return (
     <div className="mx-auto flex max-w-[860px] flex-col gap-[14px]">
-      <Link href={ROUTES.eventDetail(eventId)} className="text-[13.5px] text-accent-strong">
+      <Link
+        href={ROUTES.eventDetail(eventId)}
+        className="-my-1 inline-flex min-h-6 items-center self-start py-1 text-[13.5px] text-accent-strong"
+      >
         ‹ 행사 안내로
       </Link>
       {event && (

@@ -2,19 +2,7 @@
 
 import { mbrGrdTone, mbrSttsTone } from "@/entities/member";
 import { useMyProfileEdit } from "@/features/member";
-import {
-  Badge,
-  Button,
-  Card,
-  Field,
-  KeyValueGrid,
-  PageBody,
-  PageHeader,
-  Pill,
-  SectionLabel,
-  TextField,
-  flash,
-} from "@/shared/ui";
+import { Badge, Button, Card, Field, KeyValueGrid, PageBody, PageHeader, Pill, SectionLabel, TextField, flash } from "@/shared/ui";
 import { FIELD_LABEL } from "@/shared/config/labels";
 
 /*
@@ -82,13 +70,9 @@ export function MyAccountPage() {
               <SectionLabel>회원 정보</SectionLabel>
               <div className="flex-1" />
               {!editor.editing && (
-                <button
-                  type="button"
-                  onClick={editor.start}
-                  className="cursor-pointer text-[14px] text-accent"
-                >
+                <Button variant="link" onClick={editor.start}>
                   프로필 수정
-                </button>
+                </Button>
               )}
             </div>
 

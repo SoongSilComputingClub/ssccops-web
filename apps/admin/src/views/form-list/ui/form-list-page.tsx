@@ -25,17 +25,7 @@ import {
 import { TemplateStartSheet, useFormFromTemplate } from "@/features/form-template";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
-import {
-  Badge,
-  Button,
-  Card,
-  Chip,
-  EmptyState,
-  PageBody,
-  PageHeader,
-  Pill,
-  flash,
-} from "@/shared/ui";
+import { Badge, Button, Card, Chip, EmptyState, PageBody, PageHeader, Pill, flash } from "@/shared/ui";
 
 const ALL = "전체";
 
@@ -180,10 +170,10 @@ function FormCard({
           ))}
         </div>
       )}
-      <div className="mt-3 flex items-center gap-3 border-t border-hairline pt-3 text-[14px]">
+      <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-hairline pt-3 text-[14px]">
         {/* 권한이 없으면 감추지 않고 잠근다 — 사라지면 기능이 없어진 것인지 고장인지 알 수 없다 */}
-        <button
-          type="button"
+        <Button
+          variant="link"
           disabled={duplicating || !canWrite}
           /*
            * 시스템 폼의 복제는 막지 않는다 — 사본은 코드가 가리키지 않는 일반 폼이라 잠글
@@ -193,26 +183,24 @@ function FormCard({
             !canWrite ? NO_WRITE : form.sysYn ? SYSTEM_FORM_DUPLICATE_NOTE : undefined
           }
           onClick={onDuplicate}
-          className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           {duplicating ? "복제하는 중…" : "복제"}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="link"
           disabled={!canWrite}
           title={canWrite ? undefined : NO_WRITE}
           onClick={() => router.push(ROUTES.formEdit(form.formId))}
-          className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-50"
         >
           수정
-        </button>
+        </Button>
         {/*
           삭제만 danger 색이다 — 복제·수정과 같은 accent로 두면 좁은 화면에서 세 글자가 나란히
           서서 잘못 누르기 쉽다. **시스템 폼에서는 잠근다**: 서버가 409로 거절하므로(서버 #140)
           누르게 두면 확인 시트를 지나 거절만 받는다. 사유 문구는 서버 거절과 같은 문장이다.
         */}
-        <button
-          type="button"
+        <Button
+          variant="link-danger"
           disabled={deleting || !canDelete || form.sysYn}
           title={
             !canDelete
@@ -222,12 +210,10 @@ function FormCard({
                 : undefined
           }
           onClick={onDelete}
-          className="cursor-pointer text-danger disabled:cursor-not-allowed disabled:opacity-50"
         >
           {deleting ? "지우는 중…" : "삭제"}
-        </button>
-        <div className="flex-1" />
-        <div className="text-[13px] text-n500">수정 {formatYmd(form.mdfcnDt)}</div>
+        </Button>
+        <div className="ml-auto text-[13px] text-n500">수정 {formatYmd(form.mdfcnDt)}</div>
       </div>
     </Card>
   );

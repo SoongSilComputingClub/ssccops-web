@@ -2,9 +2,13 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { BrandMark, deployMarks } from "@ssccops/ui";
 import { ROUTES } from "@/shared/config/routes";
 import { safeNextPath, rememberOAuthNext } from "@ssccops/auth";
 import { createClient } from "@ssccops/auth/supabase/client";
+
+// 값은 이 파일에서 읽어 넘긴다 — 패키지 안에서 읽으면 NEXT_PUBLIC 인라인을 못 받는다(deploy-env.ts)
+const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
 
 /*
  * /auth/callback 이 붙여 주는 실패 원인 → 사용자 문구.
@@ -65,9 +69,7 @@ export function LoginPage() {
 
   return (
     <div className="w-full max-w-[392px] px-4">
-      <div className="flex size-[34px] items-center justify-center rounded-[12px] border border-accent text-[16px] text-accent">
-        S
-      </div>
+      <BrandMark src={DEPLOY.mark} size={34} radius={12} />
       <h1 className="mt-[22px] text-[30px] leading-[1.25] font-medium tracking-[-.5px]">
         SSCC
         <br />

@@ -31,20 +31,7 @@ import {
 import { ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
 import { todayInSeoul } from "@/shared/lib/date";
-import {
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  Field,
-  flash,
-  PageBody,
-  PageHeader,
-  Pill,
-  SectionLabel,
-  Sheet,
-  TextField,
-} from "@/shared/ui";
+import { Badge, Button, Card, EmptyState, Field, flash, PageBody, PageHeader, Pill, SectionLabel, Sheet, TextField } from "@/shared/ui";
 
 /*
  * 회원 상세 (#46 · 서버 #76 · GET /v1/members/{memberId}).
@@ -291,13 +278,13 @@ function MemberDetailView({ mbrId }: Readonly<{ mbrId: number }>) {
             <Card>
               <div className="mb-3 flex items-center justify-between gap-2">
                 <SectionLabel>최근 변경이력</SectionLabel>
-                <button
-                  type="button"
+                <Button
+                  variant="link"
                   onClick={() => router.push(ROUTES.memberHistories(member.memberId))}
-                  className="cursor-pointer text-[13.5px] text-accent"
+                  className="text-[13.5px]"
                 >
                   전체 보기 ›
-                </button>
+                </Button>
               </div>
               {member.recentChanges.length === 0 ? (
                 <div className="text-[14.5px] text-n500">변경 이력이 없습니다</div>

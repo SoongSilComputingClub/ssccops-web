@@ -61,7 +61,8 @@ export function ApplicationCard({ application }: Readonly<{ application: MyAppli
       {responseHref && (
         <Link
           href={responseHref}
-          className="self-start text-[13.5px] font-semibold text-accent-strong underline underline-offset-2"
+          // 76×20 이라 손가락으로 빗나갔다 — 시각은 그대로, 히트만 24px (UI 감사 D5 · #476)
+          className="-my-1 inline-flex min-h-6 items-center self-start py-1 text-[13.5px] font-semibold text-accent-strong underline underline-offset-2"
         >
           제출 내용 보기
         </Link>

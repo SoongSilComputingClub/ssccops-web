@@ -17,7 +17,6 @@ import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher
 import { LoginGate } from "@/features/auth";
 import {
   ROUTES,
-  signupUrl,
   studioMembersUrl,
   studioProgramDetailUrl,
   studioRecordProgramUrl,
@@ -25,7 +24,8 @@ import {
   studioRosterUrl,
 } from "@/shared/config/routes";
 import { formatDt, formatYmd, todayInSeoul } from "@/shared/lib/date";
-import { Badge, Card, EmptyState, Notice } from "@/shared/ui";
+import { Badge, Card, EmptyState } from "@/shared/ui";
+import { SignupRequiredNotice } from "@/features/signup";
 
 /*
  * 학술 대시보드 — 스터디장 홈 (#126 · 서버 #131·#134·#139).
@@ -481,20 +481,5 @@ export async function StudioDashboardPage({
 }
 
 function SignupNotice() {
-  const signup = signupUrl();
-  return (
-    <Notice
-      title="회원 가입을 마쳐야 학술 대시보드를 볼 수 있습니다"
-      description="로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다."
-    >
-      {signup && (
-        <a
-          href={signup}
-          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
-        >
-          회원 가입하기
-        </a>
-      )}
-    </Notice>
-  );
+  return <SignupRequiredNotice title="회원 가입을 마쳐야 학술 대시보드를 볼 수 있습니다" />;
 }

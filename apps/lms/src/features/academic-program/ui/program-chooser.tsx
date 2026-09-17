@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ROUTES } from "@/shared/config/routes";
 import { EmptyState, Notice } from "@/shared/ui";
+import { SignupRequiredNotice } from "@/features/signup";
 
 /*
  * 학술 화면(내 활동·회차 기록·출석부·팀원 관리)이 공유하는 안내 블록 (#190 · #192).
@@ -20,23 +21,9 @@ export function NoProgramNotice() {
   );
 }
 
-/** 미가입 안내 */
-export function ProgramSignupNotice({ signupHref }: Readonly<{ signupHref: string | null }>) {
-  return (
-    <Notice
-      title="회원 가입을 마쳐야 학술 활동 화면을 볼 수 있습니다"
-      description="로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다."
-    >
-      {signupHref && (
-        <a
-          href={signupHref}
-          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
-        >
-          회원 가입하기
-        </a>
-      )}
-    </Notice>
-  );
+/** 미가입 안내 — 같은 자리에서 가입까지 (#453). 어드민 링크(`signupHref`)는 걷어냈다 */
+export function ProgramSignupNotice() {
+  return <SignupRequiredNotice title="회원 가입을 마쳐야 학술 활동 화면을 볼 수 있습니다" />;
 }
 
 /** 활동 목록 조회 자체가 실패했을 때 — 내 활동으로 되돌린다 */

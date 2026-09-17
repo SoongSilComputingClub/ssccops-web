@@ -11,6 +11,12 @@ export const ROUTES = {
    */
   signupLink: "/signup/link",
   signupComplete: "/signup/complete",
+  /**
+   * OAuth 동의 (ssccops#315 · ADR-0026) — Supabase OAuth 2.1 서버가 `?authorization_id=`를
+   * 붙여 보내는 Authorization Path. 대시보드(Authentication → OAuth Server)에 이 값을 적는다.
+   * 화면 안에서 이 주소로 이동할 일은 없고, 상수는 그 설정값이 어디서 왔는지 남기기 위한 것이다.
+   */
+  oauthConsent: "/oauth/consent",
 
   dashboard: "/dashboard",
   operations: "/operations",
@@ -176,7 +182,44 @@ export const ROUTES = {
     sessionId: number,
   ) => `/academic-programs/sessions/${academicProgramId}/${sessionId}`,
   academicProgramAttendance: "/academic-programs/attendance",
+
+  /**
+   * RAG 설정 (#432) — 규정 도우미가 참조할 문서를 올리고 색인·적용 상태를 관리한다.
+   *
+   * 주소가 `/rag/settings`가 아니라 한 조각인 것은 이슈가 지정한 값(`app/(admin)/ragsettings`)
+   * 이기 때문이다. 아래에 화면이 더 붙으면 그때 묶음을 만든다 — 지금 나누면 조각 하나짜리
+   * 그룹이 된다.
+   */
+  ragSettings: "/ragsettings",
 } as const;
+
+/**
+ * RAG 설정의 적용 상태 필터 파라미터 (#463) — **주소와 읽는 쪽이 이 상수 하나를 함께 본다.**
+ *
+ * 문자열을 양쪽에 적으면 한쪽만 고쳐도 아무것도 깨지지 않고 **필터만 조용히 풀린다**(타입도
+ * 린트도 잡지 않는다).
+ */
+export const RAG_APPLY_QUERY = "apply";
+
+/**
+ * RAG 설정 주소 — 적용 상태로 목록을 걸러 연다 (#463).
+ *
+ * 도우미 패널이 «답변에 사용을 누르세요»라고 말하면서 데려가는 곳이 걸러지지 않은 전체 목록이면,
+ * 문서가 수십 건일 때 그 말이 다시 헛돈다. **한 «행»을 가리키지는 못한다** — 패널이 받는
+ * 것은 코퍼스 상태 하나뿐이고(추천 질문 응답에 문서 식별자가 없다) 쓰이지 않는 문서가 여러 건이면
+ * «그 행»이 하나로 정해지지도 않는다.
+ *
+ * 값이 없으면 종전 그대로 전량을 그리는 주소다.
+ *
+ * **값의 정본은 `entities/rag-document`의 `RagApplyStatus`인데 여기서 그것을 가져올 수 없다**
+ * (FSD 단방향 — `shared`는 `entities`를 모른다). 그래서 같은 세 값을 여기 적어 두고 타입으로
+ * 좁힌다 — `string`으로 열어 두면 오타가 조용히 «모르는 값»이 되어 필터만 풀린다.
+ */
+export function ragSettingsUrl(applyStatus?: "DRAFT" | "EFFECTIVE" | "SUPERSEDED"): string {
+  return applyStatus
+    ? `${ROUTES.ragSettings}?${RAG_APPLY_QUERY}=${encodeURIComponent(applyStatus)}`
+    : ROUTES.ragSettings;
+}
 
 /**
  * 공개 폼의 절대 URL — 운영진이 복사해 외부에 뿌리는 값이라 상대 경로로는 쓸 수 없다.

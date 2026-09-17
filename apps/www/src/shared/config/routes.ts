@@ -60,22 +60,8 @@ export const EVENT_CLSF_QUERY = "clsf";
 /** 로그인 실패 사유를 '내 신청' 화면까지 나르는 쿼리 키 (app/auth/callback/route.ts 참고) */
 export const LOGIN_ERROR_QUERY = "login_error";
 
-/**
- * 어드민(가입·연결 화면이 있는 앱)의 오리진.
- *
- * **간편 가입 자체는 이제 이 앱 안에서 한다**(#154 — 신청 흐름에 임베드). 이 링크가 남은
- * 자리는 **하나뿐이다** — 행사 없이 열린 '내 신청'의 가입 안내다(신청 흐름에 태울 행사가 없어
- * 폼을 그 자리에 세울 수 없다).
- *
- * 기존 회원 연결도 여기서 쓰던 자리였으나 **그 연결은 신청 흐름 안에서 끝난다**(#364 ·
- * `features/signup/ui/member-link-step.tsx`). 어드민의 연결 화면(`/signup/link`)은 그대로
- * 있지만 이 앱이 그리로 넘기지 않는다 — 명부에 있는 사람만 "다른 화면으로 이동하지 않습니다"
- * 라는 약속에서 빠지던 자리였고, 그 화면이 이 값에 기대면 값이 비었을 때 갈 곳이 없어진다.
- *
- * 값이 비어 있으면 링크 없이 문구만 안내한다 — 없는 화면으로 보내지 않기 위한 기본값이다.
+/*
+ * 어드민 오리진(`NEXT_PUBLIC_ADMIN_ORIGIN` · `signupUrl()`)은 #451에서 걷어냈다 — 마지막 남은
+ * 사용처였던 '내 신청'의 가입 안내가 이제 같은 자리에서 `SignupStep`을 연다. 이 앱이 아는 남의
+ * 오리진은 lms(`lms-routes.ts`) 하나다. 부원에게 나가는 화면이 운영 도메인을 가리키지 않는다.
  */
-export function signupUrl(): string | null {
-  // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
-  const origin = process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.replace(/\/+$/, "");
-  return origin ? `${origin}/signup` : null;
-}

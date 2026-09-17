@@ -111,6 +111,7 @@ export function FormTemplateListPage() {
       width: "88px",
       render: (t) => (
         <Toggle
+          label={`${t.tmplNm} 사용 여부`}
           on={t.useYn}
           onChange={() => void admin.toggle(t)}
           disabled={!canWrite}

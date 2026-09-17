@@ -8,17 +8,7 @@ import { useCan } from "@/features/auth";
 import { useRoleClassifications, type RoleClassificationField } from "@/features/role";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
-import {
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  PageBody,
-  PageHeader,
-  Segmented,
-  TextField,
-  flash,
-} from "@/shared/ui";
+import { Badge, Button, Card, EmptyState, PageBody, PageHeader, Segmented, TextField, flash, ScrollX } from "@/shared/ui";
 
 /*
  * 역할 분류 관리 (/members/role-labels · #49 · 서버 #80).
@@ -244,7 +234,7 @@ export function RoleLabelsPage() {
                   가로로 스크롤시킨다 — 화면 전체가 밀리면 위의 탭·추가 줄까지 따라 밀린다.
                   min-w 는 1fr(이름) 열이 짜부라지지 않을 만큼만 잡고 lg 에서 되돌린다.
                 */}
-                <div className="overflow-x-auto">
+                <ScrollX>
                 <div className="grid min-w-[600px] grid-cols-[100px_180px_1fr_130px] lg:min-w-0">
                   {[
                     FIELD_LABEL.displayOrder,
@@ -291,7 +281,7 @@ export function RoleLabelsPage() {
                                 invalidField(rowError, "indctSeqno") || undefined
                               }
                               aria-describedby={rowError ? ROW_ERROR_ID : undefined}
-                              className="w-[64px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none lg:text-[14.5px]"
+                              className="w-[64px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none focus-visible:ring-2 focus-visible:ring-accent/40 lg:text-[14.5px]"
                             />
                           ) : (
                             c.indctSeqno
@@ -320,7 +310,7 @@ export function RoleLabelsPage() {
                                   invalidField(rowError, "roleClsfNm") || undefined
                                 }
                                 aria-describedby={rowError ? ROW_ERROR_ID : undefined}
-                                className="w-[200px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none disabled:cursor-not-allowed disabled:border-line disabled:opacity-45 lg:text-[14.5px]"
+                                className="w-[200px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none focus-visible:ring-2 focus-visible:ring-accent/40 disabled:cursor-not-allowed disabled:border-line disabled:opacity-45 lg:text-[14.5px]"
                               />
                               {isSystem && (
                                 <span className="ml-2 text-[13px] text-n500">
@@ -388,7 +378,7 @@ export function RoleLabelsPage() {
                     );
                   })}
                 </div>
-                </div>
+                </ScrollX>
               </Card>
             </>
           ))}

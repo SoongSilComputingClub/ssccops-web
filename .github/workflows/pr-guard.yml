@@ -18,6 +18,10 @@ name: PR Guard
 #
 # **커밋 메시지의 타입은 이것과 다른 어휘다.** 그쪽은 docs·test·cicd를 포함해 열셋이며
 # AGENTS.md에 있다. 커밋에 `docs(agents):`라고 적으면서 이슈는 `[CHORE]`인 것이 정상이다.
+#
+# 본문의 «근거» 칸도 본다(ssccops#340 · #442). deploy-history 워크플로가 배포 레코드에
+# PR → Sub-task → 메타 이슈 → ADR을 자동으로 잇는데, 그 사슬의 출발점이 PR 본문의
+# `SoongSilComputingClub/ssccops#N` 또는 `ADR-NNNN`이다. 없으면 그 배포에 «왜»가 빠진 채 남는다.
 
 on:
   pull_request:
@@ -50,6 +54,7 @@ jobs:
           REPO: ${{ github.repository }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           set -uo pipefail
 
@@ -89,6 +94,14 @@ jobs:
             if ! gh issue view "$NO" --repo "$REPO" --json number >/dev/null 2>&1; then
               fail "#${NO} 은 이 저장소에 없는 이슈입니다. 번호를 확인하거나 이슈를 먼저 여십시오."
             fi
+          fi
+
+          # ── 본문 «근거»: ssccops#N 또는 ADR-NNNN ────────────────────────────
+          # 템플릿의 `- 근거:` 줄이 아니어도 본문 어디든 그 패턴이 있으면 통과다 — 형식을
+          # 맞추는 것이 아니라 «왜»가 어딘가 적혀 있는지를 보는 것이다.
+          if ! printf '%s' "$PR_BODY" | grep -qE '(SoongSilComputingClub/)?ssccops#[0-9]+|ADR-[0-9]{4}'; then
+            fail "PR 본문에 «근거»가 없습니다 — 메타 이슈 'SoongSilComputingClub/ssccops#N' 또는 'ADR-NNNN'을 적으십시오.
+          배포 이력(deploy-history)이 PR에서 메타 이슈·ADR을 거슬러 올라가므로 여기 없으면 그 배포에 «왜»가 빠집니다."
           fi
 
           if [ "$FAILED" -ne 0 ]; then

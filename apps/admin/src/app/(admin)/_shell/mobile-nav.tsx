@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { BrandMark, deployMarks } from "@ssccops/ui";
 import { NavPanel } from "./nav-panel";
 import { useShellNav } from "./use-shell-nav";
+
+// 값은 이 파일에서 읽어 넘긴다 — 패키지 안에서 읽으면 NEXT_PUBLIC 인라인을 못 받는다(deploy-env.ts)
+const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
 
 /**
  * 모바일 상단 바 + 드로어 (lg 미만, #85).
@@ -54,9 +58,7 @@ export function MobileNav() {
         >
           ☰
         </button>
-        <div className="flex size-7 flex-none items-center justify-center rounded-[7px] border border-accent text-[15px] text-accent">
-          S
-        </div>
+        <BrandMark src={DEPLOY.mark} size={28} />
         <div className="min-w-0 truncate text-[16px]">SSCC 운영관리</div>
       </div>
 
@@ -80,9 +82,7 @@ export function MobileNav() {
             className="absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col border-r border-hairline-strong bg-surface pt-[22px] pb-4 outline-none"
           >
             <div className="mb-3 flex items-center gap-[10px] border-b border-bg px-[18px] pb-4">
-              <div className="flex size-7 flex-none items-center justify-center rounded-[7px] border border-accent text-[15px] text-accent">
-                S
-              </div>
+              <BrandMark src={DEPLOY.mark} size={28} />
               <div className="min-w-0 text-[16px] whitespace-nowrap">SSCC 운영관리</div>
               <div className="flex-1" />
               <button

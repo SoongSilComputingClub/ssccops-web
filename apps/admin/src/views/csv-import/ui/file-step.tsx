@@ -5,7 +5,7 @@ import type { MemberImportWizard } from "@/features/member";
 import { CSV_SAMPLE, CSV_SPEC_ROWS } from "@/features/member/model/csv-spec";
 import { cn } from "@/shared/lib/cn";
 import { downloadCsv } from "@/shared/lib/download-csv";
-import { Button, Card, SectionLabel, flash } from "@/shared/ui";
+import { Button, Card, SectionLabel, flash, ScrollX } from "@/shared/ui";
 
 /*
  * 1단계 — 파일 선택 (#57).
@@ -135,7 +135,7 @@ export function FileStep({ wizard }: Readonly<{ wizard: MemberImportWizard }>) {
           가로로 스크롤시킨다 — 화면 전체가 밀리면 위의 파일 선택 영역까지 따라 밀린다.
           CSV 이관은 원래 데스크톱 작업이라 여기서는 '깨지지 않는 것'까지가 목표다 (#96).
         */}
-        <div className="overflow-x-auto">
+        <ScrollX>
         <div className="grid min-w-[560px] grid-cols-[130px_70px_1fr_150px] lg:min-w-0">
           {["컬럼", "구분", "설명", "예시"].map((h) => (
             <div key={h} className="pb-[10px] text-[13px] tracking-[.3px] text-n500">
@@ -161,7 +161,7 @@ export function FileStep({ wizard }: Readonly<{ wizard: MemberImportWizard }>) {
             </div>
           ))}
         </div>
-        </div>
+        </ScrollX>
         <div className="mt-3 text-[13.5px] text-n500">
           헤더 이름이 달라도 다음 단계에서 직접 매핑할 수 있습니다. 컬럼 순서는 상관없습니다.
         </div>

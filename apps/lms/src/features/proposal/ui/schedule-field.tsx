@@ -177,7 +177,8 @@ export function ScheduleField({
       <button
         type="button"
         onClick={onFreeText}
-        className="mt-[8px] cursor-pointer text-[12.5px] text-n400 underline underline-offset-2 hover:text-accent"
+        // 221×19 — 히트만 24px 로 (UI 감사 D5 · #476)
+        className="mt-[4px] inline-flex min-h-6 cursor-pointer items-center py-1 text-[12.5px] text-n400 underline underline-offset-2 hover:text-accent"
       >
         격주처럼 목록에 없는 일정은 직접 입력합니다
       </button>

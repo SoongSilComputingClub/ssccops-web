@@ -1,3 +1,4 @@
+import { AssistantLauncher } from "@/features/assistant";
 import { AuthGate } from "@/features/auth";
 import { MobileNav } from "./_shell/mobile-nav";
 import { Sidebar } from "./_shell/sidebar";
@@ -20,7 +21,16 @@ export default function AdminLayout({ children }: Readonly<LayoutProps<"/">>) {
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileNav />
         <div className="flex min-h-0 flex-1 flex-col">
-          <AuthGate>{children}</AuthGate>
+          <AuthGate>
+            {children}
+            {/*
+              규정 도우미 FAB + 패널 (#433). **AuthGate 안**이다 — 로그인하지 않은 상태에서
+              버튼이 보이면 누르는 순간 401이고, 가입 전(signup-required)에는 애초에 물을 수
+              있는 회원이 아니다. 대화는 이 컴포넌트가 아니라 모듈 store가 들고 있어 라우트를
+              옮겨도 남는다.
+            */}
+            <AssistantLauncher />
+          </AuthGate>
         </div>
       </div>
     </div>

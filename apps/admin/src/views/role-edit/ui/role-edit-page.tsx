@@ -6,18 +6,7 @@ import { useCan } from "@/features/auth";
 import { useRoleEditor } from "@/features/role";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
-import {
-  Badge,
-  Button,
-  Card,
-  Chip,
-  EmptyState,
-  PageBody,
-  PageHeader,
-  SectionLabel,
-  TextField,
-  flash,
-} from "@/shared/ui";
+import { Badge, Button, Card, Chip, EmptyState, PageBody, PageHeader, SectionLabel, TextField, flash } from "@/shared/ui";
 import type { RoleMember } from "@/entities/role";
 
 /*
@@ -145,13 +134,9 @@ function RoleEditorView({ roleId }: Readonly<{ roleId?: number }>) {
                 <div className="mb-3 flex items-center">
                   <SectionLabel>{FIELD_LABEL.roleClassification}</SectionLabel>
                   <div className="flex-1" />
-                  <button
-                    type="button"
-                    onClick={() => router.push(ROUTES.roleLabels)}
-                    className="cursor-pointer text-[14px] text-accent"
-                  >
+                  <Button variant="link" onClick={() => router.push(ROUTES.roleLabels)}>
                     분류 관리 ›
-                  </button>
+                  </Button>
                 </div>
                 {editor.classifications.length === 0 ? (
                   <EmptyState message="등록된 분류가 없습니다." padding="sm" />

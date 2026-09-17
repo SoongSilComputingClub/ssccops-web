@@ -1,0 +1,362 @@
+name: Deploy History
+
+# 배포 이력을 파이프라인이 남긴다 (ssccops#340 · ssccops#344 · #442 · #445).
+#
+# «어느 환경에 어떤 sha가 언제 올라갔고 무엇이 들었나»를 사람이 쓰지 않고 레코드로 남긴다.
+# 배포 주체(dev = Cloudflare Workers Builds · prod = Vercel Git)는 건드리지 않는다 — 릴리스
+# 이벤트(prod)와 develop 푸시(dev)에 **기록만 얹는** 워크플로다. 서버 레포에도 같은 설계의
+# 워크플로가 있고 레코드 필드 이름은 ssccops#340의 목록을 함께 따른다.
+#
+# 무엇을 남기나 — **메타 레포(ssccops) orphan 브랜치 `deploy-history`**의 `web-prod.jsonl`·
+# `web-dev.jsonl`에 JSON 한 줄(ADR-0033 · #445. 서버는 같은 브랜치의 `server-*.jsonl`):
+#   recorded_at · deployed_at · environment · service("web") · version · git_sha · build_time
+#   · prs[{number,title,issue,parent_issue,adr_refs}] · actor · workflow_run_url · status
+#   · apps[{app,sha,deployed_at,status}]  ← 웹은 앱이 셋이라 한 레코드에 앱별 확인 결과를 싣는다
+#
+# 쓰기 토큰은 조직 GitHub App `sscc-devops`의 설치 토큰이다(actions/create-github-app-token,
+# `repositories: ssccops`로 좁힘 · 1시간). 처음(#442)에는 이 레포의 orphan 브랜치에 썼다 —
+# 교차 레포 PAT를 두 레포에 두기 싫어서였는데, 조직 앱 토큰은 사람에 안 묶이고 비밀이 조직
+# 시크릿 하나라 저울이 바뀌었다. 같은 토큰이 **메타 레포(private)의 sub-issue Parent도 읽으므로**
+# `GITHUB_TOKEN`으로 null이던 parent_issue·adr_refs가 직접 채워진다(«근거» fallback은 남긴다).
+#
+# 조직 변수·시크릿 (두 개발 레포에 공유 · 레포에는 아무것도 없다):
+#   vars.SSCCOPS_DEPLOY_HISTORY_APP_ID     — sscc-devops 의 App ID
+#   secrets.SSCCOPS_DEPLOY_HISTORY_APP_KEY — 그 앱의 개인키(PEM). Actions 전용으로 하나 더 발급한 것
+#   vars.SSCCOPS_DEPLOY_HISTORY_ENV        — .env 모양 여러 줄. 이 워크플로는
+#                                            WEB_{DEV,PROD}_{ADMIN,WWW,LMS}_URL 여섯 개만 읽는다(끝 슬래시 없이)
+# 도메인을 **하드코딩하지 않는다** — 변수가 없으면 그 앱은 `unverified`로 남기고 워크플로는
+# 성공한다(기록이 목적이지 배포를 막는 게이트가 아니다). 앱 변수·시크릿이 없으면 실패한다 —
+# 자기 레포에 쓰는 fallback을 두면 «두 곳» 상태로 돌아간다.
+#
+# «배포됨»은 실제 응답으로 확인한다 — 앱별 `GET /version`의 `sha`가 이 sha가 될 때까지 최대
+# 10분 폴링.
+#
+# 포함 변경은 직전 지점과의 compare로 자동 산출한다: 커밋 → 그 커밋을 담은 PR(`commits/{sha}/pulls`
+# — squash 커밋도 PR에 연결돼 있다) → 제목 `[#N]`의 Sub-task → cross-repo Parent(GraphQL
+# `parent`, `GraphQL-Features: sub_issues`) → Parent 본문의 `ADR-NNNN`. develop→main 릴리스 PR은
+# head가 develop이라 걸러 낸다.
+#   - prod: 직전 태그 … 이번 태그
+#   - dev : 직전 dev 레코드의 git_sha … 이번 푸시(첫 레코드는 최신 태그부터)
+#
+# 두 레포가 같은 브랜치에 쓰므로 push가 거절되면 다시 받아서 다시 붙인다(파일이 달라 충돌은 없다).
+
+on:
+  release:
+    types: [published]
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 기록할 환경 (prod는 최신 릴리스 태그, dev는 develop 끝)
+        type: choice
+        required: true
+        options: [dev, prod]
+
+concurrency:
+  group: deploy-history
+  cancel-in-progress: false
+
+# 이 레포에는 쓰지 않는다 — 메타 레포 쓰기는 App 토큰이 한다
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+env:
+  SERVICE_KEY: web
+  META_REPO: SoongSilComputingClub/ssccops
+  HISTORY_BRANCH: deploy-history
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check org configuration
+        env:
+          APP_ID: ${{ vars.SSCCOPS_DEPLOY_HISTORY_APP_ID }}
+          HAS_KEY: ${{ secrets.SSCCOPS_DEPLOY_HISTORY_APP_KEY != '' }}
+        run: |
+          if [ -z "$APP_ID" ] || [ "$HAS_KEY" != true ]; then
+            echo "::error::조직 변수 SSCCOPS_DEPLOY_HISTORY_APP_ID 와 조직 시크릿 SSCCOPS_DEPLOY_HISTORY_APP_KEY 가 있어야 한다 (ssccops#344)"
+            exit 1
+          fi
+
+      - name: Mint sscc-devops token for the meta repo
+        id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.SSCCOPS_DEPLOY_HISTORY_APP_ID }}
+          private-key: ${{ secrets.SSCCOPS_DEPLOY_HISTORY_APP_KEY }}
+          owner: SoongSilComputingClub
+          repositories: ssccops
+
+      # .env 모양의 조직 변수에서 이 레포 몫(WEB_*)만 꺼낸다. CR·주석·빈 줄·따옴표는 무시한다.
+      - name: Load hosts from SSCCOPS_DEPLOY_HISTORY_ENV
+        id: hosts
+        env:
+          DOTENV: ${{ vars.SSCCOPS_DEPLOY_HISTORY_ENV }}
+        run: |
+          set -euo pipefail
+          declare -A H=()
+          while IFS= read -r line; do
+            line="${line%$'\r'}"
+            case "$line" in ''|'#'*) continue ;; esac
+            key="${line%%=*}"; val="${line#*=}"
+            key="$(printf '%s' "$key" | tr -d '[:space:]')"
+            val="$(printf '%s' "$val" | sed -E 's/^[[:space:]]*"?//; s/"?[[:space:]]*$//')"
+            case "$key" in WEB_*_URL) H[$key]="${val%/}" ;; esac
+          done <<< "$DOTENV"
+          for env in DEV PROD; do for app in ADMIN WWW LMS; do
+            k="WEB_${env}_${app}_URL"
+            [ -n "${H[$k]:-}" ] || echo "::warning::SSCCOPS_DEPLOY_HISTORY_ENV 에 $k 가 없다 — 그 앱은 unverified 로 남는다"
+            echo "$(printf '%s' "$k" | tr '[:upper:]' '[:lower:]')=${H[$k]:-}" >> "$GITHUB_OUTPUT"
+          done; done
+
+      # 메타 레포의 이력 브랜치를 App 토큰으로 받는다 — 직전 dev 지점도 여기서 읽는다.
+      - name: Checkout meta history branch
+        env:
+          TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          REMOTE="https://x-access-token:${TOKEN}@github.com/${META_REPO}.git"
+          if git ls-remote --exit-code --heads "$REMOTE" "$HISTORY_BRANCH" >/dev/null 2>&1; then
+            git clone -q --depth 1 --branch "$HISTORY_BRANCH" "$REMOTE" history
+          else
+            git init -q history
+            git -C history remote add origin "$REMOTE"
+            git -C history checkout -q --orphan "$HISTORY_BRANCH"
+            printf '# deploy-history\n\n배포 이력 레코드 (ssccops#344 · ADR-0033). 개발 레포 두 곳의 `deploy-history.yml`이 `server-*.jsonl` / `web-*.jsonl`에 JSON 한 줄씩 append한다 — 손으로 고치지 않는다.\n' > history/README.md
+            git -C history add README.md
+          fi
+          git -C history config user.name 'sscc-devops[bot]'
+          git -C history config user.email '272459506+sscc-devops[bot]@users.noreply.github.com'
+
+      - name: Resolve environment, sha and compare base
+        id: target
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_ENV: ${{ github.event.inputs.environment }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          PUSH_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          case "$EVENT_NAME" in
+            release) ENVIRONMENT=prod ;;
+            push) ENVIRONMENT=dev ;;
+            workflow_dispatch) ENVIRONMENT="$INPUT_ENV" ;;
+            *) echo "::error::unsupported event $EVENT_NAME"; exit 1 ;;
+          esac
+
+          git fetch -q origin 'refs/tags/*:refs/tags/*' develop
+
+          if [ "$ENVIRONMENT" = prod ]; then
+            TAG="${RELEASE_TAG:-$(git tag --sort=-v:refname | head -1)}"
+            [ -n "$TAG" ] || { echo "::error::no release tag"; exit 1; }
+            SHA=$(git rev-parse "${TAG}^{commit}")
+            PREV_TAG=$(git tag --sort=-v:refname | grep -A1 -x "$TAG" | tail -n +2 | head -1 || true)
+            if [ -n "$PREV_TAG" ]; then BASE=$(git rev-parse "${PREV_TAG}^{commit}"); else BASE=$(git rev-list --max-parents=0 "$SHA" | tail -1); fi
+            VERSION="${TAG#v}"
+          else
+            if [ "$EVENT_NAME" = push ]; then SHA="$PUSH_SHA"; else SHA=$(git rev-parse origin/develop); fi
+            BASE=""
+            FILE="history/$SERVICE_KEY-dev.jsonl"
+            if [ -s "$FILE" ]; then
+              LAST=$(tail -1 "$FILE" | jq -r '.git_sha // empty' || true)
+              if [ -n "$LAST" ] && git cat-file -e "${LAST}^{commit}" 2>/dev/null; then BASE="$LAST"; fi
+            fi
+            if [ -z "$BASE" ]; then
+              LATEST_TAG=$(git tag --sort=-v:refname | head -1 || true)
+              if [ -n "$LATEST_TAG" ]; then BASE=$(git rev-parse "${LATEST_TAG}^{commit}"); else BASE=$(git rev-list --max-parents=0 "$SHA" | tail -1); fi
+            fi
+            VERSION=$(git show "${SHA}:apps/admin/package.json" | jq -r .version)
+          fi
+
+          echo "environment=$ENVIRONMENT · sha=$SHA · base=$BASE · version=$VERSION"
+          {
+            echo "environment=$ENVIRONMENT"
+            echo "sha=$SHA"
+            echo "base=$BASE"
+            echo "version=$VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Collect PRs, sub-tasks, parents and ADR refs
+        id: prs
+        env:
+          # App 토큰 — 메타 레포 issues:read 가 있어 private 메타의 Parent 와 그 본문을 직접 읽는다
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          REPO: ${{ github.repository }}
+          BASE: ${{ steps.target.outputs.base }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          set -euo pipefail
+
+          PRS='[]'
+          if [ "$BASE" = "$SHA" ]; then
+            echo "base와 sha가 같다 — 포함 변경 없음"
+          else
+            COMMITS=$(gh api --paginate "repos/$REPO/compare/${BASE}...${SHA}?per_page=100" --jq '.commits[].sha' || true)
+            echo "commits: $(printf '%s\n' "$COMMITS" | grep -c . || true)"
+
+            NUMBERS=""
+            for c in $COMMITS; do
+              n=$(gh api "repos/$REPO/commits/$c/pulls" --jq '.[] | select(.head.ref != "develop") | .number' 2>/dev/null || true)
+              NUMBERS="$NUMBERS $n"
+            done
+            NUMBERS=$(printf '%s\n' $NUMBERS | grep -E '^[0-9]+$' | sort -un || true)
+
+            for n in $NUMBERS; do
+              PRJ=$(gh pr view "$n" --repo "$REPO" --json title,body)
+              TITLE=$(printf '%s' "$PRJ" | jq -r .title)
+              BODY=$(printf '%s' "$PRJ" | jq -r '.body // ""')
+              ISSUE=$(printf '%s' "$TITLE" | grep -oE '^\[#[0-9]+\]' | grep -oE '[0-9]+' || true)
+              PARENT=null; ADRS='[]'
+              if [ -n "$ISSUE" ]; then
+                OWNER="${REPO%%/*}"; NAME="${REPO##*/}"
+                # sub_issues 프리뷰 — cross-repo Parent(메타 이슈)와 그 본문
+                PJ=$(gh api graphql -H 'GraphQL-Features: sub_issues' \
+                  -f query='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$n){parent{number body repository{nameWithOwner}}}}}' \
+                  -F o="$OWNER" -F r="$NAME" -F n="$ISSUE" 2>/dev/null || echo '{}')
+                PN=$(printf '%s' "$PJ" | jq -r '.data.repository.issue.parent.number // empty')
+                PR_REPO=$(printf '%s' "$PJ" | jq -r '.data.repository.issue.parent.repository.nameWithOwner // empty')
+                if [ -n "$PN" ]; then
+                  PARENT=$(jq -cn --arg r "$PR_REPO" --argjson n "$PN" '"\($r)#\($n)"')
+                  ADRS=$(printf '%s' "$PJ" | jq -c '[.data.repository.issue.parent.body // "" | scan("ADR-[0-9]{4}")] | unique')
+                fi
+              fi
+              # 그래도 Parent를 못 읽었으면 PR 본문 «근거»의 ssccops#N을 쓴다
+              if [ "$PARENT" = null ]; then
+                BN=$(printf '%s' "$BODY" | grep -oE '(SoongSilComputingClub/)?ssccops#[0-9]+' | head -1 | grep -oE '[0-9]+$' || true)
+                [ -n "$BN" ] && PARENT=$(jq -cn --arg n "$BN" '"SoongSilComputingClub/ssccops#\($n)"')
+              fi
+              # PR 본문에 적힌 ADR도 합친다 — 근거가 ADR인 PR은 Parent 없이 이것만 있다
+              ADRS=$(printf '%s' "$BODY" | jq -Rs --argjson a "$ADRS" '($a + [scan("ADR-[0-9]{4}")]) | unique')
+              PRS=$(jq -c --argjson prs "$PRS" --argjson n "$n" --arg t "$TITLE" --arg i "$ISSUE" \
+                --argjson p "$PARENT" --argjson a "$ADRS" \
+                -n '$prs + [{number:$n, title:$t, issue:(if $i=="" then null else ($i|tonumber) end), parent_issue:$p, adr_refs:$a}]')
+            done
+          fi
+
+          echo "$PRS" | jq .
+          echo "prs=$PRS" >> "$GITHUB_OUTPUT"
+
+      - name: Verify /version on each app
+        id: verify
+        env:
+          ENVIRONMENT: ${{ steps.target.outputs.environment }}
+          SHA: ${{ steps.target.outputs.sha }}
+          # 도메인은 조직 변수(.env)에서만 온다 — 하드코딩 금지. 없으면 unverified.
+          PROD_ADMIN_URL: ${{ steps.hosts.outputs.web_prod_admin_url }}
+          PROD_WWW_URL: ${{ steps.hosts.outputs.web_prod_www_url }}
+          PROD_LMS_URL: ${{ steps.hosts.outputs.web_prod_lms_url }}
+          DEV_ADMIN_URL: ${{ steps.hosts.outputs.web_dev_admin_url }}
+          DEV_WWW_URL: ${{ steps.hosts.outputs.web_dev_www_url }}
+          DEV_LMS_URL: ${{ steps.hosts.outputs.web_dev_lms_url }}
+        run: |
+          set -euo pipefail
+
+          PREFIX=$(printf '%s' "$ENVIRONMENT" | tr '[:lower:]' '[:upper:]')
+          DEADLINE=$(( $(date +%s) + 600 ))   # 최대 10분 (ssccops#340)
+          APPS='[]'
+          BUILD_TIME=""
+
+          # 빈 연관 배열의 ${#DONE[@]} 는 set -u 에서 unbound 로 죽는다(첫 실측 run) — 개수는 따로 센다
+          declare -A DONE=()
+          DONE_COUNT=0
+          for app in admin www lms; do
+            var="${PREFIX}_$(printf '%s' "$app" | tr '[:lower:]' '[:upper:]')_URL"
+            url="${!var:-}"
+            if [ -z "$url" ]; then
+              echo "::warning::$var 가 없어 $app 은 unverified로 남긴다"
+              APPS=$(jq -c --arg a "$app" '. + [{app:$a, sha:null, deployed_at:null, status:"unverified"}]' <<<"$APPS")
+              DONE[$app]=1; DONE_COUNT=$((DONE_COUNT + 1))
+            fi
+          done
+
+          while [ "$DONE_COUNT" -lt 3 ]; do
+            for app in admin www lms; do
+              [ -n "${DONE[$app]:-}" ] && continue
+              var="${PREFIX}_$(printf '%s' "$app" | tr '[:lower:]' '[:upper:]')_URL"
+              url="${!var%/}/version"
+              body=$(curl -fsS --max-time 15 -H 'Cache-Control: no-cache' "$url" 2>/dev/null || true)
+              got=$(printf '%s' "$body" | jq -r '.sha // empty' 2>/dev/null || true)
+              if [ -n "$got" ] && [ "$got" = "$SHA" ]; then
+                now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+                bt=$(printf '%s' "$body" | jq -r '.builtAt // empty')
+                [ -z "$BUILD_TIME" ] && BUILD_TIME="$bt"
+                echo "$app: $SHA 확인 ($now)"
+                APPS=$(jq -c --arg a "$app" --arg s "$got" --arg d "$now" '. + [{app:$a, sha:$s, deployed_at:$d, status:"verified"}]' <<<"$APPS")
+                DONE[$app]=1; DONE_COUNT=$((DONE_COUNT + 1))
+              else
+                echo "$app: 아직 ${got:-응답 없음} (기대 $SHA)"
+              fi
+            done
+            [ "$DONE_COUNT" -ge 3 ] && break
+            if [ "$(date +%s)" -ge "$DEADLINE" ]; then
+              for app in admin www lms; do
+                [ -n "${DONE[$app]:-}" ] && continue
+                echo "::warning::$app 은 10분 안에 $SHA 를 돌려주지 않았다 — unverified"
+                APPS=$(jq -c --arg a "$app" '. + [{app:$a, sha:null, deployed_at:null, status:"unverified"}]' <<<"$APPS")
+                DONE[$app]=1; DONE_COUNT=$((DONE_COUNT + 1))
+              done
+              break
+            fi
+            sleep 20
+          done
+
+          echo "$APPS" | jq .
+          echo "apps=$APPS" >> "$GITHUB_OUTPUT"
+          echo "build_time=$BUILD_TIME" >> "$GITHUB_OUTPUT"
+
+      - name: Append record to meta deploy-history branch
+        env:
+          ENVIRONMENT: ${{ steps.target.outputs.environment }}
+          SHA: ${{ steps.target.outputs.sha }}
+          VERSION: ${{ steps.target.outputs.version }}
+          PRS: ${{ steps.prs.outputs.prs }}
+          APPS: ${{ steps.verify.outputs.apps }}
+          BUILD_TIME: ${{ steps.verify.outputs.build_time }}
+          ACTOR: ${{ github.actor }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          RECORD=$(jq -cn \
+            --arg recorded_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg env "$ENVIRONMENT" --arg version "$VERSION" --arg sha "$SHA" \
+            --arg build_time "$BUILD_TIME" --arg actor "$ACTOR" --arg run "$RUN_URL" \
+            --argjson prs "$PRS" --argjson apps "$APPS" '
+            {
+              recorded_at: $recorded_at,
+              deployed_at: ([$apps[].deployed_at | select(. != null)] | max),
+              environment: $env,
+              service: "web",
+              version: $version,
+              git_sha: $sha,
+              build_time: (if $build_time == "" then null else $build_time end),
+              prs: $prs,
+              actor: $actor,
+              workflow_run_url: $run,
+              status: (if all($apps[]; .status == "verified") then "verified" else "unverified" end),
+              apps: $apps
+            }')
+          echo "$RECORD" | jq .
+
+          FILE="$SERVICE_KEY-$ENVIRONMENT.jsonl"
+          MSG="record($SERVICE_KEY/$ENVIRONMENT): $VERSION ${SHA:0:7}"
+          for attempt in 1 2 3 4 5; do
+            printf '%s\n' "$RECORD" >> "history/$FILE"
+            (cd history && git add -A && git commit -qm "$MSG" && git push -q origin "HEAD:$HISTORY_BRANCH") && { echo "appended → $META_REPO@$HISTORY_BRANCH/$FILE"; exit 0; }
+            echo "push 거절 — 다시 받아서 재시도 ($attempt)"
+            (cd history && git reset -q --hard && git fetch -q origin "$HISTORY_BRANCH" && git reset -q --hard FETCH_HEAD)
+            sleep $((attempt * 5))
+          done
+          echo "::error::$META_REPO 의 $HISTORY_BRANCH 브랜치에 push하지 못했다"
+          exit 1

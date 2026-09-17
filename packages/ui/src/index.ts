@@ -40,8 +40,9 @@ export {
   type Theme,
 } from "./lib/theme";
 export { Badge, Pill, type BadgeTone } from "./ui/badge";
+export { BrandMark } from "./ui/brand-mark";
 export { Card, CardTitle, SectionLabel } from "./ui/card";
 export { Markdown } from "./ui/markdown";
 export { Notice } from "./ui/notice";
-export { TextField, Field } from "./ui/field";
+export { TextField, Field, INPUT_BASE } from "./ui/field";
 export { ThemeToggle } from "./ui/theme-toggle";

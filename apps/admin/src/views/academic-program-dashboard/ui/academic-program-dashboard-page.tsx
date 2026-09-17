@@ -10,16 +10,7 @@ import { useAcademicProgramDashboard } from "@/features/academic-program";
 import { ACDM_ACTV_STTS_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { ddayText, formatMd, formatYmd, todayInSeoul } from "@/shared/lib/date";
-import {
-  Badge,
-  Card,
-  CardTitle,
-  EmptyState,
-  ProgressBar,
-  PageBody,
-  PageHeader,
-  StatBox,
-} from "@/shared/ui";
+import { Badge, Card, CardTitle, EmptyState, ProgressBar, PageBody, PageHeader, StatBox, Button } from "@/shared/ui";
 
 /*
  * 학술국장 대시보드 (#126 · 서버 #131·#136).
@@ -223,13 +214,9 @@ export function AcademicProgramDashboardPage() {
               <CardTitle
                 right={
                   /* 키보드 접근(#403) */
-                  <button
-                    type="button"
-                    onClick={() => goPrograms()}
-                    className="cursor-pointer text-[14px] text-accent hover:underline"
-                  >
+                  <Button variant="link" onClick={() => goPrograms()}>
                     전체보기
-                  </button>
+                  </Button>
                 }
               >
                 진행 중 활동
@@ -299,13 +286,9 @@ export function AcademicProgramDashboardPage() {
                 <CardTitle
                   right={
                     /* 키보드 접근(#403) */
-                    <button
-                      type="button"
-                      onClick={() => goPrograms()}
-                      className="cursor-pointer text-[14px] text-accent hover:underline"
-                    >
+                    <Button variant="link" onClick={() => goPrograms()}>
                       전체보기
-                    </button>
+                    </Button>
                   }
                 >
                   최근 활동

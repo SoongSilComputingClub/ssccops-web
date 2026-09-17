@@ -101,7 +101,11 @@ function ChecklistRow({
         disabled={disabled}
         title={disabled ? "완료된 하위 업무는 점검 목록을 바꿀 수 없습니다" : undefined}
         onClick={onToggle}
-        className="flex flex-none cursor-pointer items-center disabled:cursor-not-allowed disabled:opacity-60"
+        // 옆의 항목 글은 형제라 이름이 못 된다 — 체크박스 의미와 항목 글을 여기 건다. 18px 네모는 그대로, 히트만 p-1 -m-1 로 26px (UI 감사 D9 · #471)
+        role="checkbox"
+        aria-checked={item.isCompleted}
+        aria-label={item.article}
+        className="-m-1 flex flex-none cursor-pointer items-center rounded-[8px] p-1 focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span
           className={

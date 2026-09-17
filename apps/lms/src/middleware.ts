@@ -36,9 +36,10 @@ export async function middleware(request: NextRequest) {
  * 이유는 어드민 #110과 같다 — 매니페스트가 매처에 걸리면 미인증 요청에 HTML이 실려 PWA
  * 설치 후보로 잡히지 않는다(이 앱은 미들웨어에서 리다이렉트하지 않지만, 매처에서 빼면 요청마다
  * 붙는 Supabase 왕복도 함께 없어진다).
+ * `version`(#442)도 뺀다 — 배포 확인용 `GET /version`을 deploy-history 워크플로가 인증 없이 폴링한다.
  */
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|auth/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|auth/|version$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest)$).*)",
   ],
 };

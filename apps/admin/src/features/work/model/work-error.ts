@@ -35,11 +35,16 @@ export function toWorkErrorMessage(error: unknown): string {
 }
 
 /**
- * 업무 등록 실패 → 화면에 띄울 한 줄 (OPS-002).
+ * 업무 등록·수정 실패 → 화면에 띄울 한 줄 (OPS-002 · OPS-004).
  *
  * `VALIDATION_FAILED`는 서버 문장을 그대로 쓴다 — 담당자 부적격("담당자로 지정할 수 없는
  * 회원입니다")과 기간 역전("종료 일시는 시작 일시보다 빠를 수 없습니다")이 같은 코드로
  * 오기 때문에, 여기서 한 문장으로 뭉개면 어느 칸을 고쳐야 하는지가 사라진다.
+ *
+ * 담당자 부적격은 수정 화면에서도 같은 길로 온다(#435) — 서버 `OperationErrorCode.
+ * OWNER_NOT_ACTIVE_MEMBER`는 이름과 달리 **400 `VALIDATION_FAILED`**이지 409도 전용 코드도
+ * 아니다. 후보에서 빠진 현재 담당자를 그대로 두고 저장하면 여기로 떨어지며, 전용 case를 두지
+ * 않는 것은 코드가 같아 가를 수 없고 문구로 가르지 않기 때문이다(AGENTS.md 서버 연동 규약).
  */
 export function toWorkCreateErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {

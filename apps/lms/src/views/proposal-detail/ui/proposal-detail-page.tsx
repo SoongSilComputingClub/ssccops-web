@@ -12,11 +12,12 @@ import {
   PROPOSAL_REJECTED_LOCKED,
 } from "@/features/proposal";
 import { LoginGate } from "@/features/auth";
-import { ROUTES, signupUrl } from "@/shared/config/routes";
-import { Badge, Card, EmptyState, Notice } from "@/shared/ui";
+import { ROUTES } from "@/shared/config/routes";
+import { Badge, Card, EmptyState } from "@/shared/ui";
 import { formatDt } from "@/shared/lib/date";
 import { ReviewTimeline } from "./review-timeline";
 import { ResubmitForm } from "./resubmit-form";
+import { SignupRequiredNotice } from "@/features/signup";
 
 /*
  * 기획안 한 건의 상세 (#171 · SSR 셸 + (수정요청 건이면) 클라이언트 재제출 폼).
@@ -67,7 +68,7 @@ function BackLink() {
   return (
     <Link
       href={ROUTES.myApplications}
-      className="text-[13.5px] text-n300 hover:text-accent"
+      className="-my-1 inline-flex min-h-6 items-center self-start py-1 text-[13.5px] text-n300 hover:text-accent"
     >
       ← 기획안 제출 현황
     </Link>
@@ -89,22 +90,7 @@ function Body({
   }
 
   if (result.outcome === "signup-required") {
-    const signup = signupUrl();
-    return (
-      <Notice
-        title="회원 가입을 마쳐야 기획안을 볼 수 있습니다"
-        description="로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다."
-      >
-        {signup && (
-          <a
-            href={signup}
-            className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
-          >
-            회원 가입하기
-          </a>
-        )}
-      </Notice>
-    );
+    return <SignupRequiredNotice title="회원 가입을 마쳐야 기획안을 볼 수 있습니다" />;
   }
 
   if (result.outcome === "not-seeded") {
