@@ -32,7 +32,7 @@ export function PublicFormDonePage({ formId }: Readonly<{ formId: number }>) {
           form?.formTtlNm ? `${form.formTtlNm} 응답이 접수되었습니다.` : null,
           form?.submittedAt ? `제출 일시 ${formatDt(form.submittedAt)}.` : null,
           "결과는 등록한 연락처로 안내드립니다.",
-          form?.mltplRspnsYn ? "이 폼은 여러 건을 받으므로 필요하면 하나 더 낼 수 있습니다." : null,
+          form?.mltplRspnsYn ? "필요하면 하나 더 낼 수 있습니다." : null,
         ]
           .filter(Boolean)
           .join(" ");

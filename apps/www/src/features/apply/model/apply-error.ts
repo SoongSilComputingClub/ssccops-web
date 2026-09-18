@@ -20,7 +20,7 @@ export function applyLoadErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     switch (error.code) {
       case API_ERROR.CONFIG_MISSING:
-        return "서비스 설정이 끝나지 않아 신청서를 불러오지 못했습니다 — 잠시 후 다시 시도해주세요";
+        return "지금은 신청서를 불러올 수 없습니다 — 잠시 후 다시 시도해주세요";
       case API_ERROR.NETWORK_ERROR:
         return "서버에 연결하지 못했습니다 — 네트워크 상태를 확인한 뒤 다시 시도해주세요";
       case FORM_ERROR.FORM_CONTENT_MALFORMED:
@@ -48,16 +48,16 @@ export function draftSaveErrorMessage(error: unknown): string {
     case FORM_ERROR.FORM_NOT_ACCEPTING:
       return "접수가 끝나 더 이상 저장되지 않습니다";
     case FORM_ERROR.RESPONSE_ALREADY_SUBMITTED:
-      return "이미 제출한 신청입니다 — 다른 창에서 제출했는지 확인해주세요";
+      return "이미 제출한 신청입니다";
     case FORM_ERROR.RESPONSE_ALREADY_REJECTED:
-      return "받아들여지지 않은 신청이라 더 저장되지 않습니다";
+      return "반려된 신청은 저장되지 않습니다";
     case FORM_ERROR.RESPONSE_SAVE_CONFLICT:
       return "저장이 동시에 겹쳤습니다";
     case FORM_ERROR.UNKNOWN_QUESTION_ITEM:
     case FORM_ERROR.INVALID_ANSWER_VALUE:
       return "신청서의 문항이 바뀌었습니다 — 새로고침한 뒤 다시 작성해주세요";
     case API_ERROR.NETWORK_ERROR:
-      return "서버에 연결하지 못해 저장하지 못했습니다 — 연결되면 다시 저장됩니다";
+      return "저장하지 못했습니다 — 연결되면 다시 저장됩니다";
     default:
       return "자동 저장에 실패했습니다 — 작성한 내용은 화면에 남아 있습니다";
   }
@@ -76,7 +76,7 @@ export function submitErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case FORM_ERROR.REQUIRED_ANSWER_MISSING:
-      return "필수 항목을 모두 채워 주세요";
+      return "필수 항목을 모두 채워주세요";
     case FORM_ERROR.ANSWER_PATTERN_MISMATCH:
       return "형식이 맞지 않는 답이 있습니다";
     case FORM_ERROR.ANSWER_SELECTION_LIMIT_EXCEEDED:
