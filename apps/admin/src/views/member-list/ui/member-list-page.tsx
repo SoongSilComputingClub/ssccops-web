@@ -41,7 +41,7 @@ import { Badge, Button, Card, Chip, EmptyState, GridTable, PageBody, PageHeader,
  * 보는 것은 정상이다 — 근거는 entities/session/model/types.ts 의 CAPABILITY 주석.
  */
 const NO_MEMBER_MANAGE =
-  "회원 관리(MEMBER_MANAGE) 권한이 없어 회원 명부를 볼 수 없습니다 — 운영진에게 요청해주세요";
+  "회원 명부를 볼 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";
 
 /**
  * 정렬 토글 — 화면의 네 축을 서버 `sort` 값에 1:1로 맞춘다.

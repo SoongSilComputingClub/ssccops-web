@@ -109,7 +109,7 @@ function validateCreate(input: RoleClassificationCreateInput): FieldError | null
   if (!ROLE_CLSF_CD_PATTERN.test(input.roleClsfCd)) {
     return {
       field: "roleClsfCd",
-      message: `분류 코드 "${input.roleClsfCd}" 는 쓸 수 없는 형식입니다 — 대문자로 시작하고 대문자·숫자·밑줄만 2~20자여야 합니다 (예: PROJECT, TF)`,
+      message: `분류 코드 «${input.roleClsfCd}»는 쓸 수 없는 형식입니다 — 대문자로 시작하는 대문자·숫자·밑줄 2~20자여야 합니다 (예: PROJECT, TF)`,
     };
   }
   return validateName(input.roleClsfNm);

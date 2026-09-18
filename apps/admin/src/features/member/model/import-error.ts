@@ -16,7 +16,7 @@ function commonImportMessage(error: ApiError): string | null {
     case MEMBER_IMPORT_ERROR.INVALID_CSV_FILE:
       return "CSV로 읽을 수 없는 파일입니다 — 엑셀에서 'CSV UTF-8(쉼표로 분리)'로 다시 저장하고, 따옴표가 짝을 이루는지 확인해주세요";
     case MEMBER_IMPORT_ERROR.EMPTY_CSV_FILE:
-      return "데이터 행이 없는 파일입니다 — 첫 줄은 헤더로 읽으므로 그 아래에 회원이 있어야 합니다";
+      return "데이터 행이 없는 파일입니다 — 첫 줄(헤더) 아래에 회원이 있어야 합니다";
     /*
      * 화면이 필수 매핑과 중복 매핑을 먼저 걸러 이 코드는 대개 오지 않는다. 그래도 오는 경우가
      * 하나 있다 — 2단계에서 매핑을 만든 뒤 파일만 바꿔 올린 경우다(그 파일에 없는 헤더를
@@ -68,7 +68,7 @@ export function toMemberImportErrorMessage(error: unknown): string {
  */
 export function toMemberImportExecuteErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return "이관을 실행하지 못했습니다 — 결과를 받지 못했으므로 회원 명부를 먼저 확인한 뒤 다시 시도해주세요";
+    return "결과를 받지 못했습니다 — 회원 명부를 먼저 확인한 뒤 다시 시도해주세요";
   }
 
   if (error.code === MEMBER_IMPORT_ERROR.IMPORT_FILE_MISMATCH) {
@@ -84,7 +84,7 @@ export function toMemberImportExecuteErrorMessage(error: unknown): string {
    * 학번 없는 행을 두 번 등록한다(reimportDuplicatesCount가 세는 바로 그 행들이다).
    */
   if (error.code === API_ERROR.NETWORK_ERROR) {
-    return "서버 응답을 받지 못했습니다 — 이관이 진행됐을 수 있으니 다시 실행하지 말고 회원 명부에서 결과를 먼저 확인해주세요";
+    return "결과를 받지 못했습니다 — 다시 실행하지 말고 회원 명부를 먼저 확인해주세요";
   }
   return error.message;
 }

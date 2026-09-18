@@ -20,7 +20,7 @@ import { ValidationStep } from "./validation-step";
  * 네 단계의 상태는 전부 `useMemberImport`에 있고 이 파일은 단계에 맞는 화면을 고르기만 한다.
  */
 const NO_MEMBER_MANAGE =
-  "회원 관리(MEMBER_MANAGE) 권한이 없어 회원을 이관할 수 없습니다 — 운영진에게 요청해주세요";
+  "회원을 이관할 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";
 
 export function CsvImportPage() {
   const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
@@ -47,7 +47,7 @@ function CsvImportWizard() {
     <>
       <PageHeader
         title="CSV 회원 이관"
-        subtitle="4단계 · 중복 후보는 건너뜁니다(자동 병합 없음) · 실행은 되돌릴 수 없습니다"
+        subtitle="되돌릴 수 없습니다 — 중복 후보는 건너뜁니다"
       />
       <PageBody>
         <BarStepper steps={CSV_STEPS} current={wizard.step} className="mb-5" />

@@ -41,7 +41,7 @@ import {
  */
 
 const NO_MANAGE =
-  "권한 관리(ROLE_MANAGE) 권한이 없어 역할의 권한을 볼 수 없습니다 — 최고관리자에게 요청해주세요";
+  "역할의 권한을 볼 권한이 없습니다 — 권한 관리(ROLE_MANAGE) 권한이 필요합니다";
 
 export function RoleAuthoritiesPage({ roleId }: Readonly<{ roleId: number }>) {
   const canManage = useCan(CAPABILITY.ROLE_MANAGE);
@@ -76,7 +76,7 @@ function RoleAuthoritiesEditorView({ roleId }: Readonly<{ roleId: number }>) {
     <>
       <PageHeader
         title={editor.roleNm ? `${editor.roleNm} 권한` : "역할 권한"}
-        subtitle="체크한 권한이 이 역할에 부여됩니다 · 저장하면 기존 권한은 체크한 것으로 모두 바뀝니다"
+        subtitle="저장하면 이 역할의 권한이 체크한 것으로 바뀝니다"
         showBack
         action={{
           label: editor.saving ? "저장 중…" : "저장",
@@ -157,10 +157,9 @@ function ChangeSummary({
 
       {editor.selfLockout && (
         <div className="mt-3 rounded-[12px] bg-danger/10 px-[14px] py-3 text-[13.5px] leading-[1.6] text-danger">
-          <strong>스스로를 잠그는 저장입니다.</strong> 당신은 이 역할을 맡고 있고, 이 저장은 이
-          역할에서 권한 관리(ROLE_MANAGE)를 회수합니다. 권한 관리 화면 자체가 이 권한을 요구하므로
-          다른 역할로 같은 권한을 갖고 있지 않다면 이 화면을 포함해 권한을 되돌릴 방법이 사라지고,
-          복구하려면 데이터베이스를 직접 고쳐야 합니다. 서버도 이 저장을 거절합니다.
+          <strong>스스로를 잠그는 저장입니다.</strong> 내가 맡은 이 역할에서 권한 관리(ROLE_MANAGE)를
+          회수합니다. 다른 역할로 같은 권한이 없으면 이 화면에 다시 들어올 수 없고, 복구는
+          데이터베이스를 직접 고쳐야 합니다. 서버가 이 저장을 거절합니다.
         </div>
       )}
 
@@ -218,8 +217,8 @@ function AuthorityCheckTree({ editor }: Readonly<{ editor: RoleAuthoritiesEditor
     <Card className="px-5 pt-4 pb-[10px]">
       <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-n500">
         <span>
-          <Badge tone="outline-accent">상위에서 부여</Badge> 상위를 체크해 함께 부여된 권한입니다
-          — 따로 체크할 필요가 없어 잠겨 있습니다
+          <Badge tone="outline-accent">상위에서 부여</Badge> 상위를 체크해 함께 부여된 권한입니다.
+          따로 체크하지 않아도 됩니다.
         </span>
         <span>
           <Badge tone="outline">시스템</Badge> 코드가 직접 참조하는 권한입니다
