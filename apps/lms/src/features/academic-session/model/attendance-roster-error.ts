@@ -27,9 +27,9 @@ export function loadAttendanceRosterErrorMessage(error: unknown): string {
     case ACADEMIC_ATTENDANCE_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
       return "활동을 찾을 수 없습니다 — 주소가 잘못됐거나 아직 이관되지 않은 활동일 수 있습니다";
     case ACADEMIC_ATTENDANCE_ERROR.SESSION_NOT_FOUND:
-      return "회차를 찾을 수 없습니다 — 화면을 새로고침해주세요";
+      return "회차가 없습니다 — 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
-      return "서버 주소가 설정되지 않아 출석부를 불러올 수 없습니다";
+      return "지금은 출석부를 불러올 수 없습니다 — 잠시 후 다시 시도해주세요";
     case API_ERROR.NETWORK_ERROR:
       return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
     default:
@@ -50,22 +50,22 @@ export function correctAttendanceErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case ACADEMIC_ATTENDANCE_ERROR.SESSION_NOT_EDITABLE:
-      return "이미 승인된 회차라 출석을 바꿀 수 없습니다 — 화면을 새로고침하면 최신 상태로 열립니다";
+      return "승인된 회차는 출석을 바꿀 수 없습니다 — 새로고침해주세요";
     case ACADEMIC_ATTENDANCE_ERROR.INVALID_ATTENDANCE_TARGET:
-      return "이 회차 출석부에 없는 팀원입니다 — 명단을 바꾸려면 회차 기록을 다시 제출해야 합니다";
+      return "이 회차 출석부에 없는 팀원입니다 — 회차 기록을 다시 제출해주세요";
     case ACADEMIC_ATTENDANCE_ERROR.SESSION_NOT_FOUND:
-      return "회차를 찾을 수 없습니다 — 화면을 새로고침해주세요";
+      return "회차가 없습니다 — 새로고침해주세요";
     case ACADEMIC_ATTENDANCE_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
-      return "활동을 찾을 수 없습니다 — 화면을 새로고침해주세요";
+      return "활동이 없습니다 — 새로고침해주세요";
     case ACADEMIC_ATTENDANCE_ERROR.FORBIDDEN:
-      return "이 활동의 출석을 정정할 권한이 없습니다 — 활동의 스터디장만 출석을 고칠 수 있습니다";
+      return "이 활동의 스터디장만 출석을 고칠 수 있습니다";
     case API_ERROR.NETWORK_ERROR:
       return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
     case API_ERROR.CONFIG_MISSING:
-      return "서버 주소가 설정되지 않아 정정할 수 없습니다";
+      return "지금은 정정할 수 없습니다 — 잠시 후 다시 시도해주세요";
     case AUTH_ERROR.UNAUTHENTICATED:
     case AUTH_ERROR.UNAUTHORIZED:
-      return "로그인이 만료됐습니다 — 다시 로그인한 뒤 정정해주세요";
+      return "로그인이 풀렸습니다 — 다시 로그인한 뒤 정정해주세요";
     default:
       return error.message;
   }

@@ -77,7 +77,7 @@ export async function loadSessionRecord(
       return {
         outcome: "error",
         message:
-          "이 활동에서 해당 커리큘럼 항목을 찾을 수 없습니다 — 학술 대시보드에서 회차를 다시 골라주세요",
+          "이 활동에 없는 회차입니다 — 학술 대시보드에서 다시 골라주세요",
       };
     }
 

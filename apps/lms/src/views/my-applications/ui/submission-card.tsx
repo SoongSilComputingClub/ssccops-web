@@ -59,7 +59,7 @@ export function SubmissionCard({ response }: Readonly<{ response: MyFormResponse
 
       {isChangesRequested && (
         <p className="text-[13.5px] leading-[1.6] text-amber">
-          학술국장이 수정을 요청했습니다 — 사유를 확인하고 다시 제출할 수 있습니다
+          학술국장이 수정을 요청했습니다 — 사유를 확인하고 다시 제출해주세요
         </p>
       )}
       {isRejected && (

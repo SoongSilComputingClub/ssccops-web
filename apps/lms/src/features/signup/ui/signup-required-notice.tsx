@@ -20,7 +20,7 @@ import { SignupStep } from "./signup-step";
  */
 export function SignupRequiredNotice({
   title = "회원 가입을 마쳐야 학술 활동 화면을 볼 수 있습니다",
-  description = "로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다. 지금 바로 가입할 수 있습니다.",
+  description = "아직 회원 가입이 안 된 계정입니다. 아래에서 바로 가입할 수 있습니다.",
   authUserEmail = null,
   authUserName = null,
 }: Readonly<{

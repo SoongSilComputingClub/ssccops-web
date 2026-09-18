@@ -31,7 +31,7 @@ export function AttendanceChecklist({
   if (members.length === 0) {
     return (
       <p className="rounded-[12px] border border-dashed border-line-strong bg-bg px-[12px] py-[16px] text-[13.5px] text-n500">
-        아직 확정된 팀원이 없습니다 — 출석 없이 회차 기록만 제출할 수 있습니다
+        아직 확정된 팀원이 없습니다. 출석 없이 회차 기록만 제출됩니다.
       </p>
     );
   }
