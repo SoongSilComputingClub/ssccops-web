@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { toShareDescription } from "@ssccops/share-meta";
 import { fetchPublicFormMeta, isFormRef } from "@/entities/form";
 import { PublicFormPage } from "@/views/public-form";
@@ -42,6 +43,13 @@ export async function generateMetadata({
     ? toShareDescription(meta.pageDescCn)
     : "숭실컴퓨팅클럽(SSCC) 신청서입니다";
 
+  /*
+   * 카드 이미지는 요청 시점에 그리는 라우트(`/f/{ref}/og`, ssccops#361)다. og:image는 절대 주소여야
+   * 하는데 `metadataBase`가 없고 dev·prod 도메인이 다르므로 요청 헤더에서 origin을 만든다 — 프록시
+   * 뒤라 `x-forwarded-proto`를 먼저 본다. 호스트를 못 읽으면 이미지를 빼고 텍스트 카드로 떨어진다.
+   */
+  const imageUrl = await ogImageUrl(formId);
+
   return {
     title: meta.formTtlNm,
     description,
@@ -50,13 +58,23 @@ export async function generateMetadata({
       title: `${meta.formTtlNm} · SSCC`,
       description,
       type: "website",
+      images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630 }] : undefined,
     },
     twitter: {
-      card: "summary",
+      card: imageUrl ? "summary_large_image" : "summary",
       title: `${meta.formTtlNm} · SSCC`,
       description,
+      images: imageUrl ? [imageUrl] : undefined,
     },
   };
+}
+
+async function ogImageUrl(formRef: string): Promise<string | null> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  if (!host) return null;
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}/f/${formRef}/og`;
 }
 
 export default async function Page({ params }: Readonly<PageProps<"/f/[formId]">>) {
