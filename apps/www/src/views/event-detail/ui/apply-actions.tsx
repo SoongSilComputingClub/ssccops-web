@@ -74,8 +74,7 @@ export function ApplyActions({
           신청하기
         </Link>
         <p className="text-center text-[12.5px] leading-[1.6] text-n500">
-          신청은 회원만 할 수 있습니다 — 아직 회원이 아니어도 신청 화면에서 가입까지 마칠 수
-          있습니다
+          신청은 회원만 할 수 있습니다. 회원이 아니어도 신청 화면에서 가입할 수 있습니다.
         </p>
       </>
     ) : (

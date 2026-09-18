@@ -11,7 +11,7 @@ export function eventLoadErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     switch (error.code) {
       case API_ERROR.CONFIG_MISSING:
-        return "서비스 설정이 끝나지 않아 행사 정보를 불러오지 못했습니다 — 잠시 후 다시 시도해주세요";
+        return "지금은 행사 정보를 불러올 수 없습니다 — 잠시 후 다시 시도해주세요";
       case API_ERROR.NETWORK_ERROR:
         return "서버에 연결하지 못했습니다 — 네트워크 상태를 확인한 뒤 다시 시도해주세요";
       default:

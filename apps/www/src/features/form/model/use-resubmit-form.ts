@@ -70,7 +70,7 @@ function resubmitErrorMessage(error: unknown): string {
     case FORM_ERROR.RESPONSE_ALREADY_REJECTED:
       return "반려된 응답은 다시 낼 수 없습니다 — 새로 작성해주세요";
     case FORM_ERROR.RESPONSE_CONTENT_TOO_LARGE:
-      return "답이 너무 깁니다 — 내용을 줄여 주세요";
+      return "답이 너무 깁니다 — 내용을 줄여주세요";
     case FORM_ERROR.UNKNOWN_QUESTION_ITEM:
     case FORM_ERROR.INVALID_ANSWER_VALUE:
       return "폼의 문항이 바뀌었습니다 — 새로고침한 뒤 다시 시도해주세요";

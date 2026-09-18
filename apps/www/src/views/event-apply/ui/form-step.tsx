@@ -52,7 +52,7 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
     return (
       <Notice
         title="회원 정보가 확인되지 않았습니다"
-        description="가입이 끝나지 않았거나 회원 정보가 바뀌었습니다. 화면을 새로고침하면 가입부터 다시 진행할 수 있습니다."
+        description="회원 정보가 바뀌었습니다. 새로고침하면 가입부터 다시 진행합니다."
       />
     );
   }
@@ -61,7 +61,7 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
     return (
       <Notice
         title="신청서를 찾을 수 없습니다"
-        description="행사에 연결된 신청서가 사라졌거나 아직 준비되지 않았습니다 — 운영진에게 문의해주세요."
+        description="신청서가 준비되지 않았습니다. 운영진에게 문의해주세요."
       >
         <BackToEvent eventId={eventId} />
       </Notice>
@@ -195,7 +195,7 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
 
       {apply.restored && (
         <div className="rounded-[12px] bg-accent-soft px-[13px] py-[10px] text-[13px] text-accent">
-          이어서 작성 중입니다 — 지난번에 쓰던 답을 불러왔습니다
+          지난번에 쓰던 답을 불러왔습니다
         </div>
       )}
 
@@ -245,7 +245,7 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
       </div>
 
       <p className="text-center text-[12.5px] leading-[1.7] text-n500">
-        작성 중인 내용은 자동으로 저장됩니다 — 제출해야 접수됩니다
+        작성 중인 내용은 자동 저장됩니다. 제출해야 접수됩니다.
       </p>
     </div>
   );

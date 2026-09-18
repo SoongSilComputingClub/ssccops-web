@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     template: DEPLOY.title("%s · SSCC"),
   },
   description:
-    "숭실대학교 컴퓨팅 동아리 SSCC — 동아리 소개와 모집 · 세미나 · 프로젝트 · 행사 안내",
+    "숭실대학교 컴퓨팅 동아리 SSCC — 소개와 모집·세미나·프로젝트·행사 안내",
   openGraph: {
     siteName: "SSCC",
     type: "website",

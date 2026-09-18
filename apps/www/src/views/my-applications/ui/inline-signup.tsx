@@ -45,7 +45,7 @@ export function InlineSignup({
   return (
     <Notice
       title="회원 가입을 마쳐야 신청 현황을 볼 수 있습니다"
-      description="로그인은 되었지만 아직 동아리 회원으로 등록되지 않았습니다. 모집 중인 행사에 신청하면 그 화면에서 가입까지 함께 마칠 수 있고, 지금 바로 가입할 수도 있습니다."
+      description="아직 회원 가입이 안 된 계정입니다. 아래에서 바로 가입할 수 있습니다."
     >
       <div className="flex flex-wrap items-center justify-center gap-[8px]">
         <Link

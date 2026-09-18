@@ -13,7 +13,7 @@ export default function NotFound() {
     <Card className="flex flex-col items-center gap-[10px] px-[18px] py-[52px] text-center">
       <div className="text-[18px] font-medium">공개된 행사가 아닙니다</div>
       <p className="text-[14px] leading-[1.6] text-n500">
-        주소가 바뀌었거나 아직 공개되지 않은 행사입니다 — 행사 목록에서 다시 찾아 주세요
+        없는 행사입니다 — 행사 목록에서 다시 찾아주세요
       </p>
       <Link
         href={ROUTES.events}

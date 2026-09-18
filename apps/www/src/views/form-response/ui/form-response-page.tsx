@@ -70,7 +70,7 @@ export async function FormResponsePage({
       <FormResponseShell>
         <Notice
           title="로그인이 필요합니다"
-          description="자기가 낸 응답은 본인만 볼 수 있습니다."
+          description="응답은 낸 사람만 볼 수 있습니다."
         >
           <SignInButton next={ROUTES.myFormResponse(formId, formRspnsId)} />
         </Notice>
@@ -161,7 +161,7 @@ export async function FormResponsePage({
             description={
               isDraft
                 ? "폼에서 이어서 작성한 뒤 제출해주세요."
-                : "다시 낼 수 있는 것은 운영진이 수정을 요청한 응답뿐입니다."
+                : "운영진이 수정을 요청한 응답만 다시 낼 수 있습니다."
             }
           >
             <Link

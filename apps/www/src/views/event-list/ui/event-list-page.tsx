@@ -42,7 +42,7 @@ export async function EventListPage({ eventClsfCd }: Readonly<{ eventClsfCd: str
       <header className="flex flex-col gap-[2px]">
         <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">동아리 행사</h1>
         <p className="text-[13.5px] text-n500">
-          숭실컴퓨팅클럽이 여는 모집 · 세미나 · 프로젝트 · 행사입니다
+          SSCC가 여는 모집·세미나·프로젝트·행사
         </p>
       </header>
 
