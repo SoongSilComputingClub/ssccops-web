@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { toShareDescription } from "@ssccops/share-meta";
+import { deployMarks } from "@ssccops/ui";
 import { fetchPublicFormMeta, isFormRef } from "@/entities/form";
 
 /**
@@ -26,20 +27,34 @@ export const runtime = "nodejs";
 const WIDTH = 1200;
 const HEIGHT = 630;
 const FONT_PATH = "/fonts/pretendard-semibold-ko.otf";
+/*
+ * 헤더의 동아리 마크는 탭·홈 화면 아이콘과 같은 파일(`deployMarks().mark`, #449)이다 — dev 배포는
+ * dev 마크가 뜬다. `process.env.NEXT_PUBLIC_DEPLOY_ENV`를 여기서 글자 그대로 읽는 것은 layout.tsx와
+ * 같은 이유다(패키지 안에서 읽으면 인라인을 못 받는다).
+ */
+const MARK_PATH = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV).mark;
 
-let fontCache: Promise<ArrayBuffer> | null = null;
+const assetCache = new Map<string, Promise<ArrayBuffer>>();
 
-function loadFont(origin: string): Promise<ArrayBuffer> {
-  if (!fontCache) {
-    fontCache = fetch(`${origin}${FONT_PATH}`, { cache: "force-cache" }).then((res) => {
+/** 자기 origin의 정적 자산을 받아 모듈 변수에 둔다 — 같은 인스턴스에서는 한 번만 받는다 */
+function loadAsset(origin: string, path: string): Promise<ArrayBuffer> {
+  let cached = assetCache.get(path);
+  if (!cached) {
+    cached = fetch(`${origin}${path}`, { cache: "force-cache" }).then((res) => {
       if (!res.ok) {
-        fontCache = null;
-        throw new Error(`font ${res.status}`);
+        assetCache.delete(path);
+        throw new Error(`${path} ${res.status}`);
       }
       return res.arrayBuffer();
     });
+    assetCache.set(path, cached);
   }
-  return fontCache;
+  return cached;
+}
+
+/** Satori의 <img>는 URL을 다시 받으러 나가므로 data URI로 건넨다 */
+function toDataUri(png: ArrayBuffer): string {
+  return `data:image/png;base64,${Buffer.from(png).toString("base64")}`;
 }
 
 /** 제목이 길면 두 줄까지만 — 세 줄부터는 카드에서 잘린다 */
@@ -57,12 +72,11 @@ export async function GET(request: Request, context: RouteContext<"/f/[formId]/o
     ? toShareDescription(meta.pageDescCn)
     : "숭실컴퓨팅클럽(SSCC) 신청서입니다";
 
-  let fontData: ArrayBuffer | null = null;
-  try {
-    fontData = await loadFont(origin);
-  } catch {
-    // 폰트를 못 받으면 Satori 기본 폰트로 떨어진다 — 한글이 □로 나오지만 카드 자체는 뜬다
-  }
+  // 둘 다 없어도 카드는 뜬다 — 폰트가 없으면 한글이 □로, 마크가 없으면 글자 상자로
+  const [fontData, markData] = await Promise.all([
+    loadAsset(origin, FONT_PATH).catch(() => null),
+    loadAsset(origin, MARK_PATH).catch(() => null),
+  ]);
 
   return new ImageResponse(
     (
@@ -80,21 +94,26 @@ export async function GET(request: Request, context: RouteContext<"/f/[formId]/o
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 18, fontSize: 30, opacity: 0.85 }}>
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              background: "#38bdf8",
-              color: "#0f172a",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 28,
-            }}
-          >
-            S
-          </div>
+          {markData ? (
+            // eslint-disable-next-line @next/next/no-img-element -- Satori 트리라 next/image가 아니다
+            <img src={toDataUri(markData)} width={56} height={56} alt="" style={{ borderRadius: 14 }} />
+          ) : (
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 14,
+                background: "#38bdf8",
+                color: "#0f172a",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 30,
+              }}
+            >
+              S
+            </div>
+          )}
           <span>SSCC 숭실컴퓨팅클럽</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
