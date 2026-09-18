@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type RefObject } from "react";
+import { useRef, useState } from "react";
 import type { EventDetail, EventSaveInput } from "@/entities/event";
 import type { FormSummary } from "@/entities/form";
 import { FIELD_LABEL } from "@/shared/config/labels";
@@ -9,13 +9,16 @@ import {
   Button,
   Card,
   Field,
-  Markdown,
+  ImagePickButton,
+  MTXT_MAX_LENGTH,
+  MarkdownEditor,
   SectionLabel,
-  Segmented,
   SelectField,
   Sheet,
-  TextArea,
   TextField,
+  insertImageMarkdown,
+  moveCaretAfterRender,
+  type BodyTab,
 } from "@/shared/ui";
 import { useEventCategoryOptions } from "../model/use-event-category-options";
 import { useEventImageUpload } from "../model/use-event-image-upload";
@@ -39,28 +42,9 @@ import { useFormLinkOptions } from "../model/use-form-link-options";
  */
 
 /*
- * 본문 칸의 두 얼굴 (ssccops#274).
- *
- * 운영진은 Markdown으로 적는데 게시하기 전에는 어떻게 보이는지 알 방법이 없었다 — 공개
- * 화면에 들어가 봐야 알았고, 그러려면 먼저 게시해야 했다.
- *
- * **미리보기가 답하는 것은 "무엇이 어떻게 그려지는가"이지 "어디서 줄이 바뀌는가"가 아니다.**
- * 어드민 폼과 공개 상세는 본문 칸의 폭이 달라 줄바꿈 자리가 같을 수 없다. 픽셀까지 맞추려면
- * 공개 화면의 레이아웃을 이 폼 안에 한 벌 더 지어야 하는데, 그 사본이야말로 나중에 갈린다.
+ * 본문 칸의 두 얼굴(편집·미리보기 · ssccops#274)과 첨부 버튼은 `shared/ui/markdown-editor`에
+ * 있다 — 콘텐츠 페이지·포스트(#521)가 같은 편집기를 쓰면서 올렸다. 상한값도 그쪽 한 곳이다.
  */
-const BODY_TABS = ["편집", "미리보기"] as const;
-
-/** 본문 상한 — 서버 413 EVENT_CONTENT_TOO_LARGE와 같은 값. 왕복 없이 먼저 알린다 */
-const MTXT_CN_MAX_LENGTH = 100_000;
-
-/*
- * 파일 선택 창이 이미지만 보이게 하는 힌트다 — **검증이 아니다.**
- *
- * 허용 형식의 판정은 서버에만 있다(ssccops-server#161). 웹이 목록을 복제하면 서버가 형식을
- * 늘린 날에도 화면만 계속 막고, 사용자는 왜 막혔는지 알 길이 없다. 여기 값은 고를 때의
- * 편의일 뿐이고 최종 판정은 업로드 응답 코드로 안내한다.
- */
-const IMAGE_ACCEPT = "image/*";
 
 /** 등록 화면에서 첨부가 잠기는 사유 — 발급 주소가 /v1/events/{eventId}/images 라 행사가 먼저 있어야 한다 */
 const NEED_SAVED_EVENT =
@@ -73,54 +57,6 @@ type EventFormField =
   | "mtxtCn"
   | "eventPeriod"
   | "ptcpLmtCnt";
-
-/**
- * 파일 하나를 고르는 버튼.
- *
- * `input[type=file]`을 그대로 두지 않고 감춰 버튼으로 감싼 것은, 브라우저 기본 파일 입력이
- * 폼의 다른 입력란과 생김새·크기가 전혀 달라 좁은 화면에서 줄을 깨기 때문이다. 고른 뒤
- * 값을 비우는 것(`e.target.value = ""`)은 **같은 파일을 다시 고를 수 있게** 하기 위함이다 —
- * 비우지 않으면 업로드가 실패한 뒤 같은 파일로 재시도할 때 change 이벤트가 오지 않는다.
- */
-function ImagePickButton({
-  label,
-  disabled,
-  hint,
-  onPick,
-}: Readonly<{
-  label: string;
-  disabled: boolean;
-  /** 잠겼을 때의 사유 — 버튼을 감추지 않고 이유를 붙인다(AGENTS.md) */
-  hint?: string;
-  onPick: (file: File) => void;
-}>) {
-  const pickerRef = useRef<HTMLInputElement>(null);
-
-  return (
-    <>
-      <input
-        ref={pickerRef}
-        type="file"
-        accept={IMAGE_ACCEPT}
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          if (file) onPick(file);
-        }}
-      />
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={disabled}
-        title={hint}
-        onClick={() => pickerRef.current?.click()}
-      >
-        {label}
-      </Button>
-    </>
-  );
-}
 
 /*
  * 지금 저장이 **연결을 끊는가**. 확인 팝업을 띄울 조건이다 (ssccops#270).
@@ -199,7 +135,7 @@ export function EventForm({
    * 통과한 그 값이 그대로 나간다(views/form-list의 삭제 확인 시트와 같은 판단).
    */
   const [pendingSave, setPendingSave] = useState<EventSaveInput | null>(null);
-  const [bodyTab, setBodyTab] = useState<(typeof BODY_TABS)[number]>("편집");
+  const [bodyTab, setBodyTab] = useState<BodyTab>("편집");
 
   /*
    * 업로드 상태는 본문과 대표 이미지를 **가려서** 쥔다. 훅의 pending 하나만 보면 대표
@@ -227,44 +163,12 @@ export function EventForm({
     if (imageUrl) place(imageUrl);
   };
 
-  /**
-   * 올린 이미지를 본문 Markdown에 넣는다.
-   *
-   * 커서 위치에 넣는 것은, 긴 본문을 쓰다가 중간에 그림을 끼우는 것이 실제 작성 순서이기
-   * 때문이다(끝에만 붙이면 사용자가 매번 잘라내 옮겨야 한다). 앞뒤로 줄바꿈을 채워 문단
-   * 사이에 놓는 것은 Markdown에서 문장 한가운데 낀 이미지가 그 문단에 흡수되기 때문이다.
-   *
-   * textarea를 잡지 못했을 때만 본문 끝에 붙인다 — 넣을 자리를 모르는 것이지 넣지 못하는
-   * 것은 아니므로, 올려 둔 파일을 버리지 않는다.
-   */
-  const insertImageMarkdown = (url: string) => {
-    const snippet = `![](${url})`;
+  /** 올린 이미지를 본문 Markdown의 커서 자리에 넣는다 — 규칙은 shared/ui/markdown-editor */
+  const placeImageInBody = (url: string) => {
     const el = mtxtRef.current;
-
-    if (!el) {
-      setMtxtCn((prev) => (prev && !prev.endsWith("\n") ? `${prev}\n\n${snippet}\n` : `${prev}${snippet}\n`));
-      return;
-    }
-
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const before = mtxtCn.slice(0, start);
-    const after = mtxtCn.slice(end);
-    const lead = before && !before.endsWith("\n") ? "\n" : "";
-    const trail = after && !after.startsWith("\n") ? "\n" : "";
-    const inserted = `${lead}${snippet}${trail}`;
-
-    setMtxtCn(`${before}${inserted}${after}`);
-
-    /*
-     * 값이 DOM에 반영된 뒤에 커서를 옮긴다 — 지금 옮기면 다음 렌더가 되돌린다. 그림을 넣은
-     * 자리에서 글을 이어 쓰는 것이 자연스러운 다음 동작이라 포커스도 함께 돌려준다.
-     */
-    const caret = start + inserted.length;
-    requestAnimationFrame(() => {
-      el.focus();
-      el.setSelectionRange(caret, caret);
-    });
+    const { value, caret } = insertImageMarkdown(mtxtCn, el, url);
+    setMtxtCn(value);
+    if (el && caret !== null) moveCaretAfterRender(el, caret);
   };
 
   const nextFormId = formId ? Number(formId) : null;
@@ -293,8 +197,8 @@ export function EventForm({
     if (!eventTtl.trim()) next.eventTtl = "행사 제목을 입력하세요";
     if (!eventClsfCd) next.eventClsfCd = "행사 분류를 선택하세요";
     if (!mtxtCn.trim()) next.mtxtCn = "본문을 입력하세요";
-    else if (mtxtCn.length > MTXT_CN_MAX_LENGTH) {
-      next.mtxtCn = `본문이 ${MTXT_CN_MAX_LENGTH.toLocaleString()}자를 넘습니다 — 내용을 줄여주세요`;
+    else if (mtxtCn.length > MTXT_MAX_LENGTH) {
+      next.mtxtCn = `본문이 ${MTXT_MAX_LENGTH.toLocaleString()}자를 넘습니다 — 내용을 줄여주세요`;
     }
     /* 일시는 둘 다 선택 입력이지만, 둘 다 있으면 순서는 여기서 먼저 잡는다 — 최종 판정은 서버다 */
     if (eventBgngDt && eventEndDt && eventEndDt < eventBgngDt) {
@@ -491,19 +395,27 @@ export function EventForm({
         </Card>
       </div>
 
-      <EventBodyEditor
+      <MarkdownEditor
+        className="mt-4"
+        label={FIELD_LABEL.eventContent}
         bodyTab={bodyTab}
         setBodyTab={setBodyTab}
-        mtxtCn={mtxtCn}
-        setMtxtCn={setMtxtCn}
-        mtxtRef={mtxtRef}
+        value={mtxtCn}
+        onChange={setMtxtCn}
+        textareaRef={mtxtRef}
         error={errors.mtxtCn}
-        uploadingAt={uploadingAt}
+        placeholder={"# 행사 안내\n\nMarkdown으로 작성합니다. 회원에게 보이는 본문입니다."}
         busy={busy}
-        uploadPending={imageUpload.pending}
-        attachLock={attachLock}
-        uploadError={uploadError}
-        onPick={(file) => void runUpload("body", file, insertImageMarkdown)}
+        attach={{
+          /*
+           * 업로드 상태는 본문과 대표 이미지를 가려서 본다 — 대표 이미지를 올리는 동안 본문
+           * 영역에 «올리는 중»이 뜨면 방금 무엇을 눌렀는지 헷갈린다. 잠금은 둘 다 걸린다.
+           */
+          uploading: uploadingAt === "body",
+          lock: attachLock ?? (imageUpload.pending ? "다른 이미지를 올리는 중입니다" : undefined),
+          error: uploadError,
+          onPick: (file) => void runUpload("body", file, placeImageInBody),
+        }}
       />
 
       <div className="mt-5">
@@ -526,114 +438,6 @@ export function EventForm({
         onSubmit={onSubmit}
       />
     </>
-  );
-}
-
-/*
- * 본문 칸 — 편집/미리보기 전환 · 이미지 첨부 · 글자 수 (ssccops#274).
- * 상태(`bodyTab`·`mtxtCn`·업로드 진행·오류)는 폼이 쥐고 여기는 그리기만 한다 — 첨부한
- * 이미지가 커서 자리에 들어가려면 textarea ref와 본문 값이 폼의 `insertImageMarkdown`과
- * 같은 것을 가리켜야 해서다.
- */
-function EventBodyEditor({
-  bodyTab,
-  setBodyTab,
-  mtxtCn,
-  setMtxtCn,
-  mtxtRef,
-  error,
-  uploadingAt,
-  busy,
-  uploadPending,
-  attachLock,
-  uploadError,
-  onPick,
-}: Readonly<{
-  bodyTab: (typeof BODY_TABS)[number];
-  setBodyTab: (tab: (typeof BODY_TABS)[number]) => void;
-  mtxtCn: string;
-  setMtxtCn: (value: string) => void;
-  mtxtRef: RefObject<HTMLTextAreaElement | null>;
-  /** 본문 칸의 검증 오류 — 미리보기에서도 보여야 한다 */
-  error: string | undefined;
-  uploadingAt: "body" | "thumbnail" | null;
-  busy: boolean;
-  uploadPending: boolean;
-  /** 첨부를 잠글 사유 — 없으면 undefined(잠기지 않았다) */
-  attachLock: string | undefined;
-  uploadError: string | null;
-  onPick: (file: File) => void;
-}>) {
-  return (
-    <Card className="mt-4">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <SectionLabel>{FIELD_LABEL.eventContent} (Markdown)</SectionLabel>
-        <Segmented
-          options={BODY_TABS}
-          value={bodyTab}
-          onChange={setBodyTab}
-          className="w-[168px]"
-        />
-        <div className="flex-1" />
-        {/*
-          미리보기 중에는 첨부 버튼을 감춘다 — 넣을 커서 자리가 없다. 잠그지 않고 감추는
-          것은 사유가 권한이 아니라 지금 보는 화면이라서다. 잠근 버튼에 붙일 이유가
-          "편집으로 돌아가세요" 하나뿐이면 그 버튼은 그 자리에 없는 편이 낫다.
-        */}
-        {bodyTab === "편집" && (
-          <ImagePickButton
-            label={uploadingAt === "body" ? "올리는 중…" : "이미지 첨부"}
-            disabled={busy || uploadPending || Boolean(attachLock)}
-            hint={attachLock}
-            onPick={onPick}
-          />
-        )}
-      </div>
-      {/*
-        편집칸을 언마운트하지 않고 hidden으로 접는다. 지우면 돌아왔을 때 커서 자리와
-        스크롤이 사라지고, insertImageMarkdown이 잡아 둔 ref도 끊긴다.
-      */}
-      <div hidden={bodyTab !== "편집"}>
-        <Field label={null} error={error}>
-          <TextArea
-            ref={mtxtRef}
-            value={mtxtCn}
-            onChange={(e) => setMtxtCn(e.target.value)}
-            className="min-h-[260px] font-mono text-[16px] leading-[1.8] lg:text-[13.5px]"
-            placeholder={"# 행사 안내\n\nMarkdown으로 작성합니다. 회원에게 보이는 본문입니다."}
-          />
-        </Field>
-      </div>
-      {bodyTab === "미리보기" && (
-        <div className="min-h-[260px] rounded-[12px] border border-line bg-bg px-[16px] py-[6px]">
-          {mtxtCn.trim() ? (
-            <Markdown>{mtxtCn}</Markdown>
-          ) : (
-            <div className="py-[110px] text-center text-[13.5px] text-n500">
-              아직 본문이 없습니다.
-            </div>
-          )}
-        </div>
-      )}
-      {/* 오류는 미리보기에서도 보여야 한다 — 상한을 넘긴 채 넘어올 수 있다 */}
-      {bodyTab === "미리보기" && error && (
-        <div className="mt-2 text-[12.5px] text-danger">{error}</div>
-      )}
-      {/*
-        업로드 실패는 토스트가 아니라 이 자리에 남긴다 — 본문과 대표 이미지가 같은 훅을
-        쓰므로 무엇이 왜 막혔는지 다시 볼 수 있어야 하고, 사라지는 알림이면 파일을 다시
-        고르는 사이에 문구가 없어진다.
-      */}
-      {uploadError && <div className="mt-2 text-[12.5px] text-danger">{uploadError}</div>}
-      {/* 글자 수는 두 화면 모두에서 뜻이 있다. 첨부 안내는 편집에만 있다 */}
-      <div className="mt-2 text-[12.5px] text-n500">
-        {mtxtCn.length.toLocaleString()} / {MTXT_CN_MAX_LENGTH.toLocaleString()}자
-        {bodyTab === "편집" &&
-          (attachLock
-            ? ` — ${attachLock}`
-            : " — 이미지를 첨부하면 커서 자리에 이미지 문법이 들어갑니다")}
-      </div>
-    </Card>
   );
 }
 

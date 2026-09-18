@@ -9,6 +9,7 @@ import {
 } from "@/entities/event";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
+import { NO_CONTENT_MANAGE, usePostFromEvent } from "@/features/content";
 import { EventForm, useEventDetail, useEventStatus, useSaveEvent } from "@/features/event";
 import { EventShareButton } from "@/features/share";
 import type { EventSttsCd } from "@/shared/config/codes";
@@ -120,6 +121,8 @@ function EventEditView({
   const router = useRouter();
   const save = useSaveEvent();
   const statusControl = useEventStatus();
+  const postFromEvent = usePostFromEvent();
+  const canManageContent = useCan(CAPABILITY.CONTENT_MANAGE);
 
   const stts = eventSttsBadge(event.eventSttsCd);
   const busy = save.pending || statusControl.pending;
@@ -139,6 +142,17 @@ function EventEditView({
     // 전이표 밖(stale)도 성공도 최신 상태를 다시 본다 — 화면이 낡은 채로 두지 않는다
     if (outcome === "changed" || outcome === "stale") reload();
     if (outcome === "missing") router.replace(ROUTES.events);
+  };
+
+  /*
+   * 행사에서 포스트 만들기 (#521 · POST /v1/content/posts/from-event/{eventId}).
+   * 무엇을 복사할지는 서버가 정하고 화면은 초안의 편집 화면으로 간다 — 복제와 같은 흐름이다.
+   * 같은 행사로 여러 번 누르면 초안이 여러 건 생긴다(서버가 막지 않는다) — 이동으로 그 반복을 끊는다.
+   */
+  const runPostFromEvent = async () => {
+    const { value, message } = await postFromEvent.create(event.eventId);
+    if (message) flash(message);
+    if (value) router.push(ROUTES.contentPostEdit(value.postId));
   };
 
   return (
@@ -204,6 +218,29 @@ function EventEditView({
             eventSttsCd={event.eventSttsCd}
             title={event.eventTtl}
           />
+        </Card>
+
+        {/*
+          콘텐츠 (#521). 행사 내용(제목·일시·장소·본문)을 복사한 포스트 초안을 만든다. 공유 카드처럼
+          상태를 바꾸지 않는 조작이라 게시 카드와 섞지 않는다. 권한은 행사 관리가 아니라 **콘텐츠
+          관리(CONTENT_MANAGE)**다 — 이 화면을 여는 권한과 달라 감추지 않고 잠근 채 사유를 붙인다.
+        */}
+        <Card className="mb-4">
+          <SectionLabel className="mb-3">콘텐츠</SectionLabel>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={busy || postFromEvent.pending || !canManageContent}
+              title={canManageContent ? undefined : NO_CONTENT_MANAGE}
+              onClick={() => void runPostFromEvent()}
+            >
+              {postFromEvent.pending ? "만드는 중…" : "포스트 만들기"}
+            </Button>
+            <div className="text-[13.5px] text-n500">
+              행사 제목·일시·장소·본문을 복사한 초안이 만들어집니다. 게시는 포스트 편집에서 합니다.
+            </div>
+          </div>
         </Card>
 
         <EventForm
