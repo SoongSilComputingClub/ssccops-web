@@ -102,8 +102,8 @@ export function PublicFormStep({ formRef }: Readonly<{ formRef: FormRef }>) {
         title="이미 제출한 폼입니다"
         description={
           form?.submittedAt
-            ? `제출 일시 ${formatDt(form.submittedAt)} — 진행 상황은 '내 신청'에서, 결과는 등록한 연락처로 안내드립니다`
-            : "진행 상황은 '내 신청'에서, 결과는 등록한 연락처로 안내드립니다"
+            ? `제출 일시 ${formatDt(form.submittedAt)} — 진행 상황은 '내 활동'에서, 결과는 등록한 연락처로 안내드립니다`
+            : "진행 상황은 '내 활동'에서, 결과는 등록한 연락처로 안내드립니다"
         }
       >
         {/*
@@ -119,14 +119,14 @@ export function PublicFormStep({ formRef }: Readonly<{ formRef: FormRef }>) {
           오지 않는다) 목록을 거치는 비용도 한 번 더 누르는 것뿐이다.
 
           미인증 상태로 눌러도 길이 끊기지 않는다 — '내 신청'은 로그인하지 않은 사람에게
-          `SignInButton next={ROUTES.myApplications}`를 그리므로 로그인 뒤 그 자리로 돌아온다.
+          `SignInButton next={ROUTES.me}`를 그리므로 로그인 뒤 그 자리로 돌아온다.
           (이 분기 자체는 인증된 사람만 닿는다. 토큰이 죽으면 `unauthenticated`로 갈린다.)
         */}
         <Link
-          href={ROUTES.myApplications}
+          href={ROUTES.me}
           className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
         >
-          내 신청 보기
+          내 활동 보기
         </Link>
       </Notice>
     );

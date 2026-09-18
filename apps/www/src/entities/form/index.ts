@@ -11,6 +11,7 @@ export type {
   ResponseStatus,
 } from "./model/types";
 export { isFormRef } from "./model/types";
+export { PROPOSAL_SYS_FORM_CD } from "./model/system-form-code";
 export { RESPONSE_STATUS_BADGE } from "./model/display";
 export {
   FORM_ERROR,
@@ -28,7 +29,7 @@ export { fetchPublicFormMeta } from "./api/public-form-meta";
 /*
  * **SSR 전용 조회는 이 배럴에 두지 않는다.**
  *
- * `fetchMyResponsesAcrossForms`·`fetchMyResponseDetail`은 `apiFetchAuthed`(→ `next/headers`)를
+ * `fetchMyResponsesAcrossForms`·`fetchMyResponseDetail`·`fetchSystemForm`은 `apiFetchAuthed`(→ `next/headers`)를
  * 타는데, 배럴이 그것을 재export 하면 이 배럴에서 값 하나라도 가져가는 **클라이언트 컴포넌트가
  * 그 모듈까지 함께 끌어와** 빌드가 깨진다("You're importing a module that depends on
  * next/headers"). 실제로 `RESPONSE_STATUS_BADGE`를 쓰는 카드 하나 때문에 그렇게 됐다.

@@ -16,15 +16,15 @@ function clearNextCookie(response: NextResponse) {
 }
 
 /**
- * 로그인 실패를 '내 신청' 화면으로 되돌린다.
+ * 로그인 실패를 '내 활동'(`/me`) 화면으로 되돌린다.
  *
  * 어드민은 로그인 화면으로 돌려보내지만 이 앱에는 그런 화면이 없다. 대신 **로그인할 이유가
- * 있는 유일한 화면**인 '내 신청'으로 보낸다 — 거기서만 실패 사유를 설명하고 다시 로그인
+ * 있는 유일한 화면**인 '내 활동'으로 보낸다 — 거기서만 실패 사유를 설명하고 다시 로그인
  * 버튼을 내줄 수 있다. 사유 코드를 그대로 실어 보내는 것은, 하나로 뭉뚱그리면 사용자가
  * 취소한 것인지 코드 교환이 깨진 것인지 로그를 봐도 가릴 수 없기 때문이다.
  */
 function failureRedirect(origin: string, error: string) {
-  const url = new URL(ROUTES.myApplications, origin);
+  const url = new URL(ROUTES.me, origin);
   url.searchParams.set(LOGIN_ERROR_QUERY, error);
   return clearNextCookie(NextResponse.redirect(url));
 }
@@ -46,11 +46,11 @@ function resolveNext(request: NextRequest): string {
     } catch {
       decoded = "";
     }
-    if (decoded) return safeNextPath(decoded, ROUTES.myApplications);
+    if (decoded) return safeNextPath(decoded, ROUTES.me);
   }
   return safeNextPath(
     new URL(request.url).searchParams.get("next"),
-    ROUTES.myApplications,
+    ROUTES.me,
   );
 }
 

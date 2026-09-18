@@ -91,7 +91,7 @@ export function submitErrorMessage(error: unknown): string {
      * 오지 않을 결과를 기다리므로, 다시 낼 수 없다는 것을 그대로 말한다.
      */
     case FORM_ERROR.RESPONSE_ALREADY_REJECTED:
-      return "이 신청은 다시 제출할 수 없습니다 — 결과는 '내 신청'에서 확인해주세요";
+      return "이 신청은 다시 제출할 수 없습니다 — 결과는 '내 활동'에서 확인해주세요";
     case API_ERROR.NETWORK_ERROR:
       return "서버에 연결하지 못했습니다 — 네트워크 상태를 확인한 뒤 다시 제출해주세요";
     default:

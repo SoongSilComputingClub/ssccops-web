@@ -47,6 +47,17 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_GIT_SHA: resolveGitSha(),
     NEXT_PUBLIC_BUILT_AT: new Date().toISOString(),
   },
+
+  /*
+   * `/my-applications` → `/me` (#518 · ssccops#386). '내 신청'이 '내 활동'으로 이사했고 옛 주소는
+   * 이미 뿌린 링크·북마크·OAuth 되돌아올 곳에 남아 있다. **화면이 아니라 설정이 옮긴다** — 이
+   * 앱의 «리다이렉트를 하지 않는다» 규칙은 401·403을 로그인 화면으로 밀어내지 않는다는 뜻이고,
+   * 주소 자체의 이사는 그 규칙과 무관하다. 쿼리(`?login_error=`)는 Next가 그대로 넘긴다.
+   * permanent(308)인 것은 되돌릴 일이 없기 때문이다.
+   */
+  async redirects() {
+    return [{ source: "/my-applications", destination: "/me", permanent: true }];
+  },
 };
 
 export default nextConfig;

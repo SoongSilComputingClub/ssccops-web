@@ -11,8 +11,14 @@ export const ROUTES = {
    * 돌아올 곳을 단계 수만큼 관리해야 한다.
    */
   eventApply: (eventId: number) => `/events/${eventId}/apply`,
-  /** 내 신청 현황 (#150 · wave2 D10) */
-  myApplications: "/my-applications",
+  /**
+   * 내 활동 — 신청한 행사·낸 폼·내가 이끄는 스터디·프로젝트 한 화면 (#518 · ssccops#386).
+   *
+   * `/my-applications`(#150 · wave2 D10)가 여기로 이사했다. 옛 주소는 `next.config.ts`의 정적
+   * redirect가 받는다 — 이미 뿌린 링크·북마크가 있고, 401·403 규칙과 무관한 주소 이동이라 화면이
+   * 아니라 설정이 맡는다.
+   */
+  me: "/me",
   /**
    * 공개 폼 — 링크를 아는 회원이 답을 내는 화면 (ssccops#214에서 어드민에서 옮겨 왔다).
    *

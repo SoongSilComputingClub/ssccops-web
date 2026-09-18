@@ -14,6 +14,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 **전 화면이 로그인 필수인 부원용 앱이다**(#169). 스터디장·팀장은 자기 활동을 운영하고(`/studio/*` — 대시보드·회차 기록·출석·팀원), 일반 회원은 기획안을 내고 상태를 본다(`/proposals/new` · `/my/applications`). **참여(모집) 신청 화면은 없다** — 2026-08-28 확정으로 시스템 폼(www의 공개 폼)이 맡는다. 학술 공유 링크는 여기서 **발급**하고 착지는 www가 받는다(ADR-0017).
 
+**학술은 lms, 요약은 www `/me`**(ssccops#386 · www#518). www `/me`가 «내가 이끄는 스터디·프로젝트»를 `GET /v1/academic-programs?mine=leader`로 요약해 보여주고 카드는 이 앱의 `/studio/programs/{id}`로 온다 — 회차·출석·팀원·기획안은 여전히 여기서만 한다. `/my/applications`(내 신청)는 그대로 둔다(첫 화면 카드 구조 #228 불변).
+
 ## 화면과 역할
 
 - 첫 화면 `/`(#228): 스터디장은 `redirect`로 `/studio`를 지나가고, 남은 사람에게는 «무엇을 하러 왔는지» 고르는 카드 둘(기획안 제출·내 신청). 뷰 안에 역할 조건문을 흩지 않는다.
