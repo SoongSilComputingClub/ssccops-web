@@ -4,7 +4,7 @@ import {
   apiFetchAuthedNullableFromBrowser,
 } from "@/shared/api/browser-client";
 import { ApiError } from "@/shared/api/client";
-import type { PublicForm, ResponseDraft } from "../model/types";
+import type { PublicForm, ResponseDraft, FormRef } from "../model/types";
 
 /*
  * 신청서 조회·자동 저장·제출 API (ssccops-server #35 · #36 · #143).
@@ -77,6 +77,7 @@ export function isAlreadySubmitted(error: unknown): boolean {
 
 interface PublicFormResponse {
   formId: number | null;
+  formKey: string | null;
   formTtlNm: string | null;
   rcptBgngDt: string | null;
   rcptEndDt: string | null;
@@ -93,9 +94,9 @@ interface PublicFormResponse {
  * 문항 구성이 비어 오면 빈 폼을 그리지 않고 그 자리에서 끊는다 — 문항이 0개라는 것은 신청자가
  * 아무것도 입력할 수 없는데 '제출하기'만 보인다는 뜻이다.
  */
-export async function fetchPublicForm(formId: number): Promise<PublicForm> {
+export async function fetchPublicForm(formRef: FormRef): Promise<PublicForm> {
   const res = await apiFetchAuthedNullableFromBrowser<PublicFormResponse>(
-    `/v1/forms/${formId}/public`,
+    `/v1/forms/${formRef}/public`,
   );
 
   if (!res?.qitemCpstCn) {
@@ -106,7 +107,8 @@ export async function fetchPublicForm(formId: number): Promise<PublicForm> {
   }
 
   return {
-    formId: res.formId ?? formId,
+    formId: res.formId ?? (typeof formRef === "number" ? formRef : 0),
+    formKey: res.formKey ?? null,
     formTtlNm: res.formTtlNm ?? "",
     rcptBgngDt: res.rcptBgngDt,
     rcptEndDt: res.rcptEndDt,
@@ -144,9 +146,9 @@ interface ResponseDraftResponse {
  * 오류로 세우는 쪽(`apiFetchAuthedFromBrowser`)을 쓰면 초안이 없는 **정상** 상태가 매번
  * `CLIENT_UNKNOWN_ERROR`가 되어, 한 번도 신청하지 않은 사람이 첫 진입에서 막힌다(#197).
  */
-export async function fetchMyResponseDraft(formId: number): Promise<ResponseDraft | null> {
+export async function fetchMyResponseDraft(formRef: FormRef): Promise<ResponseDraft | null> {
   const res = await apiFetchAuthedNullableFromBrowser<ResponseDraftResponse>(
-    `/v1/forms/${formId}/responses/draft`,
+    `/v1/forms/${formRef}/responses/draft`,
   );
   return res === null ? null : { rspnsCn: res.rspnsCn ?? {}, mdfcnDt: res.mdfcnDt };
 }
@@ -161,11 +163,11 @@ export async function fetchMyResponseDraft(formId: number): Promise<ResponseDraf
  * 정상이다). 다만 폼에 없는 문항·유형과 맞지 않는 값·전체 크기는 여기서도 거절된다.
  */
 export async function saveMyResponseDraft(
-  formId: number,
+  formRef: FormRef,
   rspnsCn: RspnsCn,
 ): Promise<ResponseDraft> {
   const res = await apiFetchAuthedNullableFromBrowser<ResponseDraftResponse>(
-    `/v1/forms/${formId}/responses/draft`,
+    `/v1/forms/${formRef}/responses/draft`,
     { method: "PUT", body: JSON.stringify({ rspnsCn }) },
   );
   return res === null
@@ -181,8 +183,8 @@ export async function saveMyResponseDraft(
  * 임시저장 행이 있어도 웹은 따로 손대지 않는다 — 서버가 그 행을 제출됨으로 바꾼다. 웹이 먼저
  * 지우거나 새로 만들려 들면 자동 저장을 쓴 신청자만 제출하지 못하게 된다.
  */
-export async function submitFormResponse(formId: number, rspnsCn: RspnsCn): Promise<void> {
-  await apiFetchAuthedFromBrowser<unknown>(`/v1/forms/${formId}/responses`, {
+export async function submitFormResponse(formRef: FormRef, rspnsCn: RspnsCn): Promise<void> {
+  await apiFetchAuthedFromBrowser<unknown>(`/v1/forms/${formRef}/responses`, {
     method: "POST",
     body: JSON.stringify({ rspnsCn }),
   });

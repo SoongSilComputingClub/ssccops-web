@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { fetchMyFormResponses, type MyFormResponse } from "@/entities/form";
+import { fetchMyFormResponses, type MyFormResponse, FormRef } from "@/entities/form";
 import { isUnauthenticated } from "@/shared/api/auth-error";
 
 /*
@@ -40,16 +40,16 @@ export interface MyResponsesController {
 
 const NO_RESPONSES: MyFormResponse[] = [];
 
-export function useMyResponses(formId: number): MyResponsesController {
+export function useMyResponses(formRef: FormRef): MyResponsesController {
   const [reloadKey, setReloadKey] = useState(0);
-  const requestKey = `${formId}|${reloadKey}`;
+  const requestKey = `${formRef}|${reloadKey}`;
 
   const [loaded, setLoaded] = useState<LoadedResponses | null>(null);
 
   useEffect(() => {
     let alive = true;
 
-    fetchMyFormResponses(formId)
+    fetchMyFormResponses(formRef)
       .then((responses) => {
         if (!alive) return;
         setLoaded({ key: requestKey, outcome: "ready", responses, errorMessage: "" });
@@ -67,7 +67,7 @@ export function useMyResponses(formId: number): MyResponsesController {
     return () => {
       alive = false;
     };
-  }, [formId, requestKey]);
+  }, [formRef, requestKey]);
 
   const current = loaded?.key === requestKey ? loaded : null;
 

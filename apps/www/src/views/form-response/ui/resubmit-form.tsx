@@ -12,6 +12,7 @@ import {
   type RspnsCn,
 } from "@ssccops/form-renderer";
 import { useResubmitForm } from "@/features/form";
+import type { FormRef } from "@/entities/form";
 import { ROUTES } from "@/shared/config/routes";
 import { Card } from "@/shared/ui";
 
@@ -36,16 +37,16 @@ import { Card } from "@/shared/ui";
  * `QitemCard`가 `qitemDescCn`을 함께 그린다(`ssccops#222`) — 작성 화면과 같은 것을 본다.
  */
 export function ResubmitForm({
-  formId,
+  formRef,
   composition,
   initialAnswers,
 }: Readonly<{
-  formId: number;
+  formRef: FormRef;
   composition: QitemCpstCn;
   initialAnswers: RspnsCn;
 }>) {
   const router = useRouter();
-  const form = useResubmitForm(formId, composition, initialAnswers);
+  const form = useResubmitForm(formRef, composition, initialAnswers);
   const [page, setPage] = useState(0);
   const [flash, setFlash] = useState("");
 

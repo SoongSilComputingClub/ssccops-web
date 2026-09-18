@@ -1,5 +1,6 @@
 export type {
   FormLabel,
+  FormRef,
   FormResponseReviewHistory,
   MyFormResponse,
   MyFormResponseDetail,
@@ -9,6 +10,7 @@ export type {
   ResponseDraft,
   ResponseStatus,
 } from "./model/types";
+export { isFormRef } from "./model/types";
 export { RESPONSE_STATUS_BADGE } from "./model/display";
 export {
   FORM_ERROR,

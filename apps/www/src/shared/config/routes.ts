@@ -23,8 +23,9 @@ export const ROUTES = {
    * 행사 신청(`eventApply`)과 갈리는 지점은 **행사에 딸리지 않은 폼**이라는 것이다 — 돌아갈
    * 행사가 없고, 여러 건을 받는 폼일 수 있다.
    */
-  publicForm: (formId: number) => `/f/${formId}`,
-  publicFormDone: (formId: number) => `/f/${formId}/done`,
+  // 폼 주소의 식별자는 키(UUID) 또는 숫자 — 화면은 formKey가 있으면 그것으로 만든다 (ADR-0036)
+  publicForm: (formRef: string | number) => `/f/${formRef}`,
+  publicFormDone: (formRef: string | number) => `/f/${formRef}/done`,
   /**
    * 내가 낸 응답 한 건 — 수정 요청 사유를 읽고 다시 내는 자리 (ssccops#221).
    *
@@ -32,8 +33,8 @@ export const ROUTES = {
    * 상태(`alreadySubmitted` — 수정 요청도 포함된다)가 작성 폼을 닫는 것과 재제출이 열려야
    * 하는 것이 같은 자리에서 부딪힌다.
    */
-  myFormResponse: (formId: number, formRspnsId: number) =>
-    `/f/${formId}/responses/${formRspnsId}`,
+  myFormResponse: (formRef: string | number, formRspnsId: number) =>
+    `/f/${formRef}/responses/${formRspnsId}`,
   /**
    * OAuth 콜백 라우트 핸들러. Supabase 대시보드의 Redirect URLs에 `<오리진>${authCallback}`을
    * 등록해야 로그인이 이 앱으로 돌아온다 — 등록이 없으면 Site URL(어드민)로 조용히 넘어간다.

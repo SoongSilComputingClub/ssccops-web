@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { FormRef } from "@/entities/form";
 import { SignupStep } from "@/features/signup";
 import { PublicFormStep } from "./public-form-step";
 
@@ -14,12 +15,12 @@ import { PublicFormStep } from "./public-form-step";
  * 가입이 이미 돼 있으면 이 컴포넌트는 사실상 아무것도 하지 않고 폼을 그린다.
  */
 export function PublicFormFlow({
-  formId,
+  formRef,
   signedUp,
   authUserEmail,
   authUserName,
 }: Readonly<{
-  formId: number;
+  formRef: FormRef;
   signedUp: boolean;
   authUserEmail: string | null;
   authUserName: string | null;
@@ -36,5 +37,5 @@ export function PublicFormFlow({
     );
   }
 
-  return <PublicFormStep formId={formId} />;
+  return <PublicFormStep formRef={formRef} />;
 }

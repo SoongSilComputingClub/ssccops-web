@@ -48,7 +48,7 @@ export function FormResponseCard({
 
   return (
     <Link
-      href={ROUTES.myFormResponse(response.formId, response.formRspnsId)}
+      href={ROUTES.myFormResponse(response.formKey ?? response.formId, response.formRspnsId)}
       className="flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_#e5e8eb] transition-shadow hover:shadow-[0_0_0_1px_#1b64da] lg:p-[18px]"
     >
       <div className="flex flex-wrap items-center gap-[6px]">

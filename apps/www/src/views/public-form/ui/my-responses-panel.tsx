@@ -1,6 +1,6 @@
 "use client";
 
-import { RESPONSE_STATUS_BADGE } from "@/entities/form";
+import { RESPONSE_STATUS_BADGE, FormRef } from "@/entities/form";
 import { useMyResponses } from "@/features/form";
 import { formatDt } from "@/shared/lib/date";
 import { Badge, Card } from "@/shared/ui";
@@ -17,8 +17,8 @@ import { Badge, Card } from "@/shared/ui";
  * 순번(`rspnsSeq`)과 회차(`sbmsnSeq`)를 한 자리에 섞지 않는다 — 앞은 몇 번째로 낸 건인가이고
  * 뒤는 그 한 건을 몇 번 냈는가다. 회차는 재제출한 건에만 붙는다(1회차는 적을 것이 없다).
  */
-export function MyResponsesPanel({ formId }: Readonly<{ formId: number }>) {
-  const { responses, status, errorMessage, reload } = useMyResponses(formId);
+export function MyResponsesPanel({ formRef }: Readonly<{ formRef: FormRef }>) {
+  const { responses, status, errorMessage, reload } = useMyResponses(formRef);
 
   return (
     <Card className="flex flex-col gap-[2px]">

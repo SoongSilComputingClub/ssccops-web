@@ -11,6 +11,7 @@ import {
 } from "@ssccops/form-renderer";
 // 배럴을 거치지 않는다 — 배럴이 SSR 로더를 재export 하면 클라 번들이 오염된다(entities/form/index.ts)
 import { FORM_ERROR, submitFormResponse } from "@/entities/form/api/public-form";
+import type { FormRef } from "@/entities/form/model/types";
 import { ApiError } from "@/shared/api/client";
 
 /*
@@ -84,7 +85,7 @@ function resubmitErrorMessage(error: unknown): string {
 }
 
 export function useResubmitForm(
-  formId: number,
+  formRef: FormRef,
   composition: QitemCpstCn,
   initialAnswers: RspnsCn,
 ): ResubmitForm {
@@ -137,7 +138,7 @@ export function useResubmitForm(
     try {
       // 도달하지 않은 페이지의 답은 싣지 않는다
       await submitFormResponse(
-        formId,
+        formRef,
         toRspnsCn(composition, answers, { reachedOnly: true }),
       );
       sealedRef.current = true;
@@ -180,7 +181,7 @@ export function useResubmitForm(
     } finally {
       if (aliveRef.current) setSubmitting(false);
     }
-  }, [formId, composition, answers]);
+  }, [formRef, composition, answers]);
 
   return useMemo(
     () => ({

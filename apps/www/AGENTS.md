@@ -21,7 +21,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `/` · `/events/{id}` | 행사 목록(SSR, 필터 칩용 전체 조회를 나란히 한 번 더)·상세(OG 카드) | 익명 |
 | `/events/{id}/apply` | 신청 흐름 — **미가입이면 같은 자리에서 가입**(`features/signup` · #154 · 기존 회원 연결 #364) → 신청서 | 로그인 |
 | `/my-applications` | 내 신청·낸 폼(SSR). 미로그인·미가입 모두 **이 화면 안에서** 안내하고 가입도 여기서(`InlineSignup` · #451) | 로그인 |
-| `/f/{formId}` · `/f/{formId}/done` | 공개 폼 응답(어드민에서 옮겨 옴 · ssccops#214) — 응답자는 전원 회원 | 로그인 |
+| `/f/{ref}` · `/f/{ref}/done` | 공개 폼 응답(어드민에서 옮겨 옴 · ssccops#214) — 응답자는 전원 회원. **`ref`는 폼 키(UUID) 또는 예전 숫자 id** (ADR-0036 · ssccops#359): 서버가 둘 다 받고, 화면은 새 주소를 응답의 `formKey`로만 만든다(`ROUTES.publicForm(form.formKey ?? form.formId)`). 모양 판정은 `entities/form`의 `isFormRef` 한 곳. 숫자 주소의 카드 미리보기는 지금 접수 중인 폼만 뜬다(서버 정책) | 로그인 |
 | `/s/{token}` | 공유 링크 착지 — 크롤러에는 OG, 사람은 클라이언트에서 lms 상세로(ADR-0016·0017) | 익명 |
 | `/auth/callback` · `/version` | OAuth 콜백 · 배포 이력 확인 | — |
 

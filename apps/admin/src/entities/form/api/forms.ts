@@ -30,6 +30,7 @@ interface FormLabelRefResponse {
 
 interface FormSummaryResponse {
   formId: number;
+  formKey?: string | null;
   formTtlNm: string;
   formSttsCd: FormSttsCd;
   /** 서버가 요청마다 다시 계산해 주는 파생값 (ssccops-server #33) — 배지의 기준이다 */
@@ -135,6 +136,7 @@ function fallbackReceiptStatus(formSttsCd: FormSttsCd): FormReceiptStatus {
 function toFormSummary(res: FormSummaryResponse): FormSummary {
   return {
     formId: res.formId,
+    formKey: res.formKey ?? null,
     formTtlNm: res.formTtlNm,
     formSttsCd: res.formSttsCd,
     receiptStatus: res.receiptStatus ?? fallbackReceiptStatus(res.formSttsCd),
