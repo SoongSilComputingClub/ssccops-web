@@ -28,7 +28,7 @@ import { Button, Card, EmptyState, PageBody, PageHeader, SectionLabel } from "@/
  * 메뉴 전체가 한 규칙으로 읽힌다.
  */
 const NO_MEMBER_MANAGE =
-  "회원 관리(MEMBER_MANAGE) 권한이 없어 이 화면을 볼 수 없습니다 — 운영진에게 요청해주세요";
+  "이 화면을 볼 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";
 
 export function MemberNewPage() {
   const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
@@ -53,17 +53,14 @@ export function MemberNewPage() {
           <SectionLabel className="mb-3">운영진이 회원을 직접 만들지 않습니다</SectionLabel>
           <div className="flex flex-col gap-3 text-[15px] leading-[1.6]">
             <p>
-              회원 정보는 <b>본인이 가입할 때</b> 만들어집니다. 새로 들어온 회원에게는 계정을
-              대신 만들어 주는 대신 로그인 후 가입 화면을 안내해주세요 — 학번·연락처는 본인이
-              입력하는 것이 정확하고, 계정이 연결돼 있어야 이후 연락도 닿습니다.
+              회원 정보는 <b>본인이 가입할 때</b> 만들어집니다. 새로 들어온 회원에게는 로그인 후
+              가입 화면을 안내해주세요. 학번·연락처는 본인이 넣는 것이 정확합니다.
             </p>
             <p>
-              이전 시스템의 명부를 옮기는 것은 <b>CSV 회원 이관</b>으로 합니다. 한 명씩 넣는
-              화면을 따로 두면 같은 명부를 만드는 길이 둘이 되고, 어느 쪽이 최신인지 알 수
-              없게 됩니다.
+              이전 명부를 옮길 때는 <b>CSV 회원 이관</b>을 씁니다.
             </p>
             <p className="text-[14px] text-n500">
-              등급 · 상태 · 역할은 가입한 회원의 상세 화면에서 운영진이 정합니다.
+              등급·상태·역할은 가입한 뒤 회원 상세에서 정합니다.
             </p>
           </div>
           <div className="mt-5 flex items-center gap-[10px]">

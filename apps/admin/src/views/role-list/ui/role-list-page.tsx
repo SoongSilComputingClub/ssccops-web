@@ -33,7 +33,7 @@ import type { RoleSummary } from "@/entities/role";
 const ALL = "전체";
 
 const NO_MANAGE =
-  "역할을 다룰 권한(ROLE_MANAGE)이 없어 역할 목록을 볼 수 없습니다 — 최고관리자에게 요청해주세요";
+  "역할 목록을 볼 권한이 없습니다 — 권한 관리(ROLE_MANAGE) 권한이 필요합니다";
 
 export function RoleListPage() {
   const canManageRole = useCan(CAPABILITY.ROLE_MANAGE);
@@ -212,8 +212,7 @@ function RoleListView() {
                   />
                 </Card>
                 <div className="mt-3 text-[13.5px] text-n500">
-                  항목을 눌러 상세에서 수정합니다. 사용 현황은 지금 그 역할을 맡고 있는 회원
-                  수입니다 — 지난 재임은 세지 않습니다.
+                  항목을 누르면 상세에서 고칩니다. 사용 현황은 지금 이 역할을 맡은 회원 수입니다.
                 </div>
               </>
             )}

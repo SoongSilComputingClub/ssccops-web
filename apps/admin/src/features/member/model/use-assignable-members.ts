@@ -189,8 +189,8 @@ export function assignableEditHint(
 ): string {
   if (current && memberId === current.memberId) {
     return assignable.includes(current.memberId)
-      ? "현재 담당자 그대로 저장됩니다 · 다른 회원으로 바꿀 수 있습니다"
-      : "현재 담당자는 더 이상 담당자로 지정할 수 없는 회원입니다 — 그대로 저장하면 거절되므로 다른 회원으로 바꿔주세요";
+      ? "비우면 현재 담당자 그대로입니다"
+      : "현재 담당자는 이제 지정할 수 없는 회원입니다 — 다른 회원으로 바꿔주세요";
   }
   return "선택한 회원이 담당자로 저장됩니다";
 }

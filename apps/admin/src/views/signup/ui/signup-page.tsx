@@ -177,7 +177,7 @@ export function SignupPage() {
       <h1 className="text-[28px] font-medium tracking-[-.4px]">회원 가입</h1>
       <p className="mt-2 text-[14.5px] text-n400">
         소셜 계정 <span className="font-semibold text-ink">{provider}</span>로
-        인증되었습니다. 임시회원 등급으로 등록되며 바로 이용할 수 있습니다.
+        인증됐습니다. 임시회원으로 등록되고 바로 쓸 수 있습니다.
       </p>
       {/*
        * 폼 링크를 열었다가 여기까지 온 경우에는 가입이 목적이 아니므로, 이 화면이 종착지가
@@ -325,10 +325,9 @@ export function SignupPage() {
             이 학번은 이미 명부에 등록돼 있습니다
           </div>
           <div className="mt-1 text-[13.5px] leading-[1.7] text-n400">
-            본인 학번이 맞다면 이미 SSCC 명부에 등록된 회원일 가능성이 높습니다. 새로 가입하는
-            대신 <span className="font-semibold text-ink">기존 회원 정보에 이 계정을 연결</span>하세요
-            — 기수 · 등급 · 역할이 그대로 유지됩니다. 연결에는 학번 · 회원명 · 전화번호가
-            모두 필요하며 명부의 값과 다르면 연결되지 않습니다.
+            본인 학번이 맞다면 이미 명부에 있는 회원입니다. 새로 가입하지 말고{" "}
+            <span className="font-semibold text-ink">기존 회원 정보에 이 계정을 연결</span>하세요.
+            기수·등급·역할이 그대로 남습니다. 연결에는 학번·회원명·전화번호가 모두 필요합니다.
           </div>
           <div className="mt-[10px] flex gap-2">
             <Button size="sm" disabled={pending} onClick={goToLink}>

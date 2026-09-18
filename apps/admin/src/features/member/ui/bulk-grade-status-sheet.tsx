@@ -349,7 +349,7 @@ function BulkInputStep({
           <div className="text-[14px] text-n500">선택지를 불러오는 중…</div>
         ) : options.length === 0 ? (
           <div className="text-[14px] text-danger">
-            기준 코드를 불러오지 못했습니다. 화면을 새로고침해주세요
+            선택지를 불러오지 못했습니다 — 새로고침해주세요
           </div>
         ) : (
           <div className="flex flex-wrap gap-[7px]">
@@ -551,7 +551,7 @@ function BulkResultStep({
       </div>
       {summary.skippedCount > 0 && (
         <div className="mb-3 text-[13px] text-n500">
-          건너뛴 회원은 이미 같은 값이라 이력을 남기지 않았습니다 — 실패가 아닙니다.
+          건너뛴 회원은 이미 같은 값입니다. 실패가 아닙니다.
         </div>
       )}
       <div className="flex flex-col">
@@ -574,7 +574,7 @@ function ResultRow({ row }: Readonly<{ row: MemberBulkChangeRow }>) {
         <span className="min-w-0 flex-1 truncate text-[15px]">
           {row.name ?? (
             /* 없는 회원이라 서버도 이름을 모른다 — 번호를 그대로 보여 줘야 운영자가 찾는다 */
-            <span className="text-n500" title="이름을 알 수 없는 회원입니다 — 이미 삭제되었을 수 있습니다">
+            <span className="text-n500" title="이름을 알 수 없는 회원입니다">
               회원 #{row.memberId}
             </span>
           )}

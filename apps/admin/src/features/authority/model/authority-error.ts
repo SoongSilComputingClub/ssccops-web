@@ -25,7 +25,7 @@ function toCommonMessage(error: ApiError): string {
      */
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "권한 관리(ROLE_MANAGE) 권한이 없습니다 — 최고관리자에게 요청해주세요";
+      return "권한을 다룰 권한이 없습니다 — 권한 관리(ROLE_MANAGE) 권한이 필요합니다";
     default:
       return error.message;
   }
@@ -39,7 +39,7 @@ export function toAuthorityErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case AUTHORITY_ERROR.SYSTEM_AUTHORITY_IMMUTABLE:
-      return "시스템 권한은 삭제하거나 코드를 바꿀 수 없습니다 — 코드가 직접 참조하는 권한입니다. 이름·설명·상위는 바꿀 수 있습니다";
+      return "시스템 권한은 삭제하거나 코드를 바꿀 수 없습니다 — 이름·설명·상위만 바꿀 수 있습니다";
     case AUTHORITY_ERROR.AUTHORITY_CODE_IMMUTABLE:
       return "권한 코드는 바꿀 수 없습니다. 새 코드로 만든 뒤 기존 권한을 삭제해주세요";
     case AUTHORITY_ERROR.AUTHORITY_CYCLE_DETECTED:
@@ -53,7 +53,7 @@ export function toAuthorityErrorMessage(error: unknown): string {
     case AUTHORITY_ERROR.AUTHORITY_CODE_DUPLICATED:
       return "이미 있는 권한 코드입니다";
     case AUTHORITY_ERROR.AUTHORITY_NOT_FOUND:
-      return "없는 권한입니다. 다른 곳에서 이미 지웠을 수 있어 트리를 다시 불러옵니다";
+      return "없는 권한입니다 — 트리를 다시 불러왔습니다";
     // 어느 칸이 왜 틀렸는지를 서버 문장이 담고 있다 — 뭉개면 입력란 옆에 붙일 말이 사라진다
     case AUTHORITY_ERROR.VALIDATION_FAILED:
       return error.message;
@@ -80,14 +80,13 @@ export function toRoleAuthorityErrorMessage(error: unknown): string {
   switch (error.code) {
     case AUTHORITY_ERROR.CANNOT_REVOKE_OWN_ROLE_MANAGE:
       return (
-        "저장하지 않았습니다 — 이 저장은 당신이 가진 권한 관리(ROLE_MANAGE) 권한을 스스로 회수하는 조작입니다. " +
-        "권한 관리 화면 자체가 이 권한을 요구하므로, 통과했다면 이 화면을 포함해 권한을 되돌릴 방법이 아무에게도 남지 않고 " +
-        "복구하려면 데이터베이스를 직접 고쳐야 합니다. 권한 관리를 넘기려면 먼저 다른 역할에 ROLE_MANAGE 를 부여한 뒤 그쪽에서 회수해주세요"
+        "저장하지 않았습니다 — 내 권한 관리(ROLE_MANAGE) 권한을 스스로 회수하는 저장입니다. " +
+        "넘기려면 먼저 다른 역할에 ROLE_MANAGE를 부여한 뒤 그쪽에서 회수해주세요"
       );
     case AUTHORITY_ERROR.ROLE_NOT_FOUND:
-      return "없는 역할입니다. 역할 목록에서 다시 선택해주세요";
+      return "없는 역할입니다 — 역할 목록에서 다시 골라주세요";
     case AUTHORITY_ERROR.AUTHORITY_NOT_FOUND:
-      return "체크한 권한 중 없는 것이 있습니다. 권한 트리가 바뀐 것 같아 다시 불러옵니다";
+      return "없는 권한이 섞여 있습니다 — 트리를 다시 불러왔습니다";
     default:
       return toAuthorityErrorMessage(error);
   }

@@ -158,9 +158,8 @@ export function ValidationStep({ wizard }: Readonly<{ wizard: MemberImportWizard
         <Card>
           <SectionLabel className="mb-1">경고 {warned.length}건 — 이관은 됩니다</SectionLabel>
           <div className="mb-3 text-[13.5px] text-n500">
-            고치지 않아도 진행되지만, 연락처가 없는 회원은 나중에 스스로 계정을 연결할 수
-            없습니다 (계정 연결은 학번·회원명·연락처 세 값이 모두 맞아야 합니다). 지금 파일을
-            고쳐 다시 올리는 편이 낫습니다.
+            고치지 않아도 이관됩니다. 다만 연락처가 없는 회원은 나중에 스스로 계정을 연결할 수
+            없습니다. 지금 파일을 고쳐 다시 올리는 편이 낫습니다.
           </div>
           <IssueTable rows={warned} kind="warning" />
         </Card>
@@ -189,7 +188,7 @@ export function ValidationStep({ wizard }: Readonly<{ wizard: MemberImportWizard
       <Sheet
         open={confirmOpen}
         title="이관을 실행합니다"
-        hint="되돌릴 수 없습니다 — 잘못 들어간 회원은 한 명씩 손으로 정리해야 합니다."
+        hint="되돌릴 수 없습니다. 잘못 들어간 회원은 한 명씩 정리해야 합니다."
         onClose={() => setConfirmOpen(false)}
         /*
          * 시트를 곧바로 닫고 진행 상태는 아래 실행 버튼이 보여 준다 — 요청이 나가는 동안
@@ -208,7 +207,7 @@ export function ValidationStep({ wizard }: Readonly<{ wizard: MemberImportWizard
           <li>· 정상 후보 {summary.okCount}건이 새 회원으로 등록됩니다</li>
           <li>· 오류 {summary.errorCount}건은 등록되지 않습니다</li>
           <li>· 중복 후보 {summary.duplicateCount}건은 건너뜁니다 (덮어쓰지 않습니다)</li>
-          <li>· 등록된 회원은 아직 계정과 연결되지 않은 상태입니다</li>
+          <li>· 등록된 회원은 아직 계정이 연결되지 않은 상태입니다</li>
         </ul>
         <label className="mt-4 flex cursor-pointer items-start gap-2 text-[14px]">
           <input

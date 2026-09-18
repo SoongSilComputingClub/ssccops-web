@@ -92,7 +92,7 @@ export function FileStep({ wizard }: Readonly<{ wizard: MemberImportWizard }>) {
         <div className="mt-1 text-[13.5px] text-n500">
           {file && preview
             ? "다른 파일을 끌어다 놓거나 클릭하면 바꿀 수 있습니다"
-            : "CSV · 최대 5MB · UTF-8 · 파일을 끌어다 놓거나 클릭"}
+            : "CSV(UTF-8), 최대 5MB — 끌어다 놓거나 클릭"}
         </div>
       </label>
 

@@ -26,7 +26,7 @@ export function toMemberErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return "회원 명부를 볼 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";
     case MEMBER_ERROR.INVALID_CODE_VALUE:
-      return "등급·상태·정렬 값이 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+      return "선택지가 바뀌었습니다 — 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
@@ -66,7 +66,7 @@ export function toMemberSaveErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case MEMBER_ERROR.MEMBER_NOT_FOUND:
-      return "회원을 찾을 수 없습니다 — 이미 삭제되었거나 잘못된 주소입니다";
+      return "회원이 없습니다 — 목록을 새로고침해주세요";
     case MEMBER_ERROR.STUDENT_NUMBER_DUPLICATED:
       // 서버 문장은 가입하는 사람에게 하는 말이라 여기서 바꾼다 (위 주석)
       return "이미 다른 회원이 쓰는 학번입니다 — 학번을 다시 확인해주세요";
@@ -128,9 +128,9 @@ export function toMemberChangeErrorMessage(error: unknown): string {
     case MEMBER_ERROR.NO_CHANGE:
       return "이미 같은 값입니다 — 변경할 내용이 없습니다";
     case MEMBER_ERROR.MEMBER_NOT_FOUND:
-      return "회원을 찾을 수 없습니다 — 이미 삭제되었거나 잘못된 주소입니다";
+      return "회원이 없습니다 — 목록을 새로고침해주세요";
     case MEMBER_ERROR.INVALID_CODE_VALUE:
-      return "선택한 등급·상태가 서버 기준 코드와 다릅니다. 화면을 새로고침해주세요";
+      return "선택지가 바뀌었습니다 — 새로고침해주세요";
     case MEMBER_ERROR.VALIDATION_FAILED:
       // 서버 문장을 그대로 옮긴다 (위 주석)
       return error.message;
@@ -169,7 +169,7 @@ export function toMemberHistoryErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return "변경 이력을 볼 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";
     case MEMBER_ERROR.VALIDATION_FAILED:
-      return "이력 유형 값이 서버와 다릅니다 — 화면이 낡았을 수 있습니다. 새로고침해주세요";
+      return "선택지가 바뀌었습니다 — 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
@@ -204,24 +204,24 @@ export function toMemberRoleErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case MEMBER_ROLE_ERROR.CANNOT_REVOKE_OWN_ROLE_MANAGE:
-      return "스스로를 잠그는 조작이라 막았습니다 — 자신의 권한 관리(ROLE_MANAGE) 역할은 직접 끝낼 수 없습니다. 다른 운영진에게 요청해주세요";
+      return "내 권한 관리(ROLE_MANAGE) 역할은 직접 끝낼 수 없습니다 — 다른 운영진에게 요청해주세요";
     case MEMBER_ROLE_ERROR.ROLE_ALREADY_ASSIGNED:
-      return "이미 같은 기간에 부여된 역할입니다 — 겹치지 않는 시작일을 고르거나 기존 배정을 먼저 종료해주세요";
+      return "이미 같은 기간에 부여된 역할입니다 — 겹치지 않는 시작일을 고르세요";
     case MEMBER_ROLE_ERROR.ROLE_PERIOD_INVALID:
       return "종료일은 시작일보다 이를 수 없습니다";
     case MEMBER_ROLE_ERROR.ASSIGNMENT_NOT_FOUND:
-      return "역할 배정을 찾을 수 없습니다 — 다른 곳에서 이미 바뀌었을 수 있어 목록을 다시 불러옵니다";
+      return "없는 역할 배정입니다 — 목록을 다시 불러왔습니다";
     case MEMBER_ROLE_ERROR.ROLE_NOT_FOUND:
-      return "없는 역할입니다 — 역할 목록이 낡았습니다. 화면을 새로고침해주세요";
+      return "없는 역할입니다 — 새로고침해주세요";
     case MEMBER_ROLE_ERROR.MEMBER_NOT_FOUND:
-      return "회원을 찾을 수 없습니다 — 이미 삭제되었거나 잘못된 주소입니다";
+      return "회원이 없습니다 — 목록을 새로고침해주세요";
     /*
      * 이 API는 조회도 ROLE_MANAGE 로 막혀 있다(서버가 컨트롤러 클래스 전체에 걸었다). 화면은
      * 권한이 없으면 호출조차 하지 않지만, 보고 있는 사이에 회수되면 여기로 온다.
      */
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "역할을 다룰 권한(ROLE_MANAGE)이 없습니다 — 회원 관리 권한과는 별개입니다. 운영진에게 요청해주세요";
+      return "역할을 다룰 권한이 없습니다 — 권한 관리(ROLE_MANAGE) 권한이 필요합니다";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
@@ -284,11 +284,11 @@ export function toMemberDeleteErrorMessage(error: unknown): string {
     case MEMBER_ERROR.FEATURE_DISABLED:
       return "이 기능은 꺼져 있습니다 — 배포 설정을 확인해주세요";
     case MEMBER_ERROR.MEMBER_REFERENCED:
-      return "지울 수 없습니다 — 미리보기 뒤에 이 회원이 남긴 기록이 생겼습니다. 닫고 다시 열면 무엇으로 남아 있는지 보입니다";
+      return "지울 수 없습니다 — 이 회원이 남긴 기록이 새로 생겼습니다. 닫고 다시 열어주세요";
     case MEMBER_ERROR.CANNOT_DELETE_SELF:
       return "자기 자신은 지울 수 없습니다 — 다른 운영진에게 요청해주세요";
     case MEMBER_ERROR.MEMBER_NOT_FOUND:
-      return "회원을 찾을 수 없습니다 — 이미 삭제되었거나 잘못된 주소입니다";
+      return "회원이 없습니다 — 목록을 새로고침해주세요";
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
       return "회원을 지울 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";

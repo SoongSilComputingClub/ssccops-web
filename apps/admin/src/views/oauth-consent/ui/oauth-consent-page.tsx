@@ -127,8 +127,7 @@ function ConsentBody({
       }
     >
       <p className="mt-3 text-[14.5px] leading-[1.6] text-n400">
-        이 앱이 회원님의 SSCC 계정으로 운영관리시스템을 쓰려고 합니다. 허용하면 앱은 회원님이
-        가진 권한 안에서만 동작합니다.
+        이 앱이 내 SSCC 계정으로 운영 시스템을 쓰려고 합니다. 허용해도 내 권한 안에서만 움직입니다.
       </p>
       <AuthorizationSummary authorization={authorization} />
       <div className="mt-6 mb-5 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
@@ -170,8 +169,8 @@ export function OAuthConsentPage() {
     case "invalid":
       return (
         <StatusBody title="요청이 유효하지 않습니다">
-          연결 요청이 없거나 만료됐거나 이미 처리됐습니다 — 연결을 시작한 앱에서 다시
-          시도해주세요
+          연결 요청이 없거나 만료됐거나 이미 처리됐습니다. 연결을 시작한 앱에서 다시
+          시도해주세요.
         </StatusBody>
       );
     case "error":

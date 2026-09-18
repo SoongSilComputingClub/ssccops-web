@@ -37,7 +37,7 @@ import type { MemberRoles } from "../model/use-member-roles";
  * 이 값을 아예 보지 않는다. 역할을 붙이는 자리에서 한 번은 말해 두어야 오해가 이어지지 않는다.
  */
 const REPRESENTATIVE_NOTE =
-  "대표 역할은 회원당 1건이며 사이드바 프로필에 무엇을 내걸지를 정하는 표시용입니다 — 권한과는 무관합니다";
+  "대표 역할은 프로필에 보이는 표시용입니다. 권한과는 무관합니다.";
 
 export function RoleSheet({
   memberId,
@@ -145,7 +145,7 @@ export function RoleSheet({
                   disabled={locked}
                   title={
                     locked
-                      ? "이 기간에 이미 부여돼 있습니다 — 종료한 뒤이거나 겹치지 않는 시작일에만 다시 부여할 수 있습니다"
+                      ? "이 기간에 이미 부여돼 있습니다 — 겹치지 않는 시작일을 고르세요"
                       : role.roleClsfNm
                   }
                   onClick={() => {

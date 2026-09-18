@@ -44,7 +44,7 @@ import { Badge, Button, Card, EmptyState, Field, PageBody, PageHeader, SectionLa
  * 개인정보가 채워진 폼을 보여 준 채 저장만 막는 꼴이 된다.
  */
 const NO_MEMBER_MANAGE =
-  "회원 관리(MEMBER_MANAGE) 권한이 없어 회원 정보를 수정할 수 없습니다 — 운영진에게 요청해주세요";
+  "회원 정보를 수정할 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";
 
 /**
  * 계정을 아직 연결하지 않은 회원의 학번을 고칠 때만 띄우는 안내 (#237 · ssccops#161).
@@ -58,7 +58,7 @@ const NO_MEMBER_MANAGE =
  * 다시 보지 않으므로 해당 없는 경고이고, 모든 회원에게 띄우면 곧 읽히지 않는 문장이 된다.
  */
 const UNLINKED_STUDENT_NUMBER_NOTE =
-  "이 회원은 아직 계정을 연결하지 않았습니다. 학번을 바꾸면 예전 학번으로는 계정을 연결할 수 없습니다 — 계정 연결은 학번 · 회원명 · 연락처가 모두 맞아야 합니다.";
+  "아직 계정을 연결하지 않은 회원입니다. 학번을 바꾸면 바뀐 학번으로 연결해야 합니다.";
 
 export function MemberEditPage({ mbrId }: Readonly<{ mbrId: number }>) {
   const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
@@ -282,8 +282,8 @@ function MemberEditForm({ mbrId }: Readonly<{ mbrId: number }>) {
                 성격이 다르므로, 둘을 묶어 설명하던 한 문장도 함께 갈랐다.
               */}
               <div className="mt-3 text-[13px] leading-[1.6] text-n500">
-                전산 가입일은 시스템이 계정을 만든 날이라 수정할 수 없습니다. 동아리 가입 시기는
-                확인되는 대로 채워주세요.
+                전산 가입일은 계정이 만들어진 날이라 바꿀 수 없습니다. 동아리 가입 시기는 확인되는
+                대로 채워주세요.
               </div>
             </Card>
 
@@ -313,8 +313,7 @@ function MemberEditForm({ mbrId }: Readonly<{ mbrId: number }>) {
                 </Badge>
               </div>
               <div className="mt-3 text-[13px] leading-[1.6] text-n500">
-                등급 · 상태는 변경 이력을 남겨야 해 이 화면에서 바꾸지 않습니다. 상세 화면에서
-                사유와 함께 변경합니다.
+                등급·상태는 상세 화면에서 사유와 함께 바꿉니다.
               </div>
             </Card>
 

@@ -107,15 +107,14 @@ export function MappingStep({ wizard }: Readonly<{ wizard: MemberImportWizard }>
         )}
 
         <div className="mt-4 text-[13.5px] text-n500">
-          졸업연도·역할은 고를 수 있는 필드에 없습니다 — 회원 테이블에 대응하는 칸이 없어
-          이관되지 않습니다. 역할은 이관 뒤 회원 상세에서 부여합니다.
+          졸업연도·역할은 이관되지 않습니다. 역할은 이관 뒤 회원 상세에서 부여합니다.
         </div>
       </Card>
 
       <Card className="max-w-[720px]">
         <SectionLabel className="mb-1">파일 미리보기</SectionLabel>
         <div className="mb-3 text-[13.5px] text-n500">
-          서버가 읽은 앞 {preview.sampleRows.length}행입니다 (전체 {preview.totalRowCount}행).
+          앞 {preview.sampleRows.length}행입니다 (전체 {preview.totalRowCount}행).
           값이 밀려 보인다면 매핑이 아니라 파일의 쉼표·따옴표를 확인해주세요.
         </div>
         <ScrollX>
