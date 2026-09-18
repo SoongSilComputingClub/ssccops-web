@@ -16,14 +16,14 @@ export function ApplyDone({ eventId }: Readonly<{ eventId: number }>) {
   return (
     <Notice
       title="신청이 접수되었습니다"
-      description="진행 상황은 '내 신청'에서 확인할 수 있습니다. 선발·확정 결과도 같은 화면에 표시됩니다."
+      description="진행 상황은 '내 활동'에서 확인할 수 있습니다. 선발·확정 결과도 같은 화면에 표시됩니다."
     >
       <div className="flex flex-wrap items-center justify-center gap-[8px]">
         <Link
-          href={ROUTES.myApplications}
+          href={ROUTES.me}
           className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
         >
-          내 신청 보기
+          내 활동 보기
         </Link>
         <Link
           href={ROUTES.eventDetail(eventId)}

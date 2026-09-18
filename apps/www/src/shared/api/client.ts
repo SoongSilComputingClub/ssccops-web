@@ -3,8 +3,11 @@
  *
  * 어드민의 `shared/lib/api/client.ts`와 **일부러 나눠 두었다**. 저쪽은 Supabase 세션을 실어
  * 보내고 401·403 SIGNUP_REQUIRED를 리다이렉트까지 끝내는데, 공개 앱은 익명 호출이라 그 로직이
- * 통째로 필요 없다(붙여 두면 로그인 없는 앱에 로그인 화면으로 가는 길만 남는다). 커서 페이징
- * 봉투(`page`)도 공개 목록 계약에 없어 여기서는 다루지 않는다.
+ * 통째로 필요 없다(붙여 두면 로그인 없는 앱에 로그인 화면으로 가는 길만 남는다).
+ *
+ * 커서 페이징 봉투(`page`)는 공개 목록 계약에 없어 오래 다루지 않았다 — `/me`가 학술 활동
+ * 목록(`GET /v1/academic-programs?mine=leader` · 커서 페이징)을 그리게 되면서(#518) lms의
+ * `apiFetchList`를 봉투 처리만 옮겨 왔다. 공개(익명) 목록은 여전히 `apiFetch`만 쓴다.
  *
  * 공유 패키지로 뽑는 것은 후속 이슈다 — 두 앱이 실제로 같은 것을 필요로 하는지 확인한 뒤에 한다.
  */
@@ -26,6 +29,31 @@ interface ApiResponse<T> {
   code: string;
   message: string;
   data: T | null;
+  /** 커서 목록 응답에만 실린다. 단건·오류 응답에서는 아예 빠져 있다 */
+  page?: PageEnvelope | null;
+}
+
+/**
+ * 커서 페이징 봉투 (global.apipayload.PageResponse · lms에서 옮김).
+ *
+ * 페이지 번호가 없는 것은 서버가 offset이 아니라 커서로 자르기 때문이다 — 다음 페이지는
+ * `nextCursor`를 그대로 되돌려 주는 방식이고, 마지막 페이지면 `hasNext`가 false다.
+ */
+export interface PageEnvelope {
+  size: number;
+  /** 서버가 실제로 적용한 정렬 — 다음 페이지 요청에 그대로 되돌려주면 정렬이 흔들리지 않는다 */
+  sort: string;
+  nextCursor: string | null;
+  hasNext: boolean;
+  totalCount: number;
+  overallCount: number;
+}
+
+/** 목록 조회 결과 — 배열과 페이지 봉투를 함께 돌려준다 */
+export interface ApiListResult<T> {
+  data: T[];
+  /** 서버가 page를 싣지 않았으면 null (목록이 아닌 응답을 목록으로 읽은 경우) */
+  page: PageEnvelope | null;
 }
 
 /**
@@ -68,7 +96,7 @@ async function readEnvelope<T>(response: Response): Promise<ApiResponse<T> | nul
 }
 
 /**
- * 봉투를 벗기고 `data`와 응답 상태를 함께 돌려준다 — 상태는 아래 두 공개 함수만 쓴다.
+ * 봉투를 벗기고 `data`·`page`와 응답 상태를 함께 돌려준다 — 상태는 아래 공개 함수들만 쓴다.
  *
  * **캐시하지 않는다.** Next 16의 `fetch`는 기본이 no-store지만 여기서 명시해 둔다 — 게시 철회한
  * 행사가 캐시에 남아 계속 보이는 것이 이 앱에서 가장 곤란한 종류의 어긋남이고, 그 판단을
@@ -77,7 +105,7 @@ async function readEnvelope<T>(response: Response): Promise<ApiResponse<T> | nul
 async function request<T>(
   path: string,
   init?: RequestInit,
-): Promise<{ data: T | null; status: number }> {
+): Promise<{ data: T | null; page: PageEnvelope | null; status: number }> {
   if (!API_BASE_URL) {
     /*
      * 값이 없으면 `undefined/public/v1/...`로 요청이 나가 404로 둔갑한다. 설정 누락은 런타임
@@ -106,7 +134,7 @@ async function request<T>(
     );
   }
 
-  return { data: envelope.data, status: response.status };
+  return { data: envelope.data, page: envelope.page ?? null, status: response.status };
 }
 
 /**
@@ -136,6 +164,21 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
  */
 export async function apiFetchNullable<T>(path: string, init?: RequestInit): Promise<T | null> {
   return (await request<T>(path, init)).data;
+}
+
+/**
+ * 커서 목록 호출 — `data` 배열과 `page` 봉투를 함께 돌려준다 (lms `apiFetchList`에서 옮김).
+ *
+ * `apiFetch`로 목록을 받으면 `page`가 버려져 다음 페이지가 있는지조차 알 수 없다. `data`가
+ * null이면 빈 배열로 떨어뜨린다 — 목록이 비었다는 것과 응답이 없다는 것을 화면이 다르게 다룰
+ * 이유가 없다. 이 앱에서 이것을 쓰는 곳은 인증 목록(`authed-client.ts`)뿐이다.
+ */
+export async function apiFetchList<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<ApiListResult<T>> {
+  const { data, page } = await request<T[]>(path, init);
+  return { data: data ?? [], page };
 }
 
 /** 쿼리 문자열 조립 — 값이 없는 항목은 아예 싣지 않는다(빈 값도 필터로 읽히는 서버가 있다) */

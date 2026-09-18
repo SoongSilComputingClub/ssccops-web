@@ -1,6 +1,6 @@
 import { createClient } from "@ssccops/auth/supabase/server";
 import { AUTH_ERROR } from "./auth-error";
-import { ApiError, apiFetch } from "./client";
+import { ApiError, apiFetch, apiFetchList, type ApiListResult } from "./client";
 
 /*
  * 인증이 필요한 API 호출 (서버 컴포넌트 전용).
@@ -37,14 +37,31 @@ export async function currentAccessToken(): Promise<string | null> {
   return session?.access_token ?? null;
 }
 
-/** 인증 API 호출 — 토큰이 없으면 서버에 보내지 않고 `CLIENT_UNAUTHENTICATED`로 끊는다 */
-export async function apiFetchAuthed<T>(path: string, init?: RequestInit): Promise<T> {
+/** 토큰을 헤더에 실어 주는 공통 처리 — 없으면 서버에 보내지 않고 `CLIENT_UNAUTHENTICATED`로 끊는다 */
+async function authedInit(init?: RequestInit): Promise<RequestInit> {
   const token = await currentAccessToken();
   if (!token) {
     throw new ApiError(AUTH_ERROR.UNAUTHENTICATED, "로그인이 필요합니다", 401);
   }
-
   const headers = new Headers(init?.headers);
   headers.set("Authorization", `Bearer ${token}`);
-  return apiFetch<T>(path, { ...init, headers });
+  return { ...init, headers };
+}
+
+/** 인증 단건 호출 — 봉투를 벗겨 `data`만 돌려준다 */
+export async function apiFetchAuthed<T>(path: string, init?: RequestInit): Promise<T> {
+  return apiFetch<T>(path, await authedInit(init));
+}
+
+/**
+ * 인증 커서 목록 호출 — `data` 배열과 `page` 봉투를 함께 돌려준다 (lms와 같은 모양 · #518).
+ *
+ * 이 앱에서 커서 페이징을 타는 조회는 `/me`의 «내가 이끄는 활동»(`GET /v1/academic-programs`)
+ * 하나다. 공개 목록은 여전히 `apiFetch`를 쓴다.
+ */
+export async function apiFetchAuthedList<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<ApiListResult<T>> {
+  return apiFetchList<T>(path, await authedInit(init));
 }

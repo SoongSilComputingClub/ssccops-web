@@ -89,7 +89,7 @@ export function ResubmitForm({
 
     const outcome = await form.submit();
     if (outcome === "submitted") {
-      router.push(ROUTES.myApplications);
+      router.push(ROUTES.me);
       router.refresh();
       return;
     }

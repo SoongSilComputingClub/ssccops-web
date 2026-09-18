@@ -12,7 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 **이 파일이 www 규칙의 정본이고 루트 `AGENTS.md`는 링크만 든다**(ssccops#349). 세 앱 공통은 루트에.
 
-**부원과 외부인이 보는 앱이다.** 행사 목록·상세는 로그인 없이 열리고(wave2 D1 — 비로그인 완전 공개), 신청·내 신청·공개 폼 응답만 로그인이 필요하다. 이 앱이 아는 남의 오리진은 **lms 하나**(`shared/config/lms-routes.ts` — 학술 공유 착지가 사람을 보낼 곳)다. 어드민 오리진(`NEXT_PUBLIC_ADMIN_ORIGIN`)은 #451에서 걷어냈다 — 부원에게 나가는 화면이 운영 도메인을 가리키지 않는다.
+**부원과 외부인이 보는 앱이다.** 행사 목록·상세는 로그인 없이 열리고(wave2 D1 — 비로그인 완전 공개), 신청·내 활동(`/me`)·공개 폼 응답만 로그인이 필요하다. 이 앱이 아는 남의 오리진은 **lms 하나**(`shared/config/lms-routes.ts` — 학술 공유 착지가 사람을 보낼 곳)다. 어드민 오리진(`NEXT_PUBLIC_ADMIN_ORIGIN`)은 #451에서 걷어냈다 — 부원에게 나가는 화면이 운영 도메인을 가리키지 않는다.
 
 ## 화면과 경로
 
@@ -20,7 +20,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 |---|---|---|
 | `/` · `/events/{id}` | 행사 목록(SSR, 필터 칩용 전체 조회를 나란히 한 번 더)·상세(OG 카드) | 익명 |
 | `/events/{id}/apply` | 신청 흐름 — **미가입이면 같은 자리에서 가입**(`features/signup` · #154 · 기존 회원 연결 #364) → 신청서 | 로그인 |
-| `/my-applications` | 내 신청·낸 폼(SSR). 미로그인·미가입 모두 **이 화면 안에서** 안내하고 가입도 여기서(`InlineSignup` · #451) | 로그인 |
+| `/me` | 내 활동(SSR · #518 · ssccops#386) — 블록 셋: 신청한 행사(`/v1/events/my-applications`) · 낸 폼(`/v1/forms/responses/mine`, 기획안 폼 응답은 «기획안» 칩 — 시스템 폼 여부가 목록에 없어 `GET /v1/forms/system/PROPOSAL`의 `formId`와 견준다) · 내가 이끄는 스터디·프로젝트(`/v1/academic-programs?mine=leader`, 카드는 lms 상세로). 조회는 `Promise.allSettled` — 한 블록이 실패해도 그 블록만 안내로. 미로그인·미가입 모두 **이 화면 안에서** 안내하고 가입도 여기서(`InlineSignup` · #451). **옛 `/my-applications`는 `next.config.ts`의 permanent redirect**가 받는다(화면이 아니라 설정 — «리다이렉트를 하지 않는다»는 401·403 얘기다) | 로그인 |
 | `/f/{ref}` · `/f/{ref}/done` | 공개 폼 응답(어드민에서 옮겨 옴 · ssccops#214) — 응답자는 전원 회원. **`ref`는 폼 키(UUID) 또는 예전 숫자 id** (ADR-0036 · ssccops#359): 서버가 둘 다 받고, 화면은 새 주소를 응답의 `formKey`로만 만든다(`ROUTES.publicForm(form.formKey ?? form.formId)`). 모양 판정은 `entities/form`의 `isFormRef` 한 곳. 숫자 주소의 카드 미리보기는 지금 접수 중인 폼만 뜬다(서버 정책) | 로그인 |
 | `/s/{token}` | 공유 링크 착지 — 크롤러에는 OG, 사람은 클라이언트에서 lms 상세로(ADR-0016·0017) | 익명 |
 | `/auth/callback` · `/version` | OAuth 콜백 · 배포 이력 확인 | — |
@@ -31,8 +31,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - **전 화면이 서버 컴포넌트다**(#141). 사용자 토큰이 필요한 화면도 SSR로 그린다 — 세션 쿠키는 서버에서 읽을 수 있고(`@supabase/ssr`) 그러면 토큰이 브라우저 코드에 실리지 않고 로딩 상태 훅도 필요 없다. **예외는 브라우저에서 저장·제출해야 하는 화면**(신청서 작성·재제출) — 그때만 `shared/api/browser-client.ts`(Supabase 브라우저 세션에서 토큰)를 쓴다. 토큰을 꺼내는 통로만 다르고 봉투·오류는 같다.
 - **리다이렉트를 하지 않는다.** `apiFetch`(익명 전용 `client.ts`)·`authed-client.ts`·`browser-client.ts` 어느 것도 401·403에 이동을 걸지 않는다 — 이 앱에는 밀어낼 로그인 화면이 없고(로그인은 지금 보고 있는 화면 위에서 `SignInButton`으로 시작한다) 서버 컴포넌트에서 `window.location`을 만질 수도 없다. 401·403은 오류로 올려 보내고 화면이 안내로 그린다. 판정은 `shared/api/auth-error.ts`(`isUnauthenticated`·`isSignupRequired`) 한 벌.
-- **미들웨어는 갱신기이고 매처가 좁다** — `["/my-applications", "/events/:eventId/apply", "/f/:formId"]`. `updateSession`에 가드를 주지 않고(`@ssccops/auth`), `PUBLIC_PATHS` 같은 목록 자체가 없다. **매처를 넓히면 `/s/{token}`이 조용히 깨진다** — 크롤러는 정의상 미인증이다.
-- **`/v1/auth/session`은 미가입자에게도 200을 준다.** 가입 안내를 오류(403)로 배우지 않고 세션 조회와 목록 조회를 나란히 보내 세션이 먼저 답하게 한다(`my-applications-page.tsx`).
+- **미들웨어는 갱신기이고 매처가 좁다** — `["/me/:path*", "/events/:eventId/apply", "/f/:formId"]`. `/my-applications`는 redirect 응답이라 매처에 없다(#518). `updateSession`에 가드를 주지 않고(`@ssccops/auth`), `PUBLIC_PATHS` 같은 목록 자체가 없다. **매처를 넓히면 `/s/{token}`이 조용히 깨진다** — 크롤러는 정의상 미인증이다.
+- **`/v1/auth/session`은 미가입자에게도 200을 준다.** 가입 안내를 오류(403)로 배우지 않고 세션 조회와 목록 조회를 나란히 보내 세션이 먼저 답하게 한다(`views/me/ui/me-page.tsx`).
+- **학술은 lms, 요약은 www `/me`**(ssccops#386). 회차·출석·팀원·기획안 작성은 lms의 화면이고 `/me`는 «내가 맡은 활동이 무엇이고 어디까지 왔는가»까지만 그린 뒤 lms로 보낸다(`shared/config/lms-routes.ts` — 남의 앱 주소는 그 파일에서만 조립). 홈(`/`)에는 «내 것» 블록을 얹지 않는다 — 홈이 세션에 묶이면 익명 공개 렌더에 세션 왕복이 붙는다. 로그인한 사람의 진입은 헤더 `AuthNav`(클라이언트에서 세션 판정)의 «내 활동» 하나. 별도 앱도 아니다(세 앱이 이미 셋). 팀원으로 참여한 활동(`mine=member` 없음)·출석 요약은 서버에 없어 그리지 않는다 — 없는 데이터는 블록을 빼고 메타 이슈에 남긴다.
+- **커서 페이징 봉투(`page`)는 인증 목록에만 쓴다** — `apiFetchList`·`apiFetchAuthedList`는 `/me`의 학술 활동 목록을 위해 lms에서 봉투 처리만 옮겨 왔다(#518). 공개(익명) 목록은 여전히 `apiFetch`.
 - **가입은 화면을 옮기지 않는다.** `SignupStep`은 신청 흐름 안에 임베드되고(#154) 등급은 요청에 없다 — 서버가 TEMP로 고정한다. 학번이 이미 명부에 있으면 `MemberLinkStep`이 같은 자리에서 연결을 끝낸다(#364). 회원 생성은 되돌릴 수 없으므로 `pending` 외에 ref로 한 번 더 잠근다.
 - **응답 → 도메인 변환에서 없는 값을 만들어 내지 않는다**(루트 규칙) — `@ssccops/date`·`@ssccops/share-meta`도 같은 선을 긋는다.
 

@@ -164,10 +164,10 @@ export async function FormResponsePage({
             }
           >
             <Link
-              href={isDraft ? ROUTES.publicForm(formRef) : ROUTES.myApplications}
+              href={isDraft ? ROUTES.publicForm(formRef) : ROUTES.me}
               className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
             >
-              {isDraft ? "이어서 작성하기" : "내 신청으로"}
+              {isDraft ? "이어서 작성하기" : "내 활동으로"}
             </Link>
           </Notice>
         </>

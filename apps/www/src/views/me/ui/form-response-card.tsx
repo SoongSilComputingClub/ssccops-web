@@ -37,10 +37,16 @@ import { Badge, Pill } from "@/shared/ui";
 export function FormResponseCard({
   response,
   reviewOpinion,
+  proposal = false,
 }: Readonly<{
   response: MyFormResponseOverview;
   /** 수정요청 사유 — 조회하지 못했거나 해당 없으면 null */
   reviewOpinion: string | null;
+  /**
+   * 기획안(PROPOSAL 시스템 폼) 응답인가 (#518). «낸 폼»에서 기획안은 심사 뒤 학술 활동이 되는
+   * 응답이라 다른 폼과 구별해 보인다 — 칩 하나로, 구역을 나누지는 않는다(상태 축이 같다).
+   */
+  proposal?: boolean;
 }>) {
   const status = RESPONSE_STATUS_BADGE[response.rspnsSttsCd];
   const changesRequested = response.rspnsSttsCd === "CHANGES_REQUESTED";
@@ -53,6 +59,7 @@ export function FormResponseCard({
     >
       <div className="flex flex-wrap items-center gap-[6px]">
         <Badge tone={status.tone}>{status.label}</Badge>
+        {proposal && <Pill tone="outline">기획안</Pill>}
         {response.labels.map((label) => (
           <Pill key={label.formLblId}>{label.lblNm}</Pill>
         ))}

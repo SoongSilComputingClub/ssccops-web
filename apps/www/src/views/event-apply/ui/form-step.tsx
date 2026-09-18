@@ -95,7 +95,7 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
     return (
       <Notice
         title="이미 신청하셨습니다"
-        description="접수된 신청은 '내 신청'에서 진행 상황을 확인할 수 있습니다."
+        description="접수된 신청은 '내 활동'에서 진행 상황을 확인할 수 있습니다."
       >
         <ToMyApplications />
       </Notice>
@@ -265,10 +265,10 @@ function BackToEvent({ eventId }: Readonly<{ eventId: number }>) {
 function ToMyApplications() {
   return (
     <Link
-      href={ROUTES.myApplications}
+      href={ROUTES.me}
       className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
     >
-      내 신청 보기
+      내 활동 보기
     </Link>
   );
 }

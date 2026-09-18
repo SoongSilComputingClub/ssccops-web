@@ -36,7 +36,7 @@ export function AuthNav() {
 
     /*
      * 구독을 함께 거는 것은 로그인·로그아웃이 **다른 탭에서도** 일어나기 때문이다. 한 탭에서
-     * 로그아웃했는데 다른 탭 헤더에 '내 신청'이 남아 있으면 눌러 봐야 로그인 안내만 나온다.
+     * 로그아웃했는데 다른 탭 헤더에 '내 활동'이 남아 있으면 눌러 봐야 로그인 안내만 나온다.
      */
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       if (alive) setSignedIn(session !== null);
@@ -59,11 +59,11 @@ export function AuthNav() {
     setSignedIn(false);
     setSigningOut(false);
     /*
-     * '내 신청'에 서 있었다면 목록으로 비켜 준다 — 그 화면은 서버 컴포넌트라 토큰이 없어진
+     * '내 활동'(`/me`)에 서 있었다면 목록으로 비켜 준다 — 그 화면은 서버 컴포넌트라 토큰이 없어진
      * 지금 새로 그리면 로그인 안내가 될 뿐이다. 다른 화면(목록·상세)은 로그인과 무관하므로
      * 보고 있던 자리를 뺏지 않고, 헤더만 바뀌도록 서버 렌더만 새로 받는다.
      */
-    if (pathname === ROUTES.myApplications) {
+    if (pathname === ROUTES.me) {
       router.replace(ROUTES.events);
     }
     router.refresh();
@@ -84,11 +84,16 @@ export function AuthNav() {
 
   return (
     <div className="flex items-center gap-[4px]">
+      {/*
+        '내 활동'(`/me` · #518) — 로그인한 사람에게만 보인다. 홈은 세션과 무관하게 남기고
+        (ssccops#386 — 홈에 «내 것» 블록을 얹지 않는다) 진입은 이 헤더 한 자리다. 세션 판정이
+        이 컴포넌트 안에서 끝나므로 서버 컴포넌트(홈·목록)에는 아무것도 얹지 않는다.
+      */}
       <Link
-        href={ROUTES.myApplications}
+        href={ROUTES.me}
         className="rounded-lg px-[10px] py-[6px] text-[14.5px] text-n300 hover:text-ink"
       >
-        내 신청
+        내 활동
       </Link>
       <button
         type="button"

@@ -31,10 +31,16 @@ const NEEDS_ACTION = "CHANGES_REQUESTED";
 export function FormResponsesSection({
   responses,
   reviewOpinions,
+  proposalFormId,
 }: Readonly<{
   responses: MyFormResponseOverview[];
   /** formRspnsId → 수정요청 사유. 조회하지 못한 건은 키가 없다 */
   reviewOpinions: Record<number, string>;
+  /**
+   * 기획안 폼의 formId (#518). 목록 항목에는 시스템 폼 여부가 없어 서버 컴포넌트가
+   * `GET /v1/forms/system/PROPOSAL`로 얻어 넘긴다 — 모르면 null이고 칩을 달지 않는다.
+   */
+  proposalFormId: number | null;
 }>) {
   const [labelId, setLabelId] = useState<number | null>(null);
 
@@ -109,6 +115,7 @@ export function FormResponsesSection({
               key={response.formRspnsId}
               response={response}
               reviewOpinion={reviewOpinions[response.formRspnsId] ?? null}
+              proposal={proposalFormId !== null && response.formId === proposalFormId}
             />
           ))}
         </div>
