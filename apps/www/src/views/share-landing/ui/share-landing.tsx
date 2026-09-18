@@ -44,7 +44,7 @@ export function ShareLanding({ title, href }: Readonly<{ title: string; href: st
         </>
       ) : (
         <div className="text-[13.5px] text-n500">
-          이동할 주소가 설정되지 않았습니다 — 운영진에게 문의해 주세요
+          이동할 주소가 설정되지 않았습니다 — 운영진에게 문의해주세요
         </div>
       )}
     </div>

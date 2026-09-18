@@ -42,7 +42,7 @@ export async function PublicFormPage({ formId }: Readonly<{ formId: number }>) {
   if (!Number.isInteger(formId) || formId <= 0) {
     return (
       <PublicFormShell>
-        <EmptyState title="잘못된 주소입니다 — 링크를 다시 확인해 주세요" />
+        <EmptyState title="잘못된 주소입니다 — 링크를 다시 확인해주세요" />
       </PublicFormShell>
     );
   }
@@ -89,7 +89,7 @@ async function SignedInBody({ formId }: Readonly<{ formId: number }>) {
         </Notice>
       );
     }
-    return <EmptyState title="폼을 여는 데 실패했습니다 — 잠시 후 다시 시도해 주세요" />;
+    return <EmptyState title="폼을 여는 데 실패했습니다 — 잠시 후 다시 시도해주세요" />;
   }
 
   return (

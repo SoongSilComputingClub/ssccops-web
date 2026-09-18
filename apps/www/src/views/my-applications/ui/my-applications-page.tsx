@@ -155,7 +155,7 @@ async function FormResponses({ responses }: Readonly<{ responses: MyFormResponse
     return (
       <section className="flex flex-col gap-[10px]">
         <SectionHeading title="낸 폼" />
-        <EmptyState title="폼 응답을 불러오지 못했습니다 — 잠시 후 다시 시도해 주세요" />
+        <EmptyState title="폼 응답을 불러오지 못했습니다 — 잠시 후 다시 시도해주세요" />
       </section>
     );
   }

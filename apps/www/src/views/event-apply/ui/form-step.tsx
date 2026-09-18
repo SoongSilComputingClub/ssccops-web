@@ -61,7 +61,7 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
     return (
       <Notice
         title="신청서를 찾을 수 없습니다"
-        description="행사에 연결된 신청서가 사라졌거나 아직 준비되지 않았습니다 — 운영진에게 문의해 주세요."
+        description="행사에 연결된 신청서가 사라졌거나 아직 준비되지 않았습니다 — 운영진에게 문의해주세요."
       >
         <BackToEvent eventId={eventId} />
       </Notice>
@@ -76,7 +76,7 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
     return (
       <Notice
         title={NOT_ACCEPTING_MESSAGE}
-        description="접수 기간이 아니거나 모집이 마감되었습니다. 행사 안내에서 일정을 확인해 주세요."
+        description="접수 기간이 아니거나 모집이 마감되었습니다. 행사 안내에서 일정을 확인해주세요."
       >
         <BackToEvent eventId={eventId} />
       </Notice>
@@ -128,7 +128,7 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
     return (
       <Notice
         title="신청서에 문항이 준비되지 않았습니다"
-        description="운영진에게 문의해 주세요."
+        description="운영진에게 문의해주세요."
       >
         <BackToEvent eventId={eventId} />
       </Notice>

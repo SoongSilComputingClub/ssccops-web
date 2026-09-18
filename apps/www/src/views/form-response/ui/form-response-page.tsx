@@ -59,7 +59,7 @@ export async function FormResponsePage({
   ) {
     return (
       <FormResponseShell>
-        <EmptyState title="잘못된 주소입니다 — 링크를 다시 확인해 주세요" />
+        <EmptyState title="잘못된 주소입니다 — 링크를 다시 확인해주세요" />
       </FormResponseShell>
     );
   }
@@ -126,7 +126,7 @@ export async function FormResponsePage({
         </h1>
         {canResubmit && (
           <p className="text-[13.5px] leading-[1.7] text-n500">
-            아래 사유를 확인하고 답을 고쳐 다시 제출해 주세요. 이전에 낸 답이 그대로 채워져
+            아래 사유를 확인하고 답을 고쳐 다시 제출해주세요. 이전에 낸 답이 그대로 채워져
             있습니다.
           </p>
         )}

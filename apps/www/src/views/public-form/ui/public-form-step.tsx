@@ -69,7 +69,7 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
     return (
       <Notice
         title="존재하지 않는 폼입니다"
-        description="주소가 잘못되었거나 폼이 삭제되었습니다 — 링크를 받은 곳에서 다시 확인해 주세요."
+        description="주소가 잘못되었거나 폼이 삭제되었습니다 — 링크를 받은 곳에서 다시 확인해주세요."
       />
     );
   }
@@ -82,7 +82,7 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
     return (
       <Notice
         title={NOT_ACCEPTING_MESSAGE}
-        description="접수 기간이 아니거나 아직 공개되지 않은 폼입니다. 접수 일정은 안내받은 채널에서 확인해 주세요."
+        description="접수 기간이 아니거나 아직 공개되지 않은 폼입니다. 접수 일정은 안내받은 채널에서 확인해주세요."
       />
     );
   }
@@ -152,7 +152,7 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
     return (
       <Notice
         title="아직 문항이 준비되지 않았습니다"
-        description="운영진에게 문의해 주세요."
+        description="운영진에게 문의해주세요."
       />
     );
   }
