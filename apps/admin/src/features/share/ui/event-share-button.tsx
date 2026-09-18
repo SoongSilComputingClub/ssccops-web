@@ -52,7 +52,7 @@ function noticeOf(
 
   if (eventSttsCd === "PUBLISHED") {
     if (!publicUrl) {
-      return "공개 링크 주소가 설정되지 않았습니다 — 운영진에게 문의해 주세요";
+      return "공개 링크 주소가 설정되지 않았습니다 — 운영진에게 문의해주세요";
     }
     return hasLink
       ? "게시된 행사라 누구나 여는 공개 주소를 건넵니다 — 게시 전에 만든 링크도 아직 살아 있습니다"

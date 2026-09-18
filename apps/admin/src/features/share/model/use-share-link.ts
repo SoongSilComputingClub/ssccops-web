@@ -88,7 +88,7 @@ function messageOf(error: unknown, targetType: ShareTargetType): string {
    * 대신 안내로 떨어지는 것과 같은 판단이다.
    */
   if (error instanceof ShareOriginMissingError) {
-    return "공개 링크 주소가 설정되지 않았습니다 — 운영진에게 문의해 주세요";
+    return "공개 링크 주소가 설정되지 않았습니다 — 운영진에게 문의해주세요";
   }
   if (error instanceof ApiError) {
     const rule = shareTargetRule(targetType);
@@ -114,10 +114,10 @@ function messageOf(error: unknown, targetType: ShareTargetType): string {
       case "EVENT_SHARE_NOT_DRAFT":
         return "게시 전 행사만 공유 링크를 만들 수 있습니다 — 이미 게시됐다면 공개 주소를 그대로 쓰면 됩니다. 화면을 새로 고쳐 주세요";
       default:
-        return "공유 링크를 처리하지 못했습니다 — 잠시 후 다시 시도해 주세요";
+        return "공유 링크를 처리하지 못했습니다 — 잠시 후 다시 시도해주세요";
     }
   }
-  return "공유 링크를 처리하지 못했습니다 — 잠시 후 다시 시도해 주세요";
+  return "공유 링크를 처리하지 못했습니다 — 잠시 후 다시 시도해주세요";
 }
 
 /*

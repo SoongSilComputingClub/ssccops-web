@@ -111,7 +111,7 @@ async function SignedInBody({
     session = await fetchAuthSession();
   } catch (error) {
     if (isUnauthenticated(error)) return <SessionExpiredNotice eventId={event.eventId} />;
-    return <EmptyState title="신청을 시작하지 못했습니다 — 잠시 후 다시 시도해 주세요" />;
+    return <EmptyState title="신청을 시작하지 못했습니다 — 잠시 후 다시 시도해주세요" />;
   }
 
   return (
@@ -179,7 +179,7 @@ function ClosedNotice({ event }: Readonly<{ event: PublicEventDetail }>) {
   return (
     <Notice
       title={`지금은 신청을 받지 않습니다 — ${receipt?.label ?? "모집 준비 중"}`}
-      description="모집이 열리면 이 화면에서 바로 신청할 수 있습니다. 행사 안내에서 일정을 확인해 주세요."
+      description="모집이 열리면 이 화면에서 바로 신청할 수 있습니다. 행사 안내에서 일정을 확인해주세요."
     >
       <BackToEvent eventId={event.eventId} />
     </Notice>

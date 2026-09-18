@@ -432,7 +432,7 @@ export function useApplyForm(formId: number): ApplyFormController {
     if (Object.keys(issues).length > 0) {
       if (aliveRef.current) {
         setErrors(issues);
-        setSubmitMessage("입력을 확인해 주세요");
+        setSubmitMessage("입력을 확인해주세요");
       }
       return "invalid";
     }

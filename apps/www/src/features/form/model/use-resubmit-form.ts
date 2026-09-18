@@ -68,18 +68,18 @@ function resubmitErrorMessage(error: unknown): string {
 
   switch (code) {
     case FORM_ERROR.RESPONSE_ALREADY_REJECTED:
-      return "반려된 응답은 다시 낼 수 없습니다 — 새로 작성해 주세요";
+      return "반려된 응답은 다시 낼 수 없습니다 — 새로 작성해주세요";
     case FORM_ERROR.RESPONSE_CONTENT_TOO_LARGE:
       return "답이 너무 깁니다 — 내용을 줄여 주세요";
     case FORM_ERROR.UNKNOWN_QUESTION_ITEM:
     case FORM_ERROR.INVALID_ANSWER_VALUE:
-      return "폼의 문항이 바뀌었습니다 — 새로고침한 뒤 다시 시도해 주세요";
+      return "폼의 문항이 바뀌었습니다 — 새로고침한 뒤 다시 시도해주세요";
     case FORM_ERROR.REQUIRED_ANSWER_MISSING:
     case FORM_ERROR.ANSWER_PATTERN_MISMATCH:
     case FORM_ERROR.ANSWER_SELECTION_LIMIT_EXCEEDED:
-      return "입력을 확인해 주세요";
+      return "입력을 확인해주세요";
     default:
-      return "제출하지 못했습니다 — 잠시 후 다시 시도해 주세요";
+      return "제출하지 못했습니다 — 잠시 후 다시 시도해주세요";
   }
 }
 
@@ -128,7 +128,7 @@ export function useResubmitForm(
     if (Object.keys(issues).length > 0) {
       if (aliveRef.current) {
         setErrors(issues);
-        setSubmitMessage("입력을 확인해 주세요");
+        setSubmitMessage("입력을 확인해주세요");
       }
       return "invalid";
     }

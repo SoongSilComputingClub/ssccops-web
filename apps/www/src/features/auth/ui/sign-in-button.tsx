@@ -77,7 +77,7 @@ export function SignInButton({
       </button>
       {failed && (
         <p className="text-[12.5px] text-amber">
-          로그인을 시작하지 못했습니다 — 잠시 후 다시 시도해 주세요
+          로그인을 시작하지 못했습니다 — 잠시 후 다시 시도해주세요
         </p>
       )}
     </div>

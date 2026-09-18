@@ -72,29 +72,29 @@ export function validateSignup(
   const errors: SignupFieldErrors = {};
   const academic = requiresAcademicInfo(statusCode);
 
-  if (!values.name.trim()) errors.name = "이름을 입력해 주세요";
+  if (!values.name.trim()) errors.name = "이름을 입력해주세요";
 
   const phoneNumber = values.phoneNumber.trim();
   if (!phoneNumber) {
-    errors.phoneNumber = "전화번호를 입력해 주세요";
+    errors.phoneNumber = "전화번호를 입력해주세요";
   } else if (!PHONE_NUMBER_PATTERN.test(phoneNumber)) {
-    errors.phoneNumber = "전화번호는 010-1234-5678 형식으로 입력해 주세요";
+    errors.phoneNumber = "전화번호는 010-1234-5678 형식으로 입력해주세요";
   }
 
   const studentNumber = values.studentNumber.trim();
   if (!studentNumber) {
-    if (academic) errors.studentNumber = "학번을 입력해 주세요";
+    if (academic) errors.studentNumber = "학번을 입력해주세요";
   } else if (!STUDENT_NUMBER_PATTERN.test(studentNumber)) {
     errors.studentNumber = "학번은 숫자 8자리입니다";
   }
 
   if (academic && !values.departmentName.trim()) {
-    errors.departmentName = "학과를 입력해 주세요";
+    errors.departmentName = "학과를 입력해주세요";
   }
 
   const academicYear = values.academicYear.trim();
   if (!academicYear) {
-    if (academic) errors.academicYear = "학년을 입력해 주세요";
+    if (academic) errors.academicYear = "학년을 입력해주세요";
   } else if (
     !DIGITS_ONLY.test(academicYear) ||
     Number(academicYear) < 1 ||
@@ -154,7 +154,7 @@ export type SignupFailure =
 
 export function toSignupFailure(error: unknown): SignupFailure {
   if (!(error instanceof ApiError)) {
-    return { kind: "form", message: "가입하지 못했습니다 — 잠시 후 다시 시도해 주세요" };
+    return { kind: "form", message: "가입하지 못했습니다 — 잠시 후 다시 시도해주세요" };
   }
 
   switch (error.code) {
@@ -175,7 +175,7 @@ export function toSignupFailure(error: unknown): SignupFailure {
       return { kind: "student-number-duplicated" };
 
     case SIGNUP_ERROR.INVALID_CODE_VALUE:
-      return { kind: "status", message: "재학·졸업을 다시 선택해 주세요" };
+      return { kind: "status", message: "재학·졸업을 다시 선택해주세요" };
 
     // 서버는 어느 칸이 문제인지 내려주지 않는다 — 서버 문구를 그대로 한 줄로 보여 준다
     case SIGNUP_ERROR.VALIDATION_FAILED:
@@ -184,16 +184,16 @@ export function toSignupFailure(error: unknown): SignupFailure {
     case API_ERROR.CONFIG_MISSING:
       return {
         kind: "form",
-        message: "서비스 설정이 끝나지 않아 가입할 수 없습니다 — 잠시 후 다시 시도해 주세요",
+        message: "서비스 설정이 끝나지 않아 가입할 수 없습니다 — 잠시 후 다시 시도해주세요",
       };
 
     case API_ERROR.NETWORK_ERROR:
       return {
         kind: "form",
-        message: "서버에 연결하지 못했습니다 — 네트워크 상태를 확인한 뒤 다시 시도해 주세요",
+        message: "서버에 연결하지 못했습니다 — 네트워크 상태를 확인한 뒤 다시 시도해주세요",
       };
 
     default:
-      return { kind: "form", message: "가입하지 못했습니다 — 잠시 후 다시 시도해 주세요" };
+      return { kind: "form", message: "가입하지 못했습니다 — 잠시 후 다시 시도해주세요" };
   }
 }

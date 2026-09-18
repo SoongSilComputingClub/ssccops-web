@@ -43,7 +43,7 @@ export type SessionGuard = {
  * 세션 쿠키를 리프레시한다. `guard`를 주면 미인증 요청을 로그인 화면으로 돌려보낸다.
  *
  * 갱신이 없으면 access token이 만료된 뒤 첫 조회가 그대로 401이 되어, 로그인은 살아 있는데
- * 화면만 "다시 로그인해 주세요"가 되는 상태가 한 시간마다 반복된다.
+ * 화면만 "다시 로그인해주세요"가 되는 상태가 한 시간마다 반복된다.
  */
 export async function updateSession(request: NextRequest, guard?: SessionGuard) {
   const { pathname, search } = request.nextUrl;

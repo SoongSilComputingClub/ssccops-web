@@ -98,7 +98,7 @@ export function useResponseCsvExport(input: ResponseCsvExportInput): ResponseCsv
         if (failures > 0) {
           setStatus("error");
           setErrorMessage(
-            `${failures}건의 응답 내용을 불러오지 못해 내보내지 않았습니다. 다시 시도해 주세요.`,
+            `${failures}건의 응답 내용을 불러오지 못해 내보내지 않았습니다. 다시 시도해주세요.`,
           );
           return;
         }
