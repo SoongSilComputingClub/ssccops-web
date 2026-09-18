@@ -7,7 +7,8 @@
  *
  * 커서 페이징 봉투(`page`)는 공개 목록 계약에 없어 오래 다루지 않았다 — `/me`가 학술 활동
  * 목록(`GET /v1/academic-programs?mine=leader` · 커서 페이징)을 그리게 되면서(#518) lms의
- * `apiFetchList`를 봉투 처리만 옮겨 왔다. 공개(익명) 목록은 여전히 `apiFetch`만 쓴다.
+ * `apiFetchList`를 봉투 처리만 옮겨 왔다. 공개(익명) 목록 중에는 포스트 목록(#520)만 커서
+ * 계약이라 이것을 쓰고, 행사 목록은 여전히 `apiFetch`다.
  *
  * 공유 패키지로 뽑는 것은 후속 이슈다 — 두 앱이 실제로 같은 것을 필요로 하는지 확인한 뒤에 한다.
  */
@@ -171,7 +172,8 @@ export async function apiFetchNullable<T>(path: string, init?: RequestInit): Pro
  *
  * `apiFetch`로 목록을 받으면 `page`가 버려져 다음 페이지가 있는지조차 알 수 없다. `data`가
  * null이면 빈 배열로 떨어뜨린다 — 목록이 비었다는 것과 응답이 없다는 것을 화면이 다르게 다룰
- * 이유가 없다. 이 앱에서 이것을 쓰는 곳은 인증 목록(`authed-client.ts`)뿐이다.
+ * 이유가 없다. 인증 목록(`authed-client.ts`)과 공개 포스트 목록(`entities/content` · #520 —
+ * 익명 목록으로는 첫 커서 계약)이 쓴다.
  */
 export async function apiFetchList<T>(
   path: string,

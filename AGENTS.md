@@ -24,7 +24,7 @@ Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아�
 | 영역 | 한 줄 | 정본 |
 |---|---|---|
 | `apps/admin` | 운영진 어드민 — 회원·업무·회의·승인함·폼·행사·학술·공유 링크·OAuth 동의. **유일하게 401·403 리다이렉트를 끝내고 `SessionGuard`를 주는 앱** | [apps/admin/AGENTS.md](apps/admin/AGENTS.md) |
-| `apps/www` | 공개 웹사이트 — 행사(익명)·신청(가입 임베드)·내 활동 `/me`·공개 폼 `/f`·공유 착지 `/s`. 전 화면 SSR, 리다이렉트 없음 | [apps/www/AGENTS.md](apps/www/AGENTS.md) |
+| `apps/www` | 공개 웹사이트 — 행사·콘텐츠 다섯 축(익명 · ADR-0038)·신청(가입 임베드)·내 활동 `/me`·공개 폼 `/f`·공유 착지 `/s`. 전 화면 SSR, 리다이렉트 없음 | [apps/www/AGENTS.md](apps/www/AGENTS.md) |
 | `apps/lms` | 학술 공개 앱 — 스터디장 스튜디오·기획안·내 신청. 로그인 필수, 역할별 상단 바, 공유 링크 발급(착지는 www) | [apps/lms/AGENTS.md](apps/lms/AGENTS.md) |
 | `packages/ui` | 세 앱 공용 표시 요소·테마·배포 표식(`deployMarks`)·`BrandMark` — 둘 이상이 실제로 쓰던 것만 | [packages/ui/AGENTS.md](packages/ui/AGENTS.md) |
 | `packages/auth` | Supabase 클라이언트·세션 갱신(`updateSession` + 앱이 주입하는 `SessionGuard`)·`?next=` 검증·OAuth 목적지 쿠키 | [packages/auth/AGENTS.md](packages/auth/AGENTS.md) |

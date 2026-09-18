@@ -72,3 +72,53 @@ body {
   background: #d1d6db;
   border-radius: 12px;
 }
+
+/*
+ * 연혁 타임라인 (#520 · ssccops#382). 연혁 페이지 본문은 마크다운 `## 연도` + 목록이고, 이
+ * CSS가 그 **구조만 보고** 타임라인처럼 그린다 — 본문에 특별한 문법이 없다(ADR-0038 «정형
+ * 블록의 모양»을 포기한 자리의 유일한 장식).
+ *
+ * 렌더러(`@ssccops/ui` Markdown)가 `##`을 `<h3>`으로 내린다(화면 제목이 `<h1>`이라 본문은
+ * `<h2>`부터). 그래서 셀렉터가 `h3 + ul`이다 — 렌더러의 헤딩 단계를 바꾸면 여기도 따라간다.
+ * 유틸리티 레이어 밖의 규칙이라 렌더러가 붙인 `list-disc`·`pl-[20px]`를 이긴다.
+ */
+.content-timeline h3 {
+  position: relative;
+  margin-left: 30px;
+  color: var(--color-accent-strong);
+}
+
+.content-timeline h3::before {
+  content: "";
+  position: absolute;
+  left: -30px;
+  top: 0.45em;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.content-timeline h3 + ul {
+  list-style: none;
+  margin: 4px 0 18px 5px;
+  padding: 6px 0 6px 25px;
+  border-left: 2px solid var(--color-line-strong);
+}
+
+.content-timeline h3 + ul > li {
+  position: relative;
+  padding: 3px 0;
+}
+
+.content-timeline h3 + ul > li::before {
+  content: "";
+  position: absolute;
+  left: -30px;
+  top: 0.85em;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-line-strong);
+}
