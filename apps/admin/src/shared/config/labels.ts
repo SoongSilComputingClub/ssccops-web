@@ -185,4 +185,28 @@ export const FIELD_LABEL = {
   participantLimit: "정원",
   /** form_id 가 가리키는 전속 연결 폼 (연결_폼) */
   linkedForm: "연결 폼",
+
+  /* ── 콘텐츠 (cntnt_page · cntnt_post) · #521 ─────────────── */
+  /** slug — 공개 주소의 마지막 조각. 사람 말로 옮길 이름이 없어 그대로 쓴다 */
+  contentSlug: "주소(slug)",
+  /** ttl (제목) */
+  contentTitle: "제목",
+  /** mtxt (본문) */
+  contentBody: "본문",
+  /** pub_stts_cd (게시_상태) */
+  contentPublishStatus: "게시 상태",
+  /** cntnt_clsf_cd (콘텐츠_분류) */
+  contentCategory: "분류",
+  /** actv_ymd (활동_일자) */
+  contentActivityDate: "활동일",
+  /** smry (요약) */
+  contentSummary: "요약",
+  /** event_id 가 가리키는 연결 행사 */
+  contentLinkedEvent: "연결 행사",
+  /** cover_file_id 가 가리키는 갤러리 이미지 */
+  contentCover: "표지",
+  /** pub_dt (게시_일시) */
+  contentPublishedAt: "게시 일시",
+  /** mdfcn_dt (수정_일시) */
+  contentModifiedAt: "수정 일시",
 } as const;

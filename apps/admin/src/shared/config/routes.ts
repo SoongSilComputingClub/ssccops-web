@@ -191,7 +191,32 @@ export const ROUTES = {
    * 그룹이 된다.
    */
   ragSettings: "/ragsettings",
+
+  /*
+   * 콘텐츠 (#521 · ssccops#383 · ADR-0038) — 홍보국이 공개 사이트의 페이지·포스트를 쓴다.
+   *
+   * 목록 하나에 페이지·포스트 **탭**이다(폼·행사처럼 목차에 두 줄을 두지 않는다) — 두 자원의
+   * 어드민 API가 같은 권한(CONTENT_MANAGE) 하나로 잠기고, 홍보국이 «오늘 쓸 것»을 고르는 자리가
+   * 한 곳이어야 해서다. 상세 화면이 따로 없다 — 목록에서 제목을 누르면 곧장 편집이고 게시·
+   * 게시 취소·이력도 그 화면에 있다(행사와 같은 판단).
+   *
+   * 공개 주소(`/pages/{slug}`·`/posts/{slug}`)는 www의 화면이라 여기 두지 않는다(publicFormUrl
+   * 주석과 같은 이유).
+   */
+  content: "/content",
+  contentPageNew: "/content/pages/new",
+  contentPageEdit: (pageId: number) => `/content/pages/${pageId}/edit`,
+  contentPostNew: "/content/posts/new",
+  contentPostEdit: (postId: number) => `/content/posts/${postId}/edit`,
 } as const;
+
+/** 콘텐츠 목록의 탭 파라미터 — 주소와 읽는 쪽이 이 상수 하나를 함께 본다(RAG_APPLY_QUERY와 같은 판단) */
+export const CONTENT_TAB_QUERY = "tab";
+
+/** 콘텐츠 목록 주소 — 탭을 골라 연다. 값이 없으면 페이지 탭이다 */
+export function contentListUrl(tab?: "pages" | "posts"): string {
+  return tab ? `${ROUTES.content}?${CONTENT_TAB_QUERY}=${tab}` : ROUTES.content;
+}
 
 /**
  * RAG 설정의 적용 상태 필터 파라미터 (#463) — **주소와 읽는 쪽이 이 상수 하나를 함께 본다.**

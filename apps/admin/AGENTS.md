@@ -12,7 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 **이 파일이 admin 규칙의 정본이고 루트 `AGENTS.md`는 링크만 든다**(ssccops#349). 세 앱 공통(검증·FSD·봉투·데이터 표기·문구·배포·PR)은 루트에 있다.
 
-운영진이 쓰는 앱이다 — 회원·업무·하위 업무·회의·승인함·폼·행사·학술·공유 링크·OAuth 동의. 로그인 없이 열리는 화면은 공유 링크 착지 `/s/{token}` 하나뿐이고, 나머지는 전부 회원이어야 한다. 부원에게 나가는 링크가 이 도메인을 가리키면 안 된다 — 공개 폼 `/f/{formId}`(ssccops#214)와 가입 안내(www #451 · lms #453)가 그 이유로 빠져나갔다.
+운영진이 쓰는 앱이다 — 회원·업무·하위 업무·회의·승인함·폼·행사·학술·콘텐츠·공유 링크·OAuth 동의. 로그인 없이 열리는 화면은 공유 링크 착지 `/s/{token}` 하나뿐이고, 나머지는 전부 회원이어야 한다. 부원에게 나가는 링크가 이 도메인을 가리키면 안 된다 — 공개 폼 `/f/{formId}`(ssccops#214)와 가입 안내(www #451 · lms #453)가 그 이유로 빠져나갔다.
 
 ## 라우트 그룹
 
@@ -57,6 +57,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - `--color-*: initial`로 **Tailwind 기본 팔레트를 지웠다.** `bg-red-50` 같은 이름은 클래스가 아예 생성되지 않아 색이 조용히 빠진다(달력의 승인 대기 막대가 실제로 그랬다).
   - `fill`·`hairline`·`scrim`은 값에 알파가 들어 있어 `bg-fill/50` 같은 알파 수정자는 쓸 수 없다.
   - 테마 선택은 `localStorage`이고 첫 페인트 전에 `layout.tsx`의 동기 스크립트(`THEME_INIT_SCRIPT`, `@ssccops/ui`)가 `<html data-theme>`에 박는다. **그 스크립트를 걷어내면 밝은 화면이 한 번 번쩍인다.**
+- **콘텐츠(페이지·포스트 · #521 · ssccops#383 · ADR-0038)는 행사 화면의 부품을 그대로 쓴다.** 본문 Markdown 편집기(편집/미리보기·이미지 첨부·글자 수)는 행사 폼에서 `shared/ui/markdown-editor.tsx`(`MarkdownEditor`·`ImagePickButton`·`insertImageMarkdown`)로 올려 행사·페이지·포스트 셋이 한 벌을 쓴다 — features 슬라이스끼리는 참조할 수 없고, 사본을 두면 «미리보기는 맞는데 실제가 다른» 상태가 두 곳에서 따로 생긴다. 이미지 업로드 흐름(확장자·크기로 발급 → 발급 응답의 `contentType`으로 R2 PUT)·저장 훅 골격(`inFlightRef`·문구 반환)·단건 조회 상태(`not-found` 분리)도 행사와 같은 모양이다. 서버 계약은 서버 PR #480 «API 계약 › 어드민»이 정본이고 `entities/content/api`가 응답 모양을 아는 유일한 곳이다.
+  - **PATCH가 통째 교체다**(서버 F2). 페이지·포스트 저장 본문(`ContentPage/PostSaveRequest`)은 필드가 전부 필수이거나 생략 = 비움이라 부분 본문을 보낼 길이 없다 — 위 «서버의 PATCH는 대개 전체 교체다» 그대로이고, 폼은 현재 값을 전부 채워 보낸다. MCP `update_page/update_post`의 읽고-합치기는 서버 안의 일이다.
+  - **표지(`coverFileId`)는 갤러리 안의 `fileId`만 된다.** 다른 값은 400 `COVER_NOT_IN_GALLERY`라 표지 입력란(주소)을 두지 않고 갤러리 카드의 «표지로»만으로 고른다. 고른 값은 저장 본문에 실려 PATCH로 가고(고른 즉시 서버에 가지 않는다), 갤러리에서 그 장을 지우면 서버가 표지도 비우므로 폼도 같은 규칙으로 비운다.
+  - **갤러리 발급 = 갤러리에 한 장.** `POST …/images` 응답의 `fileId`가 곧 `file_rfrnc` 행이라 업로드 완료 확인 API가 없다(서버가 기각). PUT이 실패하면 훅이 그 `fileId`를 곧바로 DELETE로 치운다 — 안 그러면 바이트 없는 장이 공개 화면에 깨진 그림으로 남는다. 갤러리·표지는 **폼 안의 상태**로 부분 갱신한다(올리기·지우기마다 상세를 다시 부르면 쓰던 본문이 사라진다). 순서 바꾸기는 없다(정렬 컬럼 없음).
+  - **올리기 전에 브라우저가 줄인다**(`shared/lib/resize-image.ts` — 긴 변 1600px·webp 0.85, canvas만). GIF·디코딩 실패·webp 인코딩 실패·원본보다 커지는 경우는 원본 그대로. 발급 요청의 확장자·크기는 **줄인 뒤의 값**이다 — 원본 크기를 보내면 서명과 바이트가 어긋난다.
+  - **게시·게시 취소 뒤 공개 화면은 최대 5분 늦다.** 공개 API가 `Cache-Control: public, s-maxage=300, stale-while-revalidate=600`이라(ADR-0038) 게시 카드에 «공개 화면에는 최대 5분 뒤 반영됩니다» 한 줄을 고정으로 둔다 — 없으면 «게시가 안 됐다» 문의가 온다. 같은 상태로의 재전이는 409(`CONTENT_ALREADY_PUBLISHED`·`CONTENT_NOT_PUBLISHED`)라 화면이 낡은 것이고 다시 부른다.
+  - 어드민 API는 목록까지 전부 `CONTENT_MANAGE`라 메뉴를 감춘다(행사·RAG와 같다). 시드는 회장·부회장뿐이고 홍보국은 배포 뒤 역할별 권한 화면에서 켠다. 행사 수정 화면의 «포스트 만들기»는 그 화면을 여는 권한(`EVENT_MANAGE`)과 달라 잠근 채 사유를 붙인다. 포스트의 행사 연결 후보는 `GET /v1/events` 전체(페이징 없음)를 제목으로 걸러 고른다 — 전용 검색 API도 «행사 고르기» 컴포넌트도 없어 새로 만들지 않았고, 조회 권한이 `EVENT_MANAGE`라 홍보국원이 그 권한이 없으면 후보가 비고 문구가 그것을 말한다.
 - **반응형은 `lg`(1024px) 한 경계로만 가른다**(#85). 예전 `body { min-width: 1024px }` 값을 그대로 브레이크포인트로 삼았으므로 **`lg` 이상은 정의상 예전과 같은 화면**이다. 기본값을 모바일로, `lg:`를 데스크톱으로 쓰고, 기존 클래스를 지우는 대신 `lg:`를 덧붙인다.
   - 셸은 `lg` 미만에서 사이드바 대신 드로어를 쓴다(`_shell/mobile-nav.tsx`). 메뉴 목차·권한 판정은 `_shell/use-shell-nav.ts`, 마크업은 `_shell/nav-panel.tsx` **한 벌뿐이다** — 사이드바에만 메뉴를 더하면 드로어에서 빠진다. 브랜드 마크는 `@ssccops/ui`의 `BrandMark`(#449).
   - `GridTable`은 `lg` 미만에서 카드로 바뀐다. 열이 많으면 `mobileHide`, 제목 줄을 바꾸려면 `mobilePrimary`.
@@ -69,4 +76,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **`shared/config/codes.ts`는 서버 표준코드와 함께 움직인다.** 공유 코드값은 `@ssccops/codes`를 재export 하고 admin 전용 70여 개는 여기 있다. 서버가 코드를 추가하면 여기도 더해야 하고, 표시명은 서버 시드와 글자까지 계약이다.
 - **supabase-js `auth.oauth`의 `getAuthorizationDetails` 응답은 두 모양이다**(#430) — 동의가 필요하면 `authorization_id`·`client`·`redirect_uri`·`scope`, **이미 동의한 적이 있으면 `redirect_url` 하나뿐**이라 화면을 그리지 않고 그 주소로 보내야 한다. `in`으로 가르지 않고 `data.client.name`을 바로 읽으면 두 번째 연결부터 죽는다. 4xx는 전부 «요청이 유효하지 않습니다»(«다시 시도» 버튼을 두지 않는다), 401·`AuthSessionMissingError`만 로그인으로.
 - **행사 참가자 명단의 회원 값은 `member`에 중첩이다**(#421). 서버 `EventParticipantResponse`는 `ResponseMemberSummary`를 `member`로 싣고 `rgtrMbrId`는 싣지 않는다. 변환기(`entities/event/api/event-participants.ts`)가 평면으로 읽으면 이름·학번이 전부 비어 보인다 — 값이 비면 서버 DTO에서 계약을 다시 확인한다. `entities/response`의 같은 모양 타입은 가져오지 않는다(entities 슬라이스끼리 참조 금지).
+- **콘텐츠 이력은 스냅샷이고 되돌리기가 없다**(#521). `GET …/history`는 생성·수정·게시·게시 취소마다 본문 전체를 한 줄로 싣고(최신 먼저) «무엇이 바뀌었나»는 없다 — 화면은 누가·언제·제목·상태만 펼치고 본문은 «본문 보기»로 그 스냅샷만 연다. 이력은 편집 화면의 첫 조회에 얹지 않고 «이력» 탭을 열 때 부른다. 포스트 이력에는 갤러리·표지·행사 연결이 없다.
+- **행사에서 포스트 만들기(from-event)는 같은 행사로 여러 번 누르면 초안이 여러 건 생긴다.** 서버가 막지 않고 slug만 `event-{id}-2`…로 피한다. 화면은 만든 즉시 편집 화면으로 이동해 반복을 끊을 뿐이다.
 - **어드민 화면 왼쪽 메뉴 맨 아래에 버전이 보인다.** 값은 `next.config.ts`가 `package.json`에서 주입하므로 따로 넣을 것이 없다 — `.env`로 받지 않는 이유는 배포 설정에 넣는 것을 잊으면 조용히 비기 때문이다.
