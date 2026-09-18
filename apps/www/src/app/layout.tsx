@@ -5,6 +5,7 @@ import { AuthNav } from "@/features/auth";
 import { ROUTES } from "@/shared/config/routes";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
+import { SiteFooter } from "./_shell/site-footer";
 import "./globals.css";
 
 /*
@@ -78,14 +79,14 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
       </head>
-      <body className="antialiased">
-        {/*
-         * 상단 바는 로고(왼쪽)와 메뉴·로그인 상태(오른쪽) 두 덩어리다 (#167). 메뉴 목차는
-         * `_shell/nav-links.ts` 한 벌을 데스크톱 메뉴와 모바일 드로어가 함께 쓴다 — 소개·활동
-         * 같은 항목이 붙을 때 그 파일 한 줄만 늘리면 된다. 로그인 여부에 따라 갈리는 부분만
-         * 클라이언트 컴포넌트(AuthNav)로 두어, 익명 공개인 목록·상세 렌더에 세션 조회가
-         * 끼어들지 않게 한다(#150).
-         */}
+      {/*
+       * 푸터가 짧은 화면에서도 바닥에 붙도록 body를 세로 flex로 두고 main이 남는 높이를 차지한다
+       * (#520). 상단 바는 로고(왼쪽)와 메뉴·로그인 상태(오른쪽) 두 덩어리다 (#167). 메뉴 목차는
+       * `_shell/nav-links.ts` 한 벌(다섯 축)을 데스크톱 메뉴와 모바일 드로어가 함께 쓴다.
+       * 로그인 여부에 따라 갈리는 부분만 클라이언트 컴포넌트(AuthNav)로 두어, 익명 공개인
+       * 목록·상세 렌더에 세션 조회가 끼어들지 않게 한다(#150).
+       */}
+      <body className="flex min-h-screen flex-col antialiased">
         <header className="border-b border-line bg-surface">
           <div className="mx-auto flex max-w-[1000px] items-center justify-between gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
             <Link href={ROUTES.events} className="flex items-center gap-[8px]">
@@ -99,9 +100,10 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
             </div>
           </div>
         </header>
-        <main className="mx-auto max-w-[1000px] px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">
+        <main className="mx-auto w-full max-w-[1000px] flex-1 px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">
           {children}
         </main>
+        <SiteFooter />
       </body>
     </html>
   );

@@ -30,6 +30,9 @@ function resolveGitSha(): string {
  * `@ssccops/auth`(ssccops-web#329)도 같은 이유로 여기 있다 — 미들웨어와 라우트 핸들러가
  * 그 소스를 그대로 컴파일한다.
  */
+/** 서버 `PublicCacheControl`과 같은 값 — 서버가 바꾸면 여기도 함께 바꾼다 */
+const PUBLIC_CACHE_CONTROL = "public, s-maxage=300, stale-while-revalidate=600";
+
 const nextConfig: NextConfig = {
   transpilePackages: [
     "@ssccops/form-renderer",
@@ -57,6 +60,32 @@ const nextConfig: NextConfig = {
    */
   async redirects() {
     return [{ source: "/my-applications", destination: "/me", permanent: true }];
+  },
+
+  /*
+   * 익명 콘텐츠 화면의 `Cache-Control` (#520 · ssccops#382 · ADR-0038).
+   *
+   * 서버의 익명 응답(`/public/v1/pages·posts·forms/open`)에는
+   * `public, s-maxage=300, stale-while-revalidate=600`이 실린다. «그대로 전달»하려 했지만
+   * **서버 컴포넌트는 응답 헤더를 만질 수 없고** `apiFetch`도 `data`만 돌려준다 — 그래서 같은
+   * 값을 경로에 건다. Next는 이미 `Cache-Control`이 있으면 동적 페이지의 기본값(`private,
+   * no-store`)을 덮어쓰지 않는다(`send-payload.js`). 두 플랫폼 모두 이 설정을 읽는다(Vercel
+   * 라우팅 · OpenNext routes-manifest) — ISR·`use cache` 없이 CDN이 5분 캐시하는 길이다.
+   *
+   * 걸리는 경로는 **세션을 보지 않는 화면**뿐이다 — 상단 바의 로그인 상태는 브라우저가
+   * 판정하므로(`AuthNav`) HTML이 사람마다 다르지 않다. `/me`·`/f`·`/events/{id}/apply`처럼
+   * 미들웨어가 잡는 경로에 이 값을 걸면 남의 세션 화면이 CDN에 남는다 — **넓히지 않는다.**
+   * 게시본이 없어 «준비 중»을 그린 응답도 같은 5분 동안 남는다(서버 404는 캐시하지 않지만
+   * 화면 응답은 200이다) — 게시 뒤 최대 5분 뒤에 보이는 것은 게시 취소와 같은 지연이다.
+   */
+  async headers() {
+    return [
+      {
+        source:
+          "/:section(about|operators|join|privacy|photo-notice|terms|activities)/:path*",
+        headers: [{ key: "Cache-Control", value: PUBLIC_CACHE_CONTROL }],
+      },
+    ];
   },
 };
 

@@ -46,7 +46,68 @@ export const ROUTES = {
    * 등록해야 로그인이 이 앱으로 돌아온다 — 등록이 없으면 Site URL(어드민)로 조용히 넘어간다.
    */
   authCallback: "/auth/callback",
+
+  /*
+   * 다섯 축 (#520 · ssccops#382) — SSCC · 운영진 · 활동 · 모집 · 문의.
+   *
+   * 페이지 경로는 서버의 게시된 페이지(`cntnt_page`) 한 장을 그린다 — 어느 슬러그인지는
+   * `content-slugs.ts`의 표가 정한다. 포스트 경로는 `cntnt_post`의 목록·상세다.
+   */
+  /** 소개 */
+  about: "/about",
+  /** 연혁 */
+  aboutHistory: "/about/history",
+  /** 핵심 가치 */
+  aboutValues: "/about/values",
+  /** 지금 운영진 */
+  operators: "/operators",
+  /** 역대 운영진 한 기수 */
+  operatorsCohort: (cohort: string | number) => `/operators/${cohort}`,
+  /** 지원 안내 — 접수 중인 폼 목록을 함께 그린다 */
+  join: "/join",
+  /** 자주 묻는 질문 */
+  joinFaq: "/join/faq",
+  /** 지난 모집 */
+  joinHistory: "/join/history",
+  /** 개인정보처리방침 */
+  privacy: "/privacy",
+  /** 사진 게재 안내 */
+  photoNotice: "/photo-notice",
+  /** 이용약관 */
+  terms: "/terms",
+  /** 활동 아카이브 — 게시된 포스트 전체 */
+  activities: "/activities",
+  /** 한 분류의 포스트 목록 — `categorySlug`는 `entities/content`의 분류 표(`academic`·`event`·`news`) */
+  activitiesCategory: (categorySlug: string) => `/activities/${categorySlug}`,
+  /** 포스트 상세 */
+  activitiesPost: (categorySlug: string, slug: string) => `/activities/${categorySlug}/${slug}`,
+  /**
+   * 학기별 묶음 — `/activities/2026/1`. 1학기는 3~8월, 2학기는 9월~이듬해 2월
+   * (`entities/content`의 `semesterRange`).
+   */
+  activitiesSemester: (year: number, semester: 1 | 2) => `/activities/${year}/${semester}`,
+  /**
+   * 문의 — 별도 화면이 아니라 **모든 화면 끝의 문의 블록**(`app/_shell/site-footer.tsx`)이다.
+   * 지원자가 어느 화면에서 멈춰도 다음 행동이 있게 푸터 위에 두었고, 상단 바의 «문의»는 그
+   * 블록으로 내려가는 앵커다.
+   */
+  contact: "#contact",
 } as const;
+
+/** 아카이브 목록의 커서 쿼리 키 — «더 보기»가 다음 페이지를 주소에 싣는다 */
+export const CURSOR_QUERY = "cursor";
+
+/**
+ * 커서를 실은 아카이브 목록 주소.
+ *
+ * «더 보기»를 버튼이 아니라 링크로 두는 이유는 행사 목록의 분류 칩과 같다 — 목록 화면이 서버
+ * 컴포넌트로 남고, 다음 페이지가 주소에 있어 공유·뒤로 가기가 말이 된다. 커서가 없으면 쿼리를
+ * 붙이지 않는다(첫 페이지가 두 주소를 갖지 않게).
+ */
+export function activitiesPath(categorySlug: string | null, cursor?: string | null): string {
+  const base = categorySlug ? ROUTES.activitiesCategory(categorySlug) : ROUTES.activities;
+  return cursor ? `${base}?${CURSOR_QUERY}=${encodeURIComponent(cursor)}` : base;
+}
 
 /**
  * 분류 필터를 쿼리로 실은 목록 주소.
