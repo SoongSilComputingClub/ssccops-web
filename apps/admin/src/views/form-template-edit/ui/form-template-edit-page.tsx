@@ -76,7 +76,7 @@ export function FormTemplateEditPage({ formTmplId }: Readonly<{ formTmplId?: num
       <PageBody>
         {editor.status === "loading" && <EmptyState message="불러오는 중…" />}
         {editor.status === "not-found" && (
-          <EmptyState message="템플릿을 찾을 수 없습니다 — 목록에서 다시 선택해주세요." />
+          <EmptyState message="없는 템플릿입니다. 목록으로 돌아가주세요." />
         )}
         {editor.status === "error" && (
           <EmptyState

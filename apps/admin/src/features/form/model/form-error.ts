@@ -63,13 +63,13 @@ export function toFormStatusErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case FORM_ERROR.INVALID_FORM_STATUS_TRANSITION:
-      return "이미 상태가 바뀐 폼입니다. 최신 상태를 다시 불러옵니다";
+      return "이미 상태가 바뀐 폼입니다 — 다시 불러왔습니다";
     case FORM_ERROR.FORM_HAS_NO_QUESTION:
       return "문항을 1개 이상 추가해야 접수를 시작할 수 있습니다";
     case FORM_ERROR.INVALID_RECEIPT_PERIOD:
       return "접수 시작·종료 일시를 확인해주세요";
     case FORM_ERROR.FORM_NOT_FOUND:
-      return "폼을 찾을 수 없습니다 — 이미 삭제된 폼일 수 있습니다";
+      return "폼이 없습니다 — 목록을 새로고침해주세요";
     default:
       return toFormErrorMessage(error);
   }
@@ -83,7 +83,7 @@ export function toFormStatusErrorMessage(error: unknown): string {
  */
 export function toFormDuplicateErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.code === FORM_ERROR.FORM_NOT_FOUND) {
-    return "원본 폼을 찾을 수 없습니다 — 이미 삭제된 폼일 수 있습니다";
+    return "원본 폼이 없습니다 — 목록을 새로고침해주세요";
   }
   if (!(error instanceof ApiError)) {
     return "폼을 복제하지 못했습니다. 잠시 후 다시 시도해주세요";
@@ -115,7 +115,7 @@ export function toFormLabelErrorMessage(error: unknown): string {
     case FORM_LABEL_ERROR.FORM_LABEL_NAME_DUPLICATED:
       return "이미 있는 라벨입니다";
     case FORM_LABEL_ERROR.FORM_LABEL_NOT_FOUND:
-      return "이미 없는 라벨입니다. 목록을 다시 불러옵니다";
+      return "없는 라벨입니다 — 목록을 다시 불러왔습니다";
     case FORM_LABEL_ERROR.FORM_LABEL_NOT_USABLE:
       return "비활성 라벨은 새로 지정할 수 없습니다";
     default:
@@ -147,9 +147,9 @@ export function toFormDeleteErrorMessage(error: unknown): string {
      * 사과가 아니라 최신 목록을 가져오는 것이 다음 행동이라 문장이 그것을 말한다.
      */
     case FORM_ERROR.FORM_ALREADY_DELETED:
-      return "이미 지워진 폼입니다. 목록을 다시 불러옵니다";
+      return "이미 지워진 폼입니다 — 목록을 다시 불러왔습니다";
     case FORM_ERROR.FORM_NOT_FOUND:
-      return "폼을 찾을 수 없습니다 — 이미 삭제된 폼일 수 있습니다";
+      return "폼이 없습니다 — 목록을 새로고침해주세요";
     default:
       return toFormErrorMessage(error);
   }
@@ -161,8 +161,8 @@ export function toFormDeleteErrorMessage(error: unknown): string {
  * 삭제와 요구 권한이 같다고 보므로 403 문구도 같다 — 지울 수는 있는데 되살릴 수는 없는 권한
  * 조합은 소프트 삭제를 하드 삭제로 되돌리는 것이라 그런 계약이 나올 이유가 없다.
  *
- * **404를 삭제와 다르게 말한다.** 삭제 쪽의 "이미 삭제된 폼일 수 있습니다"는 이 화면에서
- * 뜻이 뒤집힌다 — 여기 있는 폼은 전부 삭제된 폼이라, 그 문장은 정상을 오류처럼 읽게 한다.
+ * **404를 삭제와 다르게 말한다.** 여기 있는 폼은 전부 삭제된 폼이라 «없습니다 — 새로고침»만으로는
+ * 되살리기가 이미 됐는지 아직인지 갈리지 않는다 — 그래서 «이미 되살아난 폼»을 따로 말한다.
  */
 export function toFormRestoreErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
@@ -174,9 +174,9 @@ export function toFormRestoreErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return NO_FORM_DELETE;
     case FORM_ERROR.FORM_NOT_DELETED:
-      return "이미 되살아난 폼입니다. 목록을 다시 불러옵니다";
+      return "이미 되살아난 폼입니다 — 목록을 다시 불러왔습니다";
     case FORM_ERROR.FORM_NOT_FOUND:
-      return "폼을 찾을 수 없습니다 — 목록을 다시 불러옵니다";
+      return "폼이 없습니다 — 목록을 다시 불러왔습니다";
     default:
       return toFormErrorMessage(error);
   }

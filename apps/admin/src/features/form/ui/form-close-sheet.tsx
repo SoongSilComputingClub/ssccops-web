@@ -54,7 +54,7 @@ export function FormCloseSheet({
         <div className="mt-[2px] text-[13.5px] text-n500">응답 {responseCount}건</div>
       </div>
       <div className="mt-3 text-[13.5px] text-n400">
-        지금 작성 중인 응답자는 제출하지 못합니다. 마감한 뒤에도 다시 접수를 시작할 수 있습니다.
+        작성 중인 응답자는 제출하지 못합니다. 마감 뒤에도 다시 열 수 있습니다.
       </div>
     </Sheet>
   );

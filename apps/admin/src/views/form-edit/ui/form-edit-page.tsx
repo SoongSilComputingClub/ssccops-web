@@ -266,8 +266,7 @@ function FormEditContent({ editor }: Readonly<{ editor: FormEditor }>) {
                   <div>
                     <Badge tone={SYSTEM_FORM_BADGE.tone}>{SYSTEM_FORM_BADGE.label}</Badge>{" "}
                     {SYSTEM_FORM_DELETE_LOCKED}. {SYSTEM_FORM_OPEN_PARTS}.{" "}
-                    문항은 문구 수정·추가·순서 변경이 모두 되고, 시스템이 사용하는 문항만 지울
-                    수 없습니다.
+                    시스템 문항만 지울 수 없습니다.
                   </div>
                 )}
                 {/* 버전은 서버가 준 값만 말한다 — 신규 폼은 아직 저장된 구성이 없다 */}
@@ -462,7 +461,7 @@ function FormEditContent({ editor }: Readonly<{ editor: FormEditor }>) {
               <div className="text-[13px] text-n500">
                 {editor.academicProgramId != null
                   ? "이 폼은 학술 활동에 연결돼 있습니다. 접수 시작·접수 기간은 모집 관리 화면에서 설정합니다."
-                  : "접수를 시작하면 공개 링크로 응답을 받습니다. 문항이 없거나 접수 일시가 올바르지 않으면 시작되지 않습니다."}
+                  : "접수를 시작하면 공개 링크로 응답을 받습니다."}
               </div>
             </div>
           </div>

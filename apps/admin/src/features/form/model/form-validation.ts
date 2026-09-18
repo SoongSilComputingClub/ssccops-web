@@ -226,7 +226,7 @@ export function validateFormDraft(
     blockingMessage = rcptDt;
   } else if (removedInUseQitemIds.length > 0) {
     // 서버가 409로 거절할 요청이다. 보내서 실패를 보여 주는 대신 원인을 그대로 말한다
-    blockingMessage = `이미 응답이 있어 삭제할 수 없는 문항입니다 (${removedInUseQitemIds.join(", ")}). 되돌리면 저장이 재개됩니다`;
+    blockingMessage = `응답이 있는 문항은 지울 수 없습니다 (${removedInUseQitemIds.join(", ")}) — 되돌리면 저장됩니다`;
   } else if (removedSystemQitemIds.length > 0) {
     /*
      * 서버가 이미 한 번 400으로 거절한 삭제다. 같은 본문을 다시 보내면 같은 답이 오므로
