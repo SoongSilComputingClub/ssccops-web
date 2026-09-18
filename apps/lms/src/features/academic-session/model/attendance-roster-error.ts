@@ -25,7 +25,7 @@ export function loadAttendanceRosterErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case ACADEMIC_ATTENDANCE_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
-      return "활동을 찾을 수 없습니다 — 주소가 잘못됐거나 아직 이관되지 않은 활동일 수 있습니다";
+      return "활동이 없습니다 — 내 활동 목록을 새로고침해주세요";
     case ACADEMIC_ATTENDANCE_ERROR.SESSION_NOT_FOUND:
       return "회차가 없습니다 — 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:

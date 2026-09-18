@@ -309,7 +309,7 @@ export async function transitionSession(
   if (!res?.afterSttsCd) {
     throw new ApiError(
       SESSION_REVIEW_ERROR.VALIDATION_FAILED,
-      "상태는 바뀌었지만 서버가 전이 결과를 돌려주지 않았습니다. 화면을 새로고침해주세요",
+      "저장됐습니다 — 새로고침하면 반영됩니다",
     );
   }
 
