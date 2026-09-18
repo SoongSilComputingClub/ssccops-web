@@ -12,6 +12,7 @@ import {
   type RspnsCn,
 } from "@ssccops/form-renderer";
 import { useResubmitForm } from "@/features/form";
+import type { FormRef } from "@/entities/form";
 import { ROUTES } from "@/shared/config/routes";
 import { Card } from "@/shared/ui";
 
@@ -36,16 +37,16 @@ import { Card } from "@/shared/ui";
  * `QitemCard`가 `qitemDescCn`을 함께 그린다(`ssccops#222`) — 작성 화면과 같은 것을 본다.
  */
 export function ResubmitForm({
-  formId,
+  formRef,
   composition,
   initialAnswers,
 }: Readonly<{
-  formId: number;
+  formRef: FormRef;
   composition: QitemCpstCn;
   initialAnswers: RspnsCn;
 }>) {
   const router = useRouter();
-  const form = useResubmitForm(formId, composition, initialAnswers);
+  const form = useResubmitForm(formRef, composition, initialAnswers);
   const [page, setPage] = useState(0);
   const [flash, setFlash] = useState("");
 
@@ -55,7 +56,7 @@ export function ResubmitForm({
     return (
       <Card>
         <p className="text-[14px] text-n300">
-          이 폼의 문항을 불러오지 못했습니다 — 화면을 새로고침해 주세요.
+          이 폼의 문항을 불러오지 못했습니다 — 화면을 새로고침해주세요.
         </p>
       </Card>
     );
@@ -76,7 +77,7 @@ export function ResubmitForm({
     const issues = validatePageAnswers(composition, form.answers, currentPage);
     if (Object.keys(issues).length > 0) {
       form.setErrors(issues);
-      setFlash("입력을 확인해 주세요");
+      setFlash("입력을 확인해주세요");
       return;
     }
     form.setErrors({});
@@ -96,11 +97,11 @@ export function ResubmitForm({
       // 제출은 도달한 페이지 전부를 다시 본다 — 다른 페이지가 걸렸다면 그 페이지로 데려간다
       const firstInvalid = qitems.find((qitem) => form.errors[qitem.qitemId]);
       if (firstInvalid) goTo(pageSeqOf(firstInvalid));
-      setFlash("입력을 확인해 주세요");
+      setFlash("입력을 확인해주세요");
       return;
     }
     if (outcome === "stale") {
-      setFlash("폼의 문항이 바뀌었습니다 — 새로고침한 뒤 다시 시도해 주세요");
+      setFlash("폼의 문항이 바뀌었습니다 — 새로고침한 뒤 다시 시도해주세요");
       return;
     }
     if (outcome === "failed") setFlash("제출하지 못했습니다");

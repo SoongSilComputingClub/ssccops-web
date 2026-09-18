@@ -20,14 +20,14 @@ export function applyLoadErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     switch (error.code) {
       case API_ERROR.CONFIG_MISSING:
-        return "서비스 설정이 끝나지 않아 신청서를 불러오지 못했습니다 — 잠시 후 다시 시도해 주세요";
+        return "지금은 신청서를 불러올 수 없습니다 — 잠시 후 다시 시도해주세요";
       case API_ERROR.NETWORK_ERROR:
-        return "서버에 연결하지 못했습니다 — 네트워크 상태를 확인한 뒤 다시 시도해 주세요";
+        return "서버에 연결하지 못했습니다 — 네트워크 상태를 확인한 뒤 다시 시도해주세요";
       case FORM_ERROR.FORM_CONTENT_MALFORMED:
-        return "신청서가 아직 준비되지 않았습니다 — 운영진에게 문의해 주세요";
+        return "신청서가 아직 준비되지 않았습니다 — 운영진에게 문의해주세요";
     }
   }
-  return "신청서를 불러오지 못했습니다 — 잠시 후 다시 시도해 주세요";
+  return "신청서를 불러오지 못했습니다 — 잠시 후 다시 시도해주세요";
 }
 
 /**
@@ -48,16 +48,16 @@ export function draftSaveErrorMessage(error: unknown): string {
     case FORM_ERROR.FORM_NOT_ACCEPTING:
       return "접수가 끝나 더 이상 저장되지 않습니다";
     case FORM_ERROR.RESPONSE_ALREADY_SUBMITTED:
-      return "이미 제출한 신청입니다 — 다른 창에서 제출했는지 확인해 주세요";
+      return "이미 제출한 신청입니다";
     case FORM_ERROR.RESPONSE_ALREADY_REJECTED:
-      return "받아들여지지 않은 신청이라 더 저장되지 않습니다";
+      return "반려된 신청은 저장되지 않습니다";
     case FORM_ERROR.RESPONSE_SAVE_CONFLICT:
       return "저장이 동시에 겹쳤습니다";
     case FORM_ERROR.UNKNOWN_QUESTION_ITEM:
     case FORM_ERROR.INVALID_ANSWER_VALUE:
-      return "신청서의 문항이 바뀌었습니다 — 새로고침한 뒤 다시 작성해 주세요";
+      return "신청서의 문항이 바뀌었습니다 — 새로고침한 뒤 다시 작성해주세요";
     case API_ERROR.NETWORK_ERROR:
-      return "서버에 연결하지 못해 저장하지 못했습니다 — 연결되면 다시 저장됩니다";
+      return "저장하지 못했습니다 — 연결되면 다시 저장됩니다";
     default:
       return "자동 저장에 실패했습니다 — 작성한 내용은 화면에 남아 있습니다";
   }
@@ -71,30 +71,30 @@ export function draftSaveErrorMessage(error: unknown): string {
  */
 export function submitErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return "제출하지 못했습니다 — 잠시 후 다시 시도해 주세요";
+    return "제출하지 못했습니다 — 잠시 후 다시 시도해주세요";
   }
 
   switch (error.code) {
     case FORM_ERROR.REQUIRED_ANSWER_MISSING:
-      return "필수 항목을 모두 채워 주세요";
+      return "필수 항목을 모두 채워주세요";
     case FORM_ERROR.ANSWER_PATTERN_MISMATCH:
       return "형식이 맞지 않는 답이 있습니다";
     case FORM_ERROR.ANSWER_SELECTION_LIMIT_EXCEEDED:
       return "선택할 수 있는 개수를 넘긴 문항이 있습니다";
     case FORM_ERROR.UNKNOWN_QUESTION_ITEM:
     case FORM_ERROR.INVALID_ANSWER_VALUE:
-      return "신청서의 문항이 바뀌었습니다 — 새로고침한 뒤 다시 제출해 주세요";
+      return "신청서의 문항이 바뀌었습니다 — 새로고침한 뒤 다시 제출해주세요";
     case FORM_ERROR.RESPONSE_CONTENT_TOO_LARGE:
-      return "작성한 내용이 너무 깁니다 — 조금 줄여 다시 제출해 주세요";
+      return "작성한 내용이 너무 깁니다 — 조금 줄여 다시 제출해주세요";
     /*
      * 받아들여지지 않은 신청을 다시 내려 한 경우다. "이미 신청했습니다"로 뭉개면 신청자는
      * 오지 않을 결과를 기다리므로, 다시 낼 수 없다는 것을 그대로 말한다.
      */
     case FORM_ERROR.RESPONSE_ALREADY_REJECTED:
-      return "이 신청은 다시 제출할 수 없습니다 — 결과는 '내 신청'에서 확인해 주세요";
+      return "이 신청은 다시 제출할 수 없습니다 — 결과는 '내 신청'에서 확인해주세요";
     case API_ERROR.NETWORK_ERROR:
-      return "서버에 연결하지 못했습니다 — 네트워크 상태를 확인한 뒤 다시 제출해 주세요";
+      return "서버에 연결하지 못했습니다 — 네트워크 상태를 확인한 뒤 다시 제출해주세요";
     default:
-      return "제출하지 못했습니다 — 잠시 후 다시 시도해 주세요";
+      return "제출하지 못했습니다 — 잠시 후 다시 시도해주세요";
   }
 }

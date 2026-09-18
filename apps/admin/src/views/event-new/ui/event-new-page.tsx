@@ -34,7 +34,7 @@ export function EventNewPage() {
 
   return (
     <>
-      <PageHeader title="행사 등록" subtitle="등록 직후에는 작성 중 상태입니다 — 게시는 저장 후 이어집니다" showBack />
+      <PageHeader title="행사 등록" subtitle="저장하면 작성 중 상태로 시작합니다" showBack />
       <PageBody>
         <EventForm
           initial={null}

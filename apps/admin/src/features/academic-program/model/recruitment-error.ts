@@ -43,14 +43,14 @@ export function toRecruitmentErrorMessage(error: unknown): string {
     case RECRUITMENT_ERROR.INVALID_FORM_STATUS_TRANSITION:
       return "신청서가 이미 접수 중이라 모집을 시작할 수 없습니다 — 학술 담당자에게 문의해주세요";
     case ACADEMIC_PROGRAM_ERROR.INVALID_ACADEMIC_PROGRAM_TRANSITION:
-      return "이미 모집이 시작됐거나 처리된 활동입니다 — 화면을 새로고침해주세요";
+      return "이미 모집이 시작됐거나 처리된 활동입니다 — 새로고침해주세요";
     case ACADEMIC_PROGRAM_ERROR.FORM_NOT_LINKED:
       return "이 활동에 연결된 신청서가 없습니다 — 학술 담당자에게 문의해주세요";
     case ACADEMIC_PROGRAM_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
-      return "활동을 찾을 수 없습니다 — 이미 삭제됐거나 주소가 잘못됐을 수 있습니다";
+      return "활동이 없습니다 — 목록을 새로고침해주세요";
     case ACADEMIC_PROGRAM_ERROR.VALIDATION_FAILED:
     case ACADEMIC_PROGRAM_ERROR.INVALID_CODE_VALUE:
-      return "목록 조건이 서버 기준과 다릅니다. 화면을 새로고침해주세요";
+      return "선택지가 바뀌었습니다 — 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:

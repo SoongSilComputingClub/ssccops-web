@@ -162,8 +162,7 @@ export function RosterPanel({
       </div>
 
       <div className="mb-[14px] text-[13px] leading-[1.7] text-n500">
-        순번은 지금 보이는 목록의 등록 순서입니다 — 신청자에게는 보이지 않습니다. 취소한
-        참가자도 기록으로 남으며 명단에서 지워지지 않습니다.
+        순번은 등록 순서이고 신청자에게는 보이지 않습니다. 취소한 참가자도 명단에 남습니다.
       </div>
 
       {roster.status === "error" ? (

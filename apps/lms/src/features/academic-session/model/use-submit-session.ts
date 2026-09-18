@@ -91,7 +91,7 @@ export function useSubmitSession(academicProgramId: number): SubmitSessionContro
             if (input.sessionId === null) {
               return {
                 result: "failed",
-                message: "재제출할 회차를 찾을 수 없습니다 — 화면을 새로고침해주세요",
+                message: "재제출할 회차가 없습니다 — 새로고침해주세요",
               };
             }
             const detail = await resubmitAcademicSession(

@@ -166,7 +166,7 @@ export async function createFormTemplate(
   if (!res?.formTmplId) {
     throw new ApiError(
       FORM_TEMPLATE_ERROR.VALIDATION_FAILED,
-      "템플릿은 만들어졌지만 서버가 템플릿 번호를 돌려주지 않았습니다. 목록에서 확인해주세요",
+      "만들어졌습니다 — 목록에서 확인해주세요",
     );
   }
   return toFormTemplateSummary(res);
@@ -184,7 +184,7 @@ export async function updateFormTemplate(
   if (!res?.formTmplId) {
     throw new ApiError(
       FORM_TEMPLATE_ERROR.VALIDATION_FAILED,
-      "저장은 됐지만 서버가 결과를 돌려주지 않았습니다. 목록에서 확인해주세요",
+      "저장됐습니다 — 목록에서 확인해주세요",
     );
   }
   return toFormTemplateSummary(res);
@@ -231,7 +231,7 @@ export async function createFormFromTemplate(
   if (!res?.formId) {
     throw new ApiError(
       FORM_TEMPLATE_ERROR.VALIDATION_FAILED,
-      "폼은 만들어졌지만 서버가 폼 번호를 돌려주지 않았습니다. 폼 목록에서 확인해주세요",
+      "만들어졌습니다 — 폼 목록에서 확인해주세요",
     );
   }
   return {
@@ -271,7 +271,7 @@ export async function createTemplateFromForm(
   if (!res?.formTmplId) {
     throw new ApiError(
       FORM_TEMPLATE_ERROR.VALIDATION_FAILED,
-      "템플릿은 만들어졌지만 서버가 템플릿 번호를 돌려주지 않았습니다. 템플릿 관리에서 확인해주세요",
+      "만들어졌습니다 — 템플릿 관리에서 확인해주세요",
     );
   }
   return toFormTemplateSummary(res);

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { FormRef } from "@/entities/form";
 import { useApplyForm } from "@/features/apply";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
@@ -22,8 +23,8 @@ import { Notice } from "@/shared/ui";
  * 누를 수 있는 버튼을 두면 거절만 받게 되지만, 여러 건을 받는 폼에서는 또 내는 것이 정상이라
  * 제출 직후가 다음 건을 시작하기 가장 자연스러운 자리다.
  */
-export function PublicFormDonePage({ formId }: Readonly<{ formId: number }>) {
-  const { status, form } = useApplyForm(formId);
+export function PublicFormDonePage({ formRef }: Readonly<{ formRef: FormRef }>) {
+  const { status, form } = useApplyForm(formRef);
 
   const description =
     status === "loading"
@@ -32,7 +33,7 @@ export function PublicFormDonePage({ formId }: Readonly<{ formId: number }>) {
           form?.formTtlNm ? `${form.formTtlNm} 응답이 접수되었습니다.` : null,
           form?.submittedAt ? `제출 일시 ${formatDt(form.submittedAt)}.` : null,
           "결과는 등록한 연락처로 안내드립니다.",
-          form?.mltplRspnsYn ? "이 폼은 여러 건을 받으므로 필요하면 하나 더 낼 수 있습니다." : null,
+          form?.mltplRspnsYn ? "필요하면 하나 더 낼 수 있습니다." : null,
         ]
           .filter(Boolean)
           .join(" ");
@@ -42,7 +43,7 @@ export function PublicFormDonePage({ formId }: Readonly<{ formId: number }>) {
       <Notice title="제출이 완료되었습니다" description={description}>
         {form?.mltplRspnsYn && (
           <Link
-            href={ROUTES.publicForm(formId)}
+            href={ROUTES.publicForm(formRef)}
             className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
           >
             응답 하나 더 작성

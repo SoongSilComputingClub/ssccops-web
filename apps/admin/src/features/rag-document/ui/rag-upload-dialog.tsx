@@ -95,8 +95,8 @@ export function RagUploadDialog({
           </div>
           <div className="mt-1 text-[13px] text-n500">
             {file
-              ? `${formatFileSize(file.size)} · 다른 파일을 끌어다 놓거나 클릭하면 바꿀 수 있습니다`
-              : ".md · .pdf · .docx · 최대 10MB · 파일을 끌어다 놓거나 클릭"}
+              ? `${formatFileSize(file.size)} — 다른 파일을 끌어다 놓거나 클릭하면 바꿉니다`
+              : ".md·.pdf·.docx, 최대 10MB — 끌어다 놓거나 클릭"}
           </div>
         </label>
 
@@ -131,7 +131,7 @@ export function RagUploadDialog({
             disabled={uploading}
           />
           <div className="mt-[5px] text-[12.5px] text-n500">
-            문서 하나가 규정 하나입니다 — 개정된 규정을 올릴 때는 옛 문서를 지우고 새로 올려주세요
+            문서 하나가 규정 하나입니다. 개정판을 올릴 때는 옛 문서를 지워주세요.
           </div>
         </Field>
 

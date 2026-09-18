@@ -47,9 +47,9 @@ import {
  */
 
 const NO_MANAGE =
-  "권한 관리(ROLE_MANAGE) 권한이 없어 권한 트리를 볼 수 없습니다 — 최고관리자에게 요청해주세요";
+  "권한 트리를 볼 권한이 없습니다 — 권한 관리(ROLE_MANAGE) 권한이 필요합니다";
 
-const SYS_LOCKED = "시스템 권한은 코드를 바꾸거나 삭제할 수 없습니다 — 서비스 기능이 이 코드를 직접 사용합니다";
+const SYS_LOCKED = "시스템 권한은 코드를 바꾸거나 삭제할 수 없습니다";
 
 export function AuthorityTreePage() {
   const canManage = useCan(CAPABILITY.ROLE_MANAGE);
@@ -173,7 +173,7 @@ function AuthorityTreeAdminView() {
     <>
       <PageHeader
         title="권한 관리"
-        subtitle="사용자 정의 묶음 권한 생성 · 이름/설명/상위 변경 · 삭제"
+        subtitle="권한을 묶고 이름·설명·상위를 정합니다"
         action={{ label: "+ 새 권한", onClick: () => resetForm(null) }}
       />
       <PageBody maxWidth={1100}>
@@ -321,8 +321,8 @@ function AuthorityForm({
           />
           <div className="mt-[5px] text-[12.5px] text-n500">
             {isNew
-              ? "대문자로 시작하고 대문자·숫자·밑줄만 씁니다. 서버가 권한을 확인할 때 쓰는 이름과 같은 체계입니다"
-              : "코드는 권한을 구분하는 고유한 값이라 바꿀 수 없습니다 — 새로 만든 뒤 기존 권한을 삭제해주세요"}
+              ? "대문자로 시작하고 대문자·숫자·밑줄만 씁니다"
+              : "코드는 바꿀 수 없습니다. 새로 만든 뒤 기존 권한을 지워주세요."}
           </div>
         </Field>
 
@@ -339,7 +339,7 @@ function AuthorityForm({
           <TextArea
             value={values.authrtExpln}
             onChange={(e) => setValue({ authrtExpln: e.target.value })}
-            placeholder="이 권한이 무엇을 열어 주는지 적어 두면 역할에 부여할 때 판단이 쉽습니다"
+            placeholder="이 권한으로 무엇을 할 수 있는지 적어 두세요"
             className="text-[16px] lg:text-[15.5px]"
           />
         </Field>
@@ -411,8 +411,8 @@ function AuthorityForm({
 
       {!isNew && !sys && (
         <div className="mt-2 text-[13px] leading-[1.6] text-n500">
-          역할에 부여돼 있거나 하위 권한이 달려 있으면 삭제할 수 없습니다 — 먼저 회수하거나
-          하위를 다른 상위로 옮겨주세요.
+          역할에 부여돼 있거나 하위 권한이 있으면 지울 수 없습니다. 먼저 회수하거나 하위를
+          다른 상위로 옮겨주세요.
         </div>
       )}
     </Card>

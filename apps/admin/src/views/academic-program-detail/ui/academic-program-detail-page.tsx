@@ -87,7 +87,7 @@ export function AcademicProgramDetailPage({
           {status === "loading" && <DetailSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="활동을 찾을 수 없습니다 — 주소가 잘못됐거나 아직 이관되지 않은 활동일 수 있습니다."
+              message="없는 활동입니다. 목록으로 돌아가주세요."
               action={{
                 label: "활동 목록",
                 onClick: () => router.replace(ROUTES.academicPrograms),

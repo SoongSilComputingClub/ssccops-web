@@ -68,7 +68,7 @@ function SignedOutNotice() {
   return (
     <Notice
       title="로그인하면 신청 현황을 볼 수 있습니다"
-      description="행사 목록과 상세는 로그인 없이 볼 수 있습니다. 신청 결과는 본인만 볼 수 있어 로그인이 필요합니다."
+      description="신청 결과는 본인만 볼 수 있어 로그인이 필요합니다."
     >
       <SignInButton next={ROUTES.myApplications} label="구글로 로그인" />
     </Notice>
@@ -94,7 +94,7 @@ function SessionExpiredNotice() {
   return (
     <Notice
       title="로그인이 만료되었습니다"
-      description="보안을 위해 일정 시간이 지나면 로그인이 풀립니다. 다시 로그인하면 신청 현황을 이어서 볼 수 있습니다."
+      description="로그인이 풀렸습니다. 다시 로그인하면 신청 현황을 이어서 볼 수 있습니다."
     >
       <SignInButton next={ROUTES.myApplications} label="다시 로그인" />
     </Notice>
@@ -155,7 +155,7 @@ async function FormResponses({ responses }: Readonly<{ responses: MyFormResponse
     return (
       <section className="flex flex-col gap-[10px]">
         <SectionHeading title="낸 폼" />
-        <EmptyState title="폼 응답을 불러오지 못했습니다 — 잠시 후 다시 시도해 주세요" />
+        <EmptyState title="폼 응답을 불러오지 못했습니다 — 잠시 후 다시 시도해주세요" />
       </section>
     );
   }

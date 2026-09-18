@@ -77,7 +77,7 @@ export function SessionReviewDetail({
 
   if (status === "not-found") {
     return (
-      <EmptyState message="회차를 찾을 수 없습니다 — 이미 삭제됐거나 다른 사람이 처리했을 수 있습니다." />
+      <EmptyState message="없는 회차입니다. 목록으로 돌아가주세요." />
     );
   }
 
@@ -201,8 +201,8 @@ export function SessionReviewDetail({
         ) : (
           <div className="text-[14px] text-n500">
             {detail.sesnSttsCd === "APPROVED"
-              ? "이미 승인된 회차입니다 — 승인은 되돌릴 수 없습니다."
-              : "수정요청한 회차입니다 — 스터디장이 다시 제출하면 목록에 올라옵니다."}
+              ? "이미 승인된 회차입니다."
+              : "수정요청한 회차입니다. 스터디장이 다시 제출하면 목록에 올라옵니다."}
           </div>
         )}
       </Card>

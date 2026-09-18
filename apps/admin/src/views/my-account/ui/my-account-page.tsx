@@ -150,8 +150,7 @@ export function MyAccountPage() {
                       {member.email || "미입력"}
                     </div>
                     <div className="mt-1 text-[12.5px] text-n500">
-                      로그인에 쓰는 소셜 계정에서 가져온 값이라 여기서 바꾸면 로그인 계정과
-                      갈립니다
+                      로그인 계정에서 가져온 값이라 여기서는 바꾸지 않습니다
                     </div>
                   </Field>
                 </div>
@@ -199,8 +198,8 @@ export function MyAccountPage() {
                   ]}
                 />
                 <div className="mt-4 text-[13px] leading-[1.6] text-n500">
-                  회원명 · 학과 · 학년 · 전화번호를 직접 고칠 수 있습니다. 이메일은
-                  로그인에 쓰는 소셜 계정에서 가져온 값이라 여기서 바꾸지 않습니다.
+                  회원명·학과·학년·전화번호는 직접 고칠 수 있습니다. 이메일은 로그인 계정에서
+                  가져온 값이라 여기서는 바꾸지 않습니다.
                 </div>
               </>
             )}

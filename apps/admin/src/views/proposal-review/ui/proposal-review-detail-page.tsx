@@ -53,7 +53,7 @@ function acceptBlockReasonOf(response: FormResponseDetail): string | undefined {
    */
   const reason =
     preview.failureReason || "이 기획안은 지금 학술 활동으로 옮길 수 없습니다";
-  return `${reason} — 지금 승인하면 같은 사유로 거절됩니다. 승인 대신 수정요청으로 돌려주세요`;
+  return `${reason} — 승인 대신 수정요청으로 돌려주세요`;
 }
 
 /**

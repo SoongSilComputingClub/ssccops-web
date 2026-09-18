@@ -237,10 +237,14 @@ export function ragSettingsUrl(applyStatus?: "DRAFT" | "EFFECTIVE" | "SUPERSEDED
  * 옮긴 뒤로는 그 주소에 폼이 없다 — 값이 없을 때 `null`을 돌려주는 것은 죽은 링크를 복사해
  * 주지 않기 위해서이고, 부르는 쪽이 링크 자리를 감추거나 안내로 대체한다.
  */
-export function publicFormUrl(formId: number): string | null {
+/*
+ * 새 링크는 **키(UUID)로만** 만든다 (ADR-0036) — 숫자 주소도 열리지만 그것은 이미 뿌린 링크를
+ * 살리는 것이지 새로 만들 이유가 아니다. 키를 모르는 서버(옛 배포)면 formId로 떨어진다.
+ */
+export function publicFormUrl(formRef: string | number): string | null {
   // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
   const configured = process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN?.replace(/\/+$/, "");
-  return configured ? `${configured}/f/${formId}` : null;
+  return configured ? `${configured}/f/${formRef}` : null;
 }
 
 /**

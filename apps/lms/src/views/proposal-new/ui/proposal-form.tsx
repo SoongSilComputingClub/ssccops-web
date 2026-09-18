@@ -126,7 +126,7 @@ export function ProposalForm({
       return;
     }
     if (outcome === "not-accepting") {
-      setFlash("접수가 마감됐습니다 — 작성한 내용을 따로 복사해두고 접수가 열리면 다시 제출해주세요");
+      setFlash("접수가 마감됐습니다 — 작성한 내용을 따로 복사해두세요");
       return;
     }
     if (outcome === "stale") {
@@ -140,7 +140,7 @@ export function ProposalForm({
     <div className="flex flex-col gap-[12px]">
       <div className="rounded-2xl border border-accent/30 bg-accent-soft px-[14px] py-[11px] text-[13.5px] leading-[1.7] text-accent">
         {form.restored
-          ? "이어서 작성 중입니다 — 이전에 쓰다 만 내용이 채워져 있습니다"
+          ? "쓰다 만 내용을 불러왔습니다"
           : PROPOSAL_NEW_INTRO}
       </div>
 

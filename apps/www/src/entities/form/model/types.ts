@@ -15,8 +15,25 @@ import type { QitemCpstCn, RspnsCn } from "@ssccops/form-renderer";
  * `qitemCpstCn`이 실려 있다는 것 자체가 "지금 답을 낼 수 있다"는 뜻이다 — 접수 불가인 폼은
  * 문항을 뺀 200이 아니라 409 `FORM_NOT_ACCEPTING`으로 끊기므로 여기까지 오지 않는다.
  */
+/**
+ * 공개 폼 주소의 식별자 (ADR-0036). 무작위 키(UUID, `form.form_key`) 또는 예전 숫자 id — 서버가
+ * 둘 다 받고 웹은 **새 주소를 키로만** 만든다. 숫자를 계속 받는 것은 이미 뿌린 링크 때문이다.
+ */
+export type FormRef = string | number;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** 주소에서 온 값이 폼 식별자 모양인가 — UUID이거나 양의 정수. 아니면 화면이 «잘못된 주소»로 끊는다 */
+export function isFormRef(ref: unknown): ref is FormRef {
+  if (typeof ref === "number") return Number.isInteger(ref) && ref > 0;
+  if (typeof ref !== "string") return false;
+  return UUID_RE.test(ref) || /^[1-9][0-9]{0,17}$/.test(ref);
+}
+
 export interface PublicForm {
   formId: number;
+  /** 공개 주소용 키. 이 필드를 모르는 서버면 null — 그때는 formId로 주소를 만든다 */
+  formKey: string | null;
   formTtlNm: string;
   rcptBgngDt: string | null;
   rcptEndDt: string | null;
@@ -104,6 +121,7 @@ export interface FormLabel {
  */
 export interface MyFormResponseOverview {
   formId: number;
+  formKey: string | null;
   formTtlNm: string;
   /** 없으면 빈 배열 — 서버가 그렇게 준다 */
   labels: FormLabel[];

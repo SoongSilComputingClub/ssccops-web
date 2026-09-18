@@ -170,7 +170,7 @@ export function ScheduleField({
        */}
       <div className="mt-[10px] text-[12.5px] text-n500">
         {toScheduleText(parts) === ""
-          ? "주기 · 요일 · 시각을 모두 고르면 일정이 저장됩니다 — 비워 두어도 됩니다"
+          ? "주기·요일·시각을 모두 고르면 저장됩니다. 비워 둬도 됩니다."
           : `저장될 일정: ${toScheduleText(parts)}`}
       </div>
 

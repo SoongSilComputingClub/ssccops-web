@@ -94,7 +94,7 @@ function findMappingProblem(mapping: MemberImportMapping): string {
   );
   if (missing.length > 0) {
     const names = missing.map((f) => f.label).join(" · ");
-    return `${names} 컬럼을 반드시 지정해야 합니다 — 이 셋은 서버가 대신 정할 수 없습니다`;
+    return `${names} 컬럼은 꼭 지정해주세요`;
   }
 
   /* 한 필드에 두 컬럼이면 어느 쪽을 쓸지 서버가 고를 근거가 없어 요청 전체가 거절된다 */

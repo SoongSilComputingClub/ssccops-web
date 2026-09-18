@@ -118,7 +118,7 @@ function CorpusNotice({ corpusState }: Readonly<{ corpusState: AssistantCorpusSt
           에서 올려주세요
         </>
       ) : (
-        "아직 등록된 규정 문서가 없어 답할 수 있는 것이 없습니다"
+        "아직 규정 문서가 없어 답할 수 없습니다"
       )}
     </div>
   );

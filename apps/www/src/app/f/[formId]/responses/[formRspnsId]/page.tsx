@@ -14,5 +14,5 @@ export default async function Page({
   params,
 }: Readonly<PageProps<"/f/[formId]/responses/[formRspnsId]">>) {
   const { formId, formRspnsId } = await params;
-  return <FormResponsePage formId={Number(formId)} formRspnsId={Number(formRspnsId)} />;
+  return <FormResponsePage formRef={formId} formRspnsId={Number(formRspnsId)} />;
 }

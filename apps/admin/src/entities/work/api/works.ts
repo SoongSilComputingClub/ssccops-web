@@ -355,7 +355,7 @@ export async function createWork(input: WorkCreateInput): Promise<WorkCreateResu
   if (!res?.workId) {
     throw new ApiError(
       WORK_ERROR.VALIDATION_FAILED,
-      "업무는 등록됐지만 서버가 업무_ID를 돌려주지 않았습니다. 목록에서 확인해주세요",
+      "등록됐습니다 — 목록에서 확인해주세요",
     );
   }
 

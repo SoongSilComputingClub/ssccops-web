@@ -12,6 +12,7 @@
  * 상태·문항은 오지 않는다. 메신저가 OG를 한 번 캐싱하면 갱신하지 않아 카드가 굳으므로
  * 시간에 따라 변하는 값을 애초에 내려주지 않는 것이 서버 계약이다(ssccops#194 제약 ②).
  */
+import type { FormRef } from "../model/types";
 
 /** `{ success, code, message, data }` 봉투 — `apiFetch`를 거치지 않으므로 여기서 직접 벗긴다 */
 interface MetaEnvelope {
@@ -38,13 +39,13 @@ export interface PublicFormMeta {
  * 서버는 DRAFT 폼과 없는 폼을 **같은 404**로 답한다(그 번호의 폼이 있는지를 감춘다). 그래서
  * 여기서도 둘을 가르지 않는다.
  */
-export async function fetchPublicFormMeta(formId: number): Promise<PublicFormMeta | null> {
+export async function fetchPublicFormMeta(formRef: FormRef): Promise<PublicFormMeta | null> {
   // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
   if (!baseUrl) return null;
 
   try {
-    const res = await fetch(`${baseUrl}/public/v1/forms/${formId}/meta`, {
+    const res = await fetch(`${baseUrl}/public/v1/forms/${formRef}/meta`, {
       headers: { Accept: "application/json" },
       /*
        * 카드는 한 번 굳으므로 매 크롤에 최신값을 받을 이유가 없고, 제목은 자주 바뀌지 않는다.

@@ -16,7 +16,7 @@ export function NoProgramNotice() {
   return (
     <EmptyState
       title="맡고 있는 스터디·프로젝트가 없습니다"
-      description="기획안이 승인되어 활동이 만들어지고 스터디장·팀장으로 지정되면 이 화면을 쓸 수 있습니다."
+      description="스터디장·팀장으로 지정되면 이 화면을 쓸 수 있습니다."
     />
   );
 }

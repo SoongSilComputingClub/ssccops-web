@@ -76,7 +76,7 @@ function validateCreate(input: AuthorityCreateInput): string {
     return `권한 코드는 ${AUTHRT_CD_MAX_LENGTH}자를 넘을 수 없습니다`;
   }
   if (!AUTHRT_CD_PATTERN.test(input.authrtCd)) {
-    return "권한 코드는 대문자로 시작하고 대문자·숫자·밑줄만 쓸 수 있습니다 (예: STUDY_MANAGE)";
+    return "권한 코드는 대문자로 시작하고 대문자·숫자·밑줄만 씁니다 (예: STUDY_MANAGE)";
   }
   return validateNameAndExplanation(input.authrtNm, input.authrtExpln);
 }

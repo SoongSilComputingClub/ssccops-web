@@ -1,5 +1,5 @@
 import { apiFetchAuthedNullableFromBrowser } from "@/shared/api/browser-client";
-import type { MyFormResponse, ResponseStatus } from "../model/types";
+import type { FormRef, MyFormResponse, ResponseStatus } from "../model/types";
 
 /*
  * 내 응답 목록 (ssccops-server #143 · GET /v1/forms/{formId}/responses/mine).
@@ -33,9 +33,9 @@ interface MyFormResponseApiResponse {
  * **작성 중(DRAFT)도 함께 온다.** 운영자용 목록이 DRAFT를 빼는 것은 남의 제출 전 답안이 심사
  * 목록에 섞이지 않게 하는 규칙이라, 내 것을 나에게 보여주는 이 조회에는 해당하지 않는다.
  */
-export async function fetchMyFormResponses(formId: number): Promise<MyFormResponse[]> {
+export async function fetchMyFormResponses(formRef: FormRef): Promise<MyFormResponse[]> {
   const items = await apiFetchAuthedNullableFromBrowser<MyFormResponseApiResponse[]>(
-    `/v1/forms/${formId}/responses/mine`,
+    `/v1/forms/${formRef}/responses/mine`,
   );
 
   return (items ?? []).map((res) => ({

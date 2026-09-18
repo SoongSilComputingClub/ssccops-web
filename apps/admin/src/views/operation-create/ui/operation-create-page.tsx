@@ -47,17 +47,14 @@ import {
   flash,
 } from "@/shared/ui";
 
-const KIND_META: Record<OperTypeCd, { table: string; note: string }> = {
+const KIND_META: Record<OperTypeCd, { note: string }> = {
   WORK: {
-    table: "work",
     note: "행사·상시·정례 운영처럼 여러 하위 업무를 묶는 단위",
   },
   SUB_WORK: {
-    table: "sub_work",
-    note: "실제 실행 단위. 승인·점검 목록이 붙습니다",
+    note: "실제로 하는 일 하나. 승인과 점검 목록이 여기에 있습니다",
   },
   MEETING: {
-    table: "mtg",
     note: "정례·주제 회의. 안건과 결과를 기록합니다",
   },
 };
@@ -326,7 +323,7 @@ export function OperationCreatePage({
 
   const submit = () => {
     if (!operTtl.trim() || !bgngDt) {
-      flash("운영 제목 · 시작 일시는 필수입니다");
+      flash("제목과 시작 일시는 필수입니다");
       return;
     }
 
@@ -412,9 +409,6 @@ export function OperationCreatePage({
               >
                 <div className="flex items-center gap-2">
                   <div className="text-[16px] font-semibold">{OPER_TYPE_NM[cd]}</div>
-                  <span className="font-mono text-[12.5px] text-n500">
-                    {KIND_META[cd].table}
-                  </span>
                 </div>
                 <div className="mt-1 text-[13px] leading-[1.5] text-n500">
                   {KIND_META[cd].note}
@@ -456,7 +450,7 @@ export function OperationCreatePage({
                   blockReason={picBlockReason}
                   hint={
                     picId === sessionMember?.memberId
-                      ? "본인으로 등록됩니다 · 다른 회원을 담당자로 지정할 수 있습니다"
+                      ? "비우면 본인이 담당자가 됩니다"
                       : "선택한 회원이 담당자로 등록됩니다"
                   }
                 />
@@ -495,7 +489,7 @@ export function OperationCreatePage({
 
           <Card>
             <SectionLabel className="mb-3">
-              확장 속성 · {KIND_META[operTypeCd].table}
+              추가 정보
             </SectionLabel>
 
             {operTypeCd === "WORK" && (
@@ -516,11 +510,11 @@ export function OperationCreatePage({
                   <TextArea
                     value={grvwCn}
                     onChange={(e) => setGrvwCn(e.target.value)}
-                    placeholder="운영 종료 후 회고 · 지금은 비워도 됩니다"
+                    placeholder="운영이 끝난 뒤 쓰는 회고 (비워도 됩니다)"
                   />
                 </Field>
                 <div className="mt-3 text-[13px] text-n500">
-                  등록 후 하위 업무를 이 업무에 연결하면 진행률이 집계됩니다.
+                  하위 업무를 연결하면 진행률이 집계됩니다.
                 </div>
               </>
             )}
@@ -542,7 +536,7 @@ export function OperationCreatePage({
                   }
                 >
                   {parentWork.status === "ready"
-                    ? "하위 업무는 상위 업무 안에서만 생성됩니다"
+                    ? "하위 업무는 상위 업무에서 등록합니다"
                     : parentWork.status === "loading"
                       ? "상위 업무를 불러오는 중입니다"
                       : parentWork.errorMessage ||
@@ -575,8 +569,8 @@ export function OperationCreatePage({
                 {subWorkTypeOptions.status === "ready" &&
                   subWorkTypeOptions.types.length === 0 && (
                     <div className="mb-3 text-[13.5px] text-n500">
-                      사용 중인 하위 업무 유형이 없습니다 — 하위 업무 유형 관리에서 먼저
-                      등록하거나 사용을 켜야 합니다
+                      쓸 수 있는 하위 업무 유형이 없습니다 — 하위 업무 유형 관리에서 등록하거나
+                      사용을 켜주세요
                     </div>
                   )}
                 <div className="mb-3 flex flex-wrap gap-[7px]">
@@ -623,7 +617,7 @@ export function OperationCreatePage({
                   </div>
                 ) : (
                   <div className="mb-4 text-[13.5px] text-n500">
-                    하위 업무 유형을 선택하면 승인 규칙이 표시됩니다
+                    유형을 고르면 승인 규칙이 보입니다
                   </div>
                 )}
                 <div className="flex flex-col gap-[14px]">
@@ -643,8 +637,8 @@ export function OperationCreatePage({
                   </Field>
                 </div>
                 <div className="mt-3 text-[13px] text-n500">
-                  등록 직후 업무 상태는 기획(PLANNING)이며, 완료 점검 목록은 고른 유형의
-                  항목을 복사해 함께 만들어집니다.
+                  등록하면 기획(PLANNING)으로 시작합니다. 완료 점검 목록은 고른 유형의 항목이
+                  복사됩니다.
                 </div>
               </>
             )}
@@ -679,7 +673,7 @@ export function OperationCreatePage({
                   />
                 </Field>
                 <div className="mt-3 text-[13px] text-n500">
-                  회의 책임자는 항상 위 담당자와 같은 회원입니다 — 별도로 입력받지 않습니다.
+                  회의 책임자는 위 담당자입니다.
                   안건은 등록 뒤 회의 상세에서 상정합니다.
                 </div>
               </>

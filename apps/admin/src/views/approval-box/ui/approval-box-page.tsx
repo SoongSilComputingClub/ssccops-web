@@ -98,7 +98,7 @@ export function ApprovalBoxPage() {
 
   return (
     <>
-      <PageHeader title="승인함" subtitle="대기 · 정족수 · 반려" />
+      <PageHeader title="승인함" subtitle="승인을 기다리는 하위 업무" />
       <PageBody>
         <FilterBar trailing={status === "ready" ? <>{totalCount}건</> : null}>
           {TABS.map((cd) => (
@@ -131,7 +131,7 @@ export function ApprovalBoxPage() {
                 const approveBlockReason = !checklistDone
                   ? "완료 점검 목록을 모두 체크해야 완료 승인할 수 있습니다"
                   : quorumUnmet
-                    ? "정족수를 채워야 완료 승인할 수 있습니다 — 투표가 모여야 합니다"
+                    ? "정족수가 아직 안 찼습니다 — 승인함에서 찬성 표를 더 받아야 합니다"
                     : "";
                 const dday = ddayText(item.dueAt, todayInSeoul());
                 // 승인자 표시명은 서버가 내려준다 (서버 #123) — 코드 → 이름 사전을 웹이 갖지 않는다

@@ -50,7 +50,7 @@ export async function ProgramMembersPage({
       <header className="flex flex-col gap-[2px]">
         <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">팀원 관리</h1>
         <p className="text-[13.5px] text-n500">
-          활동에 확정·대기 중인 팀원 명단입니다 — 팀원 선발과 변경은 학술국장이 맡습니다
+          확정·대기 중인 팀원 명단입니다. 선발과 변경은 학술국장이 합니다.
         </p>
       </header>
 

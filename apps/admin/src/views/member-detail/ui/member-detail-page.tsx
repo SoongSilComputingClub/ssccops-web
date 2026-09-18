@@ -46,7 +46,7 @@ import { Badge, Button, Card, EmptyState, Field, flash, PageBody, PageHeader, Pi
  * 판정을 둔다 — 근거는 views/member-list 의 NO_MEMBER_MANAGE 주석.
  */
 const NO_MEMBER_MANAGE =
-  "회원 관리(MEMBER_MANAGE) 권한이 없어 회원 정보를 볼 수 없습니다 — 운영진에게 요청해주세요";
+  "회원 정보를 볼 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";
 
 /**
  * 역할 카드의 조작이 잠긴 이유 (#50).
@@ -66,7 +66,7 @@ const NO_MEMBER_MANAGE =
  * 실려 오므로 그것으로 그린다. 지난 재임 이력만 `ROLE_MANAGE` 뒤에 있다.
  */
 const NO_ROLE_MANAGE =
-  "역할을 다루려면 권한 관리(ROLE_MANAGE) 권한이 필요합니다 — 회원 관리 권한과는 별개입니다";
+  "역할을 다루려면 권한 관리(ROLE_MANAGE) 권한이 필요합니다";
 
 export function MemberDetailPage({ mbrId }: Readonly<{ mbrId: number }>) {
   const canManage = useCan(CAPABILITY.MEMBER_MANAGE);
@@ -296,8 +296,7 @@ function MemberDetailView({ mbrId }: Readonly<{ mbrId: number }>) {
                 </div>
               )}
               <div className="mt-3 text-[12.5px] leading-[1.6] text-n500">
-                등급 · 상태의 최근 3건입니다. 역할 부여 · 종료까지 합친 시간축은 전체 보기에
-                있습니다.
+                등급·상태의 최근 3건입니다. 역할까지 합친 전체 기록은 전체 보기에 있습니다.
               </div>
             </Card>
           </div>
@@ -521,7 +520,7 @@ function MemberRoleCard({
                 ))}
               </div>
               <div className="mt-[7px] text-[12.5px] text-n500">
-                종료는 삭제가 아니라 종료일을 채우는 것이라 지난 재임이 그대로 남습니다
+                종료해도 지난 재임 기록은 남습니다
               </div>
             </>
           )}
@@ -615,7 +614,7 @@ function AssignmentRow({
               variant="ghost"
               size="sm"
               disabled={busy}
-              title="사이드바 프로필에 내걸 역할로 지정합니다 (권한과 무관)"
+              title="프로필에 보일 역할로 지정합니다 (권한과 무관)"
               onClick={onRepresent}
             >
               대표 지정

@@ -30,7 +30,7 @@ export function toEventErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return "행사를 다룰 권한이 없습니다 — 행사 관리(EVENT_MANAGE) 권한이 필요합니다";
     case EVENT_ERROR.EVENT_NOT_FOUND:
-      return "행사를 찾을 수 없습니다 — 이미 삭제된 행사일 수 있습니다";
+      return "행사가 없습니다 — 목록을 새로고침해주세요";
     default:
       return error.message;
   }
@@ -52,7 +52,7 @@ export function toEventSaveErrorMessage(error: unknown): string {
     case EVENT_ERROR.FORM_ALREADY_LINKED:
       return "이미 다른 행사에 연결된 폼입니다 — 다른 폼을 고르거나 그쪽 연결을 먼저 해제해주세요";
     case EVENT_ERROR.EVENT_CLASSIFICATION_NOT_FOUND:
-      return "없는 행사 분류입니다 — 분류가 방금 삭제됐을 수 있으니 다시 골라주세요";
+      return "없는 행사 분류입니다 — 다시 골라주세요";
     case EVENT_ERROR.EVENT_CONTENT_TOO_LARGE:
       return "본문이 100,000자를 넘어 저장할 수 없습니다 — 내용을 줄여주세요";
     default:
@@ -85,7 +85,7 @@ export function toEventImageUploadErrorMessage(error: unknown): string {
     case EVENT_IMAGE_ERROR.IMAGE_TOO_LARGE:
       return "이미지 용량이 허용 범위를 넘습니다 — 크기를 줄여 다시 올려주세요";
     case EVENT_IMAGE_ERROR.PUT_FAILED:
-      return "이미지를 저장소에 올리지 못했습니다 — 잠시 후 다시 시도해주세요";
+      return "이미지를 올리지 못했습니다 — 잠시 후 다시 시도해주세요";
     default:
       return toEventErrorMessage(error);
   }
@@ -100,7 +100,7 @@ export function toEventStatusErrorMessage(error: unknown): string {
   switch (error.code) {
     /* 전이표 밖 — 원인이 사용자가 아니라 화면이 낡은 것이다. 다시 불러온다고 알린다 */
     case EVENT_ERROR.INVALID_EVENT_STATUS_TRANSITION:
-      return "이미 상태가 바뀐 행사입니다. 최신 상태를 다시 불러옵니다";
+      return "이미 상태가 바뀐 행사입니다 — 다시 불러왔습니다";
     default:
       return toEventErrorMessage(error);
   }
@@ -185,9 +185,9 @@ export function toEventParticipantStatusErrorMessage(error: unknown): string {
   switch (error.code) {
     /* 전이표 밖 — 원인이 사용자가 아니라 화면이 낡은 것이다. 다시 불러온다고 알린다 */
     case EVENT_PARTICIPANT_ERROR.INVALID_PARTICIPANT_STATUS_TRANSITION:
-      return "이미 상태가 바뀐 참가자입니다. 최신 명단을 다시 불러옵니다";
+      return "이미 상태가 바뀐 참가자입니다 — 명단을 다시 불러왔습니다";
     case EVENT_PARTICIPANT_ERROR.EVENT_PARTICIPANT_NOT_FOUND:
-      return "명단에 없는 참가자입니다. 최신 명단을 다시 불러옵니다";
+      return "명단에 없는 참가자입니다 — 명단을 다시 불러왔습니다";
     default:
       return toEventErrorMessage(error);
   }
@@ -208,7 +208,7 @@ export function toEventCategoryErrorMessage(error: unknown): string {
     case EVENT_CATEGORY_ERROR.EVENT_CLASSIFICATION_IN_USE:
       return "이 분류를 쓰는 행사가 있어 삭제할 수 없습니다 — 행사의 분류를 먼저 바꿔주세요";
     case EVENT_CATEGORY_ERROR.EVENT_CLASSIFICATION_NOT_FOUND:
-      return "이미 없는 분류입니다. 목록을 다시 불러옵니다";
+      return "없는 분류입니다 — 목록을 다시 불러왔습니다";
     default:
       return toEventErrorMessage(error);
   }
@@ -232,13 +232,13 @@ export function toEventDeleteErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return NO_EVENT_DELETE;
     case EVENT_ERROR.EVENT_HAS_ACADEMIC_PROGRAM:
-      return "학술 활동이 딸린 행사라 지울 수 없습니다 — 학술 활동에서 이 행사의 프로그램을 먼저 정리해주세요";
+      return "학술 활동이 연결된 행사는 지울 수 없습니다 — 학술 활동에서 먼저 정리해주세요";
     /*
      * 둘 다 "화면이 낡았다"는 뜻이다 — 다른 탭에서 이미 지웠거나 이미 없어진 행사다.
      * 사과가 아니라 최신 목록을 가져오는 것이 다음 행동이라 문장이 그것을 말한다.
      */
     case EVENT_ERROR.EVENT_ALREADY_DELETED:
-      return "이미 지워진 행사입니다. 목록을 다시 불러옵니다";
+      return "이미 지워진 행사입니다 — 목록을 다시 불러왔습니다";
     default:
       return toEventErrorMessage(error);
   }
@@ -261,9 +261,9 @@ export function toEventRestoreErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return NO_EVENT_DELETE;
     case EVENT_ERROR.EVENT_NOT_DELETED:
-      return "이미 되살아난 행사입니다. 목록을 다시 불러옵니다";
+      return "이미 되살아난 행사입니다 — 목록을 다시 불러왔습니다";
     case EVENT_ERROR.EVENT_NOT_FOUND:
-      return "행사를 찾을 수 없습니다 — 목록을 다시 불러옵니다";
+      return "행사가 없습니다 — 목록을 다시 불러왔습니다";
     default:
       return toEventErrorMessage(error);
   }

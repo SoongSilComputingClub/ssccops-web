@@ -88,11 +88,11 @@ export const SYSTEM_FORM_BADGE: { label: string; tone: BadgeTone } = {
  * 삭제를 만드는 이슈가 문구를 새로 지어내지 않게 하기 위해서다.
  */
 export const SYSTEM_FORM_DELETE_LOCKED =
-  "시스템이 사용하는 폼이라 지울 수 없습니다 — 대신 접수를 마감하세요";
+  "시스템 폼은 지울 수 없습니다 — 대신 접수를 마감하세요";
 
 /** 코드가 요구하는 문항의 삭제 잠금 — 400 `SYSTEM_FORM_CONTRACT_VIOLATION`과 같은 문장 */
 export const SYSTEM_FORM_QITEM_LOCKED =
-  "이 문항은 시스템이 사용하고 있어 지울 수 없습니다 — 문구 수정과 문항 추가는 할 수 있습니다";
+  "시스템 문항은 지울 수 없습니다 — 문구 수정과 문항 추가만 됩니다";
 
 /**
  * 시스템 폼에서 무엇이 열려 있는가.
@@ -105,7 +105,7 @@ export const SYSTEM_FORM_OPEN_PARTS =
 
 /** 복제 안내 — 사본은 코드가 가리키지 않는 일반 폼이 된다 (서버 FormEntity.create) */
 export const SYSTEM_FORM_DUPLICATE_NOTE =
-  "시스템 폼을 복제하면 사본은 일반 폼이 됩니다 — 시스템 표시는 승계하지 않습니다";
+  "사본은 일반 폼이 됩니다";
 
 /** 문항 버전 안내 — 편집 화면이 저장 전에 알린다 */
 export const QITEM_VERSION_NOTE = "문항을 바꾸면 버전이 올라가고 변경 내역이 남습니다";
@@ -128,7 +128,7 @@ export const MULTIPLE_RESPONSE_NOTE =
  * "지난 응답을 무르라"가 아니라는 것을 응답이 있을 때만 한 줄로 알린다.
  */
 export const MULTIPLE_RESPONSE_CHANGE_NOTE =
-  "이미 받은 응답이 있어도 지금 바꿀 수 있습니다 — 끄면 지금부터 새 응답만 받지 않고, 이미 들어온 응답은 그대로 남습니다";
+  "끄면 새 응답만 받지 않습니다. 이미 들어온 응답은 그대로 남습니다.";
 
 /* ── 삭제 · 복구 (ssccops-web#359 · ssccops#261 결정 코멘트) ──── */
 
@@ -172,12 +172,12 @@ export const FORM_DELETE_HINT =
  * 0건이면 이 문장 자체를 띄우지 않는다(없는 위험을 경고하면 다음번 진짜 경고도 넘겨진다).
  */
 export function formDeleteResponseWarning(responseCount: number): string {
-  return `이 폼에 들어온 응답 ${responseCount}건이 신청자의 '내 신청'에서도 사라집니다 — 되살리면 함께 돌아옵니다`;
+  return `이 폼에 들어온 응답 ${responseCount}건이 신청자의 '내 신청'에서도 사라집니다. 되살리면 함께 돌아옵니다.`;
 }
 
 /** 응답이 0건일 때의 확인 문구 — 지금 사라지는 것이 목록의 한 줄뿐이라는 사실만 말한다 */
 export const FORM_DELETE_NO_RESPONSE_NOTE =
-  "아직 들어온 응답이 없습니다. 지워도 사라지는 것은 목록의 이 폼뿐입니다.";
+  "아직 응답이 없습니다.";
 
 /**
  * 복구가 무엇을 되돌리는지 — '지운 폼' 화면이 한 번, 복구 확인이 한 번 말한다.

@@ -62,7 +62,7 @@ export function ResponseDistribution({
           */}
           <div className="mb-[10px] text-[13px] text-n500">
             답한 사람 {d.answeredCount}명 / 응답 {totalCount}건
-            {d.multi && " · 복수 응답이라 선택지 비율의 합은 100%를 넘을 수 있습니다"}
+            {d.multi && " · 복수 응답이라 비율 합이 100%를 넘습니다"}
           </div>
 
           {!d.choice ? (

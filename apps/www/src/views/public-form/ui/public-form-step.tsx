@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { FormRef } from "@/entities/form";
 import { FormDescription, QitemCard, nextPageSeq, pageSeqOf, validatePageAnswers } from "@ssccops/form-renderer";
 import { NOT_ACCEPTING_MESSAGE, SaveStatusBar, useApplyForm } from "@/features/apply";
 import { SignInButton } from "@/features/auth";
@@ -30,9 +31,9 @@ import { MyResponsesPanel } from "./my-responses-panel";
  * 화면(`/f/{id}/done`)으로 옮겨 간다(행사 신청은 같은 자리에서 완료를 그린다 — 그쪽은 돌아갈
  * 행사가 있어 굳이 주소를 바꿀 이유가 없다).
  */
-export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
+export function PublicFormStep({ formRef }: Readonly<{ formRef: FormRef }>) {
   const router = useRouter();
-  const apply = useApplyForm(formId);
+  const apply = useApplyForm(formRef);
   const [page, setPage] = useState(0);
 
   const { status, form } = apply;
@@ -47,7 +48,7 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
         title="로그인이 만료되었습니다"
         description="다시 로그인하면 작성 중이던 답을 이어서 쓸 수 있습니다."
       >
-        <SignInButton next={ROUTES.publicForm(formId)} label="다시 로그인" />
+        <SignInButton next={ROUTES.publicForm(formRef)} label="다시 로그인" />
       </Notice>
     );
   }
@@ -69,7 +70,7 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
     return (
       <Notice
         title="존재하지 않는 폼입니다"
-        description="주소가 잘못되었거나 폼이 삭제되었습니다 — 링크를 받은 곳에서 다시 확인해 주세요."
+        description="없는 폼입니다. 링크를 받은 곳에서 다시 확인해주세요."
       />
     );
   }
@@ -82,7 +83,7 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
     return (
       <Notice
         title={NOT_ACCEPTING_MESSAGE}
-        description="접수 기간이 아니거나 아직 공개되지 않은 폼입니다. 접수 일정은 안내받은 채널에서 확인해 주세요."
+        description="지금은 접수하지 않는 폼입니다. 접수 일정은 안내받은 곳에서 확인해주세요."
       />
     );
   }
@@ -101,8 +102,8 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
         title="이미 제출한 폼입니다"
         description={
           form?.submittedAt
-            ? `제출 일시 ${formatDt(form.submittedAt)} — 진행 상황은 '내 신청'에서 확인할 수 있고, 결과는 등록한 연락처로 안내드립니다`
-            : "진행 상황은 '내 신청'에서 확인할 수 있습니다 — 결과는 등록한 연락처로 안내드립니다"
+            ? `제출 일시 ${formatDt(form.submittedAt)} — 진행 상황은 '내 신청'에서, 결과는 등록한 연락처로 안내드립니다`
+            : "진행 상황은 '내 신청'에서, 결과는 등록한 연락처로 안내드립니다"
         }
       >
         {/*
@@ -152,7 +153,7 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
     return (
       <Notice
         title="아직 문항이 준비되지 않았습니다"
-        description="운영진에게 문의해 주세요."
+        description="운영진에게 문의해주세요."
       />
     );
   }
@@ -186,7 +187,7 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
 
     const outcome = await apply.submit();
     if (outcome === "submitted") {
-      router.push(ROUTES.publicFormDone(form.formId));
+      router.push(ROUTES.publicFormDone(form.formKey ?? form.formId));
       return;
     }
     if (outcome === "invalid") {
@@ -229,7 +230,7 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
         건수는 `myResponseCount`가 아니라 이 목록이 말한다. 두 값이 같은 집계라도 화면에서 두
         출처를 섞으면 한쪽만 다시 불렀을 때 숫자와 목록이 어긋난다.
       */}
-      {form.mltplRspnsYn && <MyResponsesPanel formId={form.formId} />}
+      {form.mltplRspnsYn && <MyResponsesPanel formRef={form.formKey ?? form.formId} />}
 
       {apply.restored && (
         <div className="rounded-[12px] bg-accent-soft px-[13px] py-[10px] text-[13px] text-accent">

@@ -15,6 +15,7 @@ import {
   submitFormResponse,
   type PublicForm,
 } from "@/entities/form";
+import type { FormRef } from "@/entities/form";
 import { isSignupRequired, isUnauthenticated } from "@/shared/api/auth-error";
 import { API_ERROR, ApiError } from "@/shared/api/client";
 import { applyLoadErrorMessage, draftSaveErrorMessage, submitErrorMessage } from "./apply-error";
@@ -175,7 +176,7 @@ function outcomeOf(error: unknown): Exclude<ApplyFormStatus, "loading" | "ready"
 
 /** 폼 + 초안을 이어서 읽는다. 초안 조회는 폼이 접수 가능할 때만 뜻이 있어 순서를 지킨다 */
 async function loadApplyForm(
-  formId: number,
+  formId: FormRef,
   key: string,
 ): Promise<Omit<LoadedForm, "errorMessage"> & { savedAt: number }> {
   const form = await fetchPublicForm(formId);
@@ -216,7 +217,7 @@ function placeholder(
   return { key, outcome, errorMessage, form: null, answers: EMPTY_ANSWERS, restored: false };
 }
 
-export function useApplyForm(formId: number): ApplyFormController {
+export function useApplyForm(formId: FormRef): ApplyFormController {
   const [reloadKey, setReloadKey] = useState(0);
   const requestKey = `${formId}|${reloadKey}`;
 
@@ -432,7 +433,7 @@ export function useApplyForm(formId: number): ApplyFormController {
     if (Object.keys(issues).length > 0) {
       if (aliveRef.current) {
         setErrors(issues);
-        setSubmitMessage("입력을 확인해 주세요");
+        setSubmitMessage("입력을 확인해주세요");
       }
       return "invalid";
     }

@@ -25,7 +25,7 @@ function toCommonMessage(error: ApiError): string {
      */
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "역할을 다룰 권한(ROLE_MANAGE)이 없습니다 — 최고관리자에게 요청해주세요";
+      return "역할을 다룰 권한이 없습니다 — 권한 관리(ROLE_MANAGE) 권한이 필요합니다";
     default:
       return error.message;
   }
@@ -50,11 +50,11 @@ export function toRoleErrorMessage(error: unknown): string {
      * 삭제를 여는 사람이 무엇을 안내해야 하는지 알 수 있게 남긴다.
      */
     case ROLE_ERROR.ROLE_IN_USE:
-      return "한 번이라도 배정됐거나 권한이 붙어 있는 역할은 지울 수 없습니다 — 이름을 바꿔 계속 쓰거나 그대로 두세요";
+      return "배정된 적 있거나 권한이 붙은 역할은 지울 수 없습니다";
     case ROLE_ERROR.ROLE_NOT_FOUND:
-      return "없는 역할입니다. 다른 곳에서 이미 지웠을 수 있어 목록으로 돌아갑니다";
+      return "없는 역할입니다 — 목록으로 돌아갑니다";
     case ROLE_ERROR.ROLE_CLASSIFICATION_NOT_FOUND:
-      return "없는 역할 분류입니다. 분류가 그 사이에 바뀐 것 같아 다시 불러옵니다";
+      return "없는 역할 분류입니다 — 목록을 다시 불러왔습니다";
     // 어느 칸이 왜 틀렸는지를 서버 문장이 담고 있다 — 뭉개면 입력란 옆에 붙일 말이 사라진다
     case ROLE_ERROR.VALIDATION_FAILED:
       return error.message;
@@ -77,9 +77,9 @@ export function toRoleClassificationErrorMessage(error: unknown): string {
   switch (error.code) {
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "역할 분류를 바꿀 권한(ROLE_MANAGE)이 없습니다 — 조회만 할 수 있습니다";
+      return "역할 분류를 바꿀 권한이 없습니다 — 권한 관리(ROLE_MANAGE) 권한이 필요합니다";
     case ROLE_CLASSIFICATION_ERROR.SYSTEM_ROLE_CLASSIFICATION_IMMUTABLE:
-      return "SYSTEM 분류는 이름을 바꾸거나 지울 수 없습니다 — 최고관리자 역할이 매달려 있어 모든 권한 확인의 기준이 되는 분류입니다";
+      return "SYSTEM 분류는 이름을 바꾸거나 지울 수 없습니다";
     case ROLE_CLASSIFICATION_ERROR.ROLE_CLASSIFICATION_CODE_DUPLICATED:
       return "이미 있는 분류 코드입니다 — 다른 코드를 써주세요";
     /*
@@ -89,7 +89,7 @@ export function toRoleClassificationErrorMessage(error: unknown): string {
     case ROLE_CLASSIFICATION_ERROR.ROLE_CLASSIFICATION_IN_USE:
       return "이 분류를 쓰는 역할이 있어 지울 수 없습니다 — 역할을 다른 분류로 먼저 옮겨주세요";
     case ROLE_CLASSIFICATION_ERROR.ROLE_CLASSIFICATION_NOT_FOUND:
-      return "없는 분류입니다. 다른 곳에서 이미 지웠을 수 있어 목록을 다시 불러옵니다";
+      return "없는 분류입니다 — 목록을 다시 불러왔습니다";
     case ROLE_CLASSIFICATION_ERROR.VALIDATION_FAILED:
       return error.message;
     default:

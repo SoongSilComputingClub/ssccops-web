@@ -111,7 +111,7 @@ async function SignedInBody({
     session = await fetchAuthSession();
   } catch (error) {
     if (isUnauthenticated(error)) return <SessionExpiredNotice eventId={event.eventId} />;
-    return <EmptyState title="신청을 시작하지 못했습니다 — 잠시 후 다시 시도해 주세요" />;
+    return <EmptyState title="신청을 시작하지 못했습니다 — 잠시 후 다시 시도해주세요" />;
   }
 
   return (
@@ -179,7 +179,7 @@ function ClosedNotice({ event }: Readonly<{ event: PublicEventDetail }>) {
   return (
     <Notice
       title={`지금은 신청을 받지 않습니다 — ${receipt?.label ?? "모집 준비 중"}`}
-      description="모집이 열리면 이 화면에서 바로 신청할 수 있습니다. 행사 안내에서 일정을 확인해 주세요."
+      description="모집이 열리면 이 화면에서 바로 신청할 수 있습니다. 행사 안내에서 일정을 확인해주세요."
     >
       <BackToEvent eventId={event.eventId} />
     </Notice>
@@ -191,7 +191,7 @@ function SignInNotice({ eventId }: Readonly<{ eventId: number }>) {
   return (
     <Notice
       title="로그인하면 신청할 수 있습니다"
-      description="행사 신청은 동아리 회원만 할 수 있습니다. 로그인한 뒤 이 화면으로 바로 돌아옵니다 — 아직 회원이 아니어도 여기서 가입까지 마칠 수 있습니다."
+      description="행사 신청은 동아리 회원만 할 수 있습니다. 로그인하면 이 화면으로 돌아옵니다. 회원이 아니어도 여기서 가입할 수 있습니다."
     >
       <SignInButton next={ROUTES.eventApply(eventId)} label="구글로 로그인" />
     </Notice>
@@ -203,7 +203,7 @@ function SessionExpiredNotice({ eventId }: Readonly<{ eventId: number }>) {
   return (
     <Notice
       title="로그인이 만료되었습니다"
-      description="보안을 위해 일정 시간이 지나면 로그인이 풀립니다. 다시 로그인하면 이어서 신청할 수 있습니다."
+      description="로그인이 풀렸습니다. 다시 로그인하면 이어서 신청할 수 있습니다."
     >
       <SignInButton next={ROUTES.eventApply(eventId)} label="다시 로그인" />
     </Notice>

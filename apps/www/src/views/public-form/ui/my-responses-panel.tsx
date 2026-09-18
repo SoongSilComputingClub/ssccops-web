@@ -1,6 +1,6 @@
 "use client";
 
-import { RESPONSE_STATUS_BADGE } from "@/entities/form";
+import { RESPONSE_STATUS_BADGE, FormRef } from "@/entities/form";
 import { useMyResponses } from "@/features/form";
 import { formatDt } from "@/shared/lib/date";
 import { Badge, Card } from "@/shared/ui";
@@ -17,8 +17,8 @@ import { Badge, Card } from "@/shared/ui";
  * 순번(`rspnsSeq`)과 회차(`sbmsnSeq`)를 한 자리에 섞지 않는다 — 앞은 몇 번째로 낸 건인가이고
  * 뒤는 그 한 건을 몇 번 냈는가다. 회차는 재제출한 건에만 붙는다(1회차는 적을 것이 없다).
  */
-export function MyResponsesPanel({ formId }: Readonly<{ formId: number }>) {
-  const { responses, status, errorMessage, reload } = useMyResponses(formId);
+export function MyResponsesPanel({ formRef }: Readonly<{ formRef: FormRef }>) {
+  const { responses, status, errorMessage, reload } = useMyResponses(formRef);
 
   return (
     <Card className="flex flex-col gap-[2px]">
@@ -32,7 +32,7 @@ export function MyResponsesPanel({ formId }: Readonly<{ formId: number }>) {
       </div>
       {/* 1건 폼과 갈리는 이유를 여기서 밝힌다 — 그쪽은 제출 직후 화면 자체가 바뀐다 */}
       <p className="text-[13px] leading-[1.6] text-n500">
-        이 폼은 한 사람이 여러 건을 낼 수 있어, 제출한 뒤에도 작성 화면이 계속 열려 있습니다.
+        여러 건을 낼 수 있는 폼입니다. 제출한 뒤에도 더 낼 수 있습니다.
       </p>
 
       {status === "loading" && (

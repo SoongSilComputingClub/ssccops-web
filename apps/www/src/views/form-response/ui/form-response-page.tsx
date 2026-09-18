@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { RESPONSE_STATUS_BADGE, type MyFormResponseDetail } from "@/entities/form";
+import { RESPONSE_STATUS_BADGE, type MyFormResponseDetail, FormRef, isFormRef } from "@/entities/form";
 // 배럴을 거치지 않는다 — 배럴이 SSR 로더를 재export 하면 클라 번들이 오염된다(entities/form/index.ts)
 import { fetchMyResponseDetail } from "@/entities/form/api/my-response-detail";
 import { SignInButton } from "@/features/auth";
@@ -45,21 +45,20 @@ import { ReviewTimeline } from "./review-timeline";
  * 않게). 화면도 둘을 구분하지 않는다.
  */
 export async function FormResponsePage({
-  formId,
+  formRef,
   formRspnsId,
 }: Readonly<{
-  formId: number;
+  formRef: FormRef;
   formRspnsId: number;
 }>) {
   if (
-    !Number.isInteger(formId) ||
-    formId <= 0 ||
+    !isFormRef(formRef) ||
     !Number.isInteger(formRspnsId) ||
     formRspnsId <= 0
   ) {
     return (
       <FormResponseShell>
-        <EmptyState title="잘못된 주소입니다 — 링크를 다시 확인해 주세요" />
+        <EmptyState title="잘못된 주소입니다 — 링크를 다시 확인해주세요" />
       </FormResponseShell>
     );
   }
@@ -70,9 +69,9 @@ export async function FormResponsePage({
       <FormResponseShell>
         <Notice
           title="로그인이 필요합니다"
-          description="자기가 낸 응답은 본인만 볼 수 있습니다."
+          description="응답은 낸 사람만 볼 수 있습니다."
         >
-          <SignInButton next={ROUTES.myFormResponse(formId, formRspnsId)} />
+          <SignInButton next={ROUTES.myFormResponse(formRef, formRspnsId)} />
         </Notice>
       </FormResponseShell>
     );
@@ -80,7 +79,7 @@ export async function FormResponsePage({
 
   let detail: MyFormResponseDetail;
   try {
-    detail = await fetchMyResponseDetail(formId, formRspnsId);
+    detail = await fetchMyResponseDetail(formRef, formRspnsId);
   } catch (error) {
     if (isUnauthenticated(error)) {
       return (
@@ -90,7 +89,7 @@ export async function FormResponsePage({
             description="다시 로그인하면 이어서 볼 수 있습니다."
           >
             <SignInButton
-              next={ROUTES.myFormResponse(formId, formRspnsId)}
+              next={ROUTES.myFormResponse(formRef, formRspnsId)}
               label="다시 로그인"
             />
           </Notice>
@@ -126,7 +125,7 @@ export async function FormResponsePage({
         </h1>
         {canResubmit && (
           <p className="text-[13.5px] leading-[1.7] text-n500">
-            아래 사유를 확인하고 답을 고쳐 다시 제출해 주세요. 이전에 낸 답이 그대로 채워져
+            아래 사유를 확인하고 답을 고쳐 다시 제출해주세요. 이전에 낸 답이 그대로 채워져
             있습니다.
           </p>
         )}
@@ -144,7 +143,7 @@ export async function FormResponsePage({
        */}
       {canResubmit ? (
         <ResubmitForm
-          formId={formId}
+          formRef={formRef}
           composition={detail.qitemCpstCn}
           initialAnswers={detail.rspnsCn}
         />
@@ -161,11 +160,11 @@ export async function FormResponsePage({
             description={
               isDraft
                 ? "폼에서 이어서 작성한 뒤 제출해주세요."
-                : "다시 낼 수 있는 것은 운영진이 수정을 요청한 응답뿐입니다."
+                : "운영진이 수정을 요청한 응답만 다시 낼 수 있습니다."
             }
           >
             <Link
-              href={isDraft ? ROUTES.publicForm(formId) : ROUTES.myApplications}
+              href={isDraft ? ROUTES.publicForm(formRef) : ROUTES.myApplications}
               className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
             >
               {isDraft ? "이어서 작성하기" : "내 신청으로"}

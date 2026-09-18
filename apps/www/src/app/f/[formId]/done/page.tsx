@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 
 export default async function Page({ params }: Readonly<PageProps<"/f/[formId]/done">>) {
   const { formId } = await params;
-  return <PublicFormDonePage formId={Number(formId)} />;
+  return <PublicFormDonePage formRef={formId} />;
 }

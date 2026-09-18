@@ -81,14 +81,14 @@ export function nextStepOf(
   const stage = WORK_STTS_NM[subWork.workStatus];
   const approval = subWork.approvalRequired
     ? `완료 승인은 ${approverLabel(subWork)} 권한이 있는 사람이 합니다.`
-    : `이 유형은 승인 단계가 없습니다 — 검토 단계에서 ${OWNER_OR_MANAGER}이 완료 승인을 누르면 완료됩니다.`;
+    : `이 유형은 승인 단계가 없습니다. 검토 단계에서 ${OWNER_OR_MANAGER}이 완료 승인을 하면 끝납니다.`;
 
   const blocks: NextStepBlock[] = [];
 
   switch (subWork.workStatus) {
     case "PLANNING": {
       if (!ctx.canActOnOwnerTasks) {
-        blocks.push({ kind: "permission", text: `착수는 ${OWNER_OR_MANAGER}이 누릅니다.` });
+        blocks.push({ kind: "permission", text: `착수는 ${OWNER_OR_MANAGER}이 합니다.` });
       }
       return { stage, next: "착수", blocks, approval };
     }
@@ -100,7 +100,7 @@ export function nextStepOf(
       if (!ctx.canActOnOwnerTasks) {
         blocks.push({
           kind: "permission",
-          text: `완료 승인 요청은 ${OWNER_OR_MANAGER}이 누릅니다.`,
+          text: `완료 승인 요청은 ${OWNER_OR_MANAGER}이 합니다.`,
         });
       }
       return { stage, next: "완료 승인 요청", blocks, approval };
@@ -111,7 +111,7 @@ export function nextStepOf(
       if (subWork.quorum.needed && subWork.quorum.met !== true) {
         blocks.push({
           kind: "quorum",
-          text: `동의 ${subWork.quorum.currentCount ?? 0}/${subWork.quorum.requiredCount ?? 0} — 정족수를 채워야 완료 승인할 수 있습니다.`,
+          text: `동의 ${subWork.quorum.currentCount ?? 0}/${subWork.quorum.requiredCount ?? 0} — 정족수를 채워야 완료 승인이 됩니다.`,
         });
       }
       if (!subWork.canApprove) {
@@ -119,7 +119,7 @@ export function nextStepOf(
           kind: "permission",
           text: subWork.approvalRequired
             ? `완료 승인 권한이 없습니다 — ${approverLabel(subWork)} 권한이 필요합니다.`
-            : `완료 승인은 ${OWNER_OR_MANAGER}이 누릅니다.`,
+            : `완료 승인은 ${OWNER_OR_MANAGER}이 합니다.`,
         });
       }
       return { stage, next: "완료 승인", blocks, approval };
@@ -159,7 +159,7 @@ export function NextStepGuide({
           <span className="text-n500">다음</span>{" "}
           <span className="font-medium">{step.next}</span>
           {step.blocks.length === 0 && (
-            <span className="text-n400"> · 지금 누를 수 있습니다</span>
+            <span className="text-n400"> · 지금 할 수 있습니다</span>
           )}
         </span>
       </div>

@@ -32,7 +32,7 @@ export function toFormTemplateErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return NO_TEMPLATE_WRITE;
     case FORM_TEMPLATE_ERROR.FORM_TEMPLATE_NOT_FOUND:
-      return "템플릿을 찾을 수 없습니다 — 목록을 다시 불러온 뒤 선택해주세요";
+      return "템플릿이 없습니다 — 목록을 새로고침해주세요";
     /*
      * 어느 문항이 잘못됐는지는 서버 응답만으로 알 수 없다(계약에 그 자리가 없다). 대신 편집기가
      * 같은 규칙으로 미리 검사해 문항 카드에 표시하므로, 여기서는 서버 문장을 덧붙여 둔다.
@@ -69,7 +69,7 @@ export function toFormFromTemplateErrorMessage(error: unknown): string {
  */
 export function toTemplateFromFormErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.code === FORM_ERROR.FORM_NOT_FOUND) {
-    return "폼을 찾을 수 없습니다 — 이미 삭제된 폼일 수 있습니다";
+    return "폼이 없습니다 — 목록을 새로고침해주세요";
   }
   return toFormTemplateErrorMessage(error);
 }

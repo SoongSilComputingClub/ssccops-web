@@ -129,7 +129,7 @@ export function SignupStep({
           <h2 className="text-[17px] font-semibold">신청 전 회원 정보를 남겨 주세요</h2>
           <p className="text-[13.5px] leading-[1.7] text-n500">
             행사 신청은 동아리 회원만 할 수 있습니다. 아래 정보만 남기면 바로 신청서로
-            이어집니다 — 다른 화면으로 이동하지 않습니다.
+            이어집니다.
           </p>
         </div>
 

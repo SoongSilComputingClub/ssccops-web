@@ -424,8 +424,7 @@ function DashboardBody({ data }: Readonly<{ data: LeaderDashboardReady }>) {
             })}
           </div>
           <div className="mt-[10px] text-[12.5px] text-n500">
-            대시보드는 활동 하나를 보여 줍니다 — 위 드롭다운으로 바꾸거나 카드를 눌러
-            상세에서 봅니다.
+            활동 하나씩 보입니다. 위 드롭다운으로 바꿉니다.
           </div>
         </Card>
       )}
@@ -448,7 +447,7 @@ export async function StudioDashboardPage({
           학술 대시보드
         </h1>
         <p className="text-[13.5px] text-n500">
-          내 활동의 진행 현황 · 이번 주 회차 · 학술국장 처리 현황
+          내 활동의 이번 주 회차와 처리 현황
         </p>
       </header>
 

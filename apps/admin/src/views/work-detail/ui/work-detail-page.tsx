@@ -95,7 +95,7 @@ export function WorkDetailPage({ workId }: Readonly<{ workId: number }>) {
           {status === "loading" && <DetailSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="업무를 찾을 수 없습니다 — 이미 삭제된 업무일 수 있습니다."
+              message="없는 업무입니다. 목록으로 돌아가주세요."
               action={{ label: "업무 목록", onClick: () => router.replace(ROUTES.works) }}
             />
           )}
@@ -247,7 +247,7 @@ export function WorkDetailPage({ workId }: Readonly<{ workId: number }>) {
               ]}
             />
 
-            <SectionLabel className="mt-4 mb-[10px]">확장 속성 · work</SectionLabel>
+            <SectionLabel className="mt-4 mb-[10px]">추가 정보</SectionLabel>
             <KeyValueGrid
               labelWidth={88}
               items={[

@@ -82,7 +82,7 @@ function messageOf(error: unknown, targetType: LmsShareTargetType): string {
       case "AUTHORITY_REQUIRED":
         return `공유 링크를 만들 권한이 없습니다 — ${rule.readAuthority} 권한이 필요합니다`;
       case "NOT_FOUND":
-        return `${withObjectParticle(rule.label)} 찾을 수 없습니다 — 이미 지워졌을 수 있습니다`;
+        return `${withObjectParticle(rule.label)} 없습니다 — 새로고침해주세요`;
       default:
         return "공유 링크를 처리하지 못했습니다 — 잠시 후 다시 시도해주세요";
     }

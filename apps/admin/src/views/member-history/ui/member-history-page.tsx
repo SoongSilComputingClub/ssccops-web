@@ -45,10 +45,10 @@ import { Badge, Card, Chip, EmptyState, PageBody, PageHeader } from "@/shared/ui
  */
 
 const NO_MEMBER_MANAGE =
-  "회원 관리(MEMBER_MANAGE) 권한이 없어 변경 이력을 볼 수 없습니다 — 운영진에게 요청해주세요";
+  "변경 이력을 볼 권한이 없습니다 — 회원 관리(MEMBER_MANAGE) 권한이 필요합니다";
 
 /** 이 화면에 담기는 것이 무엇인지 — 한 줄로 밝힌다 (위 주석) */
-const SCOPE_NOTE = "등급 · 상태 · 역할 · 회원 정보 변경이 기록됩니다";
+const SCOPE_NOTE = "등급·상태·역할·회원 정보가 바뀐 기록입니다";
 
 /**
  * 역할 줄의 변경자·사유가 비어 있는 이유.
@@ -60,7 +60,7 @@ const SCOPE_NOTE = "등급 · 상태 · 역할 · 회원 정보 변경이 기록
  * 그것은 사실이 아니다(적을 자리 자체가 없다).
  */
 const ROLE_BLANK_NOTE =
-  "역할 부여·종료에는 변경자와 변경 사유가 남지 않습니다 — 기록할 자리가 없어 서버가 알려줄 수 없는 값이라 '-'로 둡니다. 적지 않은 것이 아닙니다.";
+  "역할 부여·종료에는 변경자와 사유가 기록되지 않아 '-'로 보입니다.";
 
 /**
  * 회원 정보 줄에 적용일·사유 자리가 없는 이유 (#237).
@@ -71,7 +71,7 @@ const ROLE_BLANK_NOTE =
  * 그리지 않는다** — 빈칸을 그리면 "적을 수 있었는데 비워 뒀다"로 읽힌다.
  */
 const PROFILE_BLANK_NOTE =
-  "회원 정보 변경에는 적용일과 변경 사유가 없습니다 — 고친 순간이 곧 적용이라 그 자리를 비워 둡니다.";
+  "회원 정보 변경은 고친 순간 적용되어 적용일과 사유가 없습니다.";
 
 /** 필터 칩 이름 — 서버 `type` 어휘와 1:1이다 */
 const TYPE_LABEL: Record<MemberHistoryType, string> = {

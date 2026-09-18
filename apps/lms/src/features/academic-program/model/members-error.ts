@@ -22,15 +22,15 @@ export function toAcademicProgramMembersErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case ACADEMIC_PROGRAM_MEMBER_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
-      return "활동을 찾을 수 없습니다 — 주소가 잘못됐거나 아직 이관되지 않은 활동일 수 있습니다";
+      return "활동이 없습니다 — 내 활동 목록을 새로고침해주세요";
     case ACADEMIC_PROGRAM_MEMBER_ERROR.VALIDATION_FAILED:
     case ACADEMIC_PROGRAM_MEMBER_ERROR.INVALID_CODE_VALUE:
-      return "목록 조건이 서버 기준과 다릅니다. 화면을 새로고침해주세요";
+      return "선택지가 바뀌었습니다 — 새로고침해주세요";
     case AUTH_ERROR.SIGNUP_REQUIRED:
       // 여기까지 오면 각 화면이 가입 안내로 갈랐어야 하는 코드다 — 그래도 오면 일반 문구로 받는다
       return "회원만 볼 수 있는 화면입니다";
     case API_ERROR.CONFIG_MISSING:
-      return "서버 주소가 설정되지 않아 팀원 명단을 불러올 수 없습니다";
+      return "지금은 팀원 명단을 불러올 수 없습니다 — 잠시 후 다시 시도해주세요";
     case API_ERROR.NETWORK_ERROR:
       return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
     default:

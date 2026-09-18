@@ -199,7 +199,7 @@ export function QitemComposer({
      * 되돌리게 하지 말고, 누르는 순간 막는다.
      */
     if (inUse.includes(qitemId)) {
-      flash("이미 응답이 있어 이 문항은 삭제할 수 없습니다");
+      flash("응답이 있는 문항은 지울 수 없습니다");
       return;
     }
     /*
@@ -328,7 +328,7 @@ export function QitemComposer({
               }))
             }
             rows={2}
-            placeholder="페이지 설명 (선택) — 줄바꿈과 마크다운을 쓸 수 있습니다"
+            placeholder="페이지 설명 (선택, 마크다운 가능)"
           />
           <DescriptionPreview value={pages[page]?.pageDescCn} />
         </div>
@@ -414,7 +414,7 @@ export function QitemComposer({
                       value={q.qitemDescCn ?? ""}
                       onChange={(e) => patchQ(q.qitemId, { qitemDescCn: e.target.value })}
                       rows={2}
-                      placeholder="문항 설명 (선택) — 줄바꿈과 마크다운을 쓸 수 있습니다"
+                      placeholder="문항 설명 (선택, 마크다운 가능)"
                     />
                     <DescriptionPreview value={q.qitemDescCn} />
                     <div className="mt-2 flex flex-wrap gap-[6px]">

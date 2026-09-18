@@ -301,7 +301,7 @@ function FormDetailContent({ form, reload }: Readonly<{ form: FormDetail; reload
    * 내부 이동(`router.push`)을 쓰지 않는다 — 옮기기 전 코드가 그랬고, 그대로 두면 이 앱에
    * 없는 주소로 가 404가 된다. 오리진 설정이 비어 있으면 `null`이라 링크 자리를 감춘다.
    */
-  const publicUrl = publicFormUrl(form.formId);
+  const publicUrl = publicFormUrl(form.formKey ?? form.formId);
   const copyLink = () => {
     if (!publicUrl) return;
     navigator.clipboard?.writeText(publicUrl);

@@ -42,14 +42,14 @@ export async function AttendanceRosterPage({
       <header className="flex flex-col gap-[2px]">
         <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">출석부</h1>
         <p className="text-[13.5px] text-n500">
-          회차별 참석 현황입니다 — 칸을 눌러 출석을 고칠 수 있습니다. 승인된 회차는 잠깁니다
+          칸을 눌러 출석을 고칩니다. 승인된 회차는 잠깁니다.
         </p>
       </header>
 
       {selection.outcome === "unauthenticated" && (
         <LoginGate
           title="로그인이 필요합니다"
-          description="출석부는 활동의 스터디장만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
+          description="출석부는 스터디장만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
         />
       )}
       {selection.outcome === "signup-required" && (
@@ -83,7 +83,7 @@ async function RosterBody({ academicProgramId }: Readonly<{ academicProgramId: n
     return (
       <LoginGate
         title="로그인이 필요합니다"
-        description="출석부는 활동의 스터디장만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
+        description="출석부는 스터디장만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
       />
     );
   }

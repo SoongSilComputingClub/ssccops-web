@@ -46,9 +46,9 @@ import { Badge, Button, Card, EmptyState, PageBody, PageHeader, Segmented, TextF
 const NO_MANAGE =
   "역할 분류를 바꿀 권한(ROLE_MANAGE)이 없습니다 — 조회만 할 수 있습니다";
 const SYSTEM_NAME_LOCKED =
-  "SYSTEM 분류는 최고관리자 역할이 매달린 분류라 이름을 바꿀 수 없습니다 — 표시 순번은 바꿀 수 있습니다";
+  "SYSTEM 분류는 이름을 바꿀 수 없습니다 — 표시 순번만 바꿀 수 있습니다";
 const SYSTEM_DELETE_LOCKED =
-  "SYSTEM 분류는 최고관리자 역할이 매달린 분류라 지울 수 없습니다";
+  "SYSTEM 분류는 지울 수 없습니다";
 
 /* 오류 문구를 입력란에 묶어 준다 — 색과 위치만으로는 어느 칸의 이야기인지 전달되지 않는다 */
 const ADD_ERROR_ID = "role-clsf-add-error";
@@ -384,8 +384,8 @@ export function RoleLabelsPage() {
           ))}
 
         <div className="mt-3 max-w-[820px] text-[13.5px] leading-[1.7] text-n500">
-          역할이 하나라도 지정된 분류는 삭제할 수 없습니다 — 역할을 다른 분류로 먼저
-          옮겨주세요. 분류명을 바꿔도 {FIELD_LABEL.roleClassificationCode}는 그대로
+          역할이 하나라도 있는 분류는 지울 수 없습니다. 역할을 다른 분류로 먼저 옮겨주세요.
+          분류명을 바꿔도 {FIELD_LABEL.roleClassificationCode}는 그대로
           유지됩니다. {FIELD_LABEL.displayOrder}은 목록을 그리는 순서이며 비워 두면 지금
           값을 그대로 씁니다.
           <br />

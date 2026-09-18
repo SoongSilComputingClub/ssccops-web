@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { FormRef, isFormRef } from "@/entities/form";
 import { fetchAuthSession, type AuthSession } from "@/entities/session";
 import { SignInButton } from "@/features/auth";
 import { currentAccessToken, isUnauthenticated } from "@/shared/api/authed-client";
@@ -38,11 +39,11 @@ import { PublicFormFlow } from "./public-form-flow";
  * 세로 나열이라(`QitemCard`가 2단 배치를 하지 않는다) 폭만 넓히면 짧은 입력칸이 화면 끝까지
  * 늘어나 오히려 읽기 나빠진다. max-w는 상한이라 좁은 화면에서는 px-4가 그대로 지배한다.
  */
-export async function PublicFormPage({ formId }: Readonly<{ formId: number }>) {
-  if (!Number.isInteger(formId) || formId <= 0) {
+export async function PublicFormPage({ formRef }: Readonly<{ formRef: FormRef }>) {
+  if (!isFormRef(formRef)) {
     return (
       <PublicFormShell>
-        <EmptyState title="잘못된 주소입니다 — 링크를 다시 확인해 주세요" />
+        <EmptyState title="잘못된 주소입니다 — 링크를 다시 확인해주세요" />
       </PublicFormShell>
     );
   }
@@ -55,7 +56,7 @@ export async function PublicFormPage({ formId }: Readonly<{ formId: number }>) {
           title="로그인이 필요합니다"
           description="이 폼은 SSCC 회원만 답을 낼 수 있습니다. 로그인하면 이어서 작성할 수 있습니다."
         >
-          <SignInButton next={ROUTES.publicForm(formId)} />
+          <SignInButton next={ROUTES.publicForm(formRef)} />
         </Notice>
       </PublicFormShell>
     );
@@ -63,7 +64,7 @@ export async function PublicFormPage({ formId }: Readonly<{ formId: number }>) {
 
   return (
     <PublicFormShell>
-      <SignedInBody formId={formId} />
+      <SignedInBody formRef={formRef} />
     </PublicFormShell>
   );
 }
@@ -74,7 +75,7 @@ export async function PublicFormPage({ formId }: Readonly<{ formId: number }>) {
  * `/v1/auth/session`은 **미가입자에게도 200**을 준다(`signedUp: false`). 그래서 가입이
  * 필요하다는 것을 폼 조회가 403으로 깨지고 나서 배우지 않아도 된다 — 세션이 곧바로 답한다.
  */
-async function SignedInBody({ formId }: Readonly<{ formId: number }>) {
+async function SignedInBody({ formRef }: Readonly<{ formRef: FormRef }>) {
   let session: AuthSession;
   try {
     session = await fetchAuthSession();
@@ -85,16 +86,16 @@ async function SignedInBody({ formId }: Readonly<{ formId: number }>) {
           title="로그인이 만료되었습니다"
           description="다시 로그인하면 작성 중이던 답을 이어서 쓸 수 있습니다."
         >
-          <SignInButton next={ROUTES.publicForm(formId)} label="다시 로그인" />
+          <SignInButton next={ROUTES.publicForm(formRef)} label="다시 로그인" />
         </Notice>
       );
     }
-    return <EmptyState title="폼을 여는 데 실패했습니다 — 잠시 후 다시 시도해 주세요" />;
+    return <EmptyState title="폼을 여는 데 실패했습니다 — 잠시 후 다시 시도해주세요" />;
   }
 
   return (
     <PublicFormFlow
-      formId={formId}
+      formRef={formRef}
       signedUp={session.signedUp}
       authUserEmail={session.authUser.email}
       authUserName={session.authUser.name}

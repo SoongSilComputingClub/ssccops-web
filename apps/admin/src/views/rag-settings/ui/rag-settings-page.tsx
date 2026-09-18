@@ -245,7 +245,7 @@ export function RagSettingsPage() {
         const applyTitle = !canManage
           ? NO_RAG_DOCUMENT_MANAGE
           : d.applyStatus === "SUPERSEDED"
-            ? "제외한 문서는 되돌릴 수 없습니다 — 같은 파일을 다시 올려주세요"
+            ? "제외하면 되돌릴 수 없습니다. 같은 파일을 다시 올려야 합니다."
             : notIndexed && d.applyStatus === "DRAFT"
               ? "색인이 끝난 문서만 답변에 사용할 수 있습니다"
               : undefined;
@@ -384,10 +384,9 @@ export function RagSettingsPage() {
             </Card>
 
             <div className="mt-3 text-[13px] leading-[1.8] text-n500">
-              올린 문서는 «미사용»으로 들어와 색인이 끝나도 답변에 쓰이지 않습니다 — «답변에
-              사용»을 눌러야 도우미가 그 문서를 근거로 답합니다. 사용 중인 문서는 여러 건일 수 있으며,
-              개정된 규정을 올릴 때는 옛 문서를 지워주세요 — 지우지 않으면 도우미가 옛 조항과 새
-              조항을 함께 근거로 답할 수 있습니다.
+              올린 문서는 «미사용»으로 들어옵니다. «답변에 사용»을 눌러야 도우미가 그 문서로
+              답합니다. 개정된 규정을 올릴 때는 옛 문서를 지워주세요. 남겨 두면 옛 조항과 새
+              조항이 섞여 답합니다.
               {/*
                * 폴링 중이라는 사실을 알린다 — 배지가 «대기»인 채로 멈춰 보이면 운영진이 새로고침을
                * 누르거나 재색인을 다시 누른다(그쪽은 400이다).

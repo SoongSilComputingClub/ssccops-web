@@ -146,7 +146,7 @@ export function SessionDetailPage({
         <PageBody>
           {status === "loading" && <DetailSkeleton />}
           {status === "not-found" && (
-            <EmptyState message="회차를 찾을 수 없습니다 — 이미 삭제됐거나 주소가 잘못됐을 수 있습니다." />
+            <EmptyState message="없는 회차입니다. 목록으로 돌아가주세요." />
           )}
           {status === "error" && (
             <EmptyState
@@ -284,8 +284,8 @@ export function SessionDetailPage({
                 {detail.sesnSttsCd === "APPROVED"
                   ? "이미 승인된 회차입니다 — 승인은 되돌릴 수 없습니다."
                   : detail.sesnSttsCd === "REVISION_REQUESTED"
-                    ? "수정요청한 회차입니다 — 스터디장이 다시 제출하면 승인 대기 목록에 올라옵니다."
-                    : "아직 제출되지 않은 회차입니다 — 스터디장이 제출해야 승인할 수 있습니다."}
+                    ? "수정요청한 회차입니다. 스터디장이 다시 제출하면 승인 대기 목록에 올라옵니다."
+                    : "아직 제출되지 않은 회차입니다."}
               </div>
             )}
           </Card>

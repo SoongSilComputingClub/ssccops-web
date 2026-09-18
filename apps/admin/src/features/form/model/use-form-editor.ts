@@ -256,9 +256,9 @@ function toSaveErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     switch (error.code) {
       case FORM_ERROR.FORM_NOT_FOUND:
-        return "폼을 찾을 수 없습니다 — 이미 삭제된 폼일 수 있습니다";
+        return "폼이 없습니다 — 목록을 새로고침해주세요";
       case FORM_ERROR.QUESTION_ITEM_IN_USE:
-        return "이미 응답이 있어 기존 문항을 삭제·변경할 수 없습니다";
+        return "응답이 있는 문항은 지우거나 바꿀 수 없습니다";
       /*
        * 시스템 폼의 계약 위반(400)은 toFormErrorMessage가 잠금 안내와 같은 문장으로 바꾼다.
        * 여기서 따로 적지 않는 것은 그 문장이 두 벌이 되지 않게 하기 위해서다 — 화면이 미리
