@@ -64,7 +64,7 @@ const IMAGE_ACCEPT = "image/*";
 
 /** 등록 화면에서 첨부가 잠기는 사유 — 발급 주소가 /v1/events/{eventId}/images 라 행사가 먼저 있어야 한다 */
 const NEED_SAVED_EVENT =
-  "행사를 먼저 등록한 뒤 수정 화면에서 이미지를 올릴 수 있습니다";
+  "이미지는 등록한 뒤 수정 화면에서 올립니다";
 
 /** 화면이 입력란과 오류를 묶는 데 쓰는 칸 이름 */
 type EventFormField =
@@ -301,7 +301,7 @@ export function EventForm({
       next.eventPeriod = "종료 일시가 시작 일시보다 빠릅니다";
     }
     if (ptcpLmtCnt && (!/^\d+$/.test(ptcpLmtCnt) || Number(ptcpLmtCnt) < 1)) {
-      next.ptcpLmtCnt = "정원은 1 이상의 숫자여야 합니다 — 비워 두면 정원 없음입니다";
+      next.ptcpLmtCnt = "정원은 1 이상의 숫자여야 합니다";
     }
 
     setErrors(next);
@@ -459,8 +459,7 @@ export function EventForm({
                 위 문장에 이어 붙이면 "정사각형으로 나옵니다"로 읽힌다.
               */}
               <div className="mt-[3px] text-[12.5px] text-n500">
-                공유 링크 미리보기에도 이 이미지가 나옵니다 — 그쪽 잘리는 모양은 메신저가
-                정합니다
+                공유 링크 미리보기에도 이 이미지가 나옵니다.
               </div>
               {attachLock && (
                 <div className="mt-[5px] text-[12.5px] text-n500">{attachLock}</div>
@@ -484,9 +483,8 @@ export function EventForm({
               </SelectField>
               {formError && <div className="mt-[5px] text-[12.5px] text-n500">{formError}</div>}
               <div className="mt-[5px] text-[13px] leading-[1.6] text-n500">
-                모집 기간·접수 여부는 연결한 폼이 정합니다 — 행사에는 모집 기간 입력란이
-                없습니다. 폼 하나는 행사 하나에만 연결할 수 있습니다. 신청이 접수된 뒤에도
-                연결을 바꾸거나 해제할 수 있고, 그때 무엇이 끊기는지는 저장 전에 알려 드립니다.
+                모집 기간과 접수 여부는 연결한 폼이 정합니다. 폼 하나는 행사 하나에만
+                연결됩니다. 연결을 바꾸면 무엇이 끊기는지 저장 전에 알려 드립니다.
               </div>
             </Field>
           </div>
@@ -612,7 +610,7 @@ function EventBodyEditor({
             <Markdown>{mtxtCn}</Markdown>
           ) : (
             <div className="py-[110px] text-center text-[13.5px] text-n500">
-              아직 본문이 없습니다 — 편집에서 적으면 여기에 그려집니다
+              아직 본문이 없습니다.
             </div>
           )}
         </div>

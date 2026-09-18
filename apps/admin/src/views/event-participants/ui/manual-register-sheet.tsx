@@ -99,7 +99,7 @@ export function ManualRegisterSheet({
           />
         ) : (
           <div className="text-[13px] leading-[1.7] text-n500">
-            정원이 없는 행사라 확정으로 올라갑니다.
+            정원이 없어 확정으로 올라갑니다.
           </div>
         )}
         <SearchInput

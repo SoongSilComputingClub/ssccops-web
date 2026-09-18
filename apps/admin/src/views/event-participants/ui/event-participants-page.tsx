@@ -100,7 +100,7 @@ export function EventParticipantsPage({ eventId }: Readonly<{ eventId: number }>
           )}
           {status === "not-found" && (
             <EmptyState
-              message="행사를 찾을 수 없습니다 — 이미 삭제된 행사일 수 있습니다."
+              message="없는 행사입니다. 목록으로 돌아가주세요."
               action={{ label: "행사 목록", onClick: () => router.replace(ROUTES.events) }}
             />
           )}

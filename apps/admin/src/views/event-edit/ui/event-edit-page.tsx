@@ -165,9 +165,9 @@ function EventEditView({
               {event.eventSttsCd === "DRAFT" &&
                 "게시 전에는 회원에게 보이지 않습니다"}
               {event.eventSttsCd === "PUBLISHED" &&
-                "회원에게 공개된 상태입니다 — 철회하면 작성 중으로 돌아갑니다"}
+                "회원에게 공개된 상태입니다. 철회하면 작성 중으로 돌아갑니다."}
               {event.eventSttsCd === "ARCHIVED" &&
-                "보관된 행사는 목록에서 내려가고 다시 게시할 수 있습니다"}
+                "보관된 행사는 목록에서 빠집니다. 다시 게시할 수 있습니다."}
             </div>
             <div className="flex-1" />
             {TRANSITIONS[event.eventSttsCd].map((t) => (

@@ -294,8 +294,8 @@ export function EventCategoriesPage() {
           ))}
 
         <div className="mt-3 max-w-[820px] text-[13.5px] leading-[1.7] text-n500">
-          행사가 하나라도 쓰고 있는 분류는 삭제할 수 없습니다 — 행사의 분류를 먼저
-          바꿔주세요. 분류명을 바꿔도 {FIELD_LABEL.eventClassificationCode}는 그대로
+          행사가 하나라도 쓰는 분류는 지울 수 없습니다. 행사의 분류를 먼저 바꿔주세요.
+          분류명을 바꿔도 {FIELD_LABEL.eventClassificationCode}는 그대로
           유지됩니다. {FIELD_LABEL.displayOrder}은 목록을 그리는 순서이며 비워 두면 지금
           값을 그대로 씁니다.
         </div>

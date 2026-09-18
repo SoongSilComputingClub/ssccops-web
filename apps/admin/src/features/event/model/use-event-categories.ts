@@ -91,7 +91,7 @@ function validateCreate(input: EventCategoryCreateInput): FieldError | null {
   if (!EVENT_CLSF_CD_PATTERN.test(input.eventClsfCd)) {
     return {
       field: "eventClsfCd",
-      message: `분류 코드 "${input.eventClsfCd}" 는 쓸 수 없는 형식입니다 — 대문자로 시작하고 대문자·숫자·밑줄만 2~20자여야 합니다 (예: RECRUIT, SEMINAR)`,
+      message: `분류 코드 «${input.eventClsfCd}»는 쓸 수 없는 형식입니다 — 대문자로 시작하는 대문자·숫자·밑줄 2~20자여야 합니다 (예: RECRUIT, SEMINAR)`,
     };
   }
   return validateName(input.eventClsfNm);

@@ -87,8 +87,8 @@ export function ApplicationsPanel({
             <>
               <div>연결된 폼이 없습니다.</div>
               <div className="mt-2 text-[14px]">
-                신청을 받으려면 행사 수정에서 신청 폼을 먼저 연결해주세요 — 폼 없는 행사도
-                참가자 명단에서 회원을 직접 추가할 수 있습니다.
+                신청을 받으려면 행사 수정에서 신청 폼을 연결해주세요. 폼이 없어도 참가자
+                명단에서 회원을 직접 추가할 수 있습니다.
               </div>
             </>
           }
@@ -222,8 +222,7 @@ export function ApplicationsPanel({
       </div>
 
       <div className="mb-[14px] text-[13px] leading-[1.7] text-n500">
-        심사(승인·수정요청·반려)는 이름을 눌러 응답 상세에서 합니다. 승인된 신청만 명단에
-        올릴 수 있고, 명단에 올려도 신청 상태(승인)는 바뀌지 않습니다.
+        심사는 이름을 눌러 응답 상세에서 합니다. 승인된 신청만 명단에 올릴 수 있습니다.
       </div>
 
       {status === "error" ? (
