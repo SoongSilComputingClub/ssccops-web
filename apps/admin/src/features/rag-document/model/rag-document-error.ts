@@ -37,7 +37,7 @@ export function toRagDocumentErrorMessage(error: unknown): string {
     case RAG_DOCUMENT_ERROR.DISABLED:
       return "규정 도우미가 꺼져 있습니다 — 관리자에게 알려주세요";
     case RAG_DOCUMENT_ERROR.NOT_FOUND:
-      return "규정 문서를 찾을 수 없습니다 — 목록을 새로고침한 뒤 다시 시도해주세요";
+      return "규정 문서가 없습니다 — 목록을 새로고침해주세요";
     /*
      * 색인이 끝나지 않은 문서를 올리려 한 경우. 화면이 버튼을 미리 잠그므로 여기까지 오는 것은
      * 잠근 뒤 색인이 되돌아간 경우(재색인)뿐이라, 다음에 할 일을 그대로 적는다.
@@ -45,7 +45,7 @@ export function toRagDocumentErrorMessage(error: unknown): string {
     case RAG_DOCUMENT_ERROR.NOT_INDEXED:
       return "색인이 끝난 문서만 답변에 사용할 수 있습니다 — 색인이 끝난 뒤 다시 시도해주세요";
     case RAG_DOCUMENT_ERROR.INVALID_APPLY_TRANSITION:
-      return "적용 상태를 그렇게 바꿀 수 없습니다 — 목록을 새로고침한 뒤 다시 시도해주세요";
+      return "지금 상태에서는 바꿀 수 없습니다 — 새로고침해주세요";
     /*
      * 이미 대기 중인 문서에 재색인을 부른 경우다. 폴링이 곧 상태를 갱신하므로 «기다리라»가
      * 정확한 다음 행동이다 — 다시 누르게 하면 같은 400을 받는다.
@@ -53,7 +53,7 @@ export function toRagDocumentErrorMessage(error: unknown): string {
     case RAG_DOCUMENT_ERROR.INVALID_INDEX_TRANSITION:
       return "이미 색인을 기다리는 문서입니다 — 색인이 끝날 때까지 기다려주세요";
     case RAG_DOCUMENT_ERROR.LIMIT_EXCEEDED:
-      return `코퍼스가 담을 수 있는 양을 넘었습니다 — ${error.message}`;
+      return `올릴 수 있는 문서 양을 넘었습니다 — ${error.message}`;
     default:
       return error.message;
   }

@@ -167,7 +167,7 @@ export function AcademicProgramDashboardPage() {
     <>
       <PageHeader
         title="학술 대시보드"
-        subtitle="전체 활동 현황 · 이번 주 회차 · 승인 대기"
+        subtitle="이번 주 회차와 승인 대기"
       />
       <PageBody>
         {status === "loading" && <DashboardSkeleton />}
@@ -277,8 +277,7 @@ export function AcademicProgramDashboardPage() {
                   </div>
                 )}
                 <div className="mt-4 text-[12.5px] text-n500">
-                  진행일(actl_ymd) 기준입니다 — 활동 횡단 회차 응답에 계획일이 없어 아직
-                  진행되지 않은 예정 회차는 포함되지 않습니다.
+                  진행일 기준입니다. 아직 진행하지 않은 예정 회차는 들어가지 않습니다.
                 </div>
               </Card>
 

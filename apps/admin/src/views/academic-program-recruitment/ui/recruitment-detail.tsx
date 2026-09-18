@@ -313,8 +313,7 @@ function RecruitmentNoticeCard({
 
       {overCapacity && (
         <div className="mt-3 rounded-[12px] bg-amber-soft px-[12px] py-[10px] text-[13.5px] text-amber">
-          확정 인원이 모집 정원 상한을 넘었습니다 — 선발은 그대로 확정되지만
-          정원을 다시 확인해주세요.
+          확정 인원이 정원을 넘었습니다. 선발은 그대로 되니 정원을 다시 확인해주세요.
         </div>
       )}
 
@@ -539,7 +538,7 @@ function ApplicantsCard({
             !canManage
               ? "선발을 저장할 권한이 없습니다 — 스터디·프로젝트 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다"
               : selections.length === 0
-                ? "바뀐 내용이 없습니다 — 신청자의 확정·대기를 고친 뒤 저장해주세요"
+                ? "바뀐 내용이 없습니다"
                 : undefined
           }
           onClick={() => void runSelect()}
@@ -610,7 +609,7 @@ export function RecruitmentDetail({
 
   if (detailStatus === "not-found") {
     return (
-      <EmptyState message="활동을 찾을 수 없습니다 — 주소가 잘못됐거나 아직 이관되지 않은 활동일 수 있습니다." />
+      <EmptyState message="없는 활동입니다. 목록으로 돌아가주세요." />
     );
   }
 

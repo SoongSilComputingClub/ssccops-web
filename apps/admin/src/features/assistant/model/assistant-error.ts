@@ -35,7 +35,7 @@ export function toAssistantErrorMessage(error: unknown): string {
      * 같다**(기다리거나 관리자에게 알린다). 다만 꺼진 것은 기다려도 켜지지 않으므로 갈랐다.
      */
     case ASSISTANT_ERROR.UPSTREAM_FAILED:
-      return "일시적으로 답할 수 없어요 — 잠시 후 다시 시도해주세요";
+      return "지금은 답할 수 없습니다 — 잠시 후 다시 시도해주세요";
     case ASSISTANT_ERROR.UNAVAILABLE:
     case ASSISTANT_ERROR.DISABLED:
       return "규정 도우미를 지금 사용할 수 없습니다 — 관리자에게 알려주세요";
@@ -76,7 +76,7 @@ export function toAssistantErrorMessage(error: unknown): string {
  */
 export function toAssistantResetErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.code === API_ERROR.NETWORK_ERROR) {
-    return "서버에 연결할 수 없어 대화를 지우지 못했습니다 — 잠시 후 다시 시도해주세요";
+    return "대화를 지우지 못했습니다 — 잠시 후 다시 시도해주세요";
   }
   return "대화를 지우지 못했습니다 — 잠시 후 다시 시도해주세요";
 }

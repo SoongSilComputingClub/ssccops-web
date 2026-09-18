@@ -18,7 +18,7 @@ export function toDashboardErrorMessage(error: unknown): string {
   switch (error.code) {
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "운영 대시보드를 볼 권한이 없습니다 — 운영진 권한(WORK_MANAGE)이 필요합니다";
+      return "운영 대시보드를 볼 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:

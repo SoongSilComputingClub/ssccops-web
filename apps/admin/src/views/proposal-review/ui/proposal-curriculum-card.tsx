@@ -45,7 +45,7 @@ export function ProposalCurriculumCard({
       {preview === null ? (
         <EmptyState
           padding="sm"
-          message="커리큘럼 미리보기를 받지 못했습니다 — 기획안 내용에 적힌 원문을 그대로 확인해주세요"
+          message="커리큘럼 미리보기를 받지 못했습니다 — 기획안 내용의 원문을 확인해주세요"
         />
       ) : !preview.migratable ? (
         <div className="mt-4 rounded-[12px] border border-amber/40 bg-amber-soft px-3 py-[10px] text-[13.5px] leading-[1.7] text-amber">

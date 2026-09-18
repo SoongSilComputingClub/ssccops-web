@@ -79,7 +79,7 @@ export function RecruitmentProgramList({
   if (rows.length === 0) {
     return (
       <EmptyState
-        message="모집을 관리할 활동이 없습니다 — 승인·진행 중인 활동이 여기 표시됩니다."
+        message="모집을 관리할 활동이 없습니다."
         padding="sm"
       />
     );
