@@ -5,6 +5,7 @@ import type {
   MyFormResponseDetail,
   ResponseStatus,
   ReviewProcessCode,
+  FormRef,
 } from "../model/types";
 
 /*
@@ -70,11 +71,11 @@ function toReviewHistory(
 
 /** 내 응답 한 건의 답 + 검토 이력 */
 export async function fetchMyResponseDetail(
-  formId: number,
+  formRef: FormRef,
   formRspnsId: number,
 ): Promise<MyFormResponseDetail> {
   const res = await apiFetchAuthed<MyFormResponseDetailApiResponse>(
-    `/v1/forms/${formId}/responses/mine/${formRspnsId}`,
+    `/v1/forms/${formRef}/responses/mine/${formRspnsId}`,
   );
 
   return {

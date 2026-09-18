@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { toShareDescription } from "@ssccops/share-meta";
-import { fetchPublicFormMeta } from "@/entities/form";
+import { fetchPublicFormMeta, isFormRef } from "@/entities/form";
 import { PublicFormPage } from "@/views/public-form";
 
 /**
@@ -29,10 +29,9 @@ export async function generateMetadata({
 }: PageProps<"/f/[formId]">): Promise<Metadata> {
   const { formId } = await params;
 
-  const parsed = Number(formId);
-  if (!Number.isInteger(parsed) || parsed <= 0) return {};
+  if (!isFormRef(formId)) return {};
 
-  const meta = await fetchPublicFormMeta(parsed);
+  const meta = await fetchPublicFormMeta(formId);
   if (!meta) return {};
 
   /*
@@ -62,5 +61,5 @@ export async function generateMetadata({
 
 export default async function Page({ params }: Readonly<PageProps<"/f/[formId]">>) {
   const { formId } = await params;
-  return <PublicFormPage formId={Number(formId)} />;
+  return <PublicFormPage formRef={formId} />;
 }

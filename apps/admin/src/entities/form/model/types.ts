@@ -53,6 +53,8 @@ export interface FormLabelRef {
 /** GET /v1/forms 항목 — 목록 카드가 쓰는 것만 */
 export interface FormSummary {
   formId: number;
+  /** 공개 폼 주소용 무작위 키 (ADR-0036). 이 필드를 모르는 서버면 null — 그때는 formId로 주소를 만든다 */
+  formKey: string | null;
   formTtlNm: string;
   formSttsCd: FormSttsCd;
   /** 배지 표기의 기준 — formSttsCd + 접수 기간을 서버가 요청마다 다시 계산한 값 */

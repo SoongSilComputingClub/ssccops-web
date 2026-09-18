@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { FormRef } from "@/entities/form";
 import { FormDescription, QitemCard, nextPageSeq, pageSeqOf, validatePageAnswers } from "@ssccops/form-renderer";
 import { NOT_ACCEPTING_MESSAGE, SaveStatusBar, useApplyForm } from "@/features/apply";
 import { SignInButton } from "@/features/auth";
@@ -30,9 +31,9 @@ import { MyResponsesPanel } from "./my-responses-panel";
  * 화면(`/f/{id}/done`)으로 옮겨 간다(행사 신청은 같은 자리에서 완료를 그린다 — 그쪽은 돌아갈
  * 행사가 있어 굳이 주소를 바꿀 이유가 없다).
  */
-export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
+export function PublicFormStep({ formRef }: Readonly<{ formRef: FormRef }>) {
   const router = useRouter();
-  const apply = useApplyForm(formId);
+  const apply = useApplyForm(formRef);
   const [page, setPage] = useState(0);
 
   const { status, form } = apply;
@@ -47,7 +48,7 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
         title="로그인이 만료되었습니다"
         description="다시 로그인하면 작성 중이던 답을 이어서 쓸 수 있습니다."
       >
-        <SignInButton next={ROUTES.publicForm(formId)} label="다시 로그인" />
+        <SignInButton next={ROUTES.publicForm(formRef)} label="다시 로그인" />
       </Notice>
     );
   }
@@ -186,7 +187,7 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
 
     const outcome = await apply.submit();
     if (outcome === "submitted") {
-      router.push(ROUTES.publicFormDone(form.formId));
+      router.push(ROUTES.publicFormDone(form.formKey ?? form.formId));
       return;
     }
     if (outcome === "invalid") {
@@ -229,7 +230,7 @@ export function PublicFormStep({ formId }: Readonly<{ formId: number }>) {
         건수는 `myResponseCount`가 아니라 이 목록이 말한다. 두 값이 같은 집계라도 화면에서 두
         출처를 섞으면 한쪽만 다시 불렀을 때 숫자와 목록이 어긋난다.
       */}
-      {form.mltplRspnsYn && <MyResponsesPanel formId={form.formId} />}
+      {form.mltplRspnsYn && <MyResponsesPanel formRef={form.formKey ?? form.formId} />}
 
       {apply.restored && (
         <div className="rounded-[12px] bg-accent-soft px-[13px] py-[10px] text-[13px] text-accent">

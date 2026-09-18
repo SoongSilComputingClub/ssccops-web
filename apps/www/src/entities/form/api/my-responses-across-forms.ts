@@ -27,6 +27,7 @@ interface FormLabelApiResponse {
 
 interface MyFormResponseOverviewApiResponse {
   formId: number;
+  formKey?: string | null;
   formTtlNm: string | null;
   labels: FormLabelApiResponse[] | null;
   formRspnsId: number;
@@ -68,6 +69,7 @@ export async function fetchMyResponsesAcrossForms(): Promise<
 
   return (responses ?? []).map((res) => ({
     formId: res.formId,
+    formKey: res.formKey ?? null,
     formTtlNm: res.formTtlNm ?? "",
     labels: toLabels(res.labels),
     formRspnsId: res.formRspnsId,
