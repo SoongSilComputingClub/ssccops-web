@@ -61,10 +61,15 @@ pnpm build
   `tsc`가 `Cannot find name 'PageProps'`로 죽는다(`integrate.yml`의 lint job과 같은 순서다).
 - **테스트 러너는 아직 없다.** CI의 test job은 `src` 아래에 `*.test.*`·`*.spec.*`가 있을 때만
   돈다. 테스트를 처음 추가하는 사람이 러너와 `test:coverage` 스크립트를 함께 붙인다.
-- **SonarQube 분석은 아무것도 막지 않는다** — 토큰이 있을 때만 돌고, build와 별도 job이며,
-  **Quality Gate가 빨개도 실패시키지 않는다**(ssccops#231). 기존 코드의 지적을 다 갚기 전에
-  잠그면 아무것도 머지할 수 없어서다 — 숫자를 먼저 보고 기준을 정한 뒤에 잠근다. 잠그는
-  자리는 `integrate.yml`의 Quality Gate 단계에 주석으로 표시해 두었다.
+- **SonarQube Analyze job의 상태가 곧 Quality Gate 결과다**(#516 · ssccops#377). 게이트
+  ERROR면 `sonar-report.sh`가 1로 끝나 job이 빨갛고, 깨뜨린 조건마다 `::error` 주석이 실행
+  화면 Annotations에 뜬다. 그전(ssccops#231)에는 게이트가 무엇이든 초록이었다 — 결과가 요약·
+  로그에만 있어 열어 보기 전에는 아무도 몰랐다. **분석이 PR에서 돌지 않으므로 이 실패가 막는
+  머지는 없다**(ADR-0018 그대로 · build와 별도 job) — develop 커밋의 상태가 사실을 말할 뿐이며
+  게이트 조건·임계값은 여전히 ssccops#235의 문제다. 토큰이 없으면 `sonar-preflight` job이
+  판정해 Analyze를 **통째로 건너뛴다(회색)** — `secrets`는 job `if`에서 못 읽어 앞 job의
+  output으로 넘긴다. 예전엔 step마다 가드가 붙어 step은 건너뛰고 job은 초록이었다. 세 상태
+  (통과·실패·건너뜀)가 세 색이어야 한다.
   - 설정은 **저장소 루트의 `sonar-project.properties`**에 있고 워크플로에는 토큰·호스트만
     남는다. 프로젝트 키를 `vars.SONAR_PROJECT`로 받던 때가 있었는데 **그 변수가 등록된 적이
     없어 빈 키로 돌 뻔했다**(없으면 실패하지 않고 조용히 빈다).
