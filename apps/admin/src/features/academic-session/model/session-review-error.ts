@@ -32,7 +32,7 @@ export function toSessionReviewErrorMessage(error: unknown): string {
       return "회차가 없습니다 — 목록을 새로고침해주세요";
     case SESSION_REVIEW_ERROR.VALIDATION_FAILED:
     case SESSION_REVIEW_ERROR.INVALID_CODE_VALUE:
-      return "목록 조건이 서버 기준과 다릅니다. 화면을 새로고침해주세요";
+      return "선택지가 바뀌었습니다 — 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:
