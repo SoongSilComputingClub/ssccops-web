@@ -23,14 +23,14 @@ export function toLeaderDashboardErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case ACADEMIC_SESSION_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
-      return "활동을 찾을 수 없습니다 — 아직 이관되지 않았거나 삭제된 활동일 수 있습니다";
+      return "활동이 없습니다 — 내 활동 목록을 새로고침해주세요";
     case ACADEMIC_SESSION_ERROR.FORBIDDEN:
-      return "이 활동의 정보를 볼 권한이 없습니다 — 활동의 스터디장만 볼 수 있습니다";
+      return "이 활동의 스터디장만 볼 수 있습니다";
     case ACADEMIC_PROGRAM_LIST_ERROR.VALIDATION_FAILED:
     case ACADEMIC_PROGRAM_LIST_ERROR.INVALID_CODE_VALUE:
-      return "목록 조건이 서버 기준과 다릅니다. 화면을 새로고침해주세요";
+      return "선택지가 바뀌었습니다 — 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
-      return "서버 주소가 설정되지 않아 학술 대시보드를 불러올 수 없습니다";
+      return "지금은 학술 대시보드를 불러올 수 없습니다 — 잠시 후 다시 시도해주세요";
     case API_ERROR.NETWORK_ERROR:
       return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
     default:

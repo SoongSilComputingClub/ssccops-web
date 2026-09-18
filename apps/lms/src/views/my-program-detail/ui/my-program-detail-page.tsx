@@ -105,7 +105,7 @@ function Body({
     return (
       <EmptyState
         title="활동을 찾을 수 없습니다"
-        description="내가 맡은 활동이 아니거나 아직 이관되지 않은 활동일 수 있습니다 — 내 활동 목록을 다시 확인해주세요"
+        description="없는 활동입니다. 내 활동 목록에서 다시 골라주세요."
       />
     );
   }

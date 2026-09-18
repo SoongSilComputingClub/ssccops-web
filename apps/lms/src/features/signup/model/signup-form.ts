@@ -184,7 +184,7 @@ export function toSignupFailure(error: unknown): SignupFailure {
     case API_ERROR.CONFIG_MISSING:
       return {
         kind: "form",
-        message: "서비스 설정이 끝나지 않아 가입할 수 없습니다 — 잠시 후 다시 시도해주세요",
+        message: "지금은 가입할 수 없습니다 — 잠시 후 다시 시도해주세요",
       };
 
     case API_ERROR.NETWORK_ERROR:

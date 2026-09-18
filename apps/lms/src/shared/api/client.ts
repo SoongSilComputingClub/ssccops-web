@@ -125,7 +125,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse
      */
     throw new ApiError(
       API_ERROR.CONFIG_MISSING,
-      "서버 주소가 설정되지 않아 정보를 불러올 수 없습니다",
+      "지금은 정보를 불러올 수 없습니다 — 잠시 후 다시 시도해주세요",
     );
   }
 

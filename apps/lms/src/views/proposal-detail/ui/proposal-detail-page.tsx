@@ -106,7 +106,7 @@ function Body({
     return (
       <EmptyState
         title="기획안을 찾을 수 없습니다"
-        description="이미 지워졌거나 다른 사람이 낸 기획안일 수 있습니다 — 제출 현황을 다시 확인해주세요"
+        description="없는 기획안입니다. 제출 현황에서 다시 골라주세요."
       />
     );
   }
@@ -250,7 +250,7 @@ function ProcessArea({
       <Card>
         <div className="text-[13px] tracking-[.3px] text-n400">처리 결과</div>
         <p className="mt-2 text-[13.5px] leading-[1.7] text-n300">
-          승인된 기획안입니다 — 학술 활동으로 이관되면 활동 화면에서 이어집니다
+          승인된 기획안입니다. 활동으로 옮겨지면 활동 화면에서 이어집니다.
         </p>
       </Card>
     );
@@ -261,8 +261,7 @@ function ProcessArea({
       <Card>
         <div className="text-[13px] tracking-[.3px] text-n400">상태</div>
         <p className="mt-2 text-[13.5px] leading-[1.7] text-n300">
-          아직 제출하지 않은 기획안입니다 — 기획안 작성 화면에서 이어서 작성해 제출할 수
-          있습니다
+          아직 제출하지 않은 기획안입니다. 기획안 작성 화면에서 이어서 쓸 수 있습니다.
         </p>
       </Card>
     );
@@ -273,7 +272,7 @@ function ProcessArea({
     <Card>
       <div className="text-[13px] tracking-[.3px] text-n400">상태</div>
       <p className="mt-2 text-[13.5px] leading-[1.7] text-n300">
-        학술국장 검토를 기다리는 중입니다 — 결과는 이 화면에서 확인할 수 있습니다
+        학술국장 검토를 기다리는 중입니다. 결과는 이 화면에 보입니다.
       </p>
     </Card>
   );

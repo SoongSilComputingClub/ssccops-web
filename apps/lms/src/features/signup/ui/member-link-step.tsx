@@ -126,9 +126,8 @@ export function MemberLinkStep({
       <div className="flex flex-col gap-[4px]">
         <h2 className="text-[15px] font-semibold">이 학번은 이미 명부에 등록돼 있습니다</h2>
         <p className="text-[13.5px] leading-[1.7] text-n400">
-          본인 학번이 맞다면 이미 등록된 회원입니다. 새로 가입하는 대신 아래에서 기존 회원
-          정보에 이 계정을 연결하면 기수·등급·역할이 그대로 유지되고, 연결한 자리에서 바로
-          신청서로 이어집니다.
+          본인 학번이 맞다면 이미 등록된 회원입니다. 새로 가입하지 말고 아래에서 기존 회원
+          정보에 이 계정을 연결하세요. 기수·등급·역할이 그대로 남고, 바로 신청서로 이어집니다.
         </p>
       </div>
 
@@ -183,7 +182,7 @@ export function MemberLinkStep({
 
       {/* 화면이 값을 손대지 않는 이유는 link-form.ts 상단 주석에 있다 */}
       <p className="text-[12.5px] leading-[1.7] text-n500">
-        전화번호는 하이픈(-)이 있어도 없어도 됩니다 — 숫자만 비교합니다.
+        전화번호는 하이픈(-) 없이 적어도 됩니다.
       </p>
 
       {formError && (

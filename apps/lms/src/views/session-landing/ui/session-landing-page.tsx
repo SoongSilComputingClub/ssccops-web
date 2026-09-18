@@ -56,7 +56,7 @@ export async function SessionLandingPage({
     return (
       <EmptyState
         title="회차를 찾을 수 없습니다"
-        description="이미 삭제된 회차이거나 주소가 잘못됐을 수 있습니다 — 링크를 보낸 사람에게 다시 확인해주세요"
+        description="없는 회차입니다 — 링크를 보낸 사람에게 다시 확인해주세요"
       />
     );
   }

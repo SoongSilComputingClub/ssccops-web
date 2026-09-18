@@ -68,7 +68,7 @@ export function LoginGate({
   return (
     <SignupRequiredNotice
       title="아직 준비 중인 화면입니다"
-      description="학술 활동 화면은 후속 작업으로 추가됩니다. 회원이 아니라면 여기서 먼저 가입할 수 있습니다."
+      description="회원이 아니라면 여기서 먼저 가입할 수 있습니다."
     />
   );
 }
