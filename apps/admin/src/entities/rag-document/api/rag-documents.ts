@@ -176,7 +176,7 @@ export async function uploadRagDocument(
   if (!res?.ragDocId) {
     throw new ApiError(
       RAG_DOCUMENT_ERROR.PARSE_FAILED,
-      "문서는 올라갔지만 서버가 문서 번호를 돌려주지 않았습니다. 목록을 새로고침해주세요",
+      "올라갔습니다 — 새로고침하면 반영됩니다",
     );
   }
   return toRagDocument(res);
