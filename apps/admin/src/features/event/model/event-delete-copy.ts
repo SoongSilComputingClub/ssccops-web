@@ -55,12 +55,12 @@ export const EVENT_DELETE_HINT =
  * 0명이면 이 문장 자체를 띄우지 않는다 — 없는 위험을 경고하면 다음번 진짜 경고도 넘겨진다.
  */
 export function eventDeleteParticipantWarning(confirmedCount: number): string {
-  return `확정 참가자 ${confirmedCount}명의 '내 신청'에서 이 행사가 사라집니다 — 되살리면 함께 돌아옵니다`;
+  return `확정 참가자 ${confirmedCount}명의 '내 신청'에서 이 행사가 사라집니다. 되살리면 함께 돌아옵니다.`;
 }
 
 /** 확정 참가자가 0명일 때의 확인 문구 — 지금 사라지는 것이 목록의 한 줄뿐이라는 사실만 말한다 */
 export const EVENT_DELETE_NO_PARTICIPANT_NOTE =
-  "아직 확정된 참가자가 없습니다. 지워도 사라지는 것은 목록의 이 행사뿐입니다.";
+  "아직 확정된 참가자가 없습니다.";
 
 /**
  * 복구가 무엇을 되돌리는지 — '지운 행사' 화면이 한 번, 되살리기 버튼의 `title`이 한 번 말한다.

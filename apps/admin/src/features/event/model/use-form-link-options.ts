@@ -36,7 +36,7 @@ export function useFormLinkOptions(): FormLinkOptions {
       .catch(() => {
         if (alive) {
           setErrorMessage(
-            "폼 목록을 불러오지 못해 폼 연결을 바꿀 수 없습니다 — 폼 조회(FORM_READ) 권한과 서버 상태를 확인해주세요",
+            "폼 목록을 불러오지 못했습니다 — 폼 조회(FORM_READ) 권한이 필요합니다",
           );
         }
       })

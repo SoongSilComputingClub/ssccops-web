@@ -68,8 +68,7 @@ export function RegistrationNotice({
             ))}
           </div>
           <div className="mt-[10px] text-[13px] text-n400">
-            정원은 참고치라 등록을 막지 않습니다 — 인원을 맞추려면 확정된 참가자의 참가를
-            취소해주세요.
+            정원을 넘어도 등록됩니다. 인원을 맞추려면 확정된 참가자를 취소해주세요.
           </div>
         </div>
         <Button

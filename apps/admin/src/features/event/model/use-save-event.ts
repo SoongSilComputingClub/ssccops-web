@@ -72,7 +72,7 @@ export function useSaveEvent(): EventSaveControl {
   const create = useCallback(
     (input: EventSaveInput) =>
       // 생성은 항상 작성 중(DRAFT)이다(D9) — 게시가 따로 남았음을 문구가 함께 말한다
-      run(() => createEvent(input), "행사를 등록했습니다 — 게시 전에는 화면에 공개되지 않습니다"),
+      run(() => createEvent(input), "행사를 등록했습니다 — 게시해야 회원에게 보입니다"),
     [run],
   );
 
