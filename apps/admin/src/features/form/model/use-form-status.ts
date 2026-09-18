@@ -73,9 +73,9 @@ function toSuccessMessage(action: FormStatusAction, result: FormStatusChangeResu
 
   switch (result.receiptStatus) {
     case "SCHEDULED":
-      return "접수를 시작했습니다 — 시작 일시 전이라 아직 응답을 받지 않습니다";
+      return "접수를 시작했습니다 — 시작 일시부터 응답을 받습니다";
     case "EXPIRED":
-      return "접수를 시작했지만 종료 일시가 지나 응답을 받지 않습니다. 접수 기간을 확인해주세요";
+      return "종료 일시가 지나 응답을 받지 않습니다 — 접수 기간을 확인해주세요";
     default:
       return "접수를 시작했습니다";
   }

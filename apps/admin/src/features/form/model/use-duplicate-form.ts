@@ -52,7 +52,7 @@ export function useDuplicateForm(): FormDuplicateControl {
       const copy = await duplicateForm(formId);
       return {
         formId: copy.formId,
-        message: "작성 중(DRAFT) 폼으로 복제했습니다 — 라벨과 접수 기간은 승계되지 않습니다",
+        message: "복제했습니다 — 라벨과 접수 기간은 옮겨지지 않았습니다",
       };
     } catch (error: unknown) {
       // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다

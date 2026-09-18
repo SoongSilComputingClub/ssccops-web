@@ -30,7 +30,7 @@ import { toFormErrorMessage } from "./form-error";
 export const PROPOSAL_NOT_ACCEPTING_TITLE = "지금은 기획안을 접수하지 않습니다";
 
 export const PROPOSAL_NOT_ACCEPTING_DESCRIPTION =
-  "기획안 접수는 운영진이 시작해야 열립니다 — 열리면 이 화면에서 바로 작성할 수 있습니다. 이미 낸 기획안은 제출 현황에서 그대로 확인할 수 있습니다.";
+  "기획안 접수가 아직 열리지 않았습니다. 이미 낸 기획안은 제출 현황에서 볼 수 있습니다.";
 
 /** 폼 자체가 아직 세워지지 않았다 — 접수 시작 이전 단계라 위와 다른 상황이고 문구도 다르다 */
 export const PROPOSAL_FORM_MISSING =
@@ -44,7 +44,7 @@ export const PROPOSAL_FORM_MISSING =
  * AGENTS.md의 규칙이다 — 뭉뚱그리면 막힌 사람도, 권한을 주려는 사람도 무엇이 필요한지 모른다.
  */
 export const PROPOSAL_FORM_READ_DENIED =
-  "기획안 폼을 열 권한이 없습니다 — 폼 조회(FORM_READ) 권한이 필요합니다. 운영진에게 요청해주세요";
+  "기획안 폼을 열 권한이 없습니다 — 폼 조회(FORM_READ) 권한이 필요합니다";
 
 /**
  * 검토 내용을 읽을 권한이 없다.
@@ -54,7 +54,7 @@ export const PROPOSAL_FORM_READ_DENIED =
  * **펼친 칸 안에서만** 말한다.
  */
 export const PROPOSAL_REVIEW_READ_DENIED =
-  "검토 내용을 읽을 권한이 없습니다 — 응답 심사(RESPONSE_REVIEW) 권한이 필요합니다. 사유는 안내받은 채널에서 확인해주세요";
+  "검토 내용을 읽을 권한이 없습니다 — 응답 심사(RESPONSE_REVIEW) 권한이 필요합니다";
 
 /**
  * 반려된 기획안의 재제출 잠금.
@@ -73,7 +73,7 @@ export const PROPOSAL_REJECTED_LOCKED =
  * 제출자는 두 번째 기획안을 냈다고 믿는데 실제로는 첫 기획안을 덮어쓴 것이 된다.
  */
 export const PROPOSAL_RESUBMIT_NOTE =
-  "수정요청을 받은 기획안이 있으면 여기서 낸 내용이 새 기획안이 아니라 그 기획안의 다음 회차로 들어갑니다 — 검토 대기로 돌아갑니다";
+  "수정요청을 받은 기획안이 있으면 새 기획안이 아니라 그 기획안의 다음 회차로 제출됩니다.";
 
 /**
  * 기획안 폼 조회 실패 → 화면에 띄울 한 줄.

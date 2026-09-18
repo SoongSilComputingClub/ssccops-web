@@ -495,7 +495,7 @@ export async function createForm(input: FormSaveInput): Promise<FormSaveResult> 
   if (!res?.formId) {
     throw new ApiError(
       FORM_ERROR.VALIDATION_FAILED,
-      "폼은 생성됐지만 서버가 폼_ID를 돌려주지 않았습니다. 목록에서 확인해주세요",
+      "만들어졌습니다 — 목록에서 확인해주세요",
     );
   }
   return { formId: res.formId, mdfcnDt: res.mdfcnDt ?? null };
@@ -618,7 +618,7 @@ export async function duplicateForm(formId: number): Promise<FormDuplicateResult
   if (!res?.formId) {
     throw new ApiError(
       FORM_ERROR.VALIDATION_FAILED,
-      "복제는 됐지만 서버가 사본의 폼_ID를 돌려주지 않았습니다. 목록에서 확인해주세요",
+      "복제됐습니다 — 목록에서 확인해주세요",
     );
   }
   return {

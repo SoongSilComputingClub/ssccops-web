@@ -208,8 +208,7 @@ export function FormTemplateListPage() {
               />
             </Card>
             <div className="mt-3 text-[13px] text-n500">
-              사용 여부를 끄면 취소선으로 남고 새 폼을 시작할 수 없게 됩니다. 이미 만들어 둔
-              폼은 영향을 받지 않으며 언제든 다시 켤 수 있습니다.
+              끄면 새 폼을 만들 수 없습니다. 이미 만든 폼은 그대로이고, 언제든 다시 켤 수 있습니다.
             </div>
           </>
         )}

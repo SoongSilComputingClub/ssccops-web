@@ -56,7 +56,7 @@ export function useFormFromTemplate(): FormFromTemplateControl {
         return {
           formId: form.formId,
           message:
-            "작성 중(DRAFT) 폼을 만들었습니다 — 접수 기간과 라벨은 편집 화면에서 채워주세요",
+            "폼을 만들었습니다 — 접수 기간과 라벨을 채워주세요",
         };
       } catch (error: unknown) {
         // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다

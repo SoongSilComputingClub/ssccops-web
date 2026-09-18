@@ -36,7 +36,7 @@ export function toResponseErrorMessage(error: unknown): string {
      * 쪽이든 사용자가 할 다음 행동은 같다: 지금 상태를 다시 받아 보는 것.
      */
     case RESPONSE_ERROR.INVALID_RESPONSE_STATUS_TRANSITION:
-      return "이 응답은 더 이상 심사할 수 없습니다 — 승인·반려는 되돌릴 수 없으니 화면을 새로 고쳐 현재 상태를 확인해주세요";
+      return "이미 처리된 응답입니다 — 새로고침해주세요";
     /*
      * 화면이 먼저 잠그는 조건과 같은 규칙이라(수정요청·반려는 의견 필수) 여기까지 오는 것은
      * 공백만 입력했거나 화면 검증을 우회한 요청뿐이다. 그래도 문구를 두는 이유는, 없으면
@@ -57,7 +57,7 @@ export function toResponseErrorMessage(error: unknown): string {
      * 응답을 다시 승인해도 같은 사유로 막힌다 — 고칠 수 있는 사람은 제출자다.
      */
     case RESPONSE_ERROR.PROPOSAL_MIGRATION_FAILED:
-      return `${error.message} — 다시 눌러도 같은 사유로 막히므로, 승인 대신 이 사유를 적어 수정요청으로 돌려주세요`;
+      return `${error.message} — 이 사유를 적어 수정요청으로 돌려주세요`;
     default:
       return error.message;
   }

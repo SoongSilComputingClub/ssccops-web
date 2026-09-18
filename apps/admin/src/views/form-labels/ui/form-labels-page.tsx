@@ -36,7 +36,7 @@ import {
  */
 
 /** 잠긴 조작에 붙는 사유. 감추지 않고 잠그는 근거는 features/auth/model/use-can.ts */
-const NO_MANAGE = "라벨을 추가하거나 사용_여부를 바꿀 권한이 없습니다 — 조회만 할 수 있습니다";
+const NO_MANAGE = "라벨을 바꿀 권한이 없습니다 — 폼 라벨 관리(FORM_LABEL_MANAGE) 권한이 필요합니다";
 
 export function FormLabelsPage() {
   const admin = useFormLabels();

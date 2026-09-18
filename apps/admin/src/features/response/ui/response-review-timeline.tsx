@@ -44,7 +44,7 @@ export function ResponseReviewTimeline({
          */
         <EmptyState
           padding="sm"
-          message="기록된 처리 이력이 없습니다. #141 이전에 처리된 응답은 이력이 남아 있지 않습니다."
+          message="처리 이력이 없습니다."
         />
       ) : (
         <ol className="mt-4 flex flex-col gap-4">
