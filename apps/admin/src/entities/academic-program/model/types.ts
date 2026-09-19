@@ -249,6 +249,41 @@ export interface RecruitmentTeamMember {
   joinedAt: string | null;
 }
 
+/**
+ * 모집 일정 (GET·PATCH .../recruitment/schedule · 서버 신설).
+ *
+ * 연결된 신청서(폼)의 접수 기간과 그것에서 파생된 접수 상태다. **두 일시가 null 이면 "제한
+ * 없음"이지 "미정"이 아니다** — 종료가 비면 수동 마감할 때까지 열리고, 시작이 비면 곧바로
+ * 접수가 열린다(서버 FormReceiptPolicy). 모집 시작 전 활동만이 "아직 정해지지 않았다"이며
+ * 그때는 활동 상태가 APPROVED다.
+ *
+ * `receiptStatus` 를 화면이 다시 계산하지 않는다 — 서버의 Clock 과 브라우저 시각이 갈리면
+ * "미래로 미뤘는데 여전히 모집 중"으로 보이는 구간이 생긴다(#528 의 `isEditable` 과 같은 판단).
+ */
+export interface RecruitmentSchedule {
+  academicProgramId: number;
+  formId: number | null;
+  /** 접수 시작 일시 (오프셋 포함) — null 이면 제한 없음 */
+  rcptBgngDt: string | null;
+  rcptEndDt: string | null;
+  /**
+   * 서버가 파생한 접수 상태 — 화면은 그대로 배지로 그린다.
+   *
+   * 문자열 유니온을 여기 옮겨 적지 않고 `entities/form` 의 것을 쓴다 — 이 화면(모집 관리)이
+   * 이미 그 타입으로 배지를 그리고 있어(`FORM_RECEIPT_BADGE`) 사본을 두면 값이 하나 늘었을 때
+   * 한쪽만 고쳐져 배지가 조용히 빈다. 슬라이스 참조 금지는 **뷰가 두 슬라이스를 함께 읽는
+   * 것**까지 막지 않으므로, 타입을 옮겨 적는 대신 값의 정의를 한 곳에 남긴다.
+   */
+  receiptStatus: string | null;
+}
+
+/** 모집 일정 변경 입력 — **전체 교체**라 바꾸지 않는 값도 현재 값을 그대로 실어 보낸다 */
+export interface RecruitmentScheduleInput {
+  /** datetime-local 값이거나 오프셋이 붙은 값. 비우면 null(제한 없음) */
+  rcptBgngDt: string | null;
+  rcptEndDt: string | null;
+}
+
 /* ── 유형 코드테이블 (GET·POST·PATCH /v1/academic-program-types) ─ */
 
 /** 학술 활동 유형 한 줄 (AcademicProgramTypeResponse) — 목록·등록·수정·사용 전환이 같은 모양 */

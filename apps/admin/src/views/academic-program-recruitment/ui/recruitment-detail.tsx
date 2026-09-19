@@ -15,6 +15,7 @@ import {
 import type {
   AcademicProgramDetailStatus,
   RecruitmentApplicationsStatus,
+  RecruitmentScheduleState,
   RecruitmentSelectState,
   StartRecruitment,
 } from "@/features/academic-program";
@@ -26,7 +27,7 @@ import {
   type PtcpSttsCd,
 } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
-import { formatInstant, formatYmd } from "@/shared/lib/date";
+import { formatDt, formatInstant, formatYmd, toInput } from "@/shared/lib/date";
 import {
   Badge,
   Button,
@@ -159,6 +160,9 @@ interface RecruitmentDetailProps {
   select: RecruitmentSelectState["select"];
   selecting: boolean;
   teamMembers: RecruitmentSelectState["teamMembers"];
+
+  /** 모집 일정 조회·변경 — 모집이 시작된 활동에서만 카드를 그린다 */
+  schedule: RecruitmentScheduleState;
 }
 
 function DetailSkeleton() {
@@ -252,6 +256,166 @@ function StartRecruitmentCard({
           {starting ? "시작하는 중…" : "모집 시작"}
         </Button>
       </div>
+    </Card>
+  );
+}
+
+
+/**
+ * 모집 일정 수정 카드 — 모집을 시작한 뒤 접수 기간을 다시 정한다.
+ *
+ * ── 왜 이 카드가 필요한가 ───────────────────────────────────
+ * 모집 시작(`START_RECRUITMENT`)이 접수 기간을 정하지만 그 전이는 `APPROVED` 에서만 일어나,
+ * 한 번 시작하고 나면 날짜를 고칠 자리가 어디에도 없었다. 폼 편집 화면의 입력란은 #194 가
+ * "모집 관리에서 설정합니다"라는 안내로 바꿔 놓았는데 **그 안내가 가리키는 이 화면에 그
+ * 입력란이 없었다** — 서버도 폼 편집 경로를 400 으로 잠가 두어(`ACADEMIC_FORM_RECEIPT_PERIOD_LOCKED`)
+ * 두 화면 모두 막힌 상태였다. 서버에 전용 경로(PATCH .../recruitment/schedule)를 내고 그
+ * 입력란을 약속된 자리에 돌려놓는다.
+ *
+ * ── 접수 상태를 화면이 다시 계산하지 않는다 ──────────────────
+ * 배지는 서버가 파생해 응답에 실어 준 `receiptStatus` 를 그대로 그린다. 날짜로 되짚으면
+ * 서버의 Clock 과 브라우저 시각이 갈려 "미래로 미뤘는데 여전히 모집 중"인 구간이 생긴다.
+ *
+ * ── 비우면 지운다 ──────────────────────────────────────────
+ * 전체 교체라 비운 칸은 `null`("제한 없음")로 나간다 — 종료를 비우면 수동 마감까지 열리고,
+ * 시작을 비우면 곧바로 접수가 열린다. 그 뜻을 문구로 밝히지 않으면 "안 바꿈"으로 읽힌다.
+ */
+function RecruitmentScheduleCard({
+  schedule,
+}: Readonly<{ schedule: RecruitmentScheduleState }>) {
+  const canManage = useCan(CAPABILITY.ACADEMIC_PROGRAM_MANAGE);
+  const [open, setOpen] = useState(false);
+
+  const current = schedule.schedule;
+
+  /*
+   * 입력 초깃값은 **폼을 열 때** 잡는다. 카드가 늘 떠 있는 채로 초깃값을 들고 있으면 저장
+   * 뒤에 서버가 준 값과 손으로 친 값을 맞춰 주는 동기화가 필요해진다 — 여는 순간에만 채우면
+   * 그 시점의 서버 값이 곧 폼 초깃값이다(AGENTS.md "ready 전에는 폼을 마운트하지 않는다").
+   */
+  const [startAt, setStartAt] = useState("");
+  const [endAt, setEndAt] = useState("");
+
+  const beginEditing = () => {
+    setStartAt(toInput(current?.rcptBgngDt ?? null, true));
+    setEndAt(toInput(current?.rcptEndDt ?? null, true));
+    setOpen(true);
+  };
+
+  const periodInvalid = Boolean(startAt) && Boolean(endAt) && endAt < startAt;
+
+  const runSave = async () => {
+    const message = await schedule.save({ rcptBgngDt: startAt, rcptEndDt: endAt });
+    if (message) {
+      flash(message);
+      return;
+    }
+    setOpen(false);
+    flash("모집 일정을 저장했습니다.");
+  };
+
+  if (schedule.status === "error") {
+    return (
+      <Card>
+        <SectionLabel className="mb-3">모집 일정</SectionLabel>
+        <EmptyState
+          message={schedule.errorMessage || "모집 일정을 불러오지 못했습니다."}
+          action={{ label: "다시 시도", onClick: schedule.reload }}
+          padding="sm"
+        />
+      </Card>
+    );
+  }
+
+  if (schedule.status === "loading" || !current) {
+    return (
+      <Card className="animate-pulse">
+        <div className="h-[18px] w-[80px] rounded bg-fill" />
+        <div className="mt-4 h-[56px] w-full rounded bg-fill" />
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <SectionLabel>모집 일정</SectionLabel>
+        {!open && (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={!canManage}
+            title={
+              canManage
+                ? undefined
+                : "모집 일정을 고칠 권한이 없습니다 — 스터디·프로젝트 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다"
+            }
+            onClick={beginEditing}
+          >
+            일정 수정
+          </Button>
+        )}
+      </div>
+
+      {open ? (
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1 text-[13px] text-n500">
+              <span>모집 시작 일시</span>
+              <input
+                type="datetime-local"
+                value={startAt}
+                onChange={(e) => setStartAt(e.target.value)}
+                className="rounded-[10px] border border-line px-[10px] py-[8px] text-[16px] text-n200 lg:text-[14px]"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[13px] text-n500">
+              <span>모집 종료 일시</span>
+              <input
+                type="datetime-local"
+                value={endAt}
+                onChange={(e) => setEndAt(e.target.value)}
+                className="rounded-[10px] border border-line px-[10px] py-[8px] text-[16px] text-n200 lg:text-[14px]"
+              />
+            </label>
+          </div>
+
+          {periodInvalid && (
+            <div className="mt-2 text-[13px] text-danger">
+              모집 종료 일시가 시작 일시보다 빠릅니다.
+            </div>
+          )}
+
+          <div className="mt-2 text-[13px] text-n500">
+            비워 두면 제한이 없습니다. 시작을 비우면 곧바로 접수가 열리고, 종료를 비우면 직접
+            마감할 때까지 열립니다.
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Button
+              disabled={schedule.saving || periodInvalid}
+              onClick={() => void runSave()}
+            >
+              {schedule.saving ? "저장하는 중…" : "일정 저장"}
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={schedule.saving}
+              onClick={() => setOpen(false)}
+            >
+              취소
+            </Button>
+          </div>
+        </>
+      ) : (
+        <KeyValueGrid
+          labelWidth={92}
+          items={[
+            { k: "접수 시작", v: formatDt(current.rcptBgngDt) || "제한 없음" },
+            { k: "접수 종료", v: formatDt(current.rcptEndDt) || "제한 없음" },
+          ]}
+        />
+      )}
     </Card>
   );
 }
@@ -598,6 +762,7 @@ export function RecruitmentDetail({
   select,
   selecting,
   teamMembers,
+  schedule,
 }: Readonly<RecruitmentDetailProps>) {
   if (detailStatus === "idle" || !program) {
     return (
@@ -645,6 +810,11 @@ export function RecruitmentDetail({
             program={program}
             confirmedCount={confirmedFromServer}
           />
+          {/*
+            모집 일정은 공고 바로 아래에 둔다 — 공고 카드가 "지금 어떤 상태인가"를 말하고
+            이 카드가 "언제까지인가"를 말하므로, 신청자 표보다 위에 있어야 둘이 함께 읽힌다.
+          */}
+          <RecruitmentScheduleCard schedule={schedule} />
           {appStatus === "loading" ? (
             <Card className="animate-pulse">
               <div className="h-[18px] w-[100px] rounded bg-fill" />

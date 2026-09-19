@@ -40,6 +40,8 @@ export function toRecruitmentErrorMessage(error: unknown): string {
       return "아직 모집이 시작되지 않았습니다 — 모집 기간을 정해 먼저 모집을 시작해주세요";
     case RECRUITMENT_ERROR.FORM_HAS_NO_QUESTION:
       return "신청서에 문항이 없어 모집을 시작할 수 없습니다 — 폼 편집 화면에서 문항을 먼저 등록하세요";
+    case RECRUITMENT_ERROR.INVALID_RECEIPT_PERIOD:
+      return "모집 종료 일시가 시작 일시보다 빠릅니다 — 기간을 다시 정해주세요";
     case RECRUITMENT_ERROR.INVALID_FORM_STATUS_TRANSITION:
       return "신청서가 이미 접수 중이라 모집을 시작할 수 없습니다 — 학술 담당자에게 문의해주세요";
     case ACADEMIC_PROGRAM_ERROR.INVALID_ACADEMIC_PROGRAM_TRANSITION:

@@ -9,6 +9,7 @@ import { fetchIsAcademicLeader } from "@/entities/academic-program/api/programs-
 import { ROUTES } from "@/shared/config/routes";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
+import { SectionTabs } from "./_shell/section-tabs";
 import "./globals.css";
 
 /*
@@ -137,6 +138,12 @@ export default async function RootLayout({ children }: Readonly<LayoutProps<"/">
           </div>
         </header>
         <main className="mx-auto max-w-[1000px] px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">
+          {/*
+           * 지금 묶음의 하위 탭줄 (#169 개편). 상단 바가 «어느 묶음인가»를, 이 줄이 «그
+           * 묶음의 어느 화면인가»를 말한다 — 여덟 항목이 상단 바 한 줄에 서면서 라벨이 두
+           * 줄로 접히던 것을 이렇게 나눴다. 항목이 하나뿐인 묶음에서는 스스로 그리지 않는다.
+           */}
+          <SectionTabs isLeader={isLeader} />
           {children}
         </main>
       </body>
