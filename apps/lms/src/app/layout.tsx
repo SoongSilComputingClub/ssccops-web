@@ -85,12 +85,21 @@ export const viewport: Viewport = {
  *
  * 미로그인·조회 실패는 `fetchIsAcademicLeader`가 `false`로 삼킨다 — 헤더 하나 때문에 전
  * 화면이 오류로 죽지 않게 한다(그 함수 주석 참고).
+ *
+ * ── `suppressHydrationWarning`은 아래 테마 스크립트의 짝이다 ──
+ * 서버는 `data-theme` 없이 `<html>`을 그리는데(`localStorage`를 읽을 수 없다) `<head>`의
+ * 동기 스크립트가 React보다 먼저 그 속성을 박는다 — 하이드레이션이 «서버에 없던 속성»을 보고
+ * 경고한다. 스크립트를 뒤로 미루면 흰 화면이 한 번 번쩍이므로(그것이 #226의 이유다) 경고
+ * 쪽을 끈다.
+ *
+ * **이 요소의 속성 불일치 한 겹만** 눌린다 — 자식 요소의 진짜 불일치는 그대로 잡힌다.
+ * 그래서 `<html>`에만 붙이고 `<body>`나 그 아래로 내리지 않는다.
  */
 export default async function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
   const isLeader = await fetchIsAcademicLeader();
 
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
       <head>
         {/*
           * 저장된 테마를 **첫 페인트 전에** 박는다 (#341 · admin #226과 같다). React가 붙은
