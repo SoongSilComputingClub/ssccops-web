@@ -6,15 +6,16 @@ import {
   type PublicContentPage,
 } from "@/entities/content";
 import type { SectionAxis } from "@/shared/config/section-tabs";
-import { cn } from "@/shared/lib/cn";
-import { Card, EmptyState, Markdown } from "@/shared/ui";
+import { EmptyState } from "@/shared/ui";
+import { ContentBody, type ContentLayout } from "./content-body";
 import { SectionTabs } from "./section-tabs";
 
 /**
  * 게시된 페이지 한 장 (SSR · #520 · ssccops#382).
  *
- * 소개·연혁·운영진·지원 안내·법적 페이지가 전부 이 화면이다 — 다른 것은 슬러그와 제목뿐이고
- * 그 표는 `shared/config/content-slugs.ts`에 있다. 본문은 행사 본문과 같은 마크다운 렌더러
+ * 소개·연혁·운영진·지원 안내·법적 페이지가 전부 이 화면이다 — 다른 것은 슬러그·제목·레이아웃
+ * 프리셋뿐이고 그 표는 `shared/config/content-slugs.ts`에 있다. 본문은 `ContentBody`가 절
+ * 단위로 잘라(`model/sections.ts`) 프리셋대로 놓고, 절 안의 마크다운은 행사 본문과 같은 렌더러
  * (`@ssccops/ui` `Markdown` — 원시 HTML을 해석하지 않는다 · ADR-0038)로 그린다.
  *
  * ── 게시본이 없으면 «준비 중» ─────────────────────────────────
@@ -35,7 +36,7 @@ export async function ContentPage({
   slug,
   fallbackTitle,
   tabs,
-  timeline = false,
+  layout = "prose",
   after,
 }: Readonly<{
   slug: string;
@@ -43,8 +44,8 @@ export async function ContentPage({
   fallbackTitle: string;
   /** 축 안의 탭 줄 — 축과 지금 주소. 없으면 탭 줄이 없다(법적 페이지) */
   tabs?: { axis: SectionAxis; pathname: string };
-  /** 연혁 — `## 연도` + 목록을 타임라인처럼 그리는 CSS를 켠다(`globals.css` `.content-timeline`) */
-  timeline?: boolean;
+  /** 본문 레이아웃 프리셋 — 표는 `ContentBody` 주석. 기본은 `prose` */
+  layout?: ContentLayout;
   /** 본문 아래 붙는 블록 — 지원 안내의 접수 중인 폼 목록 같은 것 */
   after?: ReactNode;
 }>) {
@@ -69,15 +70,12 @@ export async function ContentPage({
 
       {errorMessage && <EmptyState title={errorMessage} />}
       {!errorMessage && !page && <EmptyState title="준비 중입니다" />}
-      {page && (
-        <Card className={cn("px-[18px] py-[8px] lg:px-[26px] lg:py-[14px]", timeline && "content-timeline")}>
-          {page.mtxt.trim() ? (
-            <Markdown>{page.mtxt}</Markdown>
-          ) : (
-            <p className="py-[10px] text-[15px] text-n500">준비 중입니다</p>
-          )}
-        </Card>
-      )}
+      {page &&
+        (page.mtxt.trim() ? (
+          <ContentBody mtxt={page.mtxt} layout={layout} />
+        ) : (
+          <EmptyState title="준비 중입니다" />
+        ))}
 
       {after}
     </article>
