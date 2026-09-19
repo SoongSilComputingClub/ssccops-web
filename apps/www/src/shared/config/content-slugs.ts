@@ -9,6 +9,16 @@
  * 슬러그 모양은 서버 `ContentSlug`(소문자·숫자·하이픈 · 80자 이하)를 따른다.
  */
 export const CONTENT_SLUG = {
+  /**
+   * `/` 맨 위 배너 한 줄 (#524 · ssccops#385) — **게시 중일 때만** 그 줄이 있다. 모집 안내가
+   * 이 자리다(상단 바에 «지원하기»를 세우지 않는 대신). 본문 첫 문단만 쓴다
+   */
+  homeBanner: "home-banner",
+  /**
+   * `/` hero (#524) — 첫 `# ` 제목이 큰 문장, 그 아래 문단이 소개 한 문단. 본문에 `## 무엇을 하나`
+   * 절이 있으면 `### 제목` + 문단 넷을 소개 블록으로 읽는다(`views/home/model/intro.ts`)
+   */
+  homeIntro: "home-intro",
   /** `/about` — 소개 */
   about: "about",
   /** `/about/history` — 연혁. 본문의 `## 연도` + 목록을 타임라인 CSS가 그린다 */
@@ -29,6 +39,8 @@ export const CONTENT_SLUG = {
   photoNotice: "photo-notice",
   /** `/terms` — 이용약관 */
   terms: "terms",
+  /** `/contact` — 문의 안내. 게시본이 있으면 문의처 블록 위에 그 본문을 그리고, 없으면 블록만 (#524) */
+  contact: "contact",
 } as const;
 
 export type ContentSlug = (typeof CONTENT_SLUG)[keyof typeof CONTENT_SLUG];
@@ -48,3 +60,13 @@ export function operatorsCohortSlug(cohort: string): string {
 export function isCohort(value: string): boolean {
   return /^\d{1,3}$/.test(value);
 }
+
+/**
+ * 역대 운영진 페이지가 게시된 기수 — 운영진 축의 «역대» 탭이 첫 항목으로 간다 (#524).
+ *
+ * **손으로 적는 표다.** 서버에 «게시된 페이지 목록» 익명 API가 없어(ADR-0038 — 슬러그 하나씩만
+ * 읽는다) 기수를 훑어 알아낼 길이 없고, 슬러그 `operators-1`부터 차례로 찔러 보는 것은 요청
+ * 수십 개를 한 화면에 얹는 일이라 기각했다. 홍보국이 새 기수 페이지를 게시하면 여기에 한 줄
+ * 더한다 — 표에 없는 기수도 주소(`/operators/43`)로는 열린다. 최신 기수가 앞이다.
+ */
+export const OPERATOR_COHORTS: readonly number[] = [44];

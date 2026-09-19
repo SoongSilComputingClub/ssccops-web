@@ -22,6 +22,7 @@ export {
   type SemesterRange,
 } from "./model/semester";
 export { contentLoadErrorMessage } from "./model/content-error";
+export { PostCard } from "./ui/post-card";
 export {
   CONTENT_ERROR,
   fetchOpenForms,

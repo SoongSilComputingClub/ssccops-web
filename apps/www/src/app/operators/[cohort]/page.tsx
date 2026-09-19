@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isCohort, operatorsCohortSlug } from "@/shared/config/content-slugs";
+import { ROUTES } from "@/shared/config/routes";
 import { ContentPage, contentPageMetadata } from "@/views/content-page";
 
 /**
@@ -26,5 +27,11 @@ export default async function Page({ params }: Readonly<PageProps<"/operators/[c
   const { cohort } = await params;
   if (!isCohort(cohort)) notFound();
 
-  return <ContentPage slug={operatorsCohortSlug(cohort)} fallbackTitle={title(cohort)} />;
+  return (
+    <ContentPage
+      slug={operatorsCohortSlug(cohort)}
+      fallbackTitle={title(cohort)}
+      tabs={{ axis: "operators", pathname: ROUTES.operatorsCohort(cohort) }}
+    />
+  );
 }

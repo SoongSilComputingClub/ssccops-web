@@ -89,7 +89,7 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
       <body className="flex min-h-screen flex-col antialiased">
         <header className="border-b border-line bg-surface">
           <div className="mx-auto flex max-w-[1000px] items-center justify-between gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
-            <Link href={ROUTES.events} className="flex items-center gap-[8px]">
+            <Link href={ROUTES.home} className="flex items-center gap-[8px]">
               <BrandMark src={DEPLOY.mark} size={26} />
               <b className="text-[15px]">SSCC</b>
             </Link>

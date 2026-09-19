@@ -1,14 +1,9 @@
-import { EVENT_CLSF_QUERY } from "@/shared/config/routes";
-import { EventListPage } from "@/views/event-list";
+import { HomePage } from "@/views/home";
 
-export default async function Page({ searchParams }: Readonly<PageProps<"/">>) {
-  const params = await searchParams;
-  const raw = params[EVENT_CLSF_QUERY];
-  /*
-   * 같은 키가 두 번 실리면(`?clsf=A&clsf=B`) 배열로 온다 — 첫 값만 쓴다. 필터는 하나뿐이고,
-   * 배열을 그대로 쿼리에 실어 보내면 서버가 무엇을 골라야 할지 모른다.
-   */
-  const eventClsfCd = (Array.isArray(raw) ? raw[0] : raw) || null;
-
-  return <EventListPage eventClsfCd={eventClsfCd} />;
+/*
+ * 홈 — «지금 SSCC» (#524 · ssccops#385). 행사 목록이던 첫 화면(#141)은 `/events`로 갔다.
+ * 쿼리를 읽지 않는다 — 분류 필터(`?clsf=`)는 행사 목록의 것이고 그쪽 라우트가 받는다.
+ */
+export default function Page() {
+  return <HomePage />;
 }

@@ -4,6 +4,7 @@ import {
   fetchPublicPostsInSemester,
   formatSemester,
   isInSemester,
+  PostCard,
   type PublicContentPostSummary,
   type SemesterRange,
 } from "@/entities/content";
@@ -15,7 +16,6 @@ import {
 } from "@/entities/event";
 import { ROUTES } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui";
-import { PostCard } from "./post-card";
 
 /**
  * 학기별 묶음 (SSR · #520 · ssccops#382) — `/activities/2026/1`의 포스트와 행사.
