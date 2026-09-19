@@ -94,6 +94,28 @@ export interface SubWorkMemberRef {
   name: string;
 }
 
+/** 점검 항목 변경 종류 — 서버 ChecklistChangeType 그대로 */
+export type SubWorkChecklistChangeType = "ADDED" | "MODIFIED" | "REMOVED";
+
+/**
+ * 점검 목록 변경 이력 한 줄 (sub_work_chck_list_hstry · 서버 #307 · V5 · #543).
+ *
+ * 항목 편집(추가·문구 수정·삭제)마다 전/후 문구와 수행자·시각이 남는다 — «변경을 금지하지 않고
+ * 기록한다»(ssccops#255 · #411)의 첫 사례이고, 이 화면이 그것을 처음 보여 준다. 지워진 항목의
+ * `checklistItemId`는 이미 없는 행을 가리킬 수 있다(하드 삭제).
+ */
+export interface SubWorkChecklistHistoryItem {
+  historyId: number;
+  checklistItemId: number | null;
+  changeType: SubWorkChecklistChangeType;
+  /** 추가는 null */
+  previousArticle: string | null;
+  /** 삭제는 null */
+  nextArticle: string | null;
+  performer: SubWorkMemberRef | null;
+  changedAt: string | null;
+}
+
 /** 완료 점검 목록 한 줄 (sub_work_chck_list) */
 export interface SubWorkChecklistItem {
   checklistItemId: number;
