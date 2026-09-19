@@ -41,6 +41,11 @@ export function lmsOrigin(): string | null {
  * 떨어진다. **그것이 맞다** — 토큰이 주는 것은 미리보기까지이고(ADR-0016), 상세는 종전대로
  * 권한 검사를 지나야 열린다.
  */
+/** LMS 랜딩 — 로그인·역할별 상단 바가 그쪽에 있다 */
+export const LMS_HOME_PATH = "/";
+/** 기획안 제출 — lms `ROUTES.proposalNew`와 같은 값. 바뀌면 여기도 */
+export const LMS_PROPOSAL_NEW_PATH = "/proposals/new";
+
 export function lmsProgramDetailPath(academicProgramId: number): string {
   return `/studio/programs/${academicProgramId}`;
 }
