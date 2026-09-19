@@ -5,7 +5,7 @@ import {
   type PublicContentPage,
 } from "@/entities/content";
 import { CONTACT } from "@/shared/config/contact";
-import { Card, EmptyState, Markdown } from "@/shared/ui";
+import { Card, ContentMarkdoc, EmptyState } from "@/shared/ui";
 
 /**
  * 문의 (SSR · #524) — 페이지 `contact`의 본문(게시돼 있으면) + 문의처 블록.
@@ -45,7 +45,7 @@ export async function ContactPage({
       {errorMessage && <EmptyState title={errorMessage} />}
       {page && page.mtxt.trim() && (
         <Card className="px-[18px] py-[8px] lg:px-[26px] lg:py-[14px]">
-          <Markdown>{page.mtxt}</Markdown>
+          <ContentMarkdoc>{page.mtxt}</ContentMarkdoc>
         </Card>
       )}
 

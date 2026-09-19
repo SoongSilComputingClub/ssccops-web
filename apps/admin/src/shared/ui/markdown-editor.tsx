@@ -4,7 +4,7 @@ import { useRef, type ReactNode, type RefObject } from "react";
 import { Button } from "./button";
 import { Card, SectionLabel } from "./card";
 import { Field, TextArea } from "./field";
-import { Markdown } from "./markdown";
+import { CONTENT_TAG_SNIPPETS, ContentMarkdoc, Markdown, validateContentMarkdoc } from "./markdown";
 import { Segmented } from "./segmented";
 
 /*
@@ -21,6 +21,12 @@ import { Segmented } from "./segmented";
  *
  * **미리보기가 답하는 것은 "무엇이 어떻게 그려지는가"이지 "어디서 줄이 바뀌는가"가 아니다.**
  * 어드민 폼과 공개 상세는 본문 칸의 폭이 달라 줄바꿈 자리가 같을 수 없다.
+ *
+ * ── 두 맛 (`flavor` · ADR-0039 · #532) ──────────────────────
+ * 행사 본문은 `markdown`(react-markdown), 콘텐츠 페이지·포스트는 `markdoc` — 레이아웃 태그
+ * (`{% cards %}` 등 5종)를 쓰고 www가 같은 `ContentMarkdoc`으로 그린다. `markdoc`이면 편집칸 위에
+ * 태그 삽입 버튼 줄이 서고, 미리보기 아래에 검증 오류(모르는 태그·닫히지 않은 태그)가 뜬다.
+ * 저장 전 검증은 폼의 몫(`bodyError` → `markdocErrors`).
  */
 
 export const BODY_TABS = ["편집", "미리보기"] as const;
@@ -131,8 +137,14 @@ export function moveCaretAfterRender(el: HTMLTextAreaElement, caret: number): vo
   });
 }
 
+/** `markdoc` 본문의 검증 오류 — 폼이 저장 전에 부른다. 비어 있으면 저장해도 된다 */
+export function markdocErrors(mtxt: string): string[] {
+  return validateContentMarkdoc(mtxt);
+}
+
 export function MarkdownEditor({
   label,
+  flavor = "markdown",
   bodyTab,
   setBodyTab,
   value,
@@ -147,6 +159,8 @@ export function MarkdownEditor({
 }: Readonly<{
   /** 칸 이름 — «본문 (Markdown)» 앞부분. 사전(FIELD_LABEL)에서 꺼낸 값을 준다 */
   label: ReactNode;
+  /** 본문 문법 — 행사는 `markdown`, 콘텐츠 페이지·포스트는 `markdoc`(레이아웃 태그) */
+  flavor?: "markdown" | "markdoc";
   bodyTab: BodyTab;
   setBodyTab: (tab: BodyTab) => void;
   value: string;
@@ -180,6 +194,21 @@ export function MarkdownEditor({
       ? ` — ${attach.lock}`
       : " — 이미지를 첨부하면 커서 자리에 이미지 문법이 들어갑니다"
     : "";
+  const markdoc = flavor === "markdoc";
+  const tagErrors = markdoc && bodyTab === "미리보기" ? markdocErrors(value) : [];
+
+  /** 태그 본보기를 커서 자리에 — 이미지 첨부와 같은 자리 규칙(앞뒤 빈 줄) */
+  const insertSnippet = (snippet: string) => {
+    const el = textareaRef.current;
+    const at = el ? el.selectionStart : value.length;
+    const before = value.slice(0, at);
+    const after = value.slice(at);
+    const lead =
+      before.length === 0 || before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+    const inserted = `${lead}${snippet}`;
+    onChange(`${before}${inserted}${after}`);
+    if (el) moveCaretAfterRender(el, before.length + inserted.length);
+  };
 
   return (
     <Card className={className}>
@@ -211,6 +240,22 @@ export function MarkdownEditor({
         스크롤이 사라지고, insertImageMarkdown이 잡아 둔 ref도 끊긴다.
       */}
       <div hidden={bodyTab !== "편집"}>
+        {markdoc && (
+          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+            <span className="text-[12.5px] text-n500">블록 넣기</span>
+            {CONTENT_TAG_SNIPPETS.map((tag) => (
+              <button
+                key={tag.label}
+                type="button"
+                disabled={busy}
+                onClick={() => insertSnippet(tag.snippet)}
+                className="rounded-full border border-line px-2.5 py-[3px] text-[12.5px] text-n300 hover:border-accent-strong hover:text-accent-strong disabled:opacity-50"
+              >
+                {tag.label}
+              </button>
+            ))}
+          </div>
+        )}
         <Field label={null} error={error}>
           <TextArea
             ref={textareaRef}
@@ -224,7 +269,11 @@ export function MarkdownEditor({
       {bodyTab === "미리보기" && (
         <div className="min-h-[260px] rounded-[12px] border border-line bg-bg px-[16px] py-[6px]">
           {value.trim() ? (
-            <Markdown>{value}</Markdown>
+            markdoc ? (
+              <ContentMarkdoc>{value}</ContentMarkdoc>
+            ) : (
+              <Markdown>{value}</Markdown>
+            )
           ) : (
             <div className="py-[110px] text-center text-[13.5px] text-n500">
               아직 본문이 없습니다.
@@ -235,6 +284,14 @@ export function MarkdownEditor({
       {/* 오류는 미리보기에서도 보여야 한다 — 상한을 넘긴 채 넘어올 수 있다 */}
       {bodyTab === "미리보기" && error && (
         <div className="mt-2 text-[12.5px] text-danger">{error}</div>
+      )}
+      {/* 태그 오류는 미리보기에서 줄 번호와 함께 — 모르는 태그는 안쪽이 평문으로 그려져 눈으로는 모른다 */}
+      {tagErrors.length > 0 && (
+        <ul className="mt-2 flex flex-col gap-[2px] text-[12.5px] text-danger">
+          {tagErrors.map((message) => (
+            <li key={message}>{message}</li>
+          ))}
+        </ul>
       )}
       {/*
         업로드 실패는 토스트가 아니라 이 자리에 남긴다 — 무엇이 왜 막혔는지 다시 볼 수

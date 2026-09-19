@@ -279,6 +279,7 @@ export function ContentPostForm({
         onChange={setMtxt}
         textareaRef={mtxtRef}
         error={errors.mtxt}
+        flavor="markdoc"
         placeholder={"# 제목\n\nMarkdown으로 작성합니다. 공개 화면에 보이는 본문입니다."}
         busy={busy}
         attach={{
