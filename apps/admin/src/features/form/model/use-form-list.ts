@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { fetchForms, type FormListFilter, type FormSummary } from "@/entities/form";
+import {
+  fetchForms,
+  type FormListFilter,
+  type FormReceiptStatus,
+  type FormSummary,
+} from "@/entities/form";
 import { toFormErrorMessage } from "./form-error";
 
 /*
@@ -49,7 +54,9 @@ export interface FormList {
 }
 
 export function useFormList(filter: FormListFilter = {}): FormList {
-  const { receiptStatus = null, formLblId = null, deleted = false } = filter;
+  const { receiptStatus = null, receiptStatuses = null, formLblId = null, deleted = false } = filter;
+  // 배열은 호출부가 렌더마다 새로 만들 수 있어 문자열로 편다 — 의존성은 값이지 참조가 아니다
+  const statusesKey = receiptStatuses ? receiptStatuses.join(",") : "";
   const [loaded, setLoaded] = useState<LoadedFormList | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -57,7 +64,7 @@ export function useFormList(filter: FormListFilter = {}): FormList {
    * 지금 화면이 보여야 할 조회의 식별자. 필터가 바뀌거나 재시도를 누르면 값이 달라지고,
    * 그 순간부터 이전 결과는 자동으로 "남의 결과"가 된다.
    */
-  const requestKey = `${receiptStatus ?? ""}|${formLblId ?? ""}|${deleted}|${reloadKey}`;
+  const requestKey = `${receiptStatus ?? ""}|${statusesKey}|${formLblId ?? ""}|${deleted}|${reloadKey}`;
 
   /*
    * 의존성은 필터 객체가 아니라 그 안의 원시값이다 — 호출부가 `{ receiptStatus }`를 인라인으로
@@ -66,7 +73,8 @@ export function useFormList(filter: FormListFilter = {}): FormList {
   useEffect(() => {
     let alive = true;
 
-    fetchForms({ receiptStatus, formLblId, deleted })
+    const statuses = statusesKey ? (statusesKey.split(",") as FormReceiptStatus[]) : null;
+    fetchForms({ receiptStatus, receiptStatuses: statuses, formLblId, deleted })
       .then((next) => {
         if (alive) setLoaded({ key: requestKey, forms: next, errorMessage: "" });
       })
@@ -79,7 +87,7 @@ export function useFormList(filter: FormListFilter = {}): FormList {
     return () => {
       alive = false;
     };
-  }, [receiptStatus, formLblId, deleted, requestKey]);
+  }, [receiptStatus, statusesKey, formLblId, deleted, requestKey]);
 
   // 이번 요청의 결과가 아직 없으면(최초 진입이든 필터 변경 직후든) 로딩이다
   const current = loaded?.key === requestKey ? loaded : null;

@@ -231,6 +231,11 @@ export interface FormListFilter {
    * 남아 있었다. 두 축을 하나로 모은다.
    */
   receiptStatus?: FormReceiptStatus | null;
+  /**
+   * 여러 상태의 합집합 (#544 · 서버 #492 `receiptStatuses`). 있으면 `receiptStatus`보다 우선한다 —
+   * 서버도 둘 다 오면 다중 값을 택한다. 빈 배열은 «전체».
+   */
+  receiptStatuses?: readonly FormReceiptStatus[] | null;
   formLblId?: number | null;
   /**
    * **지운 폼만** 본다 (ssccops-server#329). 기본값(`false`)은 살아 있는 폼만이다.
@@ -343,7 +348,12 @@ export async function fetchForms(filter: FormListFilter = {}): Promise<FormSumma
    * 화면의 URL 쿼리 파라미터도 같은 이름을 쓴다(views/form-list) — 주소창과 요청이 1:1이면
    * 어떤 조회가 나갔는지 주소만 보고 알 수 있다. 이름을 바꾸면 두 곳을 함께 바꾼다.
    */
-  if (filter.receiptStatus) query.set("receiptStatus", filter.receiptStatus);
+  if (filter.receiptStatuses && filter.receiptStatuses.length > 0) {
+    // 다중 값은 쉼표로 — 서버가 목록으로 묶는다. 값 하나여도 같은 파라미터다(서버가 단일 값 경로로 보낸다)
+    query.set("receiptStatuses", filter.receiptStatuses.join(","));
+  } else if (filter.receiptStatus) {
+    query.set("receiptStatus", filter.receiptStatus);
+  }
   if (filter.formLblId != null) query.set("labelId", String(filter.formLblId));
 
   const qs = query.toString();
