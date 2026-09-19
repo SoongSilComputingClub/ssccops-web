@@ -6,11 +6,13 @@ import { ROUTES } from "@/shared/config/routes";
  * 목차를 컴포넌트 밖에 둔 이유는 어드민 셸(`use-shell-nav.ts`)과 같다 — 한쪽에만 메뉴를
  * 더하면 다른 쪽에서 빠진다.
  *
- * ── 다섯 축 (#520 · ssccops#382) ────────────────────────────
- * SSCC · 운영진 · 활동 · 모집 · 문의. **«지원하기» CTA는 없다** — 지원은 학기 초뿐이라 평소의
- * 상단 바에 세워 둘 것이 아니고, 모집 때는 홈 배너(#524 · ssccops#385)가 안내한다. «행사»는
- * «활동» 축에 들어갔다 — 행사 목록 `/events`와 상세 `/events/{id}`에서 «활동»이 켜진다(홈은
- * 어느 축도 켜지 않는다). «문의»는 #520에서는 푸터 블록으로 가는 앵커였는데 #524에서 화면
+ * ── 여섯 항목 (#520 · ssccops#382 · #529 · ssccops#389) ─────────
+ * SSCC · 운영진 · 활동 · 행사 · 모집 · 문의. **«지원하기» CTA는 없다** — 지원은 학기 초뿐이라
+ * 평소의 상단 바에 세워 둘 것이 아니고, 모집 때는 홈 배너(#524 · ssccops#385)가 안내한다.
+ * «행사»는 #520에서 «활동» 축 안에 넣었는데(행사 목록에서 «활동»이 켜졌다) 2026-09-19 검토에서
+ * 행사 목록으로 가는 길이 홈의 «행사 전체 보기» 하나뿐이라 항목으로 세웠다(ssccops#389) —
+ * `/events`에서는 «행사»가, `/activities`에서는 «활동»이 켜진다(홈은 어느 것도 켜지 않는다).
+ * «문의»는 #520에서는 푸터 블록으로 가는 앵커였는데 #524에서 화면
  * (`/contact`)이 됐다 — 앵커는 켜지지도 않고 공유할 주소도 없었다. 하위 페이지(연혁·역대·FAQ…)로
  * 가는 길은 상단 바가 아니라 페이지 제목 아래 탭 줄(`shared/config/section-tabs.ts`)이다.
  *
@@ -30,12 +32,8 @@ const startsWith = (prefix: string) => (pathname: string) =>
 export const NAV_LINKS: readonly NavLink[] = [
   { href: ROUTES.about, label: "SSCC", isActive: startsWith(ROUTES.about) },
   { href: ROUTES.operators, label: "운영진", isActive: startsWith(ROUTES.operators) },
-  {
-    href: ROUTES.activities,
-    label: "활동",
-    isActive: (pathname) =>
-      startsWith(ROUTES.activities)(pathname) || startsWith(ROUTES.events)(pathname),
-  },
+  { href: ROUTES.activities, label: "활동", isActive: startsWith(ROUTES.activities) },
+  { href: ROUTES.events, label: "행사", isActive: startsWith(ROUTES.events) },
   { href: ROUTES.join, label: "모집", isActive: startsWith(ROUTES.join) },
   { href: ROUTES.contact, label: "문의", isActive: startsWith(ROUTES.contact) },
 ];

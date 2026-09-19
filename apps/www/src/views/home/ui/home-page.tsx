@@ -1,6 +1,4 @@
-import { todayInSeoul } from "@ssccops/date";
 import {
-  fetchOpenForms,
   fetchPublicPage,
   fetchPublicPosts,
   isContentNotFound,
@@ -30,7 +28,7 @@ const RECENT_POSTS = 6;
  * 렌더마다 세션 왕복이 붙고 CDN 캐시(`next.config.ts` `headers()`)도 걸 수 없다. 부원의 «내
  * 것»은 `/me`이고 진입은 헤더 `AuthNav` 하나다.
  *
- * ── 재료 다섯을 나란히, 하나가 실패해도 그 블록만 ────────────
+ * ── 재료 넷을 나란히, 하나가 실패해도 그 블록만 ────────────
  * `Promise.allSettled` — `/me`·학기별 묶음과 같은 판단이다. 실패한 블록은 «—» 또는 그 블록의
  * 빈 줄로 남고 나머지는 그린다. 배너·hero는 404가 정상 상태(아직 안 썼다)라 실패와 구별하지
  * 않고 기본값으로 떨어진다 — 배너는 없음, hero는 코드의 기본 문구.
@@ -39,21 +37,19 @@ const RECENT_POSTS = 6;
  * 뺐다(Sub-task «하지 않는 것»).
  */
 export async function HomePage() {
-  const [banner, intro, forms, events, posts] = await Promise.allSettled([
+  const [banner, intro, events, posts] = await Promise.allSettled([
     fetchPublishedPage(CONTENT_SLUG.homeBanner),
     fetchPublishedPage(CONTENT_SLUG.homeIntro),
-    fetchOpenForms(),
     fetchPublicEvents(),
     fetchPublicPosts({ size: RECENT_POSTS }),
   ]);
-  const today = todayInSeoul();
   const introPage = settled(intro);
 
   return (
     <div className="flex flex-col gap-[28px] lg:gap-[36px]">
       <Banner page={settled(banner)} />
       <Hero page={introPage} />
-      <Schedule forms={forms} events={events} today={today} />
+      <Schedule events={events} />
       <IntroBlocks page={introPage} />
       <RecentPosts result={posts} />
     </div>
