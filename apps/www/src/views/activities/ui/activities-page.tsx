@@ -2,13 +2,13 @@ import Link from "next/link";
 import {
   contentLoadErrorMessage,
   fetchPublicPosts,
+  PostCard,
   type ContentCategory,
   type PublicContentPostPage,
 } from "@/entities/content";
 import { ROUTES, activitiesPath } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui";
 import { CategoryTabs } from "./category-tabs";
-import { PostCard } from "./post-card";
 
 /** 한 화면에 그리는 포스트 수 — 두 열 카드가 여섯 줄 */
 const PAGE_SIZE = 12;
@@ -21,9 +21,9 @@ const PAGE_SIZE = 12;
  * 클라이언트 상태가 필요한데, 이 앱은 전 화면이 서버 컴포넌트다(#141). 한 장씩 넘기는 것이
  * 아카이브 읽기에는 충분하고, 주소가 남아 공유·뒤로 가기가 된다.
  *
- * ── 행사는 홈에 ─────────────────────────────────────────
- * 상단 바의 «활동»이 이 화면으로 오지만 지금 열리는 행사는 홈(`/`)의 행사 목록이다(#385가
- * 홈을 바꾸기 전까지). 헤더에 그 길을 한 줄 둔다.
+ * ── 행사는 `/events`에 ──────────────────────────────────
+ * 상단 바의 «활동»이 이 화면으로 오지만 열리는 행사의 전체 목록은 `/events`다(#524 — 홈이
+ * «지금 SSCC»가 되면서 행사 목록이 그리로 이사했다). 헤더에 그 길을 한 줄 둔다.
  */
 export async function ActivitiesPage({
   category,

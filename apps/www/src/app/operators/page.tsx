@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CONTENT_SLUG } from "@/shared/config/content-slugs";
+import { ROUTES } from "@/shared/config/routes";
 import { ContentPage, contentPageMetadata } from "@/views/content-page";
 
 const SLUG = CONTENT_SLUG.operators;
@@ -10,5 +11,11 @@ export function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Page() {
-  return <ContentPage slug={SLUG} fallbackTitle={TITLE} />;
+  return (
+    <ContentPage
+      slug={SLUG}
+      fallbackTitle={TITLE}
+      tabs={{ axis: "operators", pathname: ROUTES.operators }}
+    />
+  );
 }

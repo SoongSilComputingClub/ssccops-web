@@ -45,7 +45,7 @@
 
 | 이름 | 어디서 | 모양 | 역할 |
 |---|---|---|---|
-| 분류 탭(`views/activities` `CategoryTabs`) · 분류 칩(홈) | 목록 위 | `rounded-full border px-3 py-[6px] text-[14px]`, 켜지면 `border-accent-strong bg-accent-soft text-accent-strong` | **링크**다. `<nav>` + `aria-current="page"` — `role="tablist"`가 아니다. ARIA 탭은 같은 화면의 패널을 바꾸는 위젯이고, 주소가 바뀌는 이동은 내비게이션이다 |
+| 분류 탭(`views/activities` `CategoryTabs`) · 하위 내비 탭(`views/content-page` `SectionTabs` · #524) · 분류 칩(행사 목록 `/events`) | 목록·페이지 제목 아래 | `rounded-full border px-3 py-[6px] text-[14px]`, 켜지면 `border-accent-strong bg-accent-soft text-accent-strong` | **링크**다. `<nav>` + `aria-current="page"` — `role="tablist"`가 아니다. ARIA 탭은 같은 화면의 패널을 바꾸는 위젯이고, 주소가 바뀌는 이동은 내비게이션이다 |
 | 선택 칩(`shared/ui` `Chip`) | 가입 폼의 재학·졸업 | `rounded-full`, 켜지면 `bg-accent text-white` | 버튼(`aria-pressed`) |
 | `Pill`(`@ssccops/ui`) | 카드의 분류 이름 | 회색 알약 | 표시만 |
 | `Badge`(`@ssccops/ui`) | 행사 상태 | `rounded-[6px] px-[7px] text-[13px]`, 톤 7종 | 표시만 |
@@ -76,7 +76,10 @@ CSS가 구조만 본다. 규칙은 `globals.css` 끝에 있다.
 ## 상단 바 · 푸터
 
 - 상단 바: 로고(홈) · 다섯 축(SSCC · 운영진 · 활동 · 모집 · 문의) · 로그인 상태. `lg` 미만은
-  드로어. **«지원하기» CTA는 없다.**
+  드로어. **«지원하기» CTA는 없다.** 축 안의 하위 페이지는 페이지 제목 아래 탭 줄(#524).
+- 홈(#524): hero 큰 문장 30px(`lg` 40px) `font-semibold tracking-[-.6px]`, 절 제목 19px
+  `font-semibold`, 절 사이 28px(`lg` 36px). 일정은 카드 안 줄 목록(칩 · 제목 · 오른쪽 날짜),
+  소개 블록은 4열 카드(`sm` 2열), 최근 활동은 3열 `PostCard`(`sm` 2열).
 - 푸터: 문의 블록(`#contact` — 동방 위치 · 메일 · Instagram · GitHub) · 안내 문서 세 개(개인정보
   처리방침 · 사진 게재 안내 · 이용약관) · «숭실대학교 공식 사이트가 아닌 학생 동아리 운영» · ©.
   값은 `shared/config/contact.ts`.

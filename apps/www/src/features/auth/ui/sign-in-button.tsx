@@ -17,7 +17,7 @@ import { createClient } from "@ssccops/auth/supabase/client";
 
 /** 목적지가 주어지지 않으면 지금 보고 있는 화면으로 돌아온다 */
 function resolveNext(next?: string): string {
-  return safeNextPath(next ?? currentPath(), ROUTES.events);
+  return safeNextPath(next ?? currentPath(), ROUTES.home);
 }
 
 export function SignInButton({

@@ -7,7 +7,8 @@ import { ROUTES } from "@/shared/config/routes";
  *
  * 서버 컴포넌트다 — 세션도 경로도 보지 않는다. 문의 블록(`id="contact"`)이 위에 서는 것은
  * «모든 화면 끝에 문의»(제안 §6) 때문이다 — 지원자가 어느 화면에서 멈춰도 다음 행동이 있다.
- * 상단 바의 «문의»가 여기로 내려온다(`ROUTES.contact`).
+ * 상단 바의 «문의»는 #524부터 화면(`/contact`)으로 가고, 이 블록은 그 화면과 같은 값을 그린다 —
+ * 두 자리가 같은 `contact.ts`를 읽으므로 갈리지 않는다.
  *
  * 주소·SNS 값은 `shared/config/contact.ts`(옛 사이트 `footer.tsx`에서 옮김). 메일은 정해지지
  * 않아 null이고, 그때는 줄을 그리지 않는다.

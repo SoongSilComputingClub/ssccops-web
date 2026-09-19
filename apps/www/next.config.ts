@@ -77,12 +77,24 @@ const nextConfig: NextConfig = {
    * 미들웨어가 잡는 경로에 이 값을 걸면 남의 세션 화면이 CDN에 남는다 — **넓히지 않는다.**
    * 게시본이 없어 «준비 중»을 그린 응답도 같은 5분 동안 남는다(서버 404는 캐시하지 않지만
    * 화면 응답은 200이다) — 게시 뒤 최대 5분 뒤에 보이는 것은 게시 취소와 같은 지연이다.
+   *
+   * 홈(`/`)과 행사 목록(`/events`)·문의(`/contact`)는 #524에서 들어왔다 — 홈은 세션을 보지
+   * 않는 익명 화면이고(ssccops#385) 재료가 전부 익명 API다. `/events`는 **정확히 그 주소만**이다 —
+   * `/events/:path*`로 적으면 신청 화면(`/events/{id}/apply`)까지 걸린다.
    */
   async headers() {
     return [
       {
+        source: "/",
+        headers: [{ key: "Cache-Control", value: PUBLIC_CACHE_CONTROL }],
+      },
+      {
+        source: "/events",
+        headers: [{ key: "Cache-Control", value: PUBLIC_CACHE_CONTROL }],
+      },
+      {
         source:
-          "/:section(about|operators|join|privacy|photo-notice|terms|activities)/:path*",
+          "/:section(about|operators|join|contact|privacy|photo-notice|terms|activities)/:path*",
         headers: [{ key: "Cache-Control", value: PUBLIC_CACHE_CONTROL }],
       },
     ];

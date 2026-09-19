@@ -5,8 +5,10 @@ import {
   isContentNotFound,
   type PublicContentPage,
 } from "@/entities/content";
+import type { SectionAxis } from "@/shared/config/section-tabs";
 import { cn } from "@/shared/lib/cn";
 import { Card, EmptyState, Markdown } from "@/shared/ui";
+import { SectionTabs } from "./section-tabs";
 
 /**
  * 게시된 페이지 한 장 (SSR · #520 · ssccops#382).
@@ -23,16 +25,24 @@ import { Card, EmptyState, Markdown } from "@/shared/ui";
  *
  * ── 조회 실패는 화면 안에서 ─────────────────────────────────
  * 서버가 잠깐 닿지 않을 때 공개 도메인이 통째로 오류 화면이 되는 편보다 낫다(이 앱의 규칙).
+ *
+ * ── 하위 내비 (#524) ────────────────────────────────────────
+ * 세 축(SSCC · 운영진 · 모집)의 페이지는 제목 아래 탭 줄(`SectionTabs`)을 갖는다 — 라우트가
+ * `tabs`로 축과 자기 주소를 넘긴다. 법적 페이지는 넘기지 않아 탭이 없다. 게시본이 없어
+ * «준비 중»일 때도 탭은 선다 — 이웃 페이지로 가는 길까지 막을 이유가 없다.
  */
 export async function ContentPage({
   slug,
   fallbackTitle,
+  tabs,
   timeline = false,
   after,
 }: Readonly<{
   slug: string;
   /** 게시본이 없거나 조회에 실패했을 때 세우는 제목 */
   fallbackTitle: string;
+  /** 축 안의 탭 줄 — 축과 지금 주소. 없으면 탭 줄이 없다(법적 페이지) */
+  tabs?: { axis: SectionAxis; pathname: string };
   /** 연혁 — `## 연도` + 목록을 타임라인처럼 그리는 CSS를 켠다(`globals.css` `.content-timeline`) */
   timeline?: boolean;
   /** 본문 아래 붙는 블록 — 지원 안내의 접수 중인 폼 목록 같은 것 */
@@ -54,6 +64,8 @@ export async function ContentPage({
           {page?.ttl ?? fallbackTitle}
         </h1>
       </header>
+
+      {tabs && <SectionTabs axis={tabs.axis} pathname={tabs.pathname} />}
 
       {errorMessage && <EmptyState title={errorMessage} />}
       {!errorMessage && !page && <EmptyState title="준비 중입니다" />}
