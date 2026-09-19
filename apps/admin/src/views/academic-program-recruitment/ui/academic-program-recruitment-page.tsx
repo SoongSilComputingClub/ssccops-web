@@ -5,6 +5,7 @@ import type { AcademicProgramSummary } from "@/entities/academic-program";
 import {
   useAcademicProgramDetail,
   useAcademicProgramList,
+  useRecruitmentSchedule,
   useRecruitmentSelect,
   useStartRecruitment,
 } from "@/features/academic-program";
@@ -45,6 +46,7 @@ export function AcademicProgramRecruitmentPage() {
   const detail = useAcademicProgramDetail(selectedProgramId ?? 0);
   const recruitment = useRecruitmentSelect(selectedProgramId);
   const start = useStartRecruitment(selectedProgramId ?? 0);
+  const schedule = useRecruitmentSchedule(selectedProgramId);
 
   const setSelected = (program: AcademicProgramSummary) => {
     const next = new URLSearchParams(searchParams);
@@ -71,6 +73,8 @@ export function AcademicProgramRecruitmentPage() {
     detail.reload();
     recruitment.reload();
     list.reload();
+    // 방금 정한 접수 기간이 일정 카드의 값이 된다 (이 전이가 그 값을 쓰는 다른 경로다)
+    schedule.reload();
   };
 
   const onLoadMoreApplications = async () => {
@@ -115,6 +119,7 @@ export function AcademicProgramRecruitmentPage() {
             select={recruitment.select}
             selecting={recruitment.selecting}
             teamMembers={recruitment.teamMembers}
+            schedule={schedule}
           />
         </div>
       </PageBody>

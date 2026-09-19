@@ -26,3 +26,8 @@ export type {
   RecruitmentApplicationsStatus,
   RecruitmentSelectState,
 } from "./model/use-recruitment-select";
+export { useRecruitmentSchedule } from "./model/use-recruitment-schedule";
+export type {
+  RecruitmentScheduleState,
+  RecruitmentScheduleStatus,
+} from "./model/use-recruitment-schedule";

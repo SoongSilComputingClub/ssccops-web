@@ -1,8 +1,11 @@
 import type { PtcpSttsCd, RspnsSttsCd } from "@/shared/config/codes";
 import { apiFetch, apiFetchList } from "@/shared/lib/api/client";
+import { withServiceOffset } from "@/shared/lib/date";
 import type {
   RecruitmentApplication,
   RecruitmentApplicationFilter,
+  RecruitmentSchedule,
+  RecruitmentScheduleInput,
   RecruitmentSelection,
   RecruitmentTeamMember,
 } from "../model/types";
@@ -58,6 +61,14 @@ export const RECRUITMENT_ERROR = {
    * 없다 — 새로고침을 권하지 않고 담당자 문의로 안내한다.
    */
   INVALID_FORM_STATUS_TRANSITION: "INVALID_FORM_STATUS_TRANSITION",
+  /**
+   * 모집 일정 변경에서 종료가 시작보다 빠르다 (400 · 폼 도메인 코드를 그대로 전파).
+   *
+   * 화면이 저장 버튼을 미리 잠그므로 정상 흐름에서는 나오지 않지만, 두 입력란을 비워 두고
+   * 한쪽만 채우는 경우처럼 화면 검사와 서버 검사가 갈릴 수 있는 자리가 남아 있다 —
+   * 빠뜨리면 서버 원문이 그대로 토스트에 뜬다(INVALID_FORM_STATUS_TRANSITION 의 전례).
+   */
+  INVALID_RECEIPT_PERIOD: "INVALID_RECEIPT_PERIOD",
 } as const;
 
 /* ── 서버 응답(Response DTO) ────────────────────────────────── */
@@ -222,4 +233,74 @@ export async function selectRecruitmentApplicants(
   );
 
   return (res ?? []).map(toTeamMember);
+}
+
+
+/* ── 모집 일정 ─────────────────────────────────────────────── */
+
+/** 모집 일정 응답 (RecruitmentScheduleResponse) */
+interface RecruitmentScheduleResponse {
+  academicProgramId: number;
+  formId: number | null;
+  rcptBgngDt: string | null;
+  rcptEndDt: string | null;
+  receiptStatus: string | null;
+}
+
+function toSchedule(res: RecruitmentScheduleResponse): RecruitmentSchedule {
+  return {
+    academicProgramId: res.academicProgramId,
+    formId: res.formId ?? null,
+    // 없는 일시를 지어내지 않는다 — null 은 "제한 없음"이고 그 뜻은 화면이 문구로 밝힌다
+    rcptBgngDt: res.rcptBgngDt ?? null,
+    rcptEndDt: res.rcptEndDt ?? null,
+    receiptStatus: res.receiptStatus ?? null,
+  };
+}
+
+/**
+ * GET /v1/academic-programs/{academicProgramId}/recruitment/schedule — 모집 일정 조회.
+ *
+ * 자격은 신청자 조회와 같다(소유권 또는 `ACADEMIC_PROGRAM_MANAGE`). **모집 시작 전에도 200**
+ * 이며 그때는 두 일시가 `null` 이다 — `RECRUITMENT_NOT_STARTED` 로 끊기지 않으므로 이 화면은
+ * 모집 시작 카드 옆에서도 부를 수 있다(다만 지금은 부르지 않는다 · 아래 훅 주석).
+ */
+export async function fetchRecruitmentSchedule(
+  academicProgramId: number,
+): Promise<RecruitmentSchedule> {
+  const res = await apiFetch<RecruitmentScheduleResponse>(
+    `/v1/academic-programs/${academicProgramId}/recruitment/schedule`,
+  );
+  return toSchedule(res);
+}
+
+/**
+ * PATCH /v1/academic-programs/{academicProgramId}/recruitment/schedule — 모집 일정 변경.
+ *
+ * 모집을 시작한 뒤 접수 기간을 고치는 유일한 경로다(`ACADEMIC_PROGRAM_MANAGE` 전용). 모집
+ * 시작 전이면 409 `RECRUITMENT_NOT_STARTED` 이고 그 구간의 일정은 `START_RECRUITMENT` 가 정한다.
+ *
+ * ── 오프셋을 여기서 붙인다 ──────────────────────────────────
+ * `datetime-local` 입력은 오프셋 없는 값을 주는데 서버의 `rcptBgngDt` 는 `OffsetDateTime` 이라
+ * 본문 자체가 파싱되지 않아 400 이 난다 — `transitionAcademicProgram` 이 모집 시작에서 하는
+ * 것과 같은 처리이며, 그래서 훅·화면은 입력 문자열을 그대로 넘긴다.
+ *
+ * **비운 값은 `null` 로 나간다.** 전체 교체라 빈 문자열을 그대로 보내면 서버가 그것을 일시로
+ * 읽으려다 400 이 되고, `null` 이어야 "제한 없음"이라는 뜻이 된다.
+ */
+export async function updateRecruitmentSchedule(
+  academicProgramId: number,
+  input: RecruitmentScheduleInput,
+): Promise<RecruitmentSchedule> {
+  const res = await apiFetch<RecruitmentScheduleResponse>(
+    `/v1/academic-programs/${academicProgramId}/recruitment/schedule`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        rcptBgngDt: withServiceOffset(input.rcptBgngDt || null),
+        rcptEndDt: withServiceOffset(input.rcptEndDt || null),
+      }),
+    },
+  );
+  return toSchedule(res);
 }
