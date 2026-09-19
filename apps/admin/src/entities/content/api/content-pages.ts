@@ -222,3 +222,18 @@ export async function publishContentPage(pageId: number, publish: boolean): Prom
   );
   return toContentPage(res);
 }
+
+/**
+ * 페이지 전부 — 카탈로그 화면(#534)이 슬러그로 짝지으려고 커서 끝까지 읽는다. 페이지는 카탈로그
+ * 항목 13 + 기수 몇 장이라 두세 번이면 끝난다(목록 상한 100). 포스트에는 이런 것을 두지 않는다.
+ */
+export async function fetchAllContentPages(): Promise<ContentPageSummary[]> {
+  const all: ContentPageSummary[] = [];
+  let cursor: string | null = null;
+  do {
+    const page: ContentListPage<ContentPageSummary> = await fetchContentPages({ cursor, size: 100 });
+    all.push(...page.items);
+    cursor = page.hasNext ? page.nextCursor : null;
+  } while (cursor);
+  return all;
+}

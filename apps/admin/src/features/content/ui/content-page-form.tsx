@@ -60,10 +60,13 @@ export function bodyError(mtxt: string): string | undefined {
   return undefined;
 }
 
-type PageFormField = "slug" | "ttl" | "mtxt";
+type PageFormField = "ttl" | "mtxt";
 
 export function ContentPageForm({
   initial,
+  slug,
+  path,
+  defaultTitle,
   busy,
   canManage,
   submitLabel,
@@ -71,13 +74,21 @@ export function ContentPageForm({
 }: Readonly<{
   /** 수정이면 현재 값 전부(전체 교체 폼) · 등록이면 null */
   initial: ContentPage | null;
+  /**
+   * 이 페이지의 자리 — 카탈로그(`@ssccops/content`)가 정한 슬러그 (#534). 입력란이 아니라 표시다:
+   * 슬러그를 바꾸면 페이지가 라우트에서 떨어져 나가므로 어드민에서는 바꿀 수 없다.
+   */
+  slug: string;
+  /** 공개 경로 — 슬러그 옆에 보여 준다 */
+  path: string;
+  /** 등록일 때 제목 초깃값 — 카탈로그의 이름 */
+  defaultTitle?: string;
   busy: boolean;
   canManage: boolean;
   submitLabel: string;
   onSubmit: (input: ContentPageSaveInput) => void;
 }>) {
-  const [slug, setSlug] = useState(initial?.slug ?? "");
-  const [ttl, setTtl] = useState(initial?.ttl ?? "");
+  const [ttl, setTtl] = useState(initial?.ttl ?? defaultTitle ?? "");
   const [mtxt, setMtxt] = useState(initial?.mtxt ?? "");
   const [bodyTab, setBodyTab] = useState<BodyTab>("편집");
   const [errors, setErrors] = useState<Partial<Record<PageFormField, string>>>({});
@@ -85,17 +96,15 @@ export function ContentPageForm({
 
   const submit = () => {
     const next: Partial<Record<PageFormField, string>> = {};
-    const slugMsg = slugError(slug);
     const ttlMsg = titleError(ttl);
     const mtxtMsg = bodyError(mtxt);
-    if (slugMsg) next.slug = slugMsg;
     if (ttlMsg) next.ttl = ttlMsg;
     if (mtxtMsg) next.mtxt = mtxtMsg;
 
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
-    onSubmit({ slug: slug.trim(), ttl: ttl.trim(), mtxt });
+    onSubmit({ slug, ttl: ttl.trim(), mtxt });
   };
 
   return (
@@ -103,18 +112,11 @@ export function ContentPageForm({
       <Card>
         <SectionLabel className="mb-3">기본 정보</SectionLabel>
         <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-[1fr_1.4fr]">
-          <Field label={FIELD_LABEL.contentSlug} required error={errors.slug}>
-            <TextField
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              invalid={Boolean(errors.slug)}
-              placeholder="예: about"
-              autoCapitalize="none"
-              spellCheck={false}
-            />
-            <div className="mt-[5px] text-[12.5px] text-n500">
-              {SLUG_HINT}. 공개 주소의 마지막 부분입니다.
+          <Field label={FIELD_LABEL.contentSlug}>
+            <div className="flex h-[44px] items-center rounded-[10px] bg-fill px-3 font-mono text-[14px] text-n300">
+              {slug}
             </div>
+            <div className="mt-[5px] text-[12.5px] text-n500">공개 주소 {path} · 자리는 코드가 정합니다</div>
           </Field>
           <Field label={FIELD_LABEL.contentTitle} required error={errors.ttl}>
             <TextField
