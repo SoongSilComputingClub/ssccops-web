@@ -24,6 +24,7 @@ import {
   type AgndPrcsSeCd,
 } from "@/shared/config/codes";
 import { FIELD_LABEL } from "@/shared/config/labels";
+import { AttachmentSection } from "@/features/attachment";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
 import { Badge, Button, Card, Chip, ChipGroup, EmptyState, KeyValueGrid, PageBody, PageHeader, SearchInput, SectionLabel, Sheet, TextArea, TextField, flash } from "@/shared/ui";
@@ -713,6 +714,13 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
             })();
           }}
           okLabel="삭제"
+        />
+        {/* 첨부 (#546) — 회의 관리(MEETING_MANAGE)가 올리고 지운다. 회의록·자료가 여기 붙는다 */}
+        <AttachmentSection
+          className="mt-4"
+          operationId={meeting.operationId}
+          canWrite={canManage}
+          lockedHint="첨부를 올리거나 지울 권한이 없습니다 — 회의 관리(MEETING_MANAGE) 권한이 필요합니다"
         />
       </PageBody>
     </>
