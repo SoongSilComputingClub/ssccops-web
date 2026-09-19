@@ -137,6 +137,15 @@ export const CAPABILITY = {
    * (규정은 회원에게 공개된 문서다). 서버가 두 컨트롤러를 나눠 둔 이유가 그것이다.
    */
   RAG_DOCUMENT_MANAGE: "RAG_DOCUMENT_MANAGE",
+  /**
+   * 콘텐츠 관리 (#521 · 서버 ssccops-server#480 · ADR-0038).
+   *
+   * 페이지·포스트 어드민 API(`/v1/content/**`)는 **목록 조회까지 전부** 이 코드 하나로 잠긴다 —
+   * 서버가 클래스 레벨 `@RequireAuthority`로 걸어 두었다. EVENT_MANAGE·RAG_DOCUMENT_MANAGE와
+   * 같은 자리라 화면은 이 코드가 없으면 메뉴를 아예 감춘다(열어 봐야 첫 조회부터 403이다).
+   * 시드는 회장·부회장에게만 있고 홍보국은 배포 뒤 역할별 권한 화면에서 켠다.
+   */
+  CONTENT_MANAGE: "CONTENT_MANAGE",
 } as const;
 
 export type Capability = (typeof CAPABILITY)[keyof typeof CAPABILITY];

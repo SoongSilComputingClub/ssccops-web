@@ -10,12 +10,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENTS.md
 
-SSCC(숭실컴퓨팅클럽) 운영 시스템의 웹 — **pnpm workspace + Turborepo 모노레포**(앱 3 · 패키지 6).
+SSCC(숭실컴퓨팅클럽) 운영 시스템의 웹 — **pnpm workspace + Turborepo 모노레포**(앱 3 · 패키지 7).
 Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4. 백엔드는 별도 저장소
 **`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth), 배포는 **prod = Vercel
 Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아래 «배포 — 두 플랫폼» 절.
 
-## 영역 — 앱 3 · 패키지 6
+## 영역 — 앱 3 · 패키지 7
 
 영역 고유 규칙(화면·인증 방식·주요 결정·함정)은 **각 영역의 `AGENTS.md`가 정본**이다(ssccops#349 —
 서버가 도메인별로 한 것과 같다). 여기서는 가리키기만 하고 `@`로 끌어오지 않는다 — 끌어오면 분리한
@@ -24,7 +24,7 @@ Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아�
 | 영역 | 한 줄 | 정본 |
 |---|---|---|
 | `apps/admin` | 운영진 어드민 — 회원·업무·회의·승인함·폼·행사·학술·공유 링크·OAuth 동의. **유일하게 401·403 리다이렉트를 끝내고 `SessionGuard`를 주는 앱** | [apps/admin/AGENTS.md](apps/admin/AGENTS.md) |
-| `apps/www` | 공개 웹사이트 — 행사(익명)·신청(가입 임베드)·내 신청·공개 폼 `/f`·공유 착지 `/s`. 전 화면 SSR, 리다이렉트 없음 | [apps/www/AGENTS.md](apps/www/AGENTS.md) |
+| `apps/www` | 공개 웹사이트 — 행사·콘텐츠 다섯 축(익명 · ADR-0038)·신청(가입 임베드)·내 활동 `/me`·공개 폼 `/f`·공유 착지 `/s`. 전 화면 SSR, 리다이렉트 없음 | [apps/www/AGENTS.md](apps/www/AGENTS.md) |
 | `apps/lms` | 학술 공개 앱 — 스터디장 스튜디오·기획안·내 신청. 로그인 필수, 역할별 상단 바, 공유 링크 발급(착지는 www) | [apps/lms/AGENTS.md](apps/lms/AGENTS.md) |
 | `packages/ui` | 세 앱 공용 표시 요소·테마·배포 표식(`deployMarks`)·`BrandMark` — 둘 이상이 실제로 쓰던 것만 | [packages/ui/AGENTS.md](packages/ui/AGENTS.md) |
 | `packages/auth` | Supabase 클라이언트·세션 갱신(`updateSession` + 앱이 주입하는 `SessionGuard`)·`?next=` 검증·OAuth 목적지 쿠키 | [packages/auth/AGENTS.md](packages/auth/AGENTS.md) |
@@ -32,6 +32,7 @@ Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아�
 | `packages/share-meta` | 공유 카드 문구·공유 대상 → 착지 앱 규칙(ADR-0017) | [packages/share-meta/AGENTS.md](packages/share-meta/AGENTS.md) |
 | `packages/codes` | admin·lms가 함께 쓰는 서버 표준코드·표시명(계약) | [packages/codes/AGENTS.md](packages/codes/AGENTS.md) |
 | `packages/date` | 서버 일시 문자열 → 표기(잘라 쓴다 · `todayInSeoul`) | [packages/date/AGENTS.md](packages/date/AGENTS.md) |
+| `packages/content` | 콘텐츠 페이지 카탈로그 — www 라우트 슬러그 표와 어드민 페이지 목록이 같은 표(#534) | [packages/content/AGENTS.md](packages/content/AGENTS.md) |
 
 > 위의 `nextjs-agent-rules` 블록은 `next dev`가 스스로 써넣는다. 지우면 uncommitted 변경으로
 > 되살아나므로 **그대로 두고 그 바깥에** 쓴다. 개인 로컬 메모(포트·`.env.local`·증상별 원인
@@ -61,10 +62,15 @@ pnpm build
   `tsc`가 `Cannot find name 'PageProps'`로 죽는다(`integrate.yml`의 lint job과 같은 순서다).
 - **테스트 러너는 아직 없다.** CI의 test job은 `src` 아래에 `*.test.*`·`*.spec.*`가 있을 때만
   돈다. 테스트를 처음 추가하는 사람이 러너와 `test:coverage` 스크립트를 함께 붙인다.
-- **SonarQube 분석은 아무것도 막지 않는다** — 토큰이 있을 때만 돌고, build와 별도 job이며,
-  **Quality Gate가 빨개도 실패시키지 않는다**(ssccops#231). 기존 코드의 지적을 다 갚기 전에
-  잠그면 아무것도 머지할 수 없어서다 — 숫자를 먼저 보고 기준을 정한 뒤에 잠근다. 잠그는
-  자리는 `integrate.yml`의 Quality Gate 단계에 주석으로 표시해 두었다.
+- **SonarQube Analyze job의 상태가 곧 Quality Gate 결과다**(#516 · ssccops#377). 게이트
+  ERROR면 `sonar-report.sh`가 1로 끝나 job이 빨갛고, 깨뜨린 조건마다 `::error` 주석이 실행
+  화면 Annotations에 뜬다. 그전(ssccops#231)에는 게이트가 무엇이든 초록이었다 — 결과가 요약·
+  로그에만 있어 열어 보기 전에는 아무도 몰랐다. **분석이 PR에서 돌지 않으므로 이 실패가 막는
+  머지는 없다**(ADR-0018 그대로 · build와 별도 job) — develop 커밋의 상태가 사실을 말할 뿐이며
+  게이트 조건·임계값은 여전히 ssccops#235의 문제다. 토큰이 없으면 `sonar-preflight` job이
+  판정해 Analyze를 **통째로 건너뛴다(회색)** — `secrets`는 job `if`에서 못 읽어 앞 job의
+  output으로 넘긴다. 예전엔 step마다 가드가 붙어 step은 건너뛰고 job은 초록이었다. 세 상태
+  (통과·실패·건너뜀)가 세 색이어야 한다.
   - 설정은 **저장소 루트의 `sonar-project.properties`**에 있고 워크플로에는 토큰·호스트만
     남는다. 프로젝트 키를 `vars.SONAR_PROJECT`로 받던 때가 있었는데 **그 변수가 등록된 적이
     없어 빈 키로 돌 뻔했다**(없으면 실패하지 않고 조용히 빈다).

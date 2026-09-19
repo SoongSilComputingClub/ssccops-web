@@ -383,6 +383,29 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     /*
+     * 콘텐츠 (#521 · ssccops#383 · ADR-0038) — 홍보국이 공개 사이트의 페이지·포스트를 쓴다.
+     *
+     * 항목이 하나뿐인데 묶음을 여는 것은 RAG와 같은 이유다 — 다루는 것(공개 사이트에 실리는 글)이
+     * 폼·행사·학술 어디에도 속하지 않는다. 페이지·포스트를 두 줄로 나누지 않고 한 화면의 탭으로
+     * 둔 근거는 routes.ts의 `content` 주석.
+     *
+     * 어드민 API는 **목록 조회까지 전부** CONTENT_MANAGE다(서버 클래스 레벨 `@RequireAuthority`).
+     * 권한이 없으면 첫 조회부터 403이라 감추지 않으면 갈 수 없는 곳이 목차에 남는다 — 행사·RAG와
+     * 같은 판단. 만들기·편집은 목록에서 들어가므로 목차에 따로 올리지 않는다.
+     */
+    label: "콘텐츠",
+    mono: "콘",
+    items: [
+      {
+        label: "페이지 · 포스트",
+        href: ROUTES.content,
+        isActive: starts("/content"),
+        requires: CAPABILITY.CONTENT_MANAGE,
+      },
+    ],
+  },
+  {
+    /*
      * RAG (#432 · 서버 #399·#401).
      *
      * 항목이 «설정» 하나뿐인데도 묶음을 새로 여는 것은, 이 화면이 다루는 것이 다른 묶음 어디에도

@@ -62,6 +62,16 @@ export const ROUTES = {
   /** 팀원 관리 — 스터디장이 팀원 목록을 본다 */
   studioMembers: "/studio/members",
   /**
+   * 모집 관리 — 내가 낸 기획안이 승인돼 모집이 열린 활동들 (#528).
+   *
+   * **주소에 활동 번호가 없다.** 이 화면은 «내가 맡은 활동 전부»의 모집 상태를 한눈에 보는
+   * 목록이고, 활동 하나를 고르는 것은 그 카드의 «지원서 문항 편집»이 한다 — 다른 학술
+   * 화면들이 `?programId=`로 대상을 받는 것과 갈리는 자리다(어드민 `/academic-programs/recruitment`가
+   * 좌측 목록 + `?programId=`인 것과도 다르다. 그쪽은 국장이 전체를 훑으며 선발까지 하는
+   * 2열 화면이고, 이쪽은 리더가 자기 서너 건을 보는 카드 목록이다).
+   */
+  studioRecruitment: "/studio/recruitment",
+  /**
    * 기획안 제출 (일반회원).
    *
    * **주소에 폼 번호가 없다.** 기획안 폼은 코드(`sys_form_cd = 'PROPOSAL'`)가 가리키는 시스템
@@ -162,6 +172,20 @@ export function studioRosterUrl(academicProgramId: number): string {
  */
 export function studioMembersUrl(academicProgramId: number): string {
   return `${ROUTES.studioMembers}?programId=${academicProgramId}`;
+}
+
+/**
+ * 지원서 문항 편집 링크 — `/studio/programs/{programId}/form` (#528).
+ *
+ * 활동 상세(`studioProgramDetailUrl`)의 **하위 경로**다. 지원서는 활동 하나에 딸린 것이라
+ * 주소도 그 아래 둔다(시안의 `lms.sscc.co.kr/studio/programs/1/form`) — `?programId=`로 받는
+ * 회차 기록·출석부와 갈리는 것은, 그쪽이 «여러 활동을 오가며 쓰는 도구»라 활동을 바꿔 다는
+ * 드롭다운이 있고 이쪽은 그 활동 하나의 부속 화면이기 때문이다.
+ *
+ * 경로 문자열을 화면에 직접 조립하지 않는다. 모집 관리 카드가 이 빌더를 쓴다.
+ */
+export function studioProgramFormUrl(academicProgramId: number): string {
+  return `${studioProgramDetailUrl(academicProgramId)}/form`;
 }
 
 /*

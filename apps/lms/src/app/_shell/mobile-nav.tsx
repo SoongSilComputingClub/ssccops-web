@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/shared/ui";
-import { visibleNavLinks } from "./nav-links";
+import { visibleNavGroups } from "./nav-links";
 
 /**
  * 모바일 상단 바 드로어 (lg 미만, #169).
@@ -12,9 +12,14 @@ import { visibleNavLinks } from "./nav-links";
  * 학술 공개 앱은 역할별로 대여섯 개 메뉴가 있어 좁은 화면에서 상단 바가 넘친다 — 처음부터
  * 접히는 구조로 둔다. apps/www·어드민 드로어와 같은 뼈대다.
  *
- * **목차는 데스크톱 메뉴와 같은 필터를 탄다**(`visibleNavLinks` · #224) — 한쪽에만 필터를
+ * **목차는 데스크톱 메뉴와 같은 필터를 탄다**(`visibleNavGroups` · #224) — 한쪽에만 필터를
  * 걸면 좁은 화면에서 스터디장 메뉴가 그대로 보인다. 판정(`isLeader`)은 루트 레이아웃이
  * 서버에서 한 번 해 두 컴포넌트에 같은 값으로 내려보낸다.
+ *
+ * **드로어는 묶음을 접지 않고 제목 + 항목으로 펼쳐 둔다.** 좁은 화면은 세로로 길어 자리가
+ * 넉넉하고, 여기서까지 묶음을 눌러 펼치게 하면 데스크톱(상단 바 → 탭줄)보다 한 단계가 더
+ * 는다 — 드로어를 여는 것 자체가 이미 한 단계다. 묶음 제목은 링크가 아니라 라벨이다(그 자리를
+ * 누르면 어디로 가는지가 항목 목록과 겹쳐 모호하다).
  *
  * 열렸을 때 본문 스크롤을 잠그고, ESC·바깥 클릭·항목 이동으로 닫는 규약도 어드민과 같다.
  */
@@ -85,28 +90,44 @@ export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
                 ×
               </button>
             </div>
-            <nav aria-label="주 메뉴" className="flex flex-col px-[10px]">
-              {visibleNavLinks(isLeader).map((link) => {
-                const active = link.isActive(pathname);
-                return (
-                  <Link
-                    key={link.label}
-                    href={link.href}
-                    // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다.
-                    // 경로 변화를 effect로 감시하지 않고 클릭에서 닫는 것은, 상태 변경을
-                    // 렌더 뒤 effect에 미루면 한 프레임 열린 채 그려지기 때문이다(react-hooks 규칙).
-                    onClick={() => setOpen(false)}
-                    aria-current={active ? "page" : undefined}
-                    className={
-                      active
-                        ? "rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
-                        : "rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
-                    }
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
+            <nav
+              aria-label="주 메뉴"
+              className="flex flex-col gap-[14px] overflow-y-auto px-[10px]"
+            >
+              {visibleNavGroups(isLeader).map((group) => (
+                <div key={group.label} className="flex flex-col">
+                  {/*
+                    항목이 하나뿐인 묶음(학술 대시보드)은 제목을 그리지 않는다 — 같은 글자가
+                    바로 아래 링크로 한 번 더 나온다.
+                  */}
+                  {group.links.length > 1 && (
+                    <div className="px-[12px] pb-[4px] text-[12px] font-semibold text-n500">
+                      {group.label}
+                    </div>
+                  )}
+                  {group.links.map((link) => {
+                    const active = link.isActive(pathname);
+                    return (
+                      <Link
+                        key={link.label}
+                        href={link.href}
+                        // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다.
+                        // 경로 변화를 effect로 감시하지 않고 클릭에서 닫는 것은, 상태 변경을
+                        // 렌더 뒤 effect에 미루면 한 프레임 열린 채 그려지기 때문이다(react-hooks 규칙).
+                        onClick={() => setOpen(false)}
+                        aria-current={active ? "page" : undefined}
+                        className={
+                          active
+                            ? "rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
+                            : "rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
+                        }
+                      >
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
             </nav>
 
             {/*

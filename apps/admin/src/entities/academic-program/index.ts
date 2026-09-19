@@ -11,6 +11,8 @@ export type {
   AcademicProgramTypeSaveInput,
   RecruitmentApplication,
   RecruitmentApplicationFilter,
+  RecruitmentSchedule,
+  RecruitmentScheduleInput,
   RecruitmentSelection,
   RecruitmentTeamMember,
 } from "./model/types";
@@ -26,7 +28,9 @@ export {
 export {
   RECRUITMENT_ERROR,
   fetchRecruitmentApplications,
+  fetchRecruitmentSchedule,
   selectRecruitmentApplicants,
+  updateRecruitmentSchedule,
 } from "./api/recruitment";
 
 export { acdmActvSttsTone, sesnSttsTone } from "./model/display";

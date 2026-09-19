@@ -1,4 +1,5 @@
 import {
+  EventCard,
   eventLoadErrorMessage,
   fetchPublicEvents,
   toClassifications,
@@ -6,7 +7,6 @@ import {
 } from "@/entities/event";
 import { EmptyState } from "@/shared/ui";
 import { ClassificationFilter } from "./classification-filter";
-import { EventCard } from "./event-card";
 
 /**
  * 행사 목록 (SSR).

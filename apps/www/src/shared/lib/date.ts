@@ -102,3 +102,25 @@ export function formatEventDate(eventBgngDt: string | null): string | null {
   const day = `${bgng.m}월 ${bgng.d}일 (${weekday(bgng)})`;
   return bgng.hm ? `${day} ${bgng.hm}` : day;
 }
+
+/**
+ * 마감까지 남은 날 — «D-3»(#524 · 홈 «다가오는 일정»의 접수 중 칩).
+ *
+ * 값이 없거나 모양이 어긋나면 null이고 화면은 칩에 날짜를 붙이지 않는다. 오늘이면 «D-day»,
+ * 이미 지났으면 null — 서버가 기간 안의 폼만 주지만(`/public/v1/forms/open`) 5분 캐시 사이에
+ * 마감이 지날 수 있고, 그때 «D+1»을 «접수 중» 옆에 세우면 모순이다.
+ *
+ * 일자만 견준다(시각은 뗀다) — 기준일은 `todayInSeoul()`(루트 AGENTS «데이터 표기»). 계산은
+ * `Date.UTC`로 하여 렌더하는 곳의 시간대가 섞이지 않게 한다(위 요일 계산과 같다). admin의
+ * `ddayText`와 같은 규칙이되 «D+n»이 없다 — 이 앱에는 지난 마감을 그릴 자리가 없다.
+ */
+export function ddayLabel(value: string | null, today: string): string | null {
+  const end = parse(value);
+  const base = parse(today);
+  if (!end || !base) return null;
+  const diff = Math.round(
+    (Date.UTC(end.y, end.m - 1, end.d) - Date.UTC(base.y, base.m - 1, base.d)) / 86_400_000,
+  );
+  if (diff < 0) return null;
+  return diff === 0 ? "D-day" : `D-${diff}`;
+}

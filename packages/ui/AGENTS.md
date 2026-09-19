@@ -8,7 +8,7 @@
 |---|---|
 | `cn` · `onKeyActivate` · `deployEnv`/`deployMarks`(아이콘 폴더·`[DEV] ` 제목·`mark`) | `Chip` — 이름만 같고 admin은 필터 칩, www·lms는 선택 칩 |
 | `THEMES`·`useTheme`·`THEME_INIT_SCRIPT`·`ThemeToggle`(#341 — admin #226 것을 lms가 쓰게 된 순간 올림) | `EmptyState` — admin `message`+`action`, www·lms `title`+`description`으로 API가 다르다 |
-| `Badge`·`Pill` · `Card`·`CardTitle`·`SectionLabel` · `Markdown` · `Notice` · `TextField`·`Field` · **`BrandMark`**(#449) | `Button`·`GridTable`·`Calendar` — admin에만 있다, 중복이 아니다 |
+| `Badge`·`Pill` · `Card`·`CardTitle`·`SectionLabel` · `Markdown` · **`ContentMarkdoc`·`validateContentMarkdoc`·`CONTENT_TAG_SNIPPETS`**(ADR-0039 · #532 — 콘텐츠 페이지·포스트 본문, www 화면과 admin 미리보기가 한 벌) · `Notice` · `TextField`·`Field` · **`BrandMark`**(#449) | `Button`·`GridTable`·`Calendar` — admin에만 있다, 중복이 아니다 |
 
 ## 규칙
 

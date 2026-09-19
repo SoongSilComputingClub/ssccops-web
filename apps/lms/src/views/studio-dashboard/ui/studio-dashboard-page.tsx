@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   acdmActvSttsBadge,
   type AcademicProgramSummary,
+  acdmActvTypeNm,
 } from "@/entities/academic-program";
 import {
   sesnSttsBadge,
@@ -300,7 +301,7 @@ function DashboardBody({ data }: Readonly<{ data: LeaderDashboardReady }>) {
           {statusBadge && (
             <Badge tone={statusBadge.tone}>{statusBadge.label}</Badge>
           )}
-          <Badge tone="grey">{program.typeCd}</Badge>
+          <Badge tone="grey">{acdmActvTypeNm(program.typeCd)}</Badge>
           <div className="flex-1" />
           {/* 탑바(`_shell/nav-links.ts`)와 같은 순서 — 내 활동 · 회차 기록 · 출석부 · 팀원 관리 */}
           <DashLink href={studioProgramDetailUrl(program.academicProgramId)}>
@@ -414,7 +415,7 @@ function DashboardBody({ data }: Readonly<{ data: LeaderDashboardReady }>) {
                   className="flex items-center gap-[10px] rounded-[12px] px-[4px] py-[4px] hover:bg-bg"
                 >
                   {badge && <Badge tone={badge.tone}>{badge.label}</Badge>}
-                  <Badge tone="grey">{other.typeCd}</Badge>
+                  <Badge tone="grey">{acdmActvTypeNm(other.typeCd)}</Badge>
                   <div className="min-w-0 flex-1 text-[14px] text-n400">
                     {other.title || "-"}
                   </div>

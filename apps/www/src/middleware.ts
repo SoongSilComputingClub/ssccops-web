@@ -16,7 +16,12 @@ export async function middleware(request: NextRequest) {
 }
 
 /*
- * 매처는 **토큰이 실제로 필요한 두 경로만** 잡는다 — '내 신청'과 행사 신청이다.
+ * 매처는 **토큰이 실제로 필요한 경로만** 잡는다 — '내 활동'(`/me`)과 행사 신청, 공개 폼이다.
+ *
+ * `/me`는 `/my-applications`에서 이사한 자리다(#518 · ssccops#386). 옛 주소는 `next.config.ts`의
+ * redirect가 `/me`로 보내므로 매처에 남길 이유가 없다 — 리다이렉트 응답에 세션 왕복을 붙이는
+ * 것뿐이다. `/me/:path*`로 적는 것은 하위 화면이 붙어도 같은 갱신을 받게 하려는 것이고, 그
+ * 이상(`/m…`·`/(.*)`)으로 넓히지 않는다.
  *
  * updateSession()은 요청마다 Supabase를 한 번 왕복한다. 이 앱의 본체(행사 목록·상세)는 익명
  * 공개라 세션이 필요 없고, 링크 공유로 들어오는 트래픽이 대부분이라 거기에 왕복을 붙이면
@@ -52,5 +57,5 @@ export async function middleware(request: NextRequest) {
  * 같은 포괄 패턴으로 바꾸는 것만으로도 착지 요청마다 Supabase 왕복이 붙는다.
  */
 export const config = {
-  matcher: ["/my-applications", "/events/:eventId/apply", "/f/:formId"],
+  matcher: ["/me/:path*", "/events/:eventId/apply", "/f/:formId"],
 };

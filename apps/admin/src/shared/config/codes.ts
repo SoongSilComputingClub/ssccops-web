@@ -480,3 +480,35 @@ export const ACDM_ACTV_APRV_STTS_NM: Record<AcdmActvAprvSttsCd, string> = {
 };
 
 export const ACDM_ACTV_APRV_STTS_CDS = codesOf(ACDM_ACTV_APRV_STTS_NM);
+
+/* ── 콘텐츠 게시 상태 (cntnt_page·cntnt_post.pub_stts_cd) · #521 · ADR-0038 ── */
+
+/*
+ * 고정 enum(ContentPublishStatus). 행사(EVENT_STTS)와 달리 **보관이 없다** — 게시를 내리면
+ * 초안으로 돌아갈 뿐이다(서버 전이표: DRAFT ⇄ PUBLISHED). 같은 상태로 다시 전이하면 409다.
+ */
+export type PubSttsCd = "DRAFT" | "PUBLISHED";
+
+export const PUB_STTS_NM: Record<PubSttsCd, string> = {
+  DRAFT: "초안",
+  PUBLISHED: "게시",
+};
+
+export const PUB_STTS_CDS = codesOf(PUB_STTS_NM);
+
+/* ── 콘텐츠 분류 (cntnt_post.cntnt_clsf_cd) · #521 ── */
+
+/*
+ * 고정 enum(ContentCategory) — 행사 분류(event_clsf)처럼 화면에서 관리하는 코드테이블이 아니다.
+ * 공개 앱의 목록 필터(`GET /public/v1/posts?category=`)가 이 세 값으로 갈리므로 여기서 늘리지
+ * 않는다. 행사에서 만든 포스트(from-event)는 서버가 EVENT로 채운다.
+ */
+export type CntntClsfCd = "ACADEMIC" | "EVENT" | "NEWS";
+
+export const CNTNT_CLSF_NM: Record<CntntClsfCd, string> = {
+  ACADEMIC: "학술",
+  EVENT: "행사",
+  NEWS: "소식",
+};
+
+export const CNTNT_CLSF_CDS = codesOf(CNTNT_CLSF_NM);

@@ -1,6 +1,10 @@
 import { apiFetchAuthedList } from "@/shared/api/authed-client";
 import { toQuery } from "@/shared/api/client";
-import type { AcademicProgramSummary, AcdmActvSttsCd } from "../model/types";
+import type {
+  AcademicProgramSummary,
+  AcdmActvSttsCd,
+  FormReceiptStatus,
+} from "../model/types";
 
 export { ACADEMIC_PROGRAM_LIST_ERROR } from "./error-codes";
 
@@ -46,6 +50,16 @@ interface AcademicProgramSummaryResponse {
   eventEndDt: string | null;
   progressRatio: number | null;
   isLeader: boolean;
+  /* 모집 카드용 — #528 · ssccops-server#483에서 늘었다. 폼이 없는 활동은 전부 null */
+  formId: number | null;
+  formReceiptStatus: FormReceiptStatus | null;
+  rcptBgngDt: string | null;
+  rcptEndDt: string | null;
+  qitemVer: number | null;
+  pscpMinCnt: number | null;
+  pscpMaxCnt: number | null;
+  applicationCount: number | null;
+  approvedAt: string | null;
 }
 
 /* ── 응답 → 도메인 ─────────────────────────────────────────── */
@@ -68,6 +82,19 @@ function toSummary(res: AcademicProgramSummaryResponse): AcademicProgramSummary 
     eventEndAt: res.eventEndDt,
     progressRatio: toRatio(res.progressRatio),
     isLeader: res.isLeader,
+    formId: res.formId,
+    formReceiptStatus: res.formReceiptStatus,
+    rcptBgngDt: res.rcptBgngDt,
+    rcptEndDt: res.rcptEndDt,
+    qitemVer: res.qitemVer,
+    pscpMinCnt: res.pscpMinCnt,
+    pscpMaxCnt: res.pscpMaxCnt,
+    /*
+     * 서버가 접수 전에도 0을 그대로 준다 — 옛 배포(필드 없음)에서만 undefined다. 0으로
+     * 떨어뜨리는 것은 «지원 0건»과 같은 뜻이라 안전하고, 카드의 «-»는 폼 연결 여부로 가른다.
+     */
+    applicationCount: res.applicationCount ?? 0,
+    approvedAt: res.approvedAt,
   };
 }
 

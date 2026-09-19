@@ -1,6 +1,6 @@
 {
   "name": "@ssccops/www",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
@@ -17,6 +17,7 @@
   "dependencies": {
     "@ssccops/auth": "workspace:*",
     "@ssccops/codes": "workspace:*",
+    "@ssccops/content": "workspace:*",
     "@ssccops/date": "workspace:*",
     "@ssccops/form-renderer": "workspace:*",
     "@ssccops/share-meta": "workspace:*",

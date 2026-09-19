@@ -38,6 +38,7 @@ const nextConfig: NextConfig = {
     "@ssccops/form-renderer",
     "@ssccops/ui",
     "@ssccops/codes",
+    "@ssccops/content",
     "@ssccops/auth",
   ],
 

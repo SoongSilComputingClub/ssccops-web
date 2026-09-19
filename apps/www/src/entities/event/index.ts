@@ -13,6 +13,7 @@ export {
   formatCapacity,
 } from "./model/display";
 export { eventLoadErrorMessage } from "./model/event-error";
+export { EventCard } from "./ui/event-card";
 export {
   EVENT_ERROR,
   fetchPublicEvent,
