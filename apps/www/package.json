@@ -17,6 +17,7 @@
   "dependencies": {
     "@ssccops/auth": "workspace:*",
     "@ssccops/codes": "workspace:*",
+    "@ssccops/content": "workspace:*",
     "@ssccops/date": "workspace:*",
     "@ssccops/form-renderer": "workspace:*",
     "@ssccops/share-meta": "workspace:*",

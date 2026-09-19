@@ -2,20 +2,10 @@
 
 import type { ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  cntntClsfLabel,
-  pubSttsBadge,
-  type ContentPageSummary,
-  type ContentPostSummary,
-} from "@/entities/content";
+import { cntntClsfLabel, pubSttsBadge, type ContentPostSummary } from "@/entities/content";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
-import {
-  NO_CONTENT_MANAGE,
-  useContentPageList,
-  useContentPostList,
-  type ContentList,
-} from "@/features/content";
+import { NO_CONTENT_MANAGE, useContentPostList, type ContentList } from "@/features/content";
 import { PUB_STTS_CDS, PUB_STTS_NM, type PubSttsCd } from "@/shared/config/codes";
 import { CONTENT_TAB_QUERY, ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
@@ -32,6 +22,7 @@ import {
   Segmented,
   flash,
 } from "@/shared/ui";
+import { PageCatalog } from "./page-catalog";
 
 /*
  * 콘텐츠 목록 (#521 · GET /v1/content/pages · GET /v1/content/posts).
@@ -42,6 +33,10 @@ import {
  * 같은 `pubSttsCd`다.
  *
  * 상세 화면이 따로 없다 — 제목을 누르면 곧장 편집이다(행사와 같다). 삭제는 없다(서버에 없다).
+ *
+ * **페이지 탭은 서버 목록이 아니라 카탈로그다**(#534 · ssccops#392 · `PageCatalog`) — www 라우트 표의
+ * 자리마다 «없음/초안/게시». 그래서 페이지 탭에는 상태 필터 칩도 «페이지 만들기» 버튼도 없다.
+ * 포스트 탭은 그대로 서버 목록(날짜순 컬렉션 · 자유 생성).
  */
 
 const TABS = ["페이지", "포스트"] as const;
@@ -149,26 +144,6 @@ function ListBody<T>({
   );
 }
 
-function PagesPanel({ pubSttsCd }: Readonly<{ pubSttsCd: PubSttsCd | null }>) {
-  const router = useRouter();
-  const list = useContentPageList(pubSttsCd);
-  return (
-    <ListBody
-      list={list}
-      emptyMessage="아직 페이지가 없습니다."
-      render={(page: ContentPageSummary) => (
-        <ContentRow
-          key={page.pageId}
-          title={page.ttl}
-          pubSttsCd={page.pubSttsCd}
-          subtitle={`/${page.slug} · 수정 ${formatDt(page.mdfcnDt)}`}
-          onOpen={() => router.push(ROUTES.contentPageEdit(page.pageId))}
-        />
-      )}
-    />
-  );
-}
-
 function PostsPanel({ pubSttsCd }: Readonly<{ pubSttsCd: PubSttsCd | null }>) {
   const router = useRouter();
   const list = useContentPostList(pubSttsCd);
@@ -212,12 +187,16 @@ export function ContentListPage() {
       <PageHeader
         title="콘텐츠"
         subtitle="공개 사이트의 페이지와 포스트"
-        action={{
-          label: isPages ? "페이지 만들기" : "포스트 만들기",
-          onClick: () => router.push(isPages ? ROUTES.contentPageNew : ROUTES.contentPostNew),
-          disabled: !canManage,
-          title: canManage ? undefined : NO_CONTENT_MANAGE,
-        }}
+        action={
+          isPages
+            ? undefined
+            : {
+                label: "포스트 만들기",
+                onClick: () => router.push(ROUTES.contentPostNew),
+                disabled: !canManage,
+                title: canManage ? undefined : NO_CONTENT_MANAGE,
+              }
+        }
       />
       <PageBody>
         <Segmented
@@ -226,17 +205,19 @@ export function ContentListPage() {
           onChange={(next) => setQuery(next, pubSttsCd)}
           className="mb-4 w-[220px]"
         />
-        <FilterBar>
-          <Chip active={pubSttsCd === null} onClick={() => setQuery(tab, null)}>
-            {ALL}
-          </Chip>
-          {PUB_STTS_CDS.map((cd) => (
-            <Chip key={cd} active={pubSttsCd === cd} onClick={() => setQuery(tab, cd)}>
-              {PUB_STTS_NM[cd]}
+        {!isPages && (
+          <FilterBar>
+            <Chip active={pubSttsCd === null} onClick={() => setQuery(tab, null)}>
+              {ALL}
             </Chip>
-          ))}
-        </FilterBar>
-        {isPages ? <PagesPanel pubSttsCd={pubSttsCd} /> : <PostsPanel pubSttsCd={pubSttsCd} />}
+            {PUB_STTS_CDS.map((cd) => (
+              <Chip key={cd} active={pubSttsCd === cd} onClick={() => setQuery(tab, cd)}>
+                {PUB_STTS_NM[cd]}
+              </Chip>
+            ))}
+          </FilterBar>
+        )}
+        {isPages ? <PageCatalog canManage={canManage} /> : <PostsPanel pubSttsCd={pubSttsCd} />}
       </PageBody>
     </>
   );

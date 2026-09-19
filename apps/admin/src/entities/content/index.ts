@@ -15,6 +15,7 @@ export {
   fetchContentPage,
   fetchContentPageHistory,
   fetchContentPages,
+  fetchAllContentPages,
   publishContentPage,
   updateContentPage,
 } from "./api/content-pages";

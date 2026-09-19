@@ -9,6 +9,8 @@ export {
 export { useContentPageList, useContentPostList } from "./model/use-content-list";
 export type { ContentList, ContentListStatus } from "./model/use-content-list";
 export { useContentPage, useContentPost } from "./model/use-content-detail";
+export { useContentCatalog, buildCatalog } from "./model/use-content-catalog";
+export type { CatalogGroup, CatalogRow, CohortRow, ContentCatalog } from "./model/use-content-catalog";
 export type { ContentDetailQuery, ContentDetailStatus } from "./model/use-content-detail";
 export {
   useContentImageDelete,

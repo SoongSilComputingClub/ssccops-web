@@ -14,6 +14,7 @@ import {
   useContentPublish,
   useSaveContentPage,
 } from "@/features/content";
+import { findContentPage, operatorsCohortPath, parseOperatorsCohort } from "@ssccops/content";
 import { ROUTES } from "@/shared/config/routes";
 import { Card, EmptyState, PageBody, PageHeader, Segmented, flash } from "@/shared/ui";
 
@@ -29,6 +30,14 @@ import { Card, EmptyState, PageBody, PageHeader, Segmented, flash } from "@/shar
  */
 
 const TABS = ["편집", "이력"] as const;
+
+/** 공개 경로 — 카탈로그 항목이면 그 경로, 기수면 `/operators/{n}`, 표에 없으면 «어디에도 나타나지 않음»(#534) */
+function publicPath(slug: string): string {
+  const entry = findContentPage(slug);
+  if (entry) return entry.path;
+  const cohort = parseOperatorsCohort(slug);
+  return cohort != null ? operatorsCohortPath(cohort) : "공개 사이트 어디에도 나타나지 않습니다";
+}
 type Tab = (typeof TABS)[number];
 
 function EditSkeleton() {
@@ -126,6 +135,8 @@ function ContentPageEditView({
           <ContentPageForm
             key={formKey}
             initial={page}
+            slug={page.slug}
+            path={publicPath(page.slug)}
             busy={busy}
             canManage={canManage}
             submitLabel="저장"

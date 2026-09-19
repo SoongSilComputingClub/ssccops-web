@@ -204,7 +204,8 @@ export const ROUTES = {
    * 주석과 같은 이유).
    */
   content: "/content",
-  contentPageNew: "/content/pages/new",
+  /** 만들기는 카탈로그의 자리 하나로만 연다(#534) — 슬러그 없이 열면 목록으로 안내한다 */
+  contentPageNew: (slug: string) => `/content/pages/new?slug=${encodeURIComponent(slug)}`,
   contentPageEdit: (pageId: number) => `/content/pages/${pageId}/edit`,
   contentPostNew: "/content/posts/new",
   contentPostEdit: (postId: number) => `/content/posts/${postId}/edit`,
