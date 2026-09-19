@@ -260,6 +260,16 @@ export function ChecklistCard({
        * 사람이 풀지만 체크 잠금은 본인이 체크를 해제하면 풀린다.
        */}
       {locked && <div className="mt-3 text-[13px] text-n400">{lockReason}</div>}
+      {/*
+       * 착수 뒤의 편집은 이력에 남는다는 것을 편집 화면에서 말한다 (#543 · ssccops#407). 판정이
+       * 아니라 표기다 — 편집을 열지 말지는 위의 서버 플래그가 정했고, 여기서는 지금 단계가
+       * 기획이 아니라는 사실만 문장에 넣는다.
+       */}
+      {isEditing && !locked && subWork.workStatus !== "PLANNING" && (
+        <div className="mt-3 text-[13px] text-amber">
+          착수 뒤 수정입니다. 누가 언제 무엇을 바꿨는지 «점검 목록 변경 이력»에 남습니다.
+        </div>
+      )}
       {isEditing && checkedLocked && (
         <div className="mt-3 text-[13px] text-n400">
           체크를 해제하면 지울 수 있습니다.

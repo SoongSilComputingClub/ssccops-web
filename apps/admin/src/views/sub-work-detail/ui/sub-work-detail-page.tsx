@@ -39,6 +39,7 @@ import {
   flash,
 } from "@/shared/ui";
 import { ChecklistCard } from "./checklist-card";
+import { ChecklistHistory } from "./checklist-history";
 import { NextStepGuide } from "./next-step-guide";
 
 /*
@@ -130,6 +131,8 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
    */
   const { pendingSubWorkId, vote } = useApprovalDecisions();
   const [rejectOpen, setRejectOpen] = useState(false);
+  // 항목 편집이 성공할 때마다 오른다 — 펼쳐 둔 «점검 목록 변경 이력»이 방금 남긴 줄을 다시 읽게 (#543)
+  const [checklistVersion, setChecklistVersion] = useState(0);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const sessionMember = useSessionStore((s) => s.member);
   /* 기본 정보 수정도 WORK_MANAGE 다 (서버 SubWorkController 클래스 애노테이션) */
@@ -243,6 +246,7 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
       return false;
     }
     applyChecklistInsert(result);
+    setChecklistVersion((v) => v + 1);
     return true;
   };
 
@@ -254,6 +258,7 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
       return false;
     }
     applyChecklistUpdate(result);
+    setChecklistVersion((v) => v + 1);
     return true;
   };
 
@@ -266,6 +271,7 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
     }
     // 요약이 안 왔으면 목록만 줄이지 않고 통째로 다시 받는다 — '3/4 완료'인데 줄이 셋인 화면을 만들지 않는다
     if (!applyChecklistRemoval(result)) reload();
+    setChecklistVersion((v) => v + 1);
     return true;
   };
 
@@ -530,18 +536,28 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
                 { k: FIELD_LABEL.workContent, v: subWork.content || "-" },
                 // 등록 화면에 입력란이 없어 지금은 늘 비어 있다 (서버 #70)
                 { k: FIELD_LABEL.completionCriteria, v: subWork.completionCriteria || "-" },
+                {
+                  /*
+                   * 외부 URL(sub_work.otsd_url_addr) — 결과물이 있는 곳(드라이브·노션·깃허브). 값이 있을
+                   * 때만 라벨 없이 걸려 있어 «상세엔 없다»는 피드백을 받았다(#543 · ssccops#407) — 다른
+                   * 항목과 같은 행으로, 없으면 «-».
+                   */
+                  k: FIELD_LABEL.externalUrl,
+                  v: subWork.externalLink ? (
+                    <a
+                      href={subWork.externalLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block truncate text-accent"
+                    >
+                      {subWork.externalLink} ↗
+                    </a>
+                  ) : (
+                    "-"
+                  ),
+                },
               ]}
             />
-            {subWork.externalLink && (
-              <a
-                href={subWork.externalLink}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-[14px] block truncate text-[14.5px] text-accent"
-              >
-                {subWork.externalLink} ↗
-              </a>
-            )}
             {/*
              * 직전 반려 사유. 알림 채널이 없는 지금 담당자가 '무엇을 고쳐야 하는가'를 볼 수 있는
              * 유일한 자리다 — 반려 모달의 "사유는 요청자에게 전달됩니다"가 지켜지는 곳이다.
@@ -571,6 +587,10 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
             onRename={renameItem}
             onRemove={removeItem}
           />
+        </div>
+
+        <div className="mt-4">
+          <ChecklistHistory subWorkId={subWork.subWorkId} version={checklistVersion} />
         </div>
 
         <RejectSheet
