@@ -47,7 +47,7 @@ export interface ContentCatalog {
 
 export type CatalogStatus = "loading" | "ready" | "error";
 
-const GROUP_ORDER: readonly ContentPageGroup[] = ["home", "about", "operators", "join", "legal", "contact"];
+const GROUP_ORDER: readonly ContentPageGroup[] = ["home", "about", "operators", "academic", "join", "legal", "contact"];
 
 export function buildCatalog(pages: ContentPageSummary[]): ContentCatalog {
   const bySlug = new Map(pages.map((page) => [page.slug, page]));

@@ -6,8 +6,8 @@ import { ROUTES } from "@/shared/config/routes";
  * 목차를 컴포넌트 밖에 둔 이유는 어드민 셸(`use-shell-nav.ts`)과 같다 — 한쪽에만 메뉴를
  * 더하면 다른 쪽에서 빠진다.
  *
- * ── 여섯 항목 (#520 · ssccops#382 · #529 · ssccops#389) ─────────
- * SSCC · 운영진 · 활동 · 행사 · 모집 · 문의. **«지원하기» CTA는 없다** — 지원은 학기 초뿐이라
+ * ── 일곱 항목 (#520 · ssccops#382 · #529 · ssccops#389 · #550 · ssccops#412) ─────────
+ * SSCC · 운영진 · 활동 · 행사 · 학술 · 모집 · 문의. **«지원하기» CTA는 없다** — 지원은 학기 초뿐이라
  * 평소의 상단 바에 세워 둘 것이 아니고, 모집 때는 홈 배너(#524 · ssccops#385)가 안내한다.
  * «행사»는 #520에서 «활동» 축 안에 넣었는데(행사 목록에서 «활동»이 켜졌다) 2026-09-19 검토에서
  * 행사 목록으로 가는 길이 홈의 «행사 전체 보기» 하나뿐이라 항목으로 세웠다(ssccops#389) —
@@ -34,6 +34,8 @@ export const NAV_LINKS: readonly NavLink[] = [
   { href: ROUTES.operators, label: "운영진", isActive: startsWith(ROUTES.operators) },
   { href: ROUTES.activities, label: "활동", isActive: startsWith(ROUTES.activities) },
   { href: ROUTES.events, label: "행사", isActive: startsWith(ROUTES.events) },
+  // 학술은 설명 페이지 → LMS (#550) — 상단 바에서 다른 앱으로 바로 나가지 않는다
+  { href: ROUTES.academic, label: "학술", isActive: startsWith(ROUTES.academic) },
   { href: ROUTES.join, label: "모집", isActive: startsWith(ROUTES.join) },
   { href: ROUTES.contact, label: "문의", isActive: startsWith(ROUTES.contact) },
 ];
