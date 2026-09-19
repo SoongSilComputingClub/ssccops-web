@@ -21,19 +21,19 @@ export const CONTENT_SLUG = {
   homeIntro: "home-intro",
   /** `/about` — 소개 */
   about: "about",
-  /** `/about/history` — 연혁. `## 연도` + 목록 → `timeline` 프리셋(연도 점 · 세로선) */
+  /** `/about/history` — 연혁. 본문은 `{% timeline %}`으로 감싼 `## 연도` + 목록(ADR-0039) */
   history: "history",
-  /** `/about/values` — 핵심 가치. `## 가치` 절마다 카드(`cards` 프리셋), `---` 뒤 문단은 격자 아래 */
+  /** `/about/values` — 핵심 가치. `{% cards %}` 안의 `## 가치` + 문단이 카드 하나 */
   values: "values",
   /** `/operators` — 지금 운영진(기수를 주소에 적지 않는 현재 표) */
   operators: "operators",
-  /** `/join` — 지원 안내. 번호 목록이 단계 원(`steps` 프리셋) */
+  /** `/join` — 지원 안내. 절차는 `{% steps %}`로 감싼 번호 목록 */
   join: "join",
-  /** `/join/faq` — 자주 묻는 질문. `### 질문` + 답 → 접이식 Q/A(`faq` 프리셋) */
+  /** `/join/faq` — 자주 묻는 질문. `{% faq %}` 안의 `### 질문` + 답이 접이식 항목 하나 */
   joinFaq: "join-faq",
   /** `/join/history` — 지난 모집 */
   joinHistory: "join-history",
-  /** `/privacy` — 개인정보처리방침. `## 1. …` 절 → 목차 + 앵커(`legal` 프리셋) */
+  /** `/privacy` — 개인정보처리방침 */
   privacy: "privacy",
   /** `/photo-notice` — 사진 게재 안내 */
   photoNotice: "photo-notice",

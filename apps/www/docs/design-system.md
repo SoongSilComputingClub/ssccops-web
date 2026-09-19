@@ -67,29 +67,23 @@
 - 이미지가 없으면 자리를 비운다 — 회색 상자를 그리지 않는다(없는 값을 지어내지 않는다).
 - 빈 상태·조회 실패는 `EmptyState`(카드 안 가운데 정렬 · 제목 15px `n300` · 설명 13.5px `n500`).
 
-## 콘텐츠 페이지 본문 — 프리셋
+## 콘텐츠 본문 — Markdoc 태그
 
-본문은 홍보국이 쓰는 평범한 마크다운이고, `views/content-page`가 절(`##`)·소절(`###`)에서 잘라
-(`model/sections.ts`) 라우트가 고른 프리셋(`ui/content-body.tsx` `layout`)대로 놓는다. 본문에 특별한
-문법은 없고 구조만 본다 — 어떤 모양의 글이어도 깨지지 않고 `prose`에 가까운 모양으로 떨어진다.
+페이지·포스트 본문은 Markdoc(ADR-0039)이고 렌더러는 `@ssccops/ui` `ContentMarkdoc` — **어드민 미리보기와
+같은 것**이라 편집기에서 본 대로 나온다. 노드(제목·문단·목록·표·링크·이미지·인용·코드)의 리듬은 행사
+본문 `Markdown`과 같고, 표만 격자선 대신 줄 사이 `line` 하늘선(헤더 `bg` 13px `n400`)이다. 태그의 모양은
+`packages/ui/src/ui/markdoc/components.tsx`에 있고 여기서는 무엇이 있는지만 적는다.
 
-| 프리셋 | 모양 | 쓰는 곳 |
+| 태그 | 안에 쓰는 것 | 모양 |
 |---|---|---|
-| `prose` | 카드 한 장 안에 절이 차례로, 절 사이 `line` 하늘선. 절 제목 19px `font-semibold`. `###` 소절이 둘 이상이면 `bg` 타일 격자(`sm` 2열 · 제목 15.5px · 본문 14.5px) | 소개 · 운영진 · 지난 모집 |
-| `steps` | `prose` + 번호 목록(`1.`)이 단계 — accent 원(26px · 흰 숫자)과 `line-strong` 세로선 | 지원 안내 |
-| `cards` | 절마다 카드 하나, `sm` 2열 · `lg` 3열. 차례 번호 `01`(accent-strong 12.5px) · 제목 20px · 본문. 헤딩 없는 절(`---` 뒤)은 격자 위·아래 문단(14.5px `n400`) | 핵심 가치 |
-| `faq` | 카드 안에 `<details>` 한 줄씩 — `Q` 칩(accent-soft 24px) · 질문 15.5px `font-medium` · 오른쪽 화살표(열리면 뒤집힘) · 답은 36px 들여서 14.5px. JS 없음 | 자주 묻는 질문 |
-| `legal` | 카드 위에 목차(`nav` · 절 제목을 `#s{n}` 앵커로 · 절이 셋 이상일 때) + `prose` | 처리방침 · 사진 게재 안내 · 약관 |
-| `timeline` | 연도 헤딩(`.tl-year` · accent-strong) 왼쪽에 accent 점, 목록 왼쪽에 `line-strong` 세로선과 작은 점 | 연혁 |
+| `{% callout tone="info|warn" %}` | 문단 | `accent-soft`(warn은 `amber-soft`) 상자 12px 라운드 |
+| `{% cards columns=2|3 %}` | `## 제목` + 문단 — 제목마다 카드 하나 | `bg` 카드 격자(`sm` 2열 · `lg` columns열), 차례 번호 `01` accent-strong 12.5px · 제목 18px |
+| `{% faq %}` | `### 질문` + 답 | `<details>` 한 줄씩 — `Q` 칩(accent-soft 24px) · 질문 15.5px `font-medium` · 화살표 · 답 36px 들여 14.5px. JS 없음 |
+| `{% steps %}` | 번호 목록 `1.` | accent 원(26px · 흰 숫자) + `line-strong` 세로선, 마지막 단계는 선 없음 |
+| `{% timeline %}` | `## 연도` + 목록 | 연도 제목(accent-strong 19px) 왼쪽에 accent 점, 목록 왼쪽에 `line-strong` 세로선과 작은 점 |
 
-공통(`.content-prose` · `globals.css`):
-
-- **리드** — 첫 헤딩 앞의 첫 문단이 평문이면 카드 밖에 17px `n300`으로. 표·목록·인용으로 시작하면
-  리드가 없고 그 앞부분은 헤딩 없는 절로 카드 안 첫 자리에.
-- **인용은 콜아웃** — `accent-soft` 상자 12px 라운드(«초안입니다» 안내가 이 모양).
-- **표** — 격자 선 없이 줄 사이 `line` 하늘선, 헤더는 `bg` 배경 13px `n400`. 렌더러(`@ssccops/ui`
-  `Markdown`)가 붙인 `border`를 유틸리티 레이어 밖 규칙이 이긴다 — www만의 모양은 렌더러가 아니라
-  여기서 덮는다(렌더러는 lms와 공유).
+태그는 **감싸기**다 — 안의 구조는 그대로 마크다운이고 태그가 제목에서 자른다. 기대하는 구조가 아니면(제목이
+없다 · `steps`에 번호 목록이 없다) 안을 그대로 그린다. 라우트별 프리셋(#527)은 #532에서 걷어냈다.
 
 ## 상단 바 · 푸터
 

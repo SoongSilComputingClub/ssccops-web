@@ -6,17 +6,17 @@ import {
   type PublicContentPage,
 } from "@/entities/content";
 import type { SectionAxis } from "@/shared/config/section-tabs";
-import { EmptyState } from "@/shared/ui";
-import { ContentBody, type ContentLayout } from "./content-body";
+import { Card, ContentMarkdoc, EmptyState } from "@/shared/ui";
 import { SectionTabs } from "./section-tabs";
 
 /**
  * 게시된 페이지 한 장 (SSR · #520 · ssccops#382).
  *
- * 소개·연혁·운영진·지원 안내·법적 페이지가 전부 이 화면이다 — 다른 것은 슬러그·제목·레이아웃
- * 프리셋뿐이고 그 표는 `shared/config/content-slugs.ts`에 있다. 본문은 `ContentBody`가 절
- * 단위로 잘라(`model/sections.ts`) 프리셋대로 놓고, 절 안의 마크다운은 행사 본문과 같은 렌더러
- * (`@ssccops/ui` `Markdown` — 원시 HTML을 해석하지 않는다 · ADR-0038)로 그린다.
+ * 소개·연혁·운영진·지원 안내·법적 페이지가 전부 이 화면이다 — 다른 것은 슬러그와 제목뿐이고
+ * 그 표는 `shared/config/content-slugs.ts`에 있다. 본문은 `ContentMarkdoc`(ADR-0039 — 레이아웃은
+ * 글 안의 태그가 정한다 · 어드민 미리보기와 같은 렌더러 · 원시 HTML을 해석하지 않는다)으로 그린다.
+ * #527에서 라우트별 프리셋(`layout`)을 뒀다가 #532에서 걷어냈다 — 같은 글이 주소에 따라 다르게
+ * 보이고, 어느 절이 카드가 되는지가 글쓴이에게 보이지 않았다.
  *
  * ── 게시본이 없으면 «준비 중» ─────────────────────────────────
  * 서버는 초안·없음을 똑같이 404 `PAGE_NOT_FOUND`로 답한다. 포스트는 그때 404 화면으로 가지만
@@ -36,7 +36,6 @@ export async function ContentPage({
   slug,
   fallbackTitle,
   tabs,
-  layout = "prose",
   after,
 }: Readonly<{
   slug: string;
@@ -44,8 +43,6 @@ export async function ContentPage({
   fallbackTitle: string;
   /** 축 안의 탭 줄 — 축과 지금 주소. 없으면 탭 줄이 없다(법적 페이지) */
   tabs?: { axis: SectionAxis; pathname: string };
-  /** 본문 레이아웃 프리셋 — 표는 `ContentBody` 주석. 기본은 `prose` */
-  layout?: ContentLayout;
   /** 본문 아래 붙는 블록 — 지원 안내의 접수 중인 폼 목록 같은 것 */
   after?: ReactNode;
 }>) {
@@ -72,7 +69,9 @@ export async function ContentPage({
       {!errorMessage && !page && <EmptyState title="준비 중입니다" />}
       {page &&
         (page.mtxt.trim() ? (
-          <ContentBody mtxt={page.mtxt} layout={layout} />
+          <Card className="px-[18px] py-[8px] lg:px-[26px] lg:py-[14px]">
+            <ContentMarkdoc>{page.mtxt}</ContentMarkdoc>
+          </Card>
         ) : (
           <EmptyState title="준비 중입니다" />
         ))}

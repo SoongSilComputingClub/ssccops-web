@@ -41,6 +41,7 @@
 export function toShareDescription(text: string, limit = 120): string {
   const plain = text
     .replace(/```[\s\S]*?```/g, " ") // 코드 블록
+    .replace(/\{%[\s\S]*?%\}/g, " ") // Markdoc 레이아웃 태그 — 카드 문구에 `{% cards %}`가 새지 않게 (ADR-0039)
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // 이미지
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // 링크는 글자만 남긴다
     .replace(/^\s{0,3}#{1,6}\s+/gm, "") // 제목 표식

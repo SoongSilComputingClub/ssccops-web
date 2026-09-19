@@ -7,7 +7,7 @@ import {
   type ContentPostHistory,
 } from "@/entities/content";
 import { formatDt } from "@/shared/lib/date";
-import { Badge, Button, Card, EmptyState, Markdown } from "@/shared/ui";
+import { Badge, Button, Card, ContentMarkdoc, EmptyState } from "@/shared/ui";
 import type { HistoryStatus } from "../model/use-content-actions";
 
 /*
@@ -51,7 +51,7 @@ function HistoryRow({ item }: Readonly<{ item: HistoryItem }>) {
       {open && (
         <div className="mt-2 rounded-[12px] border border-line bg-bg px-[16px] py-[6px]">
           {item.mtxt.trim() ? (
-            <Markdown>{item.mtxt}</Markdown>
+            <ContentMarkdoc>{item.mtxt}</ContentMarkdoc>
           ) : (
             <div className="py-6 text-center text-[13.5px] text-n500">본문이 비어 있습니다.</div>
           )}

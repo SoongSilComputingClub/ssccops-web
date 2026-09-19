@@ -12,7 +12,7 @@ import {
   type PublicContentPostDetail,
 } from "@/entities/content";
 import { ROUTES } from "@/shared/config/routes";
-import { Card, EmptyState, Markdown, Pill } from "@/shared/ui";
+import { Card, ContentMarkdoc, EmptyState, Pill } from "@/shared/ui";
 
 /**
  * 포스트 상세 (SSR · #520 · ssccops#382) — 표지 · 본문 · 갤러리 · 행사 링크.
@@ -83,7 +83,7 @@ export async function PostDetailPage({
           </Link>
         )}
         {post.mtxt.trim() ? (
-          <Markdown>{post.mtxt}</Markdown>
+          <ContentMarkdoc>{post.mtxt}</ContentMarkdoc>
         ) : (
           <p className="text-[15px] text-n500">본문이 없습니다</p>
         )}

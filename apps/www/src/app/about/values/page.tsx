@@ -16,7 +16,6 @@ export default function Page() {
       slug={SLUG}
       fallbackTitle={TITLE}
       tabs={{ axis: "about", pathname: ROUTES.aboutValues }}
-      layout="cards"
     />
   );
 }

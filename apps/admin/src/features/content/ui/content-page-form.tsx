@@ -11,6 +11,7 @@ import {
   MarkdownEditor,
   SectionLabel,
   TextField,
+  markdocErrors,
   type BodyTab,
 } from "@/shared/ui";
 import { NO_CONTENT_MANAGE } from "../model/content-error";
@@ -48,12 +49,14 @@ export function titleError(ttl: string): string | undefined {
   return undefined;
 }
 
-/** 본문 검증 — 페이지·포스트 폼이 함께 쓴다 */
+/** 본문 검증 — 페이지·포스트 폼이 함께 쓴다. 태그 오류(ADR-0039)는 첫 줄만 — 나머지는 미리보기에 */
 export function bodyError(mtxt: string): string | undefined {
   if (!mtxt.trim()) return "본문을 입력하세요";
   if (mtxt.length > MTXT_MAX_LENGTH) {
     return `본문이 ${MTXT_MAX_LENGTH.toLocaleString()}자를 넘습니다 — 내용을 줄여주세요`;
   }
+  const [first, ...rest] = markdocErrors(mtxt);
+  if (first) return rest.length > 0 ? `${first} (외 ${rest.length}건 — 미리보기에서 확인)` : first;
   return undefined;
 }
 
@@ -132,6 +135,7 @@ export function ContentPageForm({
         onChange={setMtxt}
         textareaRef={mtxtRef}
         error={errors.mtxt}
+        flavor="markdoc"
         placeholder={"# 제목\n\nMarkdown으로 작성합니다. 공개 화면에 보이는 본문입니다."}
         busy={busy}
       />
