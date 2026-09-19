@@ -10,5 +10,5 @@ export function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Page() {
-  return <ContentPage slug={SLUG} fallbackTitle={TITLE} />;
+  return <ContentPage slug={SLUG} fallbackTitle={TITLE} layout="legal" />;
 }
