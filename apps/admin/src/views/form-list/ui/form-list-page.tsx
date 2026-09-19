@@ -40,7 +40,9 @@ const NO_WRITE = "폼을 만들거나 고칠 권한이 없습니다";
  * 값의 이름을 서버 쿼리 파라미터와 똑같이 맞춘 것도 의도한 것이다 — URL과 요청이 1:1이면
  * 어떤 조회가 나갔는지 주소창만 보고 알 수 있다.
  */
-const QUERY_RECEIPT_STATUS = "receiptStatus";
+const QUERY_RECEIPT_STATUS = "receiptStatuses";
+/** #266~#544 사이의 링크(`?receiptStatus=ACCEPTING`) — 값 하나짜리 집합으로 읽는다 */
+const QUERY_RECEIPT_STATUS_LEGACY = "receiptStatus";
 const QUERY_LABEL = "labelId";
 
 /*
@@ -70,7 +72,12 @@ const QUERY_RECEIPT_STATUS_ALL = "ALL";
  * 사용자가 보낸 조건이 아니라 시작점이고, 칩이 눌린 채로 보이므로 좁혀졌다는 사실이 드러난다.
  * 그 둘은 다른 자리다.
  */
-const DEFAULT_RECEIPT_STATUS: FormReceiptStatus = "ACCEPTING";
+/**
+ * 다중 선택 (#544 · ssccops#408). 접수 중 하나에서 시작하던 것을 **작성 중 + 접수 예정 + 접수 중**
+ * 셋으로 넓혔다 — 운영자가 «지금 손볼 폼»을 찾을 때 그 셋을 오가며 세 번 바꿔 보고 있었다.
+ * 마감·기간 종료만 기본에서 빠진다.
+ */
+const DEFAULT_RECEIPT_STATUSES: readonly FormReceiptStatus[] = ["DRAFT", "SCHEDULED", "ACCEPTING"];
 
 /**
  * URL은 사용자가 손으로 고칠 수 있다 — 모르는 값은 필터 없음으로 떨어뜨린다.
@@ -78,12 +85,18 @@ const DEFAULT_RECEIPT_STATUS: FormReceiptStatus = "ACCEPTING";
  * 파라미터가 **없는 것**과 **전체**가 이제 다른 뜻이다. 없으면 기본값(접수 중)이고, 전체는
  * `ALL`이라는 값으로 적는다 — 기본값이 좁힌 목록이라 파라미터를 지우는 것으로는 넓힐 수 없다.
  */
-function parseFormReceiptStatus(value: string | null): FormReceiptStatus | null {
-  if (value === null) return DEFAULT_RECEIPT_STATUS;
-  if (value === QUERY_RECEIPT_STATUS_ALL) return null;
-  return FORM_RECEIPT_STATUSES.includes(value as FormReceiptStatus)
-    ? (value as FormReceiptStatus)
-    : null;
+function parseFormReceiptStatuses(
+  value: string | null,
+  legacy: string | null,
+): FormReceiptStatus[] {
+  const raw = value ?? legacy;
+  if (raw === null) return [...DEFAULT_RECEIPT_STATUSES];
+  if (raw === QUERY_RECEIPT_STATUS_ALL) return [...FORM_RECEIPT_STATUSES];
+  const picked = raw
+    .split(",")
+    .filter((v): v is FormReceiptStatus => FORM_RECEIPT_STATUSES.includes(v as FormReceiptStatus));
+  // 모르는 값뿐이면 전체 — 있는 폼을 없다고 말하지 않는다
+  return picked.length > 0 ? picked : [...FORM_RECEIPT_STATUSES];
 }
 
 function parseFormLblId(value: string | null): number | null {
@@ -244,10 +257,18 @@ export function FormListPage() {
    */
   const [deleteTarget, setDeleteTarget] = useState<FormSummary | null>(null);
 
-  const receiptStatus = parseFormReceiptStatus(searchParams.get(QUERY_RECEIPT_STATUS));
+  const receiptStatuses = parseFormReceiptStatuses(
+    searchParams.get(QUERY_RECEIPT_STATUS),
+    searchParams.get(QUERY_RECEIPT_STATUS_LEGACY),
+  );
+  const isAllStatuses = receiptStatuses.length === FORM_RECEIPT_STATUSES.length;
   const formLblId = parseFormLblId(searchParams.get(QUERY_LABEL));
 
-  const { forms, status, errorMessage, reload } = useFormList({ receiptStatus, formLblId });
+  const { forms, status, errorMessage, reload } = useFormList({
+    // 전부 켜진 것은 필터 없음과 같다 — 파라미터를 비워 서버가 전체 경로로 간다
+    receiptStatuses: isAllStatuses ? null : receiptStatuses,
+    formLblId,
+  });
   const { labels } = useFormLabelOptions();
 
   /*
@@ -311,6 +332,21 @@ export function FormListPage() {
     router.push(qs ? `${ROUTES.forms}?${qs}` : ROUTES.forms, { scroll: false });
   };
 
+  /** 상태 칩 하나를 켜고 끈다 — 마지막 하나는 끄지 않는다(빈 집합은 뜻이 없다) */
+  const toggleStatus = (rs: FormReceiptStatus) => {
+    const next = receiptStatuses.includes(rs)
+      ? receiptStatuses.filter((s) => s !== rs)
+      : [...FORM_RECEIPT_STATUSES].filter((s) => s === rs || receiptStatuses.includes(s));
+    if (next.length === 0) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(QUERY_RECEIPT_STATUS_LEGACY);
+    params.set(
+      QUERY_RECEIPT_STATUS,
+      next.length === FORM_RECEIPT_STATUSES.length ? QUERY_RECEIPT_STATUS_ALL : next.join(","),
+    );
+    router.push(`${ROUTES.forms}?${params.toString()}`, { scroll: false });
+  };
+
   return (
     <>
       <PageHeader
@@ -354,9 +390,9 @@ export function FormListPage() {
         </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-[7px]">
-          {/* 전체는 파라미터를 지우는 것이 아니라 값을 넣는다 — 지우면 기본값(접수 중)이다 */}
+          {/* 전체는 다섯을 다 켠 것과 같다 — 파라미터를 지우면 기본값(작성 중·접수 예정·접수 중)이다 */}
           <Chip
-            active={receiptStatus === null}
+            active={isAllStatuses}
             onClick={() => applyFilter(QUERY_RECEIPT_STATUS, QUERY_RECEIPT_STATUS_ALL)}
           >
             {ALL}
@@ -369,11 +405,12 @@ export function FormListPage() {
             문구도 배지에서 그대로 꺼내 쓴다 — 배지가 '기간 종료'인데 칩이 '종료됨'이면
             사용자는 그 둘을 같은 것으로 읽지 못한다. 여기서 새 문구를 짓지 않는다.
           */}
+          {/* 칩은 체크박스처럼 여럿 켠다 (#544). 전체가 켜진 상태에서는 각 칩도 켜져 보인다 */}
           {FORM_RECEIPT_STATUSES.map((rs) => (
             <Chip
               key={rs}
-              active={receiptStatus === rs}
-              onClick={() => applyFilter(QUERY_RECEIPT_STATUS, rs)}
+              active={receiptStatuses.includes(rs)}
+              onClick={() => toggleStatus(rs)}
             >
               {FORM_RECEIPT_BADGE[rs].label}
             </Chip>
@@ -422,7 +459,7 @@ export function FormListPage() {
           (forms.length === 0 ? (
             <EmptyState
               message={
-                receiptStatus || formLblId
+                !isAllStatuses || formLblId
                   ? "조건에 맞는 폼이 없습니다."
                   : "등록된 폼이 없습니다."
               }
