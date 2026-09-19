@@ -77,6 +77,17 @@ export interface AcademicProgramMemberFilter {
 export type AcdmActvSttsCd = "APPROVED" | "ONGOING" | "COMPLETED";
 
 /**
+ * 접수 상태 — 서버 `FormReceiptStatus`(기간까지 본 파생값).
+ *
+ * **`entities/form`에서 가져오지 않고 여기 적는다.** 엔티티 슬라이스끼리는 서로 참조하지
+ * 않는 것이 FSD 규칙이고(AGENTS.md), 목록 응답이 이 값을 함께 내리는 이상 활동 슬라이스가
+ * 그 모양을 알아야 한다 — 모집 신청자(`RecruitmentApplication`)를 어드민이 `entities/response`에서
+ * 끌어오지 않고 학술 쪽에 옮겨 적은 것과 같은 자리다. 값이 갈리면 타입이 잡는다(두 곳 다
+ * 서버 enum 다섯 개를 그대로 적는다).
+ */
+export type FormReceiptStatus = "DRAFT" | "SCHEDULED" | "ACCEPTING" | "EXPIRED" | "CLOSED";
+
+/**
  * table: acdm_actv — 스터디장 대시보드가 그리는 "내 활동" 한 건 (`AcademicProgramSummaryResponse`).
  *
  * `GET /v1/academic-programs?mine=leader`가 내가 스터디장/팀장인 활동만 내려준다. 제목·기간은
@@ -107,4 +118,39 @@ export interface AcademicProgramSummary {
   progressRatio: number;
   /** 내가 이 활동의 스터디장/팀장인가 — 서버 판정(재계산 금지) */
   isLeader: boolean;
+
+  /* ── 모집 카드가 쓰는 값 (#528 · ssccops-server#483) ───────────
+   *
+   * 아홉 개가 한꺼번에 늘었다. 그전까지 목록에는 이 중 하나도 없어, 모집 관리 화면이
+   * **카드마다 활동 상세를 한 번 더 불러야** 했다 — 서버가 목록 질의에 폼 조인 한 줄과
+   * 접수 건수 집계 한 벌을 붙여(N+1 없음) 그 왕복을 없앴다.
+   *
+   * 폼이 연결되지 않은 활동(이관 전이거나 정합성이 깨진 경우)은 폼에서 오는 값이 전부
+   * null이다 — 화면이 그것을 «연결된 신청서가 없다»로 읽는다.
+   */
+
+  /** 연결된 모집 폼의 식별자. 없으면 null */
+  formId: number | null;
+  /**
+   * 접수 상태 — 카드 배지가 이 값으로 갈린다(활동 상태 `sttsCd`가 아니다).
+   *
+   * 학술국장이 미래 시작일로 모집을 시작하면 활동은 곧바로 `ONGOING`이지만 접수는 아직
+   * 열리지 않았고(`SCHEDULED`), 화면의 «모집 시작 전»은 그 구간까지 포함한다.
+   */
+  formReceiptStatus: FormReceiptStatus | null;
+  /** 접수 시작·종료 일시 — 학술국장이 정한다(읽기 전용) */
+  rcptBgngDt: string | null;
+  rcptEndDt: string | null;
+  /** 문항 버전 — 구성이 실제로 바뀐 저장에서만 1 오른다 */
+  qitemVer: number | null;
+  /** 모집 정원(최소·최대) — 참고치다. 서버가 초과를 막지 않는다 */
+  pscpMinCnt: number | null;
+  pscpMaxCnt: number | null;
+  /**
+   * 지원 건수(제출 이상). 접수 전에도 **0을 그대로** 내린다 — 서버가 «미모집» 같은 대체값을
+   * 만들지 않는다. 카드의 «-»는 화면이 그린다.
+   */
+  applicationCount: number;
+  /** 기획안 승인 일시 — 승인이 곧 생성이라 `acdm_actv.crt_dt`다 */
+  approvedAt: string | null;
 }

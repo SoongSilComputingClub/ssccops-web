@@ -55,3 +55,23 @@ export function acdmActvSttsBadge(
 ): { label: string; tone: BadgeTone } | null {
   return ACDM_ACTV_STTS_BADGE[code] ?? null;
 }
+
+/**
+ * 활동 유형 표시명 (#528).
+ *
+ * **`typeCd`를 가진 슬라이스에 둔다.** 모집 카드가 처음 필요로 했지만 `entities/form`에
+ * 두면, 유형이 늘었을 때 고칠 자리를 활동 슬라이스에서 찾게 된다 — 못 찾으면 배지가 조용히
+ * raw enum으로 떨어진다.
+ *
+ * 값은 런타임 코드테이블의 PK 문자열이라 목록 응답에 표시명이 없다(`AcademicProgramSummary`
+ * 주석). 그래서 화면이 표시명을 갖는다 — 모르는 코드는 **코드 그대로** 보여 준다(«기타»로
+ * 뭉개면 새 유형이 들어온 것을 아무도 모른다).
+ */
+const ACADEMIC_PROGRAM_TYPE_NM: Record<string, string> = {
+  STUDY: "스터디",
+  PROJECT: "프로젝트",
+};
+
+export function acdmActvTypeNm(typeCd: string): string {
+  return ACADEMIC_PROGRAM_TYPE_NM[typeCd] ?? typeCd;
+}

@@ -35,6 +35,17 @@ export type NavLink = {
 
 const starts = (prefix: string) => (p: string) => p === prefix || p.startsWith(`${prefix}/`);
 
+/**
+ * 지원서 문항 편집 화면인가 — `/studio/programs/{숫자}/form` (#528).
+ *
+ * 두 항목이 이 판정을 **함께 쓴다**: «내 활동»은 빼고 «모집 관리»는 켠다. 한쪽만 고치면
+ * 그 화면에서 아무것도 켜지지 않거나 둘이 함께 켜진다 — 그래서 문자열을 각자 적지 않는다.
+ *
+ * `endsWith("/form")` 하나로 두지 않은 것은 뒤에 `/form`으로 끝나는 다른 주소가 생기면
+ * 그것까지 «모집 관리»로 켜지기 때문이다.
+ */
+const isProgramFormPath = (p: string) => /^\/studio\/programs\/\d+\/form$/.test(p);
+
 export const NAV_LINKS: readonly NavLink[] = [
   // 스터디장: 학술 대시보드 · 내 활동 · 회차 기록 · 출석부 · 팀원 관리
   {
@@ -48,8 +59,27 @@ export const NAV_LINKS: readonly NavLink[] = [
     href: ROUTES.studioPrograms,
     label: "내 활동",
     role: "STUDY_LEAD",
-    // 목록(`/studio/programs`)과 상세(`/studio/programs/{id}`) 모두에서 켜진다 (#188)
-    isActive: starts(ROUTES.studioPrograms),
+    /*
+     * 목록(`/studio/programs`)과 상세(`/studio/programs/{id}`)에서 켜진다 (#188).
+     *
+     * **지원서 문항 편집(`/studio/programs/{id}/form`)은 뺀다** (#528). 주소는 활동 상세의
+     * 하위 경로지만 그 화면으로 들어오는 길은 «모집 관리»이고, 빼지 않으면 두 항목이 동시에
+     * 켜진다 — 어드민이 «스터디·프로젝트»의 `isActive`에서 `/recruitment`를 뺀 것과 같은
+     * 판단이다.
+     */
+    isActive: (p) => starts(ROUTES.studioPrograms)(p) && !isProgramFormPath(p),
+  },
+  {
+    href: ROUTES.studioRecruitment,
+    label: "모집 관리",
+    role: "STUDY_LEAD",
+    /*
+     * 목록(`/studio/recruitment`)과 **지원서 문항 편집**(`/studio/programs/{id}/form`)에서
+     * 켜진다 (#528). 편집 화면의 주소는 활동 상세의 하위 경로지만 그리로 들어오는 길은
+     * 이 항목이라, 여기서 켜 주지 않으면 그 화면에서 **아무 항목도 켜지지 않는다**
+     * («내 활동»은 같은 이유로 `/form`을 뺐다).
+     */
+    isActive: (p) => starts(ROUTES.studioRecruitment)(p) || isProgramFormPath(p),
   },
   {
     href: ROUTES.studioRecord,
