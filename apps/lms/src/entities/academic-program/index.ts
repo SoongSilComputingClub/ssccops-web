@@ -10,12 +10,14 @@ export type {
   AcademicProgramMemberFilter,
   AcademicProgramSummary,
   AcdmActvSttsCd,
+  FormReceiptStatus,
   PtcpSttsCd,
 } from "./model/types";
 
 export {
   PTCP_STTS_BADGE,
   acdmActvSttsBadge,
+  acdmActvTypeNm,
   memberRoleBadge,
   ptcpSttsBadge,
 } from "./model/display";

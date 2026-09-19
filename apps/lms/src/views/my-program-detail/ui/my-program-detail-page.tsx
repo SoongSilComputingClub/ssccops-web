@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { acdmActvSttsBadge } from "@/entities/academic-program";
+import { acdmActvSttsBadge, acdmActvTypeNm} from "@/entities/academic-program";
 import {
   sesnSttsBadge,
   type AcademicProgramApproval,
@@ -129,7 +129,7 @@ function DetailBody({ data }: Readonly<{ data: MyProgramDetailReady }>) {
       <Card>
         <div className="flex flex-wrap items-center gap-[8px]">
           {badge && <Badge tone={badge.tone}>{badge.label}</Badge>}
-          <Badge tone="grey">{program.typeCd}</Badge>
+          <Badge tone="grey">{acdmActvTypeNm(program.typeCd)}</Badge>
           <div className="flex-1" />
           <Link
             href={studioRosterUrl(program.academicProgramId)}
