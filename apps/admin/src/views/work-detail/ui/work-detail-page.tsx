@@ -14,6 +14,7 @@ import {
   WORK_TYPE_NM,
 } from "@/shared/config/codes";
 import { FIELD_LABEL } from "@/shared/config/labels";
+import { AttachmentSection } from "@/features/attachment";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
 import {
@@ -294,6 +295,13 @@ export function WorkDetailPage({ workId }: Readonly<{ workId: number }>) {
             })();
           }}
           okLabel="삭제"
+        />
+        {/* 첨부 (#546) — 업무를 고칠 수 있는 사람(WORK_MANAGE)이 올리고 지운다. 내려받기는 보는 사람 누구나 */}
+        <AttachmentSection
+          className="mt-4"
+          operationId={work.operationId}
+          canWrite={canManage}
+          lockedHint="첨부를 올리거나 지울 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다"
         />
       </PageBody>
     </>

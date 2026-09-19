@@ -38,6 +38,7 @@ import {
   Sheet,
   flash,
 } from "@/shared/ui";
+import { AttachmentSection } from "@/features/attachment";
 import { ChecklistCard } from "./checklist-card";
 import { NextStepGuide } from "./next-step-guide";
 
@@ -594,6 +595,13 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
             })();
           }}
           okLabel="삭제"
+        />
+        {/* 첨부 (#546) — 담당자 또는 WORK_MANAGE(서버 SubWorkOwnershipPolicy · 체크리스트 편집과 같은 선) */}
+        <AttachmentSection
+          className="mt-4"
+          operationId={subWork.operationId}
+          canWrite={canActOnOwnerTasks}
+          lockedHint="첨부는 담당자나 업무 관리(WORK_MANAGE) 권한이 있는 사람이 올리고 지웁니다"
         />
       </PageBody>
     </>
