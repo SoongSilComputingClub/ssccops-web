@@ -66,10 +66,19 @@ export function acdmActvSttsBadge(
  * 값은 런타임 코드테이블의 PK 문자열이라 목록 응답에 표시명이 없다(`AcademicProgramSummary`
  * 주석). 그래서 화면이 표시명을 갖는다 — 모르는 코드는 **코드 그대로** 보여 준다(«기타»로
  * 뭉개면 새 유형이 들어온 것을 아무도 모른다).
+ *
+ * **이름은 서버 `acdm_actv_type.type_nm`과 글자까지 같아야 한다** (#568). 기획안 응답은 유형을
+ * 문자열로 저장하고 승인 이관이 그것을 코드로 되돌리므로(서버 `ProposalResponseParser`), 여기서
+ * 이름을 다듬으면 화면과 기준정보가 갈린다. `TRACK`은 서버 #510이 세웠다.
+ *
+ * **`typeCd`를 유니온 타입으로 좁히지 않는다.** 유형은 배포 없이 `acdm_actv_type`에 행을 더하는
+ * 것으로 늘어나게 설계됐다 — 유니온으로 박으면 다음 유형이 들어올 때 타입이 먼저 막는다
+ * (`AcdmActvSttsCd`가 서버 enum이라 유니온인 것과 갈리는 자리).
  */
 const ACADEMIC_PROGRAM_TYPE_NM: Record<string, string> = {
   STUDY: "스터디",
   PROJECT: "프로젝트",
+  TRACK: "트랙",
 };
 
 export function acdmActvTypeNm(typeCd: string): string {

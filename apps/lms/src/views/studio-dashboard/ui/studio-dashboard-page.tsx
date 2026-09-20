@@ -470,7 +470,7 @@ export async function StudioDashboardPage({
 
       {result.outcome === "no-program" && (
         <EmptyState
-          title="맡고 있는 스터디·프로젝트가 없습니다"
+          title="맡고 있는 학술 활동이 없습니다"
           description="기획안이 승인되어 활동이 만들어지고 스터디장으로 지정되면 이 화면에 나타납니다."
         />
       )}

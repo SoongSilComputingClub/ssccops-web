@@ -42,7 +42,7 @@ export async function ProposalNewPage() {
           기획안 작성
         </h1>
         <p className="text-[13.5px] text-n500">
-          스터디·프로젝트 기획안을 작성해 학술국장에게 제출합니다
+          스터디·프로젝트·트랙 기획안을 작성해 학술국장에게 제출합니다
         </p>
       </header>
 

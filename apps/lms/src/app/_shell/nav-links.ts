@@ -94,7 +94,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
          *
          * **지원서 문항 편집(`/studio/programs/{id}/form`)은 뺀다** (#528). 주소는 활동 상세의
          * 하위 경로지만 그 화면으로 들어오는 길은 «모집 관리»이고, 빼지 않으면 두 항목이 동시에
-         * 켜진다 — 어드민이 «스터디·프로젝트»의 `isActive`에서 `/recruitment`를 뺀 것과 같은
+         * 켜진다 — 어드민이 «활동 목록»의 `isActive`에서 `/recruitment`를 뺀 것과 같은
          * 판단이다.
          */
         isActive: (p) => starts(ROUTES.studioPrograms)(p) && !isProgramFormPath(p),

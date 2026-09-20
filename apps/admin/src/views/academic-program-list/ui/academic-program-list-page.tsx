@@ -4,9 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   acdmActvSttsTone,
+  acdmActvTypeNm,
   type AcademicProgramSummary,
 } from "@/entities/academic-program";
-import { useAcademicProgramList } from "@/features/academic-program";
+import {
+  useAcademicProgramList,
+  useAcademicProgramTypes,
+} from "@/features/academic-program";
 import {
   ACDM_ACTV_STTS_CDS,
   ACDM_ACTV_STTS_NM,
@@ -28,9 +32,9 @@ import {
 } from "@/shared/ui";
 
 /*
- * 스터디·프로젝트 목록 (#125 · ssccops-server #131 · GET /v1/academic-programs).
+ * 활동 목록 (#125 · ssccops-server #131 · GET /v1/academic-programs).
  *
- * 학술국장이 승인된 활동(스터디/프로젝트) 전체를 훑는 화면이다. 활동은 기획안 승인 시
+ * 학술국장이 승인된 활동 전체를 훑는 화면이다. 활동은 기획안 승인 시
  * 서버가 이관해 만들므로 '활동 등록' 버튼이 없다(#122·#125 — 프로토타입 헤더의 `+ 활동
  * 등록`은 그 결정 이전 시안이다).
  *
@@ -84,7 +88,7 @@ function ProgramCard({
         <Badge tone={acdmActvSttsTone(program.sttsCd)}>
           {ACDM_ACTV_STTS_NM[program.sttsCd]}
         </Badge>
-        <Badge tone="grey">{program.typeCd}</Badge>
+        <Badge tone="grey">{acdmActvTypeNm(program.typeCd)}</Badge>
         <div className="flex-1" />
         {program.isLeader && (
           <span title="내가 스터디장/팀장인 활동입니다">
@@ -161,14 +165,44 @@ export function AcademicProgramListPage() {
     reload,
   } = useAcademicProgramList({ sttsCd, typeCd, keyword: keyword || null });
 
+  const { types } = useAcademicProgramTypes();
+
   /*
-   * 유형 칩은 지금 받아 둔 목록에 나타난 typeCd 집합에서 뽑는다 — 유형 목록 엔드포인트가
-   * 이 이슈 범위 밖이라(#125), 행사 앱이 분류 칩을 게시된 행사에서 뽑는 것과 같은 방식이다.
-   * 선택된 유형으로 목록이 걸러지면 그 유형만 남으므로, 이미 고른 값은 항상 포함되게 더한다.
+   * 유형 칩은 **기준정보**(GET /v1/academic-program-types)에서 뽑는다 (#568).
+   *
+   * 원래는 받아 둔 목록의 `typeCd` 집합에서 뽑았는데(#125 — 유형 엔드포인트를 붙이지 않은 채
+   * 행사 앱의 분류 칩을 따라했다), **필터를 거는 순간 나머지 칩이 사라졌다.** 서버가 이미
+   * 걸러 준 목록에는 고른 유형만 있기 때문이다 — 스터디를 고르면 프로젝트 칩이 없어져
+   * «전체 유형»을 한 번 거치지 않고는 다른 유형으로 옮겨갈 수 없었다.
+   *
+   * **비활성 유형(`useYn: false`)은 그 유형의 활동이 실제로 보일 때만 낸다.** 기준정보에는
+   * 은퇴한 유형이 쌓이는데 전부 그리면 칩 줄이 계속 길어지고, 그렇다고 활성만 그리면 끈
+   * 유형의 지난 활동을 필터로 찾을 수 없다 — 지금 목록에 있거나 이미 고른 것만 남긴다.
+   *
+   * 고른 값을 합집합으로 더하는 것은 그래서다. 덤으로 유형 조회가 실패해 칩 줄이 비었을 때도
+   * 주소의 필터를 끌 칩 하나는 남는다(`useAcademicProgramTypes` 주석).
+   *
+   * **칩 라벨만 표시명이고 주소에 실리는 값은 `typeCd` 그대로다** — 서버 질의 파라미터라
+   * 이름으로 바꾸면 필터가 통째로 빈다.
    */
+  const visibleTypeCds = new Set(programs.map((p) => p.typeCd));
   const typeOptions = Array.from(
-    new Set([...(typeCd ? [typeCd] : []), ...programs.map((p) => p.typeCd)]),
+    new Set([
+      ...types
+        .filter((t) => t.useYn || visibleTypeCds.has(t.typeCd) || t.typeCd === typeCd)
+        .map((t) => t.typeCd),
+      ...(typeCd ? [typeCd] : []),
+    ]),
   );
+
+  /*
+   * 칩 라벨은 **서버가 준 이름**을 먼저 쓴다 — 기준정보를 이미 받아 왔으므로, 운영진이 유형
+   * 관리에서 이름을 바꾸면 칩이 곧바로 따라간다. 기준정보에 없는 코드(조회 실패 · 주소에 손으로
+   * 넣은 값)만 화면 맵으로 떨어진다. 카드 배지가 맵을 그대로 쓰는 것과 갈리는 자리인데, 그쪽은
+   * 목록 응답에 이름이 없어 물어볼 데가 없다.
+   */
+  const typeNameOf = (code: string) =>
+    types.find((t) => t.typeCd === code)?.typeName || acdmActvTypeNm(code);
 
   const filtered = Boolean(sttsCd || typeCd || keyword.trim());
 
@@ -179,7 +213,7 @@ export function AcademicProgramListPage() {
 
   return (
     <>
-      <PageHeader title="스터디·프로젝트" subtitle="승인된 학술 활동" />
+      <PageHeader title="활동 목록" subtitle="승인된 학술 활동" />
       <PageBody>
         <div className="mb-4 flex flex-col gap-3">
           <SearchInput
@@ -213,7 +247,7 @@ export function AcademicProgramListPage() {
                   active={typeCd === code}
                   onClick={() => setQuery({ [QUERY_TYPE]: code })}
                 >
-                  {code}
+                  {typeNameOf(code)}
                 </Chip>
               ))}
             </div>
