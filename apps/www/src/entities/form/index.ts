@@ -12,7 +12,8 @@ export type {
 } from "./model/types";
 export { isFormRef } from "./model/types";
 export { PROPOSAL_SYS_FORM_CD } from "./model/system-form-code";
-export { RESPONSE_STATUS_BADGE } from "./model/display";
+export { RESPONSE_STATUS_BADGE, systemFormNotice } from "./model/display";
+export type { SystemFormNotice } from "./model/display";
 export {
   FORM_ERROR,
   fetchMyResponseDraft,
