@@ -264,11 +264,17 @@ export function FormListPage() {
   const isAllStatuses = receiptStatuses.length === FORM_RECEIPT_STATUSES.length;
   const formLblId = parseFormLblId(searchParams.get(QUERY_LABEL));
 
-  const { forms, status, errorMessage, reload } = useFormList({
+  const { forms: allForms, status, errorMessage, reload } = useFormList({
     // 전부 켜진 것은 필터 없음과 같다 — 파라미터를 비워 서버가 전체 경로로 간다
     receiptStatuses: isAllStatuses ? null : receiptStatuses,
     formLblId,
   });
+  /*
+   * 시스템 폼은 이 목록에서 뺀다 (#553 · ssccops#415) — 다른 모집단이라 `/forms/system`이 싼다.
+   * 화면에서 가르는 것은 서버 파라미터를 더하지 않기로 해서다(시스템 폼이 한 자릿수라 필터가
+   * 줄 것이 없다). 목록이 커서 페이징이 아니라 전량이므로 빠진 만큼 «더 보기»가 어긋날 일도 없다.
+   */
+  const forms = allForms.filter((f) => !f.sysYn);
   const { labels } = useFormLabelOptions();
 
   /*
@@ -379,11 +385,15 @@ export function FormListPage() {
           </div>
           <div className="flex-1" />
           {/*
-            **목차(사이드바)에도 있는 자리를 여기 한 번 더 둔다.** 지운 직후의 토스트가 '지운
-            폼'을 가리키는데, 그 토스트가 사라진 뒤 되돌리려는 사람이 서 있는 곳이 이 화면이다 —
-            목차를 훑어 찾게 하는 것과 바로 옆에서 누르게 하는 것은 되살릴 수 있다는 사실의
-            무게가 다르다. 권한으로 감추지 않는 것은 조회가 목록과 같은 FORM_READ라서다.
+            **목차(사이드바)에도 있는 두 자리를 여기 한 번 더 둔다.** 시스템 폼(#553)은 이 목록에서
+            빠져 있어 «기획안 폼이 어디 갔지»를 이 화면에서 묻게 되고, 지운 폼은 지운 직후의
+            토스트가 '지운 폼'을 가리키는데 그 토스트가 사라진 뒤 되돌리려는 사람이 서 있는 곳이
+            이 화면이다 — 목차를 훑어 찾게 하는 것과 바로 옆에서 누르게 하는 것은 무게가 다르다.
+            권한으로 감추지 않는 것은 두 화면의 조회가 목록과 같은 FORM_READ라서다.
           */}
+          <Button variant="ghost" onClick={() => router.push(ROUTES.formsSystem)}>
+            시스템 폼
+          </Button>
           <Button variant="ghost" onClick={() => router.push(ROUTES.formsDeleted)}>
             지운 폼
           </Button>

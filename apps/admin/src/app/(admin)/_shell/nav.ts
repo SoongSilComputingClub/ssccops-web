@@ -171,7 +171,20 @@ export const NAV_GROUPS: NavGroup[] = [
           !p.startsWith("/forms/labels") &&
           !p.startsWith("/forms/templates") &&
           // 지운 폼은 폼 목록의 부분집합이 아니라 다른 모집단이다 — 두 줄이 함께 켜지지 않게 뺀다
-          !p.startsWith("/forms/deleted"),
+          !p.startsWith("/forms/deleted") &&
+          // 시스템 폼도 같은 이유로 다른 모집단이다 (#553)
+          !p.startsWith("/forms/system"),
+        requires: CAPABILITY.FORM_READ,
+      },
+      /*
+       * 시스템 폼 (#553 · ssccops#415). 코드가 가리키는 폼(기획안)만 모은 화면이다 — 폼 목록에서
+       * 뺐으므로 목차에 자리가 있어야 찾아갈 수 있다. requires 는 목록과 같은 FORM_READ 다 —
+       * 첫 조회가 같은 GET /v1/forms 이고, 화면이 `sysYn`으로 가를 뿐이다.
+       */
+      {
+        label: "시스템 폼",
+        href: ROUTES.formsSystem,
+        isActive: starts("/forms/system"),
         requires: CAPABILITY.FORM_READ,
       },
       /*
