@@ -95,7 +95,7 @@ const nextConfig: NextConfig = {
       },
       {
         source:
-          "/:section(about|operators|join|contact|privacy|photo-notice|terms|activities)/:path*",
+          "/:section(about|operators|academic|join|contact|privacy|photo-notice|terms|activities)/:path*",
         headers: [{ key: "Cache-Control", value: PUBLIC_CACHE_CONTROL }],
       },
     ];
