@@ -296,6 +296,18 @@ export const FORM_ERROR = {
    */
   SYSTEM_FORM_CONTRACT_VIOLATION: "SYSTEM_FORM_CONTRACT_VIOLATION",
   /**
+   * 409 — 시스템 폼의 문항(`qitems`)이 바뀌는 저장 (ssccops-server #498 · ssccops#416).
+   *
+   * `SYSTEM_FORM_CONTRACT_VIOLATION`(400)보다 넓은 잠금이다. 그쪽은 계약 문항의 **삭제**만
+   * 막았는데, 코드가 읽는 것은 식별자만이 아니라 선택지 글자·안내 문구까지라 추가·순서·속성
+   * 전부를 한 번에 거절한다. 문항이 같으면 통과한다 — 제목·접수 기간·라벨·다중 응답·페이지
+   * 제목·설명(`pages`)은 비교 대상이 아니라 편집 자동 저장(전체 PATCH)이 여기 걸리지 않는다.
+   *
+   * 편집기는 `sysYn`이면 문항 편집기를 통째로 잠근다(#554 · `QitemComposer`의 `questionsLocked`).
+   * 이 코드가 오는 것은 화면을 우회한 요청이거나 잠금 배포 전에 열어 둔 탭이다.
+   */
+  SYSTEM_FORM_QUESTIONS_LOCKED: "SYSTEM_FORM_QUESTIONS_LOCKED",
+  /**
    * 409 — 이미 지워진 폼을 또 지우려 함 (ssccops-server#329 · **확정**).
    *
    * 코드 문자열은 회의 소프트 삭제(서버 #125 · `MEETING_ERROR.ALREADY_DELETED`)를 따라 잡았고
