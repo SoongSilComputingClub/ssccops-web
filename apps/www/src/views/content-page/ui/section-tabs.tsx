@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SECTION_TABS, type SectionAxis } from "@/shared/config/section-tabs";
+import { SECTION_TABS, type SectionAxis, type SectionTab } from "@/shared/config/section-tabs";
 import { cn } from "@/shared/lib/cn";
 
 /**
@@ -14,14 +14,17 @@ import { cn } from "@/shared/lib/cn";
 export function SectionTabs({
   axis,
   pathname,
+  items,
 }: Readonly<{
   axis: SectionAxis;
   /** 지금 화면의 주소 — 켜질 탭을 고른다 */
   pathname: string;
+  /** 정적 표 대신 그릴 탭 — 운영진 축이 게시된 대수로 만든다 (#571) */
+  items?: readonly SectionTab[];
 }>) {
   return (
     <nav aria-label="하위 메뉴" className="flex flex-wrap items-center gap-[7px]">
-      {SECTION_TABS[axis].map((tab) => {
+      {(items ?? SECTION_TABS[axis]).map((tab) => {
         const active = tab.isActive(pathname);
         return (
           <Link

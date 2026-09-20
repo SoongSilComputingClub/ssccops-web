@@ -10,6 +10,13 @@
 export type ContentCategoryCode = "ACADEMIC" | "EVENT" | "NEWS";
 
 /** GET /public/v1/pages/{slug} — 게시된 페이지 한 장 */
+/** 접두사 목록의 한 줄 — `GET /public/v1/pages?slugPrefix=` (서버 #513). 본문이 없다 */
+export interface PublicContentPageSummary {
+  slug: string;
+  ttl: string;
+  pubDt: string;
+}
+
 export interface PublicContentPage {
   slug: string;
   ttl: string;

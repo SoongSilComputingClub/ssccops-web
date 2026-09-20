@@ -1,4 +1,3 @@
-import { OPERATOR_COHORTS } from "./content-slugs";
 import { ROUTES } from "./routes";
 
 /*
@@ -23,11 +22,11 @@ export type SectionAxis = "about" | "operators" | "join";
 export interface SectionTab {
   href: string;
   label: string;
-  /** 지금 주소가 이 탭인가 — 역대 운영진은 어느 기수를 보든 «역대»가 켜진다 */
+  /** 지금 주소가 이 탭인가 */
   isActive: (pathname: string) => boolean;
 }
 
-const exact = (href: string) => (pathname: string) => pathname === href;
+export const exact = (href: string) => (pathname: string) => pathname === href;
 
 export const SECTION_TABS: Record<SectionAxis, readonly SectionTab[]> = {
   about: [
@@ -35,15 +34,11 @@ export const SECTION_TABS: Record<SectionAxis, readonly SectionTab[]> = {
     { href: ROUTES.aboutHistory, label: "연혁", isActive: exact(ROUTES.aboutHistory) },
     { href: ROUTES.aboutValues, label: "핵심 가치", isActive: exact(ROUTES.aboutValues) },
   ],
-  operators: [
-    { href: ROUTES.operators, label: "지금", isActive: exact(ROUTES.operators) },
-    {
-      // 표의 첫 기수(최신)로 간다 — 기수가 늘면 `OPERATOR_COHORTS`에 더한다
-      href: ROUTES.operatorsCohort(OPERATOR_COHORTS[0]),
-      label: "역대",
-      isActive: (pathname) => pathname.startsWith(`${ROUTES.operators}/`),
-    },
-  ],
+  /*
+   * 운영진 축은 «지금» 하나만 여기 있다 — 역대 대수 탭(«44대»·«43대»…)은 게시된 페이지 목록에서
+   * 만들어지므로(#571 · `views/content-page/model/operators-tabs.ts`) 정적 표에 둘 수 없다.
+   */
+  operators: [{ href: ROUTES.operators, label: "지금", isActive: exact(ROUTES.operators) }],
   join: [
     { href: ROUTES.join, label: "안내", isActive: exact(ROUTES.join) },
     { href: ROUTES.joinFaq, label: "FAQ", isActive: exact(ROUTES.joinFaq) },
