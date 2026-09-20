@@ -8,6 +8,7 @@
  */
 import { useState } from "react";
 import { onKeyActivate } from "@ssccops/ui";
+import { siteLinks } from "@/shared/config/site-links";
 import { cn } from "@/shared/lib/cn";
 import { ThemeToggle } from "@/shared/ui";
 import { NAV_FOOT, type NavGroup, type NavItem } from "./nav";
@@ -140,6 +141,17 @@ export function NavPanel({
         </div>
         {NAV_FOOT.items.map((item) => (
           <NavRow key={item.label} item={item} pathname={pathname} onNavigate={onNavigate} />
+        ))}
+        {/* 다른 앱으로 — 외부 링크라 NavRow(라우터 이동·isActive)가 아니라 <a>다 (#577 · ssccops#430) */}
+        {siteLinks().map((site) => (
+          <a
+            key={site.href}
+            href={site.href}
+            className="flex items-center gap-[9px] px-[18px] py-[10px] text-[15.5px] text-n300 hover:bg-accent/6"
+          >
+            <div className="h-[15px] w-[3px] flex-none rounded-[2px] bg-transparent" />
+            {site.label} <span className="text-[13px] text-n500">↗</span>
+          </a>
         ))}
         {/* 사이드바와 드로어가 이 한 벌을 함께 쓴다 — 한쪽에만 두면 모바일에서 못 바꾼다 */}
         <ThemeToggle className="mx-[18px] mt-2" />

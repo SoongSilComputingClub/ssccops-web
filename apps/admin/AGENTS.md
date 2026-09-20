@@ -35,6 +35,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **조회 권한과 쓰기 권한이 갈린 자리가 있다**(서버 #101): `WORK_READ`/`WORK_MANAGE` · `MEETING_READ`/`MEETING_MANAGE` · `MEETING_AGENDA_WRITE` · `SUB_WORK_TYPE_READ`/`_MANAGE`. 자리마다 **서버가 그 엔드포인트에 요구하는 코드**를 본다. 예: 회의 상세에서 개회·종료·취소는 `MEETING_MANAGE`지만 안건 추가·수정·철회는 `MEETING_AGENDA_WRITE`다(국원도 갖는다).
 - **승인·투표 자격도 권한이다**(서버 #123). 투표는 `useCan(CAPABILITY.APPROVAL_VOTE)`로 사전 잠금하고, 승인·반려는 유형마다 요구 결재 권한이 달라 서버가 건별로 내려주는 `canApprove`·`canReject`를 쓴다. 승인자 **표시명**은 응답의 `authorizerAuthorityName`이고 유형 폼의 선택지는 `GET /v1/sub-work-types/authorizer-authorities`가 준다 — 코드 → 이름 사전을 웹에 다시 만들지 말 것.
 - **이동은 감추고, 동작은 잠근다.** 사이드바 메뉴는 권한이 없으면 감추고(갈 수 없는 곳을 목차에 남기면 목차 전체를 믿을 수 없다), 화면 안의 버튼은 남긴 채 잠그고 사유를 `title`로 붙인다(이미 그 화면을 보고 있는 사람에게서 버튼만 소리 없이 사라지면 기능이 없어진 것인지 권한 문제인지 알 수 없다).
+- **사이드바·드로어 발치의 «홍보 사이트 ↗»·«학술 LMS ↗»는 `shared/config/site-links.ts`다**(#577 · ssccops#430). www는 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`(ADR-0017의 재사용 — 이름의 빚은 `routes.ts` 주석), lms는 `NEXT_PUBLIC_LMS_ORIGIN`이고 비면 그 항목이 없다. `nav.ts`의 목차가 아니라 따로인 것은 외부 앱에는 `isActive`도 권한 판정도 없어서이며, `NavRow`(라우터 이동)가 아니라 `<a>`다. 새 env 없음.
 
 ## 주요 결정 (왜 그렇게 돼 있는가)
 

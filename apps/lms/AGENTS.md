@@ -20,6 +20,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - 첫 화면 `/`(#228): 스터디장은 `redirect`로 `/studio`를 지나가고, 남은 사람에게는 «무엇을 하러 왔는지» 고르는 카드 둘(기획안 제출·내 신청). 뷰 안에 역할 조건문을 흩지 않는다.
 - 상단 바 목차는 `app/_shell/nav-links.ts` **한 벌**을 데스크톱·드로어가 함께 쓴다. 역할 필터는 `visibleNavLinks`(#224) — 근거는 `GET /v1/academic-programs?mine=leader`가 한 건이라도 주는가(`fetchIsAcademicLeader`, 루트 레이아웃이 서버에서 한 번). `leadrMbrId === 내 mbrId`를 웹에서 다시 계산하지 않는다 — 판정은 서버.
+- **상단 바 오른쪽(lg)·드로어 발치의 «홈페이지 ↗»는 `shared/config/site-links.ts`다**(#577 · ssccops#430) — www 오리진은 공유 링크가 이미 쓰는 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`이고 비면 항목이 없다. 목차(`nav-links.ts`)에 섞지 않는 것은 역할·`isActive`가 없는 외부 앱이라서다. 새 env 없음.
 - 경로는 `shared/config/routes.ts`의 `ROUTES`로만. 어드민의 `/academic-programs` 계열과 주소가 겹치지 않는다(소스를 공유하지 않는다).
 
 ## 규칙

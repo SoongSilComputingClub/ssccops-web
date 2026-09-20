@@ -7,6 +7,7 @@ import { AuthNav } from "@/features/auth";
 // 서버 전용 조회는 배럴이 재export 하지 않는다(클라이언트 번들 오염 방지) — 직접 임포트한다
 import { fetchIsAcademicLeader } from "@/entities/academic-program/api/programs-read";
 import { ROUTES } from "@/shared/config/routes";
+import { siteLinks } from "@/shared/config/site-links";
 import { ogImageUrl } from "@/shared/lib/og-image-url";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
@@ -158,6 +159,16 @@ export default async function RootLayout({ children }: Readonly<LayoutProps<"/">
                * `lg:` 이상에서만 보이는 것은 좁은 화면에서 드로어와 겹치기 때문이다 — 그쪽은
                * 드로어 발치의 `ThemeToggle`이 맡고, 둘은 같은 상태를 본다.
                */}
+              {/* 홈페이지(www)로 — lg 이상은 여기, 미만은 드로어 발치 (#577 · site-links.ts) */}
+              {siteLinks().map((site) => (
+                <a
+                  key={site.href}
+                  href={site.href}
+                  className="hidden rounded-lg px-[10px] py-[6px] text-[14.5px] text-n300 hover:text-ink lg:block"
+                >
+                  {site.label} <span className="text-[12px] text-n500">↗</span>
+                </a>
+              ))}
               <ThemeToggle fit className="hidden lg:flex" />
               <MobileNav isLeader={isLeader} />
             </div>
