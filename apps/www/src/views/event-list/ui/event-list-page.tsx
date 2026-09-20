@@ -5,8 +5,11 @@ import {
   toClassifications,
   type PublicEventSummary,
 } from "@/entities/event";
+import type { EventListView } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui";
 import { ClassificationFilter } from "./classification-filter";
+import { EventTable } from "./event-table";
+import { ViewSwitch } from "./view-switch";
 
 /**
  * 행사 목록 (SSR).
@@ -18,8 +21,18 @@ import { ClassificationFilter } from "./classification-filter";
  *
  * 조회 실패를 던지지 않고 화면 안에서 안내로 그리는 것은, 서버가 잠깐 닿지 않을 때 공개
  * 도메인이 통째로 오류 화면이 되는 편보다 낫기 때문이다.
+ *
+ * 보기 방식(`view` · #573 · ssccops#427)은 주소(`?view=list`)에서 온다 — 왜 URL인지는
+ * `shared/config/routes.ts`의 `EventListView`. 카드·리스트는 같은 목록을 다르게 그릴 뿐이라
+ * 조회·필터·빈 상태는 갈리지 않는다.
  */
-export async function EventListPage({ eventClsfCd }: Readonly<{ eventClsfCd: string | null }>) {
+export async function EventListPage({
+  eventClsfCd,
+  view,
+}: Readonly<{
+  eventClsfCd: string | null;
+  view: EventListView;
+}>) {
   let events: PublicEventSummary[] = [];
   let all: PublicEventSummary[] = [];
   let errorMessage: string | null = null;
@@ -50,7 +63,17 @@ export async function EventListPage({ eventClsfCd }: Readonly<{ eventClsfCd: str
         <EmptyState title={errorMessage} />
       ) : (
         <>
-          <ClassificationFilter classifications={classifications} selected={eventClsfCd} />
+          {/* 필터 줄 — 왼쪽 분류 칩, 오른쪽 보기 전환. 칩이 없어도(분류 하나) 전환은 오른쪽에 남는다 */}
+          <div className="flex flex-wrap items-center justify-between gap-[10px]">
+            <ClassificationFilter
+              classifications={classifications}
+              selected={eventClsfCd}
+              view={view}
+            />
+            <div className="ml-auto">
+              <ViewSwitch view={view} eventClsfCd={eventClsfCd} />
+            </div>
+          </div>
           {events.length === 0 ? (
             <EmptyState
               title={
@@ -59,14 +82,28 @@ export async function EventListPage({ eventClsfCd }: Readonly<{ eventClsfCd: str
               description="새로운 행사가 열리면 이곳에 올라옵니다"
             />
           ) : (
-            <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
-              {events.map((event) => (
-                <EventCard key={event.eventId} event={event} />
-              ))}
-            </div>
+            <EventList events={events} view={view} />
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/** 같은 목록을 보기 방식대로 — 리스트면 표(`EventTable`), 아니면 카드 격자 */
+function EventList({
+  events,
+  view,
+}: Readonly<{
+  events: PublicEventSummary[];
+  view: EventListView;
+}>) {
+  if (view === "list") return <EventTable events={events} />;
+  return (
+    <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+      {events.map((event) => (
+        <EventCard key={event.eventId} event={event} />
+      ))}
     </div>
   );
 }
