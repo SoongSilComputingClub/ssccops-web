@@ -200,7 +200,7 @@ export function MemberLinkStep({
         type="button"
         onClick={() => void link()}
         disabled={disabled}
-        className="rounded-xl bg-accent px-[16px] py-[13px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-xl bg-accent px-[16px] py-[13px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? "연결 확인 중…" : "연결하고 신청서 작성"}
       </button>

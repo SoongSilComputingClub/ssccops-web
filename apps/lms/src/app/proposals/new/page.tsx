@@ -19,7 +19,7 @@ import { ProposalNewPage } from "@/views/proposal-new";
  */
 export async function generateMetadata(): Promise<Metadata> {
   const title = "기획안 제출";
-  const description = "스터디·프로젝트 기획안을 내고 학술국 검토를 받습니다";
+  const description = "스터디·프로젝트·트랙 기획안을 내고 학술국 검토를 받습니다";
   const imageUrl = await ogImageUrl("proposal");
 
   return {

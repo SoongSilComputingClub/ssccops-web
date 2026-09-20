@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CONTACT } from "@/shared/config/contact";
 import { ROUTES } from "@/shared/config/routes";
+import { externalNavLinks } from "./nav-links";
 
 /**
  * 푸터 — 문의 블록 + 법적 페이지 + 고지 (#520 · ssccops#382).
@@ -45,6 +46,12 @@ export function SiteFooter() {
               >
                 GitHub
               </a>
+              {/* 학술 LMS — 상단 바와 같은 항목, 발치에서도 닿게 (#577) */}
+              {externalNavLinks().map((link) => (
+                <a key={link.href} href={link.href} className="text-accent-strong">
+                  {link.label}
+                </a>
+              ))}
             </span>
           </address>
         </section>

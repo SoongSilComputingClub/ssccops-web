@@ -42,7 +42,7 @@ export async function MyProgramsPage({
           내 활동
         </h1>
         <p className="text-[13.5px] text-n500">
-          내가 스터디장·팀장인 스터디·프로젝트
+          내가 스터디장·팀장인 학술 활동
         </p>
       </header>
 

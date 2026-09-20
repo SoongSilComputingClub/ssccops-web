@@ -11,7 +11,7 @@ import { SignupRequiredNotice } from "@/features/signup";
  *
  * ── 왜 생겼나 ──────────────────────────────────────────────
  * 전에는 `/`가 `/studio`(학술 대시보드)로 곧장 넘겼다. 상단 바가 역할별로 갈리고 나니(#224)
- * 일반 회원의 첫 화면이 **제목은 "학술 대시보드"인데 본문은 "맡고 있는 스터디·프로젝트가
+ * 일반 회원의 첫 화면이 **제목은 "학술 대시보드"인데 본문은 "맡고 있는 학술 활동이
  * 없습니다"**가 되어, 자기와 상관없는 화면에 도착한 것처럼 보였다. 대시보드를 고치는 대신
  * 그 앞에 고르는 화면을 두었다 — `/studio`는 대시보드 그대로다.
  *
@@ -29,7 +29,7 @@ import { SignupRequiredNotice } from "@/features/signup";
  *
  * ── 대시보드 카드를 두지 않는다 ───────────────────────────────
  * 스터디장은 이 화면에 닿기 전에 `/studio`로 넘어가므로, **여기 있는 사람은 정의상 스터디장이
- * 아니다** — 대시보드 카드를 눌러 봐야 "맡고 있는 스터디·프로젝트가 없습니다"만 나온다.
+ * 아니다** — 대시보드 카드를 눌러 봐야 "맡고 있는 학술 활동이 없습니다"만 나온다.
  * 갈 수 없는 곳을 크게 세워 두지 않는다(#224가 상단 바에서 한 것과 같은 판단). 그래서 두 카드는
  * 상단 바의 `MEMBER` 항목 둘과 정확히 같다 — 이 사람이 지금 할 수 있는 일이 그 둘이다.
  * 활동을 맡게 되면 이 화면 자체를 지나치게 되므로 카드를 다시 세울 일도 없다.
@@ -60,7 +60,7 @@ export function LandingPage({ result }: Readonly<{ result: LandingLoad }>) {
         <ActionCard
           href={ROUTES.proposalNew}
           title="기획안 제출"
-          description="새 스터디·프로젝트를 제안합니다."
+          description="새 스터디·프로젝트·트랙을 제안합니다."
           cta="기획안 쓰기"
         />
         <ActionCard
@@ -80,7 +80,7 @@ function Shell({ children }: Readonly<{ children: ReactNode }>) {
       <header className="flex flex-col gap-[2px]">
         <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">SSCC 학술</h1>
         <p className="text-[13.5px] text-n500">
-          스터디·프로젝트 활동과 회차·출석, 기획안 제출
+          스터디·프로젝트·트랙 활동과 회차·출석, 기획안 제출
         </p>
       </header>
       {children}

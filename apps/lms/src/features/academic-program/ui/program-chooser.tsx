@@ -15,7 +15,7 @@ import { SignupRequiredNotice } from "@/features/signup";
 export function NoProgramNotice() {
   return (
     <EmptyState
-      title="맡고 있는 스터디·프로젝트가 없습니다"
+      title="맡고 있는 학술 활동이 없습니다"
       description="스터디장·팀장으로 지정되면 이 화면을 쓸 수 있습니다."
     />
   );

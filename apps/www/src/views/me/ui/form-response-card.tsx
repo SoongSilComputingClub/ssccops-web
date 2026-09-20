@@ -33,20 +33,18 @@ import { Badge, Pill } from "@/shared/ui";
  * **수정 규칙은 그대로다.** 상세로 가는 것과 거기서 다시 낼 수 있는 것은 다른 일이고, 후자는
  * 서버가 `canResubmit`으로 답한다. 한 건 더 내려는 사람(여러 건 받는 폼)은 폼 주소로 가는데,
  * 그 자리는 이 목록의 카드가 아니라 폼 링크다.
+ *
+ * **기획안 응답은 이 카드로 오지 않는다**(#574). #518에서는 «기획안» 칩 하나로 섞여 있었는데
+ * 기획안의 상세·재제출은 lms의 일이라 카드가 가리키는 www 응답 상세가 반쪽이었다. 지금은
+ * `/me/proposals`의 `ProposalCard`가 lms로 보낸다.
  */
 export function FormResponseCard({
   response,
   reviewOpinion,
-  proposal = false,
 }: Readonly<{
   response: MyFormResponseOverview;
   /** 수정요청 사유 — 조회하지 못했거나 해당 없으면 null */
   reviewOpinion: string | null;
-  /**
-   * 기획안(PROPOSAL 시스템 폼) 응답인가 (#518). «낸 폼»에서 기획안은 심사 뒤 학술 활동이 되는
-   * 응답이라 다른 폼과 구별해 보인다 — 칩 하나로, 구역을 나누지는 않는다(상태 축이 같다).
-   */
-  proposal?: boolean;
 }>) {
   const status = RESPONSE_STATUS_BADGE[response.rspnsSttsCd];
   const changesRequested = response.rspnsSttsCd === "CHANGES_REQUESTED";
@@ -55,11 +53,10 @@ export function FormResponseCard({
   return (
     <Link
       href={ROUTES.myFormResponse(response.formKey ?? response.formId, response.formRspnsId)}
-      className="flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_#e5e8eb] transition-shadow hover:shadow-[0_0_0_1px_#1b64da] lg:p-[18px]"
+      className="flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_var(--color-line)] transition-shadow hover:shadow-[0_0_0_1px_var(--color-accent-strong)] lg:p-[18px]"
     >
       <div className="flex flex-wrap items-center gap-[6px]">
         <Badge tone={status.tone}>{status.label}</Badge>
-        {proposal && <Pill tone="outline">기획안</Pill>}
         {response.labels.map((label) => (
           <Pill key={label.formLblId}>{label.lblNm}</Pill>
         ))}

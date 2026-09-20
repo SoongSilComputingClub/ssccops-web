@@ -1,4 +1,3 @@
-import { OPERATOR_COHORTS } from "./content-slugs";
 import { ROUTES } from "./routes";
 
 /*
@@ -18,16 +17,21 @@ import { ROUTES } from "./routes";
  * 데스크톱에서는 마우스를 올려야 하위 항목이 보여 «있는지» 알기 어렵다. 탭은 페이지 안에 늘
  * 보인다.
  */
-export type SectionAxis = "about" | "operators" | "join";
+/*
+ * `me`(내 활동 · #574 · ssccops#428)는 콘텐츠 축이 아니라 로그인한 부원의 화면이지만 같은 탭 줄을
+ * 쓴다 — 허브 `/me` 아래 내부 페이지 넷(신청한 행사 · 낸 폼 · 낸 기획안 · 이끄는 활동)으로
+ * 가는 길이고, lms `/my/applications`처럼 «내 것»을 종류별로 한 장씩 보는 모양이다.
+ */
+export type SectionAxis = "about" | "operators" | "join" | "me";
 
 export interface SectionTab {
   href: string;
   label: string;
-  /** 지금 주소가 이 탭인가 — 역대 운영진은 어느 기수를 보든 «역대»가 켜진다 */
+  /** 지금 주소가 이 탭인가 */
   isActive: (pathname: string) => boolean;
 }
 
-const exact = (href: string) => (pathname: string) => pathname === href;
+export const exact = (href: string) => (pathname: string) => pathname === href;
 
 export const SECTION_TABS: Record<SectionAxis, readonly SectionTab[]> = {
   about: [
@@ -35,18 +39,29 @@ export const SECTION_TABS: Record<SectionAxis, readonly SectionTab[]> = {
     { href: ROUTES.aboutHistory, label: "연혁", isActive: exact(ROUTES.aboutHistory) },
     { href: ROUTES.aboutValues, label: "핵심 가치", isActive: exact(ROUTES.aboutValues) },
   ],
-  operators: [
-    { href: ROUTES.operators, label: "지금", isActive: exact(ROUTES.operators) },
-    {
-      // 표의 첫 기수(최신)로 간다 — 기수가 늘면 `OPERATOR_COHORTS`에 더한다
-      href: ROUTES.operatorsCohort(OPERATOR_COHORTS[0]),
-      label: "역대",
-      isActive: (pathname) => pathname.startsWith(`${ROUTES.operators}/`),
-    },
-  ],
+  /*
+   * 운영진 축은 «지금» 하나만 여기 있다 — 역대 대수 탭(«44대»·«43대»…)은 게시된 페이지 목록에서
+   * 만들어지므로(#571 · `views/content-page/model/operators-tabs.ts`) 정적 표에 둘 수 없다.
+   */
+  operators: [{ href: ROUTES.operators, label: "지금", isActive: exact(ROUTES.operators) }],
   join: [
     { href: ROUTES.join, label: "안내", isActive: exact(ROUTES.join) },
     { href: ROUTES.joinFaq, label: "FAQ", isActive: exact(ROUTES.joinFaq) },
     { href: ROUTES.joinHistory, label: "지난 모집", isActive: exact(ROUTES.joinHistory) },
+  ],
+  /*
+   * 내 활동 — 허브는 «요약». 상태 필터(`?status=`)가 붙어도 같은 탭이 켜지도록 `exact`는
+   * pathname만 본다(쿼리는 `pathname`에 실리지 않는다).
+   */
+  me: [
+    { href: ROUTES.me, label: "요약", isActive: exact(ROUTES.me) },
+    {
+      href: ROUTES.meApplications,
+      label: "신청한 행사",
+      isActive: exact(ROUTES.meApplications),
+    },
+    { href: ROUTES.meResponses, label: "낸 폼", isActive: exact(ROUTES.meResponses) },
+    { href: ROUTES.meProposals, label: "낸 기획안", isActive: exact(ROUTES.meProposals) },
+    { href: ROUTES.mePrograms, label: "이끄는 활동", isActive: exact(ROUTES.mePrograms) },
   ],
 };

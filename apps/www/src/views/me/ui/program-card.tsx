@@ -56,14 +56,14 @@ export function ProgramCard({ program }: Readonly<{ program: AcademicProgramSumm
   );
 
   const className =
-    "flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_#e5e8eb] lg:p-[18px]";
+    "flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_var(--color-line)] lg:p-[18px]";
 
   if (!href) return <div className={className}>{body}</div>;
 
   return (
     <a
       href={href}
-      className={`${className} transition-shadow hover:shadow-[0_0_0_1px_#1b64da]`}
+      className={`${className} transition-shadow hover:shadow-[0_0_0_1px_var(--color-accent-strong)]`}
     >
       {body}
     </a>

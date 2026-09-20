@@ -33,7 +33,7 @@ export {
   updateRecruitmentSchedule,
 } from "./api/recruitment";
 
-export { acdmActvSttsTone, sesnSttsTone } from "./model/display";
+export { acdmActvSttsTone, acdmActvTypeNm, sesnSttsTone } from "./model/display";
 
 export {
   ACADEMIC_PROGRAM_TYPE_ERROR,

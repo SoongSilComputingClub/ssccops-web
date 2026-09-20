@@ -8,7 +8,7 @@ www 라우트가 읽는 페이지 슬러그와 어드민이 보여 주는 페이
 | `CONTENT_SLUG` · `ContentSlug` | 슬러그 상수 — www 라우트가 `GET /public/v1/pages/{slug}`에 쓴다 |
 | `CONTENT_PAGES` · `ContentPageEntry` · `findContentPage` | 카탈로그 — 슬러그·이름·공개 경로·묶음·부제. 어드민 «콘텐츠 › 페이지» 탭이 이 순서로 그린다 |
 | `CONTENT_PAGE_GROUP_LABEL` | 묶음 이름(홈 · SSCC · 운영진 · 모집 · 안내 문서 · 문의) |
-| `operatorsCohortSlug` · `isCohort` · `parseOperatorsCohort` · `operatorsCohortPath` | 기수 운영진 `operators-{n}` — 카탈로그에 없는 유일한 **패턴** |
+| `operatorsCohortSlug` · `isCohort` · `parseOperatorsCohort` · `operatorsCohortPath` | 역대 운영진 `operators-{n}`(n대 · `OPERATORS_SLUG_PREFIX`) — 카탈로그에 없는 유일한 **패턴** |
 
 ## 규칙
 

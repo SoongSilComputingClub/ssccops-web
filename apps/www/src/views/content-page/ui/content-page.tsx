@@ -5,9 +5,8 @@ import {
   isContentNotFound,
   type PublicContentPage,
 } from "@/entities/content";
-import type { SectionAxis } from "@/shared/config/section-tabs";
-import { Card, ContentMarkdoc, EmptyState } from "@/shared/ui";
-import { SectionTabs } from "./section-tabs";
+import type { SectionAxis, SectionTab } from "@/shared/config/section-tabs";
+import { Card, ContentMarkdoc, EmptyState, SectionTabs } from "@/shared/ui";
 
 /**
  * 게시된 페이지 한 장 (SSR · #520 · ssccops#382).
@@ -41,8 +40,8 @@ export async function ContentPage({
   slug: string;
   /** 게시본이 없거나 조회에 실패했을 때 세우는 제목 */
   fallbackTitle: string;
-  /** 축 안의 탭 줄 — 축과 지금 주소. 없으면 탭 줄이 없다(법적 페이지) */
-  tabs?: { axis: SectionAxis; pathname: string };
+  /** 축 안의 탭 줄 — 축과 지금 주소. 없으면 탭 줄이 없다(법적 페이지). `items`는 정적 표 대신 그릴 탭(운영진) */
+  tabs?: { axis: SectionAxis; pathname: string; items?: readonly SectionTab[] };
   /** 본문 아래 붙는 블록 — 지원 안내의 접수 중인 폼 목록 같은 것 */
   after?: ReactNode;
 }>) {
@@ -63,7 +62,7 @@ export async function ContentPage({
         </h1>
       </header>
 
-      {tabs && <SectionTabs axis={tabs.axis} pathname={tabs.pathname} />}
+      {tabs && <SectionTabs axis={tabs.axis} pathname={tabs.pathname} items={tabs.items} />}
 
       {errorMessage && <EmptyState title={errorMessage} />}
       {!errorMessage && !page && <EmptyState title="준비 중입니다" />}

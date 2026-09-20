@@ -63,7 +63,7 @@ export function MyResponsesPanel({ formRef }: Readonly<{ formRef: FormRef }>) {
             return (
               <div
                 key={r.formRspnsId}
-                className="flex flex-wrap items-center gap-x-[8px] gap-y-[4px] border-t border-black/5 pt-[8px] first:border-none first:pt-0"
+                className="flex flex-wrap items-center gap-x-[8px] gap-y-[4px] border-t border-hairline pt-[8px] first:border-none first:pt-0"
               >
                 <span className="text-[14.5px]">
                   {r.rspnsSeq === null ? "응답" : `${r.rspnsSeq}번째 응답`}

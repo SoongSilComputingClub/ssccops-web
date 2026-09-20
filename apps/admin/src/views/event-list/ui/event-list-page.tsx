@@ -22,7 +22,20 @@ import {
 import { EVENT_STTS_CDS, EVENT_STTS_NM, type EventSttsCd } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
-import { Badge, Button, Card, Chip, EmptyState, PageBody, PageHeader, Pill, flash } from "@/shared/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  Chip,
+  EmptyState,
+  PageBody,
+  PageHeader,
+  Pill,
+  Segmented,
+  flash,
+} from "@/shared/ui";
+import { EVENT_VIEW_MODES, useEventViewMode } from "../model/use-event-view-mode";
+import { EventTable } from "./event-table";
 
 /*
  * 행사 목록 (#136 · GET /v1/events).
@@ -35,6 +48,10 @@ import { Badge, Button, Card, Chip, EmptyState, PageBody, PageHeader, Pill, flas
  * 걷어냈던 삭제를 소프트 삭제로 되살렸다). 보관과 삭제는 다른 뜻이다: 보관은 끝난 행사를
  * 공개에서 내리되 운영 기록으로 남기는 것이고, 삭제는 잘못 만든 것을 목록에서 치우되 되돌릴
  * 수 있게 두는 것이다 — 되돌리는 자리는 «지운 행사»(views/deleted-event-list)다.
+ *
+ * **보기가 둘이다 — 카드와 리스트** (#569 · ssccops#424). 같은 `events`를 카드(EventCard)와 표
+ * (EventTable)로 그리고 세그먼트로 오간다. 필터(URL)는 두 보기에 그대로 걸리고 선택은 브라우저에
+ * 기억한다(use-event-view-mode). 복제는 카드에만 있다 — 표 주석 참고.
  */
 
 const ALL = "전체";
@@ -254,6 +271,7 @@ export function EventListPage() {
     event: EventSummary;
     blocked: string;
   } | null>(null);
+  const [viewMode, setViewMode] = useEventViewMode();
 
   const statusFilter = parseEventStatusFilter(searchParams.get(QUERY_STATUS));
   const eventClsfCd = searchParams.get(QUERY_CATEGORY);
@@ -328,6 +346,13 @@ export function EventListPage() {
       />
       <PageBody>
         <div className="mb-3 flex flex-wrap items-center gap-2">
+          {/* 카드·리스트 — 필터 줄 왼쪽. 선택은 브라우저가 기억한다 (use-event-view-mode) */}
+          <Segmented
+            options={EVENT_VIEW_MODES}
+            value={viewMode}
+            onChange={setViewMode}
+            className="w-[168px]"
+          />
           <div className="flex-1" />
           {/*
             «지운 행사»로 가는 길 (ADR-0020). 목차에는 없고 여기 하나다(routes.ts의 `eventsDeleted`
@@ -414,6 +439,15 @@ export function EventListPage() {
                   ? { label: "+ 새 행사", onClick: () => router.push(ROUTES.eventNew) }
                   : undefined
               }
+            />
+          ) : viewMode === "리스트" ? (
+            <EventTable
+              events={events}
+              canManage={canManage}
+              canDelete={canDelete}
+              deletingEventId={deletion.pendingEventId}
+              onDelete={(e) => setDeleteTarget({ event: e, blocked: "" })}
+              noManage={NO_MANAGE}
             />
           ) : (
             <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">

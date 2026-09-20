@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import {
   acdmActvSttsTone,
+  acdmActvTypeNm,
   type AcademicProgramSummary,
 } from "@/entities/academic-program";
 import type { SessionCrossListItem } from "@/entities/academic-session";
@@ -21,7 +22,7 @@ import { Badge, Card, CardTitle, EmptyState, ProgressBar, PageBody, PageHeader, 
  * **역할로 분기하는 코드를 넣지 않는다**(#126 「결정해서 남길 것」).
  *
  * ── 통계 카드를 누르면 목록으로 간다 ──────────────────────────
- * 진행 중·지연은 스터디·프로젝트 목록으로(상태 필터를 걸고), 승인 대기는 회차·출석 승인
+ * 진행 중·지연은 활동 목록으로(상태 필터를 걸고), 승인 대기는 회차·출석 승인
  * 화면으로 — 운영 대시보드의 카드가 승인함으로 가는 것과 같은 판단이다.
  *
  * ── "이번 주"·"지연"은 훅이 판정한다 ─────────────────────────
@@ -91,7 +92,7 @@ function OngoingProgramCard({
         <Badge tone={delayed ? "outline-red" : acdmActvSttsTone(program.sttsCd)}>
           {delayed ? "지연" : ACDM_ACTV_STTS_NM[program.sttsCd]}
         </Badge>
-        <Badge tone="grey">{program.typeCd}</Badge>
+        <Badge tone="grey">{acdmActvTypeNm(program.typeCd)}</Badge>
         <div className="flex-1" />
         {program.isLeader && (
           <span title="내가 스터디장/팀장인 활동입니다">
@@ -188,7 +189,7 @@ export function AcademicProgramDashboardPage() {
                 hint={
                   data.ongoingByType.length
                     ? data.ongoingByType
-                        .map((t) => `${t.typeCd} ${t.count}`)
+                        .map((t) => `${acdmActvTypeNm(t.typeCd)} ${t.count}`)
                         .join(" · ")
                     : "진행 중인 활동이 없습니다"
                 }
@@ -314,7 +315,7 @@ export function AcademicProgramDashboardPage() {
                           <Badge tone={acdmActvSttsTone(program.sttsCd)}>
                             {ACDM_ACTV_STTS_NM[program.sttsCd]}
                           </Badge>
-                          <Badge tone="grey">{program.typeCd}</Badge>
+                          <Badge tone="grey">{acdmActvTypeNm(program.typeCd)}</Badge>
                         </div>
                         <div className="mt-[5px] text-[14.5px] text-n400">
                           {program.title || "-"} · 스터디장 {program.leaderName || "-"}

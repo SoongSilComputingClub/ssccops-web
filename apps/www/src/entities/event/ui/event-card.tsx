@@ -26,7 +26,7 @@ export function EventCard({ event }: Readonly<{ event: PublicEventSummary }>) {
   return (
     <Link
       href={ROUTES.eventDetail(event.eventId)}
-      className="flex flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_0_0_1px_#e5e8eb] transition-shadow hover:shadow-[0_0_0_1px_#1b64da]"
+      className="flex flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_0_0_1px_var(--color-line)] transition-shadow hover:shadow-[0_0_0_1px_var(--color-accent-strong)]"
     >
       {event.thmbUrlAddr && (
         /*

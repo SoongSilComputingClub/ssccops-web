@@ -89,7 +89,7 @@ export function Step({ index, children }: Readonly<{ index: number; children?: R
     <li className="group relative pb-[16px] pl-[40px] text-[15px] leading-[1.75] last:pb-0">
       <span
         aria-hidden
-        className="absolute left-0 top-0 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-accent text-[13px] font-semibold text-white"
+        className="absolute left-0 top-0 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-accent text-[13px] font-semibold text-on-solid"
       >
         {index}
       </span>

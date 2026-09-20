@@ -3,6 +3,8 @@ import Link from "next/link";
 import { BrandMark, deployMarks } from "@ssccops/ui";
 import { AuthNav } from "@/features/auth";
 import { ROUTES } from "@/shared/config/routes";
+import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
+import { ThemeToggle } from "@/shared/ui";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
 import { SiteFooter } from "./_shell/site-footer";
@@ -66,13 +68,37 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#ffffff",
+  /*
+   * 브라우저 주소창 색 — 테마마다 다르다 (#575 · lms #341과 같다). 하나만 두면 어두운 화면 위에
+   * 흰 주소창이 남아 그 자리만 튄다. 값은 각 테마의 `surface`다(`globals.css`). manifest의
+   * `theme_color`는 라이트 하나뿐이다 — manifest는 미디어 쿼리를 받지 못한다.
+   */
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#1f1f26" },
+  ],
 };
 
+/*
+ * ── `suppressHydrationWarning`은 아래 테마 스크립트의 짝이다 (#575 · lms와 같다) ──
+ * 서버는 `data-theme` 없이 `<html>`을 그리는데(`localStorage`를 읽을 수 없다) `<head>`의
+ * 동기 스크립트가 React보다 먼저 그 속성을 박는다 — 하이드레이션이 «서버에 없던 속성»을 보고
+ * 경고한다. 스크립트를 뒤로 미루면 흰 화면이 한 번 번쩍이므로(그것이 admin #226의 이유다)
+ * 경고 쪽을 끈다.
+ *
+ * **이 요소의 속성 불일치 한 겹만** 눌린다 — 자식 요소의 진짜 불일치는 그대로 잡힌다.
+ * 그래서 `<html>`에만 붙이고 `<body>`나 그 아래로 내리지 않는다.
+ */
 export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
       <head>
+        {/*
+          * 저장된 테마를 **첫 페인트 전에** 박는다 (#575 · lms #341 · admin #226과 같다). React가
+          * 붙은 뒤에 적용하면 밝은 화면이 한 번 번쩍이고 어두워진다 — 그래서 이것만 동기
+          * 스크립트다. 문자열은 `shared/lib/theme`(→ `@ssccops/ui`)이 저장 키와 함께 쥐고 있어 갈리지 않는다.
+          */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
         <link
           rel="stylesheet"
@@ -96,6 +122,15 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
             <div className="flex items-center gap-[6px]">
               <DesktopNav />
               <AuthNav />
+              {/*
+               * 테마는 admin(사이드바 발치)·lms(상단 바)와 같은 3버튼으로 고른다 (#575 · lms #349).
+               * `fit`을 주는 것은 이 자리가 로고·메뉴·로그인과 한 줄을 나눠 쓰기 때문이다 —
+               * 기본값(`flex-1`)은 폭을 채우려 들어 드로어 발치에서만 맞다.
+               *
+               * `lg:` 이상에서만 보이는 것은 좁은 화면에서 드로어와 겹치기 때문이다 — 그쪽은
+               * 드로어 발치의 `ThemeToggle`이 맡고, 둘은 같은 상태를 본다.
+               */}
+              <ThemeToggle fit className="hidden lg:flex" />
               <MobileNav />
             </div>
           </div>

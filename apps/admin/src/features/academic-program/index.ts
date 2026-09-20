@@ -4,6 +4,11 @@ export type {
   AcademicProgramList,
   AcademicProgramListStatus,
 } from "./model/use-academic-program-list";
+export { useAcademicProgramTypes } from "./model/use-academic-program-types";
+export type {
+  AcademicProgramTypes,
+  AcademicProgramTypesStatus,
+} from "./model/use-academic-program-types";
 export { useAcademicProgramDetail } from "./model/use-academic-program-detail";
 export type {
   AcademicProgramDetailQuery,

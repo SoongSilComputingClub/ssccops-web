@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_LINKS } from "./nav-links";
+import { NAV_LINKS, externalNavLinks } from "./nav-links";
 
 /**
  * 데스크톱 상단 바 메뉴 (lg 이상, #167).
@@ -34,6 +34,16 @@ export function DesktopNav() {
           </Link>
         );
       })}
+      {/* 다른 앱 — 켜지지 않고 <a>로 나간다 (#577 · nav-links.ts) */}
+      {externalNavLinks().map((link) => (
+        <a
+          key={link.href}
+          href={link.href}
+          className="rounded-lg px-[10px] py-[6px] text-[14.5px] text-n300 hover:text-ink"
+        >
+          {link.label} <span className="text-[12px] text-n500">↗</span>
+        </a>
+      ))}
     </nav>
   );
 }

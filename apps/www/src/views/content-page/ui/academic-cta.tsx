@@ -19,13 +19,13 @@ export function AcademicCta() {
       <div>
         <h2 className="text-[19px] font-semibold tracking-[-.2px]">참여하기</h2>
         <p className="mt-[4px] text-[14.5px] text-n400">
-          스터디·프로젝트 신청, 기획안 제출, 회차·출석은 LMS에서 합니다. 로그인은 그쪽에서 합니다.
+          스터디·프로젝트·트랙 신청, 기획안 제출, 회차·출석은 LMS에서 합니다. 로그인은 그쪽에서 합니다.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-[8px]">
         <a
           href={`${origin}${LMS_HOME_PATH}`}
-          className="rounded-xl bg-accent px-[18px] py-[11px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
+          className="rounded-xl bg-accent px-[18px] py-[11px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
         >
           LMS로 가기
         </a>

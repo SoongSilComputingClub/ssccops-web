@@ -23,7 +23,7 @@ export function SaveStatusBar({
 
   if (save.state === "failed") {
     return (
-      <div className="flex flex-wrap items-center gap-x-[8px] gap-y-[4px] rounded-[12px] bg-surface px-[13px] py-[9px] text-[12.5px] shadow-[0_0_0_1px_#f04452]">
+      <div className="flex flex-wrap items-center gap-x-[8px] gap-y-[4px] rounded-[12px] bg-surface px-[13px] py-[9px] text-[12.5px] shadow-[0_0_0_1px_var(--color-danger)]">
         <span className="text-danger">{save.message}</span>
         {save.retrying ? (
           <span className="text-n500">다시 시도하는 중입니다</span>
@@ -48,7 +48,7 @@ export function SaveStatusBar({
         : `${save.savedAt}에 자동 저장됨`;
 
   return (
-    <div className="rounded-[12px] bg-surface px-[13px] py-[9px] text-[12.5px] text-n500 shadow-[0_0_0_1px_#e5e8eb]">
+    <div className="rounded-[12px] bg-surface px-[13px] py-[9px] text-[12.5px] text-n500 shadow-[0_0_0_1px_var(--color-line)]">
       {label}
     </div>
   );
