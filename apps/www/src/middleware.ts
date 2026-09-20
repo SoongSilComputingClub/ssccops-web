@@ -20,8 +20,9 @@ export async function middleware(request: NextRequest) {
  *
  * `/me`는 `/my-applications`에서 이사한 자리다(#518 · ssccops#386). 옛 주소는 `next.config.ts`의
  * redirect가 `/me`로 보내므로 매처에 남길 이유가 없다 — 리다이렉트 응답에 세션 왕복을 붙이는
- * 것뿐이다. `/me/:path*`로 적는 것은 하위 화면이 붙어도 같은 갱신을 받게 하려는 것이고, 그
- * 이상(`/m…`·`/(.*)`)으로 넓히지 않는다.
+ * 것뿐이다. `/me/:path*`로 적는 것은 하위 화면이 같은 갱신을 받게 하려는 것이고 — #574부터
+ * 내부 페이지 넷(`/me/applications`·`/me/responses`·`/me/proposals`·`/me/programs`)이 실제로
+ * 여기 든다 — 그 이상(`/m…`·`/(.*)`)으로 넓히지 않는다.
  *
  * updateSession()은 요청마다 Supabase를 한 번 왕복한다. 이 앱의 본체(행사 목록·상세)는 익명
  * 공개라 세션이 필요 없고, 링크 공유로 들어오는 트래픽이 대부분이라 거기에 왕복을 붙이면

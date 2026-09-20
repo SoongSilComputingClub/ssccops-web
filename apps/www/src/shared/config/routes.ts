@@ -28,6 +28,19 @@ export const ROUTES = {
    * 아니라 설정이 맡는다.
    */
   me: "/me",
+  /*
+   * 내 활동의 내부 페이지 넷 (#574 · ssccops#428) — `/me`는 묶음마다 최근 몇 건만 보이는 허브가
+   * 되고, 전량은 여기서 본다. lms `/my/applications`와 같은 모양이다. 한 장에 세 블록을 쌓던
+   * 첫 판(#518)은 건수가 늘면 스크롤 한 장이 됐고 기획안이 «낸 폼» 안에 칩 하나로 묻혔다.
+   */
+  /** 신청한 행사 전량 */
+  meApplications: "/me/applications",
+  /** 낸 폼 전량 — 기획안 폼 응답은 빠진다(`meProposals`) */
+  meResponses: "/me/responses",
+  /** 낸 기획안 — 항목은 lms `/my/applications/{formRspnsId}`로 간다(`lms-routes.ts`) */
+  meProposals: "/me/proposals",
+  /** 내가 이끄는 스터디·프로젝트 — 카드는 lms 상세로 */
+  mePrograms: "/me/programs",
   /**
    * 공개 폼 — 링크를 아는 회원이 답을 내는 화면 (ssccops#214에서 어드민에서 옮겨 왔다).
    *
@@ -165,6 +178,19 @@ export const EVENT_LIST_VIEW = "list";
  * 화면에 `Cache-Control`(`next.config.ts`)이 걸려 있어 쿠키로 갈린 응답이 CDN에 섞인다.
  */
 export type EventListView = "card" | typeof EVENT_LIST_VIEW;
+/** 내 활동 내부 페이지의 상태 필터 쿼리 키 (#574) */
+export const ME_STATUS_QUERY = "status";
+
+/**
+ * 상태 필터를 쿼리로 실은 내 활동 내부 페이지 주소 — `/me/applications?status=CONFIRMED`.
+ *
+ * `eventsPath`와 같은 판단이다 — 칩이 버튼이 아니라 링크라 화면이 서버 컴포넌트로 남고, 고른
+ * 상태가 주소에 남는다. 값이 없으면 쿼리를 붙이지 않는다('전체'가 두 주소를 갖지 않게).
+ * 거르기는 화면이 받아 둔 전량 목록에서 한다 — 서버에 없는 필터 파라미터를 지어내지 않는다.
+ */
+export function meStatusPath(base: string, status?: string | null): string {
+  return status ? `${base}?${ME_STATUS_QUERY}=${encodeURIComponent(status)}` : base;
+}
 
 /** 로그인 실패 사유를 '내 신청' 화면까지 나르는 쿼리 키 (app/auth/callback/route.ts 참고) */
 export const LOGIN_ERROR_QUERY = "login_error";
