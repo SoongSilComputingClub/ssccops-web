@@ -20,6 +20,8 @@ import type {
   SubWorkTransitionResult,
   SubWorkVoteResult,
   VoteChoice,
+  SubWorkChecklistChangeType,
+  SubWorkChecklistHistoryItem,
 } from "../model/types";
 
 /*
@@ -602,6 +604,37 @@ function toSubWorkDetail(res: SubWorkDetailResponse): SubWorkDetail {
 export async function fetchSubWork(subWorkId: number): Promise<SubWorkDetail> {
   const detail = await apiFetch<SubWorkDetailResponse>(`/v1/sub-works/${subWorkId}`);
   return toSubWorkDetail(detail);
+}
+
+interface ChecklistHistoryResponse {
+  historyId: number;
+  checklistItemId: number | null;
+  changeType: SubWorkChecklistChangeType;
+  previousArticle: string | null;
+  nextArticle: string | null;
+  performer: MemberSummaryResponse | null;
+  changedAt: string | null;
+}
+
+/**
+ * GET /v1/sub-works/{subWorkId}/checklist/history — 점검 목록 변경 이력, 최신 먼저 (서버 #307 · #543).
+ * 조회 권한은 상세와 같은 WORK_READ. 이력이 없으면 빈 배열이다(초안 그대로인 하위 업무).
+ */
+export async function fetchSubWorkChecklistHistory(
+  subWorkId: number,
+): Promise<SubWorkChecklistHistoryItem[]> {
+  const rows = await apiFetch<ChecklistHistoryResponse[]>(
+    `/v1/sub-works/${subWorkId}/checklist/history`,
+  );
+  return rows.map((row) => ({
+    historyId: row.historyId,
+    checklistItemId: row.checklistItemId,
+    changeType: row.changeType,
+    previousArticle: row.previousArticle,
+    nextArticle: row.nextArticle,
+    performer: toMemberRef(row.performer),
+    changedAt: row.changedAt,
+  }));
 }
 
 /**

@@ -8,6 +8,8 @@ export {
 export { useCreateSubWork } from "./model/use-create-sub-work";
 export type { SubWorkCreateControl, SubWorkCreation } from "./model/use-create-sub-work";
 export { useSubWorkDetail } from "./model/use-sub-work-detail";
+export { useSubWorkChecklistHistory } from "./model/use-sub-work-checklist-history";
+export type { ChecklistHistoryStatus } from "./model/use-sub-work-checklist-history";
 export type {
   SubWorkDetailQuery,
   SubWorkDetailStatus,

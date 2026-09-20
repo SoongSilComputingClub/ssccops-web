@@ -1,6 +1,8 @@
 export type {
   SubWork,
   SubWorkChckList,
+  SubWorkChecklistChangeType,
+  SubWorkChecklistHistoryItem,
   SubWorkChecklistItem,
   SubWorkChecklistRemoval,
   SubWorkChecklistSummary,
@@ -35,6 +37,7 @@ export {
   deleteSubWork,
   deleteSubWorkChecklistItem,
   fetchSubWork,
+  fetchSubWorkChecklistHistory,
   fetchSubWorks,
   renameSubWorkChecklistItem,
   transitionSubWork,
