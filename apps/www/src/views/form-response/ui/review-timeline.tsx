@@ -2,6 +2,7 @@ import type {
   FormResponseReviewHistory,
   ReviewProcessCode,
 } from "@/entities/form";
+import { cn } from "@/shared/lib/cn";
 import { formatDt } from "@/shared/lib/date";
 import { Card } from "@/shared/ui";
 
@@ -25,7 +26,13 @@ const PROCESS_LABEL: Record<ReviewProcessCode, string> = {
   REJECT: "반려",
 };
 
-/** 수정 요청만 색을 준다 — 이 화면에 온 까닭이고, 나머지는 지나온 자취다 */
+/**
+ * 수정 요청만 색을 준다 — 이 화면에 온 까닭이고, 나머지는 지나온 자취다.
+ *
+ * 색은 토큰(`amber`·`line`)이다(#575) — 예전엔 `style`에 `#c2410c`·`#e5e8eb`를 박고 글자는
+ * `text-amber-800`을 썼는데, 그 클래스는 `@theme`이 팔레트를 비워(`--color-*: initial`) 어디에도
+ * 없어 조용히 무시됐고 값은 다크에서 그 자리만 밝게 남는다.
+ */
 const NEEDS_ATTENTION: ReviewProcessCode = "REQUEST_CHANGES";
 
 export function ReviewTimeline({
@@ -46,11 +53,13 @@ export function ReviewTimeline({
           return (
             <li
               key={history.formRspnsRvwHstryId}
-              className="flex flex-col gap-[3px] border-l-2 pl-[10px]"
-              style={{ borderColor: attention ? "#c2410c" : "#e5e8eb" }}
+              className={cn(
+                "flex flex-col gap-[3px] border-l-2 pl-[10px]",
+                attention ? "border-amber" : "border-line",
+              )}
             >
               <div className="flex flex-wrap items-center gap-[6px] text-[13.5px]">
-                <span className={attention ? "font-semibold text-amber-800" : "text-n300"}>
+                <span className={attention ? "font-semibold text-amber" : "text-n300"}>
                   {PROCESS_LABEL[history.rvwPrcsSeCd]}
                 </span>
                 {history.sbmsnSeq !== null && history.sbmsnSeq > 1 && (

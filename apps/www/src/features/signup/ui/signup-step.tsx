@@ -263,7 +263,7 @@ export function SignupStep({
       )}
 
       {formError && (
-        <div className="rounded-[12px] bg-surface px-[14px] py-[11px] text-[13.5px] text-danger shadow-[0_0_0_1px_#f04452]">
+        <div className="rounded-[12px] bg-surface px-[14px] py-[11px] text-[13.5px] text-danger shadow-[0_0_0_1px_var(--color-danger)]">
           {formError}
         </div>
       )}
@@ -272,7 +272,7 @@ export function SignupStep({
         type="button"
         onClick={() => void submit()}
         disabled={pending}
-        className="rounded-xl bg-accent px-[16px] py-[13px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-xl bg-accent px-[16px] py-[13px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? "가입 처리 중…" : "가입하고 신청서 작성"}
       </button>

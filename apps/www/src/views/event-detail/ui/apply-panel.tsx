@@ -54,7 +54,7 @@ export function ApplyPanel({ event }: Readonly<{ event: PublicEventDetail }>) {
                 type="button"
                 disabled
                 title={closedMessage(event.receiptStatus)}
-                className="cursor-not-allowed rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white opacity-45"
+                className="cursor-not-allowed rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid opacity-45"
               >
                 신청하기
               </button>

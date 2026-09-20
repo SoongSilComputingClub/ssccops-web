@@ -30,7 +30,7 @@ export function Hero({ page }: Readonly<{ page: PublicContentPage | null }>) {
       <div className="flex flex-wrap items-center gap-[8px]">
         <Link
           href={ROUTES.activities}
-          className="rounded-xl bg-accent px-[18px] py-[11px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
+          className="rounded-xl bg-accent px-[18px] py-[11px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
         >
           활동 보기
         </Link>

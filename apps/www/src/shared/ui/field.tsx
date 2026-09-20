@@ -36,7 +36,7 @@ export function Chip({
       className={cn(
         "cursor-pointer rounded-full px-[14px] py-[7px] text-[14px] transition-colors disabled:cursor-not-allowed disabled:opacity-45",
         active
-          ? "bg-accent text-white"
+          ? "bg-accent text-on-solid"
           : "bg-surface text-n300 shadow-[inset_0_0_0_1px_var(--color-line-strong)] hover:text-ink",
       )}
     >

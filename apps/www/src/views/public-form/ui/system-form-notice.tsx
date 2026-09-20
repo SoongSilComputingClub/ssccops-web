@@ -47,7 +47,7 @@ export function SystemFormNotice({ sysFormCd }: Readonly<{ sysFormCd: string }>)
       {href && (
         <a
           href={href}
-          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
+          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
         >
           {notice.action}
         </a>

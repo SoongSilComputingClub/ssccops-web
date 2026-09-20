@@ -54,7 +54,7 @@ export function ApplyActions({
         <button
           type="button"
           disabled
-          className="cursor-wait rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white opacity-45"
+          className="cursor-wait rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid opacity-45"
         >
           확인 중…
         </button>
@@ -83,7 +83,7 @@ export function ApplyActions({
           type="button"
           disabled
           title={closedMessage(receiptStatus)}
-          className="cursor-not-allowed rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white opacity-45"
+          className="cursor-not-allowed rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid opacity-45"
         >
           신청하기
         </button>
@@ -131,7 +131,7 @@ export function ApplyActions({
 }
 
 const PRIMARY =
-  "rounded-xl bg-accent px-[16px] py-[12px] text-center text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong";
+  "rounded-xl bg-accent px-[16px] py-[12px] text-center text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong";
 const SECONDARY =
   "rounded-xl border border-line bg-surface px-[16px] py-[11px] text-center text-[14.5px] font-semibold text-accent-strong transition-colors hover:bg-bg";
 
