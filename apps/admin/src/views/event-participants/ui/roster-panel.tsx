@@ -16,6 +16,7 @@ import {
   Sheet,
   type GridColumn,
 } from "@/shared/ui";
+import { useParticipantCsvExport } from "@/features/event";
 
 /*
  * 참가자 명단 탭 (#145 · GET · PATCH /v1/events/{eventId}/participants).
@@ -53,7 +54,7 @@ export function RosterPanel({
   onTransition,
   onManualAdd,
 }: Readonly<{
-  event: { ptcpLmtCnt: number | null; confirmedCount: number };
+  event: { eventId: number; eventTtl: string; ptcpLmtCnt: number | null; confirmedCount: number };
   roster: EventParticipants;
   ptcpSttsCd: PtcpSttsCd | null;
   onFilter: (value: PtcpSttsCd | null) => void;
@@ -63,6 +64,11 @@ export function RosterPanel({
   onTransition: (participant: EventParticipant, to: PtcpSttsCd) => void;
   onManualAdd: () => void;
 }>) {
+  const csv = useParticipantCsvExport({
+    eventId: event.eventId,
+    eventTtl: event.eventTtl,
+    ptcpSttsCd,
+  });
   /* 취소는 되돌릴 수 없는 전이라 확인을 받는다 — 승격은 다시 취소할 수 있어 묻지 않는다 */
   const [cancelTarget, setCancelTarget] = useState<EventParticipant | null>(null);
 
@@ -150,6 +156,15 @@ export function RosterPanel({
         <div className="text-[14px] text-n500">
           {roster.status === "ready" ? `${roster.participants.length}명` : ""}
         </div>
+        {/* 내려받기는 조회 권한이면 된다 — 명단을 보는 사람이 파일로도 갖는 것이라 쓰기 잠금과 무관하다 (#545) */}
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={csv.status === "loading" || roster.status !== "ready" || roster.participants.length === 0}
+          onClick={csv.exportCsv}
+        >
+          {csv.status === "loading" ? "만드는 중…" : "CSV 내려받기"}
+        </Button>
         <Button
           size="sm"
           variant="ghost"
@@ -160,6 +175,9 @@ export function RosterPanel({
           + 회원 직접 추가
         </Button>
       </div>
+      {csv.status === "error" && (
+        <div className="mb-[10px] text-[13px] text-danger">{csv.errorMessage}</div>
+      )}
 
       <div className="mb-[14px] text-[13px] leading-[1.7] text-n500">
         순번은 등록 순서이고 신청자에게는 보이지 않습니다. 취소한 참가자도 명단에 남습니다.
