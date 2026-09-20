@@ -18,7 +18,7 @@ import { Badge, Button, Card, EmptyState, SectionLabel, TextField } from "@/shar
  * 사이트 어디에도 나타나지 않으므로, 만들 수 있는 것은 표의 자리뿐이다. 새 페이지 종류는 코드
  * (패키지 표 + www 라우트)가 정한다 — 페이지 구성은 FE와 함께 가는 정형 구조다.
  *
- * 예외는 기수 운영진(`operators-{n}`) — 슬러그 패턴이라 «기수 추가»에 숫자 하나만 받는다.
+ * 예외는 역대 운영진(`operators-{n}` · n대) — 슬러그 패턴이라 «대수 추가»에 숫자 하나만 받는다.
  * 서버에 있지만 표에 없는 페이지는 «표에 없는 페이지» 절에 — 숨기지 않되 어디에도 안 나타난다고
  * 적는다(지우는 API는 없다).
  */
@@ -72,7 +72,7 @@ function CatalogSkeleton() {
   );
 }
 
-/** 기수 추가 — 숫자 하나. 이미 있는 기수면 편집으로, 없으면 그 슬러그로 만들기 화면 */
+/** 대수 추가 — 숫자 하나. 이미 있는 대수면 편집으로, 없으면 그 슬러그로 만들기 화면 */
 function CohortAdd({
   existing,
   canManage,
@@ -90,14 +90,14 @@ function CohortAdd({
       <TextField
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="기수 (예: 45)"
+        placeholder="대수 (예: 45)"
         inputMode="numeric"
         className="w-[140px]"
       />
       <Button onClick={go} disabled={!valid || !canManage} title={canManage ? undefined : NO_CONTENT_MANAGE}>
-        기수 페이지 열기
+        대수 페이지 열기
       </Button>
-      <span className="text-[12.5px] text-n500">주소는 /operators/기수 입니다</span>
+      <span className="text-[12.5px] text-n500">주소는 /operators/대수 입니다</span>
     </div>
   );
 }
@@ -140,14 +140,14 @@ export function PageCatalog({ canManage }: Readonly<{ canManage: boolean }>) {
                 {catalog.cohorts.map((c) => (
                   <PageRow
                     key={c.page.pageId}
-                    title={`${c.cohort}기 운영진`}
+                    title={`${c.cohort}대 운영진`}
                     page={c.page}
                     path={operatorsCohortPath(c.cohort)}
                     onOpen={() => router.push(ROUTES.contentPageEdit(c.page.pageId))}
                   />
                 ))}
                 <Card>
-                  <div className="mb-2 text-[13.5px] text-n300">역대 운영진 — 기수마다 한 페이지입니다.</div>
+                  <div className="mb-2 text-[13.5px] text-n300">역대 운영진 — 대마다 한 페이지입니다(44대·43대…).</div>
                   <CohortAdd existing={cohortPages} canManage={canManage} />
                 </Card>
               </>

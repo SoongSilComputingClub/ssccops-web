@@ -56,7 +56,7 @@ export const CONTENT_SLUG = {
   history: "history",
   /** `/about/values` — 핵심 가치. `{% cards %}` 안의 `## 가치` + 문단이 카드 하나 */
   values: "values",
-  /** `/operators` — 지금 운영진(기수를 주소에 적지 않는 현재 표) */
+  /** `/operators` — 지금 운영진(대수를 주소에 적지 않는 현재 표) */
   operators: "operators",
   /** `/academic` — 학술 활동 안내. 본문 아래에 LMS·기획안 제출 CTA가 코드로 붙는다(#550 · ssccops#412) */
   academic: "academic",
@@ -78,7 +78,7 @@ export const CONTENT_SLUG = {
 
 export type ContentSlug = (typeof CONTENT_SLUG)[keyof typeof CONTENT_SLUG];
 
-/** 카탈로그 — 어드민 목록 순서 그대로. 기수 운영진(`operators-{n}`)은 패턴이라 여기 없다 */
+/** 카탈로그 — 어드민 목록 순서 그대로. 역대 운영진(`operators-{n}` · n대)은 패턴이라 여기 없다 */
 export const CONTENT_PAGES: readonly ContentPageEntry[] = [
   { slug: CONTENT_SLUG.homeBanner, title: "홈 배너", path: "/", group: "home", note: "게시 중일 때만 홈 맨 위 한 줄 — 모집 안내 자리. 본문 첫 문단만 씁니다" },
   { slug: CONTENT_SLUG.homeIntro, title: "홈 소개", path: "/", group: "home", note: "첫 `#` 제목이 큰 문장, 아래 문단이 소개. `## 무엇을 하나` 절의 `###` 넷이 소개 블록" },
@@ -103,12 +103,14 @@ export function findContentPage(slug: string): ContentPageEntry | null {
 
 /* ── 역대 운영진 — 슬러그 패턴 ────────────────────────────── */
 
-const OPERATORS_PREFIX = "operators-";
+/** 역대 운영진 슬러그 접두사 — www가 `GET /public/v1/pages?slugPrefix=`로 게시된 대수를 묻는다 (#571) */
+export const OPERATORS_SLUG_PREFIX = "operators-";
+const OPERATORS_PREFIX = OPERATORS_SLUG_PREFIX;
 
 /**
- * 역대 운영진 한 기수의 슬러그 — `/operators/44` → `operators-44`.
+ * 역대 운영진 한 대의 슬러그 — `/operators/44` → `operators-44`(44대).
  *
- * 기수는 주소에서 오는 값이라 모양을 먼저 가른다(`isCohort`). 숫자가 아닌 것을 그대로 슬러그에
+ * 대수는 주소에서 오는 값이라 모양을 먼저 가른다(`isCohort`). 숫자가 아닌 것을 그대로 슬러그에
  * 붙이면 서버가 400으로 답하고, 그 오류는 «불러오지 못했습니다»로 보여 없는 주소인지 서버가
  * 아픈 것인지 구별되지 않는다.
  */
@@ -116,7 +118,7 @@ export function operatorsCohortSlug(cohort: string | number): string {
   return `${OPERATORS_PREFIX}${cohort}`;
 }
 
-/** 기수 주소 조각의 모양 — 한 자리에서 세 자리 숫자 */
+/** 대수 주소 조각의 모양 — 한 자리에서 세 자리 숫자 */
 export function isCohort(value: string): boolean {
   return /^\d{1,3}$/.test(value);
 }
@@ -128,7 +130,7 @@ export function parseOperatorsCohort(slug: string): number | null {
   return isCohort(rest) ? Number(rest) : null;
 }
 
-/** 기수 운영진 페이지의 공개 경로 */
+/** N대 운영진 페이지의 공개 경로 */
 export function operatorsCohortPath(cohort: number): string {
   return `/operators/${cohort}`;
 }

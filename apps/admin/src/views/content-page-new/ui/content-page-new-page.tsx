@@ -27,7 +27,7 @@ export function ContentPageNewPage() {
   const seat = entry
     ? { title: entry.title, path: entry.path }
     : cohort != null
-      ? { title: `${cohort}기 운영진`, path: operatorsCohortPath(cohort) }
+      ? { title: `${cohort}대 운영진`, path: operatorsCohortPath(cohort) }
       : null;
 
   const submit = async (input: ContentPageSaveInput) => {

@@ -3,6 +3,7 @@ import type {
   ContentCategoryCode,
   PublicContentImage,
   PublicContentPage,
+  PublicContentPageSummary,
   PublicContentPostDetail,
   PublicContentPostSummary,
   PublicOpenForm,
@@ -52,6 +53,12 @@ interface PublicContentPageResponse {
   pubDt: string;
 }
 
+interface PublicContentPageSummaryResponse {
+  slug: string;
+  ttl: string;
+  pubDt: string;
+}
+
 interface PublicContentPostSummaryResponse {
   slug: string;
   cntntClsfCd: ContentCategoryCode;
@@ -90,6 +97,21 @@ function toPostDetail(response: PublicContentPostDetailResponse): PublicContentP
 
 function toOpenForm(response: PublicOpenFormResponse): PublicOpenForm {
   return { ...response };
+}
+
+/**
+ * 접두사로 시작하는 게시된 페이지들 — slug·제목·게시일만 (서버 #513 · ssccops#425).
+ *
+ * 역대 운영진 탭이 «어떤 대수가 게시돼 있나»를 묻는 자리다. 서버 정렬은 slug 오름차순(문자열)이라
+ * 숫자 대수의 순서는 호출자가 파싱해 매긴다.
+ */
+export async function fetchPublicPageSummaries(
+  slugPrefix: string,
+): Promise<PublicContentPageSummary[]> {
+  const rows = await apiFetch<PublicContentPageSummaryResponse[]>(
+    `/public/v1/pages?slugPrefix=${encodeURIComponent(slugPrefix)}`,
+  );
+  return rows.map((row) => ({ ...row }));
 }
 
 /** 게시된 페이지 한 장. 초안·없음은 404 `PAGE_NOT_FOUND` */
