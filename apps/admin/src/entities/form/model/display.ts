@@ -115,11 +115,15 @@ export const SYSTEM_FORM_QITEM_LOCKED =
  * 문항 설명(`qitemDescCn`)은 문항의 일부라 잠긴다.
  */
 export const SYSTEM_FORM_QUESTIONS_LOCKED =
-  "시스템 폼의 문항은 바꿀 수 없습니다 — 코드가 읽는 구성입니다";
+  "시스템 폼의 문항 구조(추가·삭제·순서·유형·필수·선택지·형식 검증)는 바꿀 수 없습니다 — 코드가 읽는 구성입니다";
 
-/** 문항 전체 잠금에서 열려 있는 것 — 잠금 안내 바로 뒤에 붙는다 */
+/** 문항 잠금에서 열려 있는 것 — 잠금 안내 바로 뒤에 붙는다 (#563 · ssccops#421: 문구·설명도 열렸다) */
 export const SYSTEM_FORM_QUESTIONS_OPEN_PARTS =
-  "제목·안내 문구·접수 기간·라벨은 고칠 수 있습니다";
+  "제목·안내 문구·접수 기간·라벨과 각 문항의 질문 문구·설명은 고칠 수 있습니다";
+
+/** 잠긴 문항 카드 안 — 두 입력란 아래에서 무엇이 잠겼는지 말한다 */
+export const SYSTEM_FORM_QITEM_TEXT_OPEN =
+  "질문 문구와 설명만 고칠 수 있습니다. 아래 유형·필수·선택지·형식 검증은 코드가 읽는 값이라 잠겨 있습니다";
 
 /**
  * 409 `SYSTEM_FORM_QUESTIONS_LOCKED`를 받은 저장 — 저장 상태 표시줄의 한 줄.

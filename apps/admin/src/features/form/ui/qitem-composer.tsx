@@ -5,6 +5,7 @@ import {
   SYSTEM_FORM_BADGE,
   SYSTEM_FORM_QITEM_LOCKED,
   SYSTEM_FORM_QUESTIONS_LOCKED,
+  SYSTEM_FORM_QITEM_TEXT_OPEN,
   SYSTEM_FORM_QUESTIONS_OPEN_PARTS,
   type Qitem,
   type QitemCpstCn,
@@ -44,20 +45,44 @@ function DescriptionPreview({ value }: Readonly<{ value?: string }>) {
 }
 
 /*
- * 시스템 폼의 문항 전체 잠금에서 문항 카드가 펼쳐질 때 그리는 읽기 전용 본문 (#554).
+ * 시스템 폼의 문항 잠금에서 문항 카드가 펼쳐질 때 그리는 본문 (#554 · #563).
  *
- * 입력란마다 `disabled`를 붙이는 대신 값만 그린다. 잠긴 입력란 열여섯 개를 늘어놓으면 «고칠 수
- * 있는데 왜 안 되지»가 되고, 편집기 본문의 분기가 그만큼 늘어 Sonar 인지 복잡도를 넘긴다.
- * 운영진이 여기서 알아야 하는 것은 «지금 무엇으로 돼 있나»뿐이라 유형·필수·선택지·형식 검증·
- * 분기를 보여 주기만 한다.
+ * **질문 문구·문항 설명만 입력란이고 나머지는 값만 그린다.** 서버 잠금(server#505 · ssccops#421)이
+ * 구조 속성(유형·필수·선택지·분기·형식 검증·최대 선택 수·순서)만 비교하므로 사람이 읽는 두 칸은
+ * 여기서 고쳐도 저장이 통과한다 — 운영진이 학기마다 안내를 다듬는 자리다. 구조 속성에
+ * `disabled` 입력란을 늘어놓지 않는 이유는 «고칠 수 있는데 왜 안 되지»가 되고 편집기 본문의
+ * 분기가 그만큼 늘어 Sonar 인지 복잡도를 넘기기 때문이다 — 운영진이 알아야 하는 것은 «지금
+ * 무엇으로 돼 있나»뿐이다.
  */
-function LockedQitemBody({ q, pages }: Readonly<{ q: Qitem; pages: QitemCpstCn["pages"] }>) {
+function LockedQitemBody({
+  q,
+  pages,
+  onPatch,
+}: Readonly<{
+  q: Qitem;
+  pages: QitemCpstCn["pages"];
+  onPatch: (patch: Partial<Qitem>) => void;
+}>) {
   const branches = Object.entries(q.branchMap ?? {});
   const pageTitle = (i: number) => `${i + 1}. ${pages[i]?.pageTtl ?? ""}`;
   return (
     <div className="border-t border-line p-3 text-[13.5px] leading-[1.7] text-n400">
-      <div className="text-[14px] text-ink">{q.qitemLblNm || "(제목 없음)"}</div>
+      <TextField
+        value={q.qitemLblNm}
+        onChange={(e) => onPatch({ qitemLblNm: e.target.value })}
+        placeholder="질문 문구"
+      />
+      <TextArea
+        className="mt-2"
+        value={q.qitemDescCn ?? ""}
+        onChange={(e) => onPatch({ qitemDescCn: e.target.value })}
+        rows={2}
+        placeholder="문항 설명 (선택, 마크다운 가능)"
+      />
       <DescriptionPreview value={q.qitemDescCn} />
+      <div className="mt-2 text-[12.5px] text-n500">
+        {SYSTEM_FORM_QITEM_TEXT_OPEN}
+      </div>
       <div className="mt-2">
         {QITEM_TYPE_NM[q.qitemTypeCd]}
         {q.reqYn ? " · 필수 응답" : ""}
@@ -101,7 +126,8 @@ function LockedQitemBody({ q, pages }: Readonly<{ q: Qitem; pages: QitemCpstCn["
  * 문항 구성 편집기 — 페이지와 문항을 고치는 화면 조각.
  *
  * ── 시스템 폼의 문항 잠금 (#554 · ssccops#416) ─────────────────
- * `questionsLocked`면 문항 추가·삭제·이동·속성 편집과 페이지 추가·삭제·순서를 전부 잠근다 —
+ * `questionsLocked`면 문항 추가·삭제·이동·구조 속성 편집과 페이지 추가·삭제·순서를 잠근다(질문
+ * 문구·문항 설명은 열려 있다 — #563 · ssccops#421) —
  * 문항의 `pageSeq`가 페이지 index라 페이지 구조가 바뀌면 문항도 바뀐다. 페이지 제목·설명은
  * 서버가 비교하지 않는 값(`pages`)이라 열어 둔다. 잠긴 버튼은 감추지 않고 `title`로 사유를
  * 붙이며(AGENTS.md «이동은 감추고, 동작은 잠근다»), 펼친 문항 카드는 `LockedQitemBody`가
@@ -495,8 +521,14 @@ export function QitemComposer({
                   </div>
                 )}
 
-                {/* 잠긴 폼은 펼쳐도 값만 보인다 — 근거는 LockedQitemBody 주석 (#554) */}
-                {open && locked && <LockedQitemBody q={q} pages={pages} />}
+                {/* 잠긴 폼은 문구·설명만 고칠 수 있다 — 근거는 LockedQitemBody 주석 (#554 · #563) */}
+                {open && locked && (
+                  <LockedQitemBody
+                    q={q}
+                    pages={pages}
+                    onPatch={(patch) => patchQ(q.qitemId, patch)}
+                  />
+                )}
 
                 {open && !locked && (
                   <div className="border-t border-line p-3">
