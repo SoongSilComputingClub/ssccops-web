@@ -1,4 +1,6 @@
+import { LMS_HOME_PATH, LMS_PROPOSAL_NEW_PATH } from "@/shared/config/lms-routes";
 import type { BadgeTone } from "@/shared/ui";
+import { PROPOSAL_SYS_FORM_CD } from "./system-form-code";
 import type { ResponseStatus } from "./types";
 
 /*
@@ -26,3 +28,40 @@ export const RESPONSE_STATUS_BADGE: Record<
   ACCEPTED: { label: "승인", tone: "blue" },
   REJECTED: { label: "반려", tone: "grey" },
 };
+
+/*
+ * 시스템 폼 안내 (ssccops#417 · #555).
+ *
+ * 공개 폼 화면이 `sysFormCd`가 실린 폼을 열었을 때 문항 대신 그리는 카드의 문구와 LMS 목적지다.
+ * 코드마다 갈리는 것은 제목 한 줄과 어느 화면으로 보내는가 둘뿐이라 표 하나로 둔다 —
+ * 지금 시스템 폼은 기획안 하나지만, 모르는 코드가 와도 죽은 안내가 되지 않게 기본값을 갖는다
+ * (LMS 홈 — 그 앱이 역할별 상단 바로 제 자리를 찾아 준다).
+ *
+ * 경로만 두고 오리진은 붙이지 않는다 — 오리진은 배포 설정(`lmsOrigin()`)이고 없을 수 있다.
+ * 붙이는 것은 그리는 쪽의 일이다.
+ */
+export interface SystemFormNotice {
+  title: string;
+  description: string;
+  /** LMS 안의 경로 — `lmsOrigin()` 뒤에 붙인다 */
+  lmsPath: string;
+  /** 버튼 라벨 */
+  action: string;
+}
+
+export function systemFormNotice(sysFormCd: string): SystemFormNotice {
+  if (sysFormCd === PROPOSAL_SYS_FORM_CD) {
+    return {
+      title: "기획안은 LMS에서 냅니다",
+      description: "이 링크는 기획안 폼입니다. 기획안 작성과 제출은 LMS 화면에서 합니다.",
+      lmsPath: LMS_PROPOSAL_NEW_PATH,
+      action: "LMS에서 기획안 제출하기",
+    };
+  }
+  return {
+    title: "이 폼은 LMS에서 냅니다",
+    description: "이 링크는 LMS가 쓰는 폼입니다. 작성과 제출은 LMS 화면에서 합니다.",
+    lmsPath: LMS_HOME_PATH,
+    action: "LMS로 가기",
+  };
+}

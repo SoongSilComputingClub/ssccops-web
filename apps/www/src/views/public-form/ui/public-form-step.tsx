@@ -11,6 +11,7 @@ import { ROUTES } from "@/shared/config/routes";
 import { Card, EmptyState, Notice } from "@/shared/ui";
 import { formatDt } from "@/shared/lib/date";
 import { MyResponsesPanel } from "./my-responses-panel";
+import { SystemFormNotice } from "./system-form-notice";
 
 /*
  * 공개 폼 작성 (ssccops#214 — 어드민의 `/f/{formId}`가 옮겨 온 자리).
@@ -76,6 +77,15 @@ export function PublicFormStep({ formRef }: Readonly<{ formRef: FormRef }>) {
   }
 
   /*
+   * 시스템 폼(기획안)은 이 화면이 답을 받지 않는다 — LMS로 보낸다 (ssccops#417 · #555). 훅이 초안을
+   * 만들지 않고 `system-form`으로 끊어 주므로 여기서는 문항 대신 안내 카드만 그린다. 접수 상태·
+   * 제출 여부보다 앞이다 — 어느 상태든 이 폼의 자리는 LMS다.
+   */
+  if (status === "system-form" && form?.sysFormCd) {
+    return <SystemFormNotice sysFormCd={form.sysFormCd} />;
+  }
+
+  /*
    * 접수 불가. 서버가 준비 중·마감·기간 밖을 한 코드로 묶었으므로 화면도 하나다 — 어느 쪽인지
    * 알려 주면 링크만 가진 사람에게 준비 상황이 새어 나간다. **문항은 애초에 실려 오지 않는다.**
    */
@@ -132,7 +142,11 @@ export function PublicFormStep({ formRef }: Readonly<{ formRef: FormRef }>) {
     );
   }
 
-  if (status === "error" || form === null) {
+  /*
+   * 문항을 그릴 수 없는 나머지는 전부 여기서 받는다 — `status`가 늘어나며 위 분기가 빠뜨린 것이
+   * 아래 본문(폼이 있고 답을 받는다는 전제)으로 흘러들지 않게 `ready`가 아닌 것은 전부 끊는다.
+   */
+  if (status !== "ready" || form === null) {
     return (
       <div className="flex flex-col items-center gap-[10px]">
         <EmptyState title={apply.errorMessage || "폼을 불러오지 못했습니다"} />
