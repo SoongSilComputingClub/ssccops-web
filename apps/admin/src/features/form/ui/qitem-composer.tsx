@@ -4,6 +4,8 @@ import { useState } from "react";
 import {
   SYSTEM_FORM_BADGE,
   SYSTEM_FORM_QITEM_LOCKED,
+  SYSTEM_FORM_QUESTIONS_LOCKED,
+  SYSTEM_FORM_QUESTIONS_OPEN_PARTS,
   type Qitem,
   type QitemCpstCn,
 } from "@/entities/form";
@@ -42,7 +44,70 @@ function DescriptionPreview({ value }: Readonly<{ value?: string }>) {
 }
 
 /*
+ * 시스템 폼의 문항 전체 잠금에서 문항 카드가 펼쳐질 때 그리는 읽기 전용 본문 (#554).
+ *
+ * 입력란마다 `disabled`를 붙이는 대신 값만 그린다. 잠긴 입력란 열여섯 개를 늘어놓으면 «고칠 수
+ * 있는데 왜 안 되지»가 되고, 편집기 본문의 분기가 그만큼 늘어 Sonar 인지 복잡도를 넘긴다.
+ * 운영진이 여기서 알아야 하는 것은 «지금 무엇으로 돼 있나»뿐이라 유형·필수·선택지·형식 검증·
+ * 분기를 보여 주기만 한다.
+ */
+function LockedQitemBody({ q, pages }: Readonly<{ q: Qitem; pages: QitemCpstCn["pages"] }>) {
+  const branches = Object.entries(q.branchMap ?? {});
+  const pageTitle = (i: number) => `${i + 1}. ${pages[i]?.pageTtl ?? ""}`;
+  return (
+    <div className="border-t border-line p-3 text-[13.5px] leading-[1.7] text-n400">
+      <div className="text-[14px] text-ink">{q.qitemLblNm || "(제목 없음)"}</div>
+      <DescriptionPreview value={q.qitemDescCn} />
+      <div className="mt-2">
+        {QITEM_TYPE_NM[q.qitemTypeCd]}
+        {q.reqYn ? " · 필수 응답" : ""}
+        {q.maxSlctCnt !== undefined ? ` · 최대 ${q.maxSlctCnt}개 선택` : ""}
+      </div>
+      {isChoiceQitemType(q.qitemTypeCd) && q.optionList.length > 0 && (
+        <div className="mt-2">
+          <div className="text-n500">선택지</div>
+          <ul className="list-disc pl-5">
+            {/* key=index — 선택지 글자는 겹칠 수 있다 (아래 편집 본문의 주석) */}
+            {q.optionList.map((o, oi) => (
+              <li key={oi}>{o}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {q.ptrnCn && (
+        <div className="mt-2">
+          <div className="text-n500">입력 형식 검증</div>
+          <div>
+            {q.ptrnNm ?? "정규식"} · <span className="font-mono">{q.ptrnCn}</span>
+          </div>
+          {q.ptrnMsgCn && <div>{q.ptrnMsgCn}</div>}
+        </div>
+      )}
+      {branches.length > 0 && (
+        <div className="mt-2">
+          <div className="text-n500">선택지별 페이지 이동</div>
+          {branches.map(([o, i]) => (
+            <div key={o}>
+              {o} → {pageTitle(i)}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/*
  * 문항 구성 편집기 — 페이지와 문항을 고치는 화면 조각.
+ *
+ * ── 시스템 폼의 문항 잠금 (#554 · ssccops#416) ─────────────────
+ * `questionsLocked`면 문항 추가·삭제·이동·속성 편집과 페이지 추가·삭제·순서를 전부 잠근다 —
+ * 문항의 `pageSeq`가 페이지 index라 페이지 구조가 바뀌면 문항도 바뀐다. 페이지 제목·설명은
+ * 서버가 비교하지 않는 값(`pages`)이라 열어 둔다. 잠긴 버튼은 감추지 않고 `title`로 사유를
+ * 붙이며(AGENTS.md «이동은 감추고, 동작은 잠근다»), 펼친 문항 카드는 `LockedQitemBody`가
+ * 읽기 전용으로 그린다. `systemRequiredQitemIds`의 부분 잠금(삭제만)은 이 전체 잠금이 덮는다 —
+ * 그 코드 경로를 남겨 둔 것은 서버가 여전히 그 목록을 내리고, 카드의 «시스템» 배지가 코드가
+ * 직접 읽는 문항을 가리키는 정보로 남기 때문이다.
  *
  * ── 왜 화면이 아니라 features 에 있는가 (#134) ──────────────────
  * 폼 편집(views/form-edit)과 템플릿 편집(views/form-template-edit)이 **같은 편집기를 쓴다.**
@@ -62,6 +127,7 @@ export function QitemComposer({
   issues,
   inUseQitemIds,
   systemRequiredQitemIds,
+  questionsLocked,
 }: Readonly<{
   cpst: QitemCpstCn;
   /** 문항 구성만 바꾼다 — 무엇이 언제 저장되는지는 호출부가 정한다 */
@@ -81,6 +147,11 @@ export function QitemComposer({
    * 그쪽 호출부는 넘기지 않는다.
    */
   systemRequiredQitemIds?: string[];
+  /**
+   * 시스템 폼의 문항 전체 잠금 (#554 · ssccops#416 · 서버 409 `SYSTEM_FORM_QUESTIONS_LOCKED`).
+   * 폼 편집기가 `sysYn`을 그대로 넘긴다. 템플릿은 시스템 폼이 될 수 없어 넘기지 않는다.
+   */
+  questionsLocked?: boolean;
 }>) {
   /* 셋 다 저장 대상이 아니다 — 화면에서 어디를 보고 있는지일 뿐이다 */
   const [page, setPage] = useState(0);
@@ -89,6 +160,9 @@ export function QitemComposer({
 
   const inUse = inUseQitemIds ?? [];
   const systemRequired = systemRequiredQitemIds ?? [];
+  const locked = questionsLocked ?? false;
+  /* 잠긴 버튼의 사유 — 배너와 같은 문장이어야 한다 */
+  const lockedTitle = locked ? SYSTEM_FORM_QUESTIONS_LOCKED : undefined;
   const { pages, qitems } = cpst;
   const pageQitems = qitems.filter((q) => (q.pageSeq ?? 0) === page);
 
@@ -251,10 +325,21 @@ export function QitemComposer({
 
   return (
     <Card>
+      {/*
+        잠금 안내는 문항 편집기 안, 맨 위에 둔다 (#554). 잠긴 버튼의 title은 마우스를 올려야
+        보이고, 왼쪽 상자의 시스템 폼 안내는 좁은 화면에서 이 카드와 멀어진다 — 잠긴 것과
+        열린 것을 잠긴 자리에서 함께 말한다.
+      */}
+      {locked && (
+        <div className="mb-3 rounded-[12px] border border-line bg-bg px-[14px] py-[10px] text-[13px] leading-[1.6] text-n400">
+          <Badge tone={SYSTEM_FORM_BADGE.tone}>{SYSTEM_FORM_BADGE.label}</Badge>{" "}
+          {SYSTEM_FORM_QUESTIONS_LOCKED}. {SYSTEM_FORM_QUESTIONS_OPEN_PARTS}.
+        </div>
+      )}
       <div className="mb-3 flex items-center">
         <SectionLabel>페이지</SectionLabel>
         <div className="flex-1" />
-        <Button variant="link" onClick={addPage}>
+        <Button variant="link" onClick={addPage} disabled={locked} title={lockedTitle}>
           + 페이지 추가
         </Button>
       </div>
@@ -283,6 +368,8 @@ export function QitemComposer({
             variant="link"
             aria-label="페이지 위로 이동"
             onClick={() => movePage(page, -1)}
+            disabled={locked}
+            title={lockedTitle}
             className="text-n500"
           >
             ↑
@@ -291,6 +378,8 @@ export function QitemComposer({
             variant="link"
             aria-label="페이지 아래로 이동"
             onClick={() => movePage(page, 1)}
+            disabled={locked}
+            title={lockedTitle}
             className="text-n500"
           >
             ↓
@@ -298,8 +387,10 @@ export function QitemComposer({
           <button
             type="button"
             onClick={() => removePage(page)}
+            disabled={locked}
+            title={lockedTitle}
             aria-label="페이지 삭제"
-            className="-my-1 min-h-6 cursor-pointer px-1 py-1 hover:text-danger"
+            className="-my-1 min-h-6 cursor-pointer px-1 py-1 hover:text-danger disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:text-n500"
           >
             삭제
           </button>
@@ -342,7 +433,9 @@ export function QitemComposer({
         <button
           type="button"
           onClick={addQitem}
-          className="cursor-pointer text-[14px] text-accent"
+          disabled={locked}
+          title={lockedTitle}
+          className="cursor-pointer text-[14px] text-accent disabled:cursor-not-allowed disabled:opacity-45"
         >
           + 문항 추가
         </button>
@@ -402,7 +495,10 @@ export function QitemComposer({
                   </div>
                 )}
 
-                {open && (
+                {/* 잠긴 폼은 펼쳐도 값만 보인다 — 근거는 LockedQitemBody 주석 (#554) */}
+                {open && locked && <LockedQitemBody q={q} pages={pages} />}
+
+                {open && !locked && (
                   <div className="border-t border-line p-3">
                     <TextField
                       value={q.qitemLblNm}
@@ -456,7 +552,9 @@ export function QitemComposer({
                       {/*
                         시스템이 요구하는 문항의 삭제는 감추지 않고 잠근다 — 버튼이 사라지면
                         이 문항만 못 지우는 것인지 편집기에 삭제가 없는 것인지 알 수 없다.
-                        문구 수정·유형 변경·순서 변경은 그대로 열려 있다.
+                        시스템 폼은 `questionsLocked`로 이 본문에 오지 않으므로(#554) 이 부분
+                        잠금은 전체 잠금이 덮는다 — 남겨 둔 것은 서버가 그 목록을 여전히 내리고
+                        계약 문항이 무엇인지 알리는 자리이기 때문이다.
                       */}
                       <button
                         type="button"

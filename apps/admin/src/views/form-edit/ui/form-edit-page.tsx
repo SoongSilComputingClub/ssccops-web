@@ -259,20 +259,25 @@ function FormEditContent({ editor }: Readonly<{ editor: FormEditor }>) {
               저장을 누르기 전에 알아야 하는 두 가지를 같은 상자에서 말한다 — 이 폼에서 무엇이
               잠겨 있고 무엇이 열려 있는가, 그리고 문항을 고치면 무엇이 남는가. 잠긴 것만 적으면
               폼 전체가 굳은 줄 알고 아무도 손대지 않으므로 열려 있는 값도 함께 적는다.
+
+              문항 잠금 안내는 여기 없다 — 문항 편집기(QitemComposer)가 자기 자리에서 말한다
+              (#554). 여기서 되풀이하면 같은 화면에 같은 문장이 둘이 된다. 버전 뒤의 «문항을
+              바꾸면…»도 시스템 폼에는 붙이지 않는다 — 바꿀 수 없는 것을 바꾸면 어떻게 되는지
+              말할 이유가 없다.
             */}
             {(editor.sysYn || editor.qitemVer !== null) && (
               <div className="rounded-[12px] border border-line bg-bg px-[14px] py-[10px] text-[13px] leading-[1.6] text-n400">
                 {editor.sysYn && (
                   <div>
                     <Badge tone={SYSTEM_FORM_BADGE.tone}>{SYSTEM_FORM_BADGE.label}</Badge>{" "}
-                    {SYSTEM_FORM_DELETE_LOCKED}. {SYSTEM_FORM_OPEN_PARTS}.{" "}
-                    시스템 문항만 지울 수 없습니다.
+                    {SYSTEM_FORM_DELETE_LOCKED}. {SYSTEM_FORM_OPEN_PARTS}.
                   </div>
                 )}
                 {/* 버전은 서버가 준 값만 말한다 — 신규 폼은 아직 저장된 구성이 없다 */}
                 {editor.qitemVer !== null && (
                   <div className={editor.sysYn ? "mt-2" : undefined}>
-                    {FIELD_LABEL.qitemVersion} v{editor.qitemVer} · {QITEM_VERSION_NOTE}
+                    {FIELD_LABEL.qitemVersion} v{editor.qitemVer}
+                    {editor.sysYn ? "" : ` · ${QITEM_VERSION_NOTE}`}
                   </div>
                 )}
               </div>
@@ -466,12 +471,20 @@ function FormEditContent({ editor }: Readonly<{ editor: FormEditor }>) {
             </div>
           </div>
 
+          {/*
+            시스템 폼은 문항 편집기를 통째로 잠근다 (#554 · ssccops#416). 서버는 문항(qitems)이
+            바뀌는 저장을 409 SYSTEM_FORM_QUESTIONS_LOCKED로 거절하고, 제목·페이지 설명·접수
+            기간·라벨만 고친 자동 저장은 구성을 그대로 되보내므로(전체 PATCH · toFormSaveInput)
+            통과한다. systemRequiredQitemIds의 부분 잠금은 이 전체 잠금 안에 들어간다 — 서버가
+            여전히 그 목록을 내리므로 넘기는 자리는 그대로 둔다.
+          */}
           <QitemComposer
             cpst={draft.qitemCpstCn}
             onChange={setCpst}
             issues={issues.qitems}
             inUseQitemIds={editor.inUseQitemIds}
             systemRequiredQitemIds={editor.systemRequiredQitemIds}
+            questionsLocked={editor.sysYn}
           />
         </div>
       </PageBody>

@@ -3,6 +3,7 @@ import {
   FORM_LABEL_ERROR,
   SYSTEM_FORM_DELETE_LOCKED,
   SYSTEM_FORM_QITEM_LOCKED,
+  SYSTEM_FORM_QUESTIONS_LOCKED_SAVE_FAILED,
 } from "@/entities/form";
 import { NO_FORM_DELETE } from "./form-delete-copy";
 import { API_ERROR, ApiError } from "@/shared/lib/api/client";
@@ -42,6 +43,13 @@ export function toFormErrorMessage(error: unknown): string {
       return SYSTEM_FORM_DELETE_LOCKED;
     case FORM_ERROR.SYSTEM_FORM_CONTRACT_VIOLATION:
       return SYSTEM_FORM_QITEM_LOCKED;
+    /*
+     * 문항 전체 잠금(409 · 서버 #498 · #554). 편집기가 이미 잠겨 있어 여기 닿는 것은 우회
+     * 요청이거나 잠금 배포 전에 열어 둔 탭이다 — 저장 상태 표시줄이 «저장 실패»로 받는다.
+     * 자동 저장은 409를 재시도하지 않는다(use-form-editor.ts `isRetryable`).
+     */
+    case FORM_ERROR.SYSTEM_FORM_QUESTIONS_LOCKED:
+      return SYSTEM_FORM_QUESTIONS_LOCKED_SAVE_FAILED;
     default:
       return error.message;
   }
