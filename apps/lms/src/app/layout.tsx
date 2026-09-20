@@ -7,6 +7,7 @@ import { AuthNav } from "@/features/auth";
 // 서버 전용 조회는 배럴이 재export 하지 않는다(클라이언트 번들 오염 방지) — 직접 임포트한다
 import { fetchIsAcademicLeader } from "@/entities/academic-program/api/programs-read";
 import { ROUTES } from "@/shared/config/routes";
+import { ogImageUrl } from "@/shared/lib/og-image-url";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
 import { SectionTabs } from "./_shell/section-tabs";
@@ -25,38 +26,54 @@ const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
  *
  * 스터디장·회원이 자기 학술 활동을 보는 앱이다(lms.sscc.co.kr). 어드민·공개 행사 앱과 같은
  * 동아리의 얼굴이므로 서비스 이름을 공유하고, 제목 템플릿으로 화면 이름 뒤에 붙인다.
+ *
+ * 객체가 아니라 함수인 것은 `openGraph.images`(#556 · ssccops#418) 때문이다 — 카드 이미지는
+ * 요청 시점에 그리는 라우트(`/og`)이고 og:image는 절대 주소여야 하는데, `metadataBase`가 없고
+ * dev·prod 도메인이 다르므로 요청 헤더에서 origin을 만든다(`ogImageUrl` · www 폼 카드와 같은
+ * 방식). 이 레이아웃은 어차피 세션 쿠키를 읽어(`fetchIsAcademicLeader`) 요청마다 돌므로 헤더를
+ * 읽는다고 새로 동적이 되는 것은 없다. 화면이 자기 카드를 고르면(`proposals/new`) 그쪽
+ * `openGraph`가 이 기본을 덮는다. 호스트를 못 읽으면 이미지를 빼고 텍스트 카드로 떨어진다.
  */
-export const metadata: Metadata = {
-  // `[DEV] `는 default와 template 둘 다에 붙는다 — 화면 제목이 있는 페이지도 접두가 살아야 한다
-  title: {
-    default: DEPLOY.title("SSCC 학술"),
-    template: DEPLOY.title("%s · SSCC 학술"),
-  },
-  description: "숭실컴퓨팅클럽 학술 — 스터디·프로젝트 활동과 회차·출석, 기획안 제출",
-  openGraph: {
-    siteName: "SSCC 학술",
-    type: "website",
-    locale: "ko_KR",
-  },
-  /*
-   * iOS Safari는 manifest를 보지 않는다 — 홈 화면에 추가했을 때 전체 화면으로 뜨게 하려면
-   * 이 메타가 따로 있어야 한다(어드민 #108·www #167과 같은 이유). 상태 표시줄을 default로 둔
-   * 것은 상단 바가 흰색이라 글자가 검게 나와야 읽히기 때문이다.
-   */
-  appleWebApp: {
-    capable: true,
-    title: "SSCC 학술",
-    statusBarStyle: "default",
-  },
-  /*
-   * `icon`은 탭 파비콘이다 — `src/app/favicon.ico` 파일 규약을 걷어냈다(#413). 파일 규약은
-   * 환경으로 갈릴 수 없고, 남겨 두면 `metadata.icons`와 둘이 `/favicon.ico`를 다툰다.
-   *
-   * `apple`: iOS는 manifest의 icons도 보지 않는다 — 이 링크가 없으면 홈 화면 아이콘 자리에
-   * 페이지 스크린샷이 들어간다. 파일은 세 앱이 같은 마크를 색만 달리한 것이다(manifest.ts 주석).
-   */
-  icons: DEPLOY.icons,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const imageUrl = await ogImageUrl("default");
+
+  return {
+    // `[DEV] `는 default와 template 둘 다에 붙는다 — 화면 제목이 있는 페이지도 접두가 살아야 한다
+    title: {
+      default: DEPLOY.title("SSCC 학술"),
+      template: DEPLOY.title("%s · SSCC 학술"),
+    },
+    description: "숭실컴퓨팅클럽 학술 — 스터디·프로젝트 활동과 회차·출석, 기획안 제출",
+    openGraph: {
+      siteName: "SSCC 학술",
+      type: "website",
+      locale: "ko_KR",
+      images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630 }] : undefined,
+    },
+    twitter: {
+      card: imageUrl ? "summary_large_image" : "summary",
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+    /*
+     * iOS Safari는 manifest를 보지 않는다 — 홈 화면에 추가했을 때 전체 화면으로 뜨게 하려면
+     * 이 메타가 따로 있어야 한다(어드민 #108·www #167과 같은 이유). 상태 표시줄을 default로 둔
+     * 것은 상단 바가 흰색이라 글자가 검게 나와야 읽히기 때문이다.
+     */
+    appleWebApp: {
+      capable: true,
+      title: "SSCC 학술",
+      statusBarStyle: "default",
+    },
+    /*
+     * `icon`은 탭 파비콘이다 — `src/app/favicon.ico` 파일 규약을 걷어냈다(#413). 파일 규약은
+     * 환경으로 갈릴 수 없고, 남겨 두면 `metadata.icons`와 둘이 `/favicon.ico`를 다툰다.
+     *
+     * `apple`: iOS는 manifest의 icons도 보지 않는다 — 이 링크가 없으면 홈 화면 아이콘 자리에
+     * 페이지 스크린샷이 들어간다. 파일은 세 앱이 같은 마크를 색만 달리한 것이다(manifest.ts 주석).
+     */
+    icons: DEPLOY.icons,
+  };
+}
 
 /*
  * 뷰포트 메타가 없으면 모바일 브라우저가 980px 가상 뷰포트로 렌더한 뒤 축소해 보여준다 —

@@ -34,6 +34,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **부분 갱신과 재조회를 가른다**(admin과 같은 규칙) — 출석은 해당 회차만 부분 갱신, 전이는 재조회.
 - **화면 문구**는 루트 규칙 + #343(lms 전수 확인으로 세운 것): 대시 문장은 마침표 없음, 보조용언 붙여쓰기(`시도해주세요`).
 - 오류 코드 → 문구는 `entities/*/api/error-codes.ts`·`features/*/model/*-error.ts`가 맡고 화면은 `ApiError.code`로만 분기한다(#29).
+- **공유 카드(OG 이미지)는 `GET /og?card=…` 한 라우트가 그린다**(#556 · ssccops#418 — www 폼 카드 `f/[formId]/og`와 같은 뼈대, 1200×630, 마크 + 제목 + 부제). 카드는 `shared/config/og-cards.ts`의 허용 목록(`default` «SSCC 학술» · `proposal` «기획안 제출»)에서만 고르고 **쿼리의 문자열을 그대로 그리지 않는다** — 모르는 키는 기본 카드. 루트 레이아웃이 기본 카드를, `/proposals/new`가 기획안 카드를 `openGraph.images`에 건다. og:image는 절대 주소여야 하는데 `metadataBase`가 없어(dev·prod 도메인이 다르다) `shared/lib/og-image-url.ts`가 요청 헤더로 origin을 만든다(서버 전용 — 배럴에 싣지 않는다). 접수 기간처럼 시간에 따라 변하는 값은 담지 않는다(ssccops#194). 폰트는 `public/fonts`의 Pretendard를 자기 origin에서 fetch(ADR-0030 · 매처의 `otf` 제외가 그 짝).
 
 ## 공유 링크 발급 (`entities/share/api/share-links.ts`)
 
