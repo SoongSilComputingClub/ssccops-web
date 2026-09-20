@@ -51,6 +51,24 @@ export function lmsProgramDetailPath(academicProgramId: number): string {
 }
 
 /**
+ * 내가 낸 기획안 한 건 — lms `/my/applications/{formRspnsId}` (#574 · ssccops#428).
+ *
+ * lms `ROUTES.myApplicationDetail`·`myApplicationDetailUrl`과 같은 값이다 — 두 곳에 적는 이유는
+ * `lmsProgramDetailPath`와 같다(앱끼리 소스를 공유하지 않는다). 응답 식별자만 싣고 폼 번호는
+ * 싣지 않는다 — 기획안 폼은 코드(`PROPOSAL`)가 가리키는 시스템 폼이라 번호가 환경마다 다르고,
+ * lms 화면이 진입할 때 코드로 폼을 찾는다.
+ *
+ * ── 왜 www의 응답 상세(`/f/{ref}/responses/{id}`)가 아닌가 ────
+ * **기획안은 lms가 주인이다.** 재제출·수정 요청 대응·검토 이력이 그쪽 화면에 있고, 폼 문항의
+ * 안내(커리큘럼 줄 포맷·유형 선택지의 뜻)도 거기 있다. www의 응답 상세는 아무 폼이나 그리는 일반
+ * 화면이라 기획안을 열면 `/f/{key}`가 그랬듯(#555) 반쪽만 보인다. `/me`의 «낸 기획안»은 목록까지만
+ * 그리고 한 건은 lms로 보낸다. 오리진이 비어 있으면 링크 없이 카드만 선다(위 `lmsOrigin` 규칙).
+ */
+export function lmsMyApplicationPath(formRspnsId: number): string {
+  return `/my/applications/${formRspnsId}`;
+}
+
+/**
  * 회차 하나 — lms `/studio/sessions/{sessionId}`.
  *
  * ── 이 주소는 **해석기**이지 화면이 아니다 ───────────────────

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { MyFormResponseOverview } from "@/entities/form";
 import { Chip, EmptyState } from "@/shared/ui";
+import { needsActionFirst } from "../model/responses";
 import { FormResponseCard } from "./form-response-card";
 
 /*
@@ -23,24 +24,19 @@ import { FormResponseCard } from "./form-response-card";
  * ── 거르기는 화면에서 한다 ──────────────────────────────────
  * 목록이 페이징 없이 전량으로 오므로(서버 #270) 배열을 거르면 그만이다. 서버에 라벨 필터를
  * 여는 것은 "받아 둔 것 밖에도 답이 있을 때" 필요한 일이고 여기는 그렇지 않다.
+ *
+ * 상태 필터(`?status=`)는 이 구역 밖의 일이다(#574) — 주소에 실리는 것이라 서버 컴포넌트가
+ * 거른 뒤 넘기고, 여기서는 라벨만 거른다. 기획안 응답도 여기로 오지 않는다(`/me/proposals`).
  */
-
-/** 조치가 필요한 상태 — 이 응답들이 목록 맨 위로 온다 */
-const NEEDS_ACTION = "CHANGES_REQUESTED";
 
 export function FormResponsesSection({
   responses,
   reviewOpinions,
-  proposalFormId,
 }: Readonly<{
+  /** 기획안을 뺀 낸 폼 전량 (상태 필터가 있으면 거른 뒤) */
   responses: MyFormResponseOverview[];
   /** formRspnsId → 수정요청 사유. 조회하지 못한 건은 키가 없다 */
   reviewOpinions: Record<number, string>;
-  /**
-   * 기획안 폼의 formId (#518). 목록 항목에는 시스템 폼 여부가 없어 서버 컴포넌트가
-   * `GET /v1/forms/system/PROPOSAL`로 얻어 넘긴다 — 모르면 null이고 칩을 달지 않는다.
-   */
-  proposalFormId: number | null;
 }>) {
   const [labelId, setLabelId] = useState<number | null>(null);
 
@@ -58,11 +54,7 @@ export function FormResponsesSection({
     return [...seen].map(([formLblId, lblNm]) => ({ formLblId, lblNm }));
   }, [responses]);
 
-  /*
-   * **조치가 필요한 건이 먼저 온다.** 이 화면에 오는 까닭이 그것이고, 서버 정렬(마지막으로
-   * 움직인 순)만으로는 수정요청이 아래로 밀릴 수 있다 — 수정요청을 받은 뒤로 아무 일도
-   * 일어나지 않은 응답일수록 오래된 것으로 취급되기 때문이다.
-   */
+  // 조치가 필요한 건이 먼저 — 이유는 `model/responses.ts`의 `needsActionFirst`
   const visible = useMemo(() => {
     const filtered =
       labelId === null
@@ -70,12 +62,7 @@ export function FormResponsesSection({
         : responses.filter((response) =>
             response.labels.some((label) => label.formLblId === labelId),
           );
-
-    return [...filtered].sort((a, b) => {
-      const aFirst = a.rspnsSttsCd === NEEDS_ACTION ? 0 : 1;
-      const bFirst = b.rspnsSttsCd === NEEDS_ACTION ? 0 : 1;
-      return aFirst - bFirst;
-    });
+    return needsActionFirst(filtered);
   }, [responses, labelId]);
 
   if (responses.length === 0) {
@@ -115,7 +102,6 @@ export function FormResponsesSection({
               key={response.formRspnsId}
               response={response}
               reviewOpinion={reviewOpinions[response.formRspnsId] ?? null}
-              proposal={proposalFormId !== null && response.formId === proposalFormId}
             />
           ))}
         </div>

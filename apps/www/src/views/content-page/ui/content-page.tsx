@@ -6,8 +6,7 @@ import {
   type PublicContentPage,
 } from "@/entities/content";
 import type { SectionAxis, SectionTab } from "@/shared/config/section-tabs";
-import { Card, ContentMarkdoc, EmptyState } from "@/shared/ui";
-import { SectionTabs } from "./section-tabs";
+import { Card, ContentMarkdoc, EmptyState, SectionTabs } from "@/shared/ui";
 
 /**
  * 게시된 페이지 한 장 (SSR · #520 · ssccops#382).

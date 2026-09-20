@@ -84,7 +84,7 @@ n300 9.7 · n400 6.3 · n500 4.95 · accent 5.1 · danger 5.9 · success 8.0 · 
 
 | 이름 | 어디서 | 모양 | 역할 |
 |---|---|---|---|
-| 분류 탭(`views/activities` `CategoryTabs`) · 하위 내비 탭(`views/content-page` `SectionTabs` · #524) · 분류 칩(행사 목록 `/events`) | 목록·페이지 제목 아래 | `rounded-full border px-3 py-[6px] text-[14px]`, 켜지면 `border-accent-strong bg-accent-soft text-accent-strong` | **링크**다. `<nav>` + `aria-current="page"` — `role="tablist"`가 아니다. ARIA 탭은 같은 화면의 패널을 바꾸는 위젯이고, 주소가 바뀌는 이동은 내비게이션이다 |
+| 분류 탭(`views/activities` `CategoryTabs`) · 하위 내비 탭(`shared/ui` `SectionTabs` · #524 · 내 활동 축 #574) · 분류 칩(행사 목록 `/events`) · 상태 칩(내 활동 `views/me` `StatusFilter` · #574) | 목록·페이지 제목 아래 | `rounded-full border px-3 py-[6px] text-[14px]`, 켜지면 `border-accent-strong bg-accent-soft text-accent-strong` | **링크**다. `<nav>` + `aria-current="page"` — `role="tablist"`가 아니다. ARIA 탭은 같은 화면의 패널을 바꾸는 위젯이고, 주소가 바뀌는 이동은 내비게이션이다 |
 | 선택 칩(`shared/ui` `Chip`) | 가입 폼의 재학·졸업 | `rounded-full`, 켜지면 `bg-accent text-white` | 버튼(`aria-pressed`) |
 | `Pill`(`@ssccops/ui`) | 카드의 분류 이름 | 회색 알약 | 표시만 |
 | `Badge`(`@ssccops/ui`) | 행사 상태 | `rounded-[6px] px-[7px] text-[13px]`, 톤 7종 | 표시만 |

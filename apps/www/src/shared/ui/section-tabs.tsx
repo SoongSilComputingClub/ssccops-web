@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { SECTION_TABS, type SectionAxis, type SectionTab } from "@/shared/config/section-tabs";
-import { cn } from "@/shared/lib/cn";
+import { cn } from "../lib/cn";
 
 /**
  * 축 안의 탭 줄 — 페이지 제목 아래 (#524).
  *
  * 활동 아카이브의 분류 탭(`views/activities/ui/category-tabs.tsx`)과 같은 모양·같은 판단이다 —
  * **링크**이고 `<nav>` + `aria-current`다. 주소가 바뀌는 이동이라 ARIA 탭이 아니다.
+ *
+ * `views/content-page`에 있다가 `shared/ui`로 올라왔다(#574) — 내 활동(`views/me`)도 같은 탭 줄을
+ * 쓰게 됐고, views 슬라이스끼리는 서로 가져가지 않는다(FSD · 루트 AGENTS.md). 표(`SECTION_TABS`)와
+ * 이 컴포넌트 둘 다 `shared`에 있으니 어느 view든 축 이름과 자기 주소만 넘기면 된다.
  *
  * `pathname`을 서버 컴포넌트가 넘긴다 — 이 화면은 `usePathname`을 쓸 수 없고(전 화면 서버
  * 컴포넌트), 라우트마다 자기 주소를 알고 있다.

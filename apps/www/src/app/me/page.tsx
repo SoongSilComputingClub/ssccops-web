@@ -10,7 +10,8 @@ import { MePage } from "@/views/me";
  * 여는 것처럼 느낀다. OG 메타도 두지 않는다(공유할 것이 없다).
  *
  * `/my-applications`에서 이사했다(#518 · ssccops#386). 옛 주소는 `next.config.ts`의 redirect가
- * 여기로 보낸다.
+ * 여기로 보낸다. #574부터 이 주소는 허브이고 전량은 `/me/{applications,responses,proposals,programs}`
+ * (ssccops#428) — 로그인 실패 사유(`?login_error=`)는 콜백이 언제나 여기로 보내므로 허브만 읽는다.
  */
 export const metadata: Metadata = {
   title: "내 활동",
