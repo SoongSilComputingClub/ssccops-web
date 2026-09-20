@@ -37,9 +37,11 @@ export async function middleware(request: NextRequest) {
  * 설치 후보로 잡히지 않는다(이 앱은 미들웨어에서 리다이렉트하지 않지만, 매처에서 빼면 요청마다
  * 붙는 Supabase 왕복도 함께 없어진다).
  * `version`(#442)도 뺀다 — 배포 확인용 `GET /version`을 deploy-history 워크플로가 인증 없이 폴링한다.
+ * `otf`(#556)는 공유 카드 라우트(`/og`)가 자기 origin에서 받는 폰트다 — 확장자 목록에 없으면 그
+ * fetch에도 Supabase 왕복이 붙는다. `/og` 자체는 매처에 남는다(쿠키 없는 요청이라 갱신할 것이 없다).
  */
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|auth/|version$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|auth/|version$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest|otf)$).*)",
   ],
 };
