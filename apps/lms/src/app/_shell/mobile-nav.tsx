@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { siteLinks } from "@/shared/config/site-links";
 import { ThemeToggle } from "@/shared/ui";
 import { visibleNavGroups } from "./nav-links";
 
@@ -139,6 +140,16 @@ export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
              * 메뉴 바로 밑에 떠 있지 않게 하려는 것이다.
              */}
             <div className="mt-auto px-[18px] pt-4">
+              {/* 홈페이지(www) — 드로어에서는 발치, 테마 위 (#577) */}
+              {siteLinks().map((site) => (
+                <a
+                  key={site.href}
+                  href={site.href}
+                  className="mb-3 block rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
+                >
+                  {site.label} <span className="text-[13px] text-n500">↗</span>
+                </a>
+              ))}
               <ThemeToggle />
             </div>
           </div>

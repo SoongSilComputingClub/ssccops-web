@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/shared/ui";
-import { NAV_LINKS } from "./nav-links";
+import { NAV_LINKS, externalNavLinks } from "./nav-links";
 
 /**
  * 모바일 상단 바 드로어 (lg 미만, #167).
@@ -106,6 +106,16 @@ export function MobileNav() {
                   </Link>
                 );
               })}
+              {/* 다른 앱 — 드로어를 닫을 필요가 없다, 페이지가 통째로 바뀐다 (#577) */}
+              {externalNavLinks().map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
+                >
+                  {link.label} <span className="text-[13px] text-n500">↗</span>
+                </a>
+              ))}
             </nav>
 
             {/*

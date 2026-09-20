@@ -1,3 +1,4 @@
+import { lmsOrigin } from "@/shared/config/lms-routes";
 import { ROUTES } from "@/shared/config/routes";
 
 /**
@@ -39,3 +40,18 @@ export const NAV_LINKS: readonly NavLink[] = [
   { href: ROUTES.join, label: "모집", isActive: startsWith(ROUTES.join) },
   { href: ROUTES.contact, label: "문의", isActive: startsWith(ROUTES.contact) },
 ];
+
+/*
+ * 다른 앱으로 가는 항목 — 지금은 LMS 하나 (#577 · ssccops#430).
+ *
+ * `NAV_LINKS`에 섞지 않는 것은 저쪽 항목이 이 앱의 화면이라 `isActive`가 있고 `<Link>`로 가기
+ * 때문이다 — 외부 앱은 켜질 일이 없고 `<a>`로 나간다. 오리진(`NEXT_PUBLIC_LMS_ORIGIN`)이 비면
+ * 항목 자체가 없다(죽은 주소로 보내지 않는다 — `lms-routes.ts`). «학술» 랜딩(#550)의 CTA는
+ * 설명 뒤의 유도이고, 이것은 이미 LMS를 쓰는 부원의 지름길이다.
+ */
+export type ExternalNavLink = { href: string; label: string };
+
+export function externalNavLinks(): readonly ExternalNavLink[] {
+  const lms = lmsOrigin();
+  return lms ? [{ href: lms, label: "LMS" }] : [];
+}

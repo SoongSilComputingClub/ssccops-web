@@ -1,0 +1,32 @@
+/*
+ * 다른 앱으로 가는 링크 — 사이드바·드로어 발치의 «사이트» 묶음 (#577 · ssccops#430).
+ *
+ * 세 앱은 서로의 주소를 **배포 설정값**으로만 안다 — www는 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`
+ * (이름이 쓰임새보다 좁아진 빚은 `routes.ts`의 `publicFormUrl` 주석 그대로 — ADR-0017이 그
+ * 변수를 www 오리진으로 재사용했다), lms는 `NEXT_PUBLIC_LMS_ORIGIN`(`lms-routes.ts`). 값이 비면
+ * 그 항목을 **그리지 않는다** — 죽은 주소로 보내지 않는다는 규칙이 여기도 같다. 새 env는 없다.
+ *
+ * 메뉴 항목(`nav.ts`)이 아니라 따로 두는 것은 저쪽이 «이 앱의 화면 목차»이고 `isActive`·권한
+ * 판정이 붙기 때문이다 — 외부 앱에는 둘 다 없다.
+ */
+import { lmsOrigin } from "./lms-routes";
+
+export interface SiteLink {
+  label: string;
+  href: string;
+}
+
+function wwwOrigin(): string | null {
+  // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
+  return process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN?.replace(/\/+$/, "") || null;
+}
+
+/** 설정된 오리진만 — 순서는 부원이 보는 순서(홍보 사이트 → 학술) */
+export function siteLinks(): SiteLink[] {
+  const links: SiteLink[] = [];
+  const www = wwwOrigin();
+  const lms = lmsOrigin();
+  if (www) links.push({ label: "홍보 사이트", href: www });
+  if (lms) links.push({ label: "학술 LMS", href: lms });
+  return links;
+}
