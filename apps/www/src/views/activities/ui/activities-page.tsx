@@ -90,7 +90,7 @@ export async function ActivitiesPage({
           {nextCursor && (
             <Link
               href={activitiesPath(selected, nextCursor)}
-              className="rounded-xl bg-accent px-[16px] py-[10px] text-[14.5px] font-semibold text-white"
+              className="rounded-xl bg-accent px-[16px] py-[10px] text-[14.5px] font-semibold text-on-solid"
             >
               더 보기
             </Link>

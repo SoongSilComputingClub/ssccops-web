@@ -37,7 +37,7 @@ export function ApplicationCard({ application }: Readonly<{ application: MyAppli
       : null;
 
   return (
-    <div className="flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_#e5e8eb] transition-shadow hover:shadow-[0_0_0_1px_#1b64da] lg:p-[18px]">
+    <div className="flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_var(--color-line)] transition-shadow hover:shadow-[0_0_0_1px_var(--color-accent-strong)] lg:p-[18px]">
       <Link href={ROUTES.eventDetail(application.eventId)} className="flex flex-col gap-[8px]">
         <div className="flex items-center gap-[6px]">
           <Badge tone={status.tone}>{status.label}</Badge>

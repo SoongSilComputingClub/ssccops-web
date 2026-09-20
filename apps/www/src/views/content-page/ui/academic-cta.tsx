@@ -25,7 +25,7 @@ export function AcademicCta() {
       <div className="flex flex-wrap items-center gap-[8px]">
         <a
           href={`${origin}${LMS_HOME_PATH}`}
-          className="rounded-xl bg-accent px-[18px] py-[11px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
+          className="rounded-xl bg-accent px-[18px] py-[11px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
         >
           LMS로 가기
         </a>

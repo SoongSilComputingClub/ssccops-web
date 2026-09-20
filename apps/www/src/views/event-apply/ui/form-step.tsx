@@ -116,7 +116,7 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
         <button
           type="button"
           onClick={apply.reload}
-          className="cursor-pointer rounded-xl bg-accent px-[16px] py-[11px] text-[14.5px] font-semibold text-white transition-colors hover:bg-accent-strong"
+          className="cursor-pointer rounded-xl bg-accent px-[16px] py-[11px] text-[14.5px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
         >
           다시 시도
         </button>
@@ -202,7 +202,7 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
       )}
 
       {apply.submitMessage && (
-        <div className="rounded-[12px] bg-surface px-[13px] py-[10px] text-[13px] text-danger shadow-[0_0_0_1px_#f04452]">
+        <div className="rounded-[12px] bg-surface px-[13px] py-[10px] text-[13px] text-danger shadow-[0_0_0_1px_var(--color-danger)]">
           {apply.submitMessage}
         </div>
       )}
@@ -231,7 +231,7 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
           <button
             type="button"
             onClick={() => goTo(Math.max(0, currentPage - 1))}
-            className="flex-1 cursor-pointer rounded-[14px] bg-surface py-[13px] text-[15px] text-n300 shadow-[inset_0_0_0_1px_#d1d6db] hover:text-ink"
+            className="flex-1 cursor-pointer rounded-[14px] bg-surface py-[13px] text-[15px] text-n300 shadow-[inset_0_0_0_1px_var(--color-line-strong)] hover:text-ink"
           >
             이전
           </button>
@@ -240,7 +240,7 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
           type="button"
           onClick={() => void onNext()}
           disabled={apply.submitting}
-          className="flex-[2] cursor-pointer rounded-[14px] bg-accent py-[13px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-55"
+          className="flex-[2] cursor-pointer rounded-[14px] bg-accent py-[13px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-55"
         >
           {isLast ? (apply.submitting ? "제출하는 중…" : "제출하기") : "다음"}
         </button>
@@ -257,7 +257,7 @@ function BackToEvent({ eventId }: Readonly<{ eventId: number }>) {
   return (
     <Link
       href={ROUTES.eventDetail(eventId)}
-      className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
+      className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
     >
       행사 안내 보기
     </Link>
@@ -268,7 +268,7 @@ function ToMyApplications() {
   return (
     <Link
       href={ROUTES.me}
-      className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
+      className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
     >
       내 활동 보기
     </Link>

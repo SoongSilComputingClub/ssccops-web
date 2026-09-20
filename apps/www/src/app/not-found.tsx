@@ -18,7 +18,7 @@ export default function NotFound() {
       <div className="mt-[6px] flex flex-wrap items-center justify-center gap-[8px]">
         <Link
           href={ROUTES.home}
-          className="rounded-xl bg-accent px-[16px] py-[10px] text-[14.5px] font-semibold text-white"
+          className="rounded-xl bg-accent px-[16px] py-[10px] text-[14.5px] font-semibold text-on-solid"
         >
           홈으로
         </Link>

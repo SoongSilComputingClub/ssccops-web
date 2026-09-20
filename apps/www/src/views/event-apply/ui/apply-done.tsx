@@ -21,7 +21,7 @@ export function ApplyDone({ eventId }: Readonly<{ eventId: number }>) {
       <div className="flex flex-wrap items-center justify-center gap-[8px]">
         <Link
           href={ROUTES.me}
-          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-white transition-colors hover:bg-accent-strong"
+          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
         >
           내 활동 보기
         </Link>
