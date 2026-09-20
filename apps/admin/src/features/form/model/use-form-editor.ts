@@ -260,9 +260,10 @@ function toSaveErrorMessage(error: unknown): string {
       case FORM_ERROR.QUESTION_ITEM_IN_USE:
         return "응답이 있는 문항은 지우거나 바꿀 수 없습니다";
       /*
-       * 시스템 폼의 계약 위반(400)은 toFormErrorMessage가 잠금 안내와 같은 문장으로 바꾼다.
-       * 여기서 따로 적지 않는 것은 그 문장이 두 벌이 되지 않게 하기 위해서다 — 화면이 미리
-       * 잠글 때와 서버가 거절할 때가 같은 말이어야 한다(entities/form/model/display.ts).
+       * 시스템 폼의 계약 위반(400)과 문항 잠금(409 · 서버 #498 · #554)은 toFormErrorMessage가
+       * 받는다. 여기서 따로 적지 않는 것은 그 문장이 두 벌이 되지 않게 하기 위해서다 — 화면이
+       * 미리 잠글 때와 서버가 거절할 때가 같은 자리의 문장이어야 한다(entities/form/model/display.ts).
+       * 409는 isRetryable이 걸러 자동 재시도하지 않는다 — 같은 본문은 같은 답을 받는다.
        */
       case FORM_ERROR.INVALID_QUESTION_COMPOSITION:
         return `문항 구성이 올바르지 않습니다 — ${error.message}`;

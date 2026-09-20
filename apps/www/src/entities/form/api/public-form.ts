@@ -86,6 +86,8 @@ interface PublicFormResponse {
   submittedAt: string | null;
   mltplRspnsYn: boolean | null;
   myResponseCount: number | null;
+  /** 서버 #499부터. 그전 배포의 응답에는 키가 없다 */
+  sysFormCd?: string | null;
 }
 
 /**
@@ -125,6 +127,8 @@ export async function fetchPublicForm(formRef: FormRef): Promise<PublicForm> {
      */
     mltplRspnsYn: res.mltplRspnsYn === true,
     myResponseCount: res.myResponseCount ?? 0,
+    // 필드를 모르는 서버(#499 이전)는 일반 폼으로 읽는다 — 문항은 종전대로 실려 오므로 그대로 그린다
+    sysFormCd: res.sysFormCd ?? null,
   };
 }
 

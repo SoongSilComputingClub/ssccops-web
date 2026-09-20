@@ -231,6 +231,11 @@ export interface FormListFilter {
    * 남아 있었다. 두 축을 하나로 모은다.
    */
   receiptStatus?: FormReceiptStatus | null;
+  /**
+   * 여러 상태의 합집합 (#544 · 서버 #492 `receiptStatuses`). 있으면 `receiptStatus`보다 우선한다 —
+   * 서버도 둘 다 오면 다중 값을 택한다. 빈 배열은 «전체».
+   */
+  receiptStatuses?: readonly FormReceiptStatus[] | null;
   formLblId?: number | null;
   /**
    * **지운 폼만** 본다 (ssccops-server#329). 기본값(`false`)은 살아 있는 폼만이다.
@@ -291,6 +296,18 @@ export const FORM_ERROR = {
    */
   SYSTEM_FORM_CONTRACT_VIOLATION: "SYSTEM_FORM_CONTRACT_VIOLATION",
   /**
+   * 409 — 시스템 폼의 문항(`qitems`)이 바뀌는 저장 (ssccops-server #498 · ssccops#416).
+   *
+   * `SYSTEM_FORM_CONTRACT_VIOLATION`(400)보다 넓은 잠금이다. 그쪽은 계약 문항의 **삭제**만
+   * 막았는데, 코드가 읽는 것은 식별자만이 아니라 선택지 글자·안내 문구까지라 추가·순서·속성
+   * 전부를 한 번에 거절한다. 문항이 같으면 통과한다 — 제목·접수 기간·라벨·다중 응답·페이지
+   * 제목·설명(`pages`)은 비교 대상이 아니라 편집 자동 저장(전체 PATCH)이 여기 걸리지 않는다.
+   *
+   * 편집기는 `sysYn`이면 문항 편집기를 통째로 잠근다(#554 · `QitemComposer`의 `questionsLocked`).
+   * 이 코드가 오는 것은 화면을 우회한 요청이거나 잠금 배포 전에 열어 둔 탭이다.
+   */
+  SYSTEM_FORM_QUESTIONS_LOCKED: "SYSTEM_FORM_QUESTIONS_LOCKED",
+  /**
    * 409 — 이미 지워진 폼을 또 지우려 함 (ssccops-server#329 · **확정**).
    *
    * 코드 문자열은 회의 소프트 삭제(서버 #125 · `MEETING_ERROR.ALREADY_DELETED`)를 따라 잡았고
@@ -343,7 +360,12 @@ export async function fetchForms(filter: FormListFilter = {}): Promise<FormSumma
    * 화면의 URL 쿼리 파라미터도 같은 이름을 쓴다(views/form-list) — 주소창과 요청이 1:1이면
    * 어떤 조회가 나갔는지 주소만 보고 알 수 있다. 이름을 바꾸면 두 곳을 함께 바꾼다.
    */
-  if (filter.receiptStatus) query.set("receiptStatus", filter.receiptStatus);
+  if (filter.receiptStatuses && filter.receiptStatuses.length > 0) {
+    // 다중 값은 쉼표로 — 서버가 목록으로 묶는다. 값 하나여도 같은 파라미터다(서버가 단일 값 경로로 보낸다)
+    query.set("receiptStatuses", filter.receiptStatuses.join(","));
+  } else if (filter.receiptStatus) {
+    query.set("receiptStatus", filter.receiptStatus);
+  }
   if (filter.formLblId != null) query.set("labelId", String(filter.formLblId));
 
   const qs = query.toString();

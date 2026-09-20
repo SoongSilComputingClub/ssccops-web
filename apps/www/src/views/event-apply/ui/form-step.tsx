@@ -106,8 +106,10 @@ export function FormStep({ formId, eventId }: Readonly<{ formId: number; eventId
    * 문항을 그릴 수 없는 나머지는 전부 오류로 안내한다. `status === "error"`가 아닌데도 폼이
    * 비어 있는 경우(앞 분기가 늘어나며 생길 수 있다)까지 여기서 함께 받는다 — 아래 본문은
    * 폼이 있다는 전제로 쓰여 있고, 말없이 빈 화면을 그리는 것보다 사유와 재시도를 주는 편이 낫다.
+   * `system-form`(#555)도 여기로 온다 — 행사에 시스템 폼이 걸리는 일은 없지만, 걸렸다면 문항을
+   * 그리는 것보다 끊는 쪽이 맞다.
    */
-  if (status === "error" || form === null) {
+  if (status !== "ready" || form === null) {
     return (
       <div className="flex flex-col items-center gap-[10px]">
         <EmptyState title={apply.errorMessage || "신청서를 불러오지 못했습니다"} />

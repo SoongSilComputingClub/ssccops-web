@@ -103,6 +103,12 @@ export const ROUTES = {
    * 그대로 남는다 — 지원자가 어느 화면에서 멈춰도 다음 행동이 있게 하는 자리라서다.
    */
   contact: "/contact",
+  /**
+   * 학술 — 페이지 `academic` + LMS·기획안 제출 CTA (#550 · ssccops#412). 상단 바에서 LMS로 바로
+   * 나가지 않고 이 화면을 거치는 것은 지원자가 «학술 활동이 어떻게 돌아가는가»를 읽을 자리가
+   * 어디에도 없었기 때문이다. LMS 주소는 `lms-routes.ts`.
+   */
+  academic: "/academic",
 } as const;
 
 /** 아카이브 목록의 커서 쿼리 키 — «더 보기»가 다음 페이지를 주소에 싣는다 */

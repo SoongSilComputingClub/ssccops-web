@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormDescription } from "@ssccops/form-renderer";
 import {
   FORM_RECEIPT_BADGE,
+  PROPOSAL_SYS_FORM_CD,
   SYSTEM_FORM_BADGE,
   SYSTEM_FORM_DELETE_LOCKED,
   SYSTEM_FORM_DUPLICATE_NOTE,
@@ -33,6 +34,7 @@ import {
 } from "@/features/form-template";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { isChoiceQitemType, QITEM_TYPE_NM } from "@/shared/config/codes";
+import { lmsProposalNewUrl } from "@/shared/config/lms-routes";
 import { publicFormUrl, ROUTES } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
 import { formatDt, formatYmd } from "@/shared/lib/date";
@@ -300,13 +302,25 @@ function FormDetailContent({ form, reload }: Readonly<{ form: FormDetail; reload
    * 공개 폼은 이 앱이 아니라 `apps/www`가 서빙한다(ssccops#214). 그래서 절대 URL 하나만 쓰고
    * 내부 이동(`router.push`)을 쓰지 않는다 — 옮기기 전 코드가 그랬고, 그대로 두면 이 앱에
    * 없는 주소로 가 404가 된다. 오리진 설정이 비어 있으면 `null`이라 링크 자리를 감춘다.
+   *
+   * **시스템 폼에는 공개 링크를 만들지 않는다** (#553 · ssccops#415). 응답을 LMS에서 받는 폼이라
+   * www 공개 폼 주소는 틀린 진입점이다 — 운영진 한 명이 이 카드의 링크로 www에서 기획안에 응답한
+   * 일이 그 이슈다. 판정은 서버가 주는 `sysYn`이고 라벨·제목이 아니다. 값을 `null`로 두어 아래
+   * 카드 분기뿐 아니라 복사 함수도 같은 조건에 잠긴다.
    */
-  const publicUrl = publicFormUrl(form.formKey ?? form.formId);
+  const publicUrl = form.sysYn ? null : publicFormUrl(form.formKey ?? form.formId);
   const copyLink = () => {
     if (!publicUrl) return;
     navigator.clipboard?.writeText(publicUrl);
     flash("링크를 복사했습니다");
   };
+  /*
+   * 기획안 폼이면 LMS 기획안 제출 화면으로 보내는 버튼을 둔다 — 오리진(`NEXT_PUBLIC_LMS_ORIGIN`)이
+   * 비어 있으면 `null`이라 버튼 없이 문구만 남는다(죽은 링크를 그리지 않는다). 다른 시스템 폼
+   * 코드가 생기면 그 코드의 LMS 화면을 여기서 갈라 준다.
+   */
+  const lmsAnswerUrl =
+    form.sysYn && form.sysFormCd === PROPOSAL_SYS_FORM_CD ? lmsProposalNewUrl() : null;
 
   return (
     <>
@@ -475,39 +489,63 @@ function FormDetailContent({ form, reload }: Readonly<{ form: FormDetail; reload
               </div>
             </Card>
 
-            <Card>
-              <SectionLabel className="mb-3">공개 링크</SectionLabel>
-              {publicUrl ? (
-                <>
-                  <div className="rounded-[10px] bg-subtle p-3 text-[14px] break-all text-accent">
-                    {publicUrl}
-                  </div>
+            {form.sysYn ? (
+              /*
+               * 시스템 폼 — 공개 링크 카드 대신 «응답 받는 곳» (#553 · ssccops#415). 공개 링크를
+               * 감추기만 하면 «링크가 왜 없지»가 되고, 기획안이면 갈 곳이 LMS라는 것까지 말해야
+               * 운영진이 부원에게 맞는 주소를 준다.
+               */
+              <Card>
+                <SectionLabel className="mb-3">응답 받는 곳</SectionLabel>
+                <div className="rounded-[10px] bg-subtle p-3 text-[13px] leading-[1.6] text-n500">
+                  이 폼은 LMS에서 받습니다. 공개 링크는 만들지 않습니다. 부원에게는 LMS 주소를
+                  안내해주세요.
+                </div>
+                {lmsAnswerUrl && (
                   <div className="mt-3 flex gap-2">
                     <Button
-                      onClick={() => window.open(publicUrl, "_blank", "noopener,noreferrer")}
+                      onClick={() => window.open(lmsAnswerUrl, "_blank", "noopener,noreferrer")}
                     >
-                      링크 열기
-                    </Button>
-                    <Button variant="ghost" onClick={copyLink}>
-                      링크 복사
+                      LMS 기획안 제출 화면 열기
                     </Button>
                   </div>
-                  <div className="mt-2 text-[13px] text-n500">
-                    공개 링크는 폼 ID 기준으로 고정됩니다.
+                )}
+              </Card>
+            ) : (
+              <Card>
+                <SectionLabel className="mb-3">공개 링크</SectionLabel>
+                {publicUrl ? (
+                  <>
+                    <div className="rounded-[10px] bg-subtle p-3 text-[14px] break-all text-accent">
+                      {publicUrl}
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <Button
+                        onClick={() => window.open(publicUrl, "_blank", "noopener,noreferrer")}
+                      >
+                        링크 열기
+                      </Button>
+                      <Button variant="ghost" onClick={copyLink}>
+                        링크 복사
+                      </Button>
+                    </div>
+                    <div className="mt-2 text-[13px] text-n500">
+                      공개 링크는 폼 ID 기준으로 고정됩니다.
+                    </div>
+                  </>
+                ) : (
+                  /*
+                   * 오리진 설정(NEXT_PUBLIC_PUBLIC_FORM_ORIGIN)이 비어 있다. 죽은 주소를 복사해
+                   * 주는 것보다 무엇이 빠졌는지 말하는 편이 낫다 — 운영자가 고칠 수는 없지만
+                   * 이 문구가 없으면 복사한 링크가 왜 안 열리는지 아무도 모른다.
+                   */
+                  <div className="rounded-[10px] bg-subtle p-3 text-[13px] text-n500">
+                    공개 링크 주소가 설정되지 않아 링크를 만들 수 없습니다 — 배포 설정을
+                    확인해주세요.
                   </div>
-                </>
-              ) : (
-                /*
-                 * 오리진 설정(NEXT_PUBLIC_PUBLIC_FORM_ORIGIN)이 비어 있다. 죽은 주소를 복사해
-                 * 주는 것보다 무엇이 빠졌는지 말하는 편이 낫다 — 운영자가 고칠 수는 없지만
-                 * 이 문구가 없으면 복사한 링크가 왜 안 열리는지 아무도 모른다.
-                 */
-                <div className="rounded-[10px] bg-subtle p-3 text-[13px] text-n500">
-                  공개 링크 주소가 설정되지 않아 링크를 만들 수 없습니다 — 배포 설정을
-                  확인해주세요.
-                </div>
-              )}
-            </Card>
+                )}
+              </Card>
+            )}
 
             <Card>
               <SectionLabel className="mb-3">응답 요약</SectionLabel>

@@ -63,6 +63,11 @@ export type ApplyFormStatus =
   | "already-submitted"
   /** 연결된 신청서가 없다 */
   | "not-found"
+  /**
+   * 시스템 폼(`sysFormCd` 있음 · ssccops#417) — 답은 LMS에서 받는다. **문항을 그리면 안 되고**
+   * 초안도 만들지 않는다. `form`은 채워져 있어 화면이 코드로 목적지를 고른다
+   */
+  | "system-form"
   /** 토큰이 죽었다 — 화면이 다시 로그인을 권한다 */
   | "unauthenticated"
   /** 인증은 됐지만 아직 회원이 아니다 — 화면이 가입 단계로 되돌린다 */
@@ -180,6 +185,23 @@ async function loadApplyForm(
   key: string,
 ): Promise<Omit<LoadedForm, "errorMessage"> & { savedAt: number }> {
   const form = await fetchPublicForm(formId);
+
+  /*
+   * 시스템 폼은 여기서 끝낸다 — 초안 조회도 하지 않는다 (ssccops#417 · #555). 초안 GET은 무해하지만
+   * 이 화면이 이 폼의 답을 다루지 않는다는 뜻을 요청 하나로도 흐리지 않는다. 자동 저장 PUT은
+   * `status === "ready"`에서만 걸리므로 이 분기에서는 초안 행이 생기지 않는다. `alreadySubmitted`보다
+   * 앞에 두는 것은 이미 낸 사람이라도 결과 확인은 LMS 화면이 맞기 때문이다.
+   */
+  if (form.sysFormCd !== null) {
+    return {
+      key,
+      outcome: "system-form",
+      form,
+      answers: EMPTY_ANSWERS,
+      restored: false,
+      savedAt: 0,
+    };
+  }
 
   /*
    * 더 낼 수 없으면 초안을 묻지 않는다 — 서버도 "작성 중인 것 없음"을 돌려주므로 물어도 되지만,

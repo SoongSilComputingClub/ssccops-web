@@ -58,6 +58,16 @@ export interface PublicForm {
   mltplRspnsYn: boolean;
   /** 내가 이 폼에 **낸** 건수(임시저장 제외). 1건 폼에서는 0 아니면 1이다 */
   myResponseCount: number;
+  /**
+   * 시스템 폼 코드 — 기획안 폼이면 `"PROPOSAL"`(`PROPOSAL_SYS_FORM_CD`), 일반 폼이면 null
+   * (ssccops#417 · 서버 #499).
+   *
+   * 값이 있으면 **이 화면에서 답을 받지 않는다** — 그 폼의 안내(커리큘럼 줄 포맷·유형 선택지의
+   * 뜻)는 LMS 제출 화면이 갖고 있고, 여기는 아무 폼이나 그리는 일반 응답 화면이다. 어드민이
+   * 공개 링크를 숨겨도(ssccops#415) 이미 복사돼 돌아다니는 `/f/{key}`가 살아 있어 서버가 조회를
+   * 막는 대신 코드를 실어 보내고, 웹이 LMS로 보낸다. 이 필드를 모르는 서버면 null — 종전대로 그린다.
+   */
+  sysFormCd: string | null;
 }
 
 /**
