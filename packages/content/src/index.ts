@@ -86,7 +86,7 @@ export const CONTENT_PAGES: readonly ContentPageEntry[] = [
   { slug: CONTENT_SLUG.history, title: "연혁", path: "/about/history", group: "about", note: "`{% timeline %}` 안에 `## 연도` + 목록" },
   { slug: CONTENT_SLUG.values, title: "핵심 가치", path: "/about/values", group: "about", note: "`{% cards %}` 안에 `## 가치` + 문단" },
   { slug: CONTENT_SLUG.operators, title: "운영진", path: "/operators", group: "operators", note: "지금 운영진 — 이름은 본인이 동의한 사람만" },
-  { slug: CONTENT_SLUG.academic, title: "학술 활동", path: "/academic", group: "academic", note: "스터디·프로젝트가 어떻게 돌아가는가. 아래 «LMS로 가기»·«기획안 제출» 버튼은 코드가 붙인다" },
+  { slug: CONTENT_SLUG.academic, title: "학술 활동", path: "/academic", group: "academic", note: "스터디·프로젝트·트랙이 어떻게 돌아가는가. 아래 «LMS로 가기»·«기획안 제출» 버튼은 코드가 붙인다" },
   { slug: CONTENT_SLUG.join, title: "지원 안내", path: "/join", group: "join", note: "절차는 `{% steps %}` 안의 번호 목록. 모집 중 안내는 홈 배너에" },
   { slug: CONTENT_SLUG.joinFaq, title: "자주 묻는 질문", path: "/join/faq", group: "join", note: "`{% faq %}` 안에 `### 질문` + 답" },
   { slug: CONTENT_SLUG.joinHistory, title: "지난 모집", path: "/join/history", group: "join", note: "기수별 모집 인원 표" },

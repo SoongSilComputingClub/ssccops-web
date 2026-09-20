@@ -19,7 +19,7 @@ export function AcademicCta() {
       <div>
         <h2 className="text-[19px] font-semibold tracking-[-.2px]">참여하기</h2>
         <p className="mt-[4px] text-[14.5px] text-n400">
-          스터디·프로젝트 신청, 기획안 제출, 회차·출석은 LMS에서 합니다. 로그인은 그쪽에서 합니다.
+          스터디·프로젝트·트랙 신청, 기획안 제출, 회차·출석은 LMS에서 합니다. 로그인은 그쪽에서 합니다.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-[8px]">

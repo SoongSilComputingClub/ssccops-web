@@ -23,7 +23,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: DEPLOY.name("SSCC 학술"),
     short_name: DEPLOY.name("SSCC 학술"),
-    description: "숭실컴퓨팅클럽 학술 — 스터디·프로젝트 활동과 회차·출석, 기획안 제출",
+    description: "숭실컴퓨팅클럽 학술 — 스터디·프로젝트·트랙 활동과 회차·출석, 기획안 제출",
     lang: "ko",
     start_url: "/studio",
     scope: "/",

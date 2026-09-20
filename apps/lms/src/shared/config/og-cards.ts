@@ -17,13 +17,13 @@ export const OG_CARDS = {
   /** 앱 기본 — 루트 레이아웃이 건다. 화면이 따로 카드를 고르지 않으면 이것이 뜬다 */
   default: {
     title: "SSCC 학술",
-    description: "스터디·프로젝트 활동과 회차·출석, 기획안 제출",
+    description: "스터디·프로젝트·트랙 활동과 회차·출석, 기획안 제출",
     footer: "숭실컴퓨팅클럽 학술 · 부원 로그인 후 이용합니다",
   },
   /** 기획안 제출(`/proposals/new`) — 학기 초마다 부원 전체에게 뿌리는 링크 */
   proposal: {
     title: "기획안 제출",
-    description: "스터디·프로젝트 기획안을 내고 학술국 검토를 받습니다",
+    description: "스터디·프로젝트·트랙 기획안을 내고 학술국 검토를 받습니다",
     footer: "기획안 · 로그인하면 바로 작성할 수 있습니다",
   },
 } as const;

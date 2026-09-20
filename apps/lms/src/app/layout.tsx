@@ -44,7 +44,7 @@ export async function generateMetadata(): Promise<Metadata> {
       default: DEPLOY.title("SSCC 학술"),
       template: DEPLOY.title("%s · SSCC 학술"),
     },
-    description: "숭실컴퓨팅클럽 학술 — 스터디·프로젝트 활동과 회차·출석, 기획안 제출",
+    description: "숭실컴퓨팅클럽 학술 — 스터디·프로젝트·트랙 활동과 회차·출석, 기획안 제출",
     openGraph: {
       siteName: "SSCC 학술",
       type: "website",

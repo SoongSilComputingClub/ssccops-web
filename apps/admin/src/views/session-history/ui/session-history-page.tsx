@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { sesnSttsTone } from "@/entities/academic-program";
+import { acdmActvTypeNm, sesnSttsTone } from "@/entities/academic-program";
 import type { SessionCrossListItem } from "@/entities/academic-session";
 import { useSessionHistory } from "@/features/academic-session";
 import {
@@ -135,7 +135,7 @@ export function SessionHistoryPage() {
         <div className="min-w-0">
           <div className="truncate">{item.academicProgramTitle || "-"}</div>
           <div className="mt-[2px] text-[13px] text-n500 lg:hidden">
-            {item.typeCd}
+            {acdmActvTypeNm(item.typeCd)}
           </div>
         </div>
       ),
@@ -145,7 +145,7 @@ export function SessionHistoryPage() {
       header: "유형",
       width: ".7fr",
       mobileHide: true,
-      render: (item) => <Badge tone="grey">{item.typeCd}</Badge>,
+      render: (item) => <Badge tone="grey">{acdmActvTypeNm(item.typeCd)}</Badge>,
     },
     {
       key: "curriculum",

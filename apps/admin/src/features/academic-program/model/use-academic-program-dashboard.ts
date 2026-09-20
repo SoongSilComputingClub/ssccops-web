@@ -54,7 +54,7 @@ const RECENT_LIMIT = 5;
 export interface AcademicProgramDashboardData {
   /** 진행 중(ONGOING) 활동 수 */
   ongoingCount: number;
-  /** 그중 스터디·프로젝트 분해 — typeCd별 (표시명이 없어 코드 문자열) */
+  /** 그중 유형별 분해 — 키는 `typeCd`이고 표시명은 그리는 쪽이 붙인다(`acdmActvTypeNm` · #568) */
   ongoingByType: { typeCd: string; count: number }[];
   /** 지연 근사 활동 수 (ONGOING × 진행률 < 40%) */
   delayedCount: number;

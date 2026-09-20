@@ -46,7 +46,7 @@ export async function MePage({ loginError }: Readonly<{ loginError: string | nul
   return (
     <MeFrame
       pathname={ROUTES.me}
-      description="신청한 행사, 낸 폼과 기획안, 내가 이끄는 스터디·프로젝트를 이 화면에서 확인할 수 있습니다"
+      description="신청한 행사, 낸 폼과 기획안, 내가 이끄는 학술 활동을 이 화면에서 확인할 수 있습니다"
       loginError={loginError}
     >
       <HubBody />
@@ -249,7 +249,7 @@ async function ProposalsBlock({
   );
 }
 
-/* ── ④ 내가 이끄는 스터디·프로젝트 ────────────────────────── */
+/* ── ④ 내가 이끄는 학술 활동 ──────────────────────────────── */
 
 /*
  * 빈 목록은 실패가 아니다: 스터디장/팀장이 아닌 부원이 대부분이라 «없음»이 이 블록의 흔한 상태다.

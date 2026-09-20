@@ -38,7 +38,7 @@ export async function StudioRecruitmentPage({
       <header className="flex flex-col gap-[2px]">
         <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">모집 관리</h1>
         <p className="text-[13.5px] text-n500">
-          내가 낸 기획안이 승인돼 모집이 열린 스터디·프로젝트입니다. 모집 일정은 학술국장이 정합니다.
+          내가 낸 기획안이 승인돼 모집이 열린 학술 활동입니다. 모집 일정은 학술국장이 정합니다.
         </p>
       </header>
 

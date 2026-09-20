@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   acdmActvSttsTone,
+  acdmActvTypeNm,
   type AcademicProgramSummary,
 } from "@/entities/academic-program";
 import { useAcademicProgramList } from "@/features/academic-program";
@@ -28,9 +29,9 @@ import {
 } from "@/shared/ui";
 
 /*
- * 스터디·프로젝트 목록 (#125 · ssccops-server #131 · GET /v1/academic-programs).
+ * 활동 목록 (#125 · ssccops-server #131 · GET /v1/academic-programs).
  *
- * 학술국장이 승인된 활동(스터디/프로젝트) 전체를 훑는 화면이다. 활동은 기획안 승인 시
+ * 학술국장이 승인된 활동 전체를 훑는 화면이다. 활동은 기획안 승인 시
  * 서버가 이관해 만들므로 '활동 등록' 버튼이 없다(#122·#125 — 프로토타입 헤더의 `+ 활동
  * 등록`은 그 결정 이전 시안이다).
  *
@@ -84,7 +85,7 @@ function ProgramCard({
         <Badge tone={acdmActvSttsTone(program.sttsCd)}>
           {ACDM_ACTV_STTS_NM[program.sttsCd]}
         </Badge>
-        <Badge tone="grey">{program.typeCd}</Badge>
+        <Badge tone="grey">{acdmActvTypeNm(program.typeCd)}</Badge>
         <div className="flex-1" />
         {program.isLeader && (
           <span title="내가 스터디장/팀장인 활동입니다">
@@ -165,6 +166,9 @@ export function AcademicProgramListPage() {
    * 유형 칩은 지금 받아 둔 목록에 나타난 typeCd 집합에서 뽑는다 — 유형 목록 엔드포인트가
    * 이 이슈 범위 밖이라(#125), 행사 앱이 분류 칩을 게시된 행사에서 뽑는 것과 같은 방식이다.
    * 선택된 유형으로 목록이 걸러지면 그 유형만 남으므로, 이미 고른 값은 항상 포함되게 더한다.
+   *
+   * **칩 라벨만 표시명이고 주소에 실리는 값은 `typeCd` 그대로다** (#568) — 서버 질의 파라미터라
+   * 이름으로 바꾸면 필터가 통째로 빈다.
    */
   const typeOptions = Array.from(
     new Set([...(typeCd ? [typeCd] : []), ...programs.map((p) => p.typeCd)]),
@@ -179,7 +183,7 @@ export function AcademicProgramListPage() {
 
   return (
     <>
-      <PageHeader title="스터디·프로젝트" subtitle="승인된 학술 활동" />
+      <PageHeader title="활동 목록" subtitle="승인된 학술 활동" />
       <PageBody>
         <div className="mb-4 flex flex-col gap-3">
           <SearchInput
@@ -213,7 +217,7 @@ export function AcademicProgramListPage() {
                   active={typeCd === code}
                   onClick={() => setQuery({ [QUERY_TYPE]: code })}
                 >
-                  {code}
+                  {acdmActvTypeNm(code)}
                 </Chip>
               ))}
             </div>

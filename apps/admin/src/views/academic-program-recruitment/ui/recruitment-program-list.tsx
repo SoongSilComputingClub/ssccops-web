@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import {
   acdmActvSttsTone,
+  acdmActvTypeNm,
   type AcademicProgramSummary,
 } from "@/entities/academic-program";
 import type { AcademicProgramListStatus } from "@/features/academic-program";
@@ -105,7 +106,7 @@ export function RecruitmentProgramList({
               <Badge tone={acdmActvSttsTone(program.sttsCd)}>
                 {ACDM_ACTV_STTS_NM[program.sttsCd]}
               </Badge>
-              <Badge tone="grey">{program.typeCd}</Badge>
+              <Badge tone="grey">{acdmActvTypeNm(program.typeCd)}</Badge>
             </div>
             <div className="mt-[6px] text-[15px] font-semibold">
               {program.title || "-"}

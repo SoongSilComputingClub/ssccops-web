@@ -1,6 +1,6 @@
 "use client";
 
-import { sesnSttsTone } from "@/entities/academic-program";
+import { acdmActvTypeNm, sesnSttsTone } from "@/entities/academic-program";
 import type { SessionCrossListItem } from "@/entities/academic-session";
 import { SESN_STTS_NM } from "@/shared/config/codes";
 import { formatYmd } from "@/shared/lib/date";
@@ -93,7 +93,7 @@ export function SessionReviewList({
               <Badge tone={sesnSttsTone(item.sesnSttsCd)}>
                 {SESN_STTS_NM[item.sesnSttsCd]}
               </Badge>
-              <Badge tone="grey">{item.typeCd}</Badge>
+              <Badge tone="grey">{acdmActvTypeNm(item.typeCd)}</Badge>
               <div className="flex-1" />
               {item.hasFileReference && (
                 <span
