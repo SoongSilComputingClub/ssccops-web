@@ -127,20 +127,44 @@ export function activitiesPath(categorySlug: string | null, cursor?: string | nu
 }
 
 /**
- * 분류 필터를 쿼리로 실은 목록 주소.
+ * 분류 필터와 보기 방식을 쿼리로 실은 목록 주소.
  *
  * 필터를 URL에 두는 것은 공유·뒤로 가기 때문이다 — 칩을 누른 상태 그대로 링크를 보낼 수 있고,
  * 상세를 봤다가 돌아와도 고르던 분류가 남는다. 값이 없으면 쿼리를 아예 붙이지 않는다
  * (`/?clsf=`처럼 빈 값이 남으면 '전체'가 두 가지 주소를 갖는다).
+ *
+ * 보기 방식(`?view=list` · #573 · ssccops#427)도 같은 자리다. 기본인 카드는 쿼리를 붙이지
+ * 않는다 — `?view=card`가 있으면 같은 화면이 두 주소를 갖는다. 분류와 보기는 서로를 지우지
+ * 않는다(칩을 눌러도 리스트로 보던 사람은 리스트로 남는다).
  */
-export function eventsPath(eventClsfCd?: string | null): string {
-  return eventClsfCd
-    ? `${ROUTES.events}?${EVENT_CLSF_QUERY}=${encodeURIComponent(eventClsfCd)}`
-    : ROUTES.events;
+export function eventsPath(
+  eventClsfCd?: string | null,
+  view?: EventListView | null,
+): string {
+  const query = new URLSearchParams();
+  if (eventClsfCd) query.set(EVENT_CLSF_QUERY, eventClsfCd);
+  if (view === EVENT_LIST_VIEW) query.set(EVENT_VIEW_QUERY, view);
+  const encoded = query.toString();
+  return encoded ? `${ROUTES.events}?${encoded}` : ROUTES.events;
 }
 
 /** 목록의 분류 필터 쿼리 키 */
 export const EVENT_CLSF_QUERY = "clsf";
+
+/** 목록의 보기 방식 쿼리 키 — 값은 `EVENT_LIST_VIEW` 하나뿐이고 그 밖은 전부 카드다 */
+export const EVENT_VIEW_QUERY = "view";
+export const EVENT_LIST_VIEW = "list";
+
+/**
+ * 행사 목록의 두 모양 (#573 · ssccops#427).
+ *
+ * **URL이 정본이다.** 어드민(web#570)은 같은 선택을 localStorage에 기억하는데 그쪽은 클라이언트
+ * 페이지라 하이드레이션 뒤 바꿔 그려도 스켈레톤이 가려 준다. 이 앱은 전 화면이 서버 컴포넌트라
+ * 서버가 첫 HTML을 최종 모양으로 그려야 한다 — 브라우저 저장값은 서버가 볼 수 없어 카드로 그린 뒤
+ * 리스트로 바꾸는 깜빡임이 생기고, 링크로 공유할 수도 없다. 쿠키에 두는 길도 기각했다 — 익명
+ * 화면에 `Cache-Control`(`next.config.ts`)이 걸려 있어 쿠키로 갈린 응답이 CDN에 섞인다.
+ */
+export type EventListView = "card" | typeof EVENT_LIST_VIEW;
 
 /** 로그인 실패 사유를 '내 신청' 화면까지 나르는 쿼리 키 (app/auth/callback/route.ts 참고) */
 export const LOGIN_ERROR_QUERY = "login_error";
