@@ -1,0 +1,60 @@
+name: Lighthouse
+
+# dev 공개 화면의 Lighthouse 점수를 매일 한 번 + 손으로 (#600 · ssccops#443).
+#
+# **리포트만 한다 — 게이트가 아니다.** 값이 몇 주 안정된 뒤 `assertions`로 임계값을 건다(그때는
+# ssccops#443 코멘트에 기준선을 적고 온다). 대상이 PR 프리뷰가 아니라 dev 배포 URL인 것은 이 레포에
+# 프리뷰 배포가 없어서다(develop 푸시가 곧 dev) — 그래서 PR에 붙지 않고 스케줄로 돈다.
+# 어드민·LMS 내부 화면은 로그인 벽 뒤라 재지 않는다 — 워크플로에 세션을 넣지 않는다.
+#
+# 러너의 Chrome으로 재므로 절대값은 사람의 브라우저와 다르다. 비교는 이 워크플로의 이전 실행과만 한다.
+# 결과는 job 요약(점수 표)과 아티팩트(HTML 리포트)로 남고, 실패 이력이 필요하면 temporaryPublicStorage
+# 링크를 켠다.
+
+on:
+  schedule:
+    # 04:30 KST (19:30 UTC) — 트래픽 없는 시간. supabase-keepalive와 겹치지 않는다
+    - cron: '30 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Audit dev www · lms
+        id: lhci
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            https://dev.www.sscc-ssu.com/
+            https://dev.www.sscc-ssu.com/about
+            https://dev.www.sscc-ssu.com/events
+            https://dev.www.sscc-ssu.com/academic
+            https://dev.www.sscc-ssu.com/records
+            https://dev.www.sscc-ssu.com/join
+            https://dev.lms.sscc-ssu.com/
+          runs: 3
+          uploadArtifacts: true
+          temporaryPublicStorage: false
+
+      - name: Summary
+        if: always()
+        env:
+          LINKS: ${{ steps.lhci.outputs.links }}
+          MANIFEST: ${{ steps.lhci.outputs.manifest }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## Lighthouse (dev · mobile · 3회 중앙값)"
+            echo
+            echo "| URL | 성능 | 접근성 | 모범 사례 | SEO |"
+            echo "|---|---|---|---|---|"
+            # manifest는 실행마다 한 줄이므로 isRepresentativeRun인 것만 고른다
+            echo "$MANIFEST" | jq -r '.[] | select(.isRepresentativeRun) | "| \(.url) | \((.summary.performance*100)|round) | \((.summary.accessibility*100)|round) | \((.summary["best-practices"]*100)|round) | \((.summary.seo*100)|round) |"'
+            echo
+            echo "HTML 리포트는 이 실행의 아티팩트(lighthouse-results)에 있다. 게이트가 아니다 — ssccops#443."
+          } >> "$GITHUB_STEP_SUMMARY"

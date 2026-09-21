@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import Link from "next/link";
 import { BrandMark, deployMarks } from "@ssccops/ui";
 import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
@@ -12,6 +13,7 @@ import { ogImageUrl } from "@/shared/lib/og-image-url";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
 import { SectionTabs } from "./_shell/section-tabs";
+import { ON_VERCEL } from "@/shared/lib/vercel";
 import "./globals.css";
 
 /*
@@ -183,6 +185,8 @@ export default async function RootLayout({ children }: Readonly<LayoutProps<"/">
           <SectionTabs isLeader={isLeader} />
           {children}
         </main>
+        {/* 방문 통계 — Vercel에서만, 쿠키 없음 (#600 · ssccops#443 · 가드는 shared/lib/vercel.ts). Speed Insights는 www만 */}
+        {ON_VERCEL && <Analytics />}
       </body>
     </html>
   );

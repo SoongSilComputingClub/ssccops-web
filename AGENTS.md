@@ -286,6 +286,7 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**. 서버 
   표시명은 서버 시드와 글자까지 계약이다(`packages/codes/AGENTS.md`).
 - **`.env*`는 통째로 ignore되고 `.env.example`만 예외다.** `NEXT_PUBLIC_*`은 빌드 타임에
   인라인되므로 **값을 바꾸면 `pnpm dev`를 재시작해야** 반영된다.
+- **측정은 Vercel에서만 실린다**(#600 · ssccops#443). `@vercel/analytics`(세 앱 · 쿠키 없는 방문 통계 · Hobby 월 5만 이벤트)와 `@vercel/speed-insights`(**www만** — 30일 1만 이벤트를 프로젝트들이 나누므로)는 루트 레이아웃(서버 컴포넌트)이 `ON_VERCEL`(`shared/lib/vercel.ts` = `process.env.VERCEL === "1"`)로 가른다 — dev(Cloudflare)에는 `/_vercel/insights` 경로가 없어 404 소음이고, `VERCEL`은 `NEXT_PUBLIC_`이 아니라 브라우저 번들엔 없으니 판정은 서버에서만 된다. 대시보드 «Enable»은 사람이 켠다(www·admin·lms Analytics, www Speed Insights). www `/privacy` «6. 쿠키»가 이 통계를 말한다. **Lighthouse는 `.github/workflows/lighthouse.yml`** — 매일 04:30 KST + 수동, dev www 6경로·lms 홈, `treosh/lighthouse-ci-action` 리포트만(게이트 아님 · 기준선은 ssccops#443).
 - **`NEXT_PUBLIC_DEPLOY_ENV`는 dev 워커의 Cloudflare 빌드 변수에만 `dev`다**(#413). 없으면
   prod — 잊으면 dev가 prod 아이콘·제목으로 보일 뿐 반대는 없다. 판정(`deployMarks`)은
   `@ssccops/ui`에 있지만 **`process.env.NEXT_PUBLIC_DEPLOY_ENV`는 각 앱 `layout.tsx`·`manifest.ts`가
