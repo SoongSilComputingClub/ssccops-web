@@ -1,5 +1,6 @@
 import { ApiError, apiFetch, toQuery } from "@/shared/api/client";
 import type {
+  AcademicProgramRef,
   EventClassification,
   EventPhase,
   EventReceiptStatus,
@@ -44,6 +45,14 @@ interface PublicEventSummaryResponse {
   eventBgngDt: string | null;
   eventEndDt: string | null;
   plcNm: string | null;
+  /**
+   * 학술 프로그램 표시 (#587 · 서버 #519 · ADR-0043). 아닌 행사는 null.
+   *
+   * `formId`와 같은 이유로 옵셔널이다 — 이 필드를 모르는 서버 배포에서는 오지 않고, 그때는
+   * 변환기가 null(행사형)로 굳혀 `/events`가 종전처럼 전량을 그린다. 프로그램이 행사 축에 섞여
+   * 보일 뿐 화면이 죽지 않는다.
+   */
+  academicProgram?: AcademicProgramRef | null;
 }
 
 interface PublicEventDetailResponse extends PublicEventSummaryResponse {
@@ -67,7 +76,7 @@ interface PublicEventDetailResponse extends PublicEventSummaryResponse {
 }
 
 function toSummary(response: PublicEventSummaryResponse): PublicEventSummary {
-  return { ...response };
+  return { ...response, academicProgram: response.academicProgram ?? null };
 }
 
 function toDetail(response: PublicEventDetailResponse): PublicEventDetail {
@@ -76,9 +85,12 @@ function toDetail(response: PublicEventDetailResponse): PublicEventDetail {
    * 한 자리이고(파일 머리말), 여기서 짐작하면 신청 화면이 열린 뒤에야 폼이 없다는 것을 알게 된다.
    */
   return {
-    ...response,
+    ...toSummary(response),
     formId: response.formId ?? null,
     mltplRspnsYn: response.mltplRspnsYn ?? null,
+    mtxtCn: response.mtxtCn,
+    ptcpLmtCnt: response.ptcpLmtCnt,
+    confirmedCount: response.confirmedCount,
   };
 }
 

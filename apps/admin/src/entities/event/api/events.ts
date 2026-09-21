@@ -2,6 +2,7 @@ import type { EventSttsCd } from "@/shared/config/codes";
 import { apiFetch } from "@/shared/lib/api/client";
 import { withServiceOffset } from "@/shared/lib/date";
 import type {
+  AcademicProgramRef,
   EventDetail,
   EventDuplicate,
   EventPhase,
@@ -48,6 +49,13 @@ interface EventSummaryResponse {
    * 그때는 `?? null`이 "지운 적 없음"으로 굳혀 화면이 삭제 표시를 그리지 않는다.
    */
   delDt?: string | null;
+  /**
+   * 학술 프로그램 표시 (#587 · 서버 #519 · ADR-0043). 아닌 행사는 null.
+   *
+   * `delDt`와 같은 이유로 옵셔널이다 — 이 필드를 모르는 서버 배포에서는 통째로 빠지고, 그때는
+   * `?? null`이 «행사형»으로 굳혀 필터·배지·잠금이 조용히 없는 채로 돈다(화면이 죽지 않는다).
+   */
+  academicProgram?: AcademicProgramRef | null;
 }
 
 interface EventDetailResponse extends EventSummaryResponse {
@@ -80,6 +88,7 @@ function toEventSummary(res: EventSummaryResponse): EventSummary {
     crtDt: res.crtDt,
     mdfcnDt: res.mdfcnDt,
     delDt: res.delDt ?? null,
+    academicProgram: res.academicProgram ?? null,
   };
 }
 
@@ -111,6 +120,14 @@ export const EVENT_ERROR = {
   FORM_ALREADY_LINKED: "FORM_ALREADY_LINKED",
   /** 413 — 본문 10만 자 상한 초과 */
   EVENT_CONTENT_TOO_LARGE: "EVENT_CONTENT_TOO_LARGE",
+  /**
+   * 409 — 학술 프로그램 행사의 분류를 바꾸려 함 (#587 · 서버 #519 · ADR-0043).
+   *
+   * 프로그램 행사의 구분은 유형(`academicProgram.typeNm`)이고 분류 칸은 뜻이 없다 — 화면은 그
+   * 칸을 잠그고(`EventForm`), 이 코드는 잠금을 우회한 저장(낡은 화면·다른 탭)의 방어선이다.
+   * 서버는 **값이 바뀔 때만** 본다 — 편집 화면이 상세를 그대로 되돌려 보내는 저장은 통과한다.
+   */
+  EVENT_CLASSIFICATION_LOCKED_FOR_PROGRAM: "EVENT_CLASSIFICATION_LOCKED_FOR_PROGRAM",
   /**
    * 502 — 복제 중 본문 이미지를 저장소에서 복사하지 못했다 (ssccops#198).
    *
