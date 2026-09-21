@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { InstallItem } from "@/features/pwa";
+import { ROUTES } from "@/shared/config/routes";
 import { siteLinks } from "@/shared/config/site-links";
 import { ThemeToggle } from "@/shared/ui";
 import { visibleNavGroups } from "./nav-links";
@@ -140,6 +142,23 @@ export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
              * 메뉴 바로 밑에 떠 있지 않게 하려는 것이다.
              */}
             <div className="mt-auto px-[18px] pt-4">
+              {/*
+               * 내 정보(`/my` · #606) — 좁은 화면에서는 여기, lg 이상은 상단 바 `AuthNav`. 목차
+               * (`nav-links.ts`)에 섞지 않는 것은 역할과 무관한 화면이라 묶음에 자리가 없어서다.
+               * 로그인 여부는 보지 않는다 — 화면이 미로그인이면 게이트를 그린다.
+               */}
+              <Link
+                href={ROUTES.my}
+                onClick={() => setOpen(false)}
+                aria-current={pathname === ROUTES.my ? "page" : undefined}
+                className={
+                  pathname === ROUTES.my
+                    ? "mb-3 block rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
+                    : "mb-3 block rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
+                }
+              >
+                내 정보
+              </Link>
               {/* 홈페이지(www) — 드로어에서는 발치, 테마 위 (#577) */}
               {siteLinks().map((site) => (
                 <a
@@ -150,6 +169,8 @@ export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
                   {site.label} <span className="text-[13px] text-n500">↗</span>
                 </a>
               ))}
+              {/* «홈 화면에 추가» — 설치 가능한 브라우저에만 행, iOS는 안내 한 줄 (#606 · ADR-0045) */}
+              <InstallItem />
               <ThemeToggle />
             </div>
           </div>

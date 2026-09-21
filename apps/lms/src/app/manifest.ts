@@ -2,10 +2,12 @@ import type { MetadataRoute } from "next";
 import { deployMarks } from "@ssccops/ui";
 
 /*
- * PWA 매니페스트 (#169 · apps/www #167과 같은 범위 — "아이콘·manifest만").
+ * PWA 매니페스트 (#169 · 1차는 apps/www #167과 같은 범위 — "아이콘·manifest만").
  *
- * 설치 유도(프롬프트·배너)와 서비스워커·푸시는 범위 밖이다. 재학생이 스스로 홈 화면에
- * 추가했을 때 아이콘 자리에 페이지 스크린샷이 박히는 일만 막는다.
+ * 1차에서는 서비스워커·푸시·설치 유도가 범위 밖이었다 — manifest만으로도 홈 화면 설치와 전체 화면
+ * 실행은 된다. 2차(#606 · ADR-0045)가 그것을 얹었다: 서비스워커는 `app/sw.js/route.ts`, 오프라인 안내는
+ * `app/offline`, 푸시 토글은 `/my`, «홈 화면에 추가»는 드로어 발치, 규칙은 `packages/pwa/README.md`.
+ * 이 파일은 그대로다.
  *
  * start_url이 "/studio"인 이유: 그것이 이 앱의 첫 화면(학술 대시보드)이다. "/"로 두면
  * 루트 라우트가 /studio로 넘기는 한 단계가 설치된 앱에도 남는다.
