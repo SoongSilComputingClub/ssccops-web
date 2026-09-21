@@ -70,7 +70,7 @@ function SemesterNav({ prev, next }: Readonly<{ prev: SemesterRange; next: Semes
         ‹ {formatSemester(prev)}
       </Link>
       <Link href={ROUTES.activities} className="text-n400 hover:text-ink">
-        전체 활동
+        전체 기록
       </Link>
       <Link
         href={ROUTES.activitiesSemester(next.year, next.semester)}
