@@ -95,8 +95,8 @@ function OngoingProgramCard({
         <Badge tone="grey">{acdmActvTypeNm(program.typeCd)}</Badge>
         <div className="flex-1" />
         {program.isLeader && (
-          <span title="내가 스터디장/팀장인 활동입니다">
-            <Badge tone="outline-accent">내 활동</Badge>
+          <span title="내가 스터디장/팀장인 프로그램입니다">
+            <Badge tone="outline-accent">내 프로그램</Badge>
           </span>
         )}
       </div>
@@ -184,19 +184,19 @@ export function AcademicProgramDashboardPage() {
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-3">
               <StatCard
-                label="진행 중 활동"
+                label="진행 중 프로그램"
                 value={data.ongoingCount}
                 hint={
                   data.ongoingByType.length
                     ? data.ongoingByType
                         .map((t) => `${acdmActvTypeNm(t.typeCd)} ${t.count}`)
                         .join(" · ")
-                    : "진행 중인 활동이 없습니다"
+                    : "진행 중인 프로그램이 없습니다"
                 }
                 onClick={() => goPrograms("ONGOING")}
               />
               <StatCard
-                label="지연 활동"
+                label="지연 프로그램"
                 value={data.delayedCount}
                 hint="진행률 40% 미만 (근사)"
                 tone={data.delayedCount > 0 ? "danger" : "default"}
@@ -220,11 +220,11 @@ export function AcademicProgramDashboardPage() {
                   </Button>
                 }
               >
-                진행 중 활동
+                진행 중 프로그램
               </CardTitle>
               {data.ongoingPrograms.length === 0 ? (
                 <div className="py-6 text-center text-[15px] text-n500">
-                  진행 중인 활동이 없습니다.
+                  진행 중인 프로그램이 없습니다.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
@@ -291,11 +291,11 @@ export function AcademicProgramDashboardPage() {
                     </Button>
                   }
                 >
-                  최근 활동
+                  최근 프로그램
                 </CardTitle>
                 {data.recentPrograms.length === 0 ? (
                   <div className="py-6 text-center text-[15px] text-n500">
-                    등록된 활동이 없습니다.
+                    등록된 프로그램이 없습니다.
                   </div>
                 ) : (
                   <div className="flex flex-col gap-[14px]">

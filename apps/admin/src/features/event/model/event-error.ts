@@ -244,7 +244,7 @@ export function toEventDeleteErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return NO_EVENT_DELETE;
     case EVENT_ERROR.EVENT_HAS_ACADEMIC_PROGRAM:
-      return "학술 활동이 연결된 행사는 지울 수 없습니다 — 학술 활동에서 먼저 정리해주세요";
+      return "학술 프로그램이 연결된 행사는 지울 수 없습니다 — 학술 프로그램에서 먼저 정리해주세요";
     /*
      * 둘 다 "화면이 낡았다"는 뜻이다 — 다른 탭에서 이미 지웠거나 이미 없어진 행사다.
      * 사과가 아니라 최신 목록을 가져오는 것이 다음 행동이라 문장이 그것을 말한다.

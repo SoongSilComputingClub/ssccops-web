@@ -214,7 +214,7 @@ async function RecordBody({
     return (
       <EmptyState
         title={`${result.sesnSttsLabel} 회차입니다`}
-        description="검토 중이거나 승인된 회차는 수정할 수 없습니다. 회차 내용은 '내 활동'에서 볼 수 있습니다."
+        description="검토 중이거나 승인된 회차는 수정할 수 없습니다. 회차 내용은 '내 프로그램'에서 볼 수 있습니다."
       />
     );
   }

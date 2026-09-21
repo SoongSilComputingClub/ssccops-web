@@ -49,7 +49,7 @@ export async function SessionLandingPage({
   }
 
   if (result.outcome === "signup-required") {
-    return <SignupRequiredNotice title="회원 가입을 마쳐야 학술 활동 화면을 볼 수 있습니다" />;
+    return <SignupRequiredNotice title="회원 가입을 마쳐야 학술 프로그램 화면을 볼 수 있습니다" />;
   }
 
   if (result.outcome === "not-found") {

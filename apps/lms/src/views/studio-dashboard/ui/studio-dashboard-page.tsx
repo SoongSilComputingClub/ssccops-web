@@ -234,7 +234,7 @@ function ApprovalFeed({ approvals }: Readonly<{ approvals: AcademicProgramApprov
             <div className="mt-[5px] text-[14px] text-n400">
               {approval.sessionId != null
                 ? `회차 기록 처리`
-                : `활동 처리`}
+                : `프로그램 처리`}
               {approval.approverMemberName ? ` — 학술국장 ${approval.approverMemberName}` : ""}
             </div>
             {approval.opinionContent && (
@@ -303,9 +303,9 @@ function DashboardBody({ data }: Readonly<{ data: LeaderDashboardReady }>) {
           )}
           <Badge tone="grey">{acdmActvTypeNm(program.typeCd)}</Badge>
           <div className="flex-1" />
-          {/* 탑바(`_shell/nav-links.ts`)와 같은 순서 — 내 활동 · 회차 기록 · 출석부 · 팀원 관리 */}
+          {/* 탑바(`_shell/nav-links.ts`)와 같은 순서 — 내 프로그램 · 회차 기록 · 출석부 · 팀원 관리 */}
           <DashLink href={studioProgramDetailUrl(program.academicProgramId)}>
-            내 활동
+            내 프로그램
           </DashLink>
           <DashLink href={studioRecordProgramUrl(program.academicProgramId)}>
             회차 기록
@@ -404,7 +404,7 @@ function DashboardBody({ data }: Readonly<{ data: LeaderDashboardReady }>) {
       {/* 내가 맡은 다른 활동 */}
       {otherPrograms.length > 0 && (
         <Card>
-          <div className="mb-[12px] text-[16px] font-medium">내가 맡은 다른 활동</div>
+          <div className="mb-[12px] text-[16px] font-medium">내가 맡은 다른 프로그램</div>
           <div className="flex flex-col gap-[10px]">
             {otherPrograms.map((other) => {
               const badge = acdmActvSttsBadge(other.sttsCd);
@@ -425,7 +425,7 @@ function DashboardBody({ data }: Readonly<{ data: LeaderDashboardReady }>) {
             })}
           </div>
           <div className="mt-[10px] text-[12.5px] text-n500">
-            활동 하나씩 보입니다. 위 드롭다운으로 바꿉니다.
+            프로그램 하나씩 보입니다. 위 드롭다운으로 바꿉니다.
           </div>
         </Card>
       )}
@@ -448,7 +448,7 @@ export async function StudioDashboardPage({
           학술 대시보드
         </h1>
         <p className="text-[13.5px] text-n500">
-          내 활동의 이번 주 회차와 처리 현황
+          내 프로그램의 이번 주 회차와 처리 현황
         </p>
       </header>
 
@@ -470,8 +470,8 @@ export async function StudioDashboardPage({
 
       {result.outcome === "no-program" && (
         <EmptyState
-          title="맡고 있는 학술 활동이 없습니다"
-          description="기획안이 승인되어 활동이 만들어지고 스터디장으로 지정되면 이 화면에 나타납니다."
+          title="맡고 있는 학술 프로그램이 없습니다"
+          description="기획안이 승인되어 프로그램이 만들어지고 스터디장으로 지정되면 이 화면에 나타납니다."
         />
       )}
 

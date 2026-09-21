@@ -25,7 +25,7 @@ export function loadAttendanceRosterErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case ACADEMIC_ATTENDANCE_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
-      return "활동이 없습니다 — 내 활동 목록을 새로고침해주세요";
+      return "프로그램이 없습니다 — 내 프로그램 목록을 새로고침해주세요";
     case ACADEMIC_ATTENDANCE_ERROR.SESSION_NOT_FOUND:
       return "회차가 없습니다 — 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
@@ -56,9 +56,9 @@ export function correctAttendanceErrorMessage(error: unknown): string {
     case ACADEMIC_ATTENDANCE_ERROR.SESSION_NOT_FOUND:
       return "회차가 없습니다 — 새로고침해주세요";
     case ACADEMIC_ATTENDANCE_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
-      return "활동이 없습니다 — 새로고침해주세요";
+      return "프로그램이 없습니다 — 새로고침해주세요";
     case ACADEMIC_ATTENDANCE_ERROR.FORBIDDEN:
-      return "이 활동의 스터디장만 출석을 고칠 수 있습니다";
+      return "이 프로그램의 스터디장만 출석을 고칠 수 있습니다";
     case API_ERROR.NETWORK_ERROR:
       return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
     case API_ERROR.CONFIG_MISSING:

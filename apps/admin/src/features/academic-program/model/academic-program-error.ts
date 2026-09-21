@@ -17,14 +17,14 @@ import { API_ERROR, ApiError } from "@/shared/lib/api/client";
  */
 export function toAcademicProgramErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return "활동 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요";
+    return "프로그램 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요";
   }
 
   switch (error.code) {
     case ACADEMIC_PROGRAM_ERROR.AUTHORITY_REQUIRED:
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "활동을 볼 권한이 없습니다 — 스터디·프로젝트 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다";
+      return "프로그램을 볼 권한이 없습니다 — 학술 프로그램 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다";
     case ACADEMIC_PROGRAM_ERROR.VALIDATION_FAILED:
     case ACADEMIC_PROGRAM_ERROR.INVALID_CODE_VALUE:
       // 커서 형식·정렬·상태 필터가 서버 기준과 어긋난 경우 — 화면을 새로고침하면 필터가 초기화된다

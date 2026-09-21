@@ -70,7 +70,7 @@ export function RecruitmentProgramList({
   if (status === "error") {
     return (
       <EmptyState
-        message={errorMessage || "활동 목록을 불러오지 못했습니다."}
+        message={errorMessage || "프로그램 목록을 불러오지 못했습니다."}
         action={{ label: "다시 시도", onClick: onReload }}
         padding="sm"
       />
@@ -80,7 +80,7 @@ export function RecruitmentProgramList({
   if (rows.length === 0) {
     return (
       <EmptyState
-        message="모집을 관리할 활동이 없습니다."
+        message="모집을 관리할 프로그램이 없습니다."
         padding="sm"
       />
     );

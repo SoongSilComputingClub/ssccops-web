@@ -77,7 +77,7 @@ export async function loadSessionRecord(
       return {
         outcome: "error",
         message:
-          "이 활동에 없는 회차입니다 — 학술 대시보드에서 다시 골라주세요",
+          "이 프로그램에 없는 회차입니다 — 학술 대시보드에서 다시 골라주세요",
       };
     }
 

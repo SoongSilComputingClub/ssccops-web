@@ -41,7 +41,7 @@ const TITLE = "기획안 검토";
  * 가려 부여하기 때문이다. 화면에 그 매핑을 한 벌 더 두면 유형이 늘어난 날 화면만 틀린 말을 한다.
  */
 const ACCEPT_NOTICE =
-  "승인하면 이 기획안이 학술 활동으로 만들어지고, 제출자에게 유형에 맞는 리더 역할(스터디장 · 프로젝트장)이 부여되며, 비어 있는 모집 폼이 함께 생깁니다.";
+  "승인하면 이 기획안이 학술 프로그램으로 만들어지고, 제출자에게 유형에 맞는 리더 역할(스터디장 · 프로젝트장)이 부여되며, 비어 있는 모집 폼이 함께 생깁니다.";
 
 /** 미리보기가 승인이 성립하지 않는다고 말할 때 승인 버튼에 붙는 사유 (#164 · 서버 #150) */
 function acceptBlockReasonOf(response: FormResponseDetail): string | undefined {
@@ -52,7 +52,7 @@ function acceptBlockReasonOf(response: FormResponseDetail): string | undefined {
    * 검토자가 수정요청에 옮겨 적을 유일한 단서다. 뒤에 붙이는 것은 다음 행동뿐이다.
    */
   const reason =
-    preview.failureReason || "이 기획안은 지금 학술 활동으로 옮길 수 없습니다";
+    preview.failureReason || "이 기획안은 지금 학술 프로그램으로 옮길 수 없습니다";
   return `${reason} — 승인 대신 수정요청으로 돌려주세요`;
 }
 
