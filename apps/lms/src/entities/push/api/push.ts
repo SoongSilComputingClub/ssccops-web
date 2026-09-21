@@ -16,7 +16,7 @@ import { ApiError } from "@/shared/api/client";
  */
 export const pushApi = {
   /** VAPID 공개키 */
-  config: () => apiFetchAuthedFromBrowser<{ publicKey: string }>("/v1/push/config"),
+  config: () => apiFetchAuthedFromBrowser<{ publicKey: string | null }>("/v1/push/config"),
 
   /** 201 `{ subscriptionId }` · 같은 endpoint를 다시 보내면 200(갱신) */
   subscribe: (request: PushSubscriptionRequest) =>
