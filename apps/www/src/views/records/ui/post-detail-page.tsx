@@ -65,7 +65,7 @@ export async function PostDetailPage({
           <span className="text-[13.5px] text-n500">{formatYmd(post.actvYmd)}</span>
           {semester && (
             <Link
-              href={ROUTES.activitiesSemester(semester.year, semester.semester)}
+              href={ROUTES.recordsSemester(semester.year, semester.semester)}
               className="text-[13.5px] text-accent-strong"
             >
               {formatSemester(semester)}
@@ -117,7 +117,7 @@ export async function PostDetailPage({
 function BackLink({ category }: Readonly<{ category: ContentCategory }>) {
   return (
     <Link
-      href={ROUTES.activitiesCategory(category.slug)}
+      href={ROUTES.recordsCategory(category.slug)}
       className="-my-1 inline-flex min-h-6 items-center self-start py-1 text-[13.5px] text-accent-strong"
     >
       ‹ {category.label} 목록

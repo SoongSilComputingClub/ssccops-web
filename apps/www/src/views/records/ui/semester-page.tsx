@@ -18,7 +18,7 @@ import { ROUTES } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui";
 
 /**
- * 학기별 묶음 (SSR · #520 · ssccops#382) — `/activities/2026/1`의 포스트와 행사.
+ * 학기별 묶음 (SSR · #520 · ssccops#382) — `/records/2026/1`의 포스트와 행사.
  *
  * 서버에 학기 개념이 없어 **웹이 활동일로 걸러 낸다** — 포스트는 `actv_ymd`, 행사는 시작
  * 일시(`eventBgngDt`). 1학기 = 3~8월, 2학기 = 9월~이듬해 2월(`entities/content/model/semester.ts`).
@@ -64,16 +64,16 @@ function SemesterNav({ prev, next }: Readonly<{ prev: SemesterRange; next: Semes
   return (
     <nav aria-label="학기 이동" className="flex items-center justify-between text-[13.5px]">
       <Link
-        href={ROUTES.activitiesSemester(prev.year, prev.semester)}
+        href={ROUTES.recordsSemester(prev.year, prev.semester)}
         className="text-accent-strong"
       >
         ‹ {formatSemester(prev)}
       </Link>
-      <Link href={ROUTES.activities} className="text-n400 hover:text-ink">
+      <Link href={ROUTES.records} className="text-n400 hover:text-ink">
         전체 기록
       </Link>
       <Link
-        href={ROUTES.activitiesSemester(next.year, next.semester)}
+        href={ROUTES.recordsSemester(next.year, next.semester)}
         className="text-accent-strong"
       >
         {formatSemester(next)} ›

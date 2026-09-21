@@ -8,7 +8,7 @@ export const ROUTES = {
   home: "/",
   /**
    * 행사 목록 — 홈에서 이사했다(#524). 열리는 행사는 홈의 «다가오는 일정»이 세 건까지 보여 주고,
-   * 전체 목록(분류 칩 포함)은 여기다. 상단 바에서는 «활동» 축이 켜진다.
+   * 전체 목록(분류 칩 포함)은 여기다. 상단 바에서는 «행사»가 켜진다(#529).
    */
   events: "/events",
   eventDetail: (eventId: number) => `/events/${eventId}`,
@@ -39,7 +39,7 @@ export const ROUTES = {
   meResponses: "/me/responses",
   /** 낸 기획안 — 항목은 lms `/my/applications/{formRspnsId}`로 간다(`lms-routes.ts`) */
   meProposals: "/me/proposals",
-  /** 내가 이끄는 스터디·프로젝트 — 카드는 lms 상세로 */
+  /** 내가 이끄는 프로그램(스터디·프로젝트·트랙) — 카드는 lms 상세로 */
   mePrograms: "/me/programs",
   /**
    * 공개 폼 — 링크를 아는 회원이 답을 내는 화면 (ssccops#214에서 어드민에서 옮겨 왔다).
@@ -70,7 +70,7 @@ export const ROUTES = {
   authCallback: "/auth/callback",
 
   /*
-   * 다섯 축 (#520 · ssccops#382) — SSCC · 운영진 · 활동 · 모집 · 문의.
+   * 다섯 축 (#520 · ssccops#382) — SSCC · 운영진 · 기록(옛 활동) · 모집 · 문의.
    *
    * 페이지 경로는 서버의 게시된 페이지(`cntnt_page`) 한 장을 그린다 — 어느 슬러그인지는
    * `content-slugs.ts`의 표가 정한다. 포스트 경로는 `cntnt_post`의 목록·상세다.
@@ -97,17 +97,24 @@ export const ROUTES = {
   photoNotice: "/photo-notice",
   /** 이용약관 */
   terms: "/terms",
-  /** 활동 아카이브 — 게시된 포스트 전체 */
-  activities: "/activities",
-  /** 한 분류의 포스트 목록 — `categorySlug`는 `entities/content`의 분류 표(`academic`·`event`·`news`) */
-  activitiesCategory: (categorySlug: string) => `/activities/${categorySlug}`,
-  /** 포스트 상세 */
-  activitiesPost: (categorySlug: string, slug: string) => `/activities/${categorySlug}/${slug}`,
   /**
-   * 학기별 묶음 — `/activities/2026/1`. 1학기는 3~8월, 2학기는 9월~이듬해 2월
+   * 기록 — 게시된 포스트 아카이브 전체 (#520 · #591 · ssccops#439).
+   *
+   * `/activities`였다. #585에서 상단 바 라벨만 «기록»으로 바꿨는데(ssccops#437) 주소·식별자는
+   * 남아 있어 «활동»이 학술 프로그램과 계속 부딪혔다 — ssccops#439의 어휘 표대로 주소까지
+   * `records`다. 옛 주소는 `next.config.ts`의 영구 리다이렉트가 받는다(뿌린 링크·OG 카드).
+   * 분류 조각(`academic`·`event`·`news`)은 포스트 분류이지 축이 아니라 그대로다.
+   */
+  records: "/records",
+  /** 한 분류의 포스트 목록 — `categorySlug`는 `entities/content`의 분류 표(`academic`·`event`·`news`) */
+  recordsCategory: (categorySlug: string) => `/records/${categorySlug}`,
+  /** 포스트 상세 */
+  recordsPost: (categorySlug: string, slug: string) => `/records/${categorySlug}/${slug}`,
+  /**
+   * 학기별 묶음 — `/records/2026/1`. 1학기는 3~8월, 2학기는 9월~이듬해 2월
    * (`entities/content`의 `semesterRange`).
    */
-  activitiesSemester: (year: number, semester: 1 | 2) => `/activities/${year}/${semester}`,
+  recordsSemester: (year: number, semester: 1 | 2) => `/records/${year}/${semester}`,
   /**
    * 문의 — 페이지 `contact`(게시돼 있으면) + 문의처 블록 (#524).
    *
@@ -118,7 +125,7 @@ export const ROUTES = {
   contact: "/contact",
   /**
    * 학술 — 페이지 `academic` + LMS·기획안 제출 CTA (#550 · ssccops#412). 상단 바에서 LMS로 바로
-   * 나가지 않고 이 화면을 거치는 것은 지원자가 «학술 활동이 어떻게 돌아가는가»를 읽을 자리가
+   * 나가지 않고 이 화면을 거치는 것은 지원자가 «학술 프로그램이 어떻게 돌아가는가»를 읽을 자리가
    * 어디에도 없었기 때문이다. LMS 주소는 `lms-routes.ts`.
    */
   academic: "/academic",
@@ -134,8 +141,8 @@ export const CURSOR_QUERY = "cursor";
  * 컴포넌트로 남고, 다음 페이지가 주소에 있어 공유·뒤로 가기가 말이 된다. 커서가 없으면 쿼리를
  * 붙이지 않는다(첫 페이지가 두 주소를 갖지 않게).
  */
-export function activitiesPath(categorySlug: string | null, cursor?: string | null): string {
-  const base = categorySlug ? ROUTES.activitiesCategory(categorySlug) : ROUTES.activities;
+export function recordsPath(categorySlug: string | null, cursor?: string | null): string {
+  const base = categorySlug ? ROUTES.recordsCategory(categorySlug) : ROUTES.records;
   return cursor ? `${base}?${CURSOR_QUERY}=${encodeURIComponent(cursor)}` : base;
 }
 

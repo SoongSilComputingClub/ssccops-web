@@ -56,7 +56,7 @@ export async function apiFetchAuthed<T>(path: string, init?: RequestInit): Promi
 /**
  * 인증 커서 목록 호출 — `data` 배열과 `page` 봉투를 함께 돌려준다 (lms와 같은 모양 · #518).
  *
- * 이 앱에서 커서 페이징을 타는 조회는 `/me`의 «내가 이끄는 활동»(`GET /v1/academic-programs`)
+ * 이 앱에서 커서 페이징을 타는 조회는 `/me`의 «이끄는 프로그램»(`GET /v1/academic-programs`)
  * 하나다. 공개 목록은 여전히 `apiFetch`를 쓴다.
  */
 export async function apiFetchAuthedList<T>(

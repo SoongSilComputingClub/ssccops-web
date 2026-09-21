@@ -6,7 +6,7 @@ import {
   type ContentCategory,
   type PublicContentPostPage,
 } from "@/entities/content";
-import { ROUTES, activitiesPath } from "@/shared/config/routes";
+import { ROUTES, recordsPath } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui";
 import { CategoryTabs } from "./category-tabs";
 
@@ -14,7 +14,8 @@ import { CategoryTabs } from "./category-tabs";
 const PAGE_SIZE = 12;
 
 /**
- * 활동 아카이브 목록 (SSR · #520 · ssccops#382) — 분류 탭 · 표지 · 활동일 · «더 보기».
+ * 기록 목록 — 포스트 아카이브 (SSR · #520 · ssccops#382) — 분류 탭 · 표지 · 활동일 · «더 보기».
+ * 주소는 #591(ssccops#439)에서 `/activities`에서 `/records`로 바꿨다 — 옛 주소는 `next.config.ts` 리다이렉트.
  *
  * ── «더 보기»가 링크인 이유 ────────────────────────────────
  * 커서를 주소(`?cursor=`)에 싣고 다음 장을 **새 화면으로** 그린다. 누적해서 이어 붙이려면
@@ -22,10 +23,10 @@ const PAGE_SIZE = 12;
  * 아카이브 읽기에는 충분하고, 주소가 남아 공유·뒤로 가기가 된다.
  *
  * ── 행사는 `/events`에 ──────────────────────────────────
- * 상단 바의 «활동»이 이 화면으로 오지만 열리는 행사의 전체 목록은 `/events`다(#524 — 홈이
+ * 상단 바의 «기록»이 이 화면으로 오지만 열리는 행사의 전체 목록은 `/events`다(#524 — 홈이
  * «지금 SSCC»가 되면서 행사 목록이 그리로 이사했다). 헤더에 그 길을 한 줄 둔다.
  */
-export async function ActivitiesPage({
+export async function RecordsPage({
   category,
   cursor,
 }: Readonly<{
@@ -81,7 +82,7 @@ export async function ActivitiesPage({
         <div className="flex items-center justify-center gap-[10px]">
           {cursor && (
             <Link
-              href={activitiesPath(selected)}
+              href={recordsPath(selected)}
               className="rounded-xl border border-line px-[16px] py-[10px] text-[14.5px] text-n300 hover:text-ink"
             >
               처음으로
@@ -89,7 +90,7 @@ export async function ActivitiesPage({
           )}
           {nextCursor && (
             <Link
-              href={activitiesPath(selected, nextCursor)}
+              href={recordsPath(selected, nextCursor)}
               className="rounded-xl bg-accent px-[16px] py-[10px] text-[14.5px] font-semibold text-on-solid"
             >
               더 보기

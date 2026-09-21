@@ -93,7 +93,7 @@ function Section({ body }: Readonly<{ body: ReactNode }>) {
  * 진행 중·예정 행사를 시작일 순으로 — 시작 일시가 없는 행사는 서버가 `NONE`으로 주므로 여기서 빠진다.
  *
  * 학술 프로그램(`academicProgram`이 있는 것)도 뺀다 (#587 · ssccops#435 · ADR-0043) — 이 자리는
- * `/events`와 같은 행사 축이라 행사형만 본다. 스터디·프로젝트 모집은 학술(`/academic`)의 자리다.
+ * `/events`와 같은 행사 축이라 행사형만 본다. 학술 프로그램 모집은 학술(`/academic`)의 자리다.
  */
 function scheduledEvents(events: PublicEventSummary[]): PublicEventSummary[] {
   return excludeAcademicPrograms(events)

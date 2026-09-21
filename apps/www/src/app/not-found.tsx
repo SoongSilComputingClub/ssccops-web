@@ -14,7 +14,7 @@ export default function NotFound() {
   return (
     <Card className="flex flex-col items-center gap-[10px] px-[18px] py-[52px] text-center">
       <div className="text-[18px] font-medium">없는 주소입니다</div>
-      <p className="text-[14px] leading-[1.6] text-n500">홈이나 활동에서 다시 찾아주세요.</p>
+      <p className="text-[14px] leading-[1.6] text-n500">홈이나 기록에서 다시 찾아주세요.</p>
       <div className="mt-[6px] flex flex-wrap items-center justify-center gap-[8px]">
         <Link
           href={ROUTES.home}
@@ -23,10 +23,10 @@ export default function NotFound() {
           홈으로
         </Link>
         <Link
-          href={ROUTES.activities}
+          href={ROUTES.records}
           className="rounded-xl border border-line px-[16px] py-[10px] text-[14.5px] text-n300 hover:text-ink"
         >
-          활동 보기
+          기록 보기
         </Link>
       </div>
     </Card>

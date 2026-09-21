@@ -32,7 +32,7 @@ import { ProposalCard } from "./proposal-card";
  *   ① 신청한 행사   `GET /v1/events/my-applications`          → /me/applications
  *   ② 낸 폼         `GET /v1/forms/responses/mine` 중 기획안 밖 → /me/responses
  *   ③ 낸 기획안     같은 목록 중 기획안 폼(`PROPOSAL`) 응답     → /me/proposals · 카드는 lms로
- *   ④ 이끄는 활동   `GET /v1/academic-programs?mine=leader`     → /me/programs · 카드는 lms로
+ *   ④ 이끄는 프로그램   `GET /v1/academic-programs?mine=leader`     → /me/programs · 카드는 lms로
  * 팀원으로 참여한 활동(`mine=member`가 없다)과 출석 요약은 서버에 없어 이번에도 없다 —
  * ssccops#386에 «API 필요»로 남아 있다. 없는 데이터를 화면이 지어내지 않는다.
  *
@@ -46,7 +46,7 @@ export async function MePage({ loginError }: Readonly<{ loginError: string | nul
   return (
     <MeFrame
       pathname={ROUTES.me}
-      description="신청한 행사, 낸 폼과 기획안, 내가 이끄는 학술 활동을 이 화면에서 확인할 수 있습니다"
+      description="신청한 행사, 낸 폼과 기획안, 내가 이끄는 학술 프로그램을 이 화면에서 확인할 수 있습니다"
       loginError={loginError}
     >
       <HubBody />
@@ -249,7 +249,7 @@ async function ProposalsBlock({
   );
 }
 
-/* ── ④ 내가 이끄는 학술 활동 ──────────────────────────────── */
+/* ── ④ 내가 이끄는 학술 프로그램 ──────────────────────────────── */
 
 /*
  * 빈 목록은 실패가 아니다: 스터디장/팀장이 아닌 부원이 대부분이라 «없음»이 이 블록의 흔한 상태다.
@@ -261,11 +261,11 @@ function ProgramsBlock({
 }>) {
   const programs = result.status === "fulfilled" ? result.value : null;
   return (
-    <HubSection title="이끄는 활동" count={programs?.length ?? null} href={ROUTES.mePrograms}>
+    <HubSection title="이끄는 프로그램" count={programs?.length ?? null} href={ROUTES.mePrograms}>
       {programs === null ? (
-        <EmptyState title="활동을 불러오지 못했습니다 — 잠시 후 다시 시도해주세요" />
+        <EmptyState title="프로그램을 불러오지 못했습니다 — 잠시 후 다시 시도해주세요" />
       ) : programs.length === 0 ? (
-        <EmptyState title="이끄는 활동이 없습니다" />
+        <EmptyState title="이끄는 프로그램이 없습니다" />
       ) : (
         <div className="flex flex-col gap-[12px]">
           {programs.slice(0, HUB_PREVIEW_COUNT).map((program) => (

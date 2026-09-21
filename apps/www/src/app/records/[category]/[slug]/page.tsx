@@ -7,13 +7,13 @@ import {
   formatSemester,
   parseSemesterPath,
 } from "@/entities/content";
-import { PostDetailPage, SemesterPage } from "@/views/activities";
+import { PostDetailPage, SemesterPage } from "@/views/records";
 
 /**
- * `/activities/{a}/{b}` — 두 화면이 한 라우트를 나눠 쓴다 (#520).
+ * `/records/{a}/{b}` — 두 화면이 한 라우트를 나눠 쓴다 (#520).
  *
- * - `/activities/{category}/{slug}` 포스트 상세
- * - `/activities/{year}/{semester}` 학기별 묶음
+ * - `/records/{category}/{slug}` 포스트 상세
+ * - `/records/{year}/{semester}` 학기별 묶음
  *
  * Next는 같은 자리에 이름이 다른 동적 세그먼트 둘(`[category]`와 `[year]`)을 두지 못한다.
  * 그래서 첫 조각의 **모양**으로 가른다 — 네 자리 숫자면 연도, 분류 표에 있으면 분류, 둘 다
@@ -21,7 +21,7 @@ import { PostDetailPage, SemesterPage } from "@/views/activities";
  */
 export async function generateMetadata({
   params,
-}: PageProps<"/activities/[category]/[slug]">): Promise<Metadata> {
+}: PageProps<"/records/[category]/[slug]">): Promise<Metadata> {
   const { category, slug } = await params;
 
   const semester = parseSemesterPath(category, slug);
@@ -53,7 +53,7 @@ export async function generateMetadata({
 
 export default async function Page({
   params,
-}: Readonly<PageProps<"/activities/[category]/[slug]">>) {
+}: Readonly<PageProps<"/records/[category]/[slug]">>) {
   const { category, slug } = await params;
 
   const semester = parseSemesterPath(category, slug);
