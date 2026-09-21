@@ -47,6 +47,8 @@ export async function generateMetadata(): Promise<Metadata> {
       template: DEPLOY.title("%s · SSCC 학술"),
     },
     description: "숭실컴퓨팅클럽 학술 — 학술 프로그램(스터디·프로젝트·트랙)과 회차·출석, 기획안 제출",
+    // 검색 결과에 싣지 않는다 (#602 · ssccops#444) — robots.txt(`app/robots.ts`)가 «긁지 마라»의 짝
+    robots: { index: false, follow: false },
     openGraph: {
       siteName: "SSCC 학술",
       type: "website",

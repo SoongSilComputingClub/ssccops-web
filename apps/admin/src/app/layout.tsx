@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   // 문자열 하나라 접두를 바로 붙인다 — www·lms는 `{ default, template }`이라 둘 다에 붙는다
   title: DEPLOY.title("SSCC 운영관리"),
   description: "SSCC 운영관리시스템",
+  // 검색 결과에 싣지 않는다 (#602 · ssccops#444) — robots.txt(`app/robots.ts`)가 «긁지 마라»의 짝
+  robots: { index: false, follow: false },
   /*
    * iOS Safari는 manifest를 보지 않는다 (#108) — 홈 화면에 추가했을 때 전체 화면으로 뜨게
    * 하려면 이 메타가 따로 있어야 한다. 상태 표시줄을 default로 둔 것은 상단 바가 흰색이라
