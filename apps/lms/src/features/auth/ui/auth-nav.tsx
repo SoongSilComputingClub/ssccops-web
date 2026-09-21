@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createClient } from "@ssccops/auth/supabase/client";
+import { clearServiceWorkerCache } from "@ssccops/pwa";
+import { ROUTES } from "@/shared/config/routes";
 import { SignInButton } from "./sign-in-button";
 
 /*
@@ -16,12 +19,15 @@ import { SignInButton } from "./sign-in-button";
  * 첫 렌더에 아무것도 그리지 않는 이유도 www와 같다 — 서버는 로그인 여부를 모르므로 어느 쪽을
  * 그려도 하이드레이션 직후 뒤집힌다. 자리만 잡아 두고 판정이 끝난 뒤 그린다.
  *
- * ── www와 다른 점: '내 신청' 링크가 없다 ─────────────────────────
- * www는 로그인한 사람에게 '내 신청' 링크를 헤더에 걸지만, 이 앱의 화면 이동은 전부
- * `nav-links.ts` 목차가 맡는다(로그인해야 볼 수 있는 것이 목차 전체다). 여기서는 로그아웃만
- * 그린다.
+ * ── 로그인한 사람에게 그리는 것 (#606 · ADR-0045) ──────────────────
+ * `signedInSlot`(루트 레이아웃이 넘기는 종 `NotificationBell` + 배지 값을 듣는 `UnreadCountSync`),
+ * «내 정보»(`/my` — lg 이상만, 좁은 화면은 드로어 발치), 로그아웃. www가 «내 활동» 링크를 헤더에
+ * 거는 것과 같은 자리다 — 화면 이동은 여전히 `nav-links.ts` 목차가 맡고, 여기 있는 것은 **역할과
+ * 무관하고 로그인해야 뜻이 있는** 것들이다. 종을 slot으로 받는 것은 `features/auth`가 같은 레이어의
+ * `features/notification`을 임포트하지 않기 위해서다(FSD) — 조립은 `app/layout.tsx`가 한다. 이 가지에만
+ * 마운트되므로 어드민의 `AuthGate` 안과 같은 자리(로그인했다고 판정된 뒤)다.
  */
-export function AuthNav() {
+export function AuthNav({ signedInSlot }: Readonly<{ signedInSlot?: ReactNode }>) {
   const router = useRouter();
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -56,6 +62,8 @@ export function AuthNav() {
       setSigningOut(false);
       return;
     }
+    // 서비스워커 캐시(마지막으로 본 목록·상세)를 비운다 — 남의 기기에 내 것이 남지 않게 (#606)
+    await clearServiceWorkerCache();
     setSignedIn(false);
     setSigningOut(false);
     /*
@@ -80,6 +88,13 @@ export function AuthNav() {
 
   return (
     <div className="flex items-center gap-[4px]">
+      {signedInSlot}
+      <Link
+        href={ROUTES.my}
+        className="hidden rounded-lg px-[10px] py-[6px] text-[14.5px] text-n300 hover:text-ink lg:block"
+      >
+        내 정보
+      </Link>
       <button
         type="button"
         onClick={signOut}

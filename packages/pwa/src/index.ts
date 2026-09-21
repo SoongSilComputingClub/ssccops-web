@@ -6,7 +6,9 @@
  * - `registerServiceWorker()` · `clearServiceWorkerCache()`  등록(개발 모드 제외) · 로그아웃 때 비움
  * - `usePushSubscription(...)` · `useInstallPrompt()` · `useOnline()`  화면 훅
  * - `NotificationItem` 등 계약 타입 — 서버 표 그대로(ssccops#446)
- * - `@ssccops/pwa/ui`  알림 목록 — admin·lms가 같은 것을 그린다
+ * - `useUnreadCount` · `setUnreadCount` · `decrementUnreadCount`  종 배지 값 (#606)
+ * - `pushStateDescription(state, ctx)`  푸시 스위치 아래 문구 (#606)
+ * - `@ssccops/pwa/ui`  알림 목록·오프라인 띠·서비스워커 등록 껍데기 — admin·lms가 같은 것을 그린다
  *
  * ── 여기 없는 것 ────────────────────────────────────────────
  * 서버 호출(`apiFetch`)과 이동 규칙. 앱마다 인증 헤더·401 처리·라우트가 달라 훅이 콜백으로 받는다.
@@ -40,3 +42,5 @@ export {
 } from "./use-push-subscription";
 export { useInstallPrompt, type InstallPromptControls } from "./use-install-prompt";
 export { useOnline } from "./use-online";
+export { decrementUnreadCount, setUnreadCount, useUnreadCount } from "./unread-store";
+export { pushStateDescription } from "./push-copy";

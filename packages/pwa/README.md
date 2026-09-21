@@ -13,7 +13,10 @@
 | `useInstallPrompt()` | `canInstall` · `install()` · `isIos` · `isStandalone` |
 | `useOnline()` | `navigator.onLine` + `online`/`offline` 이벤트 |
 | `NotificationItem` · `NotificationPage` · `PushSubscriptionRequest` · `PushApp` | 서버 계약 타입(ssccops#446 표 그대로) |
+| `useUnreadCount()` · `setUnreadCount(n)` · `decrementUnreadCount()` | 종 배지 값 — 모듈 스토어(`useSyncExternalStore`, zustand 없음). 듣는 것은 앱 훅(#606) |
+| `pushStateDescription(state, { isIos, isStandalone })` | 푸시 스위치 아래 상태 문장 — 미지원·차단·꺼짐·켜짐·확인 중 + iOS 미설치 힌트(#606) |
 | `@ssccops/pwa/ui` → `NotificationList` · `NOTIFICATION_TYPE_LABEL` | 알림 목록(커서 «더 보기» · 읽음/안 읽음 · «모두 읽음») — admin·lms가 같은 것을 그린다. 데이터는 앱 훅이 넘긴다 |
+| `@ssccops/pwa/ui` → `OfflineBanner` · `ServiceWorkerRegister` | 오프라인 띠(«오프라인 — 마지막으로 본 내용» · `useOnline`) · 등록 껍데기(루트 레이아웃에 한 번) — #606에서 올렸다 |
 
 ## 서비스워커가 하는 것 — 규칙 넷
 
@@ -38,7 +41,7 @@
 
 1. `next.config.ts` `transpilePackages`에 `@ssccops/pwa`, `globals.css`에 `@source "../../../../packages/pwa/src"`(`NotificationList`의 토큰 클래스 — 루트 AGENTS.md «함정»).
 2. `app/sw.js/route.ts` — `buildServiceWorker(...)`를 `application/javascript`로. `app/offline/page.tsx` — 정적, 데이터 없음. **둘 다 미들웨어 매처에서 뺀다** — 로그인 전에 `/sw.js`가 `/login`으로 리다이렉트되면 등록 자체가 실패하고(워커 스크립트는 리다이렉트를 못 따라간다), install이 `/offline`을 담을 때 로그인 HTML을 담는다.
-3. 루트 레이아웃의 작은 클라이언트 컴포넌트가 `registerServiceWorker()` 한 번. 오프라인 띠는 `useOnline()`.
+3. 루트 레이아웃에 `@ssccops/pwa/ui`의 `ServiceWorkerRegister`(등록 한 번)와 `OfflineBanner`(띠). admin(#604)은 자기 `features/pwa`에 같은 두 컴포넌트를 사본으로 갖고 있다 — lms(#606)가 같은 것을 쓰게 되어 패키지로 올렸고, admin 사본(그리고 zustand `useUnreadStore`·`usePushToggle`의 `DESCRIPTION` 표)은 다음 admin 작업에서 패키지 것으로 바꾼다.
 4. `usePushSubscription`에 앱의 `apiFetch`로 만든 `pushApi`를 넘긴다. 로그아웃 성공 뒤 `clearServiceWorkerCache()`.
 5. `DELETE /v1/push/subscriptions`가 404(모르는 endpoint)면 앱 쪽에서 성공으로 삼킨다 — 브라우저 구독은 풀어야 한다.
 

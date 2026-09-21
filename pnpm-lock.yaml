@@ -108,6 +108,9 @@ importers:
       '@ssccops/form-renderer':
         specifier: workspace:*
         version: link:../../packages/form-renderer
+      '@ssccops/pwa':
+        specifier: workspace:*
+        version: link:../../packages/pwa
       '@ssccops/share-meta':
         specifier: workspace:*
         version: link:../../packages/share-meta

@@ -21,6 +21,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 첫 화면 `/`(#228): 스터디장은 `redirect`로 `/studio`를 지나가고, 남은 사람에게는 «무엇을 하러 왔는지» 고르는 카드 둘(기획안 제출·내 신청). 뷰 안에 역할 조건문을 흩지 않는다.
 - 상단 바 목차는 `app/_shell/nav-links.ts` **한 벌**을 데스크톱·드로어가 함께 쓴다. 역할 필터는 `visibleNavLinks`(#224) — 근거는 `GET /v1/academic-programs?mine=leader`가 한 건이라도 주는가(`fetchIsAcademicLeader`, 루트 레이아웃이 서버에서 한 번). `leadrMbrId === 내 mbrId`를 웹에서 다시 계산하지 않는다 — 판정은 서버.
 - **상단 바 오른쪽(lg)·드로어 발치의 «홈페이지 ↗»는 `shared/config/site-links.ts`다**(#577 · ssccops#430) — www 오리진은 공유 링크가 이미 쓰는 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`이고 비면 항목이 없다. 목차(`nav-links.ts`)에 섞지 않는 것은 역할·`isActive`가 없는 외부 앱이라서다. 새 env 없음.
+- **«내 정보»(`/my` · `views/my-account`)와 «알림»(`/notifications` · `views/notification-list`)도 목차 밖이다**(#606) — 역할과 무관한 화면이라 묶음에 자리가 없다. 진입은 상단 바의 종(로그인한 사람에게만 · `AuthNav`의 `signedInSlot`)과 «내 정보»(lg는 `AuthNav`, 좁은 화면은 드로어 발치)다. «기획안 제출 현황»의 `isActive`는 `/my` 접두가 아니라 `/my/applications` 경로만 본다 — `/my`에서 그 탭이 켜지지 않게.
 - 경로는 `shared/config/routes.ts`의 `ROUTES`로만. 어드민의 `/academic-programs` 계열과 주소가 겹치지 않는다(소스를 공유하지 않는다).
 
 ## 규칙
@@ -38,6 +39,19 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - 오류 코드 → 문구는 `entities/*/api/error-codes.ts`·`features/*/model/*-error.ts`가 맡고 화면은 `ApiError.code`로만 분기한다(#29).
 - **검색엔진에는 전부 닫혀 있다**(#602 · ssccops#444) — `app/robots.ts`가 `Disallow: /`, 루트 `metadata.robots`가 noindex. 전 화면 로그인 필수라 검색에 잡힐 화면이 없고, 검색으로 올 사람은 www `/academic`이 받는다. 공유 카드(OG)는 그대로다 — 메신저 크롤러는 robots.txt를 보지 않는다.
 - **공유 카드(OG 이미지)는 `GET /og?card=…` 한 라우트가 그린다**(#556 · ssccops#418 — www 폼 카드 `f/[formId]/og`와 같은 뼈대, 1200×630, 마크 + 제목 + 부제). 카드는 `shared/config/og-cards.ts`의 허용 목록(`default` «SSCC 학술» · `proposal` «기획안 제출»)에서만 고르고 **쿼리의 문자열을 그대로 그리지 않는다** — 모르는 키는 기본 카드. 루트 레이아웃이 기본 카드를, `/proposals/new`가 기획안 카드를 `openGraph.images`에 건다. og:image는 절대 주소여야 하는데 `metadataBase`가 없어(dev·prod 도메인이 다르다) `shared/lib/og-image-url.ts`가 요청 헤더로 origin을 만든다(서버 전용 — 배럴에 싣지 않는다). 접수 기간처럼 시간에 따라 변하는 값은 담지 않는다(ssccops#194). 폰트는 `public/fonts`의 Pretendard를 자기 origin에서 fetch(ADR-0030 · 매처의 `otf` 제외가 그 짝).
+
+## PWA — 서비스워커·푸시·설치 (#606 · ssccops#448 · ADR-0045)
+
+1차(#169)는 manifest·아이콘까지였고 2차가 서비스워커·표준 Web Push(VAPID)·오프라인·설치 항목을 얹었다. 공통 코드는 `@ssccops/pwa`(규칙·함정은 `packages/pwa/README.md`)이고 어드민(#604)이 먼저 꽂은 모양을 그대로 따른다 — 여기에는 lms가 어디에 무엇을 꽂았고 어드민과 무엇이 다른지만 적는다.
+
+- **서비스워커는 `app/sw.js/route.ts`가 문자열로 내준다** — `public/sw.js` 파일이 없다. `cacheVersion`은 `NEXT_PUBLIC_GIT_SHA`, `apiOrigin`은 `NEXT_PUBLIC_API_BASE_URL`의 오리진, `app: "LMS"`, `appOrigins`는 `site-links.ts`의 `appOrigins()` — **ADMIN은 이 앱의 새 env `NEXT_PUBLIC_ADMIN_ORIGIN`**(dev·prod 빌드 변수에 넣는다 · 비면 워커는 자기 `/notifications`로 연다), WWW는 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`. `NEXT_PUBLIC_ADMIN_ORIGIN`은 #453이 걷어낸 이름이 **알림 용도로만** 돌아온 것이다 — 화면 링크에는 여전히 쓰지 않는다.
+- **`/sw.js`·`/offline`은 미들웨어 매처에서 뺐다.** 이 앱은 리다이렉트하지 않아 등록이 막힐 일은 없지만 비밀이 없는 정적 응답에 Supabase 왕복을 붙이지 않는다. `/offline`은 루트 레이아웃 안에 그려진다(어드민은 셸 밖) — 이 앱의 셸은 세션 조회 실패를 `false`로 삼켜 오프라인에서도 선다. 등록은 루트 레이아웃의 `ServiceWorkerRegister`(`@ssccops/pwa/ui`), 띠는 `OfflineBanner`(같은 곳) — **개발 모드(`next dev`)에서는 등록되지 않는다.** 확인은 dev 배포에서 DevTools «Application › Service Workers».
+- **로그아웃이 캐시를 비운다** — `AuthNav.signOut`이 `signOut()` 성공 뒤 `clearServiceWorkerCache()`(`CLEAR_CACHE`)를 보내고 `router.refresh()`.
+- **푸시 스위치는 `/my`(«내 정보» — #606에서 새로 둔 화면 · 로그인 계정 + «푸시 알림» 카드)** — `features/pwa` `PushToggleCard`·`usePushToggle` → `@ssccops/pwa` `usePushSubscription`에 `entities/push` `pushApi`(`browser-client` · `app: "LMS"`) 꽂음. 상태 문구는 `@ssccops/pwa`의 `pushStateDescription` 한 벌(어드민과 같은 글자 — 알림은 회원 단위라 어느 앱에서 켜든 같은 것이 온다). `DELETE`는 `data` 없는 200이라 `apiFetchAuthedNullableFromBrowser`, 404는 성공으로 삼킨다. **기기마다 따로 켠다.**
+- **종은 `features/notification` `NotificationBell`** — 상단 바, 로그인한 사람에게만(`AuthNav`가 `signedInSlot`으로 받는다 — `features/auth`가 같은 레이어의 `features/notification`을 임포트하지 않으려고 조립은 `app/layout.tsx`). 배지 값은 `@ssccops/pwa`의 `useUnreadCount` 스토어(zustand 없음)이고 듣는 곳은 `UnreadCountSync` 하나(같은 slot — 진입·`visibilitychange`마다 `GET /v1/notifications/unread-count`, 실패는 조용).
+- **`/notifications`는 `@ssccops/pwa/ui`의 `NotificationList`를 그린다** — 어드민과 같은 컴포넌트라 목록 모양을 여기서 고치지 않는다. 훅 `useNotifications`는 어드민 것과 같은 모양이되 **이 앱의 규약대로** 401·403을 상태(`unauthenticated`·`signup-required`)로 올려 화면이 `LoginGate`·`SignupRequiredNotice`를 그리고, «모두 읽음» 실패는 토스트가 없어 목록 위 한 줄(`actionError`)이다. **클라이언트 화면이다**(이 앱의 다른 조회는 SSR 로더) — 읽음 처리·«더 보기»가 브라우저 상태이고 종 배지와 같은 값을 그 자리에서 맞춰야 한다. 이동 규칙(`notificationTarget`)은 워커와 같다 — `app`이 LMS면 라우터, ADMIN·WWW면 `appOrigins()`의 오리진으로 전체 이동, 없으면 머문다(글자만).
+- **드로어 발치의 «홈 화면에 추가»는 `features/pwa` `InstallItem`**(«홈페이지 ↗» 아래, 테마 위). `beforeinstallprompt`를 받은 브라우저에만 행, iPhone·iPad는 «홈 화면에 추가는 공유 버튼에서 합니다» 한 줄, 설치된 창에서는 없다. 데스크톱 상단 바에는 없다 — 설치는 모바일의 일이고 lg 상단 바는 이미 꽉 찼다.
+- **lms 고유 사건(기획안 검토 결과·회차 승인 알림)은 없다**(ssccops#448 «1차 밖») — 지금 오는 알림은 어드민과 같은 셋(승인 요청·결과·마감)이고 운영진이 이 앱에서 구독했을 때의 이야기다. 서버 계약은 ssccops#446 표 그대로이고 어드민 `entities/notification/api`·`entities/push/api`와 같은 모양이다 — 서버 DTO를 대조할 때 두 앱을 함께 본다.
 
 ## 공유 링크 발급 (`entities/share/api/share-links.ts`)
 

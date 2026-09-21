@@ -2,9 +2,11 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import Link from "next/link";
 import { BrandMark, deployMarks } from "@ssccops/ui";
+import { OfflineBanner, ServiceWorkerRegister } from "@ssccops/pwa/ui";
 import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { ThemeToggle } from "@/shared/ui";
 import { AuthNav } from "@/features/auth";
+import { NotificationBell, UnreadCountSync } from "@/features/notification";
 // 서버 전용 조회는 배럴이 재export 하지 않는다(클라이언트 번들 오염 방지) — 직접 임포트한다
 import { fetchIsAcademicLeader } from "@/entities/academic-program/api/programs-read";
 import { ROUTES } from "@/shared/config/routes";
@@ -136,6 +138,8 @@ export default async function RootLayout({ children }: Readonly<LayoutProps<"/">
         />
       </head>
       <body className="antialiased">
+        {/* 연결이 없을 때 맨 위 한 줄 — 상단 바 위에 겹친다 (#606 · ADR-0045) */}
+        <OfflineBanner />
         {/*
          * 상단 바는 로고(왼쪽)와 메뉴·로그인 상태(오른쪽) 두 덩어리다 (apps/www #167과 같은
          * 구조). 메뉴 목차는 `_shell/nav-links.ts` 한 벌을 데스크톱 메뉴와 모바일 드로어가
@@ -150,7 +154,18 @@ export default async function RootLayout({ children }: Readonly<LayoutProps<"/">
             </Link>
             <div className="flex items-center gap-[6px]">
               <DesktopNav isLeader={isLeader} />
-              <AuthNav />
+              {/*
+               * 종 + 배지 값 듣기 — 로그인한 사람에게만, `AuthNav`의 그 가지에 (#606 · ADR-0045).
+               * 드로어가 아니라 상단 바인 것은 열지 않고도 배지가 보여야 해서다.
+               */}
+              <AuthNav
+                signedInSlot={
+                  <>
+                    <UnreadCountSync />
+                    <NotificationBell />
+                  </>
+                }
+              />
               {/*
                * 테마는 admin(사이드바 발치)과 같은 3버튼으로 고른다 (#349). 전에는 아이콘 한
                * 버튼으로 돌려 골랐는데(#341), 누르기 전에는 다음이 무엇인지 알 수 없고 세 값
@@ -187,6 +202,8 @@ export default async function RootLayout({ children }: Readonly<LayoutProps<"/">
           <SectionTabs isLeader={isLeader} />
           {children}
         </main>
+        {/* 서비스워커 등록 — 개발 모드는 패키지가 건너뛴다 (#606 · ADR-0045 · 캐시 규칙은 packages/pwa/README.md) */}
+        <ServiceWorkerRegister />
         {/* 방문 통계 — Vercel에서만, 쿠키 없음 (#600 · ssccops#443 · 가드는 shared/lib/vercel.ts). Speed Insights는 www만 */}
         {ON_VERCEL && <Analytics />}
       </body>
