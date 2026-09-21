@@ -38,7 +38,7 @@ export async function StudioRecruitmentPage({
       <header className="flex flex-col gap-[2px]">
         <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">모집 관리</h1>
         <p className="text-[13.5px] text-n500">
-          내가 낸 기획안이 승인돼 모집이 열린 학술 활동입니다. 모집 일정은 학술국장이 정합니다.
+          내가 낸 기획안이 승인돼 모집이 열린 학술 프로그램입니다. 모집 일정은 학술국장이 정합니다.
         </p>
       </header>
 
@@ -51,7 +51,7 @@ export async function StudioRecruitmentPage({
       {load.outcome === "signup-required" && <ProgramSignupNotice />}
       {load.outcome === "none" && (
         <EmptyState
-          title="모집을 시작한 활동이 없습니다"
+          title="모집을 시작한 프로그램이 없습니다"
           description="기획안이 승인되면 이 자리에 지원서가 생깁니다."
         />
       )}
@@ -99,7 +99,7 @@ function RecruitmentList({
       <PhaseFilterChips active={phase} counts={counts} />
 
       {shown.length === 0 ? (
-        <EmptyState title="이 상태에 해당하는 활동이 없습니다" />
+        <EmptyState title="이 상태에 해당하는 프로그램이 없습니다" />
       ) : (
         <div className="flex flex-col gap-[12px]">
           {shown.map((program) => (

@@ -24,7 +24,7 @@ export function toSessionReviewErrorMessage(error: unknown): string {
     case SESSION_REVIEW_ERROR.AUTHORITY_REQUIRED:
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "회차를 승인할 권한이 없습니다 — 스터디·프로젝트 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다";
+      return "회차를 승인할 권한이 없습니다 — 학술 프로그램 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다";
     case SESSION_REVIEW_ERROR.INVALID_SESSION_TRANSITION:
       return "이미 처리된 회차입니다 — 목록을 새로고침해주세요";
     case SESSION_REVIEW_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:

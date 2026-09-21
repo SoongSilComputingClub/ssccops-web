@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { MyProgramsPage } from "@/views/my-programs";
 
 /**
- * /studio/programs — 내 활동 (#188 · #192).
+ * /studio/programs — 내 프로그램 (#188 · #192).
  *
  * `app/`은 라우팅 전용이다 — 뷰(`views/my-programs`)를 얇게 감싼다. 상단 드롭다운으로 활동을
  * 고르므로 `?programId=`를 읽어 넘긴다(없으면 목록 맨 위). `/studio/programs/{id}`(직접 링크)는
@@ -11,7 +11,7 @@ import { MyProgramsPage } from "@/views/my-programs";
  * 로그인 본인의 데이터라 캐시하지 않는다(`shared/api/client.ts`가 no-store).
  */
 export const metadata: Metadata = {
-  title: "내 활동",
+  title: "내 프로그램",
 };
 
 function toId(raw: string | string[] | undefined): number | null {

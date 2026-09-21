@@ -97,7 +97,7 @@ export function AttendanceStatsPage() {
     },
     {
       key: "programs",
-      header: "활동",
+      header: "프로그램",
       width: "1.4fr",
       render: (row) => (
         <span className="min-w-0 truncate">
@@ -127,7 +127,7 @@ export function AttendanceStatsPage() {
     <>
       <PageHeader
         title="출석 통계"
-        subtitle="전체 활동의 출석 현황을 집계합니다"
+        subtitle="전체 프로그램의 출석 현황을 집계합니다"
       />
       <PageBody maxWidth={1100}>
         {status === "loading" && <StatsSkeleton />}
@@ -158,7 +158,7 @@ export function AttendanceStatsPage() {
             </div>
 
             <Card>
-              <SectionLabel className="mb-1">활동별 출석률</SectionLabel>
+              <SectionLabel className="mb-1">프로그램별 출석률</SectionLabel>
               {programRates.length === 0 ? (
                 <EmptyState
                   message="집계할 회차가 없습니다."

@@ -10,7 +10,7 @@ import { MyProgramDetailPage } from "@/views/my-program-detail";
  * 로그인 본인의 데이터라 캐시하지 않는다(`shared/api/client.ts`가 no-store).
  */
 export const metadata: Metadata = {
-  title: "활동 상세",
+  title: "프로그램 상세",
 };
 
 function toId(raw: string | string[] | undefined): number | null {

@@ -145,7 +145,7 @@ export function SessionRecordForm({
       return;
     }
 
-    // 제출 성공 → '내 활동'으로 이동(이슈)
+    // 제출 성공 → '내 프로그램'으로 이동(이슈)
     router.push(ROUTES.studio);
     router.refresh();
   };
@@ -252,7 +252,7 @@ export function SessionRecordForm({
                 }}
                 className="rounded-[12px] bg-accent px-[16px] py-[10px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
               >
-                내 활동으로
+                내 프로그램으로
               </button>
               <p className="text-[13px] leading-[1.6] text-n500">
                 인증사진은 출석부 화면에서 다시 올릴 수 있습니다.
@@ -270,7 +270,7 @@ export function SessionRecordForm({
               </button>
               {banner && <p className="text-[13px] text-danger">{banner}</p>}
               <p className="text-[13px] leading-[1.6] text-n500">
-                제출하면 학술국장 승인 대기 상태가 됩니다. 승인 결과는 &lsquo;내 활동&rsquo;에서
+                제출하면 학술국장 승인 대기 상태가 됩니다. 승인 결과는 &lsquo;내 프로그램&rsquo;에서
                 확인할 수 있습니다.
               </p>
             </>

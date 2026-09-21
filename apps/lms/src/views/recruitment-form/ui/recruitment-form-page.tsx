@@ -34,8 +34,8 @@ export async function RecruitmentFormPage({
   if (academicProgramId == null) {
     return (
       <BackToProgramsNotice
-        title="어떤 활동의 지원서인지 알 수 없습니다"
-        description="모집 관리에서 활동을 골라주세요."
+        title="어떤 프로그램의 지원서인지 알 수 없습니다"
+        description="모집 관리에서 프로그램을 골라주세요."
       />
     );
   }

@@ -477,7 +477,7 @@ function FormEditContent({ editor }: Readonly<{ editor: FormEditor }>) {
               </Button>
               <div className="text-[13px] text-n500">
                 {editor.academicProgramId != null
-                  ? "이 폼은 학술 활동에 연결돼 있습니다. 접수 시작·접수 기간은 모집 관리 화면에서 설정합니다."
+                  ? "이 폼은 학술 프로그램에 연결돼 있습니다. 접수 시작·접수 기간은 모집 관리 화면에서 설정합니다."
                   : "접수를 시작하면 공개 링크로 응답을 받습니다."}
               </div>
             </div>

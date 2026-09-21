@@ -86,7 +86,7 @@ export function AcademicProgramRecruitmentPage() {
     <>
       <PageHeader
         title="모집 관리"
-        subtitle="승인된 활동의 모집을 시작하고 신청자를 선발합니다"
+        subtitle="승인된 프로그램의 모집을 시작하고 신청자를 선발합니다"
       />
       <PageBody maxWidth={1180}>
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">

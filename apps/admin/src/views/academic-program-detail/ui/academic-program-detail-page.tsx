@@ -26,7 +26,7 @@ import {
 } from "@/shared/ui";
 
 /*
- * 스터디·프로젝트 상세 (#125 · ssccops-server #131 상세 · #134 커리큘럼).
+ * 학술 프로그램 상세 (#125 · ssccops-server #131 상세 · #134 커리큘럼).
  *
  * 학술국장이 개별 활동의 진행률·커리큘럼 대비 진행을 확인하는 화면이다. 두 번의 조회를
  * 쓴다 — GET /v1/academic-programs/{id}(요약 카드)와 .../curriculum-items(진행 표).
@@ -82,21 +82,21 @@ export function AcademicProgramDetailPage({
   if (status !== "ready" || !program) {
     return (
       <>
-        <PageHeader title="활동 상세" showBack />
+        <PageHeader title="프로그램 상세" showBack />
         <PageBody>
           {status === "loading" && <DetailSkeleton />}
           {status === "not-found" && (
             <EmptyState
-              message="없는 활동입니다. 목록으로 돌아가주세요."
+              message="없는 프로그램입니다. 목록으로 돌아가주세요."
               action={{
-                label: "활동 목록",
+                label: "프로그램 목록",
                 onClick: () => router.replace(ROUTES.academicPrograms),
               }}
             />
           )}
           {status === "error" && (
             <EmptyState
-              message={errorMessage || "활동을 불러오지 못했습니다."}
+              message={errorMessage || "프로그램을 불러오지 못했습니다."}
               action={{ label: "다시 시도", onClick: reload }}
             />
           )}
@@ -155,7 +155,7 @@ export function AcademicProgramDetailPage({
   return (
     <>
       <PageHeader
-        title="활동 상세"
+        title="프로그램 상세"
         subtitle={program.typeName || program.typeCd}
         showBack
       />
@@ -170,8 +170,8 @@ export function AcademicProgramDetailPage({
                 {program.typeName || program.typeCd}
               </div>
               {program.isLeader && (
-                <span title="내가 스터디장/팀장인 활동입니다">
-                  <Badge tone="outline-accent">내 활동</Badge>
+                <span title="내가 스터디장/팀장인 프로그램입니다">
+                  <Badge tone="outline-accent">내 프로그램</Badge>
                 </span>
               )}
             </div>
@@ -196,7 +196,7 @@ export function AcademicProgramDetailPage({
               <StatBox label="진행률" value={`${ratio}%`} tone="accent" />
             </div>
 
-            <SectionLabel className="mt-5">활동 정보</SectionLabel>
+            <SectionLabel className="mt-5">프로그램 정보</SectionLabel>
             <KeyValueGrid
               className="mt-[10px]"
               labelWidth={92}
