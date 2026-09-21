@@ -33,6 +33,22 @@ export type EventReceiptStatus =
   | "EXPIRED"
   | "CLOSED";
 
+/**
+ * 이 행사가 학술 프로그램(스터디·프로젝트·트랙)이라는 표시 (#587 · ssccops#435 · ADR-0043).
+ *
+ * **구분은 분류가 아니라 구조다.** 서버가 `acdm_prgrm` 행의 존재로 판정해 싣고, 아닌 행사에서는
+ * 필드 자체가 null이다 — 화면이 `eventClsfCd`나 분류 이름으로 «이 행사가 스터디인가»를 다시
+ * 짐작하지 않는다(분류는 운영진이 바꾸는 값이라 dev에서 이미 갈렸다). 유형 어휘(`typeCd`·
+ * `typeNm`)는 새 코드테이블이 아니라 학술 유형(`acdm_actv_type`) 그대로라 유형이 늘어도
+ * 여기가 바뀌지 않는다.
+ */
+export interface AcademicProgramRef {
+  academicProgramId: number;
+  typeCd: string;
+  /** 유형 이름(스터디·프로젝트·트랙) — 서버가 조인해 준다. 웹이 코드 → 이름 사전을 만들지 않는다 */
+  typeNm: string;
+}
+
 /** GET /public/v1/events 항목 — 목록 카드가 쓰는 것만 (Markdown 본문은 상세에만 온다) */
 export interface PublicEventSummary {
   eventId: number;
@@ -48,6 +64,11 @@ export interface PublicEventSummary {
   eventBgngDt: string | null;
   eventEndDt: string | null;
   plcNm: string | null;
+  /**
+   * 학술 프로그램이면 그 표시, 행사형이면 null (ADR-0043). www의 축은 이 값으로 갈린다 —
+   * `/events`·홈 일정은 null인 것만, `/academic`은 있는 것만 그린다.
+   */
+  academicProgram: AcademicProgramRef | null;
 }
 
 /** GET /public/v1/events/{eventId} — 목록 항목 + 본문(Markdown)과 정원·확정 인원 */

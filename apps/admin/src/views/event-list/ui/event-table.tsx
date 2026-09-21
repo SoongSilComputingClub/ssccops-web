@@ -78,8 +78,14 @@ export function EventTable({
     {
       key: "clsf",
       header: "분류",
-      width: "110px",
-      render: (e) => <Pill tone="blue">{e.eventClsfNm}</Pill>,
+      /* 학술 프로그램이면 유형 필이 하나 더 선다(ADR-0043) — 둘이 한 칸에 들어가게 넓혔다 */
+      width: "170px",
+      render: (e) => (
+        <span className="inline-flex flex-wrap gap-1">
+          <Pill tone="blue">{e.eventClsfNm}</Pill>
+          {e.academicProgram && <Pill tone="outline">{e.academicProgram.typeNm}</Pill>}
+        </span>
+      ),
     },
     {
       key: "when",
