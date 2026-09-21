@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import Link from "next/link";
 import { BrandMark, deployMarks } from "@ssccops/ui";
 import { AuthNav } from "@/features/auth";
@@ -8,6 +10,7 @@ import { ThemeToggle } from "@/shared/ui";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
 import { SiteFooter } from "./_shell/site-footer";
+import { ON_VERCEL } from "@/shared/lib/vercel";
 import "./globals.css";
 
 /*
@@ -139,6 +142,18 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
           {children}
         </main>
         <SiteFooter />
+        {/*
+         * 측정 둘 — 방문 통계와 실사용자 Web Vitals (#600 · ssccops#443). Vercel에서만(가드는
+         * shared/lib/vercel.ts). Speed Insights는 세 앱이 한 할당(30일 1만)을 나누므로 **www에만**
+         * 싣는다 — 어드민·LMS는 회원 소수라 데이터가 적고 그 트래픽이 www 할당을 깎는다. 둘 다
+         * 쿠키 없이 돌고 개인을 식별하지 않는다(/privacy가 그것을 말한다).
+         */}
+        {ON_VERCEL && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
       </body>
     </html>
   );

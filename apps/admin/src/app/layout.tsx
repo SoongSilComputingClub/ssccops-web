@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { deployMarks } from "@ssccops/ui";
 import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { ToastViewport } from "@/shared/ui";
+import { ON_VERCEL } from "@/shared/lib/vercel";
 import "./globals.css";
 
 /*
@@ -90,6 +92,8 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
       <body className="antialiased">
         {children}
         <ToastViewport />
+        {/* 방문 통계 — Vercel에서만, 쿠키 없음 (#600 · ssccops#443 · 가드는 shared/lib/vercel.ts). Speed Insights는 www만 */}
+        {ON_VERCEL && <Analytics />}
       </body>
     </html>
   );
