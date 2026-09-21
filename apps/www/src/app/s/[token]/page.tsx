@@ -147,7 +147,7 @@ export async function generateMetadata({ params }: PageProps<"/s/[token]">): Pro
    */
   const description = preview.summary
     ? toShareDescription(preview.summary)
-    : "숭실컴퓨팅클럽(SSCC) 학술 활동입니다";
+    : "숭실컴퓨팅클럽(SSCC) 학술 프로그램입니다";
 
   return {
     title: preview.title,

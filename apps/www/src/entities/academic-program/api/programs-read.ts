@@ -3,10 +3,10 @@ import { toQuery } from "@/shared/api/client";
 import type { AcademicProgramSummary, AcdmActvSttsCd } from "../model/types";
 
 /*
- * 내가 이끄는 학술 활동 목록 (#518 · `GET /v1/academic-programs?mine=leader` · 서버 컴포넌트 전용).
+ * 내가 이끄는 학술 프로그램 목록 (#518 · `GET /v1/academic-programs?mine=leader` · 서버 컴포넌트 전용).
  *
  * lms `entities/academic-program/api/programs-read.ts`의 `fetchMyAcademicPrograms`를 옮겨 왔다.
- * 이 앱에서 쓰는 자리는 `/me`의 «내가 이끄는 스터디·프로젝트» 블록 하나다 — 활동의 운영(회차·
+ * 이 앱에서 쓰는 자리는 `/me`의 «이끄는 프로그램» 블록 하나다 — 프로그램의 운영(회차·
  * 출석·팀원)은 lms가 하고, 여기서는 요약과 lms로 가는 링크만 그린다(ssccops#386).
  *
  * ── `mine`은 역할 표기다 (ssccops-server#215) ──────────────────

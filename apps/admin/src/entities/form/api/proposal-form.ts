@@ -1,4 +1,5 @@
 import type { FormSummary } from "../model/types";
+import { PROPOSAL_SYS_FORM_CD } from "../model/system-form-code";
 import { fetchForms } from "./forms";
 
 /*
@@ -24,8 +25,8 @@ import { fetchForms } from "./forms";
  * 갈라 안내한다(features/proposal/model/proposal-error.ts).
  */
 
-/** 코드가 기획안 폼을 가리키는 값 — 서버 `ProposalFormSeed.SYSTEM_FORM_CODE`와 같은 문자열이다 */
-export const PROPOSAL_SYS_FORM_CD = "PROPOSAL";
+/* 코드값 자체는 `model/system-form-code.ts`로 옮겼다(#588) — 모집 코드와 한 표에서 갈린다 */
+export { PROPOSAL_SYS_FORM_CD };
 
 /**
  * 기획안 폼 한 건. 아직 시드되지 않았거나 다른 코드로 세워졌으면 `null`이다.

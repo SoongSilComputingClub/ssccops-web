@@ -90,7 +90,7 @@ function FormEditLink({ formId, label }: Readonly<{ formId: number | null; label
   if (formId == null) {
     return (
       <div className="text-[13px] text-n500">
-        이 활동에 연결된 신청서가 없습니다 — 학술 담당자에게 문의해주세요
+        이 프로그램에 연결된 신청서가 없습니다 — 학술 담당자에게 문의해주세요
       </div>
     );
   }
@@ -196,7 +196,7 @@ function StartRecruitmentCard({
     <Card>
       <SectionLabel className="mb-2">모집 시작</SectionLabel>
       <div className="text-[13.5px] text-n500">
-        모집을 시작하면 이 활동이 진행 중으로 바뀌고 연결된 신청서가 접수를
+        모집을 시작하면 이 프로그램이 진행 중으로 바뀌고 연결된 신청서가 접수를
         시작합니다. 모집 기간은 비워 두면 즉시 시작해 수동으로 마감할 때까지
         열립니다.
       </div>
@@ -348,7 +348,7 @@ function RecruitmentScheduleCard({
             title={
               canManage
                 ? undefined
-                : "모집 일정을 고칠 권한이 없습니다 — 스터디·프로젝트 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다"
+                : "모집 일정을 고칠 권한이 없습니다 — 학술 프로그램 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다"
             }
             onClick={beginEditing}
           >
@@ -481,7 +481,7 @@ function RecruitmentNoticeCard({
         </div>
       )}
 
-      <SectionLabel className="mt-5">활동 정보</SectionLabel>
+      <SectionLabel className="mt-5">프로그램 정보</SectionLabel>
       <KeyValueGrid
         className="mt-[10px]"
         labelWidth={92}
@@ -700,7 +700,7 @@ function ApplicantsCard({
           disabled={!canManage || selecting || selections.length === 0}
           title={
             !canManage
-              ? "선발을 저장할 권한이 없습니다 — 스터디·프로젝트 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다"
+              ? "선발을 저장할 권한이 없습니다 — 학술 프로그램 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다"
               : selections.length === 0
                 ? "바뀐 내용이 없습니다"
                 : undefined
@@ -766,7 +766,7 @@ export function RecruitmentDetail({
 }: Readonly<RecruitmentDetailProps>) {
   if (detailStatus === "idle" || !program) {
     return (
-      <EmptyState message="왼쪽 목록에서 활동을 선택하면 모집 현황이 표시됩니다." />
+      <EmptyState message="왼쪽 목록에서 프로그램을 선택하면 모집 현황이 표시됩니다." />
     );
   }
 
@@ -774,14 +774,14 @@ export function RecruitmentDetail({
 
   if (detailStatus === "not-found") {
     return (
-      <EmptyState message="없는 활동입니다. 목록으로 돌아가주세요." />
+      <EmptyState message="없는 프로그램입니다. 목록으로 돌아가주세요." />
     );
   }
 
   if (detailStatus === "error") {
     return (
       <EmptyState
-        message={detailErrorMessage || "활동을 불러오지 못했습니다."}
+        message={detailErrorMessage || "프로그램을 불러오지 못했습니다."}
         action={{ label: "다시 시도", onClick: onDetailReload }}
       />
     );

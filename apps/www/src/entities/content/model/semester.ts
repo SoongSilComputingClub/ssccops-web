@@ -45,7 +45,7 @@ export function semesterOf(ymd: string | null | undefined): SemesterRange | null
   return month >= 9 ? semesterRange(year, 2) : semesterRange(year - 1, 2);
 }
 
-/** 주소 조각(`/activities/2026/1`) → 학기. 네 자리 연도와 1·2가 아니면 null */
+/** 주소 조각(`/records/2026/1`) → 학기. 네 자리 연도와 1·2가 아니면 null */
 export function parseSemesterPath(year: string, semester: string): SemesterRange | null {
   if (!/^\d{4}$/.test(year)) return null;
   if (semester !== "1" && semester !== "2") return null;

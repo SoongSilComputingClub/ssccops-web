@@ -104,7 +104,7 @@ function ProposalReviewList({ formId }: Readonly<{ formId: number }>) {
      */
     {
       key: "responseTitle",
-      header: "활동명",
+      header: "프로그램명",
       width: "1.6fr",
       render: (r) => (
         /* 키보드 접근(#403) — 셀이 nowrap+ellipsis라 버튼도 스스로 잘라야 말줄임이 남는다 */
@@ -185,7 +185,7 @@ function ProposalReviewList({ formId }: Readonly<{ formId: number }>) {
             싣지 않는다(응답 수백 건 × 문항 수십 개면 목록이 비대해진다는 서버 계약 그대로다).
             왜 커리큘럼이 안 보이는지를 적지 않으면 검토자는 화면이 덜 만들어진 줄 안다.
           */}
-          커리큘럼은 목록에 실리지 않습니다. 활동명을 눌러 기획안 내용을 확인한 뒤 처리합니다.
+          커리큘럼은 목록에 실리지 않습니다. 프로그램명을 눌러 기획안 내용을 확인한 뒤 처리합니다.
           작성 중(미제출) 기획안은 목록에 나오지 않습니다.
         </div>
 

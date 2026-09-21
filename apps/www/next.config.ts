@@ -60,7 +60,17 @@ const nextConfig: NextConfig = {
    * permanent(308)인 것은 되돌릴 일이 없기 때문이다.
    */
   async redirects() {
-    return [{ source: "/my-applications", destination: "/me", permanent: true }];
+    return [
+      { source: "/my-applications", destination: "/me", permanent: true },
+      /*
+       * `/activities` → `/records` (#591 · ssccops#439). 포스트 아카이브의 축 이름이 «기록»이 되면서
+       * (#585 · ssccops#437 — 학술 프로그램(ADR-0043)과 «활동»이 부딪혔다) 주소도 어휘 표대로 바꿨다.
+       * 옛 주소는 카카오톡에 뿌린 링크와 메신저가 한 번 굳힌 OG 카드에 남아 있다 — 하위 경로
+       * (분류·상세·학기)까지 통째로 받는다. permanent(308)인 것은 `/my-applications`와 같은 이유다.
+       */
+      { source: "/activities", destination: "/records", permanent: true },
+      { source: "/activities/:path*", destination: "/records/:path*", permanent: true },
+    ];
   },
 
   /*
@@ -95,7 +105,7 @@ const nextConfig: NextConfig = {
       },
       {
         source:
-          "/:section(about|operators|academic|join|contact|privacy|photo-notice|terms|activities)/:path*",
+          "/:section(about|operators|academic|join|contact|privacy|photo-notice|terms|records)/:path*",
         headers: [{ key: "Cache-Control", value: PUBLIC_CACHE_CONTROL }],
       },
     ];

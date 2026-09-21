@@ -4,13 +4,13 @@ import type { ContentCategoryCode } from "./types";
  * 포스트 분류 — 코드 ↔ 주소 조각 ↔ 표시명 (#520).
  *
  * 서버 `ContentCategory`는 코드테이블이 아니라 고정 enum이라(ssccops-server#480) 행사 분류처럼
- * 목록에서 뽑지 않고 여기 표로 둔다. 주소에는 소문자 조각(`/activities/academic`)을 쓰고
+ * 목록에서 뽑지 않고 여기 표로 둔다. 주소에는 소문자 조각(`/records/academic`)을 쓰고
  * 서버에는 코드(`category=ACADEMIC`)를 보낸다 — 주소에 대문자 코드가 드러나면 개발 용어가
  * 사용자에게 나간다.
  */
 export interface ContentCategory {
   code: ContentCategoryCode;
-  /** 주소 조각 — `/activities/{slug}` */
+  /** 주소 조각 — `/records/{slug}` */
   slug: string;
   label: string;
 }

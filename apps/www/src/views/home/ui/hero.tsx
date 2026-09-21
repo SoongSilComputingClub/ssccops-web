@@ -29,10 +29,10 @@ export function Hero({ page }: Readonly<{ page: PublicContentPage | null }>) {
       </div>
       <div className="flex flex-wrap items-center gap-[8px]">
         <Link
-          href={ROUTES.activities}
+          href={ROUTES.records}
           className="rounded-xl bg-accent px-[18px] py-[11px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
         >
-          활동 보기
+          기록 보기
         </Link>
         <Link
           href={ROUTES.about}

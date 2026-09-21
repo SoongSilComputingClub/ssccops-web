@@ -4,14 +4,23 @@
  */
 export { FormCloseSheet } from "./ui/form-close-sheet";
 export { FormDeleteSheet } from "./ui/form-delete-sheet";
+export { FormDesignateSheet } from "./ui/form-designate-sheet";
 export {
+  NO_SYSTEM_FORM_DESIGNATE,
   toFormDeleteErrorMessage,
   toFormDuplicateErrorMessage,
   toFormErrorMessage,
   toFormLabelErrorMessage,
   toFormRestoreErrorMessage,
   toFormStatusErrorMessage,
+  toSystemFormDesignateErrorMessage,
 } from "./model/form-error";
+export { useDesignateSystemForm } from "./model/use-designate-system-form";
+export type {
+  SystemFormDesignateControl,
+  SystemFormDesignateOutcome,
+  SystemFormDesignation,
+} from "./model/use-designate-system-form";
 export { FORM_DELETE_CAPABILITY, NO_FORM_DELETE } from "./model/form-delete-copy";
 export { useFormDelete } from "./model/use-form-delete";
 export type {

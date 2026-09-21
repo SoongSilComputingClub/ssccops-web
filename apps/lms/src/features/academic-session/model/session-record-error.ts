@@ -27,13 +27,13 @@ export function loadSessionRecordErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case ACADEMIC_SESSION_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
-      return "활동이 없습니다 — 내 활동 목록을 새로고침해주세요";
+      return "프로그램이 없습니다 — 내 프로그램 목록을 새로고침해주세요";
     case ACADEMIC_SESSION_ERROR.CURRICULUM_ITEM_NOT_FOUND:
-      return "이 활동에 없는 회차입니다 — 학술 대시보드에서 다시 골라주세요";
+      return "이 프로그램에 없는 회차입니다 — 학술 대시보드에서 다시 골라주세요";
     case ACADEMIC_SESSION_ERROR.SESSION_NOT_FOUND:
       return "회차 기록이 없습니다 — 새로고침해주세요";
     case ACADEMIC_SESSION_ERROR.FORBIDDEN:
-      return "이 활동의 스터디장만 회차를 기록할 수 있습니다";
+      return "이 프로그램의 스터디장만 회차를 기록할 수 있습니다";
     case API_ERROR.CONFIG_MISSING:
       return "지금은 회차 정보를 불러올 수 없습니다 — 잠시 후 다시 시도해주세요";
     case API_ERROR.NETWORK_ERROR:
@@ -65,7 +65,7 @@ export function submitSessionErrorMessage(error: unknown): string {
     case ACADEMIC_SESSION_ERROR.VALIDATION_FAILED:
       return "진행일과 진행 내용을 확인해주세요";
     case ACADEMIC_SESSION_ERROR.FORBIDDEN:
-      return "이 활동의 스터디장만 회차를 기록할 수 있습니다";
+      return "이 프로그램의 스터디장만 회차를 기록할 수 있습니다";
     case ACADEMIC_SESSION_ERROR.CURRICULUM_ITEM_NOT_FOUND:
       return "회차가 없습니다 — 새로고침해주세요";
     case ACADEMIC_SESSION_ERROR.SESSION_NOT_FOUND:

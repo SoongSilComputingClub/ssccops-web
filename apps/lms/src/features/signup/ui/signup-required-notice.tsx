@@ -19,7 +19,7 @@ import { SignupStep } from "./signup-step";
  * 부모가 준다.
  */
 export function SignupRequiredNotice({
-  title = "회원 가입을 마쳐야 학술 활동 화면을 볼 수 있습니다",
+  title = "회원 가입을 마쳐야 학술 프로그램 화면을 볼 수 있습니다",
   description = "아직 회원 가입이 안 된 계정입니다. 아래에서 바로 가입할 수 있습니다.",
   authUserEmail = null,
   authUserName = null,

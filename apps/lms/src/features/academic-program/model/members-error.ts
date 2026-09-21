@@ -22,7 +22,7 @@ export function toAcademicProgramMembersErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case ACADEMIC_PROGRAM_MEMBER_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
-      return "활동이 없습니다 — 내 활동 목록을 새로고침해주세요";
+      return "프로그램이 없습니다 — 내 프로그램 목록을 새로고침해주세요";
     case ACADEMIC_PROGRAM_MEMBER_ERROR.VALIDATION_FAILED:
     case ACADEMIC_PROGRAM_MEMBER_ERROR.INVALID_CODE_VALUE:
       return "선택지가 바뀌었습니다 — 새로고침해주세요";

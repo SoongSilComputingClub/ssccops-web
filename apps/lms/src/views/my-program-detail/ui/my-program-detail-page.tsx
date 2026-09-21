@@ -41,7 +41,7 @@ import { SignupRequiredNotice } from "@/features/signup";
 export async function MyProgramDetailPage({
   academicProgramId,
   /**
-   * `/studio/programs`의 드롭다운 셸 안에 끼워질 때 true — "← 내 활동" 링크를 숨긴다
+   * `/studio/programs`의 드롭다운 셸 안에 끼워질 때 true — "← 내 프로그램" 링크를 숨긴다
    * (드롭다운이 이미 그 자리다 · #192). 직접 링크(`/studio/programs/{id}`)로 들어온
    * 경우에는 뒤로 갈 곳이 필요해 링크를 남긴다.
    */
@@ -55,8 +55,8 @@ export async function MyProgramDetailPage({
       <div className="flex flex-col gap-[16px]">
         {!embedded && <BackLink />}
         <EmptyState
-          title="활동을 찾을 수 없습니다"
-          description="내 활동 목록에서 활동을 골라 들어와주세요."
+          title="프로그램을 찾을 수 없습니다"
+          description="내 프로그램 목록에서 프로그램을 골라 들어와주세요."
         />
       </div>
     );
@@ -78,7 +78,7 @@ function BackLink() {
       href={ROUTES.studioPrograms}
       className="-my-1 inline-flex min-h-6 items-center self-start py-1 text-[13.5px] text-n300 hover:text-accent"
     >
-      ← 내 활동
+      ← 내 프로그램
     </Link>
   );
 }
@@ -92,27 +92,27 @@ function Body({
     return (
       <LoginGate
         title="로그인이 필요합니다"
-        description="활동 상세는 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
+        description="프로그램 상세는 로그인한 회원만 볼 수 있습니다 — 구글 계정으로 로그인해주세요"
       />
     );
   }
 
   if (result.outcome === "signup-required") {
-    return <SignupRequiredNotice title="회원 가입을 마쳐야 학술 활동 화면을 볼 수 있습니다" />;
+    return <SignupRequiredNotice title="회원 가입을 마쳐야 학술 프로그램 화면을 볼 수 있습니다" />;
   }
 
   if (result.outcome === "not-found") {
     return (
       <EmptyState
-        title="활동을 찾을 수 없습니다"
-        description="없는 활동입니다. 내 활동 목록에서 다시 골라주세요."
+        title="프로그램을 찾을 수 없습니다"
+        description="없는 프로그램입니다. 내 프로그램 목록에서 다시 골라주세요."
       />
     );
   }
 
   if (result.outcome === "error") {
     return (
-      <EmptyState title="활동을 불러오지 못했습니다" description={result.message} />
+      <EmptyState title="프로그램을 불러오지 못했습니다" description={result.message} />
     );
   }
 

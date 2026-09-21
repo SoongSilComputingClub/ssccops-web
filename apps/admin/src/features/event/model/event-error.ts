@@ -15,6 +15,15 @@ import { NO_EVENT_DELETE } from "./event-delete-copy";
  * 알 수 없는 코드는 서버 메시지를 그대로 보여 준다 — 뭉개면 서버가 내려보낸 원인이 사라진다.
  */
 
+/**
+ * 학술 프로그램 행사의 분류 잠금 사유 (#587 · ssccops#435 · ADR-0043).
+ *
+ * 수정 폼의 잠긴 분류 셀렉트 `title`과 서버 409(`EVENT_CLASSIFICATION_LOCKED_FOR_PROGRAM`)의
+ * 문구가 **같은 문장**이다 — 잠금을 본 사람과 거절을 받은 사람이 다른 말을 들으면 안 된다.
+ */
+export const CLASSIFICATION_LOCKED_FOR_PROGRAM =
+  "학술 프로그램 행사의 분류는 바꿀 수 없습니다 — 유형(스터디·프로젝트·트랙)으로 구분합니다";
+
 /** 조회·공통 실패. 행사 화면의 다른 매핑이 마지막에 이리로 떨어진다 */
 export function toEventErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
@@ -55,6 +64,9 @@ export function toEventSaveErrorMessage(error: unknown): string {
       return "없는 행사 분류입니다 — 다시 골라주세요";
     case EVENT_ERROR.EVENT_CONTENT_TOO_LARGE:
       return "본문이 100,000자를 넘어 저장할 수 없습니다 — 내용을 줄여주세요";
+    /* 화면이 잠근 칸을 우회한 저장(낡은 화면·다른 탭) — 잠금 사유와 같은 문장 */
+    case EVENT_ERROR.EVENT_CLASSIFICATION_LOCKED_FOR_PROGRAM:
+      return CLASSIFICATION_LOCKED_FOR_PROGRAM;
     default:
       return toEventErrorMessage(error);
   }
@@ -232,7 +244,7 @@ export function toEventDeleteErrorMessage(error: unknown): string {
     case API_ERROR.ACCESS_DENIED:
       return NO_EVENT_DELETE;
     case EVENT_ERROR.EVENT_HAS_ACADEMIC_PROGRAM:
-      return "학술 활동이 연결된 행사는 지울 수 없습니다 — 학술 활동에서 먼저 정리해주세요";
+      return "학술 프로그램이 연결된 행사는 지울 수 없습니다 — 학술 프로그램에서 먼저 정리해주세요";
     /*
      * 둘 다 "화면이 낡았다"는 뜻이다 — 다른 탭에서 이미 지웠거나 이미 없어진 행사다.
      * 사과가 아니라 최신 목록을 가져오는 것이 다음 행동이라 문장이 그것을 말한다.

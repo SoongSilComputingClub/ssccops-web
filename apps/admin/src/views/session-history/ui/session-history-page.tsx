@@ -128,7 +128,7 @@ export function SessionHistoryPage() {
     },
     {
       key: "program",
-      header: "활동",
+      header: "프로그램",
       width: "1.4fr",
       mobilePrimary: true,
       render: (item) => (
@@ -194,14 +194,14 @@ export function SessionHistoryPage() {
     <>
       <PageHeader
         title="회차 이력"
-        subtitle="전체 활동의 회차 진행을 한눈에 봅니다"
+        subtitle="전체 프로그램의 회차 진행을 한눈에 봅니다"
       />
       <PageBody maxWidth={1180}>
         <div className="mb-4 flex flex-col gap-3">
           <SearchInput
             value={keywordInput}
             onChange={setKeywordInput}
-            placeholder="활동 제목·회차 주제로 검색"
+            placeholder="프로그램 제목·회차 주제로 검색"
             className="max-w-[360px]"
           />
           <div className="flex flex-wrap gap-[7px]">

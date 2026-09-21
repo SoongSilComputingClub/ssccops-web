@@ -15,7 +15,7 @@ import { SignupRequiredNotice } from "@/features/signup";
 export function NoProgramNotice() {
   return (
     <EmptyState
-      title="맡고 있는 학술 활동이 없습니다"
+      title="맡고 있는 학술 프로그램이 없습니다"
       description="스터디장·팀장으로 지정되면 이 화면을 쓸 수 있습니다."
     />
   );
@@ -23,10 +23,10 @@ export function NoProgramNotice() {
 
 /** 미가입 안내 — 같은 자리에서 가입까지 (#453). 어드민 링크(`signupHref`)는 걷어냈다 */
 export function ProgramSignupNotice() {
-  return <SignupRequiredNotice title="회원 가입을 마쳐야 학술 활동 화면을 볼 수 있습니다" />;
+  return <SignupRequiredNotice title="회원 가입을 마쳐야 학술 프로그램 화면을 볼 수 있습니다" />;
 }
 
-/** 활동 목록 조회 자체가 실패했을 때 — 내 활동으로 되돌린다 */
+/** 프로그램 목록 조회 자체가 실패했을 때 — 내 프로그램으로 되돌린다 */
 export function BackToProgramsNotice({
   title,
   description,
@@ -40,7 +40,7 @@ export function BackToProgramsNotice({
         href={ROUTES.studioPrograms}
         className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid hover:bg-accent-strong"
       >
-        내 활동으로
+        내 프로그램으로
       </Link>
     </Notice>
   );

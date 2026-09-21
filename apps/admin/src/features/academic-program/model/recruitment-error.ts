@@ -35,7 +35,7 @@ export function toRecruitmentErrorMessage(error: unknown): string {
     case ACADEMIC_PROGRAM_ERROR.FORBIDDEN:
     case API_ERROR.FORBIDDEN:
     case API_ERROR.ACCESS_DENIED:
-      return "모집을 관리할 권한이 없습니다 — 스터디·프로젝트 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다";
+      return "모집을 관리할 권한이 없습니다 — 학술 프로그램 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다";
     case RECRUITMENT_ERROR.RECRUITMENT_NOT_STARTED:
       return "아직 모집이 시작되지 않았습니다 — 모집 기간을 정해 먼저 모집을 시작해주세요";
     case RECRUITMENT_ERROR.FORM_HAS_NO_QUESTION:
@@ -45,11 +45,11 @@ export function toRecruitmentErrorMessage(error: unknown): string {
     case RECRUITMENT_ERROR.INVALID_FORM_STATUS_TRANSITION:
       return "신청서가 이미 접수 중이라 모집을 시작할 수 없습니다 — 학술 담당자에게 문의해주세요";
     case ACADEMIC_PROGRAM_ERROR.INVALID_ACADEMIC_PROGRAM_TRANSITION:
-      return "이미 모집이 시작됐거나 처리된 활동입니다 — 새로고침해주세요";
+      return "이미 모집이 시작됐거나 처리된 프로그램입니다 — 새로고침해주세요";
     case ACADEMIC_PROGRAM_ERROR.FORM_NOT_LINKED:
-      return "이 활동에 연결된 신청서가 없습니다 — 학술 담당자에게 문의해주세요";
+      return "이 프로그램에 연결된 신청서가 없습니다 — 학술 담당자에게 문의해주세요";
     case ACADEMIC_PROGRAM_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
-      return "활동이 없습니다 — 목록을 새로고침해주세요";
+      return "프로그램이 없습니다 — 목록을 새로고침해주세요";
     case ACADEMIC_PROGRAM_ERROR.VALIDATION_FAILED:
     case ACADEMIC_PROGRAM_ERROR.INVALID_CODE_VALUE:
       return "선택지가 바뀌었습니다 — 새로고침해주세요";

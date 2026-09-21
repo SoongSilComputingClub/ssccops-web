@@ -1,6 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { eventPhaseBadge, type PublicEventSummary } from "@/entities/event";
+import {
+  eventPhaseBadge,
+  excludeAcademicPrograms,
+  type PublicEventSummary,
+} from "@/entities/event";
 import { ROUTES } from "@/shared/config/routes";
 import { formatEventDate } from "@/shared/lib/date";
 import { Badge, Card } from "@/shared/ui";
@@ -85,9 +89,14 @@ function Section({ body }: Readonly<{ body: ReactNode }>) {
   );
 }
 
-/** 진행 중·예정 행사를 시작일 순으로 — 시작 일시가 없는 행사는 서버가 `NONE`으로 주므로 여기서 빠진다 */
+/**
+ * 진행 중·예정 행사를 시작일 순으로 — 시작 일시가 없는 행사는 서버가 `NONE`으로 주므로 여기서 빠진다.
+ *
+ * 학술 프로그램(`academicProgram`이 있는 것)도 뺀다 (#587 · ssccops#435 · ADR-0043) — 이 자리는
+ * `/events`와 같은 행사 축이라 행사형만 본다. 학술 프로그램 모집은 학술(`/academic`)의 자리다.
+ */
 function scheduledEvents(events: PublicEventSummary[]): PublicEventSummary[] {
-  return events
+  return excludeAcademicPrograms(events)
     .filter((event) => event.eventPhase === "ONGOING" || event.eventPhase === "UPCOMING")
     .sort((a, b) => (a.eventBgngDt ?? "").localeCompare(b.eventBgngDt ?? ""))
     .slice(0, MAX_ROWS);

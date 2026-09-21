@@ -22,15 +22,15 @@ export function toRecruitmentFormErrorMessage(error: unknown): string {
 
   switch (error.code) {
     case RECRUITMENT_FORM_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
-      return "활동이 없습니다 — 모집 관리 목록을 새로고침해주세요";
+      return "프로그램이 없습니다 — 모집 관리 목록을 새로고침해주세요";
     case RECRUITMENT_FORM_ERROR.FORM_NOT_LINKED:
       /*
        * 승인 이관이 폼을 붙여 주므로 정상 흐름에서는 나오지 않는다 — 나오면 화면에서 풀 길이
        * 없어 새로고침을 권하지 않는다(어드민 `INVALID_FORM_STATUS_TRANSITION`과 같은 태도).
        */
-      return "이 활동에 연결된 지원서가 없습니다 — 학술 담당자에게 문의해주세요";
+      return "이 프로그램에 연결된 지원서가 없습니다 — 학술 담당자에게 문의해주세요";
     case RECRUITMENT_FORM_ERROR.FORBIDDEN:
-      return "내가 맡은 활동의 지원서만 볼 수 있습니다";
+      return "내가 맡은 프로그램의 지원서만 볼 수 있습니다";
     case AUTH_ERROR.SIGNUP_REQUIRED:
       return "회원만 볼 수 있는 화면입니다";
     case API_ERROR.CONFIG_MISSING:
@@ -60,11 +60,11 @@ export function toRecruitmentFormSaveErrorMessage(error: unknown): string {
     case RECRUITMENT_FORM_ERROR.INVALID_QUESTION_COMPOSITION:
       return "문항 구성을 저장할 수 없습니다 — 문항의 확인 필요 표시를 고쳐주세요";
     case RECRUITMENT_FORM_ERROR.FORBIDDEN:
-      return "내가 맡은 활동의 지원서만 고칠 수 있습니다";
+      return "내가 맡은 프로그램의 지원서만 고칠 수 있습니다";
     case RECRUITMENT_FORM_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
-      return "활동이 없습니다 — 모집 관리 목록을 새로고침해주세요";
+      return "프로그램이 없습니다 — 모집 관리 목록을 새로고침해주세요";
     case RECRUITMENT_FORM_ERROR.FORM_NOT_LINKED:
-      return "이 활동에 연결된 지원서가 없습니다 — 학술 담당자에게 문의해주세요";
+      return "이 프로그램에 연결된 지원서가 없습니다 — 학술 담당자에게 문의해주세요";
     case API_ERROR.CONFIG_MISSING:
       return "지금은 저장할 수 없습니다 — 잠시 후 다시 시도해주세요";
     case API_ERROR.NETWORK_ERROR:

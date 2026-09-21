@@ -80,7 +80,7 @@ function Shell({ children }: Readonly<{ children: ReactNode }>) {
       <header className="flex flex-col gap-[2px]">
         <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">SSCC 학술</h1>
         <p className="text-[13.5px] text-n500">
-          스터디·프로젝트·트랙 활동과 회차·출석, 기획안 제출
+          학술 프로그램(스터디·프로젝트·트랙)과 회차·출석, 기획안 제출
         </p>
       </header>
       {children}

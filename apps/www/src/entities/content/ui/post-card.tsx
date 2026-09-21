@@ -11,7 +11,7 @@ import { Pill } from "@/shared/ui";
  * 행사 카드(`entities/event/ui/event-card.tsx`)와 같은 틀이다. 표지가 없으면 이미지 자리를
  * 그리지 않고, 요약이 없으면 그 줄을 비운다 — 없는 값을 문구로 채우지 않는다.
  *
- * `views/activities`에 있다가 entity로 내려왔다(#524) — 홈의 «최근 활동»(`views/home`)도 같은
+ * `views/records`에 있다가 entity로 내려왔다(#524) — 홈의 «최근 활동»(`views/home`)도 같은
  * 카드를 그리는데, views 슬라이스끼리는 참조하지 않는다(루트 AGENTS «FSD»). 행사 카드가 #520에서
  * 같은 길을 밟았다.
  *
@@ -24,7 +24,7 @@ export function PostCard({ post }: Readonly<{ post: PublicContentPostSummary }>)
 
   return (
     <Link
-      href={ROUTES.activitiesPost(category.slug, post.slug)}
+      href={ROUTES.recordsPost(category.slug, post.slug)}
       className="flex flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_0_0_1px_var(--color-line)] transition-shadow hover:shadow-[0_0_0_1px_var(--color-accent-strong)]"
     >
       {post.coverImageUrl && (

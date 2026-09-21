@@ -250,7 +250,7 @@ function ProcessArea({
       <Card>
         <div className="text-[13px] tracking-[.3px] text-n400">처리 결과</div>
         <p className="mt-2 text-[13.5px] leading-[1.7] text-n300">
-          승인된 기획안입니다. 활동으로 옮겨지면 활동 화면에서 이어집니다.
+          승인된 기획안입니다. 프로그램으로 옮겨지면 프로그램 화면에서 이어집니다.
         </p>
       </Card>
     );

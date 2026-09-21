@@ -91,8 +91,8 @@ function ProgramCard({
         <Badge tone="grey">{acdmActvTypeNm(program.typeCd)}</Badge>
         <div className="flex-1" />
         {program.isLeader && (
-          <span title="내가 스터디장/팀장인 활동입니다">
-            <Badge tone="outline-accent">내 활동</Badge>
+          <span title="내가 스터디장/팀장인 프로그램입니다">
+            <Badge tone="outline-accent">내 프로그램</Badge>
           </span>
         )}
       </div>
@@ -213,13 +213,13 @@ export function AcademicProgramListPage() {
 
   return (
     <>
-      <PageHeader title="활동 목록" subtitle="승인된 학술 활동" />
+      <PageHeader title="프로그램 목록" subtitle="승인된 학술 프로그램" />
       <PageBody>
         <div className="mb-4 flex flex-col gap-3">
           <SearchInput
             value={keywordInput}
             onChange={setKeywordInput}
-            placeholder="활동 제목으로 검색"
+            placeholder="프로그램 제목으로 검색"
             className="max-w-[360px]"
           />
           <div className="flex flex-wrap gap-[7px]">
@@ -264,7 +264,7 @@ export function AcademicProgramListPage() {
 
         {status === "error" && (
           <EmptyState
-            message={errorMessage || "활동 목록을 불러오지 못했습니다."}
+            message={errorMessage || "프로그램 목록을 불러오지 못했습니다."}
             action={{ label: "다시 시도", onClick: reload }}
           />
         )}
@@ -274,8 +274,8 @@ export function AcademicProgramListPage() {
             <EmptyState
               message={
                 filtered
-                  ? "조건에 맞는 활동이 없습니다."
-                  : "승인된 활동이 없습니다."
+                  ? "조건에 맞는 프로그램이 없습니다."
+                  : "승인된 프로그램이 없습니다."
               }
               action={
                 filtered

@@ -1,4 +1,5 @@
 export type {
+  AcademicProgramRef,
   EventClassification,
   EventPhase,
   EventReceiptStatus,
@@ -12,6 +13,13 @@ export {
   eventReceiptBadge,
   formatCapacity,
 } from "./model/display";
+export {
+  excludeAcademicPrograms,
+  groupByProgramType,
+  isAcademicProgramEvent,
+  onlyAcademicPrograms,
+} from "./model/academic-program";
+export type { AcademicProgramGroup } from "./model/academic-program";
 export { eventLoadErrorMessage } from "./model/event-error";
 export { EventCard } from "./ui/event-card";
 export {

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CONTENT_CATEGORIES } from "@/entities/content";
-import { activitiesPath } from "@/shared/config/routes";
+import { recordsPath } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
 
 /**
@@ -14,13 +14,13 @@ import { cn } from "@/shared/lib/cn";
 export function CategoryTabs({ selected }: Readonly<{ selected: string | null }>) {
   return (
     <nav aria-label="분류" className="flex flex-wrap items-center gap-[7px]">
-      <Tab href={activitiesPath(null)} active={selected === null}>
+      <Tab href={recordsPath(null)} active={selected === null}>
         전체
       </Tab>
       {CONTENT_CATEGORIES.map((category) => (
         <Tab
           key={category.code}
-          href={activitiesPath(category.slug)}
+          href={recordsPath(category.slug)}
           active={selected === category.slug}
         >
           {category.label}
