@@ -1,4 +1,5 @@
 export type {
+  AcademicProgramRef,
   EventCategory,
   EventDetail,
   EventDuplicate,

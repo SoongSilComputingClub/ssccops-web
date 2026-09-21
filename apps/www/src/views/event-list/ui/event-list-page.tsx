@@ -1,6 +1,7 @@
 import {
   EventCard,
   eventLoadErrorMessage,
+  excludeAcademicPrograms,
   fetchPublicEvents,
   toClassifications,
   type PublicEventSummary,
@@ -25,6 +26,14 @@ import { ViewSwitch } from "./view-switch";
  * 보기 방식(`view` · #573 · ssccops#427)은 주소(`?view=list`)에서 온다 — 왜 URL인지는
  * `shared/config/routes.ts`의 `EventListView`. 카드·리스트는 같은 목록을 다르게 그릴 뿐이라
  * 조회·필터·빈 상태는 갈리지 않는다.
+ *
+ * ── 행사형만 (#587 · ssccops#435 · ADR-0043) ─────────────────
+ * 학술 프로그램(`academicProgram`이 있는 행사 — 스터디·프로젝트·트랙)은 이 축에 없다. www의
+ * 축은 각각 한 종류의 데이터를 본다: 행사는 행사형 `event`, 학술(`/academic`)은 `acdm_prgrm`.
+ * 섞어 두면 세미나(하루짜리)와 스터디(회차형)가 한 목록에 서고, 분류 칩으로는 못 가른다(분류는
+ * 운영진이 바꾸는 값이라 이미 갈렸다). 서버에 필터 파라미터를 더하지 않고 받아 온 전량에서
+ * 걸러 낸다 — 두 응답(필터 목록·칩용 전체) 모두이고, 그래서 분류 칩에도 프로그램만 쓰는 분류는
+ * 서지 않는다.
  */
 export async function EventListPage({
   eventClsfCd,
@@ -42,8 +51,8 @@ export async function EventListPage({
       fetchPublicEvents(eventClsfCd),
       eventClsfCd ? fetchPublicEvents() : null,
     ]);
-    events = filtered;
-    all = unfiltered ?? filtered;
+    events = excludeAcademicPrograms(filtered);
+    all = excludeAcademicPrograms(unfiltered ?? filtered);
   } catch (error) {
     errorMessage = eventLoadErrorMessage(error);
   }

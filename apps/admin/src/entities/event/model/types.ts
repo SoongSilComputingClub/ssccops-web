@@ -28,6 +28,22 @@ export type EventPhase = "UPCOMING" | "ONGOING" | "ENDED" | "NONE";
  */
 export type EventReceiptStatus = "DRAFT" | "SCHEDULED" | "ACCEPTING" | "EXPIRED" | "CLOSED";
 
+/**
+ * 이 행사가 학술 프로그램(스터디·프로젝트·트랙)이라는 표시 (#587 · ssccops#435 · ADR-0043).
+ *
+ * **구분은 분류가 아니라 구조다.** 서버가 `acdm_prgrm` 행의 존재로 판정해 싣고, 아닌 행사에서는
+ * 필드 자체가 null이다 — 화면이 분류(`eventClsfCd`)로 «이 행사가 스터디인가»를 다시 짐작하지
+ * 않는다(분류는 운영진이 바꾸는 값이라 이관 뒤 dev에서 이미 갈렸다). 유형 어휘(`typeCd`·
+ * `typeNm`)는 새 코드테이블이 아니라 학술 유형(`acdm_actv_type`) 그대로라 유형이 늘어도 여기가
+ * 바뀌지 않는다. 프로그램 행사의 분류 칸은 서버가 잠근다(수정 시 값이 바뀌면 409).
+ */
+export interface AcademicProgramRef {
+  academicProgramId: number;
+  typeCd: string;
+  /** 유형 이름(스터디·프로젝트·트랙) — 서버가 조인해 준다. 웹이 코드 → 이름 사전을 만들지 않는다 */
+  typeNm: string;
+}
+
 /** GET /v1/events 항목 — 목록 카드가 쓰는 것만 (본문·대표 이미지는 상세에만 온다) */
 export interface EventSummary {
   eventId: number;
@@ -56,6 +72,11 @@ export interface EventSummary {
    * 값이 온다 — 그 화면의 핵심 값이다(방금 실수로 지운 것과 지난 학기에 치운 것을 가르는 단서).
    */
   delDt: string | null;
+  /**
+   * 학술 프로그램이면 그 표시, 행사형이면 null (ADR-0043). 목록의 «행사 | 학술 프로그램» 필터와
+   * 유형 배지, 수정 화면의 분류 잠금이 이 값 하나로 갈린다.
+   */
+  academicProgram: AcademicProgramRef | null;
 }
 
 /** GET /v1/events/{eventId} 항목 — 목록 항목 + 본문(Markdown) + 대표 이미지 URL */

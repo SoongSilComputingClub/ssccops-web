@@ -62,6 +62,14 @@ const NO_MANAGE = "행사를 다룰 권한이 없습니다 — 행사 관리(EVE
 
 const QUERY_STATUS = "eventSttsCd";
 const QUERY_CATEGORY = "eventClsfCd";
+/**
+ * 셋째 축 — 행사형인가 학술 프로그램인가 (#587 · ssccops#435 · ADR-0043).
+ *
+ * 서버 쿼리가 아니라 **화면이 거른다** — 목록에 필터 파라미터를 더하지 않기로 해서(전량 목록이라
+ * 화면이 가른다)이고, 그래서 이 이름만 서버 계약과 무관하다. 판정은 응답의 `academicProgram`
+ * 유무이지 분류가 아니다(분류는 운영진이 바꾸는 값이라 이미 갈렸다).
+ */
+const QUERY_KIND = "kind";
 
 /** 상태 축의 '전체'. 기본값이 좁힌 목록이라 파라미터를 지우는 것으로는 넓힐 수 없다 */
 const QUERY_STATUS_ALL = "ALL";
@@ -88,6 +96,24 @@ function parseEventStatusFilter(value: string | null): EventStatusFilter {
   if (value === null) return "EXCEPT_ARCHIVED";
   if (value === QUERY_STATUS_ALL) return "ALL";
   return EVENT_STTS_CDS.includes(value as EventSttsCd) ? (value as EventSttsCd) : "ALL";
+}
+
+/** `?kind=` — 없음·모르는 값은 전체(둘 다). 상태 축과 달리 기본값이 곧 전체라 `ALL` 값이 없다 */
+type EventKindFilter = "event" | "program" | null;
+
+const EVENT_KIND_CHIPS: readonly { value: EventKindFilter; label: string }[] = [
+  { value: null, label: ALL },
+  { value: "event", label: "행사" },
+  { value: "program", label: "학술 프로그램" },
+];
+
+function parseEventKindFilter(value: string | null): EventKindFilter {
+  return value === "event" || value === "program" ? value : null;
+}
+
+function matchesKind(event: EventSummary, kind: EventKindFilter): boolean {
+  if (kind === null) return true;
+  return kind === "program" ? event.academicProgram !== null : event.academicProgram === null;
 }
 
 function EventCardSkeleton() {
@@ -170,6 +196,10 @@ function EventCard({
       </div>
       <div className="mt-2 flex flex-wrap gap-[6px]">
         <Pill tone="blue">{event.eventClsfNm}</Pill>
+        {/* 학술 프로그램이면 유형(스터디·프로젝트·트랙) — 분류 옆에 두되 톤을 달리해 다른 축임을 보인다 */}
+        {event.academicProgram && (
+          <Pill tone="outline">학술 프로그램 · {event.academicProgram.typeNm}</Pill>
+        )}
         {event.formId === null && <Pill tone="outline">폼 없음 · 공지형</Pill>}
       </div>
       {/*
@@ -275,6 +305,7 @@ export function EventListPage() {
 
   const statusFilter = parseEventStatusFilter(searchParams.get(QUERY_STATUS));
   const eventClsfCd = searchParams.get(QUERY_CATEGORY);
+  const kindFilter = parseEventKindFilter(searchParams.get(QUERY_KIND));
 
   /*
    * 단일 상태만 서버가 좁힌다. 기본(보관 제외)과 전체는 상태를 보내지 않고, 받아 온 뒤 화면에서
@@ -289,10 +320,12 @@ export function EventListPage() {
 
   const fetched = useEventList({ eventClsfCd, eventSttsCd });
   const { status, errorMessage, reload } = fetched;
-  const events =
-    statusFilter === "EXCEPT_ARCHIVED"
-      ? fetched.events.filter((e) => e.eventSttsCd !== "ARCHIVED")
-      : fetched.events;
+  /* 보관 제외와 행사·프로그램 축은 둘 다 화면이 거른다 — 위 주석의 «페이징이 없기 때문»이 같이 든다 */
+  const events = fetched.events.filter(
+    (e) =>
+      (statusFilter !== "EXCEPT_ARCHIVED" || e.eventSttsCd !== "ARCHIVED") &&
+      matchesKind(e, kindFilter),
+  );
   const { categories } = useEventCategoryOptions();
 
   /*
@@ -407,6 +440,17 @@ export function EventListPage() {
               {c.eventClsfNm}
             </Chip>
           ))}
+          {/* 셋째 축 — 행사형 | 학술 프로그램 (ADR-0043). 분류와 AND로 걸리지만 분류로 가르는 것이 아니다 */}
+          <div className="mx-0 h-px w-full bg-line lg:mx-2 lg:h-5 lg:w-px" />
+          {EVENT_KIND_CHIPS.map((chip) => (
+            <Chip
+              key={chip.value ?? "all"}
+              active={kindFilter === chip.value}
+              onClick={() => applyFilter(QUERY_KIND, chip.value)}
+            >
+              {chip.label}
+            </Chip>
+          ))}
         </div>
 
         {status === "loading" && (
@@ -429,7 +473,7 @@ export function EventListPage() {
             <EmptyState
               message={
                 /* 기본값도 좁힌 조건이다 — 보관된 행사만 있을 때 "등록된 행사가 없습니다"는 거짓이다 */
-                statusFilter !== "ALL" || eventClsfCd
+                statusFilter !== "ALL" || eventClsfCd || kindFilter
                   ? "조건에 맞는 행사가 없습니다."
                   : "등록된 행사가 없습니다."
               }

@@ -58,7 +58,12 @@ export function EventCard({ event }: Readonly<{ event: PublicEventSummary }>) {
           {event.eventTtl}
         </div>
         <div className="flex flex-wrap items-center gap-[8px]">
-          <Pill>{event.eventClsfNm}</Pill>
+          {/*
+           * 학술 프로그램이면 분류 대신 유형(스터디·프로젝트·트랙)을 이름표로 (ADR-0043). 프로그램
+           * 행사의 분류 칸은 뜻이 없어진 값이라 화면이 보지 않는다 — 이관이 EVENT로 고정한 뒤
+           * 운영진이 바꿔 이미 갈렸다(#587 · ssccops#435).
+           */}
+          <Pill>{event.academicProgram?.typeNm ?? event.eventClsfNm}</Pill>
           {meta && <span className="text-[13.5px] text-n500">{meta}</span>}
         </div>
       </div>

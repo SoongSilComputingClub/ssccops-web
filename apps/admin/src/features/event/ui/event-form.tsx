@@ -20,6 +20,7 @@ import {
   moveCaretAfterRender,
   type BodyTab,
 } from "@/shared/ui";
+import { CLASSIFICATION_LOCKED_FOR_PROGRAM } from "../model/event-error";
 import { useEventCategoryOptions } from "../model/use-event-category-options";
 import { useEventImageUpload } from "../model/use-event-image-upload";
 import { useFormLinkOptions } from "../model/use-form-link-options";
@@ -191,6 +192,15 @@ export function EventForm({
   const linkedFormMissing =
     initial?.formId != null && !forms.some((f) => f.formId === initial.formId);
 
+  /*
+   * 학술 프로그램 행사(스터디·프로젝트·트랙)의 분류 칸은 잠근다 (#587 · ssccops#435 · ADR-0043).
+   * 프로그램의 구분은 분류가 아니라 유형(`academicProgram.typeNm`)이고 분류 값은 뜻이 없다 —
+   * 감추지 않고 잠근 채 사유를 `title`로 붙인다(AGENTS «이동은 감추고, 동작은 잠근다»). 서버가
+   * 값이 바뀐 저장만 409로 거절하므로 지금 값을 그대로 되보내는 저장은 막히지 않는다. 등록
+   * 화면(`initial` 없음)에는 해당이 없다 — 프로그램 행사는 기획안 이관이 만든다.
+   */
+  const classificationLocked = initial?.academicProgram != null;
+
   const submit = () => {
     const next: Partial<Record<EventFormField, string>> = {};
 
@@ -253,6 +263,9 @@ export function EventForm({
                 value={eventClsfCd}
                 onChange={(e) => setEventClsfCd(e.target.value)}
                 aria-invalid={Boolean(errors.eventClsfCd) || undefined}
+                disabled={classificationLocked}
+                title={classificationLocked ? CLASSIFICATION_LOCKED_FOR_PROGRAM : undefined}
+                className="disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <option value="">분류 선택</option>
                 {categoryOptions.map((c) => (
