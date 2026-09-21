@@ -5,6 +5,7 @@ import {
   type PublicContentPage,
 } from "@/entities/content";
 import { fetchPublicEvents } from "@/entities/event";
+import { InstallBanner } from "@/features/pwa";
 import { CONTENT_SLUG } from "@/shared/config/content-slugs";
 import { organizationJsonLd, siteOrigin } from "@/shared/config/site";
 import { JsonLd } from "@/shared/ui";
@@ -39,6 +40,11 @@ const RECENT_POSTS = 6;
  * 서버가 주는 값 이상을 만들지 않는다 — 부원 수·«이번 학기» 같은 숫자 블록은 2026-09-19에
  * 뺐다(Sub-task «하지 않는 것»).
  *
+ * ── 발치의 설치 띠 (#607 · ssccops#449) ─────────────────────
+ * `InstallBanner`는 클라이언트 컴포넌트이고 재방문 여부를 브라우저 저장소로 판정한다 — 홈이
+ * 세션을 보지 않는다는 규칙과 CDN 캐시는 그대로다(SSR HTML에는 띠가 없다). 로그인 여부는 넘기지
+ * 않는다(내 활동 화면만 넘긴다).
+ *
  * ── `Organization` JSON-LD (#602 · ssccops#444) ─────────────
  * 검색엔진이 «이 사이트가 어느 단체인가»를 읽는 자리라 홈 한 곳에만 싣는다(모든 화면에 두면
  * 같은 데이터가 수십 번 나간다). 값은 `shared/config/site.ts`가 만들고 dev에서도 그린다 — 색인
@@ -62,6 +68,8 @@ export async function HomePage() {
       <ProgramRecruitment events={events} />
       <IntroBlocks page={introPage} />
       <RecentPosts result={posts} />
+      {/* 발치의 «홈 화면에 추가» — 재방문에만, 브라우저가 판정하므로 이 HTML은 여전히 사람마다 같다 (#607) */}
+      <InstallBanner />
     </div>
   );
 }

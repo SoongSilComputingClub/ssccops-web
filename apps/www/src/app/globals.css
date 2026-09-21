@@ -12,6 +12,8 @@
  */
 @source "../../../../packages/form-renderer/src";
 @source "../../../../packages/ui/src";
+/* 서비스워커·설치·오프라인 훅 (#607 · ADR-0045). 이 앱은 훅만 쓰지만 «패키지마다 한 줄» 규칙은 지킨다 */
+@source "../../../../packages/pwa/src";
 
 /*
  * 공개 웹사이트 디자인 토큰 — 어드민(apps/admin)·학술 앱(apps/lms)과 **같은 값**이다(Toss 라이트

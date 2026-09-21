@@ -29,6 +29,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `/f/{ref}` · `/f/{ref}/done` | 공개 폼 응답(어드민에서 옮겨 옴 · ssccops#214) — 응답자는 전원 회원. **`ref`는 폼 키(UUID) 또는 예전 숫자 id** (ADR-0036 · ssccops#359): 서버가 둘 다 받고, 화면은 새 주소를 응답의 `formKey`로만 만든다(`ROUTES.publicForm(form.formKey ?? form.formId)`). 모양 판정은 `entities/form`의 `isFormRef` 한 곳. 숫자 주소의 카드 미리보기는 지금 접수 중인 폼만 뜬다(서버 정책). **LMS가 답을 받는 시스템 폼(기획안)은 문항을 그리지 않고 LMS로 보낸다**(#555 · ssccops#417 · 서버 #499) — 판정은 `entities/form` `answersOnWww(sysFormCd)` 한 곳(#588 · ADR-0044): **신입회원 모집 지정 폼(`RECRUIT`)은 시스템 폼이지만 이 화면이 곧 지원서라 문항을 그린다**(`/join`의 «지원하기»가 여기로 온다), 그 밖의 코드는 LMS로. 훅이 `system-form`으로 끊어 초안 조회·자동 저장이 돌지 않고, `SystemFormNotice`가 카드를 그린 뒤 `lmsOrigin()`이 있으면 `PROPOSAL`→`LMS_PROPOSAL_NEW_PATH`, 그 밖→LMS 홈으로 `window.location.replace`(남의 오리진이라 `router.replace`가 아니다 · 이미 복사돼 돌아다니는 링크라 막는 것보다 보내는 편). 오리진이 없으면 안내만(죽은 주소 금지). OG는 그대로 | 로그인 |
 | `/s/{token}` | 공유 링크 착지 — 크롤러에는 OG, 사람은 클라이언트에서 lms 상세로(ADR-0016·0017) | 익명 |
 | `/auth/callback` · `/version` | OAuth 콜백 · 배포 이력 확인 | — |
+| `/sw.js` · `/offline` | 서비스워커(라우트 핸들러가 문자열로) · 오프라인 안내(정적 · 아래 «PWA») | 익명 |
 
 경로는 `shared/config/routes.ts`의 `ROUTES`로만 쓴다.
 
@@ -87,6 +88,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **기본 공유 카드 `app/og/route.tsx`** — lms #556과 같은 모양, 허용 목록 `shared/config/og-cards.ts`(지금은 `default` 하나), 틀·자산 로딩은 `shared/lib/og-card.tsx`로 올려 폼 카드와 나눠 쓴다.
 - **JSON-LD** — 홈이 `Organization`(`shared/config/site.ts` `organizationJsonLd` — 이름·url·로고·`sameAs`는 `contact.ts`의 SNS), 행사 상세가 `Event`(일시·장소·대표 이미지·주최 — 서버가 준 값만, 접수 상태·정원·마감은 공유 카드와 같은 이유로 없다). `shared/ui/json-ld.tsx`가 `<`를 `<`로 바꿔 싣는다. dev에서도 그린다 — 색인은 robots가 가르고 데이터 자체는 해가 없다.
 - 404 화면은 Next가 noindex를 스스로 붙인다. 페이지 «준비 중» 200은 색인된다 — 게시본 없는 주소가 검색에 잡히는 것이 싫으면 그때 `ContentPage`에서 noindex를 건다(지금은 상단 바에 걸린 주소라 그대로).
+
+## PWA — 서비스워커·오프라인·재방문자 설치 띠 (#607 · ssccops#449 · ADR-0045)
+
+1차(#167 · ssccops#150 B안)는 manifest·아이콘까지였고 2차가 서비스워커·오프라인·설치 띠를 얹었다. **푸시·알림 목록은 없다** — 이 앱의 로그인은 `/me`를 위한 것이고 알림 사건은 전부 어드민 것이다(ssccops#449 «판단»). 공통 코드는 `@ssccops/pwa`(규칙·함정은 `packages/pwa/README.md`)이고 여기에는 www가 어디에 무엇을 꽂았는지만 적는다.
+
+- **서비스워커는 `app/sw.js/route.ts`가 문자열로 내준다** — `public/sw.js` 파일이 없다. `cacheVersion`은 `NEXT_PUBLIC_GIT_SHA`(배포마다 옛 캐시가 지워진다), **`apiOrigin`은 null**, `appOrigins`는 비어 있다. 전 화면이 SSR이라 공개 페이지의 데이터는 HTML 안에 있고 화면 이동을 네트워크 우선 → 캐시로 다루면 «방문한 것이 오프라인에서도 열린다»가 그것으로 끝난다. 브라우저에서 API를 부르는 화면은 신청서·공개 폼(초안 저장·제출)뿐인데 오프라인에서 초안을 그려 봐야 저장이 안 되고, 캐시하면 로그아웃 때 비워야 할 것(admin의 `CLEAR_CACHE`)이 이 앱에도 생긴다 — 그래서 API 응답은 캐시하지 않고 로그아웃도 워커에 아무것도 보내지 않는다. **캐시되는 것**: 같은 오리진 `/_next/static/*`(캐시 우선) · 화면 이동 HTML 200(네트워크 우선 → 캐시 → `/offline`). 리다이렉트·오류 응답·GET 외는 담지 않는다.
+- **`/offline`은 정적이고 데이터가 없다**(`app/offline/page.tsx`) — 워커가 install 때 미리 담는다. 루트 레이아웃(상단 바·푸터)은 세션도 API도 보지 않으므로 그대로 두른다(404 화면과 같은 틀). 미들웨어 매처가 좁아(`/me/*`·신청·공개 폼) `/sw.js`·`/offline`은 원래 잡히지 않는다 — **매처를 넓힐 때 둘을 빼야 한다**(워커 스크립트는 리다이렉트를 못 따라간다). 띠(«오프라인 — 마지막으로 본 내용»)는 루트 레이아웃의 `OfflineBanner`(`useOnline`). 등록은 `ServiceWorkerRegister` 한 번 — **개발 모드(`next dev`)에서는 등록되지 않는다.** 확인은 dev 배포에서 DevTools «Application › Service Workers».
+- **설치 띠 `features/pwa` `InstallBanner`는 홈과 내 활동(`MeFrame` — 다섯 페이지)의 발치에만 있다.** 보이는 조건은 **재방문 또는 로그인** AND `beforeinstallprompt`를 받았거나 iOS AND 설치된 창이 아님 AND 30일 숨김이 아님. 재방문은 `localStorage` 방문 횟수 ≥ 2(`model/install-banner-store.ts` — 방문은 브라우저 세션당 한 번, 루트 레이아웃의 `ServiceWorkerRegister`가 센다), 로그인은 **내 활동 화면이 서버에서 본 토큰을 프롭으로 넘긴다**(브라우저가 세션을 다시 읽지 않는다). 홈은 프롭을 넘기지 않는다 — 홈이 세션을 보지 않는다는 규칙(ssccops#385)과 CDN 5분 캐시는 그대로이고, 띠는 브라우저가 판정하므로 SSR HTML에 없다. «닫기»와 브라우저 대화상자 거절은 30일 숨김(`localStorage`), 저장소 접근은 전부 try/catch(프라이빗 창에서는 늘 첫 방문). iPhone·iPad는 «공유 → 홈 화면에 추가» 안내.
+- **첫 방문에는 띄우지 않는다** — ssccops#150의 «카톡·에타 링크로 한 번 보고 나가는 방문» 판단은 첫 방문에는 그대로다. ADR-0045가 뒤집은 것은 «돌아온 사람에게도 권하지 않는다»는 쪽이다. 유도를 철회하려면 `InstallBanner` 둘을 빼면 끝이다(서비스워커·manifest는 무관).
+- `manifest.ts`는 그대로다(`display: standalone` · `start_url: "/"` · 아이콘은 #413 스크립트 산출물).
 
 ## 함정
 

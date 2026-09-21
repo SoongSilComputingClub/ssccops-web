@@ -4,6 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import Link from "next/link";
 import { BrandMark, deployMarks } from "@ssccops/ui";
 import { AuthNav } from "@/features/auth";
+import { OfflineBanner, ServiceWorkerRegister } from "@/features/pwa";
 import { OG_IMAGE_SIZE, ogImagePath } from "@/shared/config/og-cards";
 import { ROUTES } from "@/shared/config/routes";
 import { ORGANIZATION_NAME, siteOrigin } from "@/shared/config/site";
@@ -160,6 +161,8 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
        * 목록·상세 렌더에 세션 조회가 끼어들지 않게 한다(#150).
        */}
       <body className="flex min-h-screen flex-col antialiased">
+        {/* 연결이 없을 때 맨 위 한 줄 (#607 · ADR-0045) */}
+        <OfflineBanner />
         <header className="border-b border-line bg-surface">
           <div className="mx-auto flex max-w-[1000px] items-center justify-between gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
             <Link href={ROUTES.home} className="flex items-center gap-[8px]">
@@ -186,6 +189,11 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
           {children}
         </main>
         <SiteFooter />
+        {/*
+         * 서비스워커 등록 + 방문 세기 — 개발 모드는 패키지가 건너뛴다 (#607 · ADR-0045 · 캐시 규칙은
+         * packages/pwa/README.md, 이 앱의 범위는 AGENTS.md «PWA»)
+         */}
+        <ServiceWorkerRegister />
         {/*
          * 측정 둘 — 방문 통계와 실사용자 Web Vitals (#600 · ssccops#443). Vercel에서만(가드는
          * shared/lib/vercel.ts). Speed Insights는 세 앱이 한 할당(30일 1만)을 나누므로 **www에만**
