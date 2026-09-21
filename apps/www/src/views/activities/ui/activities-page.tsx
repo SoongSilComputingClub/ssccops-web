@@ -49,7 +49,7 @@ export async function ActivitiesPage({
   return (
     <div className="flex flex-col gap-[16px]">
       <header className="flex flex-col gap-[2px]">
-        <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">활동</h1>
+        <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">기록</h1>
         <p className="text-[13.5px] text-n500">
           학술·행사·뉴스 기록입니다. 지금 열리는 행사는{" "}
           <Link href={ROUTES.events} className="text-accent-strong underline underline-offset-2">

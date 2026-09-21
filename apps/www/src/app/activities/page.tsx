@@ -3,7 +3,7 @@ import { CURSOR_QUERY } from "@/shared/config/routes";
 import { ActivitiesPage } from "@/views/activities";
 
 export const metadata: Metadata = {
-  title: "활동",
+  title: "기록",
   description: "SSCC의 학술·행사·뉴스 기록",
 };
 
