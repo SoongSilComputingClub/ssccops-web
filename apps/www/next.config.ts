@@ -108,6 +108,15 @@ const nextConfig: NextConfig = {
           "/:section(about|operators|academic|join|contact|privacy|photo-notice|terms|records)/:path*",
         headers: [{ key: "Cache-Control", value: PUBLIC_CACHE_CONTROL }],
       },
+      /*
+       * sitemap(#602)도 같은 5분 — 요청마다 만드는 라우트(`app/sitemap.ts` `force-dynamic`)인데
+       * 재료가 전부 위와 같은 익명 API라 같은 값이 맞다. robots.txt는 빌드 때 굳는 정적 파일이라
+       * 여기 없다.
+       */
+      {
+        source: "/sitemap.xml",
+        headers: [{ key: "Cache-Control", value: PUBLIC_CACHE_CONTROL }],
+      },
     ];
   },
 };

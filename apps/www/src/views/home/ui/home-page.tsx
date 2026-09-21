@@ -6,6 +6,8 @@ import {
 } from "@/entities/content";
 import { fetchPublicEvents } from "@/entities/event";
 import { CONTENT_SLUG } from "@/shared/config/content-slugs";
+import { organizationJsonLd, siteOrigin } from "@/shared/config/site";
+import { JsonLd } from "@/shared/ui";
 import { Banner } from "./banner";
 import { Hero } from "./hero";
 import { IntroBlocks } from "./intro-blocks";
@@ -36,6 +38,11 @@ const RECENT_POSTS = 6;
  *
  * 서버가 주는 값 이상을 만들지 않는다 — 부원 수·«이번 학기» 같은 숫자 블록은 2026-09-19에
  * 뺐다(Sub-task «하지 않는 것»).
+ *
+ * ── `Organization` JSON-LD (#602 · ssccops#444) ─────────────
+ * 검색엔진이 «이 사이트가 어느 단체인가»를 읽는 자리라 홈 한 곳에만 싣는다(모든 화면에 두면
+ * 같은 데이터가 수십 번 나간다). 값은 `shared/config/site.ts`가 만들고 dev에서도 그린다 — 색인
+ * 여부는 robots가 가르고 구조화 데이터 자체는 해가 없다.
  */
 export async function HomePage() {
   const [banner, intro, events, posts] = await Promise.allSettled([
@@ -48,6 +55,7 @@ export async function HomePage() {
 
   return (
     <div className="flex flex-col gap-[28px] lg:gap-[36px]">
+      <JsonLd data={organizationJsonLd(siteOrigin())} />
       <Banner page={settled(banner)} />
       <Hero page={introPage} />
       <Schedule events={events} />

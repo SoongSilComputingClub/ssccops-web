@@ -4,7 +4,9 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import Link from "next/link";
 import { BrandMark, deployMarks } from "@ssccops/ui";
 import { AuthNav } from "@/features/auth";
+import { OG_IMAGE_SIZE, ogImagePath } from "@/shared/config/og-cards";
 import { ROUTES } from "@/shared/config/routes";
+import { ORGANIZATION_NAME, siteOrigin } from "@/shared/config/site";
 import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { ThemeToggle } from "@/shared/ui";
 import { DesktopNav } from "./_shell/desktop-nav";
@@ -21,6 +23,21 @@ import "./globals.css";
  */
 const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
 
+/*
+ * 이 사이트의 오리진 (#602 · ssccops#444) — `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`(어드민·lms가 www를
+ * 가리키는 바로 그 변수 · `shared/config/site.ts` 주석). 비면 절대 주소가 필요한 메타(아래
+ * `metadataBase`·canonical·og:image)를 전부 뺀다 — 요청 헤더로 지어내지 않는다.
+ */
+const ORIGIN = siteOrigin();
+
+/*
+ * 검색엔진 소유 확인 토큰 — 사람이 Search Console·네이버 서치어드바이저에 등록하며 받은 값을
+ * www Vercel(prod)의 env에 넣는다(#602 «사람이 할 것»). 비면 태그 자체가 없다(Next가 falsy를
+ * 건너뛴다). 네이버는 표준 키가 아니라 `other`로 `naver-site-verification`을 낸다.
+ */
+const GOOGLE_SITE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
+const NAVER_SITE_VERIFICATION = process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION;
+
 /**
  * 공개 웹사이트 루트 메타 (#167).
  *
@@ -28,11 +45,25 @@ const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
  * 제목이 행사가 아니라 동아리 이름이다. `title.template`은 그대로 둔다: 행사 상세가 제목만
  * 돌려줘도 탭·공유 카드에 서비스 이름이 함께 붙는 장치이고, **OG 제목에는 이 템플릿이 적용되지
  * 않으므로**(og:title은 별도 필드다) 상세 화면이 openGraph.title을 직접 적는 구조도 유지한다.
+ *
+ * ── SEO (#602 · ssccops#444) ────────────────────────────────
+ * `metadataBase`가 있어야 상대 경로로 적은 og:image·canonical이 절대 주소로 나간다(메신저·
+ * 검색엔진은 상대 주소를 받지 않는다). canonical은 `"./"` — Next가 요청 경로로 풀어 화면마다
+ * 자기 주소가 정본이 된다(`/events?clsf=X`·`/records?cursor=`처럼 쿼리가 붙은 주소도 쿼리 없는
+ * 쪽을 가리킨다). 화면이 `alternates`를 따로 적으면 그쪽이 이긴다. 기본 og:image는 `/og`
+ * (`app/og/route.tsx`)이고 대표 이미지·표지가 있는 행사·포스트, 자기 카드가 있는 폼은 자기
+ * `openGraph.images`로 덮는다. 색인 여부는 여기가 아니라 `robots.ts`가 가른다(dev는 전부 차단).
  */
 export const metadata: Metadata = {
+  ...(ORIGIN
+    ? {
+        metadataBase: new URL(ORIGIN),
+        alternates: { canonical: "./" },
+      }
+    : {}),
   // `[DEV] `는 default와 template 둘 다에 붙는다 — 화면 제목이 있는 페이지도 접두가 살아야 한다
   title: {
-    default: DEPLOY.title("SSCC 숭실컴퓨팅클럽"),
+    default: DEPLOY.title(ORGANIZATION_NAME),
     template: DEPLOY.title("%s · SSCC"),
   },
   description:
@@ -41,7 +72,20 @@ export const metadata: Metadata = {
     siteName: "SSCC",
     type: "website",
     locale: "ko_KR",
+    ...(ORIGIN ? { images: [{ url: ogImagePath("default"), ...OG_IMAGE_SIZE }] } : {}),
   },
+  // 트위터(X)·디스코드는 og:image 대신 이 카드 타입을 먼저 본다 — 이미지가 있을 때만 큰 카드
+  twitter: { card: ORIGIN ? "summary_large_image" : "summary" },
+  ...(GOOGLE_SITE_VERIFICATION || NAVER_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: GOOGLE_SITE_VERIFICATION,
+          other: NAVER_SITE_VERIFICATION
+            ? { "naver-site-verification": NAVER_SITE_VERIFICATION }
+            : undefined,
+        },
+      }
+    : {}),
   /*
    * iOS Safari는 manifest를 보지 않는다 — 홈 화면에 추가했을 때 전체 화면으로 뜨게 하려면
    * 이 메타가 따로 있어야 한다(어드민 #108과 같은 이유). 상태 표시줄을 default로 둔 것은
