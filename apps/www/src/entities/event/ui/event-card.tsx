@@ -8,7 +8,7 @@ import { Badge, Pill } from "@/shared/ui";
 /**
  * 목록 카드 — 대표 이미지 · 배지 · 제목 · 분류 · 일시 · 장소.
  *
- * `views/event-list`에 있다가 entity로 내려왔다(#520) — 학기별 묶음(`views/activities`)도 같은
+ * `views/event-list`에 있다가 entity로 내려왔다(#520) — 학기별 묶음(`views/records`)도 같은
  * 카드를 그리는데, views 슬라이스끼리는 참조하지 않는다(루트 AGENTS «FSD»). 행사 한 건의
  * 표시라 entity의 ui가 맞는 자리다.
  */

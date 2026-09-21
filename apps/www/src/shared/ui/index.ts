@@ -6,3 +6,4 @@ export { Markdown, ContentMarkdoc } from "./markdown";
 export { Notice } from "./notice";
 export { ThemeToggle } from "./theme-toggle";
 export { SectionTabs } from "./section-tabs";
+export { COMPACT_CARD_CLASS, ListCell, ListRow, ListTable } from "./list-table";

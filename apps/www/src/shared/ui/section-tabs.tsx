@@ -5,7 +5,7 @@ import { cn } from "../lib/cn";
 /**
  * 축 안의 탭 줄 — 페이지 제목 아래 (#524).
  *
- * 활동 아카이브의 분류 탭(`views/activities/ui/category-tabs.tsx`)과 같은 모양·같은 판단이다 —
+ * 기록 아카이브의 분류 탭(`views/records/ui/category-tabs.tsx`)과 같은 모양·같은 판단이다 —
  * **링크**이고 `<nav>` + `aria-current`다. 주소가 바뀌는 이동이라 ARIA 탭이 아니다.
  *
  * `views/content-page`에 있다가 `shared/ui`로 올라왔다(#574) — 내 활동(`views/me`)도 같은 탭 줄을

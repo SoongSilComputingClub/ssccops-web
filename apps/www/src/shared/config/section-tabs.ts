@@ -5,7 +5,7 @@ import { ROUTES } from "./routes";
  *
  * #520이 하위 페이지(연혁·핵심 가치·역대 운영진·FAQ·지난 모집)를 만들었지만 가는 길이 없었다 —
  * 상단 바는 축 하나에 항목 하나라 `/about/history`는 주소를 아는 사람만 열 수 있었다. 이 표가
- * 페이지 제목 아래 탭 줄이 되어 그 길을 준다. 활동 축은 분류 탭(`views/activities`)이 이미 있어
+ * 페이지 제목 아래 탭 줄이 되어 그 길을 준다. 기록 축은 분류 탭(`views/records`)이 이미 있어
  * 여기 없고, 법적 페이지(개인정보처리방침·사진 게재 안내·이용약관)는 축이 아니라 탭이 없다.
  *
  * 상단 바 항목(`app/_shell/nav-links.ts`)과 같은 모양(`href`·`label`·`isActive`)이다. 둘을
@@ -19,7 +19,7 @@ import { ROUTES } from "./routes";
  */
 /*
  * `me`(내 활동 · #574 · ssccops#428)는 콘텐츠 축이 아니라 로그인한 부원의 화면이지만 같은 탭 줄을
- * 쓴다 — 허브 `/me` 아래 내부 페이지 넷(신청한 행사 · 낸 폼 · 낸 기획안 · 이끄는 활동)으로
+ * 쓴다 — 허브 `/me` 아래 내부 페이지 넷(신청한 행사 · 낸 폼 · 낸 기획안 · 이끄는 프로그램)으로
  * 가는 길이고, lms `/my/applications`처럼 «내 것»을 종류별로 한 장씩 보는 모양이다.
  */
 export type SectionAxis = "about" | "operators" | "join" | "me";
@@ -62,6 +62,6 @@ export const SECTION_TABS: Record<SectionAxis, readonly SectionTab[]> = {
     },
     { href: ROUTES.meResponses, label: "낸 폼", isActive: exact(ROUTES.meResponses) },
     { href: ROUTES.meProposals, label: "낸 기획안", isActive: exact(ROUTES.meProposals) },
-    { href: ROUTES.mePrograms, label: "이끄는 활동", isActive: exact(ROUTES.mePrograms) },
+    { href: ROUTES.mePrograms, label: "이끄는 프로그램", isActive: exact(ROUTES.mePrograms) },
   ],
 };

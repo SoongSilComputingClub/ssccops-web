@@ -8,7 +8,7 @@ import {
 } from "@/views/content-page";
 
 const SLUG = CONTENT_SLUG.academic;
-const TITLE = "학술 활동";
+const TITLE = "학술 프로그램";
 
 export function generateMetadata(): Promise<Metadata> {
   return contentPageMetadata(SLUG, TITLE);
