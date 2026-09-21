@@ -11,6 +11,7 @@
  */
 @source "../../../../packages/form-renderer/src";
 @source "../../../../packages/ui/src";
+@source "../../../../packages/pwa/src";
 
 /*
  * SSCC Admin 디자인 토큰 — 라이트 값은 원본 디자인(Toss 라이트 테마) 그대로다.

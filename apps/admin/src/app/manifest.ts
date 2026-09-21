@@ -4,7 +4,9 @@ import { deployMarks } from "@ssccops/ui";
 /*
  * PWA 매니페스트 (#108 · 범위 결정 ssccops#105의 1안 "설치만").
  *
- * 서비스워커와 푸시는 범위 밖이다 — manifest만으로도 홈 화면 설치와 전체 화면 실행은 된다.
+ * 1차에서는 서비스워커와 푸시가 범위 밖이었다 — manifest만으로도 홈 화면 설치와 전체 화면 실행은
+ * 된다. 2차(#604 · ADR-0045)가 그 둘을 얹었다: 서비스워커는 `app/sw.js/route.ts`, 오프라인 안내는
+ * `app/offline`, 푸시 토글은 `/my`, 규칙은 `packages/pwa/README.md`. 이 파일은 그대로다.
  *
  * ── start_url을 "/"로 둔 이유 ──────────────────────────────
  * "/"는 이미 /dashboard로 보내고, 미인증이면 미들웨어가 /login?next=... 로 거른다.

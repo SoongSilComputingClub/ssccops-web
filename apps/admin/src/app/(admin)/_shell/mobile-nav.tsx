@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BrandMark, deployMarks } from "@ssccops/ui";
+import { NotificationBell } from "@/features/notification";
 import { NavPanel } from "./nav-panel";
 import { useShellNav } from "./use-shell-nav";
 
@@ -59,7 +60,9 @@ export function MobileNav() {
           ☰
         </button>
         <BrandMark src={DEPLOY.mark} size={28} />
-        <div className="min-w-0 truncate text-[16px]">SSCC 운영관리</div>
+        <div className="min-w-0 flex-1 truncate text-[16px]">SSCC 운영관리</div>
+        {/* 종 — 상단 바 오른쪽. 드로어가 아니라 여기인 것은 열지 않고도 배지가 보여야 해서다 (#604) */}
+        <NotificationBell />
       </div>
 
       {open && (

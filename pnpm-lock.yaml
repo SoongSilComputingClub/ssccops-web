@@ -32,6 +32,9 @@ importers:
       '@ssccops/form-renderer':
         specifier: workspace:*
         version: link:../../packages/form-renderer
+      '@ssccops/pwa':
+        specifier: workspace:*
+        version: link:../../packages/pwa
       '@ssccops/share-meta':
         specifier: workspace:*
         version: link:../../packages/share-meta
@@ -318,6 +321,31 @@ importers:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.18)(react@19.2.8)
     devDependencies:
+      '@types/react':
+        specifier: ^19
+        version: 19.2.18
+      eslint:
+        specifier: ^9
+        version: 9.39.5(jiti@2.7.0)
+      eslint-config-next:
+        specifier: 16.3.0
+        version: 16.3.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/pwa:
+    dependencies:
+      '@ssccops/date':
+        specifier: workspace:*
+        version: link:../date
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.43
       '@types/react':
         specifier: ^19
         version: 19.2.18

@@ -31,7 +31,8 @@ function resolveGitSha(): string {
  * OpenNext 빌드에서도 같게 돌도록 여기서 명시한다.
  *
  * `@ssccops/auth`(ssccops-web#329)도 같은 이유로 여기 있다 — 미들웨어와 라우트 핸들러가
- * 그 소스를 그대로 컴파일한다.
+ * 그 소스를 그대로 컴파일한다. `@ssccops/pwa`(#604 · ADR-0045)는 `app/sw.js/route.ts`가 서버에서
+ * 부르고 훅은 브라우저가 쓴다 — 양쪽 다 이 목록에 있어야 한다.
  */
 const nextConfig: NextConfig = {
   transpilePackages: [
@@ -40,6 +41,7 @@ const nextConfig: NextConfig = {
     "@ssccops/codes",
     "@ssccops/content",
     "@ssccops/auth",
+    "@ssccops/pwa",
   ],
 
   /*
