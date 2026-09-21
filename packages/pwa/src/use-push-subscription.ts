@@ -26,8 +26,11 @@ export type PushSubscriptionState = "unsupported" | "denied" | "off" | "on" | "p
 export interface UsePushSubscriptionOptions {
   /** 이 앱 — 서버 구독 행의 `app_cd` */
   app: PushApp;
-  /** `GET /v1/push/config` — VAPID 공개키 */
-  getConfig: () => Promise<{ publicKey: string }>;
+  /**
+   * `GET /v1/push/config` — VAPID 공개키. **null이면 서버가 푸시를 끈 것**(키 미설정 ·
+   * `ssccops.push.enabled=false` · server#527) — 구독을 만들지 않고 그 사실을 보인다.
+   */
+  getConfig: () => Promise<{ publicKey: string | null }>;
   /** `POST /v1/push/subscriptions` */
   subscribe: (request: PushSubscriptionRequest) => Promise<unknown>;
   /** `DELETE /v1/push/subscriptions` — 없는 endpoint면 서버가 404를 내도 성공으로 본다 */
@@ -142,6 +145,12 @@ export function usePushSubscription({
     let subscription: PushSubscription | null = null;
     try {
       const { publicKey } = await getConfig();
+      if (!publicKey) {
+        // 구독은 만들 수 있지만 받을 일이 없다 — 켜진 것처럼 보이는 쪽이 더 나쁘다
+        setError("이 서버에는 푸시가 꺼져 있어요 — 운영진에게 알려 주세요");
+        setState("off");
+        return;
+      }
       subscription =
         (await registration.pushManager.getSubscription()) ??
         (await registration.pushManager.subscribe({
