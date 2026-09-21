@@ -15,6 +15,7 @@ export {
   EVENT_RECEIPT_BADGE,
   EVENT_STTS_BADGE_TONE,
   PTCP_STTS_BADGE,
+  UNUSED_EVENT_CLSF_NOTE,
   eventSttsBadge,
 } from "./model/display";
 export {

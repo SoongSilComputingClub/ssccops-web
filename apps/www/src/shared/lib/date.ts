@@ -124,3 +124,15 @@ export function ddayLabel(value: string | null, today: string): string | null {
   if (diff < 0) return null;
   return diff === 0 ? "D-day" : `D-${diff}`;
 }
+
+/**
+ * «9월 15일» — 모집 페이지의 «n월 n일부터 접수합니다»(#588 · ADR-0044). 요일·시각·연도가 없다.
+ *
+ * `formatEventDate`와 같은 잘라 쓰기(서울 오프셋 문자열 그대로)이고, 값이 없거나 모양이 어긋나면
+ * null이라 화면이 그 문장을 통째로 비운다 — «부터»만 남는 반쪽 문장을 그리지 않는다.
+ */
+export function formatMonthDay(value: string | null | undefined): string | null {
+  const parts = parse(value);
+  if (!parts) return null;
+  return `${parts.m}월 ${parts.d}일`;
+}

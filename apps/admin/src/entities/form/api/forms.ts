@@ -303,10 +303,28 @@ export const FORM_ERROR = {
    * 전부를 한 번에 거절한다. 문항이 같으면 통과한다 — 제목·접수 기간·라벨·다중 응답·페이지
    * 제목·설명(`pages`)은 비교 대상이 아니라 편집 자동 저장(전체 PATCH)이 여기 걸리지 않는다.
    *
-   * 편집기는 `sysYn`이면 문항 편집기를 통째로 잠근다(#554 · `QitemComposer`의 `questionsLocked`).
-   * 이 코드가 오는 것은 화면을 우회한 요청이거나 잠금 배포 전에 열어 둔 탭이다.
+   * 편집기는 **계약이 있는 시스템 폼**(`sysYn`이고 `systemRequiredQitemIds`가 비어 있지 않음)에서
+   * 문항 편집기를 통째로 잠근다(#554 · `QitemComposer`의 `questionsLocked` · #588에서 좁힘 —
+   * 신입회원 모집 지정 폼은 계약이 없어 열려 있다 · ADR-0044). 서버도 같은 기준이다. 이 코드가
+   * 오는 것은 화면을 우회한 요청이거나 잠금 배포 전에 열어 둔 탭이다.
    */
   SYSTEM_FORM_QUESTIONS_LOCKED: "SYSTEM_FORM_QUESTIONS_LOCKED",
+  /**
+   * 400 — 그 코드로는 지정을 옮길 수 없다 (ssccops-server #520 · ADR-0044).
+   *
+   * `PUT /v1/forms/system/{sysFormCd}`로 옮길 수 있는 코드는 서버 허용 목록(`RECRUIT`)뿐이다 —
+   * 기획안(`PROPOSAL`)은 시드가 세우고 옮기지 않는다. 화면은 `RECRUIT`만 보내므로 이 코드가
+   * 오는 것은 화면을 우회한 요청이거나 서버 허용 목록이 바뀐 배포다.
+   */
+  SYSTEM_FORM_NOT_DESIGNATABLE: "SYSTEM_FORM_NOT_DESIGNATABLE",
+  /**
+   * 409 — 이미 **다른 코드**가 가리키는 폼을 지정하려 함 (ssccops-server #520).
+   *
+   * 기획안 폼을 신입회원 모집 폼으로 지정하는 요청이 여기 걸린다. 같은 코드(`RECRUIT`)가 이미
+   * 가리키는 폼을 다시 지정하는 것은 멱등이라 200이다. 화면은 시스템 폼에서 지정 버튼을
+   * 그리지 않으므로 이쪽도 우회 요청의 자리다.
+   */
+  SYSTEM_FORM_ALREADY_DESIGNATED: "SYSTEM_FORM_ALREADY_DESIGNATED",
   /**
    * 409 — 이미 지워진 폼을 또 지우려 함 (ssccops-server#329 · **확정**).
    *
@@ -689,4 +707,68 @@ export async function deleteForm(formId: number): Promise<void> {
  */
 export async function restoreForm(formId: number): Promise<void> {
   await apiFetch<void>(`/v1/forms/${formId}/restore`, { method: "POST" });
+}
+
+/* ── 시스템 폼 지정 (#588 · ssccops#436 · ADR-0044 · 서버 #520) ─── */
+
+/**
+ * 지정 결과 — 새로 지정된 폼의 상세와 «어느 폼에서 옮겨 왔는가».
+ *
+ * 상세를 통째로 싣는 것은 서버 계약(`SystemFormDesignateResponse`)이 그렇게 돼 있어서인데, 화면은
+ * 그것으로 배지를 고쳐 그리지 않고 **다시 조회한다** — 접수 상태 전이와 같은 판단(상세 화면의
+ * `applyStatusChange` 주석)이다. 그래도 옮겨 두는 것은 응답 모양을 아는 곳을 이 파일 하나로
+ * 두기 위해서다. `prevFormId`는 첫 지정이면 `null`, 같은 폼을 다시 지정했으면 그 폼이다.
+ */
+export interface SystemFormDesignateResult {
+  sysFormCd: string;
+  prevFormId: number | null;
+  form: FormDetail;
+}
+
+interface SystemFormDesignateResponse {
+  sysFormCd: string | null;
+  prevFormId: number | null;
+  form: FormDetailResponse | null;
+}
+
+/**
+ * PUT /v1/forms/system/{sysFormCd} — 코드가 가리키는 폼을 옮긴다.
+ *
+ * 본문은 «어느 폼으로»(`formId`)뿐이고 코드는 경로다 — 서버가 본문으로 코드를 받지 않는 것은
+ * 요청 본문으로 시스템 폼을 세우는 길(#140이 막은 것)을 열지 않기 위해서다. 옮길 수 있는 코드는
+ * 서버 허용 목록(`RECRUIT`)이 정하며 그 밖은 400 `SYSTEM_FORM_NOT_DESIGNATABLE`이다. 이전 지정
+ * 폼의 코드는 같은 트랜잭션에서 풀려 일반 폼이 된다.
+ *
+ * 권한은 접수 상태 전이와 같은 `FORM_STATUS_CHANGE`다 — «어느 폼이 지금 모집을 받는가»를 정하는
+ * 조작이라 접수를 여닫는 것과 같은 층이다(서버 컨트롤러 주석).
+ *
+ * 오류: 없는 폼 404 `NOT_FOUND` · 다른 코드가 이미 가리키는 폼(기획안) 409
+ * `SYSTEM_FORM_ALREADY_DESIGNATED` · 코드 불허 400 `SYSTEM_FORM_NOT_DESIGNATABLE`. 문구는
+ * features/form의 `toSystemFormDesignateErrorMessage`가 맡는다.
+ */
+export async function designateSystemForm(
+  sysFormCd: string,
+  formId: number,
+): Promise<SystemFormDesignateResult> {
+  const res = await apiFetch<SystemFormDesignateResponse | null>(
+    `/v1/forms/system/${encodeURIComponent(sysFormCd)}`,
+    { method: "PUT", body: JSON.stringify({ formId }) },
+  );
+
+  /*
+   * 상세 없이 성공으로 처리하지 않는다 — 화면이 재조회하더라도 «무엇이 지정됐는가»를 돌려주지
+   * 않는 응답은 계약 밖이고, 그것을 조용히 통과시키면 다음 배포에서 모양이 바뀐 것을 아무도
+   * 모른다(createForm이 formId 없는 응답을 끊는 것과 같은 판단).
+   */
+  if (!res?.form) {
+    throw new ApiError(
+      FORM_ERROR.VALIDATION_FAILED,
+      "지정됐습니다 — 새로고침하면 반영됩니다",
+    );
+  }
+  return {
+    sysFormCd: res.sysFormCd ?? sysFormCd,
+    prevFormId: res.prevFormId ?? null,
+    form: toFormDetail(res.form),
+  };
 }

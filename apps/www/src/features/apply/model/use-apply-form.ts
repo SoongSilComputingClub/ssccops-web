@@ -9,6 +9,7 @@ import {
 } from "@ssccops/form-renderer";
 import {
   FORM_ERROR,
+  answersOnWww,
   fetchMyResponseDraft,
   fetchPublicForm,
   saveMyResponseDraft,
@@ -187,12 +188,15 @@ async function loadApplyForm(
   const form = await fetchPublicForm(formId);
 
   /*
-   * 시스템 폼은 여기서 끝낸다 — 초안 조회도 하지 않는다 (ssccops#417 · #555). 초안 GET은 무해하지만
-   * 이 화면이 이 폼의 답을 다루지 않는다는 뜻을 요청 하나로도 흐리지 않는다. 자동 저장 PUT은
-   * `status === "ready"`에서만 걸리므로 이 분기에서는 초안 행이 생기지 않는다. `alreadySubmitted`보다
-   * 앞에 두는 것은 이미 낸 사람이라도 결과 확인은 LMS 화면이 맞기 때문이다.
+   * LMS가 답을 받는 시스템 폼은 여기서 끝낸다 — 초안 조회도 하지 않는다 (ssccops#417 · #555). 초안
+   * GET은 무해하지만 이 화면이 이 폼의 답을 다루지 않는다는 뜻을 요청 하나로도 흐리지 않는다. 자동
+   * 저장 PUT은 `status === "ready"`에서만 걸리므로 이 분기에서는 초안 행이 생기지 않는다.
+   * `alreadySubmitted`보다 앞에 두는 것은 이미 낸 사람이라도 결과 확인은 LMS 화면이 맞기 때문이다.
+   *
+   * **신입회원 모집 지정 폼(`RECRUIT`)은 시스템 폼이지만 이 화면이 곧 지원서다**(#588 · ADR-0044) —
+   * `/join`의 «지원하기»가 이 주소로 온다. 판정은 `answersOnWww` 한 곳.
    */
-  if (form.sysFormCd !== null) {
+  if (form.sysFormCd !== null && !answersOnWww(form.sysFormCd)) {
     return {
       key,
       outcome: "system-form",

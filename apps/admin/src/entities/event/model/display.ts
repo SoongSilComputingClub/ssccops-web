@@ -87,6 +87,21 @@ export const PTCP_STTS_BADGE: Record<PtcpSttsCd, { label: string; tone: BadgeTon
  *
  * 톤은 저장 상태(outline·blue·grey)·단계(outline-accent)·모집(amber)이 쓰지 않는 나머지 하나다.
  */
+/**
+ * 쓰지 않는 행사 분류의 안내 (#588 · ssccops#436 · ADR-0044).
+ *
+ * «모집»(`RECRUIT`) 분류는 신입회원 모집이 «행사 + 연결 폼»이던 시절의 자리다. ADR-0044로 모집이
+ * 지정 폼(폼 상세 → 홍보 사이트 `/join`)으로 옮겨 가면서 이 분류는 **시드에 남기되 쓰지 않는다** —
+ * 지난 행사가 가리키고 있어 지울 수 없고(409 `EVENT_CLASSIFICATION_IN_USE`), 이름을 바꾸거나 새
+ * 행사에 고르는 것을 막지도 않는다(막을 근거가 서버에 없다). 분류 관리 화면이 이름 옆에 이 사실만
+ * 적는다 — 새 운영진이 «모집» 분류 행사를 만들어 `/join`에 뜨길 기다리는 일이 없게.
+ *
+ * 코드로 매핑한 표다 — 표시명(«모집»)은 운영진이 바꿀 수 있는 값이라 판정 근거가 못 된다.
+ */
+export const UNUSED_EVENT_CLSF_NOTE: Readonly<Record<string, string>> = {
+  RECRUIT: "쓰지 않음 — 신입 모집은 지정 폼(ADR-0044)",
+};
+
 export const DELETED_EVENT_BADGE: { label: string; tone: BadgeTone } = {
   label: "삭제됨",
   tone: "outline-red",

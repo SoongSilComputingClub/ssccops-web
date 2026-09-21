@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { EventCategory } from "@/entities/event";
+import { UNUSED_EVENT_CLSF_NOTE, type EventCategory } from "@/entities/event";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useEventCategories, type EventCategoryField } from "@/features/event";
@@ -235,7 +235,18 @@ export function EventCategoriesPage() {
                               className="w-[200px] rounded-[8px] border border-accent bg-bg px-2 py-1 text-[16px] outline-none focus-visible:ring-2 focus-visible:ring-accent/40 lg:text-[14.5px]"
                             />
                           ) : (
-                            <span className="font-semibold">{c.eventClsfNm}</span>
+                            <>
+                              <span className="font-semibold">{c.eventClsfNm}</span>
+                              {/*
+                                쓰지 않는 분류의 안내 (#588 · ADR-0044) — 읽기 전용 표시이고 수정·삭제를
+                                막지 않는다(근거는 entities/event의 UNUSED_EVENT_CLSF_NOTE 주석).
+                              */}
+                              {UNUSED_EVENT_CLSF_NOTE[c.eventClsfCd] && (
+                                <span className="ml-2 text-[12.5px] text-n500">
+                                  {UNUSED_EVENT_CLSF_NOTE[c.eventClsfCd]}
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                         <div className="flex gap-3 border-t border-hairline py-3 text-[14px]">

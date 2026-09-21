@@ -6,9 +6,11 @@ import {
   MULTIPLE_RESPONSE_CHANGE_NOTE,
   MULTIPLE_RESPONSE_NOTE,
   QITEM_VERSION_NOTE,
-  SYSTEM_FORM_BADGE,
+  RECRUIT_FORM_NOTE,
+  RECRUIT_SYS_FORM_CD,
   SYSTEM_FORM_DELETE_LOCKED,
   SYSTEM_FORM_OPEN_PARTS,
+  systemFormBadge,
   type QitemCpstCn,
 } from "@/entities/form";
 import { CAPABILITY } from "@/entities/session";
@@ -269,15 +271,25 @@ function FormEditContent({ editor }: Readonly<{ editor: FormEditor }>) {
               <div className="rounded-[12px] border border-line bg-bg px-[14px] py-[10px] text-[13px] leading-[1.6] text-n400">
                 {editor.sysYn && (
                   <div>
-                    <Badge tone={SYSTEM_FORM_BADGE.tone}>{SYSTEM_FORM_BADGE.label}</Badge>{" "}
-                    {SYSTEM_FORM_DELETE_LOCKED}. {SYSTEM_FORM_OPEN_PARTS}.
+                    <Badge tone={systemFormBadge(editor.sysFormCd).tone}>
+                      {systemFormBadge(editor.sysFormCd).label}
+                    </Badge>{" "}
+                    {/* 모집 지정 폼은 문항까지 열려 있다 — 기획안 문장으로는 «문항은?»이 빠진다 (#588) */}
+                    {editor.sysFormCd === RECRUIT_SYS_FORM_CD ? (
+                      RECRUIT_FORM_NOTE
+                    ) : (
+                      <>
+                        {SYSTEM_FORM_DELETE_LOCKED}. {SYSTEM_FORM_OPEN_PARTS}.
+                      </>
+                    )}
                   </div>
                 )}
                 {/* 버전은 서버가 준 값만 말한다 — 신규 폼은 아직 저장된 구성이 없다 */}
                 {editor.qitemVer !== null && (
                   <div className={editor.sysYn ? "mt-2" : undefined}>
                     {FIELD_LABEL.qitemVersion} v{editor.qitemVer}
-                    {editor.sysYn ? "" : ` · ${QITEM_VERSION_NOTE}`}
+                    {/* 문항이 잠긴 폼에는 «바꾸면…»을 붙이지 않는다 — 바꿀 수 없는 것의 결과를 말할 이유가 없다 */}
+                    {editor.questionsLocked ? "" : ` · ${QITEM_VERSION_NOTE}`}
                   </div>
                 )}
               </div>
@@ -472,11 +484,13 @@ function FormEditContent({ editor }: Readonly<{ editor: FormEditor }>) {
           </div>
 
           {/*
-            시스템 폼은 문항 편집기를 통째로 잠근다 (#554 · ssccops#416). 서버는 문항(qitems)이
-            바뀌는 저장을 409 SYSTEM_FORM_QUESTIONS_LOCKED로 거절하고, 제목·페이지 설명·접수
-            기간·라벨만 고친 자동 저장은 구성을 그대로 되보내므로(전체 PATCH · toFormSaveInput)
-            통과한다. systemRequiredQitemIds의 부분 잠금은 이 전체 잠금 안에 들어간다 — 서버가
-            여전히 그 목록을 내리므로 넘기는 자리는 그대로 둔다.
+            계약이 있는 시스템 폼은 문항 편집기를 통째로 잠근다 (#554 · ssccops#416 → #588 · ADR-0044에서
+            «계약이 있는»으로 좁힘 — 판정은 훅의 questionsLocked). 서버는 문항(qitems)이 바뀌는
+            저장을 409 SYSTEM_FORM_QUESTIONS_LOCKED로 거절하고, 제목·페이지 설명·접수 기간·라벨만
+            고친 자동 저장은 구성을 그대로 되보내므로(전체 PATCH · toFormSaveInput) 통과한다.
+            신입회원 모집 지정 폼은 계약이 없어 여기서 문항이 자유다. systemRequiredQitemIds의
+            부분 잠금은 이 전체 잠금 안에 들어간다 — 서버가 여전히 그 목록을 내리므로 넘기는
+            자리는 그대로 둔다.
           */}
           <QitemComposer
             cpst={draft.qitemCpstCn}
@@ -484,7 +498,7 @@ function FormEditContent({ editor }: Readonly<{ editor: FormEditor }>) {
             issues={issues.qitems}
             inUseQitemIds={editor.inUseQitemIds}
             systemRequiredQitemIds={editor.systemRequiredQitemIds}
-            questionsLocked={editor.sysYn}
+            questionsLocked={editor.questionsLocked}
           />
         </div>
       </PageBody>

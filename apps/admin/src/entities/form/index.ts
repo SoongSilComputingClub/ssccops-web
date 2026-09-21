@@ -25,6 +25,13 @@ export {
   MULTIPLE_RESPONSE_CHANGE_NOTE,
   MULTIPLE_RESPONSE_NOTE,
   QITEM_VERSION_NOTE,
+  RECRUIT_DESIGNATE_ACTION,
+  RECRUIT_DESIGNATE_CONFIRM_TITLE,
+  RECRUIT_DESIGNATE_HINT,
+  RECRUIT_DESIGNATE_PREV_NOTE,
+  RECRUIT_FORM_BADGE,
+  RECRUIT_FORM_NOTE,
+  RECRUIT_NOT_DESIGNATED,
   SYSTEM_FORM_BADGE,
   SYSTEM_FORM_DELETE_LOCKED,
   SYSTEM_FORM_DUPLICATE_NOTE,
@@ -34,12 +41,14 @@ export {
   SYSTEM_FORM_QUESTIONS_LOCKED_SAVE_FAILED,
   SYSTEM_FORM_QITEM_TEXT_OPEN,
   SYSTEM_FORM_QUESTIONS_OPEN_PARTS,
+  systemFormBadge,
 } from "./model/display";
 export {
   FORM_ERROR,
   changeFormStatus,
   createForm,
   deleteForm,
+  designateSystemForm,
   duplicateForm,
   fetchForm,
   fetchForms,
@@ -54,8 +63,14 @@ export type {
   FormSaveResult,
   FormStatusAction,
   FormStatusChangeResult,
+  SystemFormDesignateResult,
 } from "./api/forms";
-export { PROPOSAL_SYS_FORM_CD, findProposalForm } from "./api/proposal-form";
+export { findProposalForm } from "./api/proposal-form";
+export {
+  PROPOSAL_SYS_FORM_CD,
+  RECRUIT_SYS_FORM_CD,
+  SYSTEM_FORM_SLOTS,
+} from "./model/system-form-code";
 export {
   FORM_LABEL_ERROR,
   LBL_NM_MAX_LENGTH,

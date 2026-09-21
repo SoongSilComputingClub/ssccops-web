@@ -11,7 +11,11 @@ export type {
   ResponseStatus,
 } from "./model/types";
 export { isFormRef } from "./model/types";
-export { PROPOSAL_SYS_FORM_CD } from "./model/system-form-code";
+export {
+  PROPOSAL_SYS_FORM_CD,
+  RECRUIT_SYS_FORM_CD,
+  answersOnWww,
+} from "./model/system-form-code";
 export { RESPONSE_STATUS_BADGE, systemFormNotice } from "./model/display";
 export type { SystemFormNotice } from "./model/display";
 export {
@@ -26,6 +30,9 @@ export {
 export { fetchMyFormResponses } from "./api/my-responses";
 export type { PublicFormMeta } from "./api/public-form-meta";
 export { fetchPublicFormMeta } from "./api/public-form-meta";
+/* 익명 경로(`apiFetch` — 토큰·`next/headers` 없음)라 배럴에 둔다 — 아래 SSR 전용 목록과 다르다 */
+export type { RecruitFormMeta, RecruitReceiptStatus } from "./api/recruit-form-meta";
+export { fetchRecruitFormMeta } from "./api/recruit-form-meta";
 
 /*
  * **SSR 전용 조회는 이 배럴에 두지 않는다.**

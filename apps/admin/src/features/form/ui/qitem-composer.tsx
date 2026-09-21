@@ -174,8 +174,10 @@ export function QitemComposer({
    */
   systemRequiredQitemIds?: string[];
   /**
-   * 시스템 폼의 문항 전체 잠금 (#554 · ssccops#416 · 서버 409 `SYSTEM_FORM_QUESTIONS_LOCKED`).
-   * 폼 편집기가 `sysYn`을 그대로 넘긴다. 템플릿은 시스템 폼이 될 수 없어 넘기지 않는다.
+   * 계약이 있는 시스템 폼의 문항 전체 잠금 (#554 · ssccops#416 · 서버 409 `SYSTEM_FORM_QUESTIONS_LOCKED`).
+   * 폼 편집기가 훅의 `questionsLocked`(`sysYn` && 계약 문항 있음 — #588 · ADR-0044)를 넘긴다.
+   * 신입회원 모집 지정 폼은 시스템 폼이지만 계약이 없어 잠기지 않는다. 템플릿은 시스템 폼이
+   * 될 수 없어 넘기지 않는다.
    */
   questionsLocked?: boolean;
 }>) {
@@ -358,6 +360,7 @@ export function QitemComposer({
       */}
       {locked && (
         <div className="mb-3 rounded-[12px] border border-line bg-bg px-[14px] py-[10px] text-[13px] leading-[1.6] text-n400">
+          {/* 잠기는 것은 계약이 있는 시스템 폼(기획안)뿐이라 배지는 «시스템 폼» 그대로다 (#588) */}
           <Badge tone={SYSTEM_FORM_BADGE.tone}>{SYSTEM_FORM_BADGE.label}</Badge>{" "}
           {SYSTEM_FORM_QUESTIONS_LOCKED}. {SYSTEM_FORM_QUESTIONS_OPEN_PARTS}.
         </div>
