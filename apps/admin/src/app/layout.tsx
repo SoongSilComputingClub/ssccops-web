@@ -4,6 +4,7 @@ import { deployMarks } from "@ssccops/ui";
 import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { ToastViewport } from "@/shared/ui";
 import { ON_VERCEL } from "@/shared/lib/vercel";
+import { OfflineBanner, ServiceWorkerRegister } from "@/features/pwa";
 import "./globals.css";
 
 /*
@@ -92,8 +93,12 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
         />
       </head>
       <body className="antialiased">
+        {/* 연결이 없을 때 맨 위 한 줄 — 셸 밖(로그인·오프라인 안내)에서도 보인다 (#604) */}
+        <OfflineBanner />
         {children}
         <ToastViewport />
+        {/* 서비스워커 등록 — 개발 모드는 패키지가 건너뛴다 (#604 · ADR-0045 · 캐시 규칙은 packages/pwa/README.md) */}
+        <ServiceWorkerRegister />
         {/* 방문 통계 — Vercel에서만, 쿠키 없음 (#600 · ssccops#443 · 가드는 shared/lib/vercel.ts). Speed Insights는 www만 */}
         {ON_VERCEL && <Analytics />}
       </body>

@@ -16,7 +16,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## 라우트 그룹
 
-`(admin)`(운영 화면 — 사이드바 셸) · `(auth)`(로그인·가입·OAuth 동의 — 셸 없는 단독 레이아웃) · `(public)`(공유 링크 착지 `/s/{token}` 하나) · `auth/`(OAuth 콜백 라우트 핸들러) · `version/`(배포 이력 확인용 `GET /version`).
+`(admin)`(운영 화면 — 사이드바 셸) · `(auth)`(로그인·가입·OAuth 동의 — 셸 없는 단독 레이아웃) · `(public)`(공유 링크 착지 `/s/{token}` 하나) · `auth/`(OAuth 콜백 라우트 핸들러) · `version/`(배포 이력 확인용 `GET /version`) · `sw.js/`(서비스워커 라우트 핸들러) · `offline/`(오프라인 안내 — 정적, 셸 밖).
 
 어드민에 남은 공개 폼 관련은 폼 상세의 **링크 복사**뿐이며 그 주소는 `publicFormUrl()`이 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`으로 만든다.
 
@@ -36,6 +36,20 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **승인·투표 자격도 권한이다**(서버 #123). 투표는 `useCan(CAPABILITY.APPROVAL_VOTE)`로 사전 잠금하고, 승인·반려는 유형마다 요구 결재 권한이 달라 서버가 건별로 내려주는 `canApprove`·`canReject`를 쓴다. 승인자 **표시명**은 응답의 `authorizerAuthorityName`이고 유형 폼의 선택지는 `GET /v1/sub-work-types/authorizer-authorities`가 준다 — 코드 → 이름 사전을 웹에 다시 만들지 말 것.
 - **이동은 감추고, 동작은 잠근다.** 사이드바 메뉴는 권한이 없으면 감추고(갈 수 없는 곳을 목차에 남기면 목차 전체를 믿을 수 없다), 화면 안의 버튼은 남긴 채 잠그고 사유를 `title`로 붙인다(이미 그 화면을 보고 있는 사람에게서 버튼만 소리 없이 사라지면 기능이 없어진 것인지 권한 문제인지 알 수 없다).
 - **사이드바·드로어 발치의 «홍보 사이트 ↗»·«학술 LMS ↗»는 `shared/config/site-links.ts`다**(#577 · ssccops#430). www는 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`(ADR-0017의 재사용 — 이름의 빚은 `routes.ts` 주석), lms는 `NEXT_PUBLIC_LMS_ORIGIN`이고 비면 그 항목이 없다. `nav.ts`의 목차가 아니라 따로인 것은 외부 앱에는 `isActive`도 권한 판정도 없어서이며, `NavRow`(라우터 이동)가 아니라 `<a>`다. 새 env 없음.
+
+## PWA — 서비스워커·푸시·설치 (#604 · ssccops#447 · ADR-0045)
+
+1차(#108)는 manifest·아이콘까지였고 2차가 서비스워커·표준 Web Push(VAPID)·오프라인·설치 항목을 얹었다. 공통 코드는 `@ssccops/pwa`(규칙·함정은 `packages/pwa/README.md`)이고 여기에는 admin이 어디에 무엇을 꽂았는지만 적는다.
+
+- **서비스워커는 `app/sw.js/route.ts`가 문자열로 내준다** — `public/sw.js` 파일이 없다. `cacheVersion`은 `NEXT_PUBLIC_GIT_SHA`(`next.config.ts`가 인라인 — 배포마다 옛 캐시가 지워진다), `apiOrigin`은 `NEXT_PUBLIC_API_BASE_URL`의 오리진(`apiFetch`와 같은 값 — **새 env 없음**), `appOrigins`는 `site-links.ts`의 `appOrigins()`(www·lms — 비면 없다). `Cache-Control: no-cache` + `force-dynamic`이라 CDN이 옛 워커를 들고 있지 않다.
+- **캐시되는 것**: 같은 오리진 `/_next/static/*`(캐시 우선) · 화면 이동 HTML(네트워크 우선 → 캐시 → `/offline`) · API 오리진의 **`GET` 200만**(네트워크 우선 → 캐시). **안 되는 것**: `GET` 외 전부(오프라인 쓰기 큐 없음 — 승인·전이는 재생하면 결과가 달라진다), 200이 아닌 응답, 리다이렉트, Supabase·CDN. 오프라인에서 마지막으로 본 목록·상세는 열리고 쓰기 버튼은 잠그지 않는다 — 누르면 `CLIENT_NETWORK_ERROR` 토스트가 이미 뜬다. 띠(«오프라인 — 마지막으로 본 내용»)는 루트 레이아웃의 `OfflineBanner`(`useOnline`)다.
+- **`/sw.js`·`/offline`은 미들웨어 매처에서 뺐다.** 워커 스크립트는 리다이렉트를 못 따라가 로그인 전에 `/login`으로 밀리면 등록이 실패하고, install이 `/offline`을 미리 담을 때 로그인 HTML을 담는다. `/offline`은 세션·API를 읽지 않는 정적 화면이라 `(admin)` 셸 밖에 있다(셸은 `AuthGate`가 있어 오프라인에서 그 자체가 오류 화면이 된다). 등록은 루트 레이아웃의 `ServiceWorkerRegister` 한 번 — **개발 모드(`next dev`)에서는 등록되지 않는다**(HMR·조각 주소와 캐시 우선이 섞이면 «고쳤는데 안 바뀐다»). 확인은 dev 배포에서 DevTools «Application › Service Workers».
+- **로그아웃이 캐시를 비운다** — `use-shell-nav.ts`가 signOut 성공 뒤 `clearServiceWorkerCache()`(`CLEAR_CACHE` 메시지)를 보낸다. 남의 기기에서 로그아웃했는데 내 목록이 오프라인으로 열리는 일을 막는다.
+- **푸시 스위치는 `/my`의 «푸시 알림» 카드**(`features/pwa` `PushToggleCard`·`usePushToggle` → `@ssccops/pwa` `usePushSubscription`에 `entities/push` `pushApi` 꽂음). 켜면 브라우저 권한 → `PushManager.subscribe`(VAPID 공개키는 `GET /v1/push/config`) → `POST /v1/push/subscriptions {…, app: "ADMIN"}`, 서버 등록이 실패하면 브라우저 구독을 되돌린다. 끄면 서버 `DELETE`(404는 성공으로 삼킨다) → 브라우저 `unsubscribe`. 상태 문구는 `usePushToggle`의 `DESCRIPTION` 한 표 — 미지원·차단됨·꺼짐·켜짐·확인 중, iOS 미설치 Safari는 «홈 화면에 추가한 뒤 켤 수 있습니다»를 덧붙인다. **기기마다 따로 켠다**(구독이 브라우저 단위다).
+- **종은 `features/notification` `NotificationBell`** — 상단 바(mobile-nav) 오른쪽, 사이드바 머리(접기 버튼 옆), 접힌 레일. 배지 값은 `entities/notification` `useUnreadStore` 하나이고 **듣는 곳은 `UnreadCountSync` 하나**(`(admin)/layout.tsx`의 AuthGate 안 — 진입 때와 `visibilitychange`마다 `GET /v1/notifications/unread-count`, 실패는 조용). 종은 드롭다운이 아니라 `/notifications`로 보낸다 — 모바일에서 읽음 처리·더 보기가 드롭다운에 비좁다.
+- **`/notifications`(`views/notification-list`)는 `@ssccops/pwa/ui`의 `NotificationList`를 그린다** — lms(#448)가 같은 컴포넌트를 쓰므로 목록 모양을 여기서 고치지 않는다. 훅(`useNotifications`)이 커서 «더 보기»(size 20)·한 건 읽음(부분 갱신 + 배지 하나 빼기)·«모두 읽음»·이동을 한다. 이동 규칙(`notificationTarget`)은 워커의 `notificationclick`과 같다 — `app`이 ADMIN이면 `linkPath`로 라우터 이동, LMS·WWW면 `appOrigins()`의 오리진으로 전체 이동, 오리진이 없으면 머문다. 사이드바 목차에는 없다 — 진입은 종뿐.
+- **드로어·사이드바 발치의 «홈 화면에 추가»는 `features/pwa` `InstallItem`**(`nav-panel.tsx`의 외부 링크 행 아래). `beforeinstallprompt`를 받은 브라우저에만 행이 있고 iPhone·iPad는 «홈 화면에 추가는 공유 버튼에서 합니다» 한 줄, 설치된 창에서는 없다. 이벤트는 `@ssccops/pwa` 모듈이 로드 때 받아 두므로 드로어를 나중에 열어도 잡힌다.
+- **서버 계약은 ssccops#446 표 그대로다**(병렬 진행 — 서버 없이 만들었다). 목록 응답은 `page` 봉투가 아니라 `data = { items, nextCursor, unreadCount }`로 읽고(`apiFetchList` 아님), `DELETE`는 다른 삭제처럼 `data` 없는 200 봉투로 가정했다. 서버 PR이 머지되면 `entities/notification/api`·`entities/push/api` 두 파일과 DTO를 대조한다(#305 계약 불일치 전례).
 
 ## 주요 결정 (왜 그렇게 돼 있는가)
 

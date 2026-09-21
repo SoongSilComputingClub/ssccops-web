@@ -8,6 +8,7 @@
  */
 import { useState } from "react";
 import { onKeyActivate } from "@ssccops/ui";
+import { InstallItem } from "@/features/pwa";
 import { siteLinks } from "@/shared/config/site-links";
 import { cn } from "@/shared/lib/cn";
 import { ThemeToggle } from "@/shared/ui";
@@ -153,6 +154,8 @@ export function NavPanel({
             {site.label} <span className="text-[13px] text-n500">↗</span>
           </a>
         ))}
+        {/* «홈 화면에 추가» — 설치 가능한 브라우저에만 행, iOS는 안내 한 줄 (#604 · #108이 남긴 자리) */}
+        <InstallItem />
         {/* 사이드바와 드로어가 이 한 벌을 함께 쓴다 — 한쪽에만 두면 모바일에서 못 바꾼다 */}
         <ThemeToggle className="mx-[18px] mt-2" />
         <AppVersion />

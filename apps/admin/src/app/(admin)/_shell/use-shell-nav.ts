@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { clearServiceWorkerCache } from "@ssccops/pwa";
 import { representativeRole, useSessionStore } from "@/entities/session";
 import { ROUTES } from "@/shared/config/routes";
 import { flash } from "@/shared/ui";
@@ -46,8 +47,11 @@ export function useShellNav() {
           flash("로그아웃에 실패했습니다. 잠시 후 다시 시도해주세요");
           return;
         }
-        // 서버 컴포넌트·미들웨어가 들고 있던 세션까지 확실히 버리려면 전체 이동이 필요하다
-        window.location.replace(ROUTES.login);
+        // 서비스워커 캐시(마지막으로 본 목록·상세)를 비운 뒤 이동한다 — 남의 기기에 내 것이 남지 않게 (#604)
+        void clearServiceWorkerCache().finally(() => {
+          // 서버 컴포넌트·미들웨어가 들고 있던 세션까지 확실히 버리려면 전체 이동이 필요하다
+          window.location.replace(ROUTES.login);
+        });
       });
       return;
     }

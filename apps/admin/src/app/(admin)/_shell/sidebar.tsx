@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BrandMark, deployMarks } from "@ssccops/ui";
+import { NotificationBell } from "@/features/notification";
 import { cn } from "@/shared/lib/cn";
 import { NAV_FOOT, groupHasActive } from "./nav";
 import { NavPanel } from "./nav-panel";
@@ -32,6 +33,7 @@ export function Sidebar() {
         >
           ›
         </button>
+        <NotificationBell size="sm" />
         <div className="my-[2px] h-px w-6 bg-bg" />
         {groups.map((g) => (
           <button
@@ -78,6 +80,8 @@ export function Sidebar() {
         <BrandMark src={DEPLOY.mark} size={28} />
         <div className="min-w-0 text-[16px] whitespace-nowrap">SSCC 운영관리</div>
         <div className="flex-1" />
+        {/* 종 — 접기 버튼 옆. 상단 바(mobile-nav)와 같은 컴포넌트 (#604) */}
+        <NotificationBell size="sm" />
         <button
           type="button"
           onClick={() => setCollapsed(true)}

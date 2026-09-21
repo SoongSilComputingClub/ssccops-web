@@ -30,3 +30,18 @@ export function siteLinks(): SiteLink[] {
   if (lms) links.push({ label: "학술 LMS", href: lms });
   return links;
 }
+
+/**
+ * 앱 코드(서버 `app_cd`) → 오리진 — 서비스워커가 다른 앱의 알림을 눌렀을 때 열 곳 (#604 · ADR-0045).
+ *
+ * 위 `siteLinks()`와 같은 두 값이고 같은 규칙(비면 없다)이다 — 없으면 워커가 자기 `/notifications`로
+ * 연다. 키가 `PushApp`(`@ssccops/pwa`)과 같은 글자인 것은 페이로드의 `app`으로 바로 찾기 위해서다.
+ */
+export function appOrigins(): { LMS?: string; WWW?: string } {
+  const origins: { LMS?: string; WWW?: string } = {};
+  const www = wwwOrigin();
+  const lms = lmsOrigin();
+  if (www) origins.WWW = www;
+  if (lms) origins.LMS = lms;
+  return origins;
+}
