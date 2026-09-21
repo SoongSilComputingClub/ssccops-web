@@ -48,12 +48,15 @@ import {
  * 실패를 «없음»으로 그리는 것과 같은 판단이다. 받았는데 비었으면 빈 상태 한 줄(그것은 정상
  * 상태다). 세션은 보지 않는다(익명 캐시 · `AcademicCta`와 같다).
  */
+/** 목록 순서 — 유형 묶음을 평탄화한다(위 «유형별 묶음 제목은 걷었다»). 홈도 같은 순서를 쓴다 (#595) */
+export function orderPrograms(events: PublicEventSummary[]): PublicEventSummary[] {
+  return groupByProgramType(onlyAcademicPrograms(events)).flatMap((group) => group.events);
+}
+
 export async function AcademicPrograms() {
   let programs: PublicEventSummary[];
   try {
-    programs = groupByProgramType(onlyAcademicPrograms(await fetchPublicEvents())).flatMap(
-      (group) => group.events,
-    );
+    programs = orderPrograms(await fetchPublicEvents());
   } catch {
     return null;
   }
@@ -64,19 +67,31 @@ export async function AcademicPrograms() {
       {programs.length === 0 ? (
         <EmptyState title="지금 모집 중인 학술 프로그램이 없습니다" />
       ) : (
-        <ListTable
-          columns="lg:grid-cols-[100px_minmax(0,1.6fr)_110px_minmax(0,1.2fr)]"
-          headers={["유형", "제목", "모집", "기간"]}
-          compact={programs.map((program) => (
-            <ProgramCompactCard key={program.eventId} program={program} />
-          ))}
-        >
-          {programs.map((program) => (
-            <ProgramRow key={program.eventId} program={program} />
-          ))}
-        </ListTable>
+        <AcademicProgramList programs={programs} />
       )}
     </section>
+  );
+}
+
+/**
+ * 표 하나 — 학술 페이지와 홈(#595 · ssccops#441)이 같은 것을 그린다. 절 제목·빈 상태·«전체 보기»는
+ * 자리마다 다르므로 밖에 있고, 여기는 받은 순서 그대로 줄만 세운다(거르기·자르기도 밖에서).
+ */
+export function AcademicProgramList({
+  programs,
+}: Readonly<{ programs: readonly PublicEventSummary[] }>) {
+  return (
+    <ListTable
+      columns="lg:grid-cols-[100px_minmax(0,1.6fr)_110px_minmax(0,1.2fr)]"
+      headers={["유형", "제목", "모집", "기간"]}
+      compact={programs.map((program) => (
+        <ProgramCompactCard key={program.eventId} program={program} />
+      ))}
+    >
+      {programs.map((program) => (
+        <ProgramRow key={program.eventId} program={program} />
+      ))}
+    </ListTable>
   );
 }
 

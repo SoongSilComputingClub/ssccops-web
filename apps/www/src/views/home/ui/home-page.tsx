@@ -9,6 +9,7 @@ import { CONTENT_SLUG } from "@/shared/config/content-slugs";
 import { Banner } from "./banner";
 import { Hero } from "./hero";
 import { IntroBlocks } from "./intro-blocks";
+import { ProgramRecruitment } from "./program-recruitment";
 import { RecentPosts } from "./recent-posts";
 import { Schedule } from "./schedule";
 
@@ -19,7 +20,7 @@ const RECENT_POSTS = 6;
  * 홈 — «지금 SSCC» (SSR · #524 · ssccops#385).
  *
  * 위에서 아래로: 배너 한 줄(페이지 `home-banner`가 게시 중일 때만) · hero(페이지 `home-intro`) ·
- * 다가오는 일정(접수 중 폼 + 예정 행사) · 소개 4블록 · 최근 활동(포스트 최신 여섯). 행사 목록이
+ * 다가오는 일정(예정 행사) · 학술 프로그램 모집(접수 중·예정 — 없으면 절 없음, #595) · 소개 4블록 · 최근 기록(포스트 최신 여섯). 행사 목록이
  * 첫 화면이던 자리(#141)이고 그 목록은 `/events`로 갔다 — 학기 중 대부분의 날에는 열린 행사가
  * 없어 첫 화면이 «공개된 행사가 없습니다» 한 줄이었다.
  *
@@ -50,6 +51,7 @@ export async function HomePage() {
       <Banner page={settled(banner)} />
       <Hero page={introPage} />
       <Schedule events={events} />
+      <ProgramRecruitment events={events} />
       <IntroBlocks page={introPage} />
       <RecentPosts result={posts} />
     </div>
