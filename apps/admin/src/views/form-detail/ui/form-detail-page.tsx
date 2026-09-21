@@ -6,10 +6,13 @@ import { FormDescription } from "@ssccops/form-renderer";
 import {
   FORM_RECEIPT_BADGE,
   PROPOSAL_SYS_FORM_CD,
-  SYSTEM_FORM_BADGE,
+  RECRUIT_DESIGNATE_ACTION,
+  RECRUIT_FORM_NOTE,
+  RECRUIT_SYS_FORM_CD,
   SYSTEM_FORM_DELETE_LOCKED,
   SYSTEM_FORM_DUPLICATE_NOTE,
   SYSTEM_FORM_OPEN_PARTS,
+  systemFormBadge,
   type FormDetail,
   type FormPage,
   type Qitem,
@@ -20,7 +23,10 @@ import {
   FORM_DELETE_CAPABILITY,
   FormCloseSheet,
   FormDeleteSheet,
+  FormDesignateSheet,
   NO_FORM_DELETE,
+  NO_SYSTEM_FORM_DESIGNATE,
+  useDesignateSystemForm,
   useDuplicateForm,
   useFormDelete,
   useFormDetail,
@@ -175,8 +181,14 @@ function FormDetailContent({ form, reload }: Readonly<{ form: FormDetail; reload
    */
   const canDelete = useCan(FORM_DELETE_CAPABILITY);
   const deletion = useFormDelete();
+  /*
+   * 신입회원 모집 폼 지정 (#588 · ADR-0044). 권한은 접수 상태 전이와 같은 FORM_STATUS_CHANGE다 —
+   * 서버가 그 코드로 건다(«어느 폼이 지금 모집을 받는가»는 접수를 여닫는 것과 같은 층).
+   */
+  const designation = useDesignateSystemForm();
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [closeSheetOpen, setCloseSheetOpen] = useState(false);
+  const [designateSheetOpen, setDesignateSheetOpen] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [page, setPage] = useState(0);
   const [sel, setSel] = useState<Record<string, string[]>>({});
@@ -250,6 +262,20 @@ function FormDetailContent({ form, reload }: Readonly<{ form: FormDetail; reload
     });
 
   /*
+   * 지정 성공 뒤에도 **재조회**다 — 응답에 상세가 실려 오지만 배지(sysFormCd·sysYn)와 함께 삭제
+   * 잠금·안내 상자·공개 링크 카드까지 한 화면이 통째로 바뀌므로 상태 전이와 같은 판단이다.
+   */
+  const confirmDesignate = async () => {
+    const { outcome, message } = await designation.designateRecruit(form.formId);
+    if (outcome === "busy") return;
+
+    setDesignateSheetOpen(false);
+    flash(message);
+    if (outcome === "designated") reload();
+    else if (outcome === "missing") router.push(ROUTES.forms);
+  };
+
+  /*
    * 삭제에 성공하면 **목록으로 나간다.**
    *
    * 이 화면에 남을 수 없어서다 — 지워진 폼은 상세 조회에서도 빠지므로(서버 #329) 여기서 다시
@@ -303,12 +329,18 @@ function FormDetailContent({ form, reload }: Readonly<{ form: FormDetail; reload
    * 내부 이동(`router.push`)을 쓰지 않는다 — 옮기기 전 코드가 그랬고, 그대로 두면 이 앱에
    * 없는 주소로 가 404가 된다. 오리진 설정이 비어 있으면 `null`이라 링크 자리를 감춘다.
    *
-   * **시스템 폼에는 공개 링크를 만들지 않는다** (#553 · ssccops#415). 응답을 LMS에서 받는 폼이라
+   * **기획안 폼에는 공개 링크를 만들지 않는다** (#553 · ssccops#415). 응답을 LMS에서 받는 폼이라
    * www 공개 폼 주소는 틀린 진입점이다 — 운영진 한 명이 이 카드의 링크로 www에서 기획안에 응답한
-   * 일이 그 이슈다. 판정은 서버가 주는 `sysYn`이고 라벨·제목이 아니다. 값을 `null`로 두어 아래
+   * 일이 그 이슈다. 판정은 서버가 주는 `sysFormCd`이고 라벨·제목이 아니다. 값을 `null`로 두어 아래
    * 카드 분기뿐 아니라 복사 함수도 같은 조건에 잠긴다.
+   *
+   * #553에서는 `sysYn`이 조건이었는데 #588(ADR-0044)에서 `sysFormCd === PROPOSAL`로 좁혔다 —
+   * 신입회원 모집 지정 폼도 시스템 폼이지만 그쪽은 **www `/f/{key}`가 곧 지원서**라 공개 링크가
+   * 맞는 진입점이다. 시스템 폼 코드가 또 생기면 «응답을 어디서 받나»를 여기서 갈라 준다.
    */
-  const publicUrl = form.sysYn ? null : publicFormUrl(form.formKey ?? form.formId);
+  const answeredInLms = form.sysFormCd === PROPOSAL_SYS_FORM_CD;
+  const isRecruitForm = form.sysFormCd === RECRUIT_SYS_FORM_CD;
+  const publicUrl = answeredInLms ? null : publicFormUrl(form.formKey ?? form.formId);
   const copyLink = () => {
     if (!publicUrl) return;
     navigator.clipboard?.writeText(publicUrl);
@@ -319,8 +351,14 @@ function FormDetailContent({ form, reload }: Readonly<{ form: FormDetail; reload
    * 비어 있으면 `null`이라 버튼 없이 문구만 남는다(죽은 링크를 그리지 않는다). 다른 시스템 폼
    * 코드가 생기면 그 코드의 LMS 화면을 여기서 갈라 준다.
    */
-  const lmsAnswerUrl =
-    form.sysYn && form.sysFormCd === PROPOSAL_SYS_FORM_CD ? lmsProposalNewUrl() : null;
+  const lmsAnswerUrl = answeredInLms ? lmsProposalNewUrl() : null;
+
+  /*
+   * 지정 버튼은 **시스템 폼이 아닌 폼**에만 그린다 — 기획안은 서버가 409(다른 코드가 가리킨다)로
+   * 거절하고, 이미 모집 폼인 것은 다시 지정할 이유가 없다(배지가 그 사실을 말한다). 권한이 없으면
+   * 감추지 않고 잠근다(features/auth/model/use-can.ts).
+   */
+  const canDesignate = !form.sysYn;
 
   return (
     <>
@@ -340,8 +378,11 @@ function FormDetailContent({ form, reload }: Readonly<{ form: FormDetail; reload
               {/* 375px에서 배지가 둘로 늘면 한 줄에 들어가지 않는다 — 접히게 둔다 */}
               <div className="flex flex-wrap items-center gap-2">
                 <Badge tone={badge.tone}>{badge.label}</Badge>
+                {/* 모집 지정 폼은 «신입회원 모집(지정)» — 기획안과 같은 «시스템 폼»으로 읽히지 않게 (#588) */}
                 {form.sysYn && (
-                  <Badge tone={SYSTEM_FORM_BADGE.tone}>{SYSTEM_FORM_BADGE.label}</Badge>
+                  <Badge tone={systemFormBadge(form.sysFormCd).tone}>
+                    {systemFormBadge(form.sysFormCd).label}
+                  </Badge>
                 )}
                 <span className="font-mono text-[13px] text-n500">
                   폼 #{form.formId}
@@ -388,8 +429,17 @@ function FormDetailContent({ form, reload }: Readonly<{ form: FormDetail; reload
               */}
               {form.sysYn && (
                 <div className="mt-3 rounded-[12px] bg-bg px-[14px] py-[10px] text-[13px] leading-[1.6] text-n400">
-                  <Badge tone={SYSTEM_FORM_BADGE.tone}>{SYSTEM_FORM_BADGE.label}</Badge>{" "}
-                  {SYSTEM_FORM_DELETE_LOCKED}. {SYSTEM_FORM_OPEN_PARTS}.
+                  <Badge tone={systemFormBadge(form.sysFormCd).tone}>
+                    {systemFormBadge(form.sysFormCd).label}
+                  </Badge>{" "}
+                  {/* 모집 폼은 문항까지 열려 있어 기획안 문장(삭제 잠금 + 열린 것)으로는 «문항은?»이 빠진다 */}
+                  {isRecruitForm ? (
+                    RECRUIT_FORM_NOTE
+                  ) : (
+                    <>
+                      {SYSTEM_FORM_DELETE_LOCKED}. {SYSTEM_FORM_OPEN_PARTS}.
+                    </>
+                  )}
                 </div>
               )}
               <div className="mt-4 flex gap-2">
@@ -487,13 +537,34 @@ function FormDetailContent({ form, reload }: Readonly<{ form: FormDetail; reload
                   {form.formSttsCd === "OPEN" ? "마감" : "접수 시작"}
                 </button>
               </div>
+              {/*
+                신입회원 모집 폼 지정 (#588 · ssccops#436 · ADR-0044) — 접수 상태 변경과 같은 줄 모양.
+                학기마다 새 폼을 만들어 여기서 지정하면 홍보 사이트 모집 페이지가 그 폼으로 «지원하기»를
+                그린다. 이미 시스템 폼(기획안·모집 지정 폼)이면 줄 자체가 없다 — 위 canDesignate 주석.
+              */}
+              {canDesignate && (
+                <div className="mt-3 flex items-center rounded-[12px] border border-line p-3">
+                  <div className="text-[14.5px]">신입회원 모집 폼</div>
+                  <div className="flex-1" />
+                  <button
+                    type="button"
+                    disabled={designation.pending || !canChangeStatus}
+                    title={canChangeStatus ? RECRUIT_DESIGNATE_ACTION : NO_SYSTEM_FORM_DESIGNATE}
+                    onClick={() => setDesignateSheetOpen(true)}
+                    className="cursor-pointer rounded-[10px] border border-line-strong bg-bg px-3 py-[6px] text-[14px] hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {designation.pending ? "지정하는 중…" : "지정"}
+                  </button>
+                </div>
+              )}
             </Card>
 
-            {form.sysYn ? (
+            {answeredInLms ? (
               /*
-               * 시스템 폼 — 공개 링크 카드 대신 «응답 받는 곳» (#553 · ssccops#415). 공개 링크를
+               * 기획안 — 공개 링크 카드 대신 «응답 받는 곳» (#553 · ssccops#415). 공개 링크를
                * 감추기만 하면 «링크가 왜 없지»가 되고, 기획안이면 갈 곳이 LMS라는 것까지 말해야
-               * 운영진이 부원에게 맞는 주소를 준다.
+               * 운영진이 부원에게 맞는 주소를 준다. 모집 지정 폼은 이 분기에 오지 않는다 — 그쪽은
+               * 공개 링크가 곧 지원서다(#588 · 위 answeredInLms 주석).
                */
               <Card>
                 <SectionLabel className="mb-3">응답 받는 곳</SectionLabel>
@@ -635,6 +706,17 @@ function FormDetailContent({ form, reload }: Readonly<{ form: FormDetail; reload
         pending={status.pending}
         onClose={() => setCloseSheetOpen(false)}
         onConfirm={confirmClose}
+      />
+
+      <FormDesignateSheet
+        open={designateSheetOpen}
+        formTtlNm={form.formTtlNm}
+        receiptStatus={form.receiptStatus}
+        rcptBgngDt={form.rcptBgngDt}
+        rcptEndDt={form.rcptEndDt}
+        pending={designation.pending}
+        onClose={() => setDesignateSheetOpen(false)}
+        onConfirm={() => void confirmDesignate()}
       />
 
       <FormDeleteSheet

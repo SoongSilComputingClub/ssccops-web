@@ -1,4 +1,5 @@
 import type { BadgeTone } from "@/shared/ui";
+import { RECRUIT_SYS_FORM_CD } from "./system-form-code";
 import type { FormReceiptStatus } from "./types";
 
 /*
@@ -73,6 +74,24 @@ export const SYSTEM_FORM_BADGE: { label: string; tone: BadgeTone } = {
   tone: "outline-accent",
 };
 
+/**
+ * 신입회원 모집 지정 폼 배지 (#588 · ssccops#436 · ADR-0044).
+ *
+ * «시스템 폼»이라고만 쓰면 기획안과 같은 것으로 읽힌다 — 문항이 잠기고 응답을 LMS에서 받는 폼.
+ * 모집 폼은 그 둘이 다 반대라(문항 자유 · 응답은 www 공개 링크) 이름을 따로 부른다. «(지정)»은
+ * 이 배지가 폼의 성격이 아니라 **지금 이 폼을 가리키고 있다**는 표시라는 뜻이다 — 다음 학기에
+ * 다른 폼을 지정하면 이 폼에서는 사라진다. 톤은 시스템 폼과 같다(둘이 한 화면에 서지 않는다).
+ */
+export const RECRUIT_FORM_BADGE: { label: string; tone: BadgeTone } = {
+  label: "신입회원 모집(지정)",
+  tone: "outline-accent",
+};
+
+/** 코드별 시스템 폼 배지 — 모집 지정 폼만 이름이 다르고 나머지는 «시스템 폼» */
+export function systemFormBadge(sysFormCd: string | null): { label: string; tone: BadgeTone } {
+  return sysFormCd === RECRUIT_SYS_FORM_CD ? RECRUIT_FORM_BADGE : SYSTEM_FORM_BADGE;
+}
+
 /*
  * 시스템 폼 안내 문구 — **화면이 미리 막을 때와 서버가 거절했을 때가 같은 문장이어야 한다.**
  *
@@ -102,7 +121,7 @@ export const SYSTEM_FORM_QITEM_LOCKED =
   "시스템 문항은 지울 수 없습니다 — 코드가 읽는 문항입니다";
 
 /**
- * 시스템 폼의 문항 전체 잠금 (#554 · ssccops#416 · 서버 #498).
+ * 계약이 있는 시스템 폼의 문항 전체 잠금 (#554 · ssccops#416 · 서버 #498 · #588에서 좁힘).
  *
  * 코드가 읽는 것은 계약 문항의 식별자만이 아니다 — 기획안 폼의 유형 선택지는 학술 활동
  * 유형명과 글자까지 같아야 하고, 커리큘럼 문항의 안내 문구가 곧 파서의 명세다. 선택지 하나를
@@ -110,12 +129,17 @@ export const SYSTEM_FORM_QITEM_LOCKED =
  * 잠근다. 서버도 문항이 바뀌는 저장을 409 `SYSTEM_FORM_QUESTIONS_LOCKED`로 거절한다 — 화면
  * 잠금은 편의, 409가 방어선이다.
  *
+ * **잠기는 것은 «계약이 있는» 시스템 폼뿐이다**(ADR-0044 · 서버 #520). 신입회원 모집 지정 폼은
+ * 코드가 가리키기만 하고 답을 읽지 않아(계약 없음) 문항이 학기마다 자유롭게 바뀐다. 그래서
+ * 문장이 «시스템 폼이라서»가 아니라 «코드가 답을 읽어서»를 이유로 든다 — 잠긴 이유가 그것이고,
+ * 잠기지 않는 시스템 폼을 본 운영진이 «시스템 폼인데 왜 열려 있지»로 읽지 않게 하기 위해서다.
+ *
  * 열린 것을 함께 말하는 이유는 `SYSTEM_FORM_OPEN_PARTS`와 같다. «안내 문구»는 페이지 설명
  * (`pageDescCn`)이다 — 서버가 비교하는 것은 `qitems`뿐이라 페이지 제목·설명은 열려 있고,
  * 문항 설명(`qitemDescCn`)은 문항의 일부라 잠긴다.
  */
 export const SYSTEM_FORM_QUESTIONS_LOCKED =
-  "시스템 폼의 문항 구조(추가·삭제·순서·유형·필수·선택지·형식 검증)는 바꿀 수 없습니다 — 코드가 읽는 구성입니다";
+  "코드가 답을 읽는 폼이라 문항 구조(추가·삭제·순서·유형·필수·선택지·형식 검증)는 바꿀 수 없습니다";
 
 /** 문항 잠금에서 열려 있는 것 — 잠금 안내 바로 뒤에 붙는다 (#563 · ssccops#421: 문구·설명도 열렸다) */
 export const SYSTEM_FORM_QUESTIONS_OPEN_PARTS =
@@ -133,7 +157,7 @@ export const SYSTEM_FORM_QITEM_TEXT_OPEN =
  * 말해야 하기 때문이다 — 잠금 안내와 같은 문장을 쓰면 배너와 구별되지 않는다.
  */
 export const SYSTEM_FORM_QUESTIONS_LOCKED_SAVE_FAILED =
-  "저장 실패 — 시스템 폼의 문항은 잠겨 있습니다";
+  "저장 실패 — 코드가 답을 읽는 폼이라 문항이 잠겨 있습니다";
 
 /**
  * 시스템 폼에서 무엇이 열려 있는가.
@@ -143,6 +167,42 @@ export const SYSTEM_FORM_QUESTIONS_LOCKED_SAVE_FAILED =
  */
 export const SYSTEM_FORM_OPEN_PARTS =
   "제목·접수 기간·라벨·접수 상태는 그대로 바꿀 수 있습니다";
+
+/* ── 신입회원 모집 지정 폼 (#588 · ssccops#436 · ADR-0044) ────── */
+
+/** 지정 버튼 문구 — 상세 화면의 버튼과 «시스템 폼» 페이지의 빈 줄 안내가 같은 이름을 부른다 */
+export const RECRUIT_DESIGNATE_ACTION = "신입회원 모집 폼으로 지정";
+
+/** 지정 확인 시트의 제목 — 마침표 없음(AGENTS.md «화면 문구») */
+export const RECRUIT_DESIGNATE_CONFIRM_TITLE = "신입회원 모집 폼으로 지정할까요?";
+
+/** 확인 시트의 부제 — 지정이 무엇을 바꾸는가 한 줄 */
+export const RECRUIT_DESIGNATE_HINT =
+  "지정하면 홍보 사이트 모집 페이지에서 이 폼으로 지원을 받습니다";
+
+/**
+ * 확인 시트 본문 — **이전 지정이 풀린다**는 사실이 이 결정에서 가장 놓치기 쉬운 결과다.
+ *
+ * 지정은 포인터 이동이라 두 폼이 동시에 모집 폼일 수 없다(서버 UNIQUE). 이전 학기 폼은 지정이
+ * 풀리는 순간 일반 폼이 되어 삭제 잠금도 사라진다(ADR-0044 «포기하는 것»). 운영진은 자기
+ * 화면에서 새 폼이 지정되는 것만 보고 지난 폼에 무슨 일이 났는지는 알 방법이 없으므로 여기서
+ * 말한다. 폼 삭제 시트가 «내 신청에서도 사라진다»를 말하는 것과 같은 자리다.
+ */
+export const RECRUIT_DESIGNATE_PREV_NOTE =
+  "지금 지정된 폼이 있으면 그 지정은 풀리고 일반 폼이 됩니다. 지정된 동안 이 폼은 지울 수 없고, 문항·제목·접수 기간은 그대로 고칠 수 있습니다.";
+
+/**
+ * 지정된 폼의 상세·편집 화면 안내 상자 — 기획안의 «시스템 폼» 안내 자리에 대신 선다.
+ *
+ * 잠긴 것(삭제)과 열린 것(문항까지)을 함께 말한다 — 기획안 안내(`SYSTEM_FORM_DELETE_LOCKED` +
+ * `SYSTEM_FORM_OPEN_PARTS`)를 그대로 쓰면 «문항은 잠겼나»가 빠져 운영진이 문항을 못 고치는
+ * 줄 안다. 응답을 어디서 받는지도 여기서 말한다(공개 링크 카드가 그대로 있는 이유).
+ */
+export const RECRUIT_FORM_NOTE =
+  "신입회원 모집 폼으로 지정돼 있습니다. 홍보 사이트 모집 페이지가 이 폼의 공개 링크로 지원을 받습니다. 지정된 동안 지울 수 없고, 문항·제목·접수 기간·라벨은 그대로 고칠 수 있습니다.";
+
+/** «시스템 폼» 페이지의 모집 줄이 비었을 때 — 다음 행동(어디서 무엇을 누르나)을 그대로 적는다 */
+export const RECRUIT_NOT_DESIGNATED = `지정된 모집 폼이 없습니다 — 폼 상세에서 «${RECRUIT_DESIGNATE_ACTION}»`;
 
 /** 복제 안내 — 사본은 코드가 가리키지 않는 일반 폼이 된다 (서버 FormEntity.create) */
 export const SYSTEM_FORM_DUPLICATE_NOTE =

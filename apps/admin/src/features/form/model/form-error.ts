@@ -131,6 +131,38 @@ export function toFormLabelErrorMessage(error: unknown): string {
   }
 }
 
+/** 지정이 막힌 사람에게 무엇이 필요한지 — 접수 상태 전이와 같은 권한이다(서버 #520) */
+export const NO_SYSTEM_FORM_DESIGNATE =
+  "신입회원 모집 폼으로 지정할 권한이 없습니다 — 폼 접수 상태 변경(FORM_STATUS_CHANGE) 권한이 필요합니다";
+
+/**
+ * 시스템 폼 지정 실패 → 화면에 띄울 한 줄 (#588 · ssccops-server #520 · ADR-0044).
+ *
+ * 403을 따로 받는 것은 삭제와 같은 이유 — 공통 처리가 폼 403을 «폼 조회(FORM_READ)»로 말하는데
+ * 여기 필요한 것은 접수 상태 변경 권한이다. 나머지 둘(허용 목록 밖 코드 · 이미 다른 코드가
+ * 가리키는 폼)은 화면이 그 버튼을 그리지 않는 자리라 우회 요청의 문구이고, 둘 다 «이 폼은 안
+ * 된다»로 끝난다 — 사용자가 다음에 할 수 있는 일이 없어 행동을 붙이지 않는다.
+ */
+export function toSystemFormDesignateErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "신입회원 모집 폼으로 지정하지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return NO_SYSTEM_FORM_DESIGNATE;
+    case FORM_ERROR.SYSTEM_FORM_NOT_DESIGNATABLE:
+      return "신입회원 모집 폼만 지정할 수 있습니다";
+    case FORM_ERROR.SYSTEM_FORM_ALREADY_DESIGNATED:
+      return "이미 다른 용도의 시스템 폼입니다 — 신입회원 모집 폼으로 지정할 수 없습니다";
+    case FORM_ERROR.FORM_NOT_FOUND:
+      return "폼이 없습니다 — 목록을 새로고침해주세요";
+    default:
+      return toFormErrorMessage(error);
+  }
+}
+
 /**
  * 폼 삭제 실패 → 화면에 띄울 한 줄 (ssccops-server#329 · PR #330으로 확정).
  *

@@ -107,6 +107,18 @@ export interface FormEditor {
   inUseQitemIds: string[];
   /** 시스템 폼인가 (ssccops-server #140) — 편집 화면이 무엇이 잠겼는지 안내하는 근거 */
   sysYn: boolean;
+  /** 코드가 이 폼을 찾는 열쇠 — 시스템 폼이 아니면 null. 안내 문구를 코드별로 가르는 데만 쓴다 */
+  sysFormCd: string | null;
+  /**
+   * 문항 편집기를 통째로 잠그는가 (#554 · #588 · ADR-0044).
+   *
+   * **`sysYn`이 아니라 «계약이 있는 시스템 폼»이다** — `systemRequiredQitemIds`가 비어 있지 않은
+   * 시스템 폼. 기획안은 코드가 답을 읽어 계약이 있고 잠기지만, 신입회원 모집 지정 폼은 코드가
+   * 가리키기만 해 계약이 없고 문항이 학기마다 자유롭게 바뀐다. 서버(#520)도 같은 기준으로
+   * 409 `SYSTEM_FORM_QUESTIONS_LOCKED`를 낸다. 판정을 훅이 한 번 하는 것은 편집 화면이 이 값을
+   * 세 자리(편집기 잠금 · 버전 안내 · 배너)에서 쓰기 때문이다.
+   */
+  questionsLocked: boolean;
   /**
    * 이미 응답이 들어온 폼인가 (제출 이상만 센다 · 작성 중은 빠진다).
    *
@@ -159,6 +171,7 @@ interface LoadedEditor {
   savedQitemIds: string[];
   hasResponses: boolean;
   sysYn: boolean;
+  sysFormCd: string | null;
   qitemVer: number | null;
   /** 상세 응답이 준 '지울 수 없는 문항' — 로드 시점 그대로다 (FormEditor 주석 참고) */
   systemRequiredQitemIds: string[];
@@ -196,6 +209,7 @@ function placeholderEditor(
     savedQitemIds: [],
     hasResponses: false,
     sysYn: false,
+    sysFormCd: null,
     qitemVer: null,
     systemRequiredQitemIds: [],
     academicProgramId: null,
@@ -214,6 +228,7 @@ function newFormEditor(key: string): LoadedEditor {
     savedQitemIds: [],
     hasResponses: false,
     sysYn: false,
+    sysFormCd: null,
     qitemVer: null,
     systemRequiredQitemIds: [],
     // 신규 폼은 학술 활동에 연결될 수 없다 — 연결은 기획안 승인 이관이 서버에서 만든다
@@ -365,6 +380,7 @@ export function useFormEditor(formId?: number): FormEditor {
           savedQitemIds: form.qitemCpstCn.qitems.map((q) => q.qitemId),
           hasResponses: form.responseCount > 0,
           sysYn: form.sysYn,
+          sysFormCd: form.sysFormCd,
           qitemVer: form.qitemVer,
           systemRequiredQitemIds: form.systemRequiredQitemIds,
           academicProgramId: form.academicProgramId,
@@ -601,6 +617,9 @@ export function useFormEditor(formId?: number): FormEditor {
     issues,
     inUseQitemIds,
     sysYn: current?.sysYn ?? false,
+    sysFormCd: current?.sysFormCd ?? null,
+    // 계약이 있는 시스템 폼만 잠긴다 — 근거는 FormEditor.questionsLocked 주석
+    questionsLocked: (current?.sysYn ?? false) && systemRequiredQitemIds.length > 0,
     hasResponses: current?.hasResponses ?? false,
     qitemVer: current?.qitemVer ?? null,
     systemRequiredQitemIds,
