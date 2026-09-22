@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { BrandMark, deployMarks } from "@ssccops/ui";
+import { AccountMenu, BrandMark, deployMarks } from "@ssccops/ui";
+import { InstallMenuItem } from "@ssccops/pwa/ui";
 import { NotificationBell } from "@/features/notification";
 import { cn } from "@/shared/lib/cn";
-import { NAV_FOOT, groupHasActive } from "./nav";
+import { AppVersion } from "./app-version";
+import { groupHasActive } from "./nav";
 import { NavPanel } from "./nav-panel";
-import { useShellNav } from "./use-shell-nav";
+import { ACCOUNT_LINKS, useShellNav } from "./use-shell-nav";
 
 // 값은 이 파일에서 읽어 넘긴다 — 패키지 안에서 읽으면 NEXT_PUBLIC 인라인을 못 받는다(deploy-env.ts)
 const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
@@ -16,9 +18,16 @@ const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
  *
  * 접기(collapsed) 상태는 데스크톱 전용이다 — 모바일에는 상시 노출되는 레일이 없고
  * 드로어가 통째로 열리고 닫힌다.
+ *
+ * ── 머리·발치 (#614 · ssccops#452) ──────────────────────────
+ * 머리는 `[브랜드] [접기]`뿐이고 발치는 `[계정 메뉴 트리거 행] [종]`이다 — 메뉴는 위로 뜬다.
+ * 테마 라디오·홍보/학술 링크·«홈 화면에 추가»·«내 계정»·«로그아웃» 행이 발치에 차례로 쌓이던
+ * 것을 전부 계정 메뉴 안으로 넣었다. 종만 밖에 남는다 — 안 읽은 배지는 열지 않고도 보여야
+ * 한다(#612에서 머리에서 프로필 행으로 옮긴 것이 그대로 발치의 짝이 됐다). 접힌 레일은 아바타
+ * 버튼(같은 메뉴) + 종.
  */
 export function Sidebar() {
-  const { pathname, groups, navigate, meName, meLabel } = useShellNav();
+  const { pathname, groups, navigate, signOut, meName, meLabel, apps } = useShellNav();
   const [collapsed, setCollapsed] = useState(false);
 
   if (collapsed) {
@@ -33,7 +42,6 @@ export function Sidebar() {
         >
           ›
         </button>
-        <NotificationBell size="sm" />
         <div className="my-[2px] h-px w-6 bg-bg" />
         {groups.map((g) => (
           <button
@@ -55,21 +63,21 @@ export function Sidebar() {
         ))}
         <div className="flex-1" />
         <div className="my-[2px] h-px w-6 bg-bg" />
-        <button
-          type="button"
-          onClick={() => {
-            setCollapsed(false);
-            navigate(NAV_FOOT.items[0].href);
-          }}
-          className={cn(
-            "flex size-[38px] flex-none cursor-pointer items-center justify-center rounded-[12px] border text-[14.5px] font-semibold",
-            groupHasActive(NAV_FOOT, pathname)
-              ? "border-accent bg-accent-soft text-accent"
-              : "border-line bg-surface text-n500 hover:border-accent hover:text-accent",
-          )}
-        >
-          {NAV_FOOT.mono}
-        </button>
+        <NotificationBell size="sm" />
+        {/* 레일에서는 메뉴가 오른쪽 위로 펼쳐진다 — 64px 안에 들어갈 폭이 아니다 */}
+        <AccountMenu
+          name={meName}
+          label={meLabel}
+          links={ACCOUNT_LINKS}
+          apps={apps}
+          install={<InstallMenuItem />}
+          onSignOut={signOut}
+          onNavigate={navigate}
+          pathname={pathname}
+          trigger="avatar"
+          placement="up"
+          align="start"
+        />
       </div>
     );
   }
@@ -90,19 +98,30 @@ export function Sidebar() {
         </button>
       </div>
 
-      <NavPanel
-        groups={groups}
-        pathname={pathname}
-        onNavigate={navigate}
-        meName={meName}
-        meLabel={meLabel}
-        /*
-         * 종은 머리가 아니라 프로필 행이다 (#612). 230px 머리에 마크·제목·종·접기를 다 두면
-         * 제목(«SSCC 운영관리» 110px)이 종 밑으로 깔린다 — 자리가 80px뿐이다. 프로필 행은 «내
-         * 것»이 모인 자리라 뜻도 맞고 폭도 남는다. 접힌 레일·모바일 상단 바는 그대로.
-         */
-        profileAction={<NotificationBell size="sm" />}
-      />
+      <div className="flex-1 overflow-y-auto">
+        <NavPanel groups={groups} pathname={pathname} onNavigate={navigate} />
+      </div>
+
+      <div className="mt-2 border-t border-bg pt-2">
+        <div className="flex items-center gap-[6px] px-[10px]">
+          <AccountMenu
+            name={meName}
+            label={meLabel}
+            links={ACCOUNT_LINKS}
+            apps={apps}
+            install={<InstallMenuItem />}
+            onSignOut={signOut}
+            onNavigate={navigate}
+            pathname={pathname}
+            trigger="row"
+            placement="up"
+            align="start"
+            className="min-w-0 flex-1"
+          />
+          <NotificationBell size="sm" />
+        </div>
+        <AppVersion />
+      </div>
     </div>
   );
 }

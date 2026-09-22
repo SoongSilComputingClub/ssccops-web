@@ -4,13 +4,11 @@ import Link from "next/link";
 import { BrandMark, deployMarks } from "@ssccops/ui";
 import { OfflineBanner, ServiceWorkerRegister } from "@ssccops/pwa/ui";
 import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
-import { ThemeToggle } from "@/shared/ui";
 import { AuthNav } from "@/features/auth";
 import { NotificationBell, UnreadCountSync } from "@/features/notification";
 // 서버 전용 조회는 배럴이 재export 하지 않는다(클라이언트 번들 오염 방지) — 직접 임포트한다
 import { fetchIsAcademicLeader } from "@/entities/academic-program/api/programs-read";
 import { ROUTES } from "@/shared/config/routes";
-import { siteLinks } from "@/shared/config/site-links";
 import { ogImageUrl } from "@/shared/lib/og-image-url";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
@@ -141,56 +139,34 @@ export default async function RootLayout({ children }: Readonly<LayoutProps<"/">
         {/* 연결이 없을 때 맨 위 한 줄 — 상단 바 위에 겹친다 (#606 · ADR-0045) */}
         <OfflineBanner />
         {/*
-         * 상단 바는 로고(왼쪽)와 메뉴·로그인 상태(오른쪽) 두 덩어리다 (apps/www #167과 같은
-         * 구조). 메뉴 목차는 `_shell/nav-links.ts` 한 벌을 데스크톱 메뉴와 모바일 드로어가
-         * 함께 쓴다. 로그인 여부에 따라 갈리는 부분만 클라이언트 컴포넌트(AuthNav)로 둔다.
+         * 상단 바 `[☰(lg 미만)] [브랜드] [1차 메뉴(lg)] ──── [종] [계정 메뉴]` (#614 · ssccops#452 —
+         * apps/www와 같은 구조). 메뉴 목차는 `_shell/nav-links.ts` 한 벌을 데스크톱 메뉴와 모바일
+         * 드로어가 함께 쓴다. 로그인 여부에 따라 갈리는 오른쪽 끝만 클라이언트 컴포넌트(AuthNav)다 —
+         * 테마·홈페이지 링크·«내 정보»·로그아웃은 그 안의 계정 메뉴에 들어갔고 상단 바에 따로
+         * 서지 않는다.
          */}
         <header className="border-b border-line bg-surface">
-          <div className="mx-auto flex max-w-[1000px] items-center justify-between gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
+          <div className="mx-auto flex max-w-[1000px] items-center gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
+            <MobileNav isLeader={isLeader} />
             {/* 로고는 첫 화면(`/`)으로 — 스터디장은 거기서 대시보드로 곧장 넘어간다 (#228) */}
             <Link href={ROUTES.home} className="flex items-center gap-[8px]">
               <BrandMark src={DEPLOY.mark} size={26} />
               <b className="text-[15px]">SSCC 학술</b>
             </Link>
-            <div className="flex items-center gap-[6px]">
-              <DesktopNav isLeader={isLeader} />
-              {/*
-               * 종 + 배지 값 듣기 — 로그인한 사람에게만, `AuthNav`의 그 가지에 (#606 · ADR-0045).
-               * 드로어가 아니라 상단 바인 것은 열지 않고도 배지가 보여야 해서다.
-               */}
-              <AuthNav
-                signedInSlot={
-                  <>
-                    <UnreadCountSync />
-                    <NotificationBell />
-                  </>
-                }
-              />
-              {/*
-               * 테마는 admin(사이드바 발치)과 같은 3버튼으로 고른다 (#349). 전에는 아이콘 한
-               * 버튼으로 돌려 골랐는데(#341), 누르기 전에는 다음이 무엇인지 알 수 없고 세 값
-               * 중 하나로 곧장 갈 수도 없었다 — 두 앱을 오가는 사람에게 같은 설정이 다른
-               * 물건으로 보인다.
-               *
-               * `fit`을 주는 것은 이 자리가 로고·메뉴·로그아웃과 한 줄을 나눠 쓰기 때문이다.
-               * 기본값(`flex-1`)은 폭을 채우려 들어 드로어·사이드바 발치에서만 맞다.
-               *
-               * `lg:` 이상에서만 보이는 것은 좁은 화면에서 드로어와 겹치기 때문이다 — 그쪽은
-               * 드로어 발치의 `ThemeToggle`이 맡고, 둘은 같은 상태를 본다.
-               */}
-              {/* 홈페이지(www)로 — lg 이상은 여기, 미만은 드로어 발치 (#577 · site-links.ts) */}
-              {siteLinks().map((site) => (
-                <a
-                  key={site.href}
-                  href={site.href}
-                  className="hidden rounded-lg px-[10px] py-[6px] text-[14.5px] text-n300 hover:text-ink lg:block"
-                >
-                  {site.label} <span className="text-[12px] text-n500">↗</span>
-                </a>
-              ))}
-              <ThemeToggle fit className="hidden lg:flex" />
-              <MobileNav isLeader={isLeader} />
-            </div>
+            <DesktopNav isLeader={isLeader} />
+            <div className="flex-1" />
+            {/*
+             * 종 + 배지 값 듣기 — 로그인한 사람에게만, `AuthNav`의 그 가지에 (#606 · ADR-0045).
+             * 드로어가 아니라 상단 바인 것은 열지 않고도 배지가 보여야 해서다.
+             */}
+            <AuthNav
+              signedInSlot={
+                <>
+                  <UnreadCountSync />
+                  <NotificationBell />
+                </>
+              }
+            />
           </div>
         </header>
         <main className="mx-auto max-w-[1000px] px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">

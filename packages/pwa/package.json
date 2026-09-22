@@ -23,7 +23,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ssccops/date": "workspace:*"
+    "@ssccops/date": "workspace:*",
+    "@ssccops/ui": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.2.0"

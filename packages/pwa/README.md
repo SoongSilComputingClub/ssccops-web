@@ -17,6 +17,7 @@
 | `pushStateDescription(state, { isIos, isStandalone })` | 푸시 스위치 아래 상태 문장 — 미지원·차단·꺼짐·켜짐·확인 중 + iOS 미설치 힌트(#606) |
 | `@ssccops/pwa/ui` → `NotificationList` · `NOTIFICATION_TYPE_LABEL` | 알림 목록(커서 «더 보기» · 읽음/안 읽음 · «모두 읽음») — admin·lms가 같은 것을 그린다. 데이터는 앱 훅이 넘긴다 |
 | `@ssccops/pwa/ui` → `OfflineBanner` · `ServiceWorkerRegister` | 오프라인 띠(«오프라인 — 마지막으로 본 내용» · `useOnline`) · 등록 껍데기(루트 레이아웃에 한 번) — #606에서 올렸다 |
+| `@ssccops/pwa/ui` → `InstallMenuItem` | 계정 메뉴 절 ⑤ «홈 화면에 추가»(`useInstallPrompt` + `@ssccops/ui` `AccountMenuItem`/`AccountMenuNote`) — 설치 가능하면 항목, iOS는 안내 한 줄, 설치된 창은 없음. admin·lms의 `InstallItem` 사본을 #614(ssccops#452)에서 올렸고 www도 같은 것을 쓴다. 이 패키지가 `@ssccops/ui`에 기대는 유일한 자리 |
 
 ## 서비스워커가 하는 것 — 규칙 넷
 

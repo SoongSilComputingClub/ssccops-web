@@ -21,7 +21,7 @@ export function NotificationBell() {
       href={ROUTES.notifications}
       aria-label={label}
       title={label}
-      className="relative flex size-9 flex-none cursor-pointer items-center justify-center rounded-[10px] border border-line text-n400 hover:border-accent hover:text-accent"
+      className="relative flex size-10 flex-none cursor-pointer items-center justify-center rounded-[10px] border border-line text-n400 hover:border-accent hover:text-accent"
     >
       <svg width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
