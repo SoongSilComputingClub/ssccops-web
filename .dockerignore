@@ -1,0 +1,32 @@
+# 빌드 컨텍스트에서 뺄 것 (#653 · ssccops#471)
+#
+# `.git`을 빼는 것은 의도다 — 서버 레포가 `COPY .git`으로 dev 배포를 5건 연속 죽인 적이 있고
+# (ssccops-server#422), 커밋 sha는 빌드 인자 `SOURCE_COMMIT`으로 받는다.
+
+.git
+.github
+node_modules
+**/node_modules
+
+# 빌드 산출물 — 이미지 안에서 새로 만든다
+.next
+**/.next
+.open-next
+**/.open-next
+out
+**/out
+.turbo
+**/.turbo
+
+# 커밋하지 않는 작업 파일 · 로컬 값
+private-workspace
+**/.env
+**/.env.*
+!**/.env.example
+CLAUDE.local.md
+
+# 문서 · 에디터 부스러기
+*.md
+.vscode
+.idea
+.DS_Store

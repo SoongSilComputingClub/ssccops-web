@@ -11,7 +11,12 @@
     "lint": {},
     "build": {
       "dependsOn": ["^build"],
-      "env": ["NEXT_PUBLIC_*", "VERCEL_GIT_COMMIT_SHA", "WORKERS_CI_COMMIT_SHA"],
+      "env": [
+        "NEXT_PUBLIC_*",
+        "VERCEL_GIT_COMMIT_SHA",
+        "WORKERS_CI_COMMIT_SHA",
+        "SOURCE_COMMIT"
+      ],
       "outputs": [".next/**", "!.next/cache/**"]
     },
     "dev": {
