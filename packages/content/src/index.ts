@@ -16,13 +16,12 @@
  */
 
 /** 카탈로그 묶음 — 어드민 목록의 절 제목이자 www 상단 바의 축 */
-export type ContentPageGroup = "home" | "about" | "operators" | "academic" | "join" | "legal" | "contact";
+export type ContentPageGroup = "home" | "about" | "operators" | "join" | "legal" | "contact";
 
 export const CONTENT_PAGE_GROUP_LABEL: Record<ContentPageGroup, string> = {
   home: "홈",
   about: "SSCC",
   operators: "운영진",
-  academic: "학술",
   join: "모집",
   legal: "안내 문서",
   contact: "문의",
@@ -58,8 +57,6 @@ export const CONTENT_SLUG = {
   values: "values",
   /** `/operators` — 지금 운영진(대수를 주소에 적지 않는 현재 표) */
   operators: "operators",
-  /** `/academic` — 학술 활동 안내. 본문 아래에 LMS·기획안 제출 CTA가 코드로 붙는다(#550 · ssccops#412) */
-  academic: "academic",
   /** `/join` — 지원 안내. 절차는 `{% steps %}`로 감싼 번호 목록 */
   join: "join",
   /** `/join/faq` — 자주 묻는 질문. `{% faq %}` 안의 `### 질문` + 답이 접이식 항목 하나 */
@@ -78,7 +75,13 @@ export const CONTENT_SLUG = {
 
 export type ContentSlug = (typeof CONTENT_SLUG)[keyof typeof CONTENT_SLUG];
 
-/** 카탈로그 — 어드민 목록 순서 그대로. 역대 운영진(`operators-{n}` · n대)은 패턴이라 여기 없다 */
+/**
+ * 카탈로그 — 어드민 목록 순서 그대로. 역대 운영진(`operators-{n}` · n대)은 패턴이라 여기 없다.
+ *
+ * **모든 www 라우트가 여기 있는 것은 아니다.** `/academic`은 #641(ssccops#464)에서 설명 글을
+ * 걷어내 화면이 통째로 코드가 됐다 — 목록·CTA가 같은 말을 하고 있었고 쓰는 사람이 없었다.
+ * 홍보국이 글로 여는 자리만 이 표에 있다.
+ */
 export const CONTENT_PAGES: readonly ContentPageEntry[] = [
   { slug: CONTENT_SLUG.homeBanner, title: "홈 배너", path: "/", group: "home", note: "게시 중일 때만 홈 맨 위 한 줄 — 모집 안내 자리. 본문 첫 문단만 씁니다" },
   { slug: CONTENT_SLUG.homeIntro, title: "홈 소개", path: "/", group: "home", note: "첫 `#` 제목이 큰 문장, 아래 문단이 소개. `## 무엇을 하나` 절의 `###` 넷이 소개 블록" },
@@ -86,7 +89,6 @@ export const CONTENT_PAGES: readonly ContentPageEntry[] = [
   { slug: CONTENT_SLUG.history, title: "연혁", path: "/about/history", group: "about", note: "`{% timeline %}` 안에 `## 연도` + 목록" },
   { slug: CONTENT_SLUG.values, title: "핵심 가치", path: "/about/values", group: "about", note: "`{% cards %}` 안에 `## 가치` + 문단" },
   { slug: CONTENT_SLUG.operators, title: "운영진", path: "/operators", group: "operators", note: "지금 운영진 — 이름은 본인이 동의한 사람만" },
-  { slug: CONTENT_SLUG.academic, title: "학술 활동", path: "/academic", group: "academic", note: "스터디·프로젝트·트랙이 어떻게 돌아가는가. 아래 «LMS로 가기»·«기획안 제출» 버튼은 코드가 붙인다" },
   { slug: CONTENT_SLUG.join, title: "지원 안내", path: "/join", group: "join", note: "절차는 `{% steps %}` 안의 번호 목록. 모집 중 안내는 홈 배너에" },
   { slug: CONTENT_SLUG.joinFaq, title: "자주 묻는 질문", path: "/join/faq", group: "join", note: "`{% faq %}` 안에 `### 질문` + 답" },
   { slug: CONTENT_SLUG.joinHistory, title: "지난 모집", path: "/join/history", group: "join", note: "기수별 모집 인원 표" },
