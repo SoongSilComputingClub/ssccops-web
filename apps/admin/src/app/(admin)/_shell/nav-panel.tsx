@@ -6,7 +6,7 @@
  * 진입점은 이것을 감싸는 sidebar.tsx · mobile-nav.tsx이고, 이 파일은 그 클라이언트
  * 그래프에 딸려 들어간다 — 서버 컴포넌트에서 직접 import하지 말 것.
  */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { onKeyActivate } from "@ssccops/ui";
 import { InstallItem } from "@/features/pwa";
 import { siteLinks } from "@/shared/config/site-links";
@@ -89,12 +89,15 @@ export function NavPanel({
   onNavigate,
   meName,
   meLabel,
+  profileAction,
 }: Readonly<{
   groups: NavGroup[];
   pathname: string;
   onNavigate: (href: string) => void;
   meName: string;
   meLabel: string;
+  /** 프로필 행 오른쪽에 둘 것 — 데스크톱 사이드바의 종 (#612). 모바일 드로어는 상단 바에 종이 있어 비운다 */
+  profileAction?: ReactNode;
 }>) {
   const [closed, setClosed] = useState<Record<string, boolean>>({});
 
@@ -135,10 +138,11 @@ export function NavPanel({
           <div className="flex size-[30px] flex-none items-center justify-center rounded-full bg-accent-soft text-[13.5px] font-semibold text-accent">
             {meName.charAt(0) || "S"}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="truncate text-[14.5px] font-semibold">{meName}</div>
             <div className="truncate text-[12.5px] text-n500">{meLabel}</div>
           </div>
+          {profileAction}
         </div>
         {NAV_FOOT.items.map((item) => (
           <NavRow key={item.label} item={item} pathname={pathname} onNavigate={onNavigate} />
