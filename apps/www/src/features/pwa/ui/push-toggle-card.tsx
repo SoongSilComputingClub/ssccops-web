@@ -1,14 +1,17 @@
 "use client";
 
 import { PushTestButton } from "@ssccops/pwa/ui";
-import { SectionLabel } from "@ssccops/ui";
+import { SectionLabel, Toggle } from "@ssccops/ui";
 import { notificationApi } from "@/entities/notification";
-import { Card, Toggle } from "@/shared/ui";
+import { Card } from "@/shared/ui";
 import { usePushToggle } from "../model/use-push-toggle";
 
 /**
- * `/my`의 «푸시 알림» 카드 — 스위치 + 상태 문장 (#606 · 어드민 #604와 같은 모양) + 켜져 있을 때만
- * «테스트 알림 보내기»(ssccops#454 · #616 — 버튼·문구는 `@ssccops/pwa/ui`, 서버 호출만 이 앱의 것).
+ * `/me`의 «푸시 알림» 카드 — 스위치 + 상태 문장 (#616 · admin #604·lms #606과 같은 모양) + 켜져 있을 때만
+ * «테스트 알림 보내기»(ssccops#454 — 버튼·문구는 `@ssccops/pwa/ui`, 서버 호출만 이 앱의 것).
+ *
+ * 허브(SSR)의 발치에 놓이는 유일한 클라이언트 구역이다 — 스위치는 «이 기기의 설정»이라 서버가 그릴 수
+ * 없고(브라우저 권한·구독), 토큰은 부모가 이미 봤으므로 로그인한 사람에게만 그려진다.
  */
 export function PushToggleCard() {
   const push = usePushToggle();
@@ -31,7 +34,7 @@ export function PushToggleCard() {
           {push.error}
         </div>
       )}
-      <PushTestButton app="LMS" sendTest={notificationApi.sendTest} enabled={push.on} />
+      <PushTestButton app="WWW" sendTest={notificationApi.sendTest} enabled={push.on} />
     </Card>
   );
 }

@@ -1,9 +1,14 @@
 "use client";
 
+import { PushTestButton } from "@ssccops/pwa/ui";
+import { notificationApi } from "@/entities/notification";
 import { Card, SectionLabel, Toggle } from "@/shared/ui";
 import { usePushToggle } from "../model/use-push-toggle";
 
-/** `/my`의 «푸시 알림» 카드 — 스위치 + 상태 문장 (#604) */
+/**
+ * `/my`의 «푸시 알림» 카드 — 스위치 + 상태 문장 (#604) + 켜져 있을 때만 «테스트 알림 보내기»
+ * (ssccops#454 · #616 — 버튼·문구는 `@ssccops/pwa/ui`, 서버 호출만 이 앱의 것).
+ */
 export function PushToggleCard() {
   const push = usePushToggle();
   return (
@@ -25,6 +30,7 @@ export function PushToggleCard() {
           {push.error}
         </div>
       )}
+      <PushTestButton app="ADMIN" sendTest={notificationApi.sendTest} enabled={push.on} />
     </Card>
   );
 }

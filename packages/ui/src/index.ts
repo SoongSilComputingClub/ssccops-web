@@ -49,6 +49,7 @@ export { CONTENT_TAG_SNIPPETS } from "./ui/markdoc/schema";
 export { Notice } from "./ui/notice";
 export { TextField, Field, INPUT_BASE } from "./ui/field";
 export { ThemeToggle } from "./ui/theme-toggle";
+export { Toggle } from "./ui/toggle";
 export {
   AccountMenu,
   AccountMenuItem,

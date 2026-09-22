@@ -4,6 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import Link from "next/link";
 import { BrandMark, deployMarks } from "@ssccops/ui";
 import { AuthNav } from "@/features/auth";
+import { NotificationBell, UnreadCountSync } from "@/features/notification";
 import { OfflineBanner, ServiceWorkerRegister } from "@/features/pwa";
 import { OG_IMAGE_SIZE, ogImagePath } from "@/shared/config/og-cards";
 import { ROUTES } from "@/shared/config/routes";
@@ -159,6 +160,8 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
        * 메뉴와 모바일 드로어가 함께 쓴다. 로그인 여부에 따라 갈리는 오른쪽 끝만 클라이언트
        * 컴포넌트(AuthNav)로 두어, 익명 공개인 목록·상세 렌더에 세션 조회가 끼어들지 않게 한다(#150).
        * 테마 라디오는 상단 바에 없다 — 로그인한 사람은 계정 메뉴 안에서, 누구나는 푸터에서 고른다.
+       * 종(#616 · ssccops#453)은 `AuthNav`의 로그인한 가지에만 꽂힌다 — 배지 값을 듣는 `UnreadCountSync`도
+       * 같은 슬롯이라 로그인 판정 뒤에만 `/v1/notifications/unread-count`가 나간다(홈 SSR은 그대로 익명).
        */}
       <body className="flex min-h-screen flex-col antialiased">
         {/* 연결이 없을 때 맨 위 한 줄 (#607 · ADR-0045) */}
@@ -172,7 +175,14 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
             </Link>
             <DesktopNav />
             <div className="flex-1" />
-            <AuthNav />
+            <AuthNav
+              signedInSlot={
+                <>
+                  <UnreadCountSync />
+                  <NotificationBell />
+                </>
+              }
+            />
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1000px] flex-1 px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">

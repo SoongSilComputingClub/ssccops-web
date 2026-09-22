@@ -9,11 +9,10 @@ import {
 import { pushApi } from "@/entities/push";
 
 /*
- * «푸시 알림» 스위치 — `/my`의 한 카드 (#604 · ssccops#447).
+ * «푸시 알림» 스위치 — `/me` 허브의 한 카드 (#616 · ssccops#453 · admin #604·lms #606과 같은 모양).
  *
- * 상태 기계는 `@ssccops/pwa`가 갖고, 이 훅은 admin의 `pushApi`를 꽂는다. lms(#606)·www(#616)가 같은
- * 모양으로 자기 `apiFetch`를 꽂는다. 스위치 아래 문구도 패키지(`pushStateDescription`)다 — 여기 있던
- * `DESCRIPTION` 표를 #616에서 걷었다(알림은 회원 단위라 어느 앱에서 켜든 같은 것이 오고, 문구도 한 벌).
+ * 상태 기계는 `@ssccops/pwa`가 갖고, 이 훅은 www의 `pushApi`(`app: "WWW"`)를 꽂는다. 스위치 아래 문구도
+ * 패키지(`pushStateDescription`)다 — 알림은 회원 단위라 어느 앱에서 켜든 같은 것이 오고, 문구도 한 벌이다.
  */
 
 export interface PushToggle {
@@ -30,7 +29,7 @@ export interface PushToggle {
 
 export function usePushToggle(): PushToggle {
   const push = usePushSubscription({
-    app: "ADMIN",
+    app: "WWW",
     getConfig: pushApi.config,
     subscribe: pushApi.subscribe,
     unsubscribe: pushApi.unsubscribe,

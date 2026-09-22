@@ -12,8 +12,8 @@ import { isIndexable, siteOrigin } from "@/shared/config/site";
  * 같다(2026-09-21 실측).
  *
  * ── prod가 막는 경로 ────────────────────────────────────────
- * 로그인해야 뜻이 있는 화면(`/me`·신청·공개 폼)과 크롤러에 카드만 주는 착지(`/s/`)·OAuth
- * 콜백. `/f/`는 링크를 아는 회원이 답을 내는 폼이라 «공개»여도 검색될 자리가 아니다. 나머지
+ * 로그인해야 뜻이 있는 화면(`/me`·`/notifications`(#616)·신청·공개 폼)과 크롤러에 카드만 주는
+ * 착지(`/s/`)·OAuth 콜백. `/f/`는 링크를 아는 회원이 답을 내는 폼이라 «공개»여도 검색될 자리가 아니다. 나머지
  * (행사·콘텐츠·기록)는 익명 SSR이라 그대로 연다. 세션 여부에 따라 다른 HTML을 그리는 경로가
  * 없으므로 목록은 이것으로 끝이다 — 새 로그인 화면이 생기면 여기도 한 줄.
  *
@@ -32,6 +32,7 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         ROUTES.me,
         `${ROUTES.me}/`,
+        ROUTES.notifications,
         "/events/*/apply",
         "/f/",
         "/s/",

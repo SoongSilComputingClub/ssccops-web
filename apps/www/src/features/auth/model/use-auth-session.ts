@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@ssccops/auth/supabase/client";
+import { clearServiceWorkerCache } from "@ssccops/pwa";
 import { ROUTES } from "@/shared/config/routes";
 
 /*
@@ -75,15 +76,25 @@ export function useAuthSession() {
       setSigningOut(false);
       return;
     }
+    /*
+     * 서비스워커 캐시를 비운다 (#616 · ADR-0045) — 워커가 API GET(알림 목록·안 읽은 수)을 네트워크 우선 →
+     * 캐시로 담기 시작했으므로(`app/sw.js/route.ts` `apiOrigin`) 남의 기기에 내 알림이 남지 않게.
+     */
+    await clearServiceWorkerCache();
     setSignedIn(false);
     setUser(null);
     setSigningOut(false);
     /*
-     * '내 활동'(`/me`와 그 내부 페이지 `/me/*` · #574)에 서 있었다면 홈으로 비켜 준다 — 그 화면은
-     * 서버 컴포넌트라 토큰이 없어진 지금 새로 그리면 로그인 안내가 될 뿐이다. 다른 화면(목록·상세)은
-     * 로그인과 무관하므로 보고 있던 자리를 뺏지 않고, 헤더만 바뀌도록 서버 렌더만 새로 받는다.
+     * '내 활동'(`/me`와 그 내부 페이지 `/me/*` · #574)이나 알림(`/notifications` · #616)에 서 있었다면
+     * 홈으로 비켜 준다 — 내 활동은 서버 컴포넌트라 토큰이 없어진 지금 새로 그리면 로그인 안내가 될
+     * 뿐이고, 알림 목록은 이미 받아 둔 남의 것이 화면에 남는다. 다른 화면(목록·상세)은 로그인과
+     * 무관하므로 보고 있던 자리를 뺏지 않고, 헤더만 바뀌도록 서버 렌더만 새로 받는다.
      */
-    if (pathname === ROUTES.me || pathname.startsWith(`${ROUTES.me}/`)) {
+    if (
+      pathname === ROUTES.me ||
+      pathname.startsWith(`${ROUTES.me}/`) ||
+      pathname === ROUTES.notifications
+    ) {
       router.replace(ROUTES.home);
     }
     router.refresh();
