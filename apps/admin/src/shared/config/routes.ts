@@ -229,6 +229,13 @@ export const ROUTES = {
   contentPageEdit: (pageId: number) => `/content/pages/${pageId}/edit`,
   contentPostNew: "/content/posts/new",
   contentPostEdit: (postId: number) => `/content/posts/${postId}/edit`,
+
+  /**
+   * 전체 메뉴 (#635 · ssccops#462) — 사이드바 목차(`_shell/nav.ts`)를 묶음별 카드로 전부 펼친다.
+   * 권한이 없어 사이드바에서 감춰진 항목도 여기서는 잠금 표시와 필요한 권한명으로 보인다.
+   * 사이드바 발치와 404 화면이 이리로 보낸다.
+   */
+  sitemap: "/sitemap",
 } as const;
 
 /** 콘텐츠 목록의 탭 파라미터 — 주소와 읽는 쪽이 이 상수 하나를 함께 본다(RAG_APPLY_QUERY와 같은 판단) */

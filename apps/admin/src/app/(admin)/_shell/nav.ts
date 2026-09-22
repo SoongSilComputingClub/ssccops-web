@@ -17,18 +17,37 @@ export interface NavItem {
 }
 
 export interface NavGroup {
+  /** 아코디언 저장(localStorage)·aria-controls 키 — 라벨이 바뀌어도 기억이 남게 라벨과 따로 둔다 */
+  id: string;
   label: string;
-  /** 미니 사이드바 타일 글자 */
-  mono: string;
+  /**
+   * 묶음 아이콘 — 이모지 한 글자 (ssccops#462 · 사용자 결정 2026-09-22). 그리는 곳은 `@ssccops/ui`
+   * `GroupIcon` 한 군데다 — SVG로 바꿀 때 여기 값은 아이콘 이름으로 읽으면 된다.
+   */
+  emoji: string;
   items: NavItem[];
 }
 
 const starts = (prefix: string) => (p: string) => p.startsWith(prefix);
 
+/*
+ * 묶음 재편 (#635 · ssccops#462 규칙 표 · 2026-09-22).
+ *
+ * 묶음 7개·항목 25개를 전부 펼쳐 놓아 한 화면을 넘겼고, 접힌 레일은 «운·회·폼» 글자 하나였다.
+ * 재편의 기준은 **«매일 하는 일»과 «가끔 만지는 기준정보»를 가르는 것**이다 — 유형·역할·권한·라벨·
+ * 템플릿·분류·지운 폼·RAG처럼 한 학기에 몇 번 여는 화면은 맨 아래 «설정» 묶음에 모으고, 각 도메인
+ * 묶음에는 운영진이 오늘 열 화면만 남긴다. **주소는 하나도 바뀌지 않았다** — 북마크·공유 링크는
+ * 그대로다. RAG 묶음은 «설정» 안의 «RAG 설정» 한 줄이 됐다(항목 하나짜리 묶음을 없앤 것이지 화면이
+ * 없어진 것이 아니다).
+ *
+ * 묶음 순서 = 운영 · 회원 · 폼 · 학술 · 행사 · 콘텐츠 · 설정(맨 아래). «설정»은 권한 필터
+ * (`visibleGroups`)를 똑같이 타므로 안의 항목이 하나도 안 보이면 묶음도 없다.
+ */
 export const NAV_GROUPS: NavGroup[] = [
   {
+    id: "ops",
     label: "운영",
-    mono: "운",
+    emoji: "📋",
     items: [
       {
         label: "운영 대시보드",
@@ -86,13 +105,6 @@ export const NAV_GROUPS: NavGroup[] = [
         requires: CAPABILITY.WORK_MANAGE,
       },
       {
-        label: "하위 업무 유형 관리",
-        href: ROUTES.subWorkTypes,
-        isActive: starts("/operations/types"),
-        // 화면 진입은 목록 조회다 — 등록·수정만 SUB_WORK_TYPE_MANAGE 로 따로 잠근다
-        requires: CAPABILITY.SUB_WORK_TYPE_READ,
-      },
-      {
         label: "운영 등록",
         href: ROUTES.operationNew,
         isActive: starts("/operations/new"),
@@ -101,8 +113,9 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    id: "members",
     label: "회원",
-    mono: "회",
+    emoji: "👥",
     items: [
       /*
        * 회원 명부 (#52 · 서버 #76).
@@ -110,6 +123,7 @@ export const NAV_GROUPS: NavGroup[] = [
        * 조회(GET /v1/members)부터 MEMBER_MANAGE 를 요구한다 — 학번·연락처·이메일이 담긴
        * 실제 명부라 목록 자체가 보호 대상이다. 그래서 requires 를 둔다.
        * 상세·수정·등록은 목록에서 들어가므로 목차에 따로 올리지 않는다.
+       * 역할·권한·CSV 이관은 «설정» 묶음이다(#635) — 명부를 보는 일과 조직 구조를 만지는 일을 가른다.
        */
       {
         label: "회원 목록",
@@ -122,46 +136,12 @@ export const NAV_GROUPS: NavGroup[] = [
           !p.startsWith("/members/csv-import"),
         requires: CAPABILITY.MEMBER_MANAGE,
       },
-      /*
-       * 역할 관리에는 requires 를 두지 않는다 (#52).
-       *
-       * 역할·역할 분류 조회는 서버가 권한 없이 열어 두었고 등록·수정·삭제만 ROLE_MANAGE 를
-       * 요구한다 — 라벨 관리와 같은 모양이다. 메뉴를 감추면 볼 수 있는 것까지 막게 되므로
-       * 화면 안의 변경 버튼만 useCan 으로 잠근다(views/role-list 가 이미 그렇게 한다).
-       * 바로 아래 권한 관리와 갈리는 지점이 여기다 — 그쪽은 조회부터 막혀 있다.
-       */
-      {
-        label: "역할 관리",
-        href: ROUTES.roles,
-        isActive: (p) =>
-          p.startsWith("/members/roles") || p.startsWith("/members/role-labels"),
-      },
-      /*
-       * 권한 트리 관리 (#32 · 서버 #65).
-       *
-       * 조회(GET /v1/authorities)부터 ROLE_MANAGE 를 요구한다 — 어떤 묶음 권한이 있는지 자체가
-       * 운영 구조를 드러내기 때문이다. 그래서 라벨 관리와 달리 requires 를 반드시 둔다.
-       * 역할별 권한 부여(/members/roles/{roleId}/authorities)는 역할 목록에서 들어가므로
-       * 목차에 따로 올리지 않는다 — 역할을 먼저 고르지 않으면 갈 수 없는 화면이다.
-       */
-      {
-        label: "권한 관리",
-        href: ROUTES.authorities,
-        isActive: starts("/members/authorities"),
-        requires: CAPABILITY.ROLE_MANAGE,
-      },
-      /* 회원 명부를 통째로 만들어 넣는 화면이다 — 회원 목록과 같은 권한으로 잠근다 (#52) */
-      {
-        label: "CSV 회원 이관",
-        href: ROUTES.csvImport,
-        isActive: starts("/members/csv-import"),
-        requires: CAPABILITY.MEMBER_MANAGE,
-      },
     ],
   },
   {
+    id: "forms",
     label: "폼",
-    mono: "폼",
+    emoji: "📝",
     items: [
       {
         label: "폼 목록",
@@ -187,49 +167,12 @@ export const NAV_GROUPS: NavGroup[] = [
         isActive: starts("/forms/system"),
         requires: CAPABILITY.FORM_READ,
       },
-      /*
-       * 라벨 관리에는 requires 를 두지 않는다. 목록 조회(GET /v1/form-labels)에는 서버가
-       * 권한을 걸지 않았고 추가·비활성화만 FORM_LABEL_MANAGE 를 요구한다 — 이슈에도
-       * "조회는 허용"으로 적혀 있다. 메뉴를 감추면 볼 수 있는 것까지 막게 된다.
-       */
-      { label: "라벨 관리", href: ROUTES.formLabels, isActive: starts("/forms/labels") },
-      /*
-       * 템플릿 관리 (#134). 라벨 관리와 달리 requires 를 둔다 — 템플릿 API는 **조회까지 전부
-       * FORM_WRITE**다(서버 FormTemplateController 의 클래스 레벨 @RequireAuthority). 권한 없이
-       * 들어가면 첫 조회부터 403이라, 감추지 않으면 갈 수 없는 곳이 목차에 남는다.
-       * 등록·수정은 목록에서 들어가므로 목차에 따로 올리지 않는다.
-       */
-      {
-        label: "템플릿 관리",
-        href: ROUTES.formTemplates,
-        isActive: starts("/forms/templates"),
-        requires: CAPABILITY.FORM_WRITE,
-      },
-      /*
-       * 지운 폼 (ssccops-web#359). **목차에 올리는 것 자체가 이 작업의 요건이다.**
-       *
-       * 응답이 들어온 폼도 지운다는 결정(ssccops#261)이 감당 가능한 것은 되돌릴 수 있기
-       * 때문인데, 되돌리는 자리를 삭제 직후의 토스트로만 알리면 그 토스트가 사라진 뒤에는
-       * 아무도 찾지 못한다 — 그때부터는 하드 삭제와 구별되지 않는다.
-       *
-       * requires 는 목록과 같은 FORM_READ 다. nav.ts 의 규칙은 **화면이 첫 조회에 부르는 API가
-       * 요구하는 권한**을 적는 것이고, 이 화면의 첫 조회는 GET /v1/forms/deleted 인데 서버가
-       * 그것을 FORM_READ 로 확정했다(ssccops-server PR #330 — 휴지통은 목록이 이미 보여주던
-       * 값에 지운 시각 하나가 붙은 것이라 목록을 볼 수 있는 사람에게 숨길 것이 없다).
-       * 복구만 FORM_WRITE 라 그것은 화면 안에서 버튼을 잠근다 — 라벨 관리가 조회는 열고
-       * 추가만 잠그는 것과 같은 판단이다.
-       */
-      {
-        label: "지운 폼",
-        href: ROUTES.formsDeleted,
-        isActive: starts("/forms/deleted"),
-        requires: CAPABILITY.FORM_READ,
-      },
     ],
   },
   {
+    id: "academic",
     label: "학술",
-    mono: "학",
+    emoji: "🎓",
     items: [
       /*
        * 학술 대시보드 (#126 · 서버 #131·#136).
@@ -378,24 +321,19 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    id: "events",
     label: "행사",
-    mono: "행",
+    emoji: "🎉",
     items: [
       /*
-       * 행사 관리 (#136). 폼과 달리 두 메뉴 모두 requires 를 둔다 — 행사·분류 관리 API는
-       * **조회까지 전부 EVENT_MANAGE**라(서버 판정) 권한 없이 들어가면 첫 조회부터 403이다.
-       * 등록·수정·분류 편집은 목록에서 들어가므로 목차에 따로 올리지 않는다.
+       * 행사 관리 (#136). 행사·분류 관리 API는 **조회까지 전부 EVENT_MANAGE**라(서버 판정) 권한
+       * 없이 들어가면 첫 조회부터 403이다 — 그래서 requires 를 둔다. 등록·수정은 목록에서
+       * 들어가므로 목차에 따로 올리지 않고, 분류 관리는 «설정» 묶음이다(#635).
        */
       {
         label: "행사 목록",
         href: ROUTES.events,
         isActive: (p) => p.startsWith("/events") && !p.startsWith("/events/categories"),
-        requires: CAPABILITY.EVENT_MANAGE,
-      },
-      {
-        label: "분류 관리",
-        href: ROUTES.eventCategories,
-        isActive: starts("/events/categories"),
         requires: CAPABILITY.EVENT_MANAGE,
       },
     ],
@@ -404,16 +342,17 @@ export const NAV_GROUPS: NavGroup[] = [
     /*
      * 콘텐츠 (#521 · ssccops#383 · ADR-0038) — 홍보국이 공개 사이트의 페이지·포스트를 쓴다.
      *
-     * 항목이 하나뿐인데 묶음을 여는 것은 RAG와 같은 이유다 — 다루는 것(공개 사이트에 실리는 글)이
-     * 폼·행사·학술 어디에도 속하지 않는다. 페이지·포스트를 두 줄로 나누지 않고 한 화면의 탭으로
-     * 둔 근거는 routes.ts의 `content` 주석.
+     * 항목이 하나뿐인데 묶음을 여는 것은 다루는 것(공개 사이트에 실리는 글)이 폼·행사·학술 어디에도
+     * 속하지 않기 때문이다. 페이지·포스트를 두 줄로 나누지 않고 한 화면의 탭으로 둔 근거는
+     * routes.ts의 `content` 주석.
      *
      * 어드민 API는 **목록 조회까지 전부** CONTENT_MANAGE다(서버 클래스 레벨 `@RequireAuthority`).
      * 권한이 없으면 첫 조회부터 403이라 감추지 않으면 갈 수 없는 곳이 목차에 남는다 — 행사·RAG와
      * 같은 판단. 만들기·편집은 목록에서 들어가므로 목차에 따로 올리지 않는다.
      */
+    id: "content",
     label: "콘텐츠",
-    mono: "콘",
+    emoji: "📰",
     items: [
       {
         label: "페이지 · 포스트",
@@ -425,23 +364,112 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     /*
-     * RAG (#432 · 서버 #399·#401).
+     * 설정 (#635 · ssccops#462) — 한 학기에 몇 번 여는 기준정보 화면을 맨 아래 한 묶음에 모은다.
      *
-     * 항목이 «설정» 하나뿐인데도 묶음을 새로 여는 것은, 이 화면이 다루는 것이 다른 묶음 어디에도
-     * 속하지 않기 때문이다 — 폼·행사·학술은 운영 데이터를 다루지만 여기는 **도우미가 무엇을 근거로
-     * 답하는가**를 정한다. 기존 묶음에 끼워 넣으면 그 묶음의 뜻이 흐려지고, 뒤이어 붙을 화면
-     * (질의 이력·프롬프트 설정)이 갈 자리도 없어진다.
+     * 각 항목의 requires 근거는 그 항목의 주석에 있고, 원래 있던 묶음(운영·회원·폼·행사·RAG)에서
+     * 그대로 옮겼다 — 권한 판정은 자리와 무관하다. 도메인이 사라진 라벨에는 앞말을 붙였다(«라벨
+     * 관리» → «폼 라벨 관리») — «설정» 안에서 «라벨»이 폼의 것인지 역할의 것인지 이름만으로 갈리게.
      */
-    label: "RAG",
-    mono: "R",
+    id: "settings",
+    label: "설정",
+    emoji: "⚙️",
     items: [
+      {
+        label: "하위 업무 유형 관리",
+        href: ROUTES.subWorkTypes,
+        isActive: starts("/operations/types"),
+        // 화면 진입은 목록 조회다 — 등록·수정만 SUB_WORK_TYPE_MANAGE 로 따로 잠근다
+        requires: CAPABILITY.SUB_WORK_TYPE_READ,
+      },
       /*
+       * 역할 관리에는 requires 를 두지 않는다 (#52).
+       *
+       * 역할·역할 분류 조회는 서버가 권한 없이 열어 두었고 등록·수정·삭제만 ROLE_MANAGE 를
+       * 요구한다 — 라벨 관리와 같은 모양이다. 메뉴를 감추면 볼 수 있는 것까지 막게 되므로
+       * 화면 안의 변경 버튼만 useCan 으로 잠근다(views/role-list 가 이미 그렇게 한다).
+       * 바로 아래 권한 관리와 갈리는 지점이 여기다 — 그쪽은 조회부터 막혀 있다.
+       */
+      {
+        label: "역할 관리",
+        href: ROUTES.roles,
+        isActive: (p) =>
+          p.startsWith("/members/roles") || p.startsWith("/members/role-labels"),
+      },
+      /*
+       * 권한 트리 관리 (#32 · 서버 #65).
+       *
+       * 조회(GET /v1/authorities)부터 ROLE_MANAGE 를 요구한다 — 어떤 묶음 권한이 있는지 자체가
+       * 운영 구조를 드러내기 때문이다. 그래서 라벨 관리와 달리 requires 를 반드시 둔다.
+       * 역할별 권한 부여(/members/roles/{roleId}/authorities)는 역할 목록에서 들어가므로
+       * 목차에 따로 올리지 않는다 — 역할을 먼저 고르지 않으면 갈 수 없는 화면이다.
+       */
+      {
+        label: "권한 관리",
+        href: ROUTES.authorities,
+        isActive: starts("/members/authorities"),
+        requires: CAPABILITY.ROLE_MANAGE,
+      },
+      /* 회원 명부를 통째로 만들어 넣는 화면이다 — 회원 목록과 같은 권한으로 잠근다 (#52) */
+      {
+        label: "CSV 회원 이관",
+        href: ROUTES.csvImport,
+        isActive: starts("/members/csv-import"),
+        requires: CAPABILITY.MEMBER_MANAGE,
+      },
+      /*
+       * 폼 라벨 관리에는 requires 를 두지 않는다. 목록 조회(GET /v1/form-labels)에는 서버가
+       * 권한을 걸지 않았고 추가·비활성화만 FORM_LABEL_MANAGE 를 요구한다 — 이슈에도
+       * "조회는 허용"으로 적혀 있다. 메뉴를 감추면 볼 수 있는 것까지 막게 된다.
+       */
+      { label: "폼 라벨 관리", href: ROUTES.formLabels, isActive: starts("/forms/labels") },
+      /*
+       * 폼 템플릿 관리 (#134). 라벨 관리와 달리 requires 를 둔다 — 템플릿 API는 **조회까지 전부
+       * FORM_WRITE**다(서버 FormTemplateController 의 클래스 레벨 @RequireAuthority). 권한 없이
+       * 들어가면 첫 조회부터 403이라, 감추지 않으면 갈 수 없는 곳이 목차에 남는다.
+       * 등록·수정은 목록에서 들어가므로 목차에 따로 올리지 않는다.
+       */
+      {
+        label: "폼 템플릿 관리",
+        href: ROUTES.formTemplates,
+        isActive: starts("/forms/templates"),
+        requires: CAPABILITY.FORM_WRITE,
+      },
+      /*
+       * 지운 폼 (ssccops-web#359). **목차에 올리는 것 자체가 이 작업의 요건이다.**
+       *
+       * 응답이 들어온 폼도 지운다는 결정(ssccops#261)이 감당 가능한 것은 되돌릴 수 있기
+       * 때문인데, 되돌리는 자리를 삭제 직후의 토스트로만 알리면 그 토스트가 사라진 뒤에는
+       * 아무도 찾지 못한다 — 그때부터는 하드 삭제와 구별되지 않는다.
+       *
+       * requires 는 목록과 같은 FORM_READ 다. nav.ts 의 규칙은 **화면이 첫 조회에 부르는 API가
+       * 요구하는 권한**을 적는 것이고, 이 화면의 첫 조회는 GET /v1/forms/deleted 인데 서버가
+       * 그것을 FORM_READ 로 확정했다(ssccops-server PR #330 — 휴지통은 목록이 이미 보여주던
+       * 값에 지운 시각 하나가 붙은 것이라 목록을 볼 수 있는 사람에게 숨길 것이 없다).
+       * 복구만 FORM_WRITE 라 그것은 화면 안에서 버튼을 잠근다 — 라벨 관리가 조회는 열고
+       * 추가만 잠그는 것과 같은 판단이다.
+       */
+      {
+        label: "지운 폼",
+        href: ROUTES.formsDeleted,
+        isActive: starts("/forms/deleted"),
+        requires: CAPABILITY.FORM_READ,
+      },
+      /* 행사 분류 관리 — 행사 목록과 같이 조회까지 EVENT_MANAGE 다 (#136) */
+      {
+        label: "행사 분류 관리",
+        href: ROUTES.eventCategories,
+        isActive: starts("/events/categories"),
+        requires: CAPABILITY.EVENT_MANAGE,
+      },
+      /*
+       * RAG 설정 (#432 · 서버 #399·#401) — 규정 도우미가 무엇을 근거로 답하는가를 정한다.
+       *
        * 코퍼스 API는 **목록 조회까지 전부** RAG_DOCUMENT_MANAGE다(서버 클래스 레벨
        * `@RequireAuthority`). 권한이 없으면 첫 조회부터 403이라 감추지 않으면 갈 수 없는 곳이
        * 목차에 남는다 — 템플릿 관리·권한 관리와 같은 판단이다.
        */
       {
-        label: "설정",
+        label: "RAG 설정",
         href: ROUTES.ragSettings,
         isActive: starts("/ragsettings"),
         requires: CAPABILITY.RAG_DOCUMENT_MANAGE,
@@ -456,6 +484,11 @@ export const NAV_GROUPS: NavGroup[] = [
  * `sidebar.tsx`·`mobile-nav.tsx`의 `ACCOUNT_LINKS`.
  */
 
+/** 이 회원이 항목을 열 수 있는가 — 목차 감추기(`visibleGroups`)와 전체 메뉴의 잠금 표시가 같은 판정을 쓴다 */
+export function itemAllowed(member: MemberProfile | null, item: NavItem): boolean {
+  return !item.requires || hasCapability(member, item.requires);
+}
+
 /*
  * 권한이 없는 메뉴를 걷어낸다 (#29).
  *
@@ -465,6 +498,8 @@ export const NAV_GROUPS: NavGroup[] = [
  * 무엇보다 **그 뒤의 화면이 실제로 쓸 수 없다** — 업무 목록은 조회부터 WORK_MANAGE 로 막혀
  * 있어 들어가 봐야 오류 화면뿐이다. 갈 수 없는 곳을 목차에 남기면 목차 전체를 믿을 수 없게
  * 된다. 화면 **안**의 동작 버튼은 반대로 잠근다 — 근거는 features/auth/model/use-can.ts.
+ * 감춰진 항목이 «있기는 한지»를 알 자리는 전체 메뉴(/sitemap · #635)다 — 거기서는 잠금 표시와
+ * 필요한 권한명으로 보인다.
  *
  * ── 왜 useCan 이 아니라 hasCapability 인가 ──────────────────────
  * 메뉴는 데이터라 항목 수만큼 판정이 필요한데 훅은 반복문 안에서 부를 수 없다. 그래서 세션
@@ -487,7 +522,7 @@ export function visibleGroups(
   groups: NavGroup[],
   member: MemberProfile | null,
 ): NavGroup[] {
-  const allowed = (item: NavItem) => !item.requires || hasCapability(member, item.requires);
+  const allowed = (item: NavItem) => itemAllowed(member, item);
 
   const visibleItems = (item: NavItem): NavItem[] => {
     if (!item.children) {
@@ -505,7 +540,7 @@ export function visibleGroups(
       ...group,
       items: group.items.flatMap(visibleItems),
     }))
-    // 항목이 하나도 남지 않은 묶음은 제목만 떠 있게 두지 않는다 (접힌 사이드바의 타일도 같다)
+    // 항목이 하나도 남지 않은 묶음은 제목만 떠 있게 두지 않는다 (접힌 레일의 아이콘도 같다)
     .filter((group) => group.items.length > 0);
 }
 
