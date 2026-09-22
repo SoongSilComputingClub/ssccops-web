@@ -1,4 +1,5 @@
 export {
+  toNotificationTypeClearErrorMessage,
   toNotificationTypeErrorMessage,
   toNotificationTypeSaveErrorMessage,
 } from "./model/notification-type-error";

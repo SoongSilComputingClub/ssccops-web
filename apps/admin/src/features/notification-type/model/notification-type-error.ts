@@ -55,3 +55,21 @@ export function toNotificationTypeSaveErrorMessage(error: unknown): string {
       return toNotificationTypeErrorMessage(error);
   }
 }
+
+/**
+ * «보낸 앱 따름으로» 되돌리기 실패 → 화면에 띄울 한 줄 (서버 #537 · DELETE).
+ *
+ * 서버가 내리는 코드는 저장과 같은 집합이라 **분기를 저장 쪽에 맡긴다** — 403은 같은 조작이
+ * 막힌 것이고(수신 앱을 바꾼다), 404도 같은 뜻이다(목록이 낡았다). 문구를 한 벌 더 만들면
+ * 같은 상황에 다른 말이 두 개 생긴다.
+ *
+ * 갈리는 것은 **요청이 서버에 닿지도 못한 경우**뿐이다. 그때만 눌린 버튼의 이름으로 말한다 —
+ * 되돌리기를 누른 사람에게 «저장하지 못했습니다»는 자기가 한 일과 어긋난다. `VALIDATION_FAILED`
+ * («최소 한 앱»)는 이 요청에 본문이 없어 오지 않는다.
+ */
+export function toNotificationTypeClearErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "보낸 앱 따름으로 되돌리지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+  return toNotificationTypeSaveErrorMessage(error);
+}

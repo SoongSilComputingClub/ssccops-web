@@ -30,6 +30,7 @@ export function NotificationTypeRow({
   onToggle,
   onReset,
   onSave,
+  onClear,
 }: Readonly<{
   row: NotificationTypeRouteRow;
   canManage: boolean;
@@ -38,6 +39,8 @@ export function NotificationTypeRow({
   onToggle: (app: NotificationApp) => void;
   onReset: () => void;
   onSave: () => void;
+  /** 기준표에서 빼 «보낸 앱 따름»으로 되돌린다 (#647) */
+  onClear: () => void;
 }>) {
   const reason = blockReason(row, noManage);
   const needsApp = row.apps.length === 0 && row.dirty;
@@ -83,6 +86,24 @@ export function NotificationTypeRow({
         </div>
 
         <div className="flex flex-none items-center gap-3">
+          {/*
+            기준표에 행이 있는 줄에만 둔다 (#647 · 서버 #537). 이미 보낸 앱을 따르는 줄에서는
+            누를 것이 없고, 서버가 멱등이라 200이 와서 «되돌렸습니다»만 뜬다.
+
+            고친 값(`row.dirty`)과 무관하게 **저장된 값**을 따라 나타난다 — 이 버튼이 지우는
+            것은 서버에 있는 행이고, 옆의 «되돌리기»가 버리는 것은 아직 보내지 않은 체크다.
+          */}
+          {row.registered && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClear}
+              disabled={!canManage || row.saving}
+              title={noManage || "이 유형의 알림을 보낸 앱에만 보이게 되돌립니다"}
+            >
+              보낸 앱 따름으로
+            </Button>
+          )}
           {row.dirty && !row.saving && (
             <Button variant="link" onClick={onReset}>
               되돌리기

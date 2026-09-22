@@ -111,3 +111,27 @@ export async function replaceNotificationTypeApps(
   );
   return toRoute(saved);
 }
+
+/* ── 보낸 앱 따름으로 되돌리기 ─────────────────────────────── */
+
+/**
+ * DELETE /v1/notifications/types/{type} — 그 유형의 기준표 행을 전부 지운다 (서버 #537).
+ *
+ * 지운 뒤의 유형은 **그 알림 행 자신의 앱**을 따른다(ADR-0047 «미등록»). 빈 배열을 PUT 하는
+ * 길은 서버가 400으로 막으므로(«최소 한 앱») 기본값으로 가는 길은 이 요청 하나다.
+ *
+ * **204가 아니라 200 + 본문이다**(서버 컨트롤러 주석). 응답은 목록·저장과 같은 한 줄이고
+ * `followsSendingApp`이 true라, 화면은 되돌린 직후 목록을 다시 받지 않고 그 줄만 다시 그린다.
+ *
+ * **멱등이다** — 이미 미등록인 유형에도 200이 온다. 그래도 화면은 그 줄에서 버튼을 감춘다:
+ * 누를 것이 없는 자리에 버튼을 두면 «지금 어느 규칙으로 도는가»가 읽히지 않는다.
+ */
+export async function clearNotificationTypeApps(
+  type: string,
+): Promise<NotificationTypeRoute> {
+  const cleared = await apiFetch<NotificationTypeRouteResponse>(
+    `/v1/notifications/types/${encodeURIComponent(type)}`,
+    { method: "DELETE" },
+  );
+  return toRoute(cleared);
+}

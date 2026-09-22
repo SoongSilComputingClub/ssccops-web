@@ -48,6 +48,19 @@ export function NotificationTypeListPage() {
     flash(`${row.label} 수신 앱을 저장했습니다`);
   };
 
+  /*
+   * 되돌리기 (#647 · DELETE). 확인 창을 두지 않는다 — 지우는 것은 기준표의 행이고 되돌아가는
+   * 곳은 «보낸 앱에 보인다»라, 알림이 사라지지 않고 다시 체크해 저장하면 그만이다.
+   */
+  const clear = async (row: NotificationTypeRouteRow) => {
+    const message = await admin.clear(row.type);
+    if (message) {
+      flash(message);
+      return;
+    }
+    flash(`${row.label} 수신 앱을 보낸 앱 따름으로 되돌렸습니다`);
+  };
+
   return (
     <>
       <PageHeader title="알림 유형" subtitle="알림이 보일 앱" />
@@ -58,7 +71,8 @@ export function NotificationTypeListPage() {
         */}
         <div className="mb-4 max-w-[720px] text-[14px] leading-[1.7] text-n400">
           유형마다 알림이 보일 앱을 정합니다. 정하지 않은 유형은 그 알림을 보낸 앱에만 보입니다.
-          바꾼 내용은 줄마다 저장하며, 저장하면 목록과 푸시에 바로 반영됩니다.
+          바꾼 내용은 줄마다 저장하며, 저장하면 목록과 푸시에 바로 반영됩니다. 한 번 정한 유형은
+          «보낸 앱 따름으로»를 눌러 정하지 않은 상태로 되돌립니다.
         </div>
         {!canManage && <div className="mb-4 text-[13px] text-n500">{NO_MANAGE}</div>}
 
@@ -84,6 +98,7 @@ export function NotificationTypeListPage() {
                   onToggle={(app: NotificationApp) => admin.toggleApp(row.type, app)}
                   onReset={() => admin.reset(row.type)}
                   onSave={() => void save(row)}
+                  onClear={() => void clear(row)}
                 />
               ))}
             </Card>
