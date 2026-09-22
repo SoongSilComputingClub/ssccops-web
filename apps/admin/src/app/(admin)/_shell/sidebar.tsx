@@ -80,8 +80,6 @@ export function Sidebar() {
         <BrandMark src={DEPLOY.mark} size={28} />
         <div className="min-w-0 text-[16px] whitespace-nowrap">SSCC 운영관리</div>
         <div className="flex-1" />
-        {/* 종 — 접기 버튼 옆. 상단 바(mobile-nav)와 같은 컴포넌트 (#604) */}
-        <NotificationBell size="sm" />
         <button
           type="button"
           onClick={() => setCollapsed(true)}
@@ -98,6 +96,12 @@ export function Sidebar() {
         onNavigate={navigate}
         meName={meName}
         meLabel={meLabel}
+        /*
+         * 종은 머리가 아니라 프로필 행이다 (#612). 230px 머리에 마크·제목·종·접기를 다 두면
+         * 제목(«SSCC 운영관리» 110px)이 종 밑으로 깔린다 — 자리가 80px뿐이다. 프로필 행은 «내
+         * 것»이 모인 자리라 뜻도 맞고 폭도 남는다. 접힌 레일·모바일 상단 바는 그대로.
+         */
+        profileAction={<NotificationBell size="sm" />}
       />
     </div>
   );
