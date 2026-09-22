@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GroupIcon } from "@ssccops/ui";
@@ -102,8 +103,15 @@ export function SitemapPage() {
                 {g.label}
               </h2>
               <ul>
-                {g.items.map((item) => (
-                  <SitemapItem key={item.href} item={item} member={member} pathname={pathname} />
+                {g.items.map((item, i) => (
+                  <Fragment key={item.href}>
+                    {item.section && item.section !== g.items[i - 1]?.section && (
+                      <li className="pt-[8px] pb-[2px] text-[12px] font-semibold tracking-[.3px] text-n500">
+                        {item.section}
+                      </li>
+                    )}
+                    <SitemapItem item={item} member={member} pathname={pathname} />
+                  </Fragment>
                 ))}
               </ul>
             </Card>

@@ -6,7 +6,7 @@
  * 진입점은 이것을 감싸는 sidebar.tsx · mobile-nav.tsx이고, 이 파일은 그 클라이언트
  * 그래프에 딸려 들어간다 — 서버 컴포넌트에서 직접 import하지 말 것.
  */
-import { useId } from "react";
+import { Fragment, useId } from "react";
 import { GroupIcon, onKeyActivate } from "@ssccops/ui";
 import { cn } from "@/shared/lib/cn";
 import { groupHasActive, type NavGroup, type NavItem } from "./nav";
@@ -159,13 +159,16 @@ export function NavPanel({
             </button>
             {/* 접혀도 DOM에 둔다(`hidden`) — `aria-controls`가 가리키는 자리가 늘 있어야 한다 */}
             <div id={panelId} role="group" aria-label={g.label} hidden={!open} className="pb-1">
-              {g.items.map((item) => (
-                <NavRow
-                  key={item.href}
-                  item={item}
-                  pathname={pathname}
-                  onNavigate={onNavigate}
-                />
+              {g.items.map((item, i) => (
+                <Fragment key={item.href}>
+                  {/* 구분 제목 — 보이는 항목 기준으로 값이 바뀔 때만 (#639 · ssccops#463) */}
+                  {item.section && item.section !== g.items[i - 1]?.section && (
+                    <div className="px-[18px] pt-[10px] pb-[3px] text-[11.5px] font-semibold tracking-[.3px] text-n500">
+                      {item.section}
+                    </div>
+                  )}
+                  <NavRow item={item} pathname={pathname} onNavigate={onNavigate} />
+                </Fragment>
               ))}
             </div>
           </div>
