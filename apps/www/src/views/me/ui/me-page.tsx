@@ -35,7 +35,7 @@ import { ProposalCard } from "./proposal-card";
  *   ③ 낸 기획안     같은 목록 중 기획안 폼(`PROPOSAL`) 응답     → /me/proposals · 카드는 lms로
  *   ④ 이끄는 프로그램   `GET /v1/academic-programs?mine=leader`     → /me/programs · 카드는 lms로
  *   ⑤ 푸시 알림       `PushToggleCard`(클라이언트 · #616 · ssccops#453) — 이 기기의 설정, 발치에
- *   ⓪ 다시 제출할 것  ②·③ 중 수정 요청(`CHANGES_REQUESTED`)을 받은 것 전부 — **맨 위**, 있을 때만
+ *   ⓪ 다시 제출할 것  ①·②·③ 중 수정 요청(`CHANGES_REQUESTED`)을 받은 것 전부 — **맨 위**, 있을 때만
  *                    (#626 · ssccops#457). 첫 판은 ②·③ 안에서 앞으로 당기기만 했는데 셋째 묶음이라
  *                    첫 화면 아래였고, 카드의 주의 상자는 없는 팔레트 클래스(`amber-50`)라 밋밋한
  *                    글자였다 — 운영진이 «재제출이 필요한지 안 보인다»고 했다. 위에 올린 건은 아래
@@ -84,11 +84,20 @@ async function HubBody() {
 
   const pendingForms = split?.forms.filter(needsAction) ?? [];
   const pendingProposals = split?.proposals.filter(needsAction) ?? [];
+  // 행사·학술 프로그램 신청도 수정 요청을 받는다 — 서버 #530이 그 값을 접지 않고 내려준다 (#628)
+  const pendingApplications =
+    applicationsResult.status === "fulfilled"
+      ? applicationsResult.value.filter((a) => a.applicationStatus === "CHANGES_REQUESTED")
+      : [];
 
   return (
     <div className="flex flex-col gap-[24px]">
       <AccountLine session={gate.session} />
-      <NeedsActionBlock forms={pendingForms} proposals={pendingProposals} />
+      <NeedsActionBlock
+        applications={pendingApplications}
+        forms={pendingForms}
+        proposals={pendingProposals}
+      />
       <ApplicationsBlock result={applicationsResult} />
       <ResponsesBlock forms={split?.forms ?? null} />
       <ProposalsBlock proposals={split?.proposals ?? null} />
@@ -107,10 +116,15 @@ async function HubBody() {
  * 없음). 하나도 없으면 절 자체가 없다 — 빈 «할 것 없음»은 자리만 차지한다.
  */
 async function NeedsActionBlock({
+  applications,
   forms,
   proposals,
-}: Readonly<{ forms: MyFormResponseOverview[]; proposals: MyFormResponseOverview[] }>) {
-  const total = forms.length + proposals.length;
+}: Readonly<{
+  applications: MyApplication[];
+  forms: MyFormResponseOverview[];
+  proposals: MyFormResponseOverview[];
+}>) {
+  const total = applications.length + forms.length + proposals.length;
   if (total === 0) return null;
   const reviewOpinions = await loadReviewOpinions([...forms, ...proposals]);
 
@@ -122,6 +136,12 @@ async function NeedsActionBlock({
       </h2>
       <p className="text-[13.5px] text-n500">운영진이 수정을 요청한 응답입니다. 사유를 보고 고쳐서 다시 내주세요.</p>
       <div className="flex flex-col gap-[12px]">
+        {applications.map((application) => (
+          <ApplicationCard
+            key={`${application.eventId}-${application.formRspnsId ?? application.eventPtcpId ?? "none"}`}
+            application={application}
+          />
+        ))}
         {forms.map((response) => (
           <FormResponseCard
             key={response.formRspnsId}
@@ -225,9 +245,11 @@ function ApplicationPreview({ applications }: Readonly<{ applications: MyApplica
       />
     );
   }
+  // 수정 요청 건은 ⓪이 이미 보였다 — 여기서는 나머지의 최근 몇 건
+  const rest = applications.filter((a) => a.applicationStatus !== "CHANGES_REQUESTED");
   return (
     <div className="flex flex-col gap-[12px]">
-      {applications.slice(0, HUB_PREVIEW_COUNT).map((application) => (
+      {rest.slice(0, HUB_PREVIEW_COUNT).map((application) => (
         <ApplicationCard
           key={`${application.eventId}-${application.formRspnsId ?? application.eventPtcpId ?? "none"}`}
           application={application}

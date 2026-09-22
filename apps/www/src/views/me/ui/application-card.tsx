@@ -29,6 +29,7 @@ import { Badge, Pill } from "@/shared/ui";
  */
 export function ApplicationCard({ application }: Readonly<{ application: MyApplication }>) {
   const status = applicationStatusBadge(application.applicationStatus);
+  const changesRequested = application.applicationStatus === "CHANGES_REQUESTED";
   const period = formatEventPeriod(application.eventBgngDt, application.eventEndDt);
 
   const responseHref =
@@ -55,8 +56,22 @@ export function ApplicationCard({ application }: Readonly<{ application: MyAppli
           </div>
         )}
 
-        <p className="text-[13.5px] leading-[1.6] text-n300">{status.note}</p>
+        {!changesRequested && (
+          <p className="text-[13.5px] leading-[1.6] text-n300">{status.note}</p>
+        )}
       </Link>
+
+      {/*
+       * 수정 요청은 설명 문장 대신 주의 상자다(#628 · ssccops#458) — 낸 폼·기획안 카드와 같은 모양,
+       * 색은 토큰. 사유는 응답 화면이 보인다(여기서 사유까지 부르면 카드마다 조회 하나).
+       * 링크는 같은 응답 화면이고 문구만 «다시 제출하기»다.
+       */}
+      {changesRequested && (
+        <div className="rounded-xl bg-amber-soft px-[12px] py-[10px] text-[13.5px] leading-[1.6] text-amber">
+          <span className="font-semibold">수정 요청</span>
+          <p className="mt-[2px]">{status.note}</p>
+        </div>
+      )}
 
       {responseHref && (
         <Link
@@ -64,7 +79,7 @@ export function ApplicationCard({ application }: Readonly<{ application: MyAppli
           // 76×20 이라 손가락으로 빗나갔다 — 시각은 그대로, 히트만 24px (UI 감사 D5 · #476)
           className="-my-1 inline-flex min-h-6 items-center self-start py-1 text-[13.5px] font-semibold text-accent-strong underline underline-offset-2"
         >
-          제출 내용 보기
+          {changesRequested ? "다시 제출하기 →" : "제출 내용 보기"}
         </Link>
       )}
     </div>
