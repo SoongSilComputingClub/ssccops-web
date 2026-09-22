@@ -45,6 +45,7 @@ export function NotificationList({
   onOpen,
   onReadAll,
   readingAll,
+  onOpenSettings,
 }: Readonly<{
   items: NotificationItem[];
   status: NotificationListStatus;
@@ -57,6 +58,11 @@ export function NotificationList({
   onOpen: (item: NotificationItem) => void;
   onReadAll: () => void;
   readingAll: boolean;
+  /**
+   * 빈 상태에 «푸시를 켜면 새 알림이 이 기기로 옵니다» + «설정 열기»를 그린다(ssccops#461 · #634) —
+   * 페이지의 «알림 설정» 절을 펼치는 함수. 스위치가 이미 켜져 있으면 넘기지 않는다(그 줄이 틀린 말이 된다)
+   */
+  onOpenSettings?: () => void;
 }>) {
   const unread = items.filter((item) => item.readAt === null).length;
 
@@ -71,7 +77,23 @@ export function NotificationList({
     );
   }
   if (items.length === 0) {
-    return <div className="py-[52px] text-center text-[15px] text-n500">아직 알림이 없습니다.</div>;
+    return (
+      <div className="py-[52px] text-center text-[15px] text-n500">
+        <p>아직 알림이 없습니다.</p>
+        {onOpenSettings && (
+          <>
+            <p className="mt-1 text-[13.5px]">푸시를 켜면 새 알림이 이 기기로 옵니다.</p>
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              className="mt-3 cursor-pointer rounded-[10px] border border-line-strong px-3 py-[7px] text-[14px] text-n300 hover:border-accent hover:text-accent"
+            >
+              설정 열기
+            </button>
+          </>
+        )}
+      </div>
+    );
   }
 
   return (

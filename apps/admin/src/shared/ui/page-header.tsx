@@ -10,6 +10,7 @@ export function PageHeader({
   subtitle,
   showBack,
   action,
+  right,
 }: Readonly<{
   title: ReactNode;
   subtitle?: ReactNode;
@@ -19,6 +20,8 @@ export function PageHeader({
    * 이유를 툴팁으로 붙인다. 근거는 features/auth/model/use-can.ts.
    */
   action?: { label: string; onClick: () => void; disabled?: boolean; title?: string };
+  /** 제목 오른쪽의 보조 요소 — `/notifications`의 ⚙ «설정»(#634)처럼 주요 액션이 아닌 토글 버튼 */
+  right?: ReactNode;
 }>) {
   const router = useRouter();
   return (
@@ -48,6 +51,7 @@ export function PageHeader({
         <h1 className="text-[24px] font-medium tracking-[-.3px]">{title}</h1>
         {subtitle && <div className="mt-[2px] text-[13.5px] text-n500">{subtitle}</div>}
       </div>
+      {right}
       {action && (
         <Button onClick={action.onClick} disabled={action.disabled} title={action.title}>
           {action.label}
