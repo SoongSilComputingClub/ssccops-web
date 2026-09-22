@@ -389,6 +389,30 @@ export const NAV_GROUPS: NavGroup[] = [
         requires: CAPABILITY.SUB_WORK_TYPE_READ,
       },
       /*
+       * 알림 유형 (ssccops#465 · ADR-0047 · 서버 #535) — 어느 알림이 어느 앱에 보이는지를
+       * 배포 없이 바꾼다.
+       *
+       * **`requires`가 SUPER인 것은 서버가 그 코드를 요구하기 때문이다**(조회까지 클래스 레벨
+       * `@RequireAuthority(SUPER)`). 이 목록에서 유일하게 트리 최상위 코드를 적는 자리인데,
+       * nav.ts의 규칙은 «화면이 첫 조회에 부르는 API가 요구하는 권한»을 적는 것이고 그 값이
+       * 실제로 SUPER다 — 알림이 어느 앱에 속하는지는 학기마다 바뀌는 시스템 정책이라 위임할
+       * 대상이 없어 서버가 새 자식 권한을 만들지 않았다(컨트롤러 주석). 권한이 넓어지면 서버가
+       * 코드를 만들고 이 한 줄이 따라간다.
+       *
+       * 조회부터 막히므로 감춘다 — 권한 관리·행사·RAG와 같은 판단이다. 감춰진 것이 있기는
+       * 한지는 전체 메뉴(/sitemap)가 잠금 표시로 말한다.
+       *
+       * «운영» 구분에 두는 것은 이 표가 운영 사건(승인·마감)과 회원 사건(응답·참가)을 함께
+       * 담지만 만지는 사람이 시스템 운영자 한 종류이기 때문이다.
+       */
+      {
+        section: "운영",
+        label: "알림 유형",
+        href: ROUTES.notificationTypes,
+        isActive: starts("/settings/notification-types"),
+        requires: CAPABILITY.SUPER,
+      },
+      /*
        * 역할 관리에는 requires 를 두지 않는다 (#52).
        *
        * 역할·역할 분류 조회는 서버가 권한 없이 열어 두었고 등록·수정·삭제만 ROLE_MANAGE 를
