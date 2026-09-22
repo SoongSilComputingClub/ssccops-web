@@ -64,7 +64,13 @@ export function ResubmitForm({
 
   const currentPage = Math.min(page, pages.length - 1);
   const pageQitems = qitems.filter((qitem) => pageSeqOf(qitem) === currentPage);
-  const isLast = nextPageSeq(composition, currentPage, form.answers) === null;
+  /*
+   * 마지막 페이지 판정은 페이지 수로 한다 (#624 · ssccops#456). `nextPageSeq`는 마지막 페이지로
+   * clamp한 숫자를 돌려주지 **null을 주지 않는다** — 그것을 `=== null`로 보던 동안 이 판정이
+   * 늘 false라 마지막 페이지에서도 버튼이 «다음»이었고 재제출이 한 번도 열리지 않았다(prod·dev
+   * 같이 · 2026-09-22 운영진 신고). lms 재제출·www 신청 화면과 같은 식이다.
+   */
+  const isLast = currentPage >= pages.length - 1;
 
   const goTo = (next: number | null) => {
     if (next === null) return;
