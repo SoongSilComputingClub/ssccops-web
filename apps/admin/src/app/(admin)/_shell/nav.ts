@@ -14,6 +14,12 @@ export interface NavItem {
    * 조회조차 막게 된다.
    */
   requires?: Capability;
+  /**
+   * 묶음 안의 구분 제목 (#639 · ssccops#463). 같은 값이 이어지는 동안 한 번만 찍히고, 권한 필터로
+   * 항목이 빠진 뒤 **보이는 항목 기준**으로 찍는다(빈 구분 제목 없음). «설정» 묶음이 화면 9개를
+   * 한 줄로 이어 무엇의 설정인지 갈리지 않아 뒀다 — 다른 묶음은 비워 둔다. 클릭되지 않는다.
+   */
+  section?: string;
 }
 
 export interface NavGroup {
@@ -375,6 +381,7 @@ export const NAV_GROUPS: NavGroup[] = [
     emoji: "⚙️",
     items: [
       {
+        section: "운영",
         label: "하위 업무 유형 관리",
         href: ROUTES.subWorkTypes,
         isActive: starts("/operations/types"),
@@ -390,6 +397,7 @@ export const NAV_GROUPS: NavGroup[] = [
        * 바로 아래 권한 관리와 갈리는 지점이 여기다 — 그쪽은 조회부터 막혀 있다.
        */
       {
+        section: "회원",
         label: "역할 관리",
         href: ROUTES.roles,
         isActive: (p) =>
@@ -404,6 +412,7 @@ export const NAV_GROUPS: NavGroup[] = [
        * 목차에 따로 올리지 않는다 — 역할을 먼저 고르지 않으면 갈 수 없는 화면이다.
        */
       {
+        section: "회원",
         label: "권한 관리",
         href: ROUTES.authorities,
         isActive: starts("/members/authorities"),
@@ -411,6 +420,7 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       /* 회원 명부를 통째로 만들어 넣는 화면이다 — 회원 목록과 같은 권한으로 잠근다 (#52) */
       {
+        section: "회원",
         label: "CSV 회원 이관",
         href: ROUTES.csvImport,
         isActive: starts("/members/csv-import"),
@@ -421,7 +431,8 @@ export const NAV_GROUPS: NavGroup[] = [
        * 권한을 걸지 않았고 추가·비활성화만 FORM_LABEL_MANAGE 를 요구한다 — 이슈에도
        * "조회는 허용"으로 적혀 있다. 메뉴를 감추면 볼 수 있는 것까지 막게 된다.
        */
-      { label: "폼 라벨 관리", href: ROUTES.formLabels, isActive: starts("/forms/labels") },
+      // 앞말 «폼»은 구분 제목이 대신한다 (#639) — #635가 붙였던 «폼 라벨 관리»를 원래 이름으로
+      { section: "폼", label: "라벨 관리", href: ROUTES.formLabels, isActive: starts("/forms/labels") },
       /*
        * 폼 템플릿 관리 (#134). 라벨 관리와 달리 requires 를 둔다 — 템플릿 API는 **조회까지 전부
        * FORM_WRITE**다(서버 FormTemplateController 의 클래스 레벨 @RequireAuthority). 권한 없이
@@ -429,7 +440,8 @@ export const NAV_GROUPS: NavGroup[] = [
        * 등록·수정은 목록에서 들어가므로 목차에 따로 올리지 않는다.
        */
       {
-        label: "폼 템플릿 관리",
+        section: "폼",
+        label: "템플릿 관리",
         href: ROUTES.formTemplates,
         isActive: starts("/forms/templates"),
         requires: CAPABILITY.FORM_WRITE,
@@ -449,6 +461,7 @@ export const NAV_GROUPS: NavGroup[] = [
        * 추가만 잠그는 것과 같은 판단이다.
        */
       {
+        section: "폼",
         label: "지운 폼",
         href: ROUTES.formsDeleted,
         isActive: starts("/forms/deleted"),
@@ -456,7 +469,8 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       /* 행사 분류 관리 — 행사 목록과 같이 조회까지 EVENT_MANAGE 다 (#136) */
       {
-        label: "행사 분류 관리",
+        section: "행사",
+        label: "분류 관리",
         href: ROUTES.eventCategories,
         isActive: starts("/events/categories"),
         requires: CAPABILITY.EVENT_MANAGE,
@@ -469,6 +483,7 @@ export const NAV_GROUPS: NavGroup[] = [
        * 목차에 남는다 — 템플릿 관리·권한 관리와 같은 판단이다.
        */
       {
+        section: "규정 도우미",
         label: "RAG 설정",
         href: ROUTES.ragSettings,
         isActive: starts("/ragsettings"),
