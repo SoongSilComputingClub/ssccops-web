@@ -8,7 +8,7 @@
  * - `NotificationItem` 등 계약 타입 — 서버 표 그대로(ssccops#446)
  * - `useUnreadCount` · `setUnreadCount` · `decrementUnreadCount`  종 배지 값 (#606)
  * - `pushStateDescription(state, ctx)`  푸시 스위치 아래 문구 (#606)
- * - `@ssccops/pwa/ui`  알림 목록·오프라인 띠·서비스워커 등록 껍데기 — admin·lms가 같은 것을 그린다
+ * - `@ssccops/pwa/ui`  알림 목록·«알림 설정» 카드(#634)·오프라인 띠·서비스워커 등록 껍데기 — 세 앱이 같은 것을 그린다
  *
  * ── 여기 없는 것 ────────────────────────────────────────────
  * 서버 호출(`apiFetch`)과 이동 규칙. 앱마다 인증 헤더·401 처리·라우트가 달라 훅이 콜백으로 받는다.
