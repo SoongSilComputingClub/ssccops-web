@@ -48,7 +48,8 @@ export interface NotificationTypeRoute {
    * 기준표에 행이 하나도 없는 유형 — 그 알림 행 자신의 앱(= 보낸 앱)을 따른다 (ADR-0047).
    *
    * «아직 정하지 않았다»의 안전한 기본값이라 화면은 «보낸 앱을 따릅니다»로 그린다. 한 번
-   * 저장하면 false가 되고, 다시 이 상태로 돌리는 조작은 없다(서버에 DELETE가 없다).
+   * 저장하면 false가 되고, 되돌리는 길은 `clearNotificationTypeApps`(DELETE · 서버 #537)다 —
+   * 빈 배열 저장은 서버가 400으로 막으므로(ADR-0047 «최소 한 앱») 그 길로는 돌아오지 못한다.
    */
   followsSendingApp: boolean;
 }

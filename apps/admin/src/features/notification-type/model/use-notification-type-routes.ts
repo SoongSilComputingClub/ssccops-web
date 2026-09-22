@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  clearNotificationTypeApps,
   fetchNotificationTypeRoutes,
   NOTIFICATION_APPS,
   NOTIFICATION_TYPE_ERROR,
@@ -12,6 +13,7 @@ import {
 import { syncSessionOnForbidden } from "@/entities/session";
 import { ApiError } from "@/shared/lib/api/client";
 import {
+  toNotificationTypeClearErrorMessage,
   toNotificationTypeErrorMessage,
   toNotificationTypeSaveErrorMessage,
 } from "./notification-type-error";
@@ -63,6 +65,14 @@ export interface NotificationTypeRouteRow {
    * 화면이 말하는 것은 «지금 보낸 앱을 따른다»가 아니라 «저장하면 이렇게 된다»여서다.
    */
   followsSendingApp: boolean;
+  /**
+   * 기준표에 행이 있는 유형 — «보낸 앱 따름으로» 되돌릴 것이 있다는 뜻이다 (#647 · 서버 #537).
+   *
+   * **`followsSendingApp`의 반대가 아니다.** 이쪽은 고친 값을 보지 않고 **저장된 값만** 따른다 —
+   * 되돌리기가 지우는 것은 서버에 있는 행이라, 아직 저장하지 않은 체크로 그 버튼이 나타나거나
+   * 사라지면 누른 결과가 화면과 어긋난다(고친 값을 버리는 조작은 «되돌리기»가 따로 있다).
+   */
+  registered: boolean;
   saving: boolean;
 }
 
@@ -79,6 +89,13 @@ export interface NotificationTypeRoutesAdmin {
   reset: (type: string) => void;
   /** 저장. **빈 문자열이 성공**이고 그 밖은 화면에 띄울 오류 한 줄이다 */
   save: (type: string) => Promise<string>;
+  /**
+   * 그 유형을 기준표에서 빼 «보낸 앱 따름»으로 되돌린다 (#647 · DELETE).
+   *
+   * 저장과 같이 **빈 문자열이 성공**이다. 되돌리면 그 줄의 고친 값도 함께 버린다 — 지워진
+   * 행 위에 남은 체크는 어디에도 저장되지 않은 값이라 «저장하지 않음»으로 붙잡아 둘 이유가 없다.
+   */
+  clear: (type: string) => Promise<string>;
 }
 
 /** 두 앱 목록이 같은가 — 둘 다 NOTIFICATION_APPS 순으로 세워져 있어 자리끼리 견준다 */
@@ -135,6 +152,7 @@ export function useNotificationTypeRoutes(): NotificationTypeRoutesAdmin {
       apps: draft ?? route.apps,
       dirty,
       followsSendingApp: route.followsSendingApp && !dirty,
+      registered: !route.followsSendingApp,
       saving: savingTypes.includes(route.type),
     };
   });
@@ -175,23 +193,27 @@ export function useNotificationTypeRoutes(): NotificationTypeRoutesAdmin {
     });
   }, []);
 
-  const save = useCallback(
-    async (type: string): Promise<string> => {
-      const row = rowsRef.current.find((r) => r.type === type);
-      if (!row) return "";
-      /*
-       * 클라이언트 선검사는 남긴다 — 서버도 400으로 막지만(EMPTY_NOTIFICATION_ROUTE) 왕복 한
-       * 번을 기다리지 않고 바로 알려 주는 편이 낫다. 버튼도 같은 조건으로 잠겨 있어 여기까지
-       * 오는 것은 잠금이 새는 경우뿐이다.
-       */
-      if (row.apps.length === 0) return "앱을 최소 한 곳 선택해야 저장됩니다";
+  /*
+   * 줄 하나를 바꾸는 요청의 공통 절차 — 중복 클릭 잠금, 그 줄을 «저장 중»으로, 응답 한 줄을
+   * 목록에 얹기, 403이면 세션 맞추기, 404면 목록 다시 받기.
+   *
+   * 저장(PUT)과 되돌리기(DELETE)가 **갈리는 것은 보내는 요청과 실패 문구 둘뿐**이라 그 둘만
+   * 인자로 받는다. 두 벌로 베껴 두면 한쪽에만 404 처리나 잠금을 빠뜨리게 되고, 그 차이는
+   * 권한이 회수됐거나 유형이 사라진 드문 자리에서만 드러나 눈에 띄지 않는다.
+   */
+  const runRowMutation = useCallback(
+    async (
+      type: string,
+      send: () => Promise<NotificationTypeRoute>,
+      toErrorMessage: (error: unknown) => string,
+    ): Promise<string> => {
       if (busyRef.current.has(type)) return "";
 
       busyRef.current.add(type);
       setSavingTypes((types) => [...types, type]);
 
       try {
-        const saved = await replaceNotificationTypeApps(type, row.apps);
+        const saved = await send();
         if (aliveRef.current) {
           setLoaded((prev) =>
             prev === null
@@ -217,7 +239,7 @@ export function useNotificationTypeRoutes(): NotificationTypeRoutesAdmin {
           reset(type);
           setRequestKey((k) => k + 1);
         }
-        return toNotificationTypeSaveErrorMessage(error);
+        return toErrorMessage(error);
       } finally {
         busyRef.current.delete(type);
         if (aliveRef.current) {
@@ -228,6 +250,48 @@ export function useNotificationTypeRoutes(): NotificationTypeRoutesAdmin {
     [reset],
   );
 
+  const save = useCallback(
+    async (type: string): Promise<string> => {
+      const row = rowsRef.current.find((r) => r.type === type);
+      if (!row) return "";
+      /*
+       * 클라이언트 선검사는 남긴다 — 서버도 400으로 막지만(EMPTY_NOTIFICATION_ROUTE) 왕복 한
+       * 번을 기다리지 않고 바로 알려 주는 편이 낫다. 버튼도 같은 조건으로 잠겨 있어 여기까지
+       * 오는 것은 잠금이 새는 경우뿐이다.
+       *
+       * **되돌리기가 이 검사를 우회하는 길이 아니다** — 빈 체크를 저장하는 것(알림을 조용히
+       * 끄는 설정)과 기본값으로 되돌리는 것(보낸 앱에 보인다)은 결과가 다르다.
+       */
+      if (row.apps.length === 0) return "앱을 최소 한 곳 선택해야 저장됩니다";
+
+      return runRowMutation(
+        type,
+        () => replaceNotificationTypeApps(type, row.apps),
+        toNotificationTypeSaveErrorMessage,
+      );
+    },
+    [runRowMutation],
+  );
+
+  const clear = useCallback(
+    async (type: string): Promise<string> => {
+      const row = rowsRef.current.find((r) => r.type === type);
+      /*
+       * 이미 보낸 앱을 따르는 줄이면 보내지 않는다. 서버는 멱등이라 200을 주지만(서버 #537),
+       * 그러면 «되돌렸습니다» 토스트가 아무것도 바꾸지 않은 자리에서도 뜬다 — 그 줄에는
+       * 버튼도 없으므로 여기까지 오는 것은 잠금이 새는 경우뿐이다.
+       */
+      if (!row?.registered) return "";
+
+      return runRowMutation(
+        type,
+        () => clearNotificationTypeApps(type),
+        toNotificationTypeClearErrorMessage,
+      );
+    },
+    [runRowMutation],
+  );
+
   return {
     rows,
     status,
@@ -236,5 +300,6 @@ export function useNotificationTypeRoutes(): NotificationTypeRoutesAdmin {
     toggleApp,
     reset,
     save,
+    clear,
   };
 }
