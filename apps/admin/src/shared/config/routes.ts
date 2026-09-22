@@ -36,6 +36,18 @@ export const ROUTES = {
    * 알림에서 오리진을 못 찾을 때 여는 곳도 이 주소다(`@ssccops/pwa`가 `/notifications`로 고정).
    */
   notifications: "/notifications",
+  /*
+   * 알림 유형 (ssccops#465 · ADR-0047 · 서버 #535) — 유형마다 그 알림이 보일 앱을 정한다.
+   *
+   * **주소가 `/notifications/types`가 아니라 `/settings/…`인 것은 다루는 것이 다르기 때문이다.**
+   * `/notifications`는 «나에게 온 알림»이고(인증만 있으면 누구나), 이 화면은 시스템 전체의 수신
+   * 정책이다(SUPER). 알림 주소 아래에 두면 «내 알림»을 보러 온 사람의 주소 한 칸 옆에 운영진도
+   * 못 여는 화면이 서고, 목차에서도 두 줄이 같은 묶음으로 읽힌다.
+   *
+   * `/settings` 아래의 첫 화면이다. «설정» 묶음의 다른 항목들은 각자의 도메인 주소를 그대로
+   * 들고 옮겨 왔으므로(#635 — 북마크를 지키려고) 이 접두사에 나머지를 모으지 않는다.
+   */
+  notificationTypes: "/settings/notification-types",
 
   members: "/members",
   memberNew: "/members/new",
