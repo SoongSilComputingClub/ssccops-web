@@ -17,6 +17,11 @@ const NEEDS_ACTION = "CHANGES_REQUESTED";
  * 일어나지 않은 응답일수록 오래된 것으로 취급되기 때문이다. 나머지 순서는 서버 것 그대로다
  * (안정 정렬).
  */
+/** 수정 요청을 받아 다시 내야 하는 응답인가 (#626 · ssccops#457) */
+export function needsAction(response: MyFormResponseOverview): boolean {
+  return response.rspnsSttsCd === NEEDS_ACTION;
+}
+
 export function needsActionFirst(responses: readonly MyFormResponseOverview[]) {
   return [...responses].sort((a, b) => {
     const aFirst = a.rspnsSttsCd === NEEDS_ACTION ? 0 : 1;

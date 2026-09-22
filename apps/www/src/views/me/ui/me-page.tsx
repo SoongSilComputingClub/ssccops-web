@@ -16,7 +16,7 @@ import { ROUTES } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui";
 import { resolveGate } from "../model/gate";
 import { lookupProposalForm, proposalFormIdOf } from "../model/proposal-form";
-import { HUB_PREVIEW_COUNT, needsActionFirst, splitProposals } from "../model/responses";
+import { HUB_PREVIEW_COUNT, needsAction, needsActionFirst, splitProposals } from "../model/responses";
 import { loadReviewOpinions } from "../model/review-opinions";
 import { ApplicationCard } from "./application-card";
 import { FormResponseCard } from "./form-response-card";
@@ -35,6 +35,11 @@ import { ProposalCard } from "./proposal-card";
  *   ③ 낸 기획안     같은 목록 중 기획안 폼(`PROPOSAL`) 응답     → /me/proposals · 카드는 lms로
  *   ④ 이끄는 프로그램   `GET /v1/academic-programs?mine=leader`     → /me/programs · 카드는 lms로
  *   ⑤ 푸시 알림       `PushToggleCard`(클라이언트 · #616 · ssccops#453) — 이 기기의 설정, 발치에
+ *   ⓪ 다시 제출할 것  ②·③ 중 수정 요청(`CHANGES_REQUESTED`)을 받은 것 전부 — **맨 위**, 있을 때만
+ *                    (#626 · ssccops#457). 첫 판은 ②·③ 안에서 앞으로 당기기만 했는데 셋째 묶음이라
+ *                    첫 화면 아래였고, 카드의 주의 상자는 없는 팔레트 클래스(`amber-50`)라 밋밋한
+ *                    글자였다 — 운영진이 «재제출이 필요한지 안 보인다»고 했다. 위에 올린 건은 아래
+ *                    묶음의 미리보기에서 뺀다(두 번 보이지 않게). 건수는 묶음 제목에 그대로 남는다.
  * 팀원으로 참여한 활동(`mine=member`가 없다)과 출석 요약은 서버에 없어 이번에도 없다 —
  * ssccops#386에 «API 필요»로 남아 있다. 없는 데이터를 화면이 지어내지 않는다.
  *
@@ -77,15 +82,62 @@ async function HubBody() {
       ? splitProposals(responsesResult.value, proposalFormId)
       : null;
 
+  const pendingForms = split?.forms.filter(needsAction) ?? [];
+  const pendingProposals = split?.proposals.filter(needsAction) ?? [];
+
   return (
     <div className="flex flex-col gap-[24px]">
       <AccountLine session={gate.session} />
+      <NeedsActionBlock forms={pendingForms} proposals={pendingProposals} />
       <ApplicationsBlock result={applicationsResult} />
       <ResponsesBlock forms={split?.forms ?? null} />
       <ProposalsBlock proposals={split?.proposals ?? null} />
       <ProgramsBlock result={programsResult} />
       <PushSection />
     </div>
+  );
+}
+
+/* ── ⓪ 다시 제출할 것 (#626 · ssccops#457) ───────────────────────── */
+
+/*
+ * 수정 요청을 받은 응답은 «오늘 내가 할 것»의 첫째다 — 검토가 멈춰 있고 내가 움직여야 풀린다.
+ * 미리보기 상한(`HUB_PREVIEW_COUNT`)을 두지 않는다: 이 절에 오는 건은 한두 건이고, 잘라서 못 본
+ * 건이 곧 안 낸 건이 된다. 사유는 여기 건에 대해서만 부른다(아래 묶음은 이 건을 빼므로 중복 조회
+ * 없음). 하나도 없으면 절 자체가 없다 — 빈 «할 것 없음»은 자리만 차지한다.
+ */
+async function NeedsActionBlock({
+  forms,
+  proposals,
+}: Readonly<{ forms: MyFormResponseOverview[]; proposals: MyFormResponseOverview[] }>) {
+  const total = forms.length + proposals.length;
+  if (total === 0) return null;
+  const reviewOpinions = await loadReviewOpinions([...forms, ...proposals]);
+
+  return (
+    <section className="flex flex-col gap-[10px]">
+      <h2 className="text-[16px] font-semibold tracking-[-.2px]">
+        다시 제출할 것
+        <span className="ml-[6px] text-[14px] font-medium text-amber">{total}</span>
+      </h2>
+      <p className="text-[13.5px] text-n500">운영진이 수정을 요청한 응답입니다. 사유를 보고 고쳐서 다시 내주세요.</p>
+      <div className="flex flex-col gap-[12px]">
+        {forms.map((response) => (
+          <FormResponseCard
+            key={response.formRspnsId}
+            response={response}
+            reviewOpinion={reviewOpinions[response.formRspnsId] ?? null}
+          />
+        ))}
+        {proposals.map((response) => (
+          <ProposalCard
+            key={response.formRspnsId}
+            response={response}
+            reviewOpinion={reviewOpinions[response.formRspnsId] ?? null}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -205,7 +257,8 @@ async function ResponsesBlock({
     );
   }
 
-  const preview = needsActionFirst(forms).slice(0, HUB_PREVIEW_COUNT);
+  // 수정 요청 건은 ⓪이 이미 보였다 — 여기서는 나머지의 최근 몇 건
+  const preview = needsActionFirst(forms.filter((r) => !needsAction(r))).slice(0, HUB_PREVIEW_COUNT);
   const reviewOpinions = await loadReviewOpinions(preview);
 
   return (
@@ -246,7 +299,8 @@ async function ProposalsBlock({
     );
   }
 
-  const preview = needsActionFirst(proposals).slice(0, HUB_PREVIEW_COUNT);
+  // 수정 요청 건은 ⓪이 이미 보였다
+  const preview = needsActionFirst(proposals.filter((r) => !needsAction(r))).slice(0, HUB_PREVIEW_COUNT);
   const reviewOpinions = await loadReviewOpinions(preview);
 
   return (

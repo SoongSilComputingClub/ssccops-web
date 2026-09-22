@@ -92,16 +92,16 @@ export function FormResponseCard({
        * 조회에 실패해도 카드는 그대로 선다. 사유를 못 읽는 것과 수정요청을 받았다는 사실을
        * 모르는 것은 다른 일이라, 상태 배지만으로도 이 화면은 제 몫을 한다.
        */}
+      {/*
+       * 색은 토큰이다(#626) — `bg-amber-50`·`text-amber-900`은 이 앱이 팔레트를 비워 클래스가
+       * 생성되지 않아 상자가 밋밋한 글자였다(`review-timeline`과 같은 함정 · #575). 사유가 있든
+       * 없든 «다시 제출하기»는 늘 붙는다 — 사유만 보이면 무엇을 해야 하는지 모른다.
+       */}
       {changesRequested && (
-        <div className="rounded-xl bg-amber-50 px-[12px] py-[10px] text-[13.5px] leading-[1.6] text-amber-900">
-          {reviewOpinion ? (
-            <>
-              <span className="font-semibold">수정 요청</span>
-              <p className="mt-[2px] whitespace-pre-line">{reviewOpinion}</p>
-            </>
-          ) : (
-            <span>수정 요청을 받았습니다 — 눌러서 사유를 확인하고 다시 내주세요</span>
-          )}
+        <div className="rounded-xl bg-amber-soft px-[12px] py-[10px] text-[13.5px] leading-[1.6] text-amber">
+          <span className="font-semibold">수정 요청</span>
+          {reviewOpinion && <p className="mt-[2px] whitespace-pre-line">{reviewOpinion}</p>}
+          <p className="mt-[6px] font-semibold">다시 제출하기 →</p>
         </div>
       )}
     </Link>
