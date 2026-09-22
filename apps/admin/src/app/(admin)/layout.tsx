@@ -1,5 +1,6 @@
 import { AssistantLauncher } from "@/features/assistant";
 import { AuthGate } from "@/features/auth";
+import { UnreadCountSync } from "@/features/notification";
 import { MobileNav } from "./_shell/mobile-nav";
 import { Sidebar } from "./_shell/sidebar";
 
@@ -30,6 +31,8 @@ export default function AdminLayout({ children }: Readonly<LayoutProps<"/">>) {
               옮겨도 남는다.
             */}
             <AssistantLauncher />
+            {/* 종 배지 값 — 한 곳에서만 듣는다. AuthGate 안인 이유는 규정 도우미와 같다 (#604) */}
+            <UnreadCountSync />
           </AuthGate>
         </div>
       </div>

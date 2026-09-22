@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { SignInButton } from "@/features/auth";
+import { InstallBanner } from "@/features/pwa";
 import { loginErrorMessage } from "@/entities/session";
 import { currentAccessToken } from "@/shared/api/authed-client";
 import { Notice, SectionTabs } from "@/shared/ui";
@@ -61,6 +62,13 @@ export async function MeFrame({
       )}
 
       {token ? children : !loginError && <SignedOutNotice next={pathname} />}
+
+      {/*
+       * 발치의 «홈 화면에 추가» (#607 · ssccops#449) — 로그인한 사람은 «돌아올 사람»이라 방문 횟수와
+       * 무관하게 띄운다. 토큰은 이미 여기서 봤으므로 브라우저가 세션을 다시 읽지 않는다. 다섯 페이지
+       * 모두 이 틀이라 내 활동 어디서든 같은 자리다.
+       */}
+      <InstallBanner signedIn={token !== null} />
     </div>
   );
 }

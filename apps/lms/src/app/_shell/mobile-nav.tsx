@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { siteLinks } from "@/shared/config/site-links";
-import { ThemeToggle } from "@/shared/ui";
+import { InstallMenuItem } from "@ssccops/pwa/ui";
+import { AccountSections } from "@ssccops/ui";
+import { ACCOUNT_LINKS, SignInButton, accountApps, useAuthSession } from "@/features/auth";
 import { visibleNavGroups } from "./nav-links";
 
 /**
@@ -22,10 +23,18 @@ import { visibleNavGroups } from "./nav-links";
  * 는다 — 드로어를 여는 것 자체가 이미 한 단계다. 묶음 제목은 링크가 아니라 라벨이다(그 자리를
  * 누르면 어디로 가는지가 항목 목록과 겹쳐 모호하다).
  *
+ * ── ☰은 왼쪽, 드로어도 왼쪽에서 (#614 · ssccops#452) ─────────
+ * 세 앱의 모바일 상단 바가 `[☰] [브랜드] ──── [종] [아바타]` 한 모양이다(어드민이 원래 이 모양).
+ * 발치는 계정 절(`AccountSections` — 내 정보·테마·홈페이지·홈 화면에 추가·로그아웃)이고 상단 바의
+ * 계정 메뉴와 같은 항목을 받는다. 로그인 전이면 «로그인» 하나. «내 정보»·«홈페이지 ↗»·설치 항목·
+ * 테마 라디오가 발치에 따로 서 있던 것을 그 절이 흡수했다.
+ *
  * 열렸을 때 본문 스크롤을 잠그고, ESC·바깥 클릭·항목 이동으로 닫는 규약도 어드민과 같다.
  */
 export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { signedIn, signOut, signingOut } = useAuthSession();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -56,7 +65,7 @@ export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
         onClick={() => setOpen(true)}
         aria-label="메뉴 열기"
         aria-expanded={open}
-        className="flex size-9 flex-none cursor-pointer items-center justify-center rounded-[10px] border border-line text-[17px] text-n400 hover:border-accent hover:text-accent lg:hidden"
+        className="flex size-10 flex-none cursor-pointer items-center justify-center rounded-[10px] border border-line text-[17px] text-n400 hover:border-accent hover:text-accent lg:hidden"
       >
         ☰
       </button>
@@ -70,7 +79,7 @@ export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
           <div
             aria-hidden="true"
             onClick={() => setOpen(false)}
-            className="absolute inset-0 animate-fade-in bg-scrim"
+            className="absolute inset-0 animate-fade-in bg-scrim motion-reduce:animate-none"
           />
           <div
             ref={panelRef}
@@ -78,7 +87,7 @@ export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
             role="dialog"
             aria-modal="true"
             aria-label="메뉴"
-            className="absolute inset-y-0 right-0 flex w-[78%] max-w-[280px] flex-col border-l border-hairline-strong bg-surface pt-[22px] pb-4 outline-none"
+            className="absolute inset-y-0 left-0 flex w-[78%] max-w-[280px] flex-col border-r border-hairline-strong bg-surface pt-[22px] pb-4 outline-none"
           >
             <div className="mb-3 flex items-center justify-between border-b border-bg px-[18px] pb-4">
               <b className="text-[15px]">메뉴</b>
@@ -91,66 +100,68 @@ export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
                 ×
               </button>
             </div>
-            <nav
-              aria-label="주 메뉴"
-              className="flex flex-col gap-[14px] overflow-y-auto px-[10px]"
-            >
-              {visibleNavGroups(isLeader).map((group) => (
-                <div key={group.label} className="flex flex-col">
-                  {/*
-                    항목이 하나뿐인 묶음(학술 대시보드)은 제목을 그리지 않는다 — 같은 글자가
-                    바로 아래 링크로 한 번 더 나온다.
-                  */}
-                  {group.links.length > 1 && (
-                    <div className="px-[12px] pb-[4px] text-[12px] font-semibold text-n500">
-                      {group.label}
-                    </div>
-                  )}
-                  {group.links.map((link) => {
-                    const active = link.isActive(pathname);
-                    return (
-                      <Link
-                        key={link.label}
-                        href={link.href}
-                        // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다.
-                        // 경로 변화를 effect로 감시하지 않고 클릭에서 닫는 것은, 상태 변경을
-                        // 렌더 뒤 effect에 미루면 한 프레임 열린 채 그려지기 때문이다(react-hooks 규칙).
-                        onClick={() => setOpen(false)}
-                        aria-current={active ? "page" : undefined}
-                        className={
-                          active
-                            ? "rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
-                            : "rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
-                        }
-                      >
-                        {link.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              ))}
-            </nav>
+            <div className="flex flex-1 flex-col overflow-y-auto [overscroll-behavior:contain]">
+              <nav aria-label="주 메뉴" className="flex flex-col gap-[14px] px-[10px]">
+                {visibleNavGroups(isLeader).map((group) => (
+                  <div key={group.label} className="flex flex-col">
+                    {/*
+                      항목이 하나뿐인 묶음(학술 대시보드)은 제목을 그리지 않는다 — 같은 글자가
+                      바로 아래 링크로 한 번 더 나온다.
+                    */}
+                    {group.links.length > 1 && (
+                      <div className="px-[12px] pb-[4px] text-[12px] font-semibold text-n500">
+                        {group.label}
+                      </div>
+                    )}
+                    {group.links.map((link) => {
+                      const active = link.isActive(pathname);
+                      return (
+                        <Link
+                          key={link.label}
+                          href={link.href}
+                          // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다.
+                          // 경로 변화를 effect로 감시하지 않고 클릭에서 닫는 것은, 상태 변경을
+                          // 렌더 뒤 effect에 미루면 한 프레임 열린 채 그려지기 때문이다(react-hooks 규칙).
+                          onClick={() => setOpen(false)}
+                          aria-current={active ? "page" : undefined}
+                          className={
+                            active
+                              ? "rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
+                              : "rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
+                          }
+                        >
+                          {link.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ))}
+              </nav>
 
-            {/*
-             * 테마는 목차 아래 발치에 둔다 (#341 · 어드민 사이드바와 같은 자리). 상단 바의
-             * 아이콘 버튼과 **같은 상태를 본다** — `useTheme`이 구독이라 한쪽에서 바꾸면
-             * 다른 쪽 표시도 함께 맞는다(각자 state를 쥐면 갈린다).
-             *
-             * `mt-auto`로 아래에 붙이는 것은 목차가 짧은 일반 회원(항목 둘)의 드로어에서
-             * 메뉴 바로 밑에 떠 있지 않게 하려는 것이다.
-             */}
-            <div className="mt-auto px-[18px] pt-4">
-              {/* 홈페이지(www) — 드로어에서는 발치, 테마 위 (#577) */}
-              {siteLinks().map((site) => (
-                <a
-                  key={site.href}
-                  href={site.href}
-                  className="mb-3 block rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
-                >
-                  {site.label} <span className="text-[13px] text-n500">↗</span>
-                </a>
-              ))}
-              <ThemeToggle />
+              {/*
+               * 계정 절은 목차 아래 발치 — `mt-auto`로 아래에 붙이는 것은 목차가 짧은 일반 회원
+               * (항목 둘)의 드로어에서 메뉴 바로 밑에 떠 있지 않게 하려는 것이다. 판정 전(null)은
+               * 아무것도 그리지 않는다 — 판정은 하이드레이션 직후 끝난다.
+               */}
+              <div className="mt-auto px-[10px] pt-4">
+                {signedIn === true && (
+                  <AccountSections
+                    links={ACCOUNT_LINKS}
+                    apps={accountApps()}
+                    install={<InstallMenuItem />}
+                    onSignOut={() => void signOut()}
+                    signingOut={signingOut}
+                    onNavigate={(href) => router.push(href)}
+                    onSelect={() => setOpen(false)}
+                    pathname={pathname}
+                  />
+                )}
+                {signedIn === false && (
+                  <div className="px-[8px]">
+                    <SignInButton variant="ghost" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

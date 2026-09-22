@@ -79,8 +79,19 @@ export const ROUTES = {
    * `/proposals/new`와 같은 판단이다. 화면이 진입할 때 코드로 폼을 찾는다.
    */
   proposalNew: "/proposals/new",
+  /**
+   * 내 정보 (#606 · ADR-0045) — 로그인 계정과 이 기기의 «푸시 알림» 스위치. 상단 바 «내 정보»(lg)·
+   * 드로어 발치에서 들어온다. 목차(`nav-links.ts`)에는 없다 — 역할과 무관한 화면이라 묶음에 넣을
+   * 자리가 없고, «기획안 제출 현황»의 `isActive`가 `/my` 접두로 걸리지 않게 그쪽은 정확한 경로만 본다.
+   */
+  my: "/my",
   /** 기획안 제출 현황 — 회원이 자기가 낸 기획안의 상태를 본다 */
   myApplications: "/my/applications",
+  /**
+   * 내 알림 (#606 · ADR-0045) — 상단 바 종이 여는 목록. 서비스워커의 `notificationclick`이 다른 앱의
+   * 알림에서 오리진을 못 찾을 때 여는 곳도 이 주소다(`@ssccops/pwa`가 `/notifications`로 고정).
+   */
+  notifications: "/notifications",
   /**
    * 기획안 한 건의 상세 — 검토 이력·수정요청 사유와, 수정요청받은 건이면 재제출 폼 (#171).
    *
@@ -189,7 +200,11 @@ export function studioProgramFormUrl(academicProgramId: number): string {
 }
 
 /*
- * 어드민 오리진(`NEXT_PUBLIC_ADMIN_ORIGIN` · `signupUrl()`)은 #453에서 걷어냈다 — 미가입 안내가
- * 어드민 `/signup`으로 보내던 열두 자리가 이제 같은 자리에서 `SignupRequiredNotice`(www에서
- * 가져온 `SignupStep`)를 연다. 부원에게 나가는 화면이 운영 도메인을 가리키지 않는다.
+ * 어드민 오리진(`signupUrl()`)은 #453에서 걷어냈다 — 미가입 안내가 어드민 `/signup`으로 보내던 열두
+ * 자리가 이제 같은 자리에서 `SignupRequiredNotice`(www에서 가져온 `SignupStep`)를 연다. 부원에게
+ * 나가는 화면이 운영 도메인을 가리키지 않는다.
+ *
+ * `NEXT_PUBLIC_ADMIN_ORIGIN`은 #606(ADR-0045)에서 **다른 용도로** 돌아왔다 — 운영진이 lms에서 받은
+ * 어드민 알림(승인 요청 등)을 눌렀을 때 열 곳이다(`site-links.ts` `appOrigins()`). 화면 링크에는
+ * 여전히 쓰지 않는다.
  */

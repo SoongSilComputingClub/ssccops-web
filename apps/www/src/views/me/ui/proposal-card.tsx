@@ -69,16 +69,14 @@ export function ProposalCard({
       )}
 
       {/* 사유는 여기서 읽힌다 — 다시 내는 것은 lms의 일이라 안내가 그쪽을 가리킨다 */}
+      {/* 색은 토큰(#626 — `amber-50`은 생성되지 않는 클래스였다). 다시 내는 곳은 lms라 안내가 그쪽 */}
       {changesRequested && (
-        <div className="rounded-xl bg-amber-50 px-[12px] py-[10px] text-[13.5px] leading-[1.6] text-amber-900">
-          {reviewOpinion ? (
-            <>
-              <span className="font-semibold">수정 요청</span>
-              <p className="mt-[2px] whitespace-pre-line">{reviewOpinion}</p>
-            </>
-          ) : (
-            <span>수정 요청을 받았습니다 — LMS에서 사유를 확인하고 다시 내주세요</span>
-          )}
+        <div className="rounded-xl bg-amber-soft px-[12px] py-[10px] text-[13.5px] leading-[1.6] text-amber">
+          <span className="font-semibold">수정 요청</span>
+          {reviewOpinion && <p className="mt-[2px] whitespace-pre-line">{reviewOpinion}</p>}
+          <p className="mt-[6px] font-semibold">
+            {href ? "LMS에서 다시 제출하기 →" : "LMS에서 다시 제출해주세요"}
+          </p>
         </div>
       )}
 
@@ -89,12 +87,12 @@ export function ProposalCard({
   );
 
   const className =
-    "flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_#e5e8eb] lg:p-[18px]";
+    "flex flex-col gap-[8px] rounded-2xl bg-surface p-[16px] shadow-[0_0_0_1px_var(--color-line)] lg:p-[18px]";
 
   if (!href) return <div className={className}>{body}</div>;
 
   return (
-    <a href={href} className={`${className} transition-shadow hover:shadow-[0_0_0_1px_#1b64da]`}>
+    <a href={href} className={`${className} transition-shadow hover:shadow-[0_0_0_1px_var(--color-accent-strong)]`}>
       {body}
     </a>
   );

@@ -17,6 +17,12 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-08-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Smart Placement (#620 · ssccops#455) — 이 워커만 SSR에서 dev.api(한국 원서버)를 부르는데, 한국
+  // 사용자 요청이 무료 플랜 피어링 탓에 HKG 콜로에 떨어져 «HKG → 원서버» 국제 구간이 수십 초씩
+  // 막혔다(2026-09-22 실측 · /about 30회 중 13회 6초 초과). 사용자 근처가 아니라 자주 부르는 백엔드
+  // 근처에서 돌게 한다. 실험이다 — 효과가 없으면 이 블록을 지운다. admin·lms는 워커가 API를 안
+  // 부르므로 넣지 않는다.
+  "placement": { "mode": "smart" },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"

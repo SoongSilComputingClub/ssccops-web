@@ -31,6 +31,11 @@ export const ROUTES = {
   operationNew: "/operations/new",
   subWorkTypes: "/operations/types",
   approvals: "/approvals",
+  /**
+   * 내 알림 (#604 · ADR-0045) — 종 아이콘이 여는 목록. 서비스워커의 `notificationclick`이 다른 앱의
+   * 알림에서 오리진을 못 찾을 때 여는 곳도 이 주소다(`@ssccops/pwa`가 `/notifications`로 고정).
+   */
+  notifications: "/notifications",
 
   members: "/members",
   memberNew: "/members/new",

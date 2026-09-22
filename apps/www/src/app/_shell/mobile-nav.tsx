@@ -1,23 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ThemeToggle } from "@/shared/ui";
-import { NAV_LINKS, externalNavLinks } from "./nav-links";
+import { InstallMenuItem } from "@ssccops/pwa/ui";
+import { AccountSections } from "@ssccops/ui";
+import { ACCOUNT_LINKS, SignInButton, accountApps, useAuthSession } from "@/features/auth";
+import { NAV_LINKS } from "./nav-links";
 
 /**
  * 모바일 상단 바 드로어 (lg 미만, #167).
  *
- * 메뉴가 하나뿐인 지금은 드로어가 과해 보이지만, 이 앱은 소개·활동 같은 항목이 붙기로 돼 있다
- * (ssccops#150). 항목이 늘어나면 좁은 화면에서 상단 바가 넘치므로 처음부터 접히는 구조로 둔다 —
- * 어드민 드로어(`apps/admin/.../_shell/mobile-nav.tsx`)와 같은 뼈대이되 권한 게이트가 없어
- * 그만큼 단순하다.
+ * 항목이 늘어나면 좁은 화면에서 상단 바가 넘치므로 처음부터 접히는 구조로 둔다 — 어드민
+ * 드로어(`apps/admin/.../_shell/mobile-nav.tsx`)와 같은 뼈대이되 권한 게이트가 없어 그만큼 단순하다.
+ *
+ * ── ☰은 왼쪽, 드로어도 왼쪽에서 (#614 · ssccops#452) ─────────
+ * 세 앱의 모바일 상단 바가 `[☰] [브랜드] ──── [종] [아바타]` 한 모양이다. 발치는 계정 절
+ * (`AccountSections` — 내 활동·테마·학술 LMS·홈 화면에 추가·로그아웃)이고 상단 바의 계정 메뉴와
+ * 같은 항목을 받는다. 로그인 전이면 «로그인» 하나 — 테마는 푸터에 있어 드로어에 두지 않는다.
+ * «LMS ↗» 행·테마 라디오가 여기 따로 서 있던 것을 그 절이 흡수했다. 로그인 판정은 상단 바와 같은
+ * `useAuthSession`(브라우저 로컬 쿠키 — 홈이 세션을 보지 않는 규칙은 그대로다 · ssccops#385).
  *
  * 열렸을 때 본문 스크롤을 잠그고, ESC·바깥 클릭·항목 이동으로 닫는 규약도 어드민과 같다.
  */
 export function MobileNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { signedIn, signOut, signingOut } = useAuthSession();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +57,7 @@ export function MobileNav() {
         onClick={() => setOpen(true)}
         aria-label="메뉴 열기"
         aria-expanded={open}
-        className="flex size-9 flex-none cursor-pointer items-center justify-center rounded-[10px] border border-line text-[17px] text-n400 hover:border-accent hover:text-accent lg:hidden"
+        className="flex size-10 flex-none cursor-pointer items-center justify-center rounded-[10px] border border-line text-[17px] text-n400 hover:border-accent hover:text-accent lg:hidden"
       >
         ☰
       </button>
@@ -63,7 +72,7 @@ export function MobileNav() {
             aria-hidden="true"
             onClick={() => setOpen(false)}
             // 스크림·경계 색은 토큰이다(#575) — `bg-black/40`은 다크에서 그 자리만 밝게 남는다
-            className="absolute inset-0 animate-fade-in bg-scrim"
+            className="absolute inset-0 animate-fade-in bg-scrim motion-reduce:animate-none"
           />
           <div
             ref={panelRef}
@@ -71,7 +80,7 @@ export function MobileNav() {
             role="dialog"
             aria-modal="true"
             aria-label="메뉴"
-            className="absolute inset-y-0 right-0 flex w-[78%] max-w-[280px] flex-col border-l border-hairline-strong bg-surface pt-[22px] pb-4 outline-none"
+            className="absolute inset-y-0 left-0 flex w-[78%] max-w-[280px] flex-col border-r border-hairline-strong bg-surface pt-[22px] pb-4 outline-none"
           >
             <div className="mb-3 flex items-center justify-between border-b border-bg px-[18px] pb-4">
               <b className="text-[15px]">메뉴</b>
@@ -84,50 +93,54 @@ export function MobileNav() {
                 ×
               </button>
             </div>
-            <nav aria-label="주 메뉴" className="flex flex-col px-[10px]">
-              {NAV_LINKS.map((link) => {
-                const active = link.isActive(pathname);
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다.
-                    // 경로 변화를 effect로 감시하지 않고 클릭에서 닫는 것은, 상태 변경을
-                    // 렌더 뒤 effect에 미루면 한 프레임 열린 채 그려지기 때문이다(react-hooks 규칙).
-                    onClick={() => setOpen(false)}
-                    aria-current={active ? "page" : undefined}
-                    className={
-                      active
-                        ? "rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
-                        : "rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
-                    }
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
-              {/* 다른 앱 — 드로어를 닫을 필요가 없다, 페이지가 통째로 바뀐다 (#577) */}
-              {externalNavLinks().map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
-                >
-                  {link.label} <span className="text-[13px] text-n500">↗</span>
-                </a>
-              ))}
-            </nav>
+            <div className="flex flex-1 flex-col overflow-y-auto [overscroll-behavior:contain]">
+              <nav aria-label="주 메뉴" className="flex flex-col px-[10px]">
+                {NAV_LINKS.map((link) => {
+                  const active = link.isActive(pathname);
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다.
+                      // 경로 변화를 effect로 감시하지 않고 클릭에서 닫는 것은, 상태 변경을
+                      // 렌더 뒤 effect에 미루면 한 프레임 열린 채 그려지기 때문이다(react-hooks 규칙).
+                      onClick={() => setOpen(false)}
+                      aria-current={active ? "page" : undefined}
+                      className={
+                        active
+                          ? "rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
+                          : "rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
+                      }
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </nav>
 
-            {/*
-             * 테마는 목차 아래 발치에 둔다 (#575 · lms #341 · 어드민 사이드바와 같은 자리). 상단
-             * 바의 3버튼과 **같은 상태를 본다** — `useTheme`이 구독이라 한쪽에서 바꾸면 다른 쪽
-             * 표시도 함께 맞는다(각자 state를 쥐면 갈린다).
-             *
-             * `mt-auto`로 아래에 붙이는 것은 목차(일곱 항목)가 끝난 바로 밑에 떠 있지 않게
-             * 하려는 것이다.
-             */}
-            <div className="mt-auto px-[18px] pt-4">
-              <ThemeToggle />
+              {/*
+               * 계정 절은 목차 아래 발치 — `mt-auto`로 아래에 붙이는 것은 목차(일곱 항목)가 끝난
+               * 바로 밑에 떠 있지 않게 하려는 것이다. 판정 전(null)은 아무것도 그리지 않는다.
+               */}
+              <div className="mt-auto px-[10px] pt-4">
+                {signedIn === true && (
+                  <AccountSections
+                    links={ACCOUNT_LINKS}
+                    apps={accountApps()}
+                    install={<InstallMenuItem />}
+                    onSignOut={() => void signOut()}
+                    signingOut={signingOut}
+                    onNavigate={(href) => router.push(href)}
+                    onSelect={() => setOpen(false)}
+                    pathname={pathname}
+                  />
+                )}
+                {signedIn === false && (
+                  <div className="px-[8px]">
+                    <SignInButton variant="ghost" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -1,77 +1,45 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import { InstallMenuItem } from "@ssccops/pwa/ui";
+import { AccountMenu, UtilityCluster, type AccountMenuLink } from "@ssccops/ui";
+import { lmsOrigin } from "@/shared/config/lms-routes";
 import { ROUTES } from "@/shared/config/routes";
-import { createClient } from "@ssccops/auth/supabase/client";
+import { useAuthSession } from "../model/use-auth-session";
 import { SignInButton } from "./sign-in-button";
 
 /*
- * 상단 바의 로그인 상태 — 이 앱에서 두 번째 `"use client"`다.
+ * 상단 바 오른쪽 끝 — 로그인 상태 (#167 → #614 · ssccops#452).
  *
- * ── 왜 서버에서 그리지 않는가 ──────────────────────────────────────
- * 헤더는 루트 레이아웃에 있어 **모든 화면**에 함께 렌더된다. 여기서 쿠키를 읽어 로그인 여부를
- * 판정하면 익명 공개인 목록·상세에까지 Supabase 왕복이 하나씩 붙는다(그 트래픽이 이 앱의
- * 대부분이다). 브라우저에서 세션을 보는 것은 로컬 쿠키를 읽는 일이라 왕복이 없다.
+ * 판정은 `useAuthSession`(브라우저의 로컬 쿠키 — 왕복 없음, 홈은 세션을 보지 않는다 · ssccops#385)이고
+ * 첫 렌더에는 자리만 잡는다(그 훅 주석).
  *
- * ── 첫 렌더에 아무것도 그리지 않는 이유 ─────────────────────────────
- * 서버는 로그인 여부를 모르므로 어느 쪽을 그려도 하이드레이션 직후 뒤집힌다. '로그인'을 먼저
- * 그리면 이미 로그인한 사람에게 로그인 버튼이 한 번 번쩍이는데, 그건 로그아웃된 줄 알게 만든다.
- * 자리만 잡아 두고(높이 고정) 판정이 끝난 뒤 그린다.
+ * ── 로그인한 사람에게는 `[종] [계정 메뉴]` 둘뿐이다 ──────────────
+ * 종은 `signedInSlot`으로 받는다(#616 · ssccops#453) — `features/auth`가 같은 레이어의
+ * `features/notification`을 임포트하지 않기 위해서다(FSD · lms와 같은 자리). 조립은 `app/layout.tsx`.
+ * 이 가지에만 마운트되므로 «로그인했다고 판정된 뒤»이고, 로그아웃 상태에는 종이 없다(알림은 회원 것).
+ * 계정 메뉴는 «내 활동»(`/me` · #518 — 홈에 «내 것» 블록을 얹지 않으므로 진입은 이 한 자리) · 테마 ·
+ * «학술 LMS ↗» · «홈 화면에 추가» · 로그아웃이다. 로그아웃 상태는 «로그인» 하나뿐이고 테마는 푸터에 있다.
+ *
+ * 같은 항목을 드로어(`app/_shell/mobile-nav.tsx`)가 `AccountSections`로 인라인 그린다.
  */
-export function AuthNav() {
+export const ACCOUNT_LINKS: readonly AccountMenuLink[] = [{ label: "내 활동", href: ROUTES.me }];
+
+/** ④ 다른 앱 — LMS 하나. `NEXT_PUBLIC_LMS_ORIGIN`이 비면 항목이 없다(죽은 주소 금지 · `lms-routes.ts`) */
+export function accountApps(): AccountMenuLink[] {
+  const lms = lmsOrigin();
+  return lms ? [{ label: "학술 LMS", href: lms, external: true }] : [];
+}
+
+export function AuthNav({ signedInSlot }: Readonly<{ signedInSlot?: ReactNode }>) {
   const router = useRouter();
   const pathname = usePathname();
-  const [signedIn, setSignedIn] = useState<boolean | null>(null);
-  const [signingOut, setSigningOut] = useState(false);
-
-  useEffect(() => {
-    const supabase = createClient();
-    let alive = true;
-
-    void supabase.auth.getSession().then(({ data }) => {
-      if (alive) setSignedIn(data.session !== null);
-    });
-
-    /*
-     * 구독을 함께 거는 것은 로그인·로그아웃이 **다른 탭에서도** 일어나기 때문이다. 한 탭에서
-     * 로그아웃했는데 다른 탭 헤더에 '내 활동'이 남아 있으면 눌러 봐야 로그인 안내만 나온다.
-     */
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (alive) setSignedIn(session !== null);
-    });
-
-    return () => {
-      alive = false;
-      subscription.subscription.unsubscribe();
-    };
-  }, []);
-
-  const signOut = async () => {
-    setSigningOut(true);
-    const { error } = await createClient().auth.signOut();
-    if (error) {
-      // 쿠키가 남았는데 화면만 로그아웃된 상태로 두지 않는다 — 상태를 건드리지 않고 되돌린다
-      setSigningOut(false);
-      return;
-    }
-    setSignedIn(false);
-    setSigningOut(false);
-    /*
-     * '내 활동'(`/me`와 그 내부 페이지 `/me/*` · #574)에 서 있었다면 홈으로 비켜 준다 — 그 화면은
-     * 서버 컴포넌트라 토큰이 없어진 지금 새로 그리면 로그인 안내가 될 뿐이다. 다른 화면(목록·상세)은
-     * 로그인과 무관하므로 보고 있던 자리를 뺏지 않고, 헤더만 바뀌도록 서버 렌더만 새로 받는다.
-     */
-    if (pathname === ROUTES.me || pathname.startsWith(`${ROUTES.me}/`)) {
-      router.replace(ROUTES.home);
-    }
-    router.refresh();
-  };
+  const { signedIn, user, signOut, signingOut } = useAuthSession();
 
   if (signedIn === null) {
     // 판정 전 — 높이만 잡아 두어 로그인 버튼이 나타날 때 헤더가 흔들리지 않게 한다
-    return <div className="h-[30px]" aria-hidden />;
+    return <div className="h-10" aria-hidden />;
   }
 
   if (!signedIn) {
@@ -83,26 +51,19 @@ export function AuthNav() {
   }
 
   return (
-    <div className="flex items-center gap-[4px]">
-      {/*
-        '내 활동'(`/me` · #518) — 로그인한 사람에게만 보인다. 홈은 세션과 무관하게 남기고
-        (ssccops#386 — 홈에 «내 것» 블록을 얹지 않는다) 진입은 이 헤더 한 자리다. 세션 판정이
-        이 컴포넌트 안에서 끝나므로 서버 컴포넌트(홈·목록)에는 아무것도 얹지 않는다.
-      */}
-      <Link
-        href={ROUTES.me}
-        className="rounded-lg px-[10px] py-[6px] text-[14.5px] text-n300 hover:text-ink"
-      >
-        내 활동
-      </Link>
-      <button
-        type="button"
-        onClick={signOut}
-        disabled={signingOut}
-        className="rounded-lg px-[10px] py-[6px] text-[14.5px] text-n500 hover:text-ink disabled:opacity-50"
-      >
-        로그아웃
-      </button>
-    </div>
+    <UtilityCluster bell={signedInSlot}>
+      <AccountMenu
+        name={user?.name ?? user?.email ?? "회원"}
+        label={user?.email ?? undefined}
+        links={ACCOUNT_LINKS}
+        apps={accountApps()}
+        install={<InstallMenuItem />}
+        onSignOut={() => void signOut()}
+        signingOut={signingOut}
+        onNavigate={(href) => router.push(href)}
+        pathname={pathname}
+        trigger="avatar-name"
+      />
+    </UtilityCluster>
   );
 }

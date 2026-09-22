@@ -149,7 +149,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         href: ROUTES.myApplications,
         label: "기획안 제출 현황",
         role: "MEMBER",
-        isActive: starts("/my"),
+        // `/my`(내 정보 · #606)는 이 항목이 아니다 — 접두가 아니라 제출 현황 경로만 본다
+        isActive: starts(ROUTES.myApplications),
       },
     ],
   },

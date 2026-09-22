@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { deployMarks } from "@ssccops/ui";
 import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { ToastViewport } from "@/shared/ui";
+import { ON_VERCEL } from "@/shared/lib/vercel";
+import { OfflineBanner, ServiceWorkerRegister } from "@/features/pwa";
 import "./globals.css";
 
 /*
@@ -16,6 +19,8 @@ export const metadata: Metadata = {
   // 문자열 하나라 접두를 바로 붙인다 — www·lms는 `{ default, template }`이라 둘 다에 붙는다
   title: DEPLOY.title("SSCC 운영관리"),
   description: "SSCC 운영관리시스템",
+  // 검색 결과에 싣지 않는다 (#602 · ssccops#444) — robots.txt(`app/robots.ts`)가 «긁지 마라»의 짝
+  robots: { index: false, follow: false },
   /*
    * iOS Safari는 manifest를 보지 않는다 (#108) — 홈 화면에 추가했을 때 전체 화면으로 뜨게
    * 하려면 이 메타가 따로 있어야 한다. 상태 표시줄을 default로 둔 것은 상단 바가 흰색이라
@@ -88,8 +93,14 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
         />
       </head>
       <body className="antialiased">
+        {/* 연결이 없을 때 맨 위 한 줄 — 셸 밖(로그인·오프라인 안내)에서도 보인다 (#604) */}
+        <OfflineBanner />
         {children}
         <ToastViewport />
+        {/* 서비스워커 등록 — 개발 모드는 패키지가 건너뛴다 (#604 · ADR-0045 · 캐시 규칙은 packages/pwa/README.md) */}
+        <ServiceWorkerRegister />
+        {/* 방문 통계 — Vercel에서만, 쿠키 없음 (#600 · ssccops#443 · 가드는 shared/lib/vercel.ts). Speed Insights는 www만 */}
+        {ON_VERCEL && <Analytics />}
       </body>
     </html>
   );

@@ -10,12 +10,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENTS.md
 
-SSCC(숭실컴퓨팅클럽) 운영 시스템의 웹 — **pnpm workspace + Turborepo 모노레포**(앱 3 · 패키지 7).
+SSCC(숭실컴퓨팅클럽) 운영 시스템의 웹 — **pnpm workspace + Turborepo 모노레포**(앱 3 · 패키지 8).
 Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4. 백엔드는 별도 저장소
 **`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth), 배포는 **prod = Vercel
 Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아래 «배포 — 두 플랫폼» 절.
 
-## 영역 — 앱 3 · 패키지 7
+## 영역 — 앱 3 · 패키지 8
 
 영역 고유 규칙(화면·인증 방식·주요 결정·함정)은 **각 영역의 `AGENTS.md`가 정본**이다(ssccops#349 —
 서버가 도메인별로 한 것과 같다). 여기서는 가리키기만 하고 `@`로 끌어오지 않는다 — 끌어오면 분리한
@@ -33,6 +33,7 @@ Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아�
 | `packages/codes` | admin·lms가 함께 쓰는 서버 표준코드·표시명(계약) | [packages/codes/AGENTS.md](packages/codes/AGENTS.md) |
 | `packages/date` | 서버 일시 문자열 → 표기(잘라 쓴다 · `todayInSeoul`) | [packages/date/AGENTS.md](packages/date/AGENTS.md) |
 | `packages/content` | 콘텐츠 페이지 카탈로그 — www 라우트 슬러그 표와 어드민 페이지 목록이 같은 표(#534) | [packages/content/AGENTS.md](packages/content/AGENTS.md) |
+| `packages/pwa` | 서비스워커 소스(`buildServiceWorker`)·등록·푸시 구독·설치·오프라인 훅·알림 목록 UI(`@ssccops/pwa/ui`) — ADR-0045 · #604. Workbox·next-pwa 없음 | [packages/pwa/README.md](packages/pwa/README.md) |
 
 > 위의 `nextjs-agent-rules` 블록은 `next dev`가 스스로 써넣는다. 지우면 uncommitted 변경으로
 > 되살아나므로 **그대로 두고 그 바깥에** 쓴다. 개인 로컬 메모(포트·`.env.local`·증상별 원인
@@ -286,6 +287,7 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**. 서버 
   표시명은 서버 시드와 글자까지 계약이다(`packages/codes/AGENTS.md`).
 - **`.env*`는 통째로 ignore되고 `.env.example`만 예외다.** `NEXT_PUBLIC_*`은 빌드 타임에
   인라인되므로 **값을 바꾸면 `pnpm dev`를 재시작해야** 반영된다.
+- **측정은 Vercel에서만 실린다**(#600 · ssccops#443). `@vercel/analytics`(세 앱 · 쿠키 없는 방문 통계 · Hobby 월 5만 이벤트)와 `@vercel/speed-insights`(**www만** — 30일 1만 이벤트를 프로젝트들이 나누므로)는 루트 레이아웃(서버 컴포넌트)이 `ON_VERCEL`(`shared/lib/vercel.ts` = `process.env.VERCEL === "1"`)로 가른다 — dev(Cloudflare)에는 `/_vercel/insights` 경로가 없어 404 소음이고, `VERCEL`은 `NEXT_PUBLIC_`이 아니라 브라우저 번들엔 없으니 판정은 서버에서만 된다. 대시보드 «Enable»은 사람이 켠다(www·admin·lms Analytics, www Speed Insights). www `/privacy` «6. 쿠키»가 이 통계를 말한다. **Lighthouse는 `.github/workflows/lighthouse.yml`** — 매일 04:30 KST + 수동, dev www 6경로·lms 홈, `treosh/lighthouse-ci-action` 리포트만(게이트 아님 · 기준선은 ssccops#443).
 - **`NEXT_PUBLIC_DEPLOY_ENV`는 dev 워커의 Cloudflare 빌드 변수에만 `dev`다**(#413). 없으면
   prod — 잊으면 dev가 prod 아이콘·제목으로 보일 뿐 반대는 없다. 판정(`deployMarks`)은
   `@ssccops/ui`에 있지만 **`process.env.NEXT_PUBLIC_DEPLOY_ENV`는 각 앱 `layout.tsx`·`manifest.ts`가

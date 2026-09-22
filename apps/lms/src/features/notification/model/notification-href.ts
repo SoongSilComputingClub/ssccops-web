@@ -1,0 +1,21 @@
+import type { NotificationItem } from "@/entities/notification";
+import { appOrigins } from "@/shared/config/site-links";
+
+export type NotificationTarget =
+  | { kind: "internal"; href: string }
+  | { kind: "external"; href: string }
+  | { kind: "none" };
+
+/**
+ * 알림 행 → 갈 곳 (#606 · 어드민 #604와 같은 규칙). 서비스워커의 `notificationclick`과도 같다 — 자기 앱
+ * (LMS)이면 라우터 이동, ADMIN·WWW면 그 앱의 오리진(`site-links` `appOrigins()`)으로 전체 이동, 오리진이
+ * 없으면 머문다(행은 글자만 — 읽음 처리는 된다). 운영진이 lms에서 어드민 알림(승인 요청)을 받는 경우가
+ * 이 «외부 링크»다 — 알림은 회원 단위라 어느 앱에서 구독하든 같은 것이 온다(ssccops#448).
+ */
+export function notificationTarget(item: NotificationItem): NotificationTarget {
+  const path = item.linkPath || "";
+  if (item.app === "LMS") return path ? { kind: "internal", href: path } : { kind: "none" };
+  const origin = item.app === "ADMIN" || item.app === "WWW" ? appOrigins()[item.app] : undefined;
+  if (!origin) return { kind: "none" };
+  return { kind: "external", href: `${origin}${path}` };
+}

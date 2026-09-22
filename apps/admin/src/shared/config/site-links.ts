@@ -1,5 +1,5 @@
 /*
- * 다른 앱으로 가는 링크 — 사이드바·드로어 발치의 «사이트» 묶음 (#577 · ssccops#430).
+ * 다른 앱으로 가는 링크 — 계정 메뉴 절 ④ «다른 앱» (#577 · ssccops#430 → #614 · ssccops#452: 발치의 «사이트» 행에서 계정 메뉴 안으로).
  *
  * 세 앱은 서로의 주소를 **배포 설정값**으로만 안다 — www는 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`
  * (이름이 쓰임새보다 좁아진 빚은 `routes.ts`의 `publicFormUrl` 주석 그대로 — ADR-0017이 그
@@ -29,4 +29,19 @@ export function siteLinks(): SiteLink[] {
   if (www) links.push({ label: "홍보 사이트", href: www });
   if (lms) links.push({ label: "학술 LMS", href: lms });
   return links;
+}
+
+/**
+ * 앱 코드(서버 `app_cd`) → 오리진 — 서비스워커가 다른 앱의 알림을 눌렀을 때 열 곳 (#604 · ADR-0045).
+ *
+ * 위 `siteLinks()`와 같은 두 값이고 같은 규칙(비면 없다)이다 — 없으면 워커가 자기 `/notifications`로
+ * 연다. 키가 `PushApp`(`@ssccops/pwa`)과 같은 글자인 것은 페이로드의 `app`으로 바로 찾기 위해서다.
+ */
+export function appOrigins(): { LMS?: string; WWW?: string } {
+  const origins: { LMS?: string; WWW?: string } = {};
+  const www = wwwOrigin();
+  const lms = lmsOrigin();
+  if (www) origins.WWW = www;
+  if (lms) origins.LMS = lms;
+  return origins;
 }

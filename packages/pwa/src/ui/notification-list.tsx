@@ -1,0 +1,163 @@
+import { formatDt } from "@ssccops/date";
+import type { NotificationItem } from "../notification";
+
+/*
+ * 알림 목록 — admin `/notifications`·lms(#448)·www(ssccops#453)가 같은 것을 그린다 (ssccops#447).
+ *
+ * 데이터를 부르지 않는다. 커서 «더 보기»·읽음 처리·이동은 앱의 훅이 하고 이 컴포넌트는 행과 버튼만
+ * 그린다 — 두 앱의 `apiFetch`가 다르고(admin은 401·403 리다이렉트까지 끝낸다) 이동 규칙도 앱마다
+ * 다르기 때문이다(`@ssccops/form-renderer`가 전송 계층을 모르는 것과 같은 자리).
+ *
+ * 행은 `<button>`이다 — 안에 다른 버튼·링크가 없어 role 방식이 필요 없다. 안 읽은 행은 왼쪽 점과
+ * 굵은 제목으로 가르고 색만으로 가르지 않는다.
+ *
+ * 색은 토큰 이름으로만 적는다(`bg-surface`·`text-n500`) — 앱의 `globals.css`가 `@source`로 이
+ * 패키지를 가리켜야 클래스가 생성된다(루트 AGENTS.md «함정»).
+ */
+
+/** 알림 유형 → 짧은 라벨. 서버 `title`이 이미 문장이라 행의 작은 캡션에만 쓴다 */
+export const NOTIFICATION_TYPE_LABEL: Record<string, string> = {
+  APPROVAL_REQUESTED: "승인 요청",
+  APPROVAL_APPROVED: "승인",
+  APPROVAL_REJECTED: "반려",
+  DEADLINE_DUE: "마감 임박",
+  DEADLINE_OVERDUE: "마감 지남",
+  // 회원 사건 (ssccops#453) — 낸 응답의 검토 결과 · 행사 참가 상태
+  RESPONSE_ACCEPTED: "응답 승인",
+  RESPONSE_REJECTED: "응답 반려",
+  RESPONSE_CHANGES_REQUESTED: "수정 요청",
+  APPLICATION_CONFIRMED: "참가 확정",
+  APPLICATION_WAITLISTED: "대기",
+  APPLICATION_CANCELLED: "참가 취소",
+  // «내 정보»의 테스트 알림 (ssccops#454)
+  TEST: "테스트",
+};
+
+export type NotificationListStatus = "loading" | "ready" | "error";
+
+export function NotificationList({
+  items,
+  status,
+  errorMessage,
+  hasNext,
+  loadingMore,
+  onLoadMore,
+  onOpen,
+  onReadAll,
+  readingAll,
+}: Readonly<{
+  items: NotificationItem[];
+  status: NotificationListStatus;
+  /** `status === "error"`일 때 한 줄 */
+  errorMessage?: string;
+  hasNext: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
+  /** 행을 눌렀다 — 앱이 읽음 처리와 이동을 한다 */
+  onOpen: (item: NotificationItem) => void;
+  onReadAll: () => void;
+  readingAll: boolean;
+}>) {
+  const unread = items.filter((item) => item.readAt === null).length;
+
+  if (status === "loading") {
+    return <div className="py-[52px] text-center text-[15px] text-n500">불러오는 중…</div>;
+  }
+  if (status === "error") {
+    return (
+      <div className="py-[52px] text-center text-[15px] text-danger">
+        {errorMessage ?? "알림을 불러오지 못했습니다 — 새로고침해주세요"}
+      </div>
+    );
+  }
+  if (items.length === 0) {
+    return <div className="py-[52px] text-center text-[15px] text-n500">아직 알림이 없습니다.</div>;
+  }
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center">
+        <div className="text-[13.5px] text-n500">
+          {unread > 0 ? `안 읽음 ${unread}건` : "모두 읽었습니다"}
+        </div>
+        <div className="flex-1" />
+        <button
+          type="button"
+          onClick={onReadAll}
+          disabled={readingAll || unread === 0}
+          className="-mx-1 -my-1 inline-flex min-h-6 cursor-pointer items-center rounded-[6px] px-1 py-1 text-[14px] text-accent hover:text-accent-strong disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          모두 읽음
+        </button>
+      </div>
+
+      <ul className="divide-y divide-hairline rounded-2xl bg-surface shadow-[0_0_0_1px_var(--color-line)]">
+        {items.map((item) => {
+          const isUnread = item.readAt === null;
+          return (
+            <li key={item.notificationId}>
+              <button
+                type="button"
+                onClick={() => onOpen(item)}
+                className="flex w-full cursor-pointer items-start gap-3 px-[18px] py-[14px] text-left hover:bg-accent/6"
+              >
+                <span
+                  aria-hidden="true"
+                  className={
+                    isUnread
+                      ? "mt-[7px] size-2 flex-none rounded-full bg-accent"
+                      : "mt-[7px] size-2 flex-none rounded-full bg-transparent"
+                  }
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline gap-2">
+                    <span
+                      className={
+                        isUnread
+                          ? "min-w-0 flex-1 truncate text-[15.5px] font-semibold text-ink"
+                          : "min-w-0 flex-1 truncate text-[15.5px] text-n300"
+                      }
+                    >
+                      {item.title}
+                    </span>
+                    <span className="flex-none text-[12.5px] text-n500">
+                      {formatDt(item.createdAt)}
+                    </span>
+                  </span>
+                  {item.body && (
+                    <span
+                      className={
+                        isUnread
+                          ? "mt-[2px] block text-[14px] leading-[1.6] text-n300"
+                          : "mt-[2px] block text-[14px] leading-[1.6] text-n500"
+                      }
+                    >
+                      {item.body}
+                    </span>
+                  )}
+                  <span className="mt-1 block text-[12.5px] text-n500">
+                    {NOTIFICATION_TYPE_LABEL[item.type] ?? item.type}
+                    {isUnread ? " · 안 읽음" : ""}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      {hasNext && (
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="cursor-pointer rounded-[12px] border border-line-strong px-4 py-[9px] text-[15px] text-n300 hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {loadingMore ? "불러오는 중…" : "더 보기"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

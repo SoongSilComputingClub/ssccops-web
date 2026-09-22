@@ -1,13 +1,19 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import Link from "next/link";
 import { BrandMark, deployMarks } from "@ssccops/ui";
 import { AuthNav } from "@/features/auth";
+import { NotificationBell, UnreadCountSync } from "@/features/notification";
+import { OfflineBanner, ServiceWorkerRegister } from "@/features/pwa";
+import { OG_IMAGE_SIZE, ogImagePath } from "@/shared/config/og-cards";
 import { ROUTES } from "@/shared/config/routes";
+import { ORGANIZATION_NAME, siteOrigin } from "@/shared/config/site";
 import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
-import { ThemeToggle } from "@/shared/ui";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
 import { SiteFooter } from "./_shell/site-footer";
+import { ON_VERCEL } from "@/shared/lib/vercel";
 import "./globals.css";
 
 /*
@@ -18,6 +24,21 @@ import "./globals.css";
  */
 const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
 
+/*
+ * 이 사이트의 오리진 (#602 · ssccops#444) — `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`(어드민·lms가 www를
+ * 가리키는 바로 그 변수 · `shared/config/site.ts` 주석). 비면 절대 주소가 필요한 메타(아래
+ * `metadataBase`·canonical·og:image)를 전부 뺀다 — 요청 헤더로 지어내지 않는다.
+ */
+const ORIGIN = siteOrigin();
+
+/*
+ * 검색엔진 소유 확인 토큰 — 사람이 Search Console·네이버 서치어드바이저에 등록하며 받은 값을
+ * www Vercel(prod)의 env에 넣는다(#602 «사람이 할 것»). 비면 태그 자체가 없다(Next가 falsy를
+ * 건너뛴다). 네이버는 표준 키가 아니라 `other`로 `naver-site-verification`을 낸다.
+ */
+const GOOGLE_SITE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
+const NAVER_SITE_VERIFICATION = process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION;
+
 /**
  * 공개 웹사이트 루트 메타 (#167).
  *
@@ -25,11 +46,25 @@ const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
  * 제목이 행사가 아니라 동아리 이름이다. `title.template`은 그대로 둔다: 행사 상세가 제목만
  * 돌려줘도 탭·공유 카드에 서비스 이름이 함께 붙는 장치이고, **OG 제목에는 이 템플릿이 적용되지
  * 않으므로**(og:title은 별도 필드다) 상세 화면이 openGraph.title을 직접 적는 구조도 유지한다.
+ *
+ * ── SEO (#602 · ssccops#444) ────────────────────────────────
+ * `metadataBase`가 있어야 상대 경로로 적은 og:image·canonical이 절대 주소로 나간다(메신저·
+ * 검색엔진은 상대 주소를 받지 않는다). canonical은 `"./"` — Next가 요청 경로로 풀어 화면마다
+ * 자기 주소가 정본이 된다(`/events?clsf=X`·`/records?cursor=`처럼 쿼리가 붙은 주소도 쿼리 없는
+ * 쪽을 가리킨다). 화면이 `alternates`를 따로 적으면 그쪽이 이긴다. 기본 og:image는 `/og`
+ * (`app/og/route.tsx`)이고 대표 이미지·표지가 있는 행사·포스트, 자기 카드가 있는 폼은 자기
+ * `openGraph.images`로 덮는다. 색인 여부는 여기가 아니라 `robots.ts`가 가른다(dev는 전부 차단).
  */
 export const metadata: Metadata = {
+  ...(ORIGIN
+    ? {
+        metadataBase: new URL(ORIGIN),
+        alternates: { canonical: "./" },
+      }
+    : {}),
   // `[DEV] `는 default와 template 둘 다에 붙는다 — 화면 제목이 있는 페이지도 접두가 살아야 한다
   title: {
-    default: DEPLOY.title("SSCC 숭실컴퓨팅클럽"),
+    default: DEPLOY.title(ORGANIZATION_NAME),
     template: DEPLOY.title("%s · SSCC"),
   },
   description:
@@ -38,7 +73,20 @@ export const metadata: Metadata = {
     siteName: "SSCC",
     type: "website",
     locale: "ko_KR",
+    ...(ORIGIN ? { images: [{ url: ogImagePath("default"), ...OG_IMAGE_SIZE }] } : {}),
   },
+  // 트위터(X)·디스코드는 og:image 대신 이 카드 타입을 먼저 본다 — 이미지가 있을 때만 큰 카드
+  twitter: { card: ORIGIN ? "summary_large_image" : "summary" },
+  ...(GOOGLE_SITE_VERIFICATION || NAVER_SITE_VERIFICATION
+    ? {
+        verification: {
+          google: GOOGLE_SITE_VERIFICATION,
+          other: NAVER_SITE_VERIFICATION
+            ? { "naver-site-verification": NAVER_SITE_VERIFICATION }
+            : undefined,
+        },
+      }
+    : {}),
   /*
    * iOS Safari는 manifest를 보지 않는다 — 홈 화면에 추가했을 때 전체 화면으로 뜨게 하려면
    * 이 메타가 따로 있어야 한다(어드민 #108과 같은 이유). 상태 표시줄을 default로 둔 것은
@@ -107,38 +155,57 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
       </head>
       {/*
        * 푸터가 짧은 화면에서도 바닥에 붙도록 body를 세로 flex로 두고 main이 남는 높이를 차지한다
-       * (#520). 상단 바는 로고(왼쪽)와 메뉴·로그인 상태(오른쪽) 두 덩어리다 (#167). 메뉴 목차는
-       * `_shell/nav-links.ts` 한 벌(다섯 축)을 데스크톱 메뉴와 모바일 드로어가 함께 쓴다.
-       * 로그인 여부에 따라 갈리는 부분만 클라이언트 컴포넌트(AuthNav)로 두어, 익명 공개인
-       * 목록·상세 렌더에 세션 조회가 끼어들지 않게 한다(#150).
+       * (#520). 상단 바는 `[☰(lg 미만)] [브랜드] [1차 메뉴(lg)] ──── [종 자리] [계정 메뉴 | 로그인]`
+       * (#167 → #614 · ssccops#452). 메뉴 목차는 `_shell/nav-links.ts` 한 벌(일곱 항목)을 데스크톱
+       * 메뉴와 모바일 드로어가 함께 쓴다. 로그인 여부에 따라 갈리는 오른쪽 끝만 클라이언트
+       * 컴포넌트(AuthNav)로 두어, 익명 공개인 목록·상세 렌더에 세션 조회가 끼어들지 않게 한다(#150).
+       * 테마 라디오는 상단 바에 없다 — 로그인한 사람은 계정 메뉴 안에서, 누구나는 푸터에서 고른다.
+       * 종(#616 · ssccops#453)은 `AuthNav`의 로그인한 가지에만 꽂힌다 — 배지 값을 듣는 `UnreadCountSync`도
+       * 같은 슬롯이라 로그인 판정 뒤에만 `/v1/notifications/unread-count`가 나간다(홈 SSR은 그대로 익명).
        */}
       <body className="flex min-h-screen flex-col antialiased">
+        {/* 연결이 없을 때 맨 위 한 줄 (#607 · ADR-0045) */}
+        <OfflineBanner />
         <header className="border-b border-line bg-surface">
-          <div className="mx-auto flex max-w-[1000px] items-center justify-between gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
+          <div className="mx-auto flex max-w-[1000px] items-center gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
+            <MobileNav />
             <Link href={ROUTES.home} className="flex items-center gap-[8px]">
               <BrandMark src={DEPLOY.mark} size={26} />
               <b className="text-[15px]">SSCC</b>
             </Link>
-            <div className="flex items-center gap-[6px]">
-              <DesktopNav />
-              <AuthNav />
-              {/*
-               * 테마는 admin(사이드바 발치)·lms(상단 바)와 같은 3버튼으로 고른다 (#575 · lms #349).
-               * `fit`을 주는 것은 이 자리가 로고·메뉴·로그인과 한 줄을 나눠 쓰기 때문이다 —
-               * 기본값(`flex-1`)은 폭을 채우려 들어 드로어 발치에서만 맞다.
-               *
-               * `lg:` 이상에서만 보이는 것은 좁은 화면에서 드로어와 겹치기 때문이다 — 그쪽은
-               * 드로어 발치의 `ThemeToggle`이 맡고, 둘은 같은 상태를 본다.
-               */}
-              <ThemeToggle fit className="hidden lg:flex" />
-              <MobileNav />
-            </div>
+            <DesktopNav />
+            <div className="flex-1" />
+            <AuthNav
+              signedInSlot={
+                <>
+                  <UnreadCountSync />
+                  <NotificationBell />
+                </>
+              }
+            />
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1000px] flex-1 px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">
           {children}
         </main>
         <SiteFooter />
+        {/*
+         * 서비스워커 등록 + 방문 세기 — 개발 모드는 패키지가 건너뛴다 (#607 · ADR-0045 · 캐시 규칙은
+         * packages/pwa/README.md, 이 앱의 범위는 AGENTS.md «PWA»)
+         */}
+        <ServiceWorkerRegister />
+        {/*
+         * 측정 둘 — 방문 통계와 실사용자 Web Vitals (#600 · ssccops#443). Vercel에서만(가드는
+         * shared/lib/vercel.ts). Speed Insights는 세 앱이 한 할당(30일 1만)을 나누므로 **www에만**
+         * 싣는다 — 어드민·LMS는 회원 소수라 데이터가 적고 그 트래픽이 www 할당을 깎는다. 둘 다
+         * 쿠키 없이 돌고 개인을 식별하지 않는다(/privacy가 그것을 말한다).
+         */}
+        {ON_VERCEL && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
       </body>
     </html>
   );

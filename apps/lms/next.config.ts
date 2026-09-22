@@ -29,7 +29,8 @@ function resolveGitSha(): string {
  * 손대지 않아도 되게 하려는 것이다. `globals.css`의 `@source`도 같은 이유로 함께 걸어 둔다.
  *
  * `@ssccops/auth`(ssccops-web#329)도 같은 이유로 여기 있다 — 미들웨어와 라우트 핸들러가
- * 그 소스를 그대로 컴파일한다.
+ * 그 소스를 그대로 컴파일한다. `@ssccops/pwa`(#606 · ADR-0045)는 `app/sw.js/route.ts`가 서버에서
+ * 부르고 훅은 브라우저가 쓴다 — 양쪽 다 이 목록에 있어야 한다.
  */
 const nextConfig: NextConfig = {
   transpilePackages: [
@@ -37,6 +38,7 @@ const nextConfig: NextConfig = {
     "@ssccops/ui",
     "@ssccops/codes",
     "@ssccops/auth",
+    "@ssccops/pwa",
   ],
 
   /*

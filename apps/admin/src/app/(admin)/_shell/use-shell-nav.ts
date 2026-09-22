@@ -2,10 +2,19 @@
 
 import { useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { clearServiceWorkerCache } from "@ssccops/pwa";
+import type { AccountMenuLink } from "@ssccops/ui";
 import { representativeRole, useSessionStore } from "@/entities/session";
 import { ROUTES } from "@/shared/config/routes";
+import { siteLinks } from "@/shared/config/site-links";
 import { flash } from "@/shared/ui";
 import { NAV_GROUPS, visibleGroups } from "./nav";
+
+/**
+ * 계정 메뉴 절 ② — 이 앱의 «내 정보» (#614 · ssccops#452). 옛 `NAV_FOOT`의 «내 계정»이다.
+ * «내 활동»은 www의 화면이라 여기 없다.
+ */
+export const ACCOUNT_LINKS: readonly AccountMenuLink[] = [{ label: "내 정보", href: ROUTES.my }];
 
 /**
  * 데스크톱 사이드바와 모바일 드로어가 함께 쓰는 셸 상태 (#85).
@@ -39,20 +48,33 @@ export function useShellNav() {
   })();
 
   const navigate = (href: string) => {
-    if (href === ROUTES.login) {
-      void logout().then((ok) => {
-        if (!ok) {
-          // 쿠키가 남아 있어 실제로는 여전히 로그인 상태다 — 화면만 로그아웃된 척하지 않는다
-          flash("로그아웃에 실패했습니다. 잠시 후 다시 시도해주세요");
-          return;
-        }
-        // 서버 컴포넌트·미들웨어가 들고 있던 세션까지 확실히 버리려면 전체 이동이 필요하다
-        window.location.replace(ROUTES.login);
-      });
-      return;
-    }
     router.push(href);
   };
 
-  return { pathname, groups, navigate, meName, meLabel };
+  /*
+   * 로그아웃 — 계정 메뉴 절 ⑥ (#614). 옛 «로그아웃» 메뉴 행이 `navigate(ROUTES.login)`으로
+   * 하던 것을 따로 뗐다 — 이동이 아니라 동작이라 목차 항목의 모양이 맞지 않았다.
+   */
+  const signOut = () => {
+    void logout().then((ok) => {
+      if (!ok) {
+        // 쿠키가 남아 있어 실제로는 여전히 로그인 상태다 — 화면만 로그아웃된 척하지 않는다
+        flash("로그아웃에 실패했습니다. 잠시 후 다시 시도해주세요");
+        return;
+      }
+      // 서비스워커 캐시(마지막으로 본 목록·상세)를 비운 뒤 이동한다 — 남의 기기에 내 것이 남지 않게 (#604)
+      void clearServiceWorkerCache().finally(() => {
+        // 서버 컴포넌트·미들웨어가 들고 있던 세션까지 확실히 버리려면 전체 이동이 필요하다
+        window.location.replace(ROUTES.login);
+      });
+    });
+  };
+
+  /** 계정 메뉴 절 ④ — 다른 앱(홍보 사이트·학술 LMS). 오리진이 비면 항목이 없다 (`site-links.ts`) */
+  const apps = useMemo<AccountMenuLink[]>(
+    () => siteLinks().map((site) => ({ label: site.label, href: site.href, external: true })),
+    [],
+  );
+
+  return { pathname, groups, navigate, signOut, meName, meLabel, apps };
 }

@@ -107,7 +107,13 @@ function branchTargetOf(
   return null;
 }
 
-/** '다음'을 눌렀을 때 갈 페이지 — 분기 목적지가 없으면 바로 다음 페이지 */
+/**
+ * '다음'을 눌렀을 때 갈 페이지 — 분기 목적지가 없으면 바로 다음 페이지.
+ *
+ * **null을 돌려주지 않는다** — 마지막 페이지에서도 (clamp한) 마지막 페이지 번호다. «마지막인가»는
+ * `page >= pages.length - 1`로 본다. www 재제출 화면이 `=== null`로 보다가 제출 버튼이 영영 안
+ * 뜬 적이 있다(ssccops#456).
+ */
 export function nextPageSeq(
   composition: QitemCpstCn,
   page: number,

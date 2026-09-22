@@ -28,7 +28,8 @@ function resolveGitSha(): string {
  * 두었다 — 신청 흐름(EV-006)이 붙을 때 설정을 다시 손대지 않아도 되게 하려는 것이다.
  *
  * `@ssccops/auth`(ssccops-web#329)도 같은 이유로 여기 있다 — 미들웨어와 라우트 핸들러가
- * 그 소스를 그대로 컴파일한다.
+ * 그 소스를 그대로 컴파일한다. `@ssccops/pwa`(#607 · ADR-0045)는 `app/sw.js/route.ts`가 서버에서
+ * 부르고 훅은 브라우저가 쓴다 — 양쪽 다 이 목록에 있어야 한다.
  */
 /** 서버 `PublicCacheControl`과 같은 값 — 서버가 바꾸면 여기도 함께 바꾼다 */
 const PUBLIC_CACHE_CONTROL = "public, s-maxage=300, stale-while-revalidate=600";
@@ -40,6 +41,7 @@ const nextConfig: NextConfig = {
     "@ssccops/codes",
     "@ssccops/content",
     "@ssccops/auth",
+    "@ssccops/pwa",
   ],
 
   /*
@@ -106,6 +108,15 @@ const nextConfig: NextConfig = {
       {
         source:
           "/:section(about|operators|academic|join|contact|privacy|photo-notice|terms|records)/:path*",
+        headers: [{ key: "Cache-Control", value: PUBLIC_CACHE_CONTROL }],
+      },
+      /*
+       * sitemap(#602)도 같은 5분 — 요청마다 만드는 라우트(`app/sitemap.ts` `force-dynamic`)인데
+       * 재료가 전부 위와 같은 익명 API라 같은 값이 맞다. robots.txt는 빌드 때 굳는 정적 파일이라
+       * 여기 없다.
+       */
+      {
+        source: "/sitemap.xml",
         headers: [{ key: "Cache-Control", value: PUBLIC_CACHE_CONTROL }],
       },
     ];

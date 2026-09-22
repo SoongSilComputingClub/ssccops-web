@@ -97,6 +97,45 @@ async function readEnvelope<T>(response: Response): Promise<ApiResponse<T> | nul
 }
 
 /**
+ * 한 번의 fetch가 기다리는 상한 (#618 · ssccops#455).
+ *
+ * dev www는 Cloudflare Worker에서 SSR을 하고, 그 워커가 `dev.api`(원서버 직결)로 보내는 fetch가
+ * 간헐적으로 스톨했다 — 2026-09-22 실측으로 `/about`이 20번 중 3번 30초를 넘겼고 1~4분 뒤에야
+ * 200이 왔다. 워커·API·같은 시각의 다른 경로는 전부 멀쩡했으니 엣지→원서버 연결 하나가 죽은
+ * 것이고, `fetch`에 상한이 없으면 TCP가 포기할 때까지 화면이 통째로 기다린다. 6초는 정상
+ * 응답(0.1~0.5초)의 열 배가 넘고 두 번 기다려도 사람이 «죽었다»고 판단하는 선(≈15초) 아래다.
+ */
+const FETCH_TIMEOUT_MS = 6000;
+
+/**
+ * 타임아웃 + 안전한 요청만 1회 재시도.
+ *
+ * 재시도는 GET·HEAD(메서드 없음 포함)에만 한다 — POST는 서버에 닿았는지 모르는 채로 다시 보내면
+ * 두 번 만들 수 있다. 재시도는 **새 연결**을 타게 되는 것이 요점이라 지연을 두지 않는다.
+ * 호출자가 `signal`을 주면 그것을 그대로 쓰고(중단 의도가 있다) 타임아웃은 걸지 않는다.
+ */
+async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+  const method = (init.method ?? "GET").toUpperCase();
+  const retryable = method === "GET" || method === "HEAD";
+  const attempts = retryable ? 2 : 1;
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await fetch(url, {
+        ...init,
+        signal: init.signal ?? AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+    } catch {
+      if (attempt >= attempts) {
+        throw new ApiError(
+          API_ERROR.NETWORK_ERROR,
+          "서버 응답이 늦습니다 — 잠시 후 다시 시도해주세요",
+        );
+      }
+    }
+  }
+}
+
+/**
  * 봉투를 벗기고 `data`·`page`와 응답 상태를 함께 돌려준다 — 상태는 아래 공개 함수들만 쓴다.
  *
  * **캐시하지 않는다.** Next 16의 `fetch`는 기본이 no-store지만 여기서 명시해 둔다 — 게시 철회한
@@ -118,12 +157,7 @@ async function request<T>(
     );
   }
 
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, { cache: "no-store", ...init });
-  } catch {
-    throw new ApiError(API_ERROR.NETWORK_ERROR, "서버에 연결할 수 없습니다");
-  }
+  const response = await fetchWithRetry(`${API_BASE_URL}${path}`, { cache: "no-store", ...init });
 
   const envelope = await readEnvelope<T>(response);
 
