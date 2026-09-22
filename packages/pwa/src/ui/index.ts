@@ -1,7 +1,9 @@
 export {
+  NOTIFICATION_APP_LABEL,
   NOTIFICATION_TYPE_LABEL,
   NotificationList,
   type NotificationListStatus,
+  type NotificationScope,
 } from "./notification-list";
 export { InstallMenuItem } from "./install-menu-item";
 export {

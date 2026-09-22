@@ -3,6 +3,7 @@
 import type {
   NotificationItem,
   NotificationPage,
+  PushApp,
   PushTestRequest,
   PushTestResult,
 } from "@ssccops/pwa";
@@ -23,15 +24,25 @@ import { toQuery } from "@/shared/api/client";
  * 회원이 여기서 받는 알림은 낸 응답의 검토 결과(`RESPONSE_*` → `/me/responses`·`/me/proposals`)와 행사
  * 참가 상태(`APPLICATION_*` → `/me/applications`)다. 운영진 계정이면 어드민 사건(`app = ADMIN`)도 같은
  * 목록에 온다 — 알림은 회원 단위라 앱마다 갈라 두지 않는다(ssccops#448).
+ *
+ * `app`을 주면 **그 앱이 수신 앱인 알림만** 온다(server#535 · ADR-0047 — 기준표 `noti_type_rcpn`이
+ * 정하고, 등록된 행이 없는 유형은 그 알림 행 자신의 `app`을 따른다). 함께 오는 `unreadCount`도 같은
+ * 필터를 지난다. 주지 않으면 앱과 무관하게 전부다(«전체» 칩). 기준 코드에 없는 값은 400.
  */
+
+/** 이 앱 — 목록·배지의 기본 필터이자 `NotificationList`의 `currentApp` (#643) */
+export const CURRENT_APP: PushApp = "WWW";
+
 export const notificationApi = {
-  list: (params: { cursor?: string | null; size?: number } = {}) =>
+  list: (params: { cursor?: string | null; size?: number; app?: PushApp | null } = {}) =>
     apiFetchAuthedFromBrowser<NotificationPage>(
-      `/v1/notifications${toQuery({ cursor: params.cursor, size: params.size })}`,
+      `/v1/notifications${toQuery({ cursor: params.cursor, size: params.size, app: params.app })}`,
     ),
 
-  unreadCount: () =>
-    apiFetchAuthedFromBrowser<{ unreadCount: number }>("/v1/notifications/unread-count"),
+  unreadCount: (params: { app?: PushApp | null } = {}) =>
+    apiFetchAuthedFromBrowser<{ unreadCount: number }>(
+      `/v1/notifications/unread-count${toQuery({ app: params.app })}`,
+    ),
 
   read: (notificationId: number) =>
     apiFetchAuthedFromBrowser<{ notificationId: number; readAt: string }>(
