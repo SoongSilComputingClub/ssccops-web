@@ -15,6 +15,8 @@
  */
 export type ApplicationStatus =
   | "SUBMITTED"
+  /** 운영진이 수정을 요청했다 — 다시 내야 한다 (서버 #530 · ssccops#458) */
+  | "CHANGES_REQUESTED"
   | "ACCEPTED"
   | "REJECTED"
   | "CONFIRMED"

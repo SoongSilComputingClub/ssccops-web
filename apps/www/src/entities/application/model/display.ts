@@ -23,6 +23,11 @@ export const APPLICATION_STATUS_BADGE: Record<
     tone: "outline",
     note: "신청서가 접수되었습니다 — 결과가 정해지면 이 화면에 표시됩니다",
   },
+  CHANGES_REQUESTED: {
+    label: "수정요청",
+    tone: "amber",
+    note: "운영진이 수정을 요청했습니다 — 신청서를 고쳐 다시 내주세요",
+  },
   ACCEPTED: {
     label: "승인",
     tone: "outline-accent",
