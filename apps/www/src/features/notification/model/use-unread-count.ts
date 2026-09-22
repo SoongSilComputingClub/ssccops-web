@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { setUnreadCount } from "@ssccops/pwa";
-import { notificationApi } from "@/entities/notification";
+import { CURRENT_APP, notificationApi } from "@/entities/notification";
 
 /*
  * 안 읽은 알림 수를 듣는다 — 진입 때 한 번, 탭이 다시 보일 때마다 (#616 · admin #604·lms #606과 같다).
@@ -12,6 +12,9 @@ import { notificationApi } from "@/entities/notification";
  * 판정은 브라우저의 로컬 쿠키(`useAuthSession`)이고 이 요청은 판정 뒤에만, 브라우저에서만 나간다. SSR
  * HTML에는 배지가 없다(스토어의 서버 스냅샷이 null).
  *
+ * **배지는 언제나 «이 앱» 수다**(#643 · ADR-0047) — 조회에 `app`을 실어 기준표가 이 앱을 수신 앱으로
+ * 둔 알림만 센다. 목록의 «전체» 칩은 이 값을 건드리지 않는다.
+ *
  * **실패는 조용하다.** 서버가 아직 이 경로를 모르거나 연결이 없거나 미가입(403)이면 배지를 안 그릴 뿐
  * 아무 안내도 없다 — 알림 수는 화면의 주역이 아니다.
  */
@@ -20,7 +23,7 @@ export function useUnreadCountSync(): void {
     let cancelled = false;
     const refresh = () => {
       notificationApi
-        .unreadCount()
+        .unreadCount({ app: CURRENT_APP })
         .then((res) => {
           if (!cancelled) setUnreadCount(res.unreadCount);
         })

@@ -25,6 +25,9 @@ import { Notice } from "@/shared/ui";
  * 값을 그 자리에서 맞춰야 한다. 미로그인·미가입은 훅이 상태로 올리고 여기서 안내를 그린다 — 리다이렉트
  * 없음(이 앱의 규약). 가입은 `/me`의 자리(`InlineSignup` · #451)라 그리로 보낸다.
  *
+ * 목록 머리의 «이 앱 | 전체» 칩과 다른 앱 행의 꼬리표는 그 컴포넌트가 그린다(#643 · ADR-0047) — 이
+ * 화면은 훅의 `scope`·`changeScope`와 `currentApp`을 잇기만 한다.
+ *
  * «알림 설정» 절은 헤더 오른쪽 ⚙ «설정»으로 펼치고 접는다. 스위치가 꺼져 있으면(`off`·`denied`·
  * `unsupported`) **펼친 채로** 시작한다(ssccops#461 — 스위치가 `/me` 발치에만 있어 있는 줄 몰랐다). 규칙은
  * `useNotificationSettingsDisclosure`(localStorage 없음 — 상태가 규칙). 카드는 접혀 있어도 마운트돼
@@ -92,6 +95,9 @@ function Body({
       )}
       <NotificationList
         items={list.items}
+        currentApp={list.currentApp}
+        scope={list.scope}
+        onScopeChange={list.changeScope}
         status={list.status}
         errorMessage={list.errorMessage || undefined}
         hasNext={list.hasNext}

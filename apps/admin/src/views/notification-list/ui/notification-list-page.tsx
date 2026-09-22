@@ -21,6 +21,9 @@ import { PageBody, PageHeader } from "@/shared/ui";
  * `unsupported`) **펼친 채로** 시작한다 — 푸시 스위치가 `/my`에만 있어 알림 화면을 보는 사람이 설정이
  * 있는 줄 몰랐다(ssccops#461). 규칙은 `useNotificationSettingsDisclosure`(localStorage 없음 — 상태가 규칙).
  * 카드는 접혀 있어도 마운트돼 있다(`hidden`) — 상태 기계가 카드 안에 있어 접힌 채로도 상태를 알아야 한다.
+ *
+ * 목록 머리의 «이 앱 | 전체» 칩과 다른 앱 행의 꼬리표도 그 컴포넌트가 그린다(#643 · ADR-0047) — 이
+ * 화면은 훅의 `scope`·`changeScope`와 `currentApp`을 잇기만 한다.
  */
 export function NotificationListPage() {
   const list = useNotifications();
@@ -43,6 +46,9 @@ export function NotificationListPage() {
         </section>
         <NotificationList
           items={list.items}
+          currentApp={list.currentApp}
+          scope={list.scope}
+          onScopeChange={list.changeScope}
           status={list.status}
           errorMessage={list.errorMessage || undefined}
           hasNext={list.hasNext}
