@@ -2,7 +2,7 @@ import { formatDt } from "@ssccops/date";
 import type { NotificationItem } from "../notification";
 
 /*
- * 알림 목록 — admin `/notifications`와 lms(#448)가 같은 것을 그린다 (ssccops#447).
+ * 알림 목록 — admin `/notifications`·lms(#448)·www(ssccops#453)가 같은 것을 그린다 (ssccops#447).
  *
  * 데이터를 부르지 않는다. 커서 «더 보기»·읽음 처리·이동은 앱의 훅이 하고 이 컴포넌트는 행과 버튼만
  * 그린다 — 두 앱의 `apiFetch`가 다르고(admin은 401·403 리다이렉트까지 끝낸다) 이동 규칙도 앱마다
@@ -22,6 +22,15 @@ export const NOTIFICATION_TYPE_LABEL: Record<string, string> = {
   APPROVAL_REJECTED: "반려",
   DEADLINE_DUE: "마감 임박",
   DEADLINE_OVERDUE: "마감 지남",
+  // 회원 사건 (ssccops#453) — 낸 응답의 검토 결과 · 행사 참가 상태
+  RESPONSE_ACCEPTED: "응답 승인",
+  RESPONSE_REJECTED: "응답 반려",
+  RESPONSE_CHANGES_REQUESTED: "수정 요청",
+  APPLICATION_CONFIRMED: "참가 확정",
+  APPLICATION_WAITLISTED: "대기",
+  APPLICATION_CANCELLED: "참가 취소",
+  // «내 정보»의 테스트 알림 (ssccops#454)
+  TEST: "테스트",
 };
 
 export type NotificationListStatus = "loading" | "ready" | "error";

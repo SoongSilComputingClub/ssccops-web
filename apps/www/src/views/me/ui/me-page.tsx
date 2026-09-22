@@ -11,6 +11,7 @@ import {
 import type { MyFormResponseOverview } from "@/entities/form";
 import { fetchMyResponsesAcrossForms } from "@/entities/form/api/my-responses-across-forms";
 import { fetchAuthSession } from "@/entities/session";
+import { PushToggleCard } from "@/features/pwa";
 import { ROUTES } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui";
 import { resolveGate } from "../model/gate";
@@ -33,6 +34,7 @@ import { ProposalCard } from "./proposal-card";
  *   ② 낸 폼         `GET /v1/forms/responses/mine` 중 기획안 밖 → /me/responses
  *   ③ 낸 기획안     같은 목록 중 기획안 폼(`PROPOSAL`) 응답     → /me/proposals · 카드는 lms로
  *   ④ 이끄는 프로그램   `GET /v1/academic-programs?mine=leader`     → /me/programs · 카드는 lms로
+ *   ⑤ 푸시 알림       `PushToggleCard`(클라이언트 · #616 · ssccops#453) — 이 기기의 설정, 발치에
  * 팀원으로 참여한 활동(`mine=member`가 없다)과 출석 요약은 서버에 없어 이번에도 없다 —
  * ssccops#386에 «API 필요»로 남아 있다. 없는 데이터를 화면이 지어내지 않는다.
  *
@@ -82,7 +84,24 @@ async function HubBody() {
       <ResponsesBlock forms={split?.forms ?? null} />
       <ProposalsBlock proposals={split?.proposals ?? null} />
       <ProgramsBlock result={programsResult} />
+      <PushSection />
     </div>
+  );
+}
+
+/* ── ⑤ 푸시 알림 (#616 · ssccops#453) ─────────────────────────── */
+
+/*
+ * 이 앱에는 «내 정보» 화면이 따로 없다 — 회원 정보는 어드민 것이고 계정은 계정 메뉴가 보인다. 스위치는
+ * «이 기기의 설정»이라 어느 묶음의 부속도 아니어서 허브 발치에 절 하나로 둔다(admin·lms `/my`와 같은
+ * 카드). 로그인한 사람에게만 — 문(`resolveGate`) 안쪽이라 미가입은 여기 오지 않는다.
+ */
+function PushSection() {
+  return (
+    <section className="flex flex-col gap-[10px]">
+      <h2 className="text-[16px] font-semibold tracking-[-.2px]">알림 설정</h2>
+      <PushToggleCard />
+    </section>
   );
 }
 

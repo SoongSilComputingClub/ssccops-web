@@ -33,6 +33,8 @@ export type {
   NotificationPage,
   NotificationType,
   PushSubscriptionRequest,
+  PushTestRequest,
+  PushTestResult,
 } from "./notification";
 export {
   usePushSubscription,

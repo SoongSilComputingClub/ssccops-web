@@ -16,7 +16,8 @@ export async function middleware(request: NextRequest) {
 }
 
 /*
- * 매처는 **토큰이 실제로 필요한 경로만** 잡는다 — '내 활동'(`/me`)과 행사 신청, 공개 폼이다.
+ * 매처는 **토큰이 실제로 필요한 경로만** 잡는다 — '내 활동'(`/me`)과 알림(`/notifications` · #616), 행사
+ * 신청, 공개 폼이다.
  *
  * `/me`는 `/my-applications`에서 이사한 자리다(#518 · ssccops#386). 옛 주소는 `next.config.ts`의
  * redirect가 `/me`로 보내므로 매처에 남길 이유가 없다 — 리다이렉트 응답에 세션 왕복을 붙이는
@@ -38,6 +39,12 @@ export async function middleware(request: NextRequest) {
  * 화면이고 한 번에 오래 머무르므로, 갱신이 없으면 긴 폼일수록 마지막에 401을 만난다.
  * 완료 화면(`/f/{id}/done`)까지 잡지 않는 것은 그쪽이 아무것도 조회하지 않기 때문이다.
  *
+ * **알림(`/notifications` · #616 · ssccops#453)도 같은 이유다** — 브라우저에서 목록·읽음 처리·«더 보기»를
+ * 이어 가는 화면이라 세션이 갱신돼 있어야 한다. 하위 경로가 없어 정확히 그 주소 하나만. 종 배지의
+ * `unread-count` 요청은 모든 화면에서 나가지만 그것 때문에 매처를 넓히지 않는다 — 실패는 조용하고
+ * (`features/notification` `useUnreadCountSync`), 만료가 임박한 토큰은 supabase-js가 브라우저에서 스스로
+ * 갱신한다(`browser-client.ts`).
+ *
  * **크롤러를 가려낼 필요가 없다.** 어드민에서는 미들웨어가 미인증 요청을 `/login`으로 돌려보내
  * `generateMetadata`가 아예 돌지 않았고, 그래서 UA로 크롤러를 골라 통과시키는 장치가 있었다
  * (ssccops-web#269). 여기서는 `updateSession`이 리다이렉트를 하지 않으므로 우회할 대상 자체가
@@ -58,5 +65,5 @@ export async function middleware(request: NextRequest) {
  * 같은 포괄 패턴으로 바꾸는 것만으로도 착지 요청마다 Supabase 왕복이 붙는다.
  */
 export const config = {
-  matcher: ["/me/:path*", "/events/:eventId/apply", "/f/:formId"],
+  matcher: ["/me/:path*", "/notifications", "/events/:eventId/apply", "/f/:formId"],
 };

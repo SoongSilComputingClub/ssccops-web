@@ -2,7 +2,7 @@
 
 **이 파일이 정본이고 루트 `AGENTS.md`는 링크만 든다**(ssccops#349). «왜 그 모양인가»는 `src/index.ts`·`src/service-worker.ts` 머리 주석에도 있다.
 
-세 앱이 함께 쓰는 서비스워커·설치·푸시·오프라인(ADR-0045 · ssccops#447). 1차 PWA(#108)는 manifest·아이콘까지였고, 2차가 서비스워커와 표준 Web Push(VAPID)를 얹는다. 소스를 그대로 export 한다(빌드 단계 없음 — 앱 `next.config.ts`의 `transpilePackages`에 올린다).
+세 앱이 함께 쓰는 서비스워커·설치·푸시·오프라인(ADR-0045 · ssccops#447). 1차 PWA(#108)는 manifest·아이콘까지였고, 2차가 서비스워커와 표준 Web Push(VAPID)를 얹는다. admin #604 · lms #606 · www #616(ssccops#453 — 회원이 낸 응답의 결과·참가 상태를 받는다)이 차례로 붙었다. 소스를 그대로 export 한다(빌드 단계 없음 — 앱 `next.config.ts`의 `transpilePackages`에 올린다).
 
 | 내보내는 것 | 무엇 |
 |---|---|
@@ -12,10 +12,11 @@
 | `usePushSubscription({ app, getConfig, subscribe, unsubscribe })` | `state: unsupported · denied · off · on · pending` · `enable()` · `disable()` · `error` |
 | `useInstallPrompt()` | `canInstall` · `install()` · `isIos` · `isStandalone` |
 | `useOnline()` | `navigator.onLine` + `online`/`offline` 이벤트 |
-| `NotificationItem` · `NotificationPage` · `PushSubscriptionRequest` · `PushApp` | 서버 계약 타입(ssccops#446 표 그대로) |
+| `NotificationItem` · `NotificationPage` · `NotificationType` · `PushSubscriptionRequest` · `PushTestRequest`·`PushTestResult` · `PushApp` | 서버 계약 타입(ssccops#446 표 그대로). `NotificationType`은 5(운영진 · 승인·마감) + 6(회원 · ssccops#453 — `RESPONSE_ACCEPTED`·`RESPONSE_REJECTED`·`RESPONSE_CHANGES_REQUESTED`·`APPLICATION_CONFIRMED`·`APPLICATION_WAITLISTED`·`APPLICATION_CANCELLED`, `app = WWW`) + `TEST`(ssccops#454) |
 | `useUnreadCount()` · `setUnreadCount(n)` · `decrementUnreadCount()` | 종 배지 값 — 모듈 스토어(`useSyncExternalStore`, zustand 없음). 듣는 것은 앱 훅(#606) |
-| `pushStateDescription(state, { isIos, isStandalone })` | 푸시 스위치 아래 상태 문장 — 미지원·차단·꺼짐·켜짐·확인 중 + iOS 미설치 힌트(#606) |
-| `@ssccops/pwa/ui` → `NotificationList` · `NOTIFICATION_TYPE_LABEL` | 알림 목록(커서 «더 보기» · 읽음/안 읽음 · «모두 읽음») — admin·lms가 같은 것을 그린다. 데이터는 앱 훅이 넘긴다 |
+| `pushStateDescription(state, { isIos, isStandalone })` | 푸시 스위치 아래 상태 문장 — 미지원·차단·꺼짐·켜짐·확인 중 + iOS 미설치 힌트(#606). 세 앱이 같은 글자(#616에서 admin 표도 이것으로). 무엇이 오는지는 나열하지 않는다 — 운영진과 회원이 받는 종류가 달라 한 줄에 다 적으면 남의 것이 섞인다 |
+| `@ssccops/pwa/ui` → `NotificationList` · `NOTIFICATION_TYPE_LABEL` | 알림 목록(커서 «더 보기» · 읽음/안 읽음 · «모두 읽음») — admin·lms·www가 같은 것을 그린다. 데이터는 앱 훅이 넘긴다. 라벨 표는 12종 전부(#616) |
+| `@ssccops/pwa/ui` → `PushTestButton({ app, sendTest, enabled })` | «테스트 알림 보내기»(ssccops#454 · #616) — «내 정보»의 푸시 스위치 아래, `enabled`(스위치 켜짐)일 때만 그린다. 앱이 `sendTest`(`POST /v1/notifications/test {app}` → `{notificationId, pushed}`)를 넘기고 버튼이 문구를 가른다: 성공 «보냈습니다 — 기기 알림을 확인해주세요(n대)», `pushed === 0`이면 «푸시 알림을 껐다 켜주세요», 429(`status` 또는 `code === "TOO_MANY_REQUESTS"` — 1분 3회)면 «너무 자주 보냈습니다», 그 밖은 «보내지 못했습니다». 앱의 `ApiError`를 모르므로 `status`·`code` 필드만 duck-typing |
 | `@ssccops/pwa/ui` → `OfflineBanner` · `ServiceWorkerRegister` | 오프라인 띠(«오프라인 — 마지막으로 본 내용» · `useOnline`) · 등록 껍데기(루트 레이아웃에 한 번) — #606에서 올렸다 |
 | `@ssccops/pwa/ui` → `InstallMenuItem` | 계정 메뉴 절 ⑤ «홈 화면에 추가»(`useInstallPrompt` + `@ssccops/ui` `AccountMenuItem`/`AccountMenuNote`) — 설치 가능하면 항목, iOS는 안내 한 줄, 설치된 창은 없음. admin·lms의 `InstallItem` 사본을 #614(ssccops#452)에서 올렸고 www도 같은 것을 쓴다. 이 패키지가 `@ssccops/ui`에 기대는 유일한 자리 |
 
@@ -42,8 +43,8 @@
 
 1. `next.config.ts` `transpilePackages`에 `@ssccops/pwa`, `globals.css`에 `@source "../../../../packages/pwa/src"`(`NotificationList`의 토큰 클래스 — 루트 AGENTS.md «함정»).
 2. `app/sw.js/route.ts` — `buildServiceWorker(...)`를 `application/javascript`로. `app/offline/page.tsx` — 정적, 데이터 없음. **둘 다 미들웨어 매처에서 뺀다** — 로그인 전에 `/sw.js`가 `/login`으로 리다이렉트되면 등록 자체가 실패하고(워커 스크립트는 리다이렉트를 못 따라간다), install이 `/offline`을 담을 때 로그인 HTML을 담는다.
-3. 루트 레이아웃에 `@ssccops/pwa/ui`의 `ServiceWorkerRegister`(등록 한 번)와 `OfflineBanner`(띠). admin(#604)은 자기 `features/pwa`에 같은 두 컴포넌트를 사본으로 갖고 있다 — lms(#606)가 같은 것을 쓰게 되어 패키지로 올렸고, admin 사본(그리고 zustand `useUnreadStore`·`usePushToggle`의 `DESCRIPTION` 표)은 다음 admin 작업에서 패키지 것으로 바꾼다.
-4. `usePushSubscription`에 앱의 `apiFetch`로 만든 `pushApi`를 넘긴다. 로그아웃 성공 뒤 `clearServiceWorkerCache()`.
+3. 루트 레이아웃에 `@ssccops/pwa/ui`의 `ServiceWorkerRegister`(등록 한 번)와 `OfflineBanner`(띠). admin(#604)은 자기 `features/pwa`에 같은 두 컴포넌트를 사본으로 갖고 있다 — lms(#606)가 같은 것을 쓰게 되어 패키지로 올렸고, admin 사본(그리고 zustand `useUnreadStore`)은 다음 admin 작업에서 패키지 것으로 바꾼다(`usePushToggle`의 `DESCRIPTION` 표는 #616에서 `pushStateDescription`으로 바꿨다).
+4. `usePushSubscription`에 앱의 `apiFetch`로 만든 `pushApi`를 넘긴다. 로그아웃 성공 뒤 `clearServiceWorkerCache()`. «내 정보»의 스위치 카드 아래에 `PushTestButton`(앱의 `notificationApi.sendTest`) — admin `/my` · lms `/my` · www `/me`(#616).
 5. `DELETE /v1/push/subscriptions`가 404(모르는 endpoint)면 앱 쪽에서 성공으로 삼킨다 — 브라우저 구독은 풀어야 한다.
 
 ## 함정
