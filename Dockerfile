@@ -79,6 +79,11 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
 
+# 헬스체크용 curl (#655). alpine에는 `wget`만 있는데 **Coolify의 헬스체크는 `curl`로 돈다** —
+# 없으면 매 검사가 실패해 컨테이너가 unhealthy로 종료된다(2026-09-23 admin 배포에서 실측).
+# 약 4 MB이고, 아래 HEALTHCHECK도 같은 바이너리를 쓴다.
+RUN apk add --no-cache curl
+
 # 비루트로 돈다. standalone은 자기 파일만 읽으므로 쓰기 권한이 필요 없다.
 RUN addgroup -g 1001 -S nodejs && adduser -u 1001 -G nodejs -S nextjs
 
@@ -93,6 +98,10 @@ COPY --from=installer --chown=nextjs:nodejs /repo/apps/${APP}/public ./apps/${AP
 
 USER nextjs
 EXPOSE 3000
+
+# «이 컨테이너가 사는가»의 기준을 이미지 안에 둔다 — 배포 플랫폼이 자기 검사를 덮어써도(Coolify가
+# 그렇게 한다) 이미지만으로 돌려 볼 때 같은 판정이 나온다. `/version`은 세 앱이 모두 가진 라우트다.
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5   CMD curl -fsS "http://127.0.0.1:${PORT}/version" > /dev/null || exit 1
 
 # `CMD`의 exec 형식에는 ARG·ENV가 펼쳐지지 않아 셸을 거친다. `exec`을 붙여 노드가 PID 1이
 # 되게 한다 — 그러지 않으면 셸이 PID 1이 되어 SIGTERM이 노드에 닿지 않고 배포 교체가 10초
