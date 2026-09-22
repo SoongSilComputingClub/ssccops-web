@@ -31,7 +31,9 @@ const startsWith = (prefix: string) => (pathname: string) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
 export const NAV_LINKS: readonly NavLink[] = [
-  { href: ROUTES.about, label: "SSCC", isActive: startsWith(ROUTES.about) },
+  // «소개»(#633 · ssccops#460) — «SSCC»였는데 브랜드 «SSCC» 바로 옆이라 같은 글자가 둘이었다.
+  // 페이지 제목·탭 축 이름과 같은 «소개»로. 주소(`/about`)는 그대로
+  { href: ROUTES.about, label: "소개", isActive: startsWith(ROUTES.about) },
   { href: ROUTES.operators, label: "운영진", isActive: startsWith(ROUTES.operators) },
   // «기록»(#585 · ssccops#437) — 포스트 아카이브. «활동»이었는데 학술 프로그램(ADR-0043)과 이름이 부딪혔다. 주소도 #591에서 `/records`(ssccops#439)
   { href: ROUTES.records, label: "기록", isActive: startsWith(ROUTES.records) },
