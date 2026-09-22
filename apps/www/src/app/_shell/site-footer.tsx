@@ -3,9 +3,14 @@ import { CONTACT } from "@/shared/config/contact";
 import { ROUTES } from "@/shared/config/routes";
 import { ThemeToggle } from "@/shared/ui";
 import { externalNavLinks } from "./nav-links";
+import { siteMapColumns } from "./site-map";
 
 /**
- * 푸터 — 문의 블록 + 법적 페이지 + 테마 + 고지 (#520 · ssccops#382).
+ * 푸터 — 전체 메뉴 + 문의 블록 + 법적 페이지 + 테마 + 고지 (#520 · ssccops#382).
+ *
+ * **«전체 메뉴»**(#633 · ssccops#460)가 맨 위다 — 상단 바 축 일곱 개와 각 축의 탭·기록 분류·내 것.
+ * 재료는 `site-map.ts`가 상단 바·탭 설정에서 만든다(손으로 두 벌 적지 않는다). 세 앱 어디에도
+ * 전체를 한눈에 보는 자리가 없어서 두었고, 모든 화면이 이 푸터를 두르니 별도 `/sitemap`은 없다.
  *
  * 서버 컴포넌트다 — 세션도 경로도 보지 않는다(`ThemeToggle`은 클라이언트 컴포넌트지만 세션이 아니라
  * `localStorage`를 본다). **테마 라디오는 여기가 로그아웃 상태의 유일한 자리다** (#614 · ssccops#452)
@@ -24,6 +29,35 @@ export function SiteFooter() {
   return (
     <footer className="mt-[40px] border-t border-line bg-surface">
       <div className="mx-auto flex max-w-[1000px] flex-col gap-[22px] px-[20px] py-[28px] lg:px-[28px]">
+        <nav aria-label="전체 메뉴" className="grid grid-cols-2 gap-x-[16px] gap-y-[18px] sm:grid-cols-4 lg:grid-cols-8">
+          {siteMapColumns().map((column) => (
+            <div key={column.href} className="flex min-w-0 flex-col gap-[6px]">
+              <Link href={column.href} className="text-[14px] font-semibold hover:text-accent-strong">
+                {column.title}
+              </Link>
+              {column.rows.length > 0 && (
+                <ul className="flex flex-col gap-[4px] text-[13px] text-n300">
+                  {column.rows.map((row) =>
+                    row.external ? (
+                      <li key={row.href}>
+                        <a href={row.href} className="hover:text-ink">
+                          {row.label} ↗
+                        </a>
+                      </li>
+                    ) : (
+                      <li key={row.href}>
+                        <Link href={row.href} className="hover:text-ink">
+                          {row.label}
+                        </Link>
+                      </li>
+                    ),
+                  )}
+                </ul>
+              )}
+            </div>
+          ))}
+        </nav>
+
         <section id="contact" className="flex flex-col gap-[8px] scroll-mt-[20px]">
           <h2 className="text-[15px] font-semibold">문의</h2>
           <address className="flex flex-col gap-[4px] text-[14px] not-italic text-n300">
