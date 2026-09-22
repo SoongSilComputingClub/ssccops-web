@@ -6,6 +6,8 @@ import { InstallMenuItem } from "@ssccops/pwa/ui";
 import { NotificationBell } from "@/features/notification";
 import { AppVersion } from "./app-version";
 import { NavPanel } from "./nav-panel";
+import { SitemapLink } from "./sitemap-link";
+import { useNavAccordion } from "./use-nav-accordion";
 import { ACCOUNT_LINKS, useShellNav } from "./use-shell-nav";
 
 // 값은 이 파일에서 읽어 넘긴다 — 패키지 안에서 읽으면 NEXT_PUBLIC 인라인을 못 받는다(deploy-env.ts)
@@ -23,9 +25,13 @@ const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
  * 목차 + 같은 계정 절(`AccountSections` — ②~⑥ 인라인)이다. 드로어에 계정 절을 한 번 더 두는 것은
  * 드로어를 연 사람이 «로그아웃이 어디 있지»를 상단 바로 돌아가 찾지 않게 하려는 것이고, 두 자리가
  * 같은 항목 배열을 받아 갈리지 않는다.
+ *
+ * 목차는 사이드바와 같은 아코디언이다(#635 — `useNavAccordion` · 같은 localStorage 키). 드로어를 여는
+ * 순간 현재 묶음만 펼쳐져 있어 375px에서도 계정 절까지 한 화면에 든다.
  */
 export function MobileNav() {
   const { pathname, groups, navigate, signOut, meName, meLabel, apps } = useShellNav();
+  const accordion = useNavAccordion(groups, pathname);
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -120,7 +126,14 @@ export function MobileNav() {
 
             {/* 목차와 계정 절이 함께 스크롤된다 — 짧은 화면에서 로그아웃이 잘리지 않게 */}
             <div className="flex-1 overflow-y-auto [overscroll-behavior:contain]">
-              <NavPanel groups={groups} pathname={pathname} onNavigate={go} />
+              <NavPanel
+                groups={groups}
+                pathname={pathname}
+                onNavigate={go}
+                isOpen={accordion.isOpen}
+                onToggle={accordion.toggle}
+              />
+              <SitemapLink pathname={pathname} onNavigate={go} className="mt-1 border-t border-bg" />
               <AccountSections
                 links={ACCOUNT_LINKS}
                 apps={apps}

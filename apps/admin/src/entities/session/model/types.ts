@@ -150,6 +150,45 @@ export const CAPABILITY = {
 
 export type Capability = (typeof CAPABILITY)[keyof typeof CAPABILITY];
 
+/*
+ * 권한 코드의 화면 표시명 (#635 · ssccops#462) — 전체 메뉴(/sitemap)가 잠긴 항목 옆에 «필요한 권한»을
+ * 적을 때 쓴다.
+ *
+ * 이 사전은 **403 문구가 이미 쓰고 있던 글자**를 한 곳에 모은 것이다 — `features/*` 오류 문구가
+ * «업무 관리(WORK_MANAGE) 권한이 필요합니다»처럼 같은 이름을 각자 적고 있었다. 승인자 권한처럼
+ * 서버가 이름을 내려주는 자리(`authorizerAuthorityName`)에는 쓰지 않는다 — 그쪽은 서버 값이 정본이다.
+ * 표시는 {@link capabilityLabel}로 «이름(코드)» 한 모양이다.
+ */
+const CAPABILITY_NAME: Record<Capability, string> = {
+  WORK_MANAGE: "업무 관리",
+  WORK_READ: "업무 조회",
+  WORK_DELETE: "업무 삭제",
+  SUB_WORK_DELETE: "하위 업무 삭제",
+  MEETING_MANAGE: "회의 관리",
+  MEETING_READ: "회의 조회",
+  MEETING_AGENDA_WRITE: "회의 안건 작성",
+  MEETING_DELETE: "회의 삭제",
+  SUB_WORK_TYPE_READ: "하위 업무 유형 조회",
+  SUB_WORK_TYPE_MANAGE: "하위 업무 유형 관리",
+  FORM_READ: "폼 조회",
+  FORM_WRITE: "폼 작성·수정",
+  FORM_STATUS_CHANGE: "폼 상태 변경",
+  FORM_LABEL_MANAGE: "폼 라벨 관리",
+  RESPONSE_REVIEW: "응답 심사",
+  ROLE_MANAGE: "권한 관리",
+  MEMBER_MANAGE: "회원 관리",
+  EVENT_MANAGE: "행사 관리",
+  ACADEMIC_PROGRAM_MANAGE: "학술 프로그램 관리",
+  APPROVAL_VOTE: "찬반 투표",
+  RAG_DOCUMENT_MANAGE: "규정 문서 관리",
+  CONTENT_MANAGE: "콘텐츠 관리",
+};
+
+/** «업무 관리(WORK_MANAGE)» — 403 문구와 같은 모양 */
+export function capabilityLabel(capability: Capability): string {
+  return `${CAPABILITY_NAME[capability]}(${capability})`;
+}
+
 /** 회원이 현재 맡고 있는 조직 역할 한 건 */
 export interface MemberRole {
   roleId: number;
