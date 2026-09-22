@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BrandMark, deployMarks } from "@ssccops/ui";
+import { AccountMenu, AccountSections, BrandMark, deployMarks, UtilityCluster } from "@ssccops/ui";
+import { InstallMenuItem } from "@ssccops/pwa/ui";
 import { NotificationBell } from "@/features/notification";
+import { AppVersion } from "./app-version";
 import { NavPanel } from "./nav-panel";
-import { useShellNav } from "./use-shell-nav";
+import { ACCOUNT_LINKS, useShellNav } from "./use-shell-nav";
 
 // 값은 이 파일에서 읽어 넘긴다 — 패키지 안에서 읽으면 NEXT_PUBLIC 인라인을 못 받는다(deploy-env.ts)
 const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
@@ -15,9 +17,15 @@ const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
  * 데스크톱 사이드바를 그대로 좁히지 않고 드로어로 바꾼 것은, 230px 사이드바를 남기면
  * 375px 화면에서 본문에 145px밖에 남지 않기 때문이다. 메뉴 목차와 권한 판정은
  * useShellNav 한 곳에서 오므로 사이드바와 어긋나지 않는다.
+ *
+ * ── 상단 바 `[☰] [브랜드] ──── [종] [아바타]` (#614 · ssccops#452) ──
+ * 세 앱의 모바일 상단 바가 같은 모양이다. 아바타를 누르면 계정 메뉴(팝오버)가 뜨고, 드로어는
+ * 목차 + 같은 계정 절(`AccountSections` — ②~⑥ 인라인)이다. 드로어에 계정 절을 한 번 더 두는 것은
+ * 드로어를 연 사람이 «로그아웃이 어디 있지»를 상단 바로 돌아가 찾지 않게 하려는 것이고, 두 자리가
+ * 같은 항목 배열을 받아 갈리지 않는다.
  */
 export function MobileNav() {
-  const { pathname, groups, navigate, meName, meLabel } = useShellNav();
+  const { pathname, groups, navigate, signOut, meName, meLabel, apps } = useShellNav();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -55,14 +63,26 @@ export function MobileNav() {
           onClick={() => setOpen(true)}
           aria-label="메뉴 열기"
           aria-expanded={open}
-          className="flex size-9 flex-none cursor-pointer items-center justify-center rounded-[10px] border border-line text-[17px] text-n400 hover:border-accent hover:text-accent"
+          className="flex size-10 flex-none cursor-pointer items-center justify-center rounded-[10px] border border-line text-[17px] text-n400 hover:border-accent hover:text-accent"
         >
           ☰
         </button>
         <BrandMark src={DEPLOY.mark} size={28} />
         <div className="min-w-0 flex-1 truncate text-[16px]">SSCC 운영관리</div>
-        {/* 종 — 상단 바 오른쪽. 드로어가 아니라 여기인 것은 열지 않고도 배지가 보여야 해서다 (#604) */}
-        <NotificationBell />
+        {/* 종은 드로어가 아니라 여기다 — 열지 않고도 배지가 보여야 한다 (#604) */}
+        <UtilityCluster bell={<NotificationBell />}>
+          <AccountMenu
+            name={meName}
+            label={meLabel}
+            links={ACCOUNT_LINKS}
+            apps={apps}
+            install={<InstallMenuItem />}
+            onSignOut={signOut}
+            onNavigate={navigate}
+            pathname={pathname}
+            trigger="avatar"
+          />
+        </UtilityCluster>
       </div>
 
       {open && (
@@ -74,7 +94,7 @@ export function MobileNav() {
           <div
             aria-hidden="true"
             onClick={() => setOpen(false)}
-            className="absolute inset-0 animate-fade-in bg-scrim"
+            className="absolute inset-0 animate-fade-in bg-scrim motion-reduce:animate-none"
           />
           <div
             ref={panelRef}
@@ -98,13 +118,21 @@ export function MobileNav() {
               </button>
             </div>
 
-            <NavPanel
-              groups={groups}
-              pathname={pathname}
-              onNavigate={go}
-              meName={meName}
-              meLabel={meLabel}
-            />
+            {/* 목차와 계정 절이 함께 스크롤된다 — 짧은 화면에서 로그아웃이 잘리지 않게 */}
+            <div className="flex-1 overflow-y-auto [overscroll-behavior:contain]">
+              <NavPanel groups={groups} pathname={pathname} onNavigate={go} />
+              <AccountSections
+                links={ACCOUNT_LINKS}
+                apps={apps}
+                install={<InstallMenuItem />}
+                onSignOut={signOut}
+                onNavigate={navigate}
+                onSelect={() => setOpen(false)}
+                pathname={pathname}
+                className="mt-2 px-[10px]"
+              />
+              <AppVersion />
+            </div>
           </div>
         </div>
       )}

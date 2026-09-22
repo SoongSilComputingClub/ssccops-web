@@ -450,14 +450,11 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-export const NAV_FOOT: NavGroup = {
-  label: "계정",
-  mono: "계",
-  items: [
-    { label: "내 계정", href: ROUTES.my, isActive: starts("/my") },
-    { label: "로그아웃", href: ROUTES.login, isActive: () => false },
-  ],
-};
+/*
+ * «계정» 묶음(내 계정·로그아웃)은 여기 없다 (#614 · ssccops#452). 목차는 «이 앱의 화면»이고,
+ * 계정·테마·다른 앱·설치·로그아웃은 발치의 계정 메뉴(`@ssccops/ui` `AccountMenu`)가 든다 —
+ * `sidebar.tsx`·`mobile-nav.tsx`의 `ACCOUNT_LINKS`.
+ */
 
 /*
  * 권한이 없는 메뉴를 걷어낸다 (#29).

@@ -20,8 +20,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - 첫 화면 `/`(#228): 스터디장은 `redirect`로 `/studio`를 지나가고, 남은 사람에게는 «무엇을 하러 왔는지» 고르는 카드 둘(기획안 제출·내 신청). 뷰 안에 역할 조건문을 흩지 않는다.
 - 상단 바 목차는 `app/_shell/nav-links.ts` **한 벌**을 데스크톱·드로어가 함께 쓴다. 역할 필터는 `visibleNavLinks`(#224) — 근거는 `GET /v1/academic-programs?mine=leader`가 한 건이라도 주는가(`fetchIsAcademicLeader`, 루트 레이아웃이 서버에서 한 번). `leadrMbrId === 내 mbrId`를 웹에서 다시 계산하지 않는다 — 판정은 서버.
-- **상단 바 오른쪽(lg)·드로어 발치의 «홈페이지 ↗»는 `shared/config/site-links.ts`다**(#577 · ssccops#430) — www 오리진은 공유 링크가 이미 쓰는 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`이고 비면 항목이 없다. 목차(`nav-links.ts`)에 섞지 않는 것은 역할·`isActive`가 없는 외부 앱이라서다. 새 env 없음.
-- **«내 정보»(`/my` · `views/my-account`)와 «알림»(`/notifications` · `views/notification-list`)도 목차 밖이다**(#606) — 역할과 무관한 화면이라 묶음에 자리가 없다. 진입은 상단 바의 종(로그인한 사람에게만 · `AuthNav`의 `signedInSlot`)과 «내 정보»(lg는 `AuthNav`, 좁은 화면은 드로어 발치)다. «기획안 제출 현황»의 `isActive`는 `/my` 접두가 아니라 `/my/applications` 경로만 본다 — `/my`에서 그 탭이 켜지지 않게.
+- **계정 메뉴 절 ④ «홈페이지»는 `shared/config/site-links.ts`다**(#577 · ssccops#430 → #614) — www 오리진은 공유 링크가 이미 쓰는 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`이고 비면 항목이 없다. 목차(`nav-links.ts`)에 섞지 않는 것은 역할·`isActive`가 없는 외부 앱이라서다. `features/auth`의 `accountApps()`가 `AccountMenuLink`로 바꿔 넘긴다. 새 env 없음.
+- **«내 정보»(`/my` · `views/my-account`)와 «알림»(`/notifications` · `views/notification-list`)도 목차 밖이다**(#606) — 역할과 무관한 화면이라 묶음에 자리가 없다. 진입은 상단 바의 종(로그인한 사람에게만 · `AuthNav`의 `signedInSlot`)과 계정 메뉴 절 ② «내 정보»(`ACCOUNT_LINKS` · `features/auth`)다. «기획안 제출 현황»의 `isActive`는 `/my` 접두가 아니라 `/my/applications` 경로만 본다 — `/my`에서 그 탭이 켜지지 않게.
+- **셸의 유틸리티는 계정 메뉴 하나, 종만 밖에**(#614 · ssccops#452 규칙 표가 정본). 상단 바는 `[☰(lg 미만)][브랜드][1차 메뉴(lg)]──[종][계정 메뉴]`(`app/layout.tsx` — 오른쪽 끝은 `AuthNav`가 `UtilityCluster`로), 모바일 드로어는 왼쪽에서 열리고(☰이 왼쪽으로 갔다) 목차 + `AccountSections`(②~⑥ 인라인)이며 로그인 전이면 «로그인» 하나. 메뉴 절은 ① 구글 계정 이름·이메일(`useAuthSession` — 세션의 `user_metadata`, 서버 안 부름) ② «내 정보» ③ 테마 ④ «홈페이지» ⑤ 홈 화면에 추가(`@ssccops/pwa/ui` `InstallMenuItem`) ⑥ 로그아웃. 로그인 판정은 `features/auth` `useAuthSession` 한 벌을 `AuthNav`·`MobileNav`가 각자 부른다(로컬 쿠키 — 왕복 없음, `onAuthStateChange`로 둘이 같이 바뀐다). **테마 라디오·«홈페이지 ↗»·«내 정보»·«로그아웃»·설치 항목을 상단 바나 드로어 발치에 다시 세우지 않는다.** `shared/ui`의 `ThemeToggle` shim은 쓰는 곳이 없어 지웠다.
 - 경로는 `shared/config/routes.ts`의 `ROUTES`로만. 어드민의 `/academic-programs` 계열과 주소가 겹치지 않는다(소스를 공유하지 않는다).
 
 ## 규칙
@@ -46,11 +47,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - **서비스워커는 `app/sw.js/route.ts`가 문자열로 내준다** — `public/sw.js` 파일이 없다. `cacheVersion`은 `NEXT_PUBLIC_GIT_SHA`, `apiOrigin`은 `NEXT_PUBLIC_API_BASE_URL`의 오리진, `app: "LMS"`, `appOrigins`는 `site-links.ts`의 `appOrigins()` — **ADMIN은 이 앱의 새 env `NEXT_PUBLIC_ADMIN_ORIGIN`**(dev·prod 빌드 변수에 넣는다 · 비면 워커는 자기 `/notifications`로 연다), WWW는 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`. `NEXT_PUBLIC_ADMIN_ORIGIN`은 #453이 걷어낸 이름이 **알림 용도로만** 돌아온 것이다 — 화면 링크에는 여전히 쓰지 않는다.
 - **`/sw.js`·`/offline`은 미들웨어 매처에서 뺐다.** 이 앱은 리다이렉트하지 않아 등록이 막힐 일은 없지만 비밀이 없는 정적 응답에 Supabase 왕복을 붙이지 않는다. `/offline`은 루트 레이아웃 안에 그려진다(어드민은 셸 밖) — 이 앱의 셸은 세션 조회 실패를 `false`로 삼켜 오프라인에서도 선다. 등록은 루트 레이아웃의 `ServiceWorkerRegister`(`@ssccops/pwa/ui`), 띠는 `OfflineBanner`(같은 곳) — **개발 모드(`next dev`)에서는 등록되지 않는다.** 확인은 dev 배포에서 DevTools «Application › Service Workers».
-- **로그아웃이 캐시를 비운다** — `AuthNav.signOut`이 `signOut()` 성공 뒤 `clearServiceWorkerCache()`(`CLEAR_CACHE`)를 보내고 `router.refresh()`.
+- **로그아웃이 캐시를 비운다** — `useAuthSession().signOut`(#614 전에는 `AuthNav.signOut`)이 `signOut()` 성공 뒤 `clearServiceWorkerCache()`(`CLEAR_CACHE`)를 보내고 `router.refresh()`.
 - **푸시 스위치는 `/my`(«내 정보» — #606에서 새로 둔 화면 · 로그인 계정 + «푸시 알림» 카드)** — `features/pwa` `PushToggleCard`·`usePushToggle` → `@ssccops/pwa` `usePushSubscription`에 `entities/push` `pushApi`(`browser-client` · `app: "LMS"`) 꽂음. 상태 문구는 `@ssccops/pwa`의 `pushStateDescription` 한 벌(어드민과 같은 글자 — 알림은 회원 단위라 어느 앱에서 켜든 같은 것이 온다). `DELETE`는 `data` 없는 200이라 `apiFetchAuthedNullableFromBrowser`, 404는 성공으로 삼킨다. **기기마다 따로 켠다.**
 - **종은 `features/notification` `NotificationBell`** — 상단 바, 로그인한 사람에게만(`AuthNav`가 `signedInSlot`으로 받는다 — `features/auth`가 같은 레이어의 `features/notification`을 임포트하지 않으려고 조립은 `app/layout.tsx`). 배지 값은 `@ssccops/pwa`의 `useUnreadCount` 스토어(zustand 없음)이고 듣는 곳은 `UnreadCountSync` 하나(같은 slot — 진입·`visibilitychange`마다 `GET /v1/notifications/unread-count`, 실패는 조용).
 - **`/notifications`는 `@ssccops/pwa/ui`의 `NotificationList`를 그린다** — 어드민과 같은 컴포넌트라 목록 모양을 여기서 고치지 않는다. 훅 `useNotifications`는 어드민 것과 같은 모양이되 **이 앱의 규약대로** 401·403을 상태(`unauthenticated`·`signup-required`)로 올려 화면이 `LoginGate`·`SignupRequiredNotice`를 그리고, «모두 읽음» 실패는 토스트가 없어 목록 위 한 줄(`actionError`)이다. **클라이언트 화면이다**(이 앱의 다른 조회는 SSR 로더) — 읽음 처리·«더 보기»가 브라우저 상태이고 종 배지와 같은 값을 그 자리에서 맞춰야 한다. 이동 규칙(`notificationTarget`)은 워커와 같다 — `app`이 LMS면 라우터, ADMIN·WWW면 `appOrigins()`의 오리진으로 전체 이동, 없으면 머문다(글자만).
-- **드로어 발치의 «홈 화면에 추가»는 `features/pwa` `InstallItem`**(«홈페이지 ↗» 아래, 테마 위). `beforeinstallprompt`를 받은 브라우저에만 행, iPhone·iPad는 «홈 화면에 추가는 공유 버튼에서 합니다» 한 줄, 설치된 창에서는 없다. 데스크톱 상단 바에는 없다 — 설치는 모바일의 일이고 lg 상단 바는 이미 꽉 찼다.
+- **«홈 화면에 추가»는 계정 메뉴 절 ⑤ — `@ssccops/pwa/ui` `InstallMenuItem`**(#614 · ssccops#452 — 이 앱의 `features/pwa` `InstallItem` 사본은 지웠다). `beforeinstallprompt`를 받은 브라우저에만 항목, iPhone·iPad는 «홈 화면에 추가는 공유 버튼에서 합니다» 한 줄, 설치된 창에서는 없다. 데스크톱에서도 계정 메뉴 안에 있다 — 상단 바가 꽉 차서 못 두던 자리 문제가 메뉴로 사라졌다.
 - **lms 고유 사건(기획안 검토 결과·회차 승인 알림)은 없다**(ssccops#448 «1차 밖») — 지금 오는 알림은 어드민과 같은 셋(승인 요청·결과·마감)이고 운영진이 이 앱에서 구독했을 때의 이야기다. 서버 계약은 ssccops#446 표 그대로이고 어드민 `entities/notification/api`·`entities/push/api`와 같은 모양이다 — 서버 DTO를 대조할 때 두 앱을 함께 본다.
 
 ## 공유 링크 발급 (`entities/share/api/share-links.ts`)
@@ -60,6 +61,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## 함정
 
 - **어드민이 멀쩡한 것은 근거가 되지 않는다** — 공유 패키지 클래스가 빠지는 사고(#316)는 앱이 작은 www·lms에서 먼저 드러난다.
-- 다크모드·테마 토글은 `@ssccops/ui`의 `useTheme`·`ThemeToggle`(#341)이고 색은 토큰 이름으로만(`text-on-solid` 등 — admin과 같은 팔레트).
+- 다크모드·테마 토글은 `@ssccops/ui`의 `useTheme`·`ThemeToggle`(#341)이고 색은 토큰 이름으로만(`text-on-solid` 등 — admin과 같은 팔레트). 토글이 그려지는 자리는 계정 메뉴 절 ③뿐이다(#614).
 - 반응형은 `lg` 하나(admin과 같다). 입력란 글자는 좁은 화면에서 16px 아래로 내리지 않는다(#105).
 - `shared/config/codes.ts`는 `@ssccops/codes`를 재export 한다 — 표시명은 서버 시드와 글자까지 계약.

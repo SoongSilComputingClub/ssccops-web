@@ -49,6 +49,9 @@ export const NAV_LINKS: readonly NavLink[] = [
  * 때문이다 — 외부 앱은 켜질 일이 없고 `<a>`로 나간다. 오리진(`NEXT_PUBLIC_LMS_ORIGIN`)이 비면
  * 항목 자체가 없다(죽은 주소로 보내지 않는다 — `lms-routes.ts`). «학술» 랜딩(#550)의 CTA는
  * 설명 뒤의 유도이고, 이것은 이미 LMS를 쓰는 부원의 지름길이다.
+ *
+ * **읽는 곳은 푸터뿐이다** (#614 · ssccops#452). 상단 바·드로어에서는 뺐다 — 다른 앱은 계정
+ * 메뉴 절 ④의 자리이고 그쪽은 `features/auth`의 `accountApps()`가 같은 오리진으로 만든다.
  */
 export type ExternalNavLink = { href: string; label: string };
 

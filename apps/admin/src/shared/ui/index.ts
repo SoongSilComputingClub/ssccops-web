@@ -16,7 +16,6 @@ export { useToastStore, flash, ToastViewport } from "./toast";
 export { Sheet } from "./sheet";
 export { Calendar, visibleRange, type CalendarItem, type CalendarMode } from "./calendar";
 export { PageHeader, PageBody } from "./page-header";
-export { ThemeToggle } from "./theme-toggle";
 export { Markdown, ContentMarkdoc } from "./markdown";
 export { FilterBar } from "./filter-bar";
 export { ScrollX } from "./scroll-x";
