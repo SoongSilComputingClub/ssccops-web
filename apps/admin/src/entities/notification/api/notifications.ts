@@ -36,7 +36,7 @@ export const notificationApi = {
 
   /**
    * 테스트 알림 — 호출자 자신에게 알림 행 + 자기 구독 전부로 푸시 (ssccops#454 · #616). `app`은 링크가
-   * 갈 «내 정보»의 앱. 1분 3회를 넘기면 429 `TOO_MANY_REQUESTS` — 버튼(`@ssccops/pwa/ui`)이 문구로 가른다.
+   * 갈 «내 정보»의 앱. 1분 3회를 넘기면 429 `RATE_LIMITED`(server#529) — 버튼(`@ssccops/pwa/ui`)이 문구로 가른다.
    */
   sendTest: (request: PushTestRequest) =>
     apiFetch<PushTestResult>("/v1/notifications/test", {

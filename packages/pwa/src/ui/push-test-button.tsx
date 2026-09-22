@@ -12,11 +12,12 @@ import type { PushApp } from "../service-worker";
  * 자기 구독 전부로 푸시를 보내게 한다. 세 앱이 같은 버튼·같은 문구를 쓰므로 여기 한 벌이다.
  *
  * 서버 호출은 앱이 넘긴다(`sendTest` — 앱마다 인증 헤더·봉투 처리가 다른 `apiFetch`). 429는 서버가
- * 1분 3회를 넘긴 것(`TOO_MANY_REQUESTS`) — 앱의 `ApiError`를 여기서 임포트할 수 없어 `status`·`code`
- * 필드만 duck-typing으로 읽는다. 결과 문구는 버튼 아래 한 줄이고 다음 시도에서 지워진다.
+ * 1분 3회를 넘긴 것(코드 `RATE_LIMITED` · server#529) — 앱의 `ApiError`를 여기서 임포트할 수 없어
+ * `status`·`code` 필드만 duck-typing으로 읽는다. 결과 문구는 버튼 아래 한 줄이고 다음 시도에서 지워진다.
  *
  * **스위치가 켜져 있을 때만 그린다**(`enabled`) — 꺼진 채 보내면 알림 행만 남고 푸시는 0대라 «안 온다»를
- * 확인하는 버튼이 된다. 그래도 서버는 거부하지 않으므로 pushed가 0이면 그 사실을 문구로 말한다.
+ * 확인하는 버튼이 된다. 그래도 서버는 거부하지 않으므로 `pushed`가 0이면(서버가 푸시를 껐거나 이 계정의
+ * 구독이 죽어 있다) 그 사실을 문구로 말한다.
  */
 
 type TestStatus =
@@ -25,10 +26,10 @@ type TestStatus =
   | { kind: "sent"; pushed: number }
   | { kind: "error"; message: string };
 
-function isTooManyRequests(error: unknown): boolean {
+function isRateLimited(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false;
   const { status, code } = error as { status?: unknown; code?: unknown };
-  return status === 429 || code === "TOO_MANY_REQUESTS";
+  return status === 429 || code === "RATE_LIMITED";
 }
 
 function resultMessage(status: TestStatus): string | null {
@@ -36,7 +37,7 @@ function resultMessage(status: TestStatus): string | null {
     case "sent":
       return status.pushed > 0
         ? `보냈습니다 — 기기 알림을 확인해주세요(${status.pushed}대)`
-        : "알림은 남겼지만 푸시를 받은 기기가 없습니다 — 푸시 알림을 껐다 켜주세요";
+        : "알림 목록에는 남았지만 푸시를 받은 기기가 없습니다 — 푸시 알림을 껐다 켜주세요";
     case "error":
       return status.message;
     default:
@@ -69,7 +70,7 @@ export function PushTestButton({
     } catch (error: unknown) {
       setStatus({
         kind: "error",
-        message: isTooManyRequests(error)
+        message: isRateLimited(error)
           ? "너무 자주 보냈습니다 — 잠시 후 다시 시도해주세요"
           : "테스트 알림을 보내지 못했습니다 — 잠시 후 다시 시도해주세요",
       });
