@@ -2,9 +2,11 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   type FocusEvent,
@@ -149,8 +151,10 @@ export function AccountMenuNote({ children }: Readonly<{ children: ReactNode }>)
   );
 }
 
+/* `<hr>`이 곧 role="separator"다(S6819). 기본 테두리는 Tailwind preflight가 지우지만 `border-0`을
+ * 적어 두면 preflight 없이 쓰는 자리에서도 1px 줄이 두 겹으로 보이지 않는다 */
 function Divider() {
-  return <div role="separator" className="my-1 h-px bg-line" />;
+  return <hr className="my-1 h-px border-0 bg-line" />;
 }
 
 function Avatar({ name, size }: Readonly<{ name: string; size: number }>) {
@@ -180,7 +184,14 @@ interface SectionsProps {
 }
 
 /** 절 ②~⑥ — 팝오버와 드로어가 같은 것을 그린다 */
-function Sections({ links = [], apps = [], install, onSignOut, signingOut, pathname }: SectionsProps) {
+function Sections({
+  links = [],
+  apps = [],
+  install,
+  onSignOut,
+  signingOut,
+  pathname,
+}: Readonly<SectionsProps>) {
   return (
     <>
       <Divider />
@@ -229,8 +240,13 @@ export function AccountSections({
     className?: string;
   }
 >) {
+  // 값이 매 렌더 새 객체면 이 컨텍스트를 읽는 항목 전부가 함께 다시 그려진다 (S6481)
+  const ctx = useMemo<ItemContext>(
+    () => ({ inMenu: false, onSelect: onSelect ?? (() => {}), onNavigate }),
+    [onSelect, onNavigate],
+  );
   return (
-    <ItemCtx.Provider value={{ inMenu: false, onSelect: onSelect ?? (() => {}), onNavigate }}>
+    <ItemCtx.Provider value={ctx}>
       <div className={cn("flex flex-col", className)}>
         <Sections {...sections} />
       </div>
@@ -276,10 +292,11 @@ export function AccountMenu({
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
-  const close = (restoreFocus: boolean) => {
+  // 팝오버의 컨텍스트 값이 이것을 물고 있어 `useCallback`이다 — 매 렌더 새 함수면 memo가 헛돈다
+  const close = useCallback((restoreFocus: boolean) => {
     setOpen(false);
     if (restoreFocus) triggerRef.current?.focus();
-  };
+  }, []);
 
   // 열리면 첫 항목에 포커스 — 메뉴 버튼 패턴. 바깥 클릭은 포커스를 뺏지 않고 닫기만 한다
   useEffect(() => {
@@ -334,9 +351,15 @@ export function AccountMenu({
     setOpen(false);
   };
 
+  // 팝오버 안 항목이 읽는 값 — 매 렌더 새 객체면 항목 전부가 함께 다시 그려진다 (S6481)
+  const menuCtx = useMemo<ItemContext>(
+    () => ({ inMenu: true, onSelect: () => close(true), onNavigate }),
+    [close, onNavigate],
+  );
+
+  /* `type`은 두 트리거에 직접 적는다 — 스프레드로 넘기면 읽는 사람도 정적 분석도 못 본다 (S9011) */
   const triggerProps = {
     ref: triggerRef,
-    type: "button" as const,
     "aria-haspopup": "menu" as const,
     "aria-expanded": open,
     "aria-controls": open ? menuId : undefined,
@@ -353,6 +376,7 @@ export function AccountMenu({
       {trigger === "row" ? (
         <button
           {...triggerProps}
+          type="button"
           aria-label={`계정 메뉴 — ${name}`}
           className="flex w-full min-w-0 cursor-pointer touch-manipulation items-center gap-[9px] rounded-[10px] px-2 py-[6px] text-left outline-none hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent"
         >
@@ -368,6 +392,7 @@ export function AccountMenu({
       ) : (
         <button
           {...triggerProps}
+          type="button"
           aria-label={`계정 메뉴 — ${name}`}
           className={cn(
             "flex h-10 min-w-10 cursor-pointer touch-manipulation items-center justify-center gap-[6px] rounded-full outline-none hover:bg-bg focus-visible:ring-2 focus-visible:ring-accent",
@@ -388,6 +413,8 @@ export function AccountMenu({
           ref={menuRef}
           id={menuId}
           role="menu"
+          /* 메뉴 버튼 패턴대로 컨테이너도 포커스를 받을 수 있어야 한다 — Tab 순서에는 넣지 않는다 (S6852) */
+          tabIndex={-1}
           aria-label="계정 메뉴"
           onKeyDown={onMenuKeyDown}
           className={cn(
@@ -403,7 +430,7 @@ export function AccountMenu({
               {label && <div className="truncate text-[12.5px] text-n500">{label}</div>}
             </div>
           </div>
-          <ItemCtx.Provider value={{ inMenu: true, onSelect: () => close(true), onNavigate }}>
+          <ItemCtx.Provider value={menuCtx}>
             <Sections {...sections} />
           </ItemCtx.Provider>
         </div>

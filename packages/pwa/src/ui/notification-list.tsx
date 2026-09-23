@@ -99,8 +99,11 @@ function ScopeChips({
   onChange,
 }: Readonly<{ scope: NotificationScope; onChange: (scope: NotificationScope) => void }>) {
   return (
-    <div
-      role="group"
+    /*
+     * role="group"의 시맨틱 태그가 `<fieldset>`이다(S6819). 브라우저 기본 테두리·여백은 Tailwind
+     * preflight의 전역 리셋이 이미 지우므로 클래스는 그대로다 — `display`만 `inline-flex`로 덮는다.
+     */
+    <fieldset
       aria-label="알림 범위"
       className="mb-3 inline-flex gap-1 rounded-[12px] border border-line p-[3px]"
     >
@@ -122,7 +125,7 @@ function ScopeChips({
           </button>
         );
       })}
-    </div>
+    </fieldset>
   );
 }
 

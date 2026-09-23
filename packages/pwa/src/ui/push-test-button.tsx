@@ -91,17 +91,17 @@ export function PushTestButton({
           {status.kind === "sending" ? "보내는 중…" : "테스트 알림 보내기"}
         </button>
       </div>
+      {/* `<output>`이 곧 role="status"다(S6819). 기본 display가 inline이라 `block`을 함께 적는다 */}
       {message && (
-        <p
-          role="status"
+        <output
           className={
             status.kind === "error"
-              ? "text-[13.5px] leading-[1.6] text-danger"
-              : "text-[13.5px] leading-[1.6] text-n500"
+              ? "block text-[13.5px] leading-[1.6] text-danger"
+              : "block text-[13.5px] leading-[1.6] text-n500"
           }
         >
           {message}
-        </p>
+        </output>
       )}
     </div>
   );

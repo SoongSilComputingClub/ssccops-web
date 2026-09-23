@@ -69,8 +69,8 @@ export function TextField({
  * 초점이 가지 않았다. 자식이 **입력 하나**(input·select·textarea 또는 그것을 그리는 컴포넌트)면
  * `useId()`로 만든 id를 `cloneElement`로 넘겨 `htmlFor`와 잇는다(자식이 `id`를 이미 갖고 있으면
  * 그것을 쓴다). 자식이 하나가 아니거나 요소가 아니면(입력 옆에 버튼이 붙은 칸, 칩 묶음) 통째로
- * `<label>`로 감싸지 않는다 — 안의 버튼이 라벨 클릭에 걸린다 — 대신 `role="group"
- * aria-labelledby`로 묶는다. 오류 문구는 `aria-describedby`로 입력에 잇는다.
+ * `<label>`로 감싸지 않는다 — 안의 버튼이 라벨 클릭에 걸린다 — 대신 `<fieldset aria-labelledby>`으로
+ * 묶는다(role="group"의 시맨틱 태그 · S6819). 오류 문구는 `aria-describedby`로 입력에 잇는다.
  */
 export function Field({
   label,
@@ -96,9 +96,11 @@ export function Field({
         "aria-describedby": error ? errorId : children.props["aria-describedby"],
       })
     : (
-        <div role="group" aria-labelledby={labelId}>
+        // `min-w-0` — fieldset만 UA가 `min-inline-size: min-content`를 주므로 preflight로도 남는다.
+        // 그대로 두면 칩 묶음이 좁은 화면에서 줄지 않고 가로로 넘친다
+        <fieldset aria-labelledby={labelId} className="min-w-0">
           {children}
-        </div>
+        </fieldset>
       );
   return (
     <div className={className}>

@@ -32,6 +32,7 @@ export type {
   NotificationItem,
   NotificationPage,
   NotificationType,
+  NotificationTypeCd,
   PushSubscriptionRequest,
   PushTestRequest,
   PushTestResult,
