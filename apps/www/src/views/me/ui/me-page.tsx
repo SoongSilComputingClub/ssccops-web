@@ -11,7 +11,7 @@ import {
 import type { MyFormResponseOverview } from "@/entities/form";
 import { fetchMyResponsesAcrossForms } from "@/entities/form/api/my-responses-across-forms";
 import { fetchAuthSession } from "@/entities/session";
-import { PushToggleCard } from "@/features/pwa";
+import { NotificationSettings } from "@/features/pwa";
 import { ROUTES } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui";
 import { resolveGate } from "../model/gate";
@@ -34,7 +34,7 @@ import { ProposalCard } from "./proposal-card";
  *   ② 낸 폼         `GET /v1/forms/responses/mine` 중 기획안 밖 → /me/responses
  *   ③ 낸 기획안     같은 목록 중 기획안 폼(`PROPOSAL`) 응답     → /me/proposals · 카드는 lms로
  *   ④ 이끄는 프로그램   `GET /v1/academic-programs?mine=leader`     → /me/programs · 카드는 lms로
- *   ⑤ 푸시 알림       `PushToggleCard`(클라이언트 · #616 · ssccops#453) — 이 기기의 설정, 발치에
+ *   ⑤ 푸시 알림       `NotificationSettings`(클라이언트 · #616 · ssccops#453) — 이 기기의 설정, 발치에
  *   ⓪ 다시 제출할 것  ①·②·③ 중 수정 요청(`CHANGES_REQUESTED`)을 받은 것 전부 — **맨 위**, 있을 때만
  *                    (#626 · ssccops#457). 첫 판은 ②·③ 안에서 앞으로 당기기만 했는데 셋째 묶음이라
  *                    첫 화면 아래였고, 카드의 주의 상자는 없는 팔레트 클래스(`amber-50`)라 밋밋한
@@ -131,8 +131,7 @@ async function NeedsActionBlock({
   return (
     <section className="flex flex-col gap-[10px]">
       <h2 className="text-[16px] font-semibold tracking-[-.2px]">
-        다시 제출할 것
-        <span className="ml-[6px] text-[14px] font-medium text-amber">{total}</span>
+        다시 제출할 것<span className="ml-[6px] text-[14px] font-medium text-amber">{total}</span>
       </h2>
       <p className="text-[13.5px] text-n500">운영진이 수정을 요청한 응답입니다. 사유를 보고 고쳐서 다시 내주세요.</p>
       <div className="flex flex-col gap-[12px]">
@@ -166,13 +165,14 @@ async function NeedsActionBlock({
 /*
  * 이 앱에는 «내 정보» 화면이 따로 없다 — 회원 정보는 어드민 것이고 계정은 계정 메뉴가 보인다. 스위치는
  * «이 기기의 설정»이라 어느 묶음의 부속도 아니어서 허브 발치에 절 하나로 둔다(admin·lms `/my`와 같은
- * 카드). 로그인한 사람에게만 — 문(`resolveGate`) 안쪽이라 미가입은 여기 오지 않는다.
+ * 카드 — `@ssccops/pwa/ui` 한 벌, #634). `/notifications` 맨 위에도 같은 카드가 있다(ssccops#461).
+ * 로그인한 사람에게만 — 문(`resolveGate`) 안쪽이라 미가입은 여기 오지 않는다.
  */
 function PushSection() {
   return (
     <section className="flex flex-col gap-[10px]">
       <h2 className="text-[16px] font-semibold tracking-[-.2px]">알림 설정</h2>
-      <PushToggleCard />
+      <NotificationSettings />
     </section>
   );
 }

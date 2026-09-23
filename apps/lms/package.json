@@ -1,6 +1,6 @@
 {
   "name": "@ssccops/lms",
-  "version": "0.2.15",
+  "version": "0.2.16",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3002",
@@ -21,6 +21,7 @@
     "@ssccops/form-renderer": "workspace:*",
     "@ssccops/pwa": "workspace:*",
     "@ssccops/share-meta": "workspace:*",
+    "@ssccops/signup": "workspace:*",
     "@ssccops/ui": "workspace:*",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",

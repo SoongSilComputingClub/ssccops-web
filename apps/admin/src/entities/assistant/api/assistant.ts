@@ -290,7 +290,11 @@ function parseEventData(data: string): unknown {
 }
 
 /** 서버가 내리는 세 값 — 모르는 문자열을 그대로 상태로 삼지 않기 위한 대조표 */
-const CORPUS_STATES: readonly AssistantCorpusState[] = ["EMPTY", "NONE_EFFECTIVE", "READY"];
+const CORPUS_STATES: ReadonlySet<AssistantCorpusState> = new Set([
+  "EMPTY",
+  "NONE_EFFECTIVE",
+  "READY",
+]);
 
 /**
  * 추천 질문 — `GET /v1/assistant/suggestions`. 최대 3개 + 코퍼스 상태(#463).
@@ -310,7 +314,7 @@ export async function fetchAssistantSuggestions(): Promise<AssistantSuggestions>
   const questions = response.questions ?? [];
   const received = response.corpusState;
   const corpusState =
-    received !== null && received !== undefined && CORPUS_STATES.includes(received)
+    received !== null && received !== undefined && CORPUS_STATES.has(received)
       ? received
       : questions.length > 0
         ? "READY"

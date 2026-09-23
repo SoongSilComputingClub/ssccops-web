@@ -53,6 +53,8 @@ export interface AuthUser {
  *                             회차 승인 (#122 · 서버 #130·#133·#136). 조회 셋(목록·상세·
  *                             커리큘럼)은 인증만 요구하므로 이 코드로 잠그지 않는다 —
  *                             SUB_WORK_TYPE와 같은 자리다(핸들러마다 인가가 갈린다)
+ *  - SUPER                GET·PUT /v1/notifications/types…(서버 #535 · ADR-0047) — 트리
+ *                         최상위지만 서버가 그 코드를 요구하므로 화면도 그것을 본다
  *
  * WORK_MANAGE·MEETING_MANAGE는 원래 조회까지 포함한 컨트롤러 전체였으나(#83), 국원에게
  * 조회만 열어 주기 위해 조회 전용 잎(WORK_READ·MEETING_READ)이 각각의 자식으로 새로
@@ -79,6 +81,19 @@ export interface AuthUser {
  * 서버의 AuthorityPolicy 한 곳에만 있고 웹은 배열에 코드가 있는지만 본다.
  */
 export const CAPABILITY = {
+  /**
+   * 최고 관리자 — 트리의 최상위 (서버 AuthorityCode.SUPER).
+   *
+   * **이 목록에서 유일하게 «묶음처럼 생긴» 코드이고, 그래도 여기 있는 것이 맞다.** 위 주석이
+   * 묶음 코드를 적지 말라고 하는 이유는 «자식만 직접 부여받은 회원의 배열에는 부모가 없다»인데,
+   * 이 코드는 그 반대편이다 — 요구하는 엔드포인트가 실제로 SUPER를 적어 두었으므로(서버 #535
+   * `NotificationTypeRoutingController` 클래스 레벨) 화면이 봐야 하는 값이 이것이다.
+   *
+   * 지금 이 코드로 잠기는 자리는 «설정 › 알림 유형»(수신 앱 기준표 · ADR-0047) 하나다. 학기에
+   * 몇 번 건드리는 시스템 정책이라 위임할 대상이 없어 서버가 자식 권한을 따로 만들지 않았다 —
+   * 넓힐 필요가 생기면 서버가 코드를 만들고 화면이 그것을 본다.
+   */
+  SUPER: "SUPER",
   WORK_MANAGE: "WORK_MANAGE",
   WORK_READ: "WORK_READ",
   /** 업무 소프트 삭제 전용 (서버 #125) — 담당자 본인이어도 이 코드가 없으면 삭제 버튼을 잠근다 */
@@ -149,6 +164,47 @@ export const CAPABILITY = {
 } as const;
 
 export type Capability = (typeof CAPABILITY)[keyof typeof CAPABILITY];
+
+/*
+ * 권한 코드의 화면 표시명 (#635 · ssccops#462) — 전체 메뉴(/sitemap)가 잠긴 항목 옆에 «필요한 권한»을
+ * 적을 때 쓴다.
+ *
+ * 이 사전은 **403 문구가 이미 쓰고 있던 글자**를 한 곳에 모은 것이다 — `features/*` 오류 문구가
+ * «업무 관리(WORK_MANAGE) 권한이 필요합니다»처럼 같은 이름을 각자 적고 있었다. 승인자 권한처럼
+ * 서버가 이름을 내려주는 자리(`authorizerAuthorityName`)에는 쓰지 않는다 — 그쪽은 서버 값이 정본이다.
+ * 표시는 {@link capabilityLabel}로 «이름(코드)» 한 모양이다.
+ */
+const CAPABILITY_NAME: Record<Capability, string> = {
+  // 서버 시드(V3)의 authrt_nm 그대로 — 권한 트리 화면이 보여 주는 이름과 같아야 한다
+  SUPER: "최고 관리자",
+  WORK_MANAGE: "업무 관리",
+  WORK_READ: "업무 조회",
+  WORK_DELETE: "업무 삭제",
+  SUB_WORK_DELETE: "하위 업무 삭제",
+  MEETING_MANAGE: "회의 관리",
+  MEETING_READ: "회의 조회",
+  MEETING_AGENDA_WRITE: "회의 안건 작성",
+  MEETING_DELETE: "회의 삭제",
+  SUB_WORK_TYPE_READ: "하위 업무 유형 조회",
+  SUB_WORK_TYPE_MANAGE: "하위 업무 유형 관리",
+  FORM_READ: "폼 조회",
+  FORM_WRITE: "폼 작성·수정",
+  FORM_STATUS_CHANGE: "폼 상태 변경",
+  FORM_LABEL_MANAGE: "폼 라벨 관리",
+  RESPONSE_REVIEW: "응답 심사",
+  ROLE_MANAGE: "권한 관리",
+  MEMBER_MANAGE: "회원 관리",
+  EVENT_MANAGE: "행사 관리",
+  ACADEMIC_PROGRAM_MANAGE: "학술 프로그램 관리",
+  APPROVAL_VOTE: "찬반 투표",
+  RAG_DOCUMENT_MANAGE: "규정 문서 관리",
+  CONTENT_MANAGE: "콘텐츠 관리",
+};
+
+/** «업무 관리(WORK_MANAGE)» — 403 문구와 같은 모양 */
+export function capabilityLabel(capability: Capability): string {
+  return `${CAPABILITY_NAME[capability]}(${capability})`;
+}
 
 /** 회원이 현재 맡고 있는 조직 역할 한 건 */
 export interface MemberRole {

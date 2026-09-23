@@ -1,10 +1,8 @@
+import type { NotificationTarget } from "@ssccops/pwa";
 import type { NotificationItem } from "@/entities/notification";
 import { appOrigins } from "@/shared/config/site-links";
 
-export type NotificationTarget =
-  | { kind: "internal"; href: string }
-  | { kind: "external"; href: string }
-  | { kind: "none" };
+export type { NotificationTarget };
 
 /**
  * 알림 행 → 갈 곳 (#604). 서비스워커의 `notificationclick`과 같은 규칙이다 — 자기 앱이면 라우터

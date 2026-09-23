@@ -494,7 +494,7 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
                     <button
                       type="button"
                       onClick={() => router.push(ROUTES.workDetail(subWork.workId))}
-                      className="cursor-pointer truncate text-left hover:text-accent"
+                      className="min-h-6 cursor-pointer truncate text-left hover:text-accent"
                     >
                       {subWork.workTitle || `업무 ${subWork.workId}`}
                     </button>

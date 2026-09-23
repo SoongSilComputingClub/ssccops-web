@@ -27,6 +27,8 @@ import {
  * 있어야 한다(`isAssignablePick`).
  */
 export function AssignableMemberSelect({
+  id,
+  "aria-describedby": describedBy,
   assignable,
   value,
   onChange,
@@ -34,6 +36,12 @@ export function AssignableMemberSelect({
   blockReason,
   hint,
 }: Readonly<{
+  /**
+   * `Field`가 라벨을 이으려고 `cloneElement`로 넘기는 것들 — 셀렉트까지 내려보내지 않으면
+   * `<label htmlFor>`이 없는 id를 가리켜 **담당자 칸이 이름 없는 입력으로 남는다** (#486).
+   */
+  id?: string;
+  "aria-describedby"?: string;
   assignable: AssignableMembers;
   /** 고른 담당자 — 후보(또는 current)에 없는 값이면 빈 선택지로 보인다 */
   value: number | null;
@@ -54,6 +62,8 @@ export function AssignableMemberSelect({
   return (
     <>
       <SelectField
+        id={id}
+        aria-describedby={describedBy}
         value={pickable && value !== null ? String(value) : ""}
         disabled={assignable.status !== "ready"}
         onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}

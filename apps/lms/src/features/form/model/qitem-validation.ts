@@ -1,4 +1,9 @@
-import { isChoiceQitemType, isTextQitemType, type QitemCpstCn } from "@ssccops/form-renderer";
+import {
+  isChoiceQitemType,
+  isTextQitemType,
+  type Qitem,
+  type QitemCpstCn,
+} from "@ssccops/form-renderer";
 
 /*
  * 저장 전 클라이언트 검증 — 문항 구성 규칙 (#528).
@@ -52,84 +57,128 @@ function qitemLabel(index: number, qitemLblNm: string): string {
   return qitemLblNm.trim() ? `‘${qitemLblNm.trim()}’ 문항` : `${index + 1}번 문항`;
 }
 
+/*
+ * 아래 `check*`는 문항 하나를 갈래별로 보는 검사들이다 — 한 함수에 있던 것을 그대로 잘라
+ * 옮겼다(#660 · S3776 인지 복잡도 29). **부르는 순서가 규칙이다**: `blockingMessage`는 모인
+ * 문구 중 첫 번째라, 순서를 바꾸면 같은 초안에서 다른 문장이 뜬다.
+ *
+ * 갈래를 가르는 조건(`isChoiceQitemType`·`SINGLE_CHOICE`…)은 각 검사가 자기 머리에서 본다 —
+ * 호출부에 두면 «이 검사가 언제 도는가»가 두 자리로 갈린다.
+ */
+
+/** 문항에 오류 문구를 붙인다 — 부른 순서대로 쌓인다 */
+type AddQitemIssue = (message: string) => void;
+
+/** 식별자 — 비었거나 앞 문항과 겹치면 응답이 섞인다 */
+function checkQitemId(qitem: Qitem, name: string, seen: ReadonlySet<string>, add: AddQitemIssue) {
+  if (!qitem.qitemId) {
+    add(`${name}: 문항 식별자가 비어 있습니다`);
+  } else if (seen.has(qitem.qitemId)) {
+    // 식별자 중복은 응답 데이터가 섞이는 사고다 — 저장 전에 반드시 막는다
+    add(`${name}: 문항 식별자(${qitem.qitemId})가 중복입니다`);
+  }
+}
+
+/** 문항이 놓인 페이지 */
+function checkPageSeq(qitem: Qitem, name: string, pageCount: number, add: AddQitemIssue) {
+  const pageSeq = qitem.pageSeq ?? 0;
+  if (pageSeq < 0 || pageSeq >= pageCount) {
+    add(`${name}: 존재하지 않는 페이지에 놓여 있습니다`);
+  }
+}
+
+/** 선택지 — 선택형 문항에서만 본다 */
+function checkOptionList(qitem: Qitem, name: string, add: AddQitemIssue) {
+  if (!isChoiceQitemType(qitem.qitemTypeCd)) return;
+
+  if (qitem.optionList.length === 0) {
+    add(`${name}: 선택지를 1개 이상 추가하세요`);
+  }
+  const duplicated = qitem.optionList.filter(
+    (option, i) => qitem.optionList.indexOf(option) !== i,
+  );
+  if (duplicated.length > 0) {
+    add(`${name}: 선택지가 중복입니다 (${duplicated[0]})`);
+  }
+  if (qitem.optionList.some((option) => !option.trim())) {
+    add(`${name}: 빈 선택지가 있습니다`);
+  }
+}
+
+/** 선택지별 페이지 이동 — 단일선택에 분기가 달려 있을 때만 본다 */
+function checkBranchMap(qitem: Qitem, name: string, pageCount: number, add: AddQitemIssue) {
+  if (qitem.qitemTypeCd !== "SINGLE_CHOICE" || !qitem.branchMap) return;
+
+  for (const [option, target] of Object.entries(qitem.branchMap)) {
+    if (!qitem.optionList.includes(option)) {
+      // 선택지를 지우면 분기도 같이 지우지만, 이름을 고친 경우 여기서 잡힌다
+      add(`${name}: 없는 선택지(${option})에 분기가 남아 있습니다`);
+    }
+    if (!Number.isInteger(target) || target < 0 || target >= pageCount) {
+      add(`${name}: ‘${option}’ 분기가 없는 페이지를 가리킵니다`);
+    }
+  }
+}
+
+/** 최대 선택 개수 — 다중선택에 값이 있을 때만 본다 */
+function checkMaxSlctCnt(qitem: Qitem, name: string, add: AddQitemIssue) {
+  if (qitem.qitemTypeCd !== "MULTI_CHOICE" || qitem.maxSlctCnt === undefined) return;
+
+  if (qitem.maxSlctCnt < 1) {
+    add(`${name}: 최대 선택 개수는 1 이상이어야 합니다`);
+  } else if (qitem.maxSlctCnt > qitem.optionList.length) {
+    add(
+      `${name}: 최대 선택 개수(${qitem.maxSlctCnt})가 선택지 수(${qitem.optionList.length})보다 많습니다`,
+    );
+  }
+}
+
+/** 입력 형식 정규식 — 값이 있는 텍스트 문항에서만 본다 */
+function checkPtrnCn(qitem: Qitem, name: string, add: AddQitemIssue) {
+  if (!qitem.ptrnCn || !isTextQitemType(qitem.qitemTypeCd)) return;
+
+  /*
+   * 깨진 정규식이 저장되면 지원자 화면의 응답 검증이 통째로 무너진다. 컴파일 가능 여부는
+   * 실제로 만들어 보는 것 말고 확인할 방법이 없다 — 서버도 `Pattern.compile()`로 같은
+   * 검사를 한다.
+   */
+  try {
+    new RegExp(qitem.ptrnCn);
+  } catch {
+    add(`${name}: 입력 형식 정규식이 올바르지 않습니다`);
+  }
+}
+
 export function validateQitemCpst(
   qitemCpstCn: QitemCpstCn,
   context: QitemCpstContext,
 ): QitemCpstIssues {
   const { pages, qitems } = qitemCpstCn;
   const issues: Record<string, string[]> = {};
+  /*
+   * `(issues[qitemId] ??= []).push(...)` 한 줄이던 것을 푼다 (#660 · S1121 — 부분식 안의 대입).
+   * 같은 문항의 문구는 부른 순서대로 쌓이고, 문항의 순서는 처음 걸린 순서다.
+   */
   const add = (qitemId: string, message: string) => {
-    (issues[qitemId] ??= []).push(message);
+    const messages = issues[qitemId] ?? [];
+    messages.push(message);
+    issues[qitemId] = messages;
   };
 
   const seen = new Set<string>();
 
   qitems.forEach((qitem, index) => {
     const name = qitemLabel(index, qitem.qitemLblNm);
+    const addIssue = (message: string) => add(qitem.qitemId, message);
 
-    if (!qitem.qitemId) {
-      add(qitem.qitemId, `${name}: 문항 식별자가 비어 있습니다`);
-    } else if (seen.has(qitem.qitemId)) {
-      // 식별자 중복은 응답 데이터가 섞이는 사고다 — 저장 전에 반드시 막는다
-      add(qitem.qitemId, `${name}: 문항 식별자(${qitem.qitemId})가 중복입니다`);
-    }
+    checkQitemId(qitem, name, seen, addIssue);
     seen.add(qitem.qitemId);
 
-    const pageSeq = qitem.pageSeq ?? 0;
-    if (pageSeq < 0 || pageSeq >= pages.length) {
-      add(qitem.qitemId, `${name}: 존재하지 않는 페이지에 놓여 있습니다`);
-    }
-
-    if (isChoiceQitemType(qitem.qitemTypeCd)) {
-      if (qitem.optionList.length === 0) {
-        add(qitem.qitemId, `${name}: 선택지를 1개 이상 추가하세요`);
-      }
-      const duplicated = qitem.optionList.filter(
-        (option, i) => qitem.optionList.indexOf(option) !== i,
-      );
-      if (duplicated.length > 0) {
-        add(qitem.qitemId, `${name}: 선택지가 중복입니다 (${duplicated[0]})`);
-      }
-      if (qitem.optionList.some((option) => !option.trim())) {
-        add(qitem.qitemId, `${name}: 빈 선택지가 있습니다`);
-      }
-    }
-
-    if (qitem.qitemTypeCd === "SINGLE_CHOICE" && qitem.branchMap) {
-      for (const [option, target] of Object.entries(qitem.branchMap)) {
-        if (!qitem.optionList.includes(option)) {
-          // 선택지를 지우면 분기도 같이 지우지만, 이름을 고친 경우 여기서 잡힌다
-          add(qitem.qitemId, `${name}: 없는 선택지(${option})에 분기가 남아 있습니다`);
-        }
-        if (!Number.isInteger(target) || target < 0 || target >= pages.length) {
-          add(qitem.qitemId, `${name}: ‘${option}’ 분기가 없는 페이지를 가리킵니다`);
-        }
-      }
-    }
-
-    if (qitem.qitemTypeCd === "MULTI_CHOICE" && qitem.maxSlctCnt !== undefined) {
-      if (qitem.maxSlctCnt < 1) {
-        add(qitem.qitemId, `${name}: 최대 선택 개수는 1 이상이어야 합니다`);
-      } else if (qitem.maxSlctCnt > qitem.optionList.length) {
-        add(
-          qitem.qitemId,
-          `${name}: 최대 선택 개수(${qitem.maxSlctCnt})가 선택지 수(${qitem.optionList.length})보다 많습니다`,
-        );
-      }
-    }
-
-    if (qitem.ptrnCn && isTextQitemType(qitem.qitemTypeCd)) {
-      /*
-       * 깨진 정규식이 저장되면 지원자 화면의 응답 검증이 통째로 무너진다. 컴파일 가능 여부는
-       * 실제로 만들어 보는 것 말고 확인할 방법이 없다 — 서버도 `Pattern.compile()`로 같은
-       * 검사를 한다.
-       */
-      try {
-        new RegExp(qitem.ptrnCn);
-      } catch {
-        add(qitem.qitemId, `${name}: 입력 형식 정규식이 올바르지 않습니다`);
-      }
-    }
+    checkPageSeq(qitem, name, pages.length, addIssue);
+    checkOptionList(qitem, name, addIssue);
+    checkBranchMap(qitem, name, pages.length, addIssue);
+    checkMaxSlctCnt(qitem, name, addIssue);
+    checkPtrnCn(qitem, name, addIssue);
   });
 
   const removedInUseQitemIds = context.hasResponses

@@ -2,7 +2,7 @@ import { SectionLabel } from "@ssccops/ui";
 import { LoginGate } from "@/features/auth";
 // 서버 전용 조회는 배럴이 재export 하지 않는다(클라이언트 번들 오염 방지) — 직접 임포트한다
 import { loadSessionUser } from "@/features/auth/model/load-session-user";
-import { PushToggleCard } from "@/features/pwa";
+import { NotificationSettings } from "@/features/pwa";
 import { Card } from "@/shared/ui";
 
 /*
@@ -39,8 +39,8 @@ export async function MyAccountPage() {
             <div className="mt-3 text-[15.5px] text-ink">{user.name ?? "-"}</div>
             <div className="mt-[2px] text-[13.5px] text-n500">{user.email ?? "-"}</div>
           </Card>
-          {/* 푸시 알림 스위치 — 기기마다 따로 켠다 (#606 · ADR-0045). 상태 문구는 @ssccops/pwa */}
-          <PushToggleCard />
+          {/* 푸시 알림 스위치 — 기기마다 따로 켠다 (#606 · ADR-0045). 카드는 @ssccops/pwa/ui 한 벌(#634) */}
+          <NotificationSettings />
         </div>
       )}
     </div>

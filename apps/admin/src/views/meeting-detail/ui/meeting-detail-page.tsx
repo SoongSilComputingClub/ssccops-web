@@ -27,7 +27,7 @@ import { FIELD_LABEL } from "@/shared/config/labels";
 import { AttachmentSection } from "@/features/attachment";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
-import { Badge, Button, Card, Chip, ChipGroup, EmptyState, KeyValueGrid, PageBody, PageHeader, SearchInput, SectionLabel, Sheet, TextArea, TextField, flash } from "@/shared/ui";
+import { Badge, Button, Card, Chip, ChipGroup, EmptyState, Field, KeyValueGrid, PageBody, PageHeader, SearchInput, SectionLabel, Sheet, TextArea, TextField, flash } from "@/shared/ui";
 
 /*
  * 회의 상세 (ssccops-server OPS-025 조회 · OPS-026 전이 · OPS-027~029 안건, #83 ·
@@ -116,7 +116,12 @@ function CancelSheet({
       }}
       okLabel="취소"
     >
+      {/*
+        시트의 `hint`가 이 칸의 라벨 노릇을 하지만 `<label>`이 아니라 이름이 되지 못한다 —
+        라벨을 한 줄 더 세우면 같은 문구가 두 번 보이므로 `aria-label`로만 붙인다 (#486).
+      */}
       <TextField
+        aria-label="취소 사유"
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         placeholder="예: 우천으로 일정 취소"
@@ -208,24 +213,26 @@ function AgendaCard({
           {agenda.processStatus ? AGND_PRCS_SE_NM[agenda.processStatus] : "-"}
         </Badge>
       </div>
-      <div className="mt-3">
-        <div className="mb-[6px] text-[13.5px] text-n400">{FIELD_LABEL.agendaContent}</div>
+      {/*
+        라벨 div + 입력을 `Field`로 바꿨다 (#486) — 그리는 결과는 같고(`Field`의 라벨이 같은
+        `mb-[6px] text-[13.5px] text-n400`이다) `<label htmlFor>`이 붙어 칸에 이름이 생긴다.
+      */}
+      <Field label={FIELD_LABEL.agendaContent} className="mt-3">
         <TextArea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="논의할 내용을 작성하세요"
           disabled={!editable}
         />
-      </div>
-      <div className="mt-3">
-        <div className="mb-[6px] text-[13.5px] text-n400">{FIELD_LABEL.agendaResult}</div>
+      </Field>
+      <Field label={FIELD_LABEL.agendaResult} className="mt-3">
         <TextField
           value={resultContent}
           onChange={(e) => setResultContent(e.target.value)}
           placeholder="예: 원안 가결"
           disabled={!editable}
         />
-      </div>
+      </Field>
       {editable && dirty && (
         <Button
           className="mt-3"
@@ -676,7 +683,9 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
                     </Chip>
                   ))}
                 </div>
+                {/* 칩 줄과 버튼 사이에 라벨을 끼우면 «안건 추가» 묶음의 모양이 달라진다 — 이름만 붙인다 (#486) */}
                 <TextArea
+                  aria-label={FIELD_LABEL.agendaContent}
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
                   placeholder={`${FIELD_LABEL.agendaContent} (선택)`}

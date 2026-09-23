@@ -59,7 +59,11 @@ import { RagApplyConfirm, RagDeleteConfirm } from "./rag-confirm-sheets";
 const SEARCH_DEBOUNCE_MS = 300;
 
 /** URL이 고를 수 있는 값 — 모르는 문자열을 상태로 삼지 않기 위한 대조표 */
-const RAG_APPLY_STATUSES: readonly RagApplyStatus[] = ["DRAFT", "EFFECTIVE", "SUPERSEDED"];
+const RAG_APPLY_STATUSES: ReadonlySet<RagApplyStatus> = new Set([
+  "DRAFT",
+  "EFFECTIVE",
+  "SUPERSEDED",
+]);
 
 /**
  * 적용 상태 필터를 URL에서 읽는다 (#463).
@@ -68,7 +72,7 @@ const RAG_APPLY_STATUSES: readonly RagApplyStatus[] = ["DRAFT", "EFFECTIVE", "SU
  * 떨어뜨린다. 잘못된 링크 하나로 화면이 비어 «문서가 사라졌다»로 읽히는 것이 더 나쁘다.
  */
 function parseApplyFilter(value: string | null): RagApplyStatus | null {
-  return value !== null && RAG_APPLY_STATUSES.includes(value as RagApplyStatus)
+  return value !== null && RAG_APPLY_STATUSES.has(value as RagApplyStatus)
     ? (value as RagApplyStatus)
     : null;
 }

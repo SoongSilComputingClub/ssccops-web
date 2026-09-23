@@ -95,7 +95,12 @@ export function QitemCard({
           className={cn(INPUT_BASE, "mt-3 border-line px-[11px] py-[9px]")}
         />
       ) : (
-        <div role="group" aria-labelledby={titleId} className="mt-3 flex flex-col gap-1">
+        /*
+         * role="group"의 시맨틱 태그가 `<fieldset>`이다(S6819). 테두리·여백은 Tailwind preflight의
+         * 전역 리셋이 지우지만 `min-inline-size: min-content`는 fieldset에만 남는 UA 기본값이라
+         * `min-w-0`으로 함께 푼다 — 안 그러면 긴 선택지가 좁은 화면에서 가로로 넘친다
+         */
+        <fieldset aria-labelledby={titleId} className="mt-3 flex min-w-0 flex-col gap-1">
           {qitem.optionList.map((o) => {
             const picked = selected.includes(o);
             return (
@@ -128,7 +133,7 @@ export function QitemCard({
               </div>
             );
           })}
-        </div>
+        </fieldset>
       )}
       {error && <div className="mt-2 text-[13.5px] text-danger">{error}</div>}
     </div>

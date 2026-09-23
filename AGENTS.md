@@ -10,12 +10,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENTS.md
 
-SSCC(숭실컴퓨팅클럽) 운영 시스템의 웹 — **pnpm workspace + Turborepo 모노레포**(앱 3 · 패키지 8).
+SSCC(숭실컴퓨팅클럽) 운영 시스템의 웹 — **pnpm workspace + Turborepo 모노레포**(앱 3 · 패키지 9).
 Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4. 백엔드는 별도 저장소
 **`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth), 배포는 **prod = Vercel
 Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아래 «배포 — 두 플랫폼» 절.
 
-## 영역 — 앱 3 · 패키지 8
+## 영역 — 앱 3 · 패키지 9
 
 영역 고유 규칙(화면·인증 방식·주요 결정·함정)은 **각 영역의 `AGENTS.md`가 정본**이다(ssccops#349 —
 서버가 도메인별로 한 것과 같다). 여기서는 가리키기만 하고 `@`로 끌어오지 않는다 — 끌어오면 분리한
@@ -28,6 +28,7 @@ Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아�
 | `apps/lms` | 학술 공개 앱 — 스터디장 스튜디오·기획안·내 신청. 로그인 필수, 역할별 상단 바, 공유 링크 발급(착지는 www) | [apps/lms/AGENTS.md](apps/lms/AGENTS.md) |
 | `packages/ui` | 세 앱 공용 표시 요소·테마·배포 표식(`deployMarks`)·`BrandMark` — 둘 이상이 실제로 쓰던 것만 | [packages/ui/AGENTS.md](packages/ui/AGENTS.md) |
 | `packages/auth` | Supabase 클라이언트·세션 갱신(`updateSession` + 앱이 주입하는 `SessionGuard`)·`?next=` 검증·OAuth 목적지 쿠키 | [packages/auth/AGENTS.md](packages/auth/AGENTS.md) |
+| `packages/signup` | www·lms가 함께 쓰는 가입 화면 한 벌(`SignupStep`·`MemberLinkStep`) — 전송 계층은 `apiFetch`로 받는다(#664) | [packages/signup/AGENTS.md](packages/signup/AGENTS.md) |
 | `packages/form-renderer` | 폼 문항 렌더링·응답 검증 — 전송 계층을 모른다 | [packages/form-renderer/AGENTS.md](packages/form-renderer/AGENTS.md) |
 | `packages/share-meta` | 공유 카드 문구·공유 대상 → 착지 앱 규칙(ADR-0017) | [packages/share-meta/AGENTS.md](packages/share-meta/AGENTS.md) |
 | `packages/codes` | admin·lms가 함께 쓰는 서버 표준코드·표시명(계약) | [packages/codes/AGENTS.md](packages/codes/AGENTS.md) |
@@ -266,6 +267,7 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**. 서버 
 - `next/image` 최적화에 기대지 않는다 — `<img>` + 직접 URL.
 - 미들웨어에 Node 전용 API를 쓰지 않는다(Workers 런타임에 없다).
 - OpenNext 파일(`wrangler.jsonc`·`open-next.config.ts`)은 dev용이라 지우지 않는다. Vercel 빌드는 `next build`만 돌리므로 있어도 무방하다.
+- **컨테이너로도 띄울 수 있다 — 루트 `Dockerfile` 하나**(#653 · ssccops#471). `--build-arg APP=admin|www|lms`로 어느 앱을 만들지 고르고 `output: "standalone"` 산출물만 담는다(이미지 180 MB대 · 런타임 메모리 60 MB대 실측). 쓰는 곳은 **동아리방 Coolify의 시험 환경**(`ssccops` 프로젝트 dev)이고 **Cloudflare·Vercel은 이 파일을 읽지 않는다** — ADR-0030은 그대로다. 함정 둘: ① `initOpenNextCloudflareForDev()`는 가드가 `globalThis.AsyncLocalStorage` 하나뿐이라 **`next build`에서도 돌아** wrangler/workerd를 띄운다(alpine에서는 그 spawn이 빌드를 죽인다) — 그래서 `NODE_ENV === "development"`로 감쌌다. ② **turbo 2는 기본이 strict 환경 모드**라 `turbo.json`의 `build.env`에 없는 변수는 태스크에 닿지 않는다 — 커밋 sha를 넘기는 `SOURCE_COMMIT`을 그 목록에 함께 적어야 `/version`이 `unknown`이 되지 않는다.
 - Cloudflare의 prod 워커 3개는 DNS 롤백용으로 남겨 둔다(ADR-0030). 지우려면 ADR을 뒤집는다.
 - **배포 이력은 `deploy-history.yml`이 남긴다**(ssccops#340 · ssccops#344 · #442 · #445) — 릴리스 게시(prod)·`develop` 푸시(dev)마다 세 앱의 `GET /version`(`{version, sha, builtAt}` — `next.config.ts`가 빌드 때 인라인, `middleware.ts` 매처에서 제외)을 최대 10분 폴링해 **메타 레포(`ssccops`) orphan 브랜치 `deploy-history`**의 `web-prod.jsonl`·`web-dev.jsonl`에 한 줄 append([ADR-0033](https://github.com/SoongSilComputingClub/ssccops/blob/develop/docs/decisions/0033-deploy-history-in-meta-repo-via-app-token.md) — 서버는 같은 브랜치의 `server-*.jsonl`, 조회는 서버 레포 `scripts/deploy-history.sh current web prod`). 쓰기 토큰은 조직 GitHub App `sscc-devops`의 설치 토큰(`actions/create-github-app-token`, `repositories: ssccops`)이고 같은 토큰이 **private 메타 레포의 sub-issue Parent도 읽어** `parent_issue`·`adr_refs`가 직접 채워진다(PR 본문의 «근거» `ssccops#N`·`ADR-NNNN`은 fallback이자 `pr-guard.yml` 검사 대상으로 남는다). 이 레포에는 쓰지 않는다(`permissions.contents: read`). 도메인·앱 정보는 **조직 변수·시크릿**에서만 온다 — `SSCCOPS_DEPLOY_HISTORY_APP_ID` · `SSCCOPS_DEPLOY_HISTORY_APP_KEY` · `SSCCOPS_DEPLOY_HISTORY_ENV`(.env 모양 여러 줄, 이 레포는 `WEB_{DEV,PROD}_{ADMIN,WWW,LMS}_URL` 여섯 개만 읽는다). URL이 없으면 그 앱은 `unverified`, 앱 변수·시크릿이 없으면 워크플로가 실패한다(자기 레포에 쓰는 fallback을 두면 «두 곳» 상태로 돌아간다).
 

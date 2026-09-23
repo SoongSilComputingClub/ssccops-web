@@ -389,10 +389,10 @@ export async function* apiFetchStream(
         separator = SSE_EVENT_SEPARATOR.exec(buffer);
       }
     }
-  } catch (failure) {
+  } catch (error) {
     /* 우리가 끊었다 — 호출부가 이미 아는 사실이라 오류로 올리지 않는다 */
     if (init?.signal?.aborted) return;
-    if (failure instanceof ApiError) throw failure;
+    if (error instanceof ApiError) throw error;
     throw new ApiError(API_ERROR.NETWORK_ERROR, "서버와의 연결이 끊어졌습니다");
   } finally {
     /*

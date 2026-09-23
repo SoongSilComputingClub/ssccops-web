@@ -74,7 +74,8 @@ function splitAtHeadings(children: RenderableTreeNode[]): {
     if (child instanceof Tag && HEADING.test(child.name)) {
       groups.push({ title: textOf(child), body: [] });
     } else if (groups.length > 0) {
-      groups[groups.length - 1].body.push(child);
+      // `at(-1)`은 `undefined`까지 내는 타입이라 `?.`가 붙는다 — 바로 위 조건이 이미 막는 자리다
+      groups.at(-1)?.body.push(child);
     } else {
       lead.push(child);
     }

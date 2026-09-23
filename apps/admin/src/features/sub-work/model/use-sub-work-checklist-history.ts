@@ -55,7 +55,7 @@ export function useSubWorkChecklistHistory(
   }, [subWorkId, open, key]);
 
   if (!open) return { items: [], status: "idle", errorMessage: "", reload };
-  const current = loaded && loaded.key === key ? loaded : null;
+  const current = loaded?.key === key ? loaded : null;
   return {
     items: current?.items ?? [],
     status: current ? current.outcome : "loading",

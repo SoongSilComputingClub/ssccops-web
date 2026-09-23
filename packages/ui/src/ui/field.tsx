@@ -1,6 +1,6 @@
 "use client";
 
-import { cloneElement, isValidElement, useId } from "react";
+import { Children, cloneElement, isValidElement, useId } from "react";
 import type { InputHTMLAttributes, ReactNode } from "react";
 import { cn } from "../lib/cn";
 
@@ -58,6 +58,27 @@ export function TextField({
   );
 }
 
+type NamedProps = Readonly<{ "aria-labelledby"?: string; "aria-describedby"?: string }>;
+
+/*
+ * 묶음(`<fieldset>`)의 **첫 요소 자식**에만 라벨을 잇는다 (#486).
+ *
+ * 뒤에 오는 형제는 힌트·오류·버튼이라 이름을 받을 대상이 아니고, 둘 이상에 같은 라벨을 붙이면
+ * 보조기기가 같은 이름을 여러 번 읽는다. `Fragment`는 DOM 속성을 받지 못하므로 건너뛴다 —
+ * `<>`로 감싼 자식은 그 안에서 스스로 이름을 챙긴다.
+ */
+function nameFirstChild(children: ReactNode, labelId: string, errorId?: string) {
+  let named = false;
+  return Children.map(children, (child) => {
+    if (named || !isValidElement<NamedProps>(child) || typeof child.type === "symbol") return child;
+    named = true;
+    return cloneElement(child, {
+      "aria-labelledby": child.props["aria-labelledby"] ?? labelId,
+      "aria-describedby": errorId ?? child.props["aria-describedby"],
+    });
+  });
+}
+
 /**
  * 라벨 + 입력 래퍼.
  *
@@ -69,8 +90,14 @@ export function TextField({
  * 초점이 가지 않았다. 자식이 **입력 하나**(input·select·textarea 또는 그것을 그리는 컴포넌트)면
  * `useId()`로 만든 id를 `cloneElement`로 넘겨 `htmlFor`와 잇는다(자식이 `id`를 이미 갖고 있으면
  * 그것을 쓴다). 자식이 하나가 아니거나 요소가 아니면(입력 옆에 버튼이 붙은 칸, 칩 묶음) 통째로
- * `<label>`로 감싸지 않는다 — 안의 버튼이 라벨 클릭에 걸린다 — 대신 `role="group"
- * aria-labelledby`로 묶는다. 오류 문구는 `aria-describedby`로 입력에 잇는다.
+ * `<label>`로 감싸지 않는다 — 안의 버튼이 라벨 클릭에 걸린다 — 대신 `<fieldset aria-labelledby>`으로
+ * 묶는다(role="group"의 시맨틱 태그 · S6819). 오류 문구는 `aria-describedby`로 입력에 잇는다.
+ *
+ * ── 묶음 안의 입력에도 이름을 준다 (#486) ────────────────────
+ * `<fieldset>`으로 떨어지면 **그룹에만 이름이 붙고 안의 입력은 여전히 이름이 없었다.** «입력 +
+ * 형제 힌트»가 그 모양이다(담당자 셀렉트 아래 안내 한 줄, 분류 셀렉트 아래 조회 실패 문구).
+ * 그래서 묶음일 때는 **첫 요소 자식**에 `aria-labelledby`로 같은 라벨을 잇는다 — 통째로 감싸지
+ * 않는 이유(버튼이 라벨 클릭에 걸린다)는 그대로 지키면서 이름만 더한다.
  */
 export function Field({
   label,
@@ -96,9 +123,11 @@ export function Field({
         "aria-describedby": error ? errorId : children.props["aria-describedby"],
       })
     : (
-        <div role="group" aria-labelledby={labelId}>
-          {children}
-        </div>
+        // `min-w-0` — fieldset만 UA가 `min-inline-size: min-content`를 주므로 preflight로도 남는다.
+        // 그대로 두면 칩 묶음이 좁은 화면에서 줄지 않고 가로로 넘친다
+        <fieldset aria-labelledby={labelId} className="min-w-0">
+          {nameFirstChild(children, labelId, error ? errorId : undefined)}
+        </fieldset>
       );
   return (
     <div className={className}>

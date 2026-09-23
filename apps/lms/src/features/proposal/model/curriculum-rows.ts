@@ -38,8 +38,40 @@ const FIELD_DELIMITER = "|";
 /** 회차 번호 접미사 — 서버는 `1`도 `1회차`도 같게 읽지만, 쓸 때는 안내와 같은 쪽으로 쓴다 */
 const SEQUENCE_SUFFIX = "회차";
 
-/** `YYYY-MM-DD`. 서버가 ISO만 받는다 */
+/** `YYYY-MM-DD`. 서버가 ISO만 받는다 — **모양만 본다**(아래 `isRealYmd`) */
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/** 달마다 며칠까지 있는가. 2월은 윤년에 29일이라 아래에서 따로 본다 */
+const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+/** 그 달의 마지막 날. 달이 1~12가 아니면 0 — 있을 수 있는 날이 없다는 뜻이다 */
+export function lastDayOfMonth(year: number, month: number): number {
+  if (month < 1 || month > 12) return 0;
+  if (month === 2 && isLeapYear(year)) return 29;
+  return DAYS_IN_MONTH[month - 1] ?? 0;
+}
+
+/*
+ * 모양이 맞는 것과 **그 날짜가 있는 것**은 다르다 (#676 · ssccops#484).
+ *
+ * 정규식만 보던 동안 `2026-09-31`이 제출을 통과했고, 서버가 `LocalDate.parse`로 거절하는 것은
+ * 검토 화면에서였다 — 잘못된 줄 하나가 «제출 → 검토자 발견 → 수정요청 → 재제출» 한 바퀴를
+ * 소모했다. 두 판정이 갈려 있던 것이 원인이라 여기서 서버와 같은 것을 본다.
+ *
+ * `new Date(...)`로 되짚지 않는다 — 두 자리 연도(`0026`)를 1926년으로 옮기는 규칙이 있어
+ * 윤년 판정이 조용히 달라진다. 달의 길이는 오류 문장에도 쓰이므로 어차피 직접 센다.
+ */
+export function isRealYmd(value: string): boolean {
+  if (!ISO_DATE_PATTERN.test(value)) return false;
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(5, 7));
+  const day = Number(value.slice(8, 10));
+  return day >= 1 && day <= lastDayOfMonth(year, month);
+}
 
 export function emptyCurriculumRow(): CurriculumRow {
   return { title: "", planYmd: "" };
@@ -110,7 +142,9 @@ export function toCurriculumRows(text: string): CurriculumRow[] | null {
     if (title === "") return null;
 
     const planYmd = (fields[2] ?? "").trim();
-    if (planYmd !== "" && !ISO_DATE_PATTERN.test(planYmd)) return null;
+    // 모양만이 아니라 실재까지 본다 — 제출 검증(`validateCurriculumRows`)과 같은 판정이어야
+    // 없는 날짜가 든 옛 답이 표로 열리는지가 두 규칙에 갈리지 않는다
+    if (planYmd !== "" && !isRealYmd(planYmd)) return null;
 
     rows.push({ title, planYmd });
   }
@@ -128,6 +162,55 @@ function parseSequence(rawSequence: string): number | null {
   if (!/^\d+$/.test(digits)) return null;
   const seqno = Number(digits);
   return seqno > 0 ? seqno : null;
+}
+
+/*
+ * 제출 전에 막는다 — 첫 번째로 걸린 회차 하나만 말한다 (#676 · ssccops#484).
+ *
+ * ── 왜 입력 중이 아니라 제출 시점인가 ───────────────────────
+ * 날짜는 왼쪽부터 채워지므로 `2026-0`을 치는 동안 내내 «없는 날짜»다. 치는 사람을 빨간 칸이
+ * 따라다니면 고치라는 신호가 아니라 잡음이 된다.
+ *
+ * ── 왜 형식 오류와 없는 날짜를 가르나 ───────────────────────
+ * 없는 날짜 쪽 문장에 형식 예시를 붙이면 제출자가 **형식을 고치려 든다.** 2026-09-23에 실제로
+ * 그 혼동이 났다 — 서버가 "날짜를 읽을 수 없습니다 (예: 2026-03-05)"라고 했고 제출자는 이미
+ * 그 형식대로 적은 뒤였다. 그래서 여기서는 달의 길이를 짚어 준다.
+ *
+ * ── 왜 행이 아니라 저장 문자열을 보나 ───────────────────────
+ * 표로 열지 못한 답(자유 입력으로 이어 쓰던 기존 기획안)에는 행이 없다. 답 문자열 하나가 두
+ * 모드의 공통분모이고, 그 문자열이 곧 서버가 받는 것이다. 회차 번호도 줄에 적힌 값을 그대로
+ * 인용하므로 표에서는 화면에 보이는 번호와 같다(표가 `{행 순서}회차`로 쓴다).
+ *
+ * **날짜만 본다.** 칸 수·회차 번호·주제는 서버 파서의 몫이고, 여기서 같이 보면 두 벌이 갈린다.
+ */
+export function validateCurriculumDates(answer: unknown): string | null {
+  // rspns_cn은 JSONB라 모양을 DB가 보장하지 않는다 — 문자열이 아니면 서버가 볼 일이다
+  if (typeof answer !== "string") return null;
+
+  for (const rawLine of answer.split(/\r\n|\r|\n/)) {
+    const line = rawLine.trim();
+    if (line === "") continue;
+
+    const fields = line.split(FIELD_DELIMITER);
+    // 날짜 칸이 없는 줄(2칸)과 칸 수가 어긋난 줄은 이 함수의 몫이 아니다 — 서버가 본다
+    if (fields.length !== 3) continue;
+
+    const planYmd = (fields[2] ?? "").trim();
+    // 날짜는 생략할 수 있다 — 안내 문구가 그렇게 적혀 있고 서버도 NULL로 받는다
+    if (planYmd === "" || isRealYmd(planYmd)) continue;
+
+    const seqno = parseSequence(fields[0] ?? "");
+    const where = seqno === null ? "계획일" : `${seqno}회차 계획일`;
+    if (!ISO_DATE_PATTERN.test(planYmd)) {
+      return `${where}이 날짜 모양이 아닙니다 — 2026-03-05처럼 적어주세요`;
+    }
+    const month = Number(planYmd.slice(5, 7));
+    const lastDay = lastDayOfMonth(Number(planYmd.slice(0, 4)), month);
+    return lastDay === 0
+      ? `${where}이 없는 날짜입니다 — "${planYmd}"를 확인해주세요`
+      : `${where}이 없는 날짜입니다 — ${month}월은 ${lastDay}일까지입니다`;
+  }
+  return null;
 }
 
 /**

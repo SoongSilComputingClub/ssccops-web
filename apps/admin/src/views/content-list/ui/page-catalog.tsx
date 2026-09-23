@@ -87,7 +87,9 @@ function CohortAdd({
   };
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {/* 입력·버튼·안내가 한 줄에 서는 자리라 라벨을 세우지 않고 placeholder의 이름만 붙인다 (#486) */}
       <TextField
+        aria-label="대수"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="대수 (예: 45)"

@@ -12,7 +12,7 @@ import {
   type QitemTypeCd,
 } from "@ssccops/form-renderer";
 import { SectionLabel } from "@ssccops/ui";
-import { Badge, Card, Chip, TextArea, TextField, Toggle } from "@/shared/ui";
+import { Badge, Card, Chip, Field, TextArea, TextField, Toggle } from "@/shared/ui";
 import {
   isCompilableRegExp,
   nextQitemId,
@@ -63,6 +63,16 @@ function DescriptionPreview({ value }: Readonly<{ value?: string }>) {
 
 /** 시스템이 요구하는 문항의 잠금 사유 — 배지·툴팁·경고가 같은 문장을 쓴다 */
 const SYSTEM_QITEM_LOCKED = "시스템이 사용하는 문항은 지울 수 없습니다";
+
+/*
+ * 글자만 있는 «+ 페이지 추가»·«+ 문항 추가» 버튼 (#486).
+ *
+ * 글자 높이(20px)가 곧 히트 영역이라 손가락으로 빗나갔다. 어드민은 같은 자리에 `Button
+ * variant="link"`을 쓰는데 이 앱에는 `Button`이 없어 그 `LINK_SHAPE`을 그대로 적는다 —
+ * **패딩을 음수 마진으로 상쇄**하므로 보이는 자리·크기는 그대로고 히트 영역만 24px이 된다.
+ */
+const LINK_BUTTON =
+  "-mx-1 -my-1 inline-flex min-h-6 min-w-6 cursor-pointer items-center justify-center rounded-[6px] px-1 py-1 text-[14px] text-accent focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none";
 
 export function QitemComposer({
   cpst,
@@ -258,11 +268,7 @@ export function QitemComposer({
         <SectionLabel>페이지</SectionLabel>
         <div className="flex-1" />
         {!readOnly && (
-          <button
-            type="button"
-            onClick={addPage}
-            className="cursor-pointer text-[14px] text-accent"
-          >
+          <button type="button" onClick={addPage} className={LINK_BUTTON}>
             + 페이지 추가
           </button>
         )}
@@ -316,8 +322,14 @@ export function QitemComposer({
             </>
           )}
         </div>
+        {/*
+          편집기 안쪽 칸들은 라벨을 세우지 않는다 (#486) — 문항 카드가 이미 여러 층이라 칸마다
+          라벨을 얹으면 편집기가 두 배로 길어진다. placeholder에 보이는 이름을 `aria-label`로
+          붙인다. 어드민 `features/form/ui/qitem-composer.tsx`와 같은 자리·같은 이름이다.
+        */}
         <div className="mt-2 flex flex-col gap-2">
           <TextField
+            aria-label="페이지 제목"
             value={pages[page]?.pageTtl ?? ""}
             disabled={readOnly}
             onChange={(e) =>
@@ -329,6 +341,7 @@ export function QitemComposer({
             placeholder="페이지 제목"
           />
           <TextArea
+            aria-label="페이지 설명"
             value={pages[page]?.pageDescCn ?? ""}
             disabled={readOnly}
             onChange={(e) =>
@@ -350,11 +363,7 @@ export function QitemComposer({
         <div className="text-[14.5px] font-medium">이 페이지의 문항 {pageQitems.length}개</div>
         <div className="flex-1" />
         {!readOnly && (
-          <button
-            type="button"
-            onClick={addQitem}
-            className="cursor-pointer text-[14px] text-accent"
-          >
+          <button type="button" onClick={addQitem} className={LINK_BUTTON}>
             + 문항 추가
           </button>
         )}
@@ -417,12 +426,14 @@ export function QitemComposer({
                 {open && (
                   <div className="border-t border-line p-3">
                     <TextField
+                      aria-label="질문 문구"
                       value={q.qitemLblNm}
                       disabled={readOnly}
                       onChange={(e) => patchQ(q.qitemId, { qitemLblNm: e.target.value })}
                       placeholder="질문 문구"
                     />
                     <TextArea
+                      aria-label="문항 설명"
                       className="mt-2"
                       value={q.qitemDescCn ?? ""}
                       disabled={readOnly}
@@ -500,6 +511,7 @@ export function QitemComposer({
                           {q.optionList.map((o, oi) => (
                             <div key={oi} className="flex items-center gap-2">
                               <TextField
+                                aria-label={`선택지 ${oi + 1}`}
                                 value={o}
                                 disabled={readOnly}
                                 onChange={(e) =>
@@ -566,8 +578,7 @@ export function QitemComposer({
                         </div>
 
                         {q.qitemTypeCd === "MULTI_CHOICE" && (
-                          <div>
-                            <div className="mb-[6px] text-[13.5px] text-n400">최대 선택 개수</div>
+                          <Field label="최대 선택 개수">
                             {/*
                               빈 값만 «제한 없음»이다. 숫자가 아니면 초안을 바꾸지 않고 알린다 —
                               `Number(v) || undefined`는 "0"도 "abc"도 조용히 제한 없음으로 바꿔
@@ -590,7 +601,7 @@ export function QitemComposer({
                               placeholder="제한 없음"
                               className="w-[120px]"
                             />
-                          </div>
+                          </Field>
                         )}
 
                         {isTextQitemType(q.qitemTypeCd) && (
@@ -629,6 +640,7 @@ export function QitemComposer({
                               고정폭 13.5px을 되살린다.
                             */}
                             <TextField
+                              aria-label="정규식"
                               value={q.ptrnCn ?? ""}
                               invalid={!isCompilableRegExp(q.ptrnCn)}
                               disabled={readOnly}
@@ -643,6 +655,7 @@ export function QitemComposer({
                               </div>
                             )}
                             <TextField
+                              aria-label="형식 오류 안내 문구"
                               value={q.ptrnMsgCn ?? ""}
                               disabled={readOnly}
                               onChange={(e) => patchQ(q.qitemId, { ptrnMsgCn: e.target.value })}
@@ -684,7 +697,8 @@ export function QitemComposer({
                                         disabled={readOnly}
                                         onClick={() =>
                                           patchQ(q.qitemId, {
-                                            branchMap: { ...(q.branchMap ?? {}), [o]: i },
+                                            // undefined 전개는 건너뛴다 (#660 · S7744)
+                                            branchMap: { ...q.branchMap, [o]: i },
                                           })
                                         }
                                       >

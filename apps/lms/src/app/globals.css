@@ -13,6 +13,8 @@
 @source "../../../../packages/form-renderer/src";
 @source "../../../../packages/ui/src";
 @source "../../../../packages/pwa/src";
+/* 가입 화면 (#664 · www와 한 벌). 미가입 안내가 같은 자리에서 연다 */
+@source "../../../../packages/signup/src";
 
 /*
  * 학술 공개 앱 디자인 토큰 — 어드민(apps/admin)·공개 행사 앱(apps/www)과 **같은 값**이다

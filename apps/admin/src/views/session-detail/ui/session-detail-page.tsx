@@ -304,7 +304,9 @@ export function SessionDetailPage({
           }}
           onOk={() => void submitRevision()}
         >
+          {/* 시트의 `hint`는 `<label>`이 아니라 이름이 되지 못한다 — 문구를 더 세우지 않고 이름만 붙인다 (#486) */}
           <TextArea
+            aria-label="수정요청 사유"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             maxLength={REVISION_REASON_MAX_LENGTH}

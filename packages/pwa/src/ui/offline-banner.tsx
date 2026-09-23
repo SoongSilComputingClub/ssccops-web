@@ -20,12 +20,10 @@ export function OfflineBanner() {
   const online = useOnline();
   if (online) return null;
   return (
-    // 흐름에 끼우지 않고 위에 겹쳐 띄운다 — admin 셸은 h-dvh 고정이고 드로어(z-80)보다 위여야 한다
-    <div
-      role="status"
-      className="fixed inset-x-0 top-0 z-[90] bg-amber-soft px-4 py-2 text-center text-[13.5px] text-amber"
-    >
+    // 흐름에 끼우지 않고 위에 겹쳐 띄운다 — admin 셸은 h-dvh 고정이고 드로어(z-80)보다 위여야 한다.
+    // `<output>`이 곧 role="status"다(S6819) — 기본 display가 inline이라 `block`을 함께 적는다.
+    <output className="fixed inset-x-0 top-0 z-[90] block bg-amber-soft px-4 py-2 text-center text-[13.5px] text-amber">
       오프라인 — 마지막으로 본 내용
-    </div>
+    </output>
   );
 }

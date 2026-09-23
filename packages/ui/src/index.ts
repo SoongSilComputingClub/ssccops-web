@@ -42,6 +42,7 @@ export {
 export { Badge, Pill, type BadgeTone } from "./ui/badge";
 export { BrandMark } from "./ui/brand-mark";
 export { Card, CardTitle, SectionLabel } from "./ui/card";
+export { GroupIcon } from "./ui/group-icon";
 export { Markdown } from "./ui/markdown";
 export { ContentMarkdoc } from "./ui/markdoc/content-markdoc";
 export { validateContentMarkdoc } from "./ui/markdoc/validate";

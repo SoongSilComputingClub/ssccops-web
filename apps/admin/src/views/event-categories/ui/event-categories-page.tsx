@@ -94,8 +94,13 @@ export function EventCategoriesPage() {
       <PageBody>
         <div className="mb-4 max-w-[820px]">
           {/* 코드+이름+추가는 좁은 화면에 한 줄로 들어가지 않는다 — 세로로 쌓고 lg부터 나란히 */}
+          {/*
+            추가 행에는 라벨을 세우지 않는다 — 코드·이름·버튼이 한 줄에 서는 자리라 라벨을 얹으면
+            행이 두 층이 된다. 대신 placeholder에 이미 보이는 이름을 `aria-label`로 붙인다 (#486).
+          */}
           <div className="flex flex-col items-stretch gap-2 lg:flex-row lg:items-center">
             <TextField
+              aria-label={FIELD_LABEL.eventClassificationCode}
               value={newCd}
               onChange={(e) => setNewCd(e.target.value)}
               disabled={!canManage}
@@ -106,6 +111,7 @@ export function EventCategoriesPage() {
               className="w-full font-mono text-[16px] lg:w-[220px] lg:text-[15.5px]"
             />
             <TextField
+              aria-label={FIELD_LABEL.eventClassificationName}
               value={newNm}
               onChange={(e) => setNewNm(e.target.value)}
               onKeyDown={(e) => {

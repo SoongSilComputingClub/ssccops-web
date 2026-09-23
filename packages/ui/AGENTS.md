@@ -10,6 +10,7 @@
 | `THEMES`·`useTheme`·`THEME_INIT_SCRIPT`·`ThemeToggle`(#341 — admin #226 것을 lms가 쓰게 된 순간 올림) | `EmptyState` — admin `message`+`action`, www·lms `title`+`description`으로 API가 다르다 |
 | `Badge`·`Pill` · `Card`·`CardTitle`·`SectionLabel` · `Markdown` · **`ContentMarkdoc`·`validateContentMarkdoc`·`CONTENT_TAG_SNIPPETS`**(ADR-0039 · #532 — 콘텐츠 페이지·포스트 본문, www 화면과 admin 미리보기가 한 벌) · `Notice` · `TextField`·`Field` · **`BrandMark`**(#449) · **`Toggle`**(#616 — admin·lms 사본을 www 푸시 스위치가 세 번째로 쓰게 되어 올림) | `Button`·`GridTable`·`Calendar` — admin에만 있다, 중복이 아니다 |
 | **`AccountMenu`·`AccountSections`·`AccountMenuItem`·`AccountMenuNote`·`UtilityCluster`**(#614 · ssccops#452 — 세 앱 셸의 계정 메뉴. 절 순서 ①이름·역할 ②내 정보/내 활동 ③테마 ④다른 앱 ⑤홈 화면에 추가 ⑥로그아웃과 WAI-ARIA menu button 동작은 여기가 정하고 앱은 항목만 넘긴다) | 종(`NotificationBell`) — 라우트·배지 스토어가 앱마다 달라 `UtilityCluster`의 `bell` 슬롯으로 받는다 |
+| **`GroupIcon`**(#635 · ssccops#462 — 메뉴 묶음 아이콘. 지금은 이모지 한 글자를 `aria-hidden` · 고정 22px 상자 · 이모지 글꼴 스택으로 그린다. admin만 쓰지만 «둘 이상» 규칙의 예외로 여기 둔 것은 **SVG로 바꿀 때 한 곳만 고치기 위해서**이고(사용자가 SVG 대신 이모지를 택했다 — OS마다 그림체가 다르다) lms·www 셸이 묶음을 갖게 되면 같은 것을 쓴다. 이모지를 화면에 직접 찍지 않는다) | |
 
 ## 규칙
 

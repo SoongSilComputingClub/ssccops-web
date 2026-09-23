@@ -2,7 +2,7 @@
 
 import { mbrGrdTone, mbrSttsTone } from "@/entities/member";
 import { useMyProfileEdit } from "@/features/member";
-import { PushToggleCard } from "@/features/pwa";
+import { NotificationSettings } from "@/features/pwa";
 import { Badge, Button, Card, Field, KeyValueGrid, PageBody, PageHeader, Pill, SectionLabel, TextField, flash } from "@/shared/ui";
 import { FIELD_LABEL } from "@/shared/config/labels";
 
@@ -254,8 +254,8 @@ export function MyAccountPage() {
             />
           </Card>
 
-          {/* 푸시 알림 스위치 — 기기마다 따로 켠다 (#604 · ADR-0045). 상태 문구는 features/pwa */}
-          <PushToggleCard />
+          {/* 푸시 알림 스위치 — 기기마다 따로 켠다 (#604 · ADR-0045). 카드는 @ssccops/pwa/ui 한 벌(#634) */}
+          <NotificationSettings />
         </div>
       </PageBody>
     </>
