@@ -1,10 +1,8 @@
+import type { NotificationTarget } from "@ssccops/pwa";
 import type { NotificationItem } from "@/entities/notification";
 import { appOrigins } from "@/shared/config/app-origins";
 
-export type NotificationTarget =
-  | { kind: "internal"; href: string }
-  | { kind: "external"; href: string }
-  | { kind: "none" };
+export type { NotificationTarget };
 
 /**
  * 알림 행 → 갈 곳 (#616 · admin #604·lms #606과 같은 규칙). 서비스워커의 `notificationclick`과도 같다 —

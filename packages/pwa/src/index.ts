@@ -7,11 +7,13 @@
  * - `usePushSubscription(...)` · `useInstallPrompt()` · `useOnline()`  화면 훅
  * - `NotificationItem` 등 계약 타입 — 서버 표 그대로(ssccops#446)
  * - `useUnreadCount` · `setUnreadCount` · `decrementUnreadCount`  종 배지 값 (#606)
+ * - `createNotificationApi(apiFetch)` · `useNotificationList(...)`  알림 호출 한 벌 · 목록 화면 상태 (#665)
  * - `pushStateDescription(state, ctx)`  푸시 스위치 아래 문구 (#606)
  * - `@ssccops/pwa/ui`  알림 목록·«알림 설정» 카드(#634)·오프라인 띠·서비스워커 등록 껍데기 — 세 앱이 같은 것을 그린다
  *
  * ── 여기 없는 것 ────────────────────────────────────────────
- * 서버 호출(`apiFetch`)과 이동 규칙. 앱마다 인증 헤더·401 처리·라우트가 달라 훅이 콜백으로 받는다.
+ * 보내는 일(`apiFetch`)과 이동 규칙. 앱마다 인증 헤더·401 처리·라우트가 달라 훅이 콜백으로 받는다 —
+ * 알림 호출의 경로·파라미터는 계약이라 여기 있지만 그것을 실어 보내는 것은 앱이 넘긴다.
  * `process.env.NEXT_PUBLIC_*`도 읽지 않는다 — 앱 파일에 글자 그대로 적혀야 빌드 때 인라인된다
  * (`@ssccops/ui`와 같은 규칙). 예외는 `NODE_ENV` 하나(`register.ts` 주석).
  *
@@ -46,4 +48,19 @@ export {
 export { useInstallPrompt, type InstallPromptControls } from "./use-install-prompt";
 export { useOnline } from "./use-online";
 export { decrementUnreadCount, setUnreadCount, useUnreadCount } from "./unread-store";
+export {
+  createNotificationApi,
+  type NotificationApi,
+  type NotificationFetch,
+  type NotificationListParams,
+  type NotificationReadResult,
+} from "./notification-api";
+export {
+  useNotificationList,
+  type NotificationGateStatus,
+  type NotificationListState,
+  type NotificationStatus,
+  type NotificationTarget,
+  type UseNotificationListOptions,
+} from "./use-notification-list";
 export { pushStateDescription } from "./push-copy";
