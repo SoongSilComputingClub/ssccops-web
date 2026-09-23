@@ -12,7 +12,8 @@ export interface SiteLink {
   href: string;
 }
 
-// `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
+// `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786).
+// 아래 `adminOrigin()`의 같은 정규식도 같은 이유다 (#660).
 function wwwOrigin(): string | null {
   return process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN?.replace(/\/+$/, "") || null;
 }

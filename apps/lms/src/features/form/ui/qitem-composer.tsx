@@ -684,7 +684,8 @@ export function QitemComposer({
                                         disabled={readOnly}
                                         onClick={() =>
                                           patchQ(q.qitemId, {
-                                            branchMap: { ...(q.branchMap ?? {}), [o]: i },
+                                            // undefined 전개는 건너뛴다 (#660 · S7744)
+                                            branchMap: { ...q.branchMap, [o]: i },
                                           })
                                         }
                                       >
