@@ -1,5 +1,5 @@
-import { SIGNUP_ERROR, type SignupRequest, type SignupStatusCode } from "@/entities/member";
-import { API_ERROR, ApiError } from "@/shared/api/client";
+import { CLIENT_ERROR, toApiFailure } from "./api-failure";
+import { SIGNUP_ERROR, type SignupRequest, type SignupStatusCode } from "./signup-api";
 
 /*
  * 간편 가입 폼의 값·검증·요청 변환 (wave2 §8-4).
@@ -114,7 +114,7 @@ export function hasErrors(errors: SignupFieldErrors): boolean {
  * 검증을 통과한 값을 요청 본문으로 옮긴다.
  *
  * 빈 값은 **키째 뺀다** — 학번은 UNIQUE 컬럼이라 빈 문자열로 저장하면 두 번째 졸업 회원부터
- * 중복으로 막힌다(`entities/member/api/signup.ts`의 요청 타입 주석).
+ * 중복으로 막힌다(`model/signup-api.ts`의 요청 타입 주석).
  */
 export function buildSignupRequest(
   values: SignupFormValues,
@@ -153,11 +153,12 @@ export type SignupFailure =
   | { kind: "student-number-duplicated" };
 
 export function toSignupFailure(error: unknown): SignupFailure {
-  if (!(error instanceof ApiError)) {
+  const failure = toApiFailure(error);
+  if (!failure) {
     return { kind: "form", message: "가입하지 못했습니다 — 잠시 후 다시 시도해주세요" };
   }
 
-  switch (error.code) {
+  switch (failure.code) {
     /*
      * 중복 제출·뒤로 가기로 이미 가입된 계정이 다시 제출한 경우다. 실패로 그릴 것이 아니라
      * 이미 도달한 상태(회원)로 다뤄 신청서 작성으로 넘긴다.
@@ -179,15 +180,15 @@ export function toSignupFailure(error: unknown): SignupFailure {
 
     // 서버는 어느 칸이 문제인지 내려주지 않는다 — 서버 문구를 그대로 한 줄로 보여 준다
     case SIGNUP_ERROR.VALIDATION_FAILED:
-      return { kind: "form", message: error.message };
+      return { kind: "form", message: failure.message };
 
-    case API_ERROR.CONFIG_MISSING:
+    case CLIENT_ERROR.CONFIG_MISSING:
       return {
         kind: "form",
         message: "지금은 가입할 수 없습니다 — 잠시 후 다시 시도해주세요",
       };
 
-    case API_ERROR.NETWORK_ERROR:
+    case CLIENT_ERROR.NETWORK_ERROR:
       return {
         kind: "form",
         message: "서버에 연결하지 못했습니다 — 네트워크 상태를 확인한 뒤 다시 시도해주세요",

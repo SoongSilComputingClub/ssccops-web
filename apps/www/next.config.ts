@@ -33,7 +33,8 @@ function resolveGitSha(): string {
  *
  * `@ssccops/auth`(ssccops-web#329)도 같은 이유로 여기 있다 — 미들웨어와 라우트 핸들러가
  * 그 소스를 그대로 컴파일한다. `@ssccops/pwa`(#607 · ADR-0045)는 `app/sw.js/route.ts`가 서버에서
- * 부르고 훅은 브라우저가 쓴다 — 양쪽 다 이 목록에 있어야 한다.
+ * 부르고 훅은 브라우저가 쓴다 — 양쪽 다 이 목록에 있어야 한다. `@ssccops/signup`(#664)은
+ * 가입 화면 한 벌이다 — lms와 나눠 쓴다.
  */
 /** 서버 `PublicCacheControl`과 같은 값 — 서버가 바꾸면 여기도 함께 바꾼다 */
 const PUBLIC_CACHE_CONTROL = "public, s-maxage=300, stale-while-revalidate=600";
@@ -59,6 +60,7 @@ const nextConfig: NextConfig = {
     "@ssccops/content",
     "@ssccops/auth",
     "@ssccops/pwa",
+    "@ssccops/signup",
   ],
 
   /*

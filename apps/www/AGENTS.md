@@ -72,7 +72,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **셸의 유틸리티는 계정 메뉴 하나, 종만 밖에**(#614 · ssccops#452 규칙 표가 정본). 상단 바는 `[☰(lg 미만)][브랜드][1차 메뉴(lg)]──[종][계정 메뉴 | 로그인]`(`app/layout.tsx` — 오른쪽 끝은 `AuthNav`). 로그인 상태면 `UtilityCluster`(종 슬롯은 `features/notification` `NotificationBell` — #616, 루트 레이아웃이 `AuthNav signedInSlot=`으로 넘긴다 · `features/auth`가 같은 레이어를 임포트하지 않으려고 · 상단 바 하나가 데스크톱·모바일을 함께 맡는다) + `AccountMenu`(① 구글 계정 이름·이메일 ② «내 활동» `/me` ③ 테마 ④ «학술 LMS» ⑤ 홈 화면에 추가(`@ssccops/pwa/ui` `InstallMenuItem`) ⑥ 로그아웃), 로그아웃 상태면 «로그인» 하나. 모바일 드로어는 왼쪽에서 열리고(☰이 왼쪽으로 갔다) 목차 + `AccountSections`(②~⑥ 인라인) 또는 «로그인». 로그인 판정은 `features/auth` `useAuthSession` 한 벌을 `AuthNav`·`MobileNav`가 각자 부른다 — **여전히 브라우저의 로컬 쿠키만 본다**(홈은 세션을 보지 않는다 · ssccops#385 그대로), 이름·이메일도 세션의 `user_metadata`이고 서버를 부르지 않는다.
 - **포스트 분류는 코드테이블이 아니라 고정 enum**(`ACADEMIC`·`EVENT`·`NEWS`)이라 행사 분류처럼 목록에서 뽑지 않고 `entities/content/model/category.ts` 표로 둔다. 표에 없는 코드가 오면 카드를 그리지 않는다(죽은 주소로 보내지 않는다).
 - 화면 규칙(토큰·간격·칩·카드·타임라인)은 [`docs/design-system.md`](docs/design-system.md).
-- **가입은 화면을 옮기지 않는다.** `SignupStep`은 신청 흐름 안에 임베드되고(#154) 등급은 요청에 없다 — 서버가 TEMP로 고정한다. 학번이 이미 명부에 있으면 `MemberLinkStep`이 같은 자리에서 연결을 끝낸다(#364). 회원 생성은 되돌릴 수 없으므로 `pending` 외에 ref로 한 번 더 잠근다.
+- **가입은 화면을 옮기지 않는다.** 화면은 `@ssccops/signup` 한 벌이고(#664 — lms와 사본이 같았다) 이 앱의 `features/signup`은 인증 호출(`apiFetchAuthedFromBrowser`)을 꽂는 배선뿐이다. `SignupStep`은 신청 흐름 안에 임베드되고(#154) 등급은 요청에 없다 — 서버가 TEMP로 고정한다. 학번이 이미 명부에 있으면 `MemberLinkStep`이 같은 자리에서 연결을 끝낸다(#364). 회원 생성은 되돌릴 수 없으므로 `pending` 외에 ref로 한 번 더 잠근다.
 - **응답 → 도메인 변환에서 없는 값을 만들어 내지 않는다**(루트 규칙) — `@ssccops/date`·`@ssccops/share-meta`도 같은 선을 긋는다.
 
 ## 공유 카드(OG) — 한 번 굳는다

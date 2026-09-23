@@ -21,6 +21,7 @@
     "@ssccops/form-renderer": "workspace:*",
     "@ssccops/pwa": "workspace:*",
     "@ssccops/share-meta": "workspace:*",
+    "@ssccops/signup": "workspace:*",
     "@ssccops/ui": "workspace:*",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",

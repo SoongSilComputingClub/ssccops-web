@@ -29,7 +29,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - **조회는 서버 컴포넌트로 그린다**(www와 같은 규약 · #131·#172). `features/*/model/load-*.ts`가 SSR 로더이고 훅이 아니다 — 쿠키의 세션을 서버에서 읽어 토큰을 브라우저에 싣지 않고, 읽기 전용 화면에 상태 기계를 들이지 않는다. **브라우저에서 저장·제출해야 하는 것만** `shared/api/browser-client.ts`를 탄다: 기획안 자동 저장·제출(`use-proposal-form.ts`), 재제출, 회차 기록·출석, 공유 링크 발급·폐기.
 - **리다이렉트를 하지 않는다.** `shared/api/client.ts`는 www에서 옮겨 온 것에 커서 페이징 봉투(`apiFetchList` — 어드민의 401 갱신·재로그인 리다이렉트는 함께 옮기지 않았다)만 더했다. 401·403은 오류로 올려 보내고 화면이 안내로 그린다. 미들웨어는 갱신기(가드 없음)이고 매처는 정적 자산·`auth/`·`version`만 뺀 전 경로다.
-- **미가입(`SIGNUP_REQUIRED`) 안내는 `features/signup`의 `SignupRequiredNotice`다**(#453) — www의 `SignupStep`(기존 회원 연결 포함)을 가져와 같은 자리에서 가입하고 `router.refresh()`. 어드민 `/signup`으로 보내던 `signupUrl()`·`NEXT_PUBLIC_ADMIN_ORIGIN`은 없다. 문구는 자리마다 다르므로 제목·설명은 부모가 준다(`ProgramSignupNotice`는 그 래퍼).
+- **미가입(`SIGNUP_REQUIRED`) 안내는 `features/signup`의 `SignupRequiredNotice`다**(#453) — `@ssccops/signup`의 `SignupStep`(기존 회원 연결 포함 · #664에서 www 사본과 합쳤다)을 같은 자리에서 열고 `router.refresh()`. 이 앱의 `features/signup`은 인증 호출을 꽂는 배선 + 이 안내뿐이다. 어드민 `/signup`으로 보내던 `signupUrl()`·`NEXT_PUBLIC_ADMIN_ORIGIN`은 없다. 문구는 자리마다 다르므로 제목·설명은 부모가 준다(`ProgramSignupNotice`는 그 래퍼).
 - **로딩 완료 전에는 폼을 마운트하지 않는다** — 그러면 `useState` 초깃값이 곧 폼 초깃값이라 동기화용 `useEffect`가 없다(admin의 수정 화면과 같은 규칙).
 - **검증은 `@ssccops/form-renderer`가 한다.** 필수·정규식·최대 선택 수·분기를 화면에서 한 줄이라도 다시 판정하면 서버 `ResponseAnswerValidator`와 맞춰 둔 규칙이 두 벌이 된다. 자동 저장 경로에는 검증을 걸지 않는다(작성 중 필수가 빈 것이 정상) — '다음'과 '제출'에서만.
 - **기획안 자동 저장**(#185): 공개 폼의 초안 경로(`GET`·`PUT /v1/forms/{formId}/responses/draft`)를 쓴다. 저장·제출은 한 프라미스 체인에 줄 세우고, «더러움» 플래그 대신 보낼 본문의 직렬화 문자열과 마지막 저장 성공 본문을 비교하며, 보내는 순간의 본문은 최신 스냅샷에서 읽는다(디바운스 700ms · 재시도 1.5/3/6/12s). 재제출(#171)은 전체 본문 재전송이라 초안이 없다.

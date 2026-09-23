@@ -10,12 +10,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENTS.md
 
-SSCC(숭실컴퓨팅클럽) 운영 시스템의 웹 — **pnpm workspace + Turborepo 모노레포**(앱 3 · 패키지 8).
+SSCC(숭실컴퓨팅클럽) 운영 시스템의 웹 — **pnpm workspace + Turborepo 모노레포**(앱 3 · 패키지 9).
 Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4. 백엔드는 별도 저장소
 **`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth), 배포는 **prod = Vercel
 Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아래 «배포 — 두 플랫폼» 절.
 
-## 영역 — 앱 3 · 패키지 8
+## 영역 — 앱 3 · 패키지 9
 
 영역 고유 규칙(화면·인증 방식·주요 결정·함정)은 **각 영역의 `AGENTS.md`가 정본**이다(ssccops#349 —
 서버가 도메인별로 한 것과 같다). 여기서는 가리키기만 하고 `@`로 끌어오지 않는다 — 끌어오면 분리한
@@ -28,6 +28,7 @@ Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아�
 | `apps/lms` | 학술 공개 앱 — 스터디장 스튜디오·기획안·내 신청. 로그인 필수, 역할별 상단 바, 공유 링크 발급(착지는 www) | [apps/lms/AGENTS.md](apps/lms/AGENTS.md) |
 | `packages/ui` | 세 앱 공용 표시 요소·테마·배포 표식(`deployMarks`)·`BrandMark` — 둘 이상이 실제로 쓰던 것만 | [packages/ui/AGENTS.md](packages/ui/AGENTS.md) |
 | `packages/auth` | Supabase 클라이언트·세션 갱신(`updateSession` + 앱이 주입하는 `SessionGuard`)·`?next=` 검증·OAuth 목적지 쿠키 | [packages/auth/AGENTS.md](packages/auth/AGENTS.md) |
+| `packages/signup` | www·lms가 함께 쓰는 가입 화면 한 벌(`SignupStep`·`MemberLinkStep`) — 전송 계층은 `apiFetch`로 받는다(#664) | [packages/signup/AGENTS.md](packages/signup/AGENTS.md) |
 | `packages/form-renderer` | 폼 문항 렌더링·응답 검증 — 전송 계층을 모른다 | [packages/form-renderer/AGENTS.md](packages/form-renderer/AGENTS.md) |
 | `packages/share-meta` | 공유 카드 문구·공유 대상 → 착지 앱 규칙(ADR-0017) | [packages/share-meta/AGENTS.md](packages/share-meta/AGENTS.md) |
 | `packages/codes` | admin·lms가 함께 쓰는 서버 표준코드·표시명(계약) | [packages/codes/AGENTS.md](packages/codes/AGENTS.md) |
