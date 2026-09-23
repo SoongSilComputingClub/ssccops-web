@@ -1,6 +1,7 @@
 # ssccops-web
 
 [![Integrate](https://github.com/SoongSilComputingClub/ssccops-web/actions/workflows/integrate.yml/badge.svg?branch=develop)](https://github.com/SoongSilComputingClub/ssccops-web/actions/workflows/integrate.yml)
+[![Quality Gate](https://sonarqube.sscc-ssu.com/api/project_badges/measure?project=ssccops-web&metric=alert_status&token=sqb_6e33549becfce7bcf9acde4c1ba3c340749ed2ab)](https://sonarqube.sscc-ssu.com/dashboard?id=ssccops-web)
 
 SSCC(숭실대학교 컴퓨팅 동아리) **운영 시스템의 웹**입니다. 동아리 운영에 필요한 일 — 업무·회의·결재,
 회원과 권한, 폼과 응답, 학술 프로그램, 행사와 신청, 홍보 콘텐츠 — 을 세 개의 앱으로 나눠 다루고,
