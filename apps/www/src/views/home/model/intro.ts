@@ -53,9 +53,14 @@ export const DEFAULT_INTRO_BLOCKS: readonly IntroBlock[] = [
 
 const WHAT_WE_DO_HEADING = "무엇을 하나";
 
-/** `.`이 건너지 못하는 문자 — `\s`에는 들어 있어 아래 두 갈래가 갈린다 (LF · CR · LS · PS) */
+/**
+ * `.`이 건너지 못하는 문자 — `\s`에는 들어 있어 아래 두 갈래가 갈린다 (LF · CR · LS · PS)
+ *
+ * 넷 다 BMP 문자라 `codePointAt`과 `charCodeAt`이 같은 값을 준다. 서러게이트 쌍이 통째로
+ * 들어와도 나오는 코드 포인트는 이 넷에 들지 않으므로 판정이 달라지지 않는다 (#666 · S7758).
+ */
 function isLineBreak(ch: string): boolean {
-  const code = ch.charCodeAt(0);
+  const code = ch.codePointAt(0);
   return code === 0x0a || code === 0x0d || code === 0x2028 || code === 0x2029;
 }
 
@@ -81,8 +86,9 @@ function headingText(line: string, level: number): string | null {
 
   const text = rest.trim();
   if (text !== "") {
-    for (let i = 0; i < text.length; i += 1) {
-      if (isLineBreak(text[i])) return null;
+    // 글자를 차례로 볼 뿐 자리를 쓰지 않는다 — `for…of`가 준다 (#666 · S4138)
+    for (const ch of text) {
+      if (isLineBreak(ch)) return null;
     }
     return text;
   }
