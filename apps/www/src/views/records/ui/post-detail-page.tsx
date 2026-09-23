@@ -42,7 +42,7 @@ export async function PostDetailPage({
   }
 
   const actual = categoryByCode(post.cntntClsfCd);
-  if (!actual || actual.slug !== category.slug) notFound();
+  if (actual?.slug !== category.slug) notFound();
 
   const semester = semesterOf(post.actvYmd);
 

@@ -131,8 +131,7 @@ async function NeedsActionBlock({
   return (
     <section className="flex flex-col gap-[10px]">
       <h2 className="text-[16px] font-semibold tracking-[-.2px]">
-        다시 제출할 것
-        <span className="ml-[6px] text-[14px] font-medium text-amber">{total}</span>
+        다시 제출할 것<span className="ml-[6px] text-[14px] font-medium text-amber">{total}</span>
       </h2>
       <p className="text-[13.5px] text-n500">운영진이 수정을 요청한 응답입니다. 사유를 보고 고쳐서 다시 내주세요.</p>
       <div className="flex flex-col gap-[12px]">

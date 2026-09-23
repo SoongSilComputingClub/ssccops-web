@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
+import { withoutTrailingSlash } from "@/shared/lib/origin";
 
 /*
  * 배포 확인용 `GET /version` (ssccops#340 · #442).
  *
  * deploy-history 워크플로가 릴리스·develop 푸시 뒤 «빌드된 sha가 실제로 떠 있는가»를 이
  * 응답으로 폴링한다. 세 값은 전부 `next.config.ts`가 빌드 때 인라인한 것이라 런타임에 읽을
- * 것이 없고, 그래서 세 앱의 이 파일은 글자까지 같다 — **www만 `?probe=api`가 더 있다**(아래).
+ * 것이 없고, 그래서 `?probe=api` 조각을 빼면 세 앱의 이 파일은 글자까지 같다 — **그 조각은
+ * www에만 있다**(아래 · 맨 위 `withoutTrailingSlash` import도 그 조각의 것이다).
  *
  * `force-dynamic`은 캐시 회피만을 위한 것이다 — 정적으로 굳으면 값은 어차피 같지만 CDN·
  * 브라우저가 옛 응답을 들고 있을 수 있어 «새 sha가 떴는가»를 묻는 폴링이 거짓 실패한다.
@@ -23,7 +25,7 @@ export const dynamic = "force-dynamic";
 const PROBE_TIMEOUT_MS = 20_000;
 
 async function probeApi(): Promise<{ status: number; ms: number }> {
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
+  const base = withoutTrailingSlash(process.env.NEXT_PUBLIC_API_BASE_URL);
   const startedAt = Date.now();
   if (!base) return { status: 0, ms: 0 };
   try {

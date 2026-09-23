@@ -53,9 +53,44 @@ export const DEFAULT_INTRO_BLOCKS: readonly IntroBlock[] = [
 
 const WHAT_WE_DO_HEADING = "무엇을 하나";
 
-const H1 = /^#\s+(.+?)\s*$/;
-const H2 = /^##\s+(.+?)\s*$/;
-const H3 = /^###\s+(.+?)\s*$/;
+/** `.`이 건너지 못하는 문자 — `\s`에는 들어 있어 아래 두 갈래가 갈린다 (LF · CR · LS · PS) */
+function isLineBreak(ch: string): boolean {
+  const code = ch.charCodeAt(0);
+  return code === 0x0a || code === 0x0d || code === 0x2028 || code === 0x2029;
+}
+
+/**
+ * `#`이 정확히 `level`개이고 그 뒤가 공백으로 시작하면 제목 글자, 아니면 null (#659 · S8786).
+ *
+ * 옛 `/^#{level}\s+(.+?)\s*$/` 셋을 대신한다 — 결과는 같고 **되돌아가지 않는다**. 게으른
+ * `(.+?)`와 `\s*$`가 맞물린 정규식은 자르는 자리를 한 칸씩 옮겨 가며 다시 재서 공백이 긴
+ * 줄에서 길이의 제곱으로 번지는데, 여기서는 앞뒤로 한 번씩만 훑는다.
+ *
+ * 아래 두 갈래는 옛 정규식의 구석을 그대로 옮긴 것이다. 줄은 `split(/\r?\n/)`이 낸 것이라 보통
+ * 줄바꿈이 없지만, 원문이 CR로만 줄을 나눴다면 `\r`이 줄 안에 남는다 —
+ * - 제목 글자에 `\r`이 섞이면 `(.+?)`가 그것을 건너지 못해 **제목 줄이 아니었다**.
+ * - `#` 뒤가 공백뿐이면 `\s+`가 한 칸을 `(.+?)`에 내주며 성립해 **공백 한 칸이 제목**이었고
+ *   (hero 제목이 빈 줄이 된다) 그 칸은 `\r`이 아닌 마지막 공백이었다.
+ */
+function headingText(line: string, level: number): string | null {
+  for (let i = 0; i < level; i += 1) {
+    if (line[i] !== "#") return null;
+  }
+  const rest = line.slice(level);
+  if (rest.trimStart().length === rest.length) return null;
+
+  const text = rest.trim();
+  if (text !== "") {
+    for (let i = 0; i < text.length; i += 1) {
+      if (isLineBreak(text[i])) return null;
+    }
+    return text;
+  }
+
+  let last = rest.length - 1;
+  while (last >= 0 && isLineBreak(rest[last])) last -= 1;
+  return last >= 1 ? rest[last] : null;
+}
 
 /** 빈 줄로 문단을 가른다 — 문단 안의 줄바꿈은 공백 하나로 잇는다(마크다운의 soft break와 같다) */
 function toParagraphs(lines: string[]): string[] {
@@ -80,10 +115,10 @@ export function parseHomeIntro(mtxt: string): HomeIntro {
   const body: string[] = [];
 
   for (const line of lines) {
-    if (H2.test(line)) break;
-    const h1 = H1.exec(line);
-    if (h1 && headline === null) {
-      headline = h1[1];
+    if (headingText(line, 2) !== null) break;
+    const h1 = headingText(line, 1);
+    if (h1 !== null && headline === null) {
+      headline = h1;
       continue;
     }
     // 제목 앞의 줄은 버린다 — hero 문단은 제목 아래에서 시작한다
@@ -105,7 +140,7 @@ export function parseHomeIntro(mtxt: string): HomeIntro {
  */
 export function parseIntroBlocks(mtxt: string): IntroBlock[] | null {
   const lines = mtxt.split(/\r?\n/);
-  const start = lines.findIndex((line) => H2.exec(line)?.[1] === WHAT_WE_DO_HEADING);
+  const start = lines.findIndex((line) => headingText(line, 2) === WHAT_WE_DO_HEADING);
   if (start < 0) return null;
 
   const blocks: IntroBlock[] = [];
@@ -116,11 +151,11 @@ export function parseIntroBlocks(mtxt: string): IntroBlock[] | null {
   };
 
   for (const line of lines.slice(start + 1)) {
-    if (H2.test(line)) break;
-    const h3 = H3.exec(line);
-    if (h3) {
+    if (headingText(line, 2) !== null) break;
+    const h3 = headingText(line, 3);
+    if (h3 !== null) {
       flush();
-      current = { title: h3[1], lines: [] };
+      current = { title: h3, lines: [] };
     } else if (current) {
       current.lines.push(line);
     }

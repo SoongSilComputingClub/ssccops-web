@@ -14,9 +14,9 @@ import {
   fetchPublicForm,
   saveMyResponseDraft,
   submitFormResponse,
+  type FormRef,
   type PublicForm,
 } from "@/entities/form";
-import type { FormRef } from "@/entities/form";
 import { isSignupRequired, isUnauthenticated } from "@/shared/api/auth-error";
 import { API_ERROR, ApiError } from "@/shared/api/client";
 import { applyLoadErrorMessage, draftSaveErrorMessage, submitErrorMessage } from "./apply-error";

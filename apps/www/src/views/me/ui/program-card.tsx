@@ -40,16 +40,19 @@ export function ProgramCard({ program }: Readonly<{ program: AcademicProgramSumm
       {period && <div className="text-[13.5px] text-n500">{period}</div>}
 
       <div className="flex items-center gap-[8px] text-[13px] text-n500">
-        <div
-          className="h-[6px] flex-1 overflow-hidden rounded-full bg-bg"
-          role="progressbar"
+        {/*
+          `<progress>`는 `role="progressbar"`를 스스로 갖는 태그다(#659 · S6819) — `value`·`max`가
+          `aria-valuenow`·`aria-valuemax`의 자리다. 다만 기본 모양이 브라우저마다 달라 `appearance-none`
+          으로 지우고 트랙·막대를 벤더 의사요소로 다시 칠한다: 트랙은 요소 자신(웹킷은 `-bar`),
+          막대는 `-value`(웹킷)·`-moz-progress-bar`(파이어폭스). 색·높이·둥근 정도는 옛 div 두 겹과
+          같은 토큰이라 화면은 그대로다.
+        */}
+        <progress
+          className="h-[6px] flex-1 appearance-none overflow-hidden rounded-full border-none bg-bg [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-accent [&::-webkit-progress-bar]:bg-bg [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-accent"
           aria-label="진행률"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={ratio}
-        >
-          <div className="h-full rounded-full bg-accent" style={{ width: `${ratio}%` }} />
-        </div>
+          value={ratio}
+          max={100}
+        />
         <span className="whitespace-nowrap">진행률 {ratio}%</span>
       </div>
     </>

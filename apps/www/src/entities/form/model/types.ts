@@ -27,7 +27,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export function isFormRef(ref: unknown): ref is FormRef {
   if (typeof ref === "number") return Number.isInteger(ref) && ref > 0;
   if (typeof ref !== "string") return false;
-  return UUID_RE.test(ref) || /^[1-9][0-9]{0,17}$/.test(ref);
+  return UUID_RE.test(ref) || /^[1-9]\d{0,17}$/.test(ref);
 }
 
 export interface PublicForm {
