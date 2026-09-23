@@ -1,3 +1,4 @@
+import { withoutTrailingSlash } from "@/shared/lib/origin";
 import { lmsOrigin } from "./lms-routes";
 
 /*
@@ -16,9 +17,8 @@ import { lmsOrigin } from "./lms-routes";
  * 그대로다 — 남의 앱 주소는 그 파일이 정본이고 여기서는 표로 묶기만 한다.
  */
 
-// `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
 export function adminOrigin(): string | null {
-  return process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.replace(/\/+$/, "") || null;
+  return withoutTrailingSlash(process.env.NEXT_PUBLIC_ADMIN_ORIGIN) || null;
 }
 
 export function appOrigins(): { ADMIN?: string; LMS?: string } {

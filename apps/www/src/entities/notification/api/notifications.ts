@@ -1,7 +1,6 @@
 "use client";
 
 import type {
-  NotificationItem,
   NotificationPage,
   PushApp,
   PushTestRequest,
@@ -67,4 +66,4 @@ export const notificationApi = {
     }),
 };
 
-export type { NotificationItem, NotificationPage };
+export type { NotificationItem, NotificationPage } from "@ssccops/pwa";

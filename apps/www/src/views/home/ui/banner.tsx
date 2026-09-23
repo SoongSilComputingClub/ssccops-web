@@ -12,7 +12,7 @@ import { Markdown } from "@/shared/ui";
  * 같다. 한 줄로 쓰는 것은 홍보국 쪽 규칙이고 화면이 자르지 않는다.
  */
 export function Banner({ page }: Readonly<{ page: PublicContentPage | null }>) {
-  if (!page || !page.mtxt.trim()) return null;
+  if (!page?.mtxt.trim()) return null;
 
   return (
     <aside

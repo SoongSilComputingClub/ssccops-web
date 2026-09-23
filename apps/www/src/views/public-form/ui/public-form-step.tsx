@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { FormRef } from "@/entities/form";
+import type { FormRef, PublicForm } from "@/entities/form";
 import { FormDescription, QitemCard, nextPageSeq, pageSeqOf, validatePageAnswers } from "@ssccops/form-renderer";
-import { NOT_ACCEPTING_MESSAGE, SaveStatusBar, useApplyForm } from "@/features/apply";
+import { NOT_ACCEPTING_MESSAGE, SaveStatusBar, useApplyForm, type ApplyFormStatus } from "@/features/apply";
 import { SignInButton } from "@/features/auth";
 import { ROUTES } from "@/shared/config/routes";
 import { Card, EmptyState, Notice } from "@/shared/ui";
@@ -39,108 +39,8 @@ export function PublicFormStep({ formRef }: Readonly<{ formRef: FormRef }>) {
 
   const { status, form } = apply;
 
-  if (status === "loading") {
-    return <EmptyState title="폼을 불러오는 중입니다…" />;
-  }
-
-  if (status === "unauthenticated") {
-    return (
-      <Notice
-        title="로그인이 만료되었습니다"
-        description="다시 로그인하면 작성 중이던 답을 이어서 쓸 수 있습니다."
-      >
-        <SignInButton next={ROUTES.publicForm(formRef)} label="다시 로그인" />
-      </Notice>
-    );
-  }
-
-  /*
-   * 가입 단계를 지나온 뒤에도 서버가 미가입이라고 답하는 경우다 — 다른 창에서 탈퇴했거나 가입이
-   * 실제로는 끝나지 않았다. 새로고침을 권해 서버 판정으로 되돌린다(가입 폼이 그 자리에 다시 선다).
-   */
-  if (status === "signup-required") {
-    return (
-      <Notice
-        title="회원 정보가 확인되지 않았습니다"
-        description="가입이 끝나지 않았거나 회원 정보가 바뀌었습니다. 화면을 새로고침하면 가입부터 다시 진행할 수 있습니다."
-      />
-    );
-  }
-
-  if (status === "not-found") {
-    return (
-      <Notice
-        title="존재하지 않는 폼입니다"
-        description="없는 폼입니다. 링크를 받은 곳에서 다시 확인해주세요."
-      />
-    );
-  }
-
-  /*
-   * 시스템 폼(기획안)은 이 화면이 답을 받지 않는다 — LMS로 보낸다 (ssccops#417 · #555). 훅이 초안을
-   * 만들지 않고 `system-form`으로 끊어 주므로 여기서는 문항 대신 안내 카드만 그린다. 접수 상태·
-   * 제출 여부보다 앞이다 — 어느 상태든 이 폼의 자리는 LMS다.
-   */
-  if (status === "system-form" && form?.sysFormCd) {
-    return <SystemFormNotice sysFormCd={form.sysFormCd} />;
-  }
-
-  /*
-   * 접수 불가. 서버가 준비 중·마감·기간 밖을 한 코드로 묶었으므로 화면도 하나다 — 어느 쪽인지
-   * 알려 주면 링크만 가진 사람에게 준비 상황이 새어 나간다. **문항은 애초에 실려 오지 않는다.**
-   */
-  if (status === "not-accepting") {
-    return (
-      <Notice
-        title={NOT_ACCEPTING_MESSAGE}
-        description="지금은 접수하지 않는 폼입니다. 접수 일정은 안내받은 곳에서 확인해주세요."
-      />
-    );
-  }
-
-  /*
-   * 이 회원은 더 낼 수 없다 — 1건만 받는 폼에서 제출을 마친 경우다. 여러 건을 받는 폼은 이미
-   * 낸 뒤에도 `ready`로 오므로 여기 도달하지 않는다(서버의 `alreadySubmitted`가 그렇게 판정한다).
-   *
-   * **`form === null`을 여기 얹지 않는다.** 조회에 실패하면 훅이 `form: null`을 넣는데, 그것까지
-   * 이 안내로 흡수하면 낸 적 없는 사람에게 "이미 제출했습니다"가 뜨고 아래 오류 분기는 영원히
-   * 도달하지 못한다 — 실패 원인이 화면에 드러나지 않아 진단도 막힌다.
-   */
-  if (status === "already-submitted") {
-    return (
-      <Notice
-        title="이미 제출한 폼입니다"
-        description={
-          form?.submittedAt
-            ? `제출 일시 ${formatDt(form.submittedAt)} — 진행 상황은 '내 활동'에서, 결과는 등록한 연락처로 안내드립니다`
-            : "진행 상황은 '내 활동'에서, 결과는 등록한 연락처로 안내드립니다"
-        }
-      >
-        {/*
-          홍보로 도는 것은 이 폼 주소 하나뿐이다 — 이미 낸 사람이 그 링크를 다시 열면 여기에
-          닿는데, '내 신청'은 상단 메뉴에만 있어 폼 링크로 처음 들어온 사람은 보지 않는다.
-          그래서 안내 안에 출구를 둔다(제출 완료 화면 `ApplyDone`이 이미 쓰는 모양이다).
-
-          **응답 상세(`ROUTES.myFormResponse`)로 바로 보내지 않는다.** 이 화면이 가진 것은
-          `alreadySubmitted`·`submittedAt`뿐이고 폼 조회(`GET /v1/forms/{formId}/public`)는
-          응답 식별자를 주지 않는다. 상세로 보내려면 여기서 `.../responses/mine`을 한 번 더
-          불러 식별자를 캐내야 하는데, 그러면 문항을 그리지도 않는 안내 카드가 조회 상태와
-          실패 문구를 따로 갖게 된다. 낸 건이 한 건뿐인 폼이라(여러 건 받는 폼은 이 분기에
-          오지 않는다) 목록을 거치는 비용도 한 번 더 누르는 것뿐이다.
-
-          미인증 상태로 눌러도 길이 끊기지 않는다 — '내 신청'은 로그인하지 않은 사람에게
-          `SignInButton next={ROUTES.me}`를 그리므로 로그인 뒤 그 자리로 돌아온다.
-          (이 분기 자체는 인증된 사람만 닿는다. 토큰이 죽으면 `unauthenticated`로 갈린다.)
-        */}
-        <Link
-          href={ROUTES.me}
-          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
-        >
-          내 활동 보기
-        </Link>
-      </Notice>
-    );
-  }
+  const notice = statusNotice(status, form, formRef);
+  if (notice !== null) return notice;
 
   /*
    * 문항을 그릴 수 없는 나머지는 전부 여기서 받는다 — `status`가 늘어나며 위 분기가 빠뜨린 것이
@@ -302,4 +202,122 @@ export function PublicFormStep({ formRef }: Readonly<{ formRef: FormRef }>) {
       </p>
     </div>
   );
+}
+
+/**
+ * 문항을 그리기 전에 끊는 상태들 — 그릴 것이 없으면 null (#659 · S3776).
+ *
+ * `PublicFormStep`에서 갈라 낸 조각이다. 화면 트리는 그대로다(컴포넌트가 아니라 부르는 자리에
+ * 그대로 펼쳐지는 함수다) — 상태가 늘 때마다 분기가 한 줄씩 붙어 한 함수가 폼 조회부터 제출까지
+ * 전부 쥐고 있던 것을 «그릴 수 없는 상태»와 «그리는 화면»으로 나눈 것뿐이다.
+ */
+function statusNotice(
+  status: ApplyFormStatus,
+  form: PublicForm | null,
+  formRef: FormRef,
+): ReactNode | null {
+  if (status === "loading") {
+    return <EmptyState title="폼을 불러오는 중입니다…" />;
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <Notice
+        title="로그인이 만료되었습니다"
+        description="다시 로그인하면 작성 중이던 답을 이어서 쓸 수 있습니다."
+      >
+        <SignInButton next={ROUTES.publicForm(formRef)} label="다시 로그인" />
+      </Notice>
+    );
+  }
+
+  /*
+   * 가입 단계를 지나온 뒤에도 서버가 미가입이라고 답하는 경우다 — 다른 창에서 탈퇴했거나 가입이
+   * 실제로는 끝나지 않았다. 새로고침을 권해 서버 판정으로 되돌린다(가입 폼이 그 자리에 다시 선다).
+   */
+  if (status === "signup-required") {
+    return (
+      <Notice
+        title="회원 정보가 확인되지 않았습니다"
+        description="가입이 끝나지 않았거나 회원 정보가 바뀌었습니다. 화면을 새로고침하면 가입부터 다시 진행할 수 있습니다."
+      />
+    );
+  }
+
+  if (status === "not-found") {
+    return (
+      <Notice
+        title="존재하지 않는 폼입니다"
+        description="없는 폼입니다. 링크를 받은 곳에서 다시 확인해주세요."
+      />
+    );
+  }
+
+  /*
+   * 시스템 폼(기획안)은 이 화면이 답을 받지 않는다 — LMS로 보낸다 (ssccops#417 · #555). 훅이 초안을
+   * 만들지 않고 `system-form`으로 끊어 주므로 여기서는 문항 대신 안내 카드만 그린다. 접수 상태·
+   * 제출 여부보다 앞이다 — 어느 상태든 이 폼의 자리는 LMS다.
+   */
+  if (status === "system-form" && form?.sysFormCd) {
+    return <SystemFormNotice sysFormCd={form.sysFormCd} />;
+  }
+
+  /*
+   * 접수 불가. 서버가 준비 중·마감·기간 밖을 한 코드로 묶었으므로 화면도 하나다 — 어느 쪽인지
+   * 알려 주면 링크만 가진 사람에게 준비 상황이 새어 나간다. **문항은 애초에 실려 오지 않는다.**
+   */
+  if (status === "not-accepting") {
+    return (
+      <Notice
+        title={NOT_ACCEPTING_MESSAGE}
+        description="지금은 접수하지 않는 폼입니다. 접수 일정은 안내받은 곳에서 확인해주세요."
+      />
+    );
+  }
+
+  /*
+   * 이 회원은 더 낼 수 없다 — 1건만 받는 폼에서 제출을 마친 경우다. 여러 건을 받는 폼은 이미
+   * 낸 뒤에도 `ready`로 오므로 여기 도달하지 않는다(서버의 `alreadySubmitted`가 그렇게 판정한다).
+   *
+   * **`form === null`을 여기 얹지 않는다.** 조회에 실패하면 훅이 `form: null`을 넣는데, 그것까지
+   * 이 안내로 흡수하면 낸 적 없는 사람에게 "이미 제출했습니다"가 뜨고 아래 오류 분기는 영원히
+   * 도달하지 못한다 — 실패 원인이 화면에 드러나지 않아 진단도 막힌다.
+   */
+  if (status === "already-submitted") {
+    return (
+      <Notice
+        title="이미 제출한 폼입니다"
+        description={
+          form?.submittedAt
+            ? `제출 일시 ${formatDt(form.submittedAt)} — 진행 상황은 '내 활동'에서, 결과는 등록한 연락처로 안내드립니다`
+            : "진행 상황은 '내 활동'에서, 결과는 등록한 연락처로 안내드립니다"
+        }
+      >
+        {/*
+          홍보로 도는 것은 이 폼 주소 하나뿐이다 — 이미 낸 사람이 그 링크를 다시 열면 여기에
+          닿는데, '내 신청'은 상단 메뉴에만 있어 폼 링크로 처음 들어온 사람은 보지 않는다.
+          그래서 안내 안에 출구를 둔다(제출 완료 화면 `ApplyDone`이 이미 쓰는 모양이다).
+
+          **응답 상세(`ROUTES.myFormResponse`)로 바로 보내지 않는다.** 이 화면이 가진 것은
+          `alreadySubmitted`·`submittedAt`뿐이고 폼 조회(`GET /v1/forms/{formId}/public`)는
+          응답 식별자를 주지 않는다. 상세로 보내려면 여기서 `.../responses/mine`을 한 번 더
+          불러 식별자를 캐내야 하는데, 그러면 문항을 그리지도 않는 안내 카드가 조회 상태와
+          실패 문구를 따로 갖게 된다. 낸 건이 한 건뿐인 폼이라(여러 건 받는 폼은 이 분기에
+          오지 않는다) 목록을 거치는 비용도 한 번 더 누르는 것뿐이다.
+
+          미인증 상태로 눌러도 길이 끊기지 않는다 — '내 신청'은 로그인하지 않은 사람에게
+          `SignInButton next={ROUTES.me}`를 그리므로 로그인 뒤 그 자리로 돌아온다.
+          (이 분기 자체는 인증된 사람만 닿는다. 토큰이 죽으면 `unauthenticated`로 갈린다.)
+        */}
+        <Link
+          href={ROUTES.me}
+          className="rounded-xl bg-accent px-[16px] py-[12px] text-[15px] font-semibold text-on-solid transition-colors hover:bg-accent-strong"
+        >
+          내 활동 보기
+        </Link>
+      </Notice>
+    );
+  }
+
+  return null;
 }

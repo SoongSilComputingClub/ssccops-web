@@ -43,7 +43,7 @@ export async function ContactPage({
       </header>
 
       {errorMessage && <EmptyState title={errorMessage} />}
-      {page && page.mtxt.trim() && (
+      {page?.mtxt.trim() && (
         <Card className="px-[18px] py-[8px] lg:px-[26px] lg:py-[14px]">
           <ContentMarkdoc>{page.mtxt}</ContentMarkdoc>
         </Card>

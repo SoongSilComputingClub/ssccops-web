@@ -1,4 +1,5 @@
 import { deployMarks } from "@ssccops/ui";
+import { withoutTrailingSlash } from "@/shared/lib/origin";
 import { CONTACT } from "./contact";
 
 /*
@@ -18,8 +19,7 @@ import { CONTACT } from "./contact";
  * OG 카드가 헤더로 origin을 만드는 것(#556)은 og:image 하나라 자리가 다르다.
  */
 export function siteOrigin(): string | null {
-  // `/\/+$/`는 되돌아가는 정규식이지만 입력이 배포 설정값이라 닿을 일이 없다 (#401 · S8786)
-  return process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN?.replace(/\/+$/, "") || null;
+  return withoutTrailingSlash(process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN) || null;
 }
 
 /**
