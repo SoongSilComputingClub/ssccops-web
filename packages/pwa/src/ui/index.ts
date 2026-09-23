@@ -5,6 +5,12 @@ export {
   type NotificationListStatus,
   type NotificationScope,
 } from "./notification-list";
+export { NotificationBell } from "./notification-bell";
+export {
+  NotificationPageHeader,
+  NotificationScreen,
+  type NotificationSettingsDisclosure,
+} from "./notification-screen";
 export { InstallMenuItem } from "./install-menu-item";
 export {
   NOTIFICATION_SETTINGS_SECTION_ID,

@@ -1,16 +1,17 @@
-import { NextResponse } from "next/server";
-import { buildServiceWorker } from "@ssccops/pwa";
-import { deployMarks } from "@ssccops/ui";
+import { serviceWorkerResponse } from "@ssccops/pwa";
 import { appOrigins } from "@/shared/config/app-origins";
 
 /*
- * `GET /sw.js` — 서비스워커 (#607 · #616 · ssccops#449 · ssccops#453 · ADR-0045). admin #604·lms #606과
- * 같은 자리다.
+ * `GET /sw.js` — 서비스워커 (#607 · #616 · ssccops#449 · ssccops#453 · ADR-0045 · #671).
  *
  * `public/sw.js` 파일이 아니라 라우트 핸들러가 `@ssccops/pwa`의 소스 문자열을 내준다 — 캐시 이름에
  * 빌드 sha(`NEXT_PUBLIC_GIT_SHA` · `next.config.ts`가 인라인)를 넣으려면 빌드마다 파일을 다시 써야
  * 하는데, 그 단계는 Vercel·OpenNext 양쪽에서 검증할 것이 하나 더 는다(플랫폼 중립 · ADR-0030).
  * 라우트 핸들러는 `/version`과 같은 자리라 이미 두 플랫폼에서 같은 뜻이다.
+ *
+ * 헤더 셋(`application/javascript` · `no-cache` · `Service-Worker-Allowed: /`)과 `apiOrigin` 파싱·
+ * 알림 아이콘은 세 앱이 같아 `serviceWorkerResponse`로 올렸다(#671) — 이 파일에 남은 것은 **env를
+ * 글자 그대로 읽는 일**(`NEXT_PUBLIC_*`은 빌드 때 치환된다)과 이 앱의 값 둘이다.
  *
  * ── #616에서 `apiOrigin`·`appOrigins`가 생겼다 ──────────────────
  * #607에서는 둘 다 비어 있었다 — 전 화면이 SSR이라 공개 페이지의 데이터는 HTML 안에 있고, 브라우저에서
@@ -25,42 +26,19 @@ import { appOrigins } from "@/shared/config/app-origins";
  * `NEXT_PUBLIC_LMS_ORIGIN`. 알림을 눌렀을 때 `app`이 자기 앱(WWW)이 아니면 여기서 찾고, 없으면 자기
  * `/notifications`로 연다.
  *
- * - `Cache-Control: no-cache` — 브라우저는 24시간마다 워커 스크립트를 다시 받는데, CDN이 옛
- *   스크립트를 들고 있으면 새 배포 뒤에도 옛 캐시 이름으로 돈다. `force-dynamic`이 같은 이유.
- * - `Service-Worker-Allowed: /` — 스코프가 `/`이고 스크립트도 `/sw.js`라 없어도 되지만, 스크립트를
- *   옮기게 되면 이 헤더가 없어서 스코프가 좁아지는 종류의 실패라 처음부터 둔다.
+ * - `force-dynamic` — CDN이 옛 스크립트를 들고 있으면 새 배포 뒤에도 옛 캐시 이름으로 돈다(응답 헤더의
+ *   `Cache-Control: no-cache`가 같은 이유 · 패키지가 붙인다).
  * - 미들웨어 매처(`/me/*`·`/notifications`·신청·공개 폼)가 좁아 이 경로는 원래 잡히지 않는다 — 넓힐 때
  *   `/sw.js`·`/offline`은 빼야 한다(워커 스크립트는 리다이렉트를 못 따라간다).
  */
 export const dynamic = "force-dynamic";
 
-// 알림 아이콘도 dev·prod로 갈린다 — 값은 이 파일이 읽어 넘긴다(인라인 함정은 layout.tsx 주석)
-const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
-
-function apiOrigin(): string | null {
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL;
-  if (!base) return null;
-  try {
-    return new URL(base).origin;
-  } catch {
-    return null;
-  }
-}
-
 export function GET() {
-  const source = buildServiceWorker({
-    cacheVersion: process.env.NEXT_PUBLIC_GIT_SHA ?? "unknown",
-    offlinePath: "/offline",
-    apiOrigin: apiOrigin(),
-    appOrigins: appOrigins(),
+  return serviceWorkerResponse({
     app: "WWW",
-    iconPath: DEPLOY.mark,
-  });
-  return new NextResponse(source, {
-    headers: {
-      "Content-Type": "application/javascript; charset=utf-8",
-      "Cache-Control": "no-cache",
-      "Service-Worker-Allowed": "/",
-    },
+    appOrigins: appOrigins(),
+    cacheVersion: process.env.NEXT_PUBLIC_GIT_SHA,
+    apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    deployEnv: process.env.NEXT_PUBLIC_DEPLOY_ENV,
   });
 }
