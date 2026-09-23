@@ -28,8 +28,19 @@ export function nextQitemId(qitems: Qitem[]): string {
     if (matched) max = Math.max(max, Number(matched[1]));
   }
 
-  let candidate = `q${max + 1}`;
-  for (let n = max + 2; used.has(candidate); n += 1) candidate = `q${n}`;
+  /*
+   * `for (let n = max + 2; used.has(candidate); n += 1)`이던 것을 while로 편다 (#660 · S1994 —
+   * «증감하는 변수가 조건의 변수와 다르다»). 밀어내는 값과 검사하는 값이 같은 번호를 보고
+   * 있었으므로 **버그는 아니었고** 돌던 순서도 그대로다 — 두 변수가 한 줄에 묶여 그렇게
+   * 보였을 뿐이다. `max`가 쓰이는 번호의 최대값이라 `q${max + 1}`은 웬만해선 비어 있고, 이
+   * 루프는 그래도 겹쳤을 때를 위한 보험이다.
+   */
+  let n = max + 1;
+  let candidate = `q${n}`;
+  while (used.has(candidate)) {
+    n += 1;
+    candidate = `q${n}`;
+  }
   return candidate;
 }
 
@@ -74,10 +85,13 @@ export function isCompilableRegExp(pattern: string | undefined): boolean {
  *
  * 두 앱이 같은 폼을 그리므로 프리셋이 갈리면 «어드민에서 고른 학번 형식»과 «여기서 고른
  * 학번 형식»이 다른 정규식이 된다.
+ *
+ * 이메일만 `String.raw`인 것은 백슬래시를 겹쳐 적던 자리라서다 (#660 · S7780) — 글자는
+ * 그대로이고 나머지 넷은 백슬래시가 없어 겹쳐 적을 것이 없다. 어드민 쪽은 #658이 본다.
  */
 export const PATTERN_PRESETS = [
   { name: "자유 입력", pattern: "" },
-  { name: "이메일", pattern: "^[^@\\s]+@[^@\\s]+\\.[a-zA-Z]{2,}$" },
+  { name: "이메일", pattern: String.raw`^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$` },
   { name: "휴대전화", pattern: "^01[016-9]-[0-9]{3,4}-[0-9]{4}$" },
   { name: "숫자만", pattern: "^[0-9]+$" },
   { name: "학번(8자리)", pattern: "^[0-9]{8}$" },
