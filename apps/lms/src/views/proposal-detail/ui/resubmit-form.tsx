@@ -12,6 +12,7 @@ import {
   type RspnsCn,
 } from "@ssccops/form-renderer";
 // 배럴을 거치지 않는다 — 배럴이 SSR 로더(→ next/headers)를 재export 해 클라 번들을 오염시킨다
+import { validateCurriculumDates } from "@/features/proposal/model/curriculum-rows";
 import { PROPOSAL_RESUBMIT_NOTE } from "@/features/proposal/model/proposal-error";
 import { useCurriculumRows } from "@/features/proposal/model/use-curriculum-rows";
 import { useResubmitForm } from "@/features/proposal/model/use-resubmit-form";
@@ -99,6 +100,13 @@ export function ResubmitForm({
 
   const onNext = async () => {
     const issues = validatePageAnswers(composition, form.answers, currentPage);
+    /*
+     * 커리큘럼 날짜는 범용 검증이 모른다 (#676) — `validatePageAnswers`는 필수·길이·패턴만 보고,
+     * 2026-09-31 같은 «형식은 맞는데 없는 날짜»는 정규식으로 잡을 수 없다. 여기서 막지 않으면
+     * 승인 단계에서 서버가 거절해 수정요청 한 바퀴를 더 돈다.
+     */
+    const curriculumIssue = validateCurriculumDates(form.answers[CURRICULUM_QITEM_ID]);
+    if (curriculumIssue) issues[CURRICULUM_QITEM_ID] = curriculumIssue;
     if (Object.keys(issues).length > 0) {
       form.setErrors(issues);
       setFlash("입력을 확인해주세요");
