@@ -42,13 +42,22 @@ const nextConfig: NextConfig = {
    * 컨테이너로 띄우는 자리(동아리방 Coolify · #653 · ssccops#471)를 위한 산출물.
    *
    * `standalone`은 실행에 필요한 파일만 추려 담는다 — 이미지에 소스와 `node_modules` 전체를
-   * 넣지 않는다. **Cloudflare(dev)·Vercel(prod)은 이 값을 무시한다**(각자 자기 어댑터로
-   * 빌드한다) 그래서 플랫폼 중립 규칙(ADR-0030)을 깨지 않는다.
+   * 넣지 않는다.
    *
-   * `outputFileTracingRoot`가 없으면 추적이 이 앱 폴더에서 멈춰 `packages/*`가 빠지고,
-   * 컨테이너가 기동하다 `Cannot find module '@ssccops/ui'`로 죽는다 — 모노레포라 필요하다.
+   * ⚠️ **Vercel에서는 켜면 안 된다** (#681). #653이 «Cloudflare·Vercel은 이 값을 무시한다»고
+   * 적어 두었는데 **틀렸다** — Vercel은 빌드 끝에 `.next/next-server.js.nft.json`을 읽는데
+   * `standalone`을 켜면 그 파일이 그 자리에 나오지 않아 `ENOENT`로 죽는다. dev는
+   * Cloudflare(OpenNext)라 멀쩡했고 **Vercel 빌드는 `main` 푸시에서만 돌아** v0.2.16 릴리스에서
+   * 처음 터졌다. 플랫폼이 갈린 자리는 양쪽에서 실제로 빌드해 보기 전에는 «무시한다»고 단정하지
+   * 않는다(루트 AGENTS.md «배포 — 두 플랫폼»).
+   *
+   * 그래서 **컨테이너 빌드가 스스로 켠다** — `Dockerfile`이 `CONTAINER_BUILD=1`을 준다. 값을
+   * 읽으므로 `turbo.json`의 `build.env`에도 있어야 한다(turbo 2는 strict 환경 모드다).
+   *
+   * `outputFileTracingRoot`는 그대로 둔다 — 모노레포에서 추적이 이 앱 폴더에서 멈추면
+   * `packages/*`가 빠지고, 그것은 Vercel에서도 필요한 설정이다.
    */
-  output: "standalone",
+  output: process.env.CONTAINER_BUILD === "1" ? "standalone" : undefined,
   outputFileTracingRoot: join(import.meta.dirname, "../../"),
 
   transpilePackages: [

@@ -68,6 +68,12 @@ ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
 ARG SOURCE_COMMIT=""
 ENV SOURCE_COMMIT=$SOURCE_COMMIT
 
+# `output: "standalone"`을 켜는 스위치 (#681). 이 파일이 켜는 이유는 **Vercel에서 켜면 빌드가
+# 죽기 때문**이다 — 빌드 끝에 읽는 `.next/next-server.js.nft.json`이 standalone에서는 그 자리에
+# 나오지 않는다. 아래 4단계가 `.next/standalone`을 복사하므로 이 값이 없으면 이미지가 비어 나온다.
+# `turbo.json`의 `build.env`에도 있어야 태스크에 닿는다(turbo 2는 strict 환경 모드).
+ENV CONTAINER_BUILD=1
+
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm turbo run build --filter="@ssccops/${APP}"
 
