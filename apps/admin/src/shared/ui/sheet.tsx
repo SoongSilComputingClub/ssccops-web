@@ -77,7 +77,7 @@ export function Sheet({
    * 패널에 `tabIndex={-1}`을 주고 거기에 초점을 두면 안의 첫 입력이 무엇이든 다음 Tab이 그것으로
    * 간다. 위의 Esc 처리는 그대로 두었다 — 초점이 안에 있어도 document 리스너가 먼저 받는다.
    */
-  const panelRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
     if (!open) return;
@@ -98,14 +98,24 @@ export function Sheet({
         폭이 w-[440px] 고정이면 375px 화면에서 좌우가 잘려 취소·확인 버튼에 닿을 수 없다 (#85).
         max-w로 바꾸고 좌우 여백을 빼 좁은 화면에서는 화면에 맞추고, 440px 이상에서는
         예전과 같은 크기를 유지한다.
+
+        `role="dialog"`을 붙인 div가 아니라 `<dialog>`다 (#658 · S6819) — 같은 역할이 태그에
+        들어 있다. **`open` 속성만 쓰고 `showModal()`은 쓰지 않는다**: 최상위 레이어로 올라가면
+        스크림·z-index를 브라우저가 대신 정해, 위의 스크림과 이 시트 위에 겹쳐 뜨는 것들이
+        모두 어긋난다. 여는 조건은 위의 `if (!open) return null` 그대로다.
+
+        브라우저 기본 스타일 중 Tailwind preflight가 되돌리지 않는 둘을 여기서 맞춘다 —
+        `height: fit-content`는 `h-auto`로, `color: CanvasText`는 `text-[color:inherit]`로
+        (부모에서 물려받던 색을 그대로 둔다). 여백·테두리는 preflight의
+        `* { margin: 0; padding: 0; border: 0 }`이 이미 지운다.
       */}
-      <div
+      <dialog
         ref={panelRef}
-        role="dialog"
+        open
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="fixed top-1/2 left-1/2 z-[91] max-h-[78%] w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 animate-pop-in overflow-y-auto rounded-2xl bg-surface p-[22px] shadow-[0_0_0_1px_var(--color-line-strong),0_16px_40px_rgb(0_0_0/.56)] outline-none"
+        className="fixed top-1/2 left-1/2 z-[91] h-auto max-h-[78%] w-[calc(100%-2rem)] max-w-[440px] -translate-x-1/2 -translate-y-1/2 animate-pop-in overflow-y-auto rounded-2xl bg-surface p-[22px] text-[color:inherit] shadow-[0_0_0_1px_var(--color-line-strong),0_16px_40px_rgb(0_0_0/.56)] outline-none"
       >
         <h2 id={titleId} className="text-[20px] font-medium">
           {title}
@@ -122,7 +132,7 @@ export function Sheet({
             </Button>
           )}
         </div>
-      </div>
+      </dialog>
     </>
   );
 }

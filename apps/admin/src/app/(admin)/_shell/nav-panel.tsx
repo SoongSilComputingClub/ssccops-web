@@ -157,8 +157,14 @@ export function NavPanel({
                 <Chevron open={open} />
               </span>
             </button>
-            {/* 접혀도 DOM에 둔다(`hidden`) — `aria-controls`가 가리키는 자리가 늘 있어야 한다 */}
-            <div id={panelId} role="group" aria-label={g.label} hidden={!open} className="pb-1">
+            {/*
+              접혀도 DOM에 둔다(`hidden`) — `aria-controls`가 가리키는 자리가 늘 있어야 한다.
+
+              `role="group"`을 붙인 div가 아니라 `<fieldset>`이다(#658 · S6819) — 같은 역할이
+              태그에 들어 있다. `min-w-0`은 fieldset의 기본값 `min-inline-size: min-content`를
+              되돌린다: 그대로 두면 안의 `truncate`가 줄이지 못해 묶음이 사이드바 폭을 밀어낸다.
+            */}
+            <fieldset id={panelId} aria-label={g.label} hidden={!open} className="min-w-0 pb-1">
               {g.items.map((item, i) => (
                 <Fragment key={item.href}>
                   {/* 구분 제목 — 보이는 항목 기준으로 값이 바뀔 때만 (#639 · ssccops#463) */}
@@ -170,7 +176,7 @@ export function NavPanel({
                   <NavRow item={item} pathname={pathname} onNavigate={onNavigate} />
                 </Fragment>
               ))}
-            </div>
+            </fieldset>
           </div>
         );
       })}

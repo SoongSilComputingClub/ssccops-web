@@ -1,5 +1,4 @@
 import type {
-  NotificationItem,
   NotificationPage,
   PushApp,
   PushTestRequest,
@@ -31,13 +30,14 @@ export const notificationApi = {
     if (params.size) query.set("size", String(params.size));
     if (params.app) query.set("app", params.app);
     const qs = query.toString();
-    return apiFetch<NotificationPage>(`/v1/notifications${qs ? `?${qs}` : ""}`);
+    const search = qs ? `?${qs}` : "";
+    return apiFetch<NotificationPage>(`/v1/notifications${search}`);
   },
 
-  unreadCount: (params: { app?: PushApp | null } = {}) =>
-    apiFetch<{ unreadCount: number }>(
-      `/v1/notifications/unread-count${params.app ? `?app=${params.app}` : ""}`,
-    ),
+  unreadCount: (params: { app?: PushApp | null } = {}) => {
+    const search = params.app ? `?app=${params.app}` : "";
+    return apiFetch<{ unreadCount: number }>(`/v1/notifications/unread-count${search}`);
+  },
 
   read: (notificationId: number) =>
     apiFetch<{ notificationId: number; readAt: string }>(
@@ -58,4 +58,4 @@ export const notificationApi = {
     }),
 };
 
-export type { NotificationItem, NotificationPage };
+export type { NotificationItem, NotificationPage } from "@ssccops/pwa";

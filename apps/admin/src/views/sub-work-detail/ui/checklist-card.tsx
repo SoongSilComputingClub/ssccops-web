@@ -95,18 +95,28 @@ function ChecklistRow({
 
   return (
     <div className="flex items-center gap-[11px]">
-      <button
-        type="button"
+      {/*
+        `role="checkbox"`를 얹은 button이 아니라 진짜 `<input type="checkbox">`다 (#658 · S6819).
+        보이는 네모는 그리던 그대로라(18px · ✓ 글자) 입력은 `sr-only`로 숨기고 옆의 span이 몸을
+        맡는다 — 입력을 그대로 보이면 색·모서리·체크 표시가 브라우저 기본값으로 바뀐다. 초점
+        테두리와 잠긴 표시는 label 이 `has-[:focus-visible]`·`has-[:disabled]`로 대신 받는다.
+
+        옆의 항목 글은 형제라 이름이 못 된다 — 항목 글을 여기 건다. 18px 네모는 그대로, 히트만
+        p-1 -m-1 로 26px (UI 감사 D9 · #471).
+      */}
+      <label
         // 완료된 건은 체크를 되돌릴 수 없다 (서버 409) — 누를 수 없게 해 이유를 붙인다
-        disabled={disabled}
         title={disabled ? "완료된 하위 업무는 점검 목록을 바꿀 수 없습니다" : undefined}
-        onClick={onToggle}
-        // 옆의 항목 글은 형제라 이름이 못 된다 — 체크박스 의미와 항목 글을 여기 건다. 18px 네모는 그대로, 히트만 p-1 -m-1 로 26px (UI 감사 D9 · #471)
-        role="checkbox"
-        aria-checked={item.isCompleted}
-        aria-label={item.article}
-        className="-m-1 flex flex-none cursor-pointer items-center rounded-[8px] p-1 focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+        className="-m-1 flex flex-none cursor-pointer items-center rounded-[8px] p-1 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/40 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60"
       >
+        <input
+          type="checkbox"
+          className="sr-only"
+          checked={item.isCompleted}
+          disabled={disabled}
+          onChange={onToggle}
+          aria-label={item.article}
+        />
         <span
           className={
             item.isCompleted
@@ -116,7 +126,7 @@ function ChecklistRow({
         >
           {item.isCompleted ? "✓" : ""}
         </span>
-      </button>
+      </label>
 
       {isDrafting ? (
         <>

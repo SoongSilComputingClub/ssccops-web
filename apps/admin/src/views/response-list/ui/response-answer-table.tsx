@@ -3,7 +3,6 @@
 import { useState } from "react";
 import type { RspnsCn } from "@ssccops/form-renderer";
 import { answerText, type AnswerColumn, type FormResponseItem } from "@/entities/response";
-import { onKeyActivate } from "@ssccops/ui";
 import { cn } from "@/shared/lib/cn";
 
 /*
@@ -94,49 +93,16 @@ export function ResponseAnswerTable({
                   {r.member.stdntNo || "-"}
                 </td>
                 {columns.map((c) => {
-                  const text = answerText(rspnsCn, c.qitemId);
                   const cellKey = `${r.formRspnsId}:${c.qitemId}`;
                   const open = expanded === cellKey;
                   return (
-                    <td
+                    <AnswerCell
                       key={c.qitemId}
-                      /*
-                       * 답이 있을 때만 펼침을 건다. 빈 칸을 눌러 아무 일도 안 일어나면
-                       * 사용자는 고장으로 읽는다.
-                       */
-                      onClick={
-                        text ? () => setExpanded(open ? null : cellKey) : undefined
-                      }
-                      // 키보드로도 펼친다 — 답이 있는 칸만 Tab 정거장이 된다 (D8)
-                      role={text ? "button" : undefined}
-                      tabIndex={text ? 0 : undefined}
-                      aria-expanded={text ? open : undefined}
-                      onKeyDown={
-                        text ? onKeyActivate(() => setExpanded(open ? null : cellKey)) : undefined
-                      }
-                      /* 마우스로 잠깐 올려도 전문이 보이게 — 누르는 것과 두 경로를 준다 */
-                      title={text || undefined}
-                      className={cn(
-                        "px-3 py-2 align-top focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none",
-                        text && "cursor-pointer",
-                        open ? "whitespace-pre-wrap" : "truncate",
-                      )}
-                      style={{
-                        maxWidth: open
-                          ? undefined
-                          : c.long
-                            ? COL_WIDTH.long
-                            : COL_WIDTH.short,
-                      }}
-                    >
-                      {/*
-                        빈 칸을 `-`로 채우지 않는다. 답을 비워 둔 것인지 그 응답 당시에는 없던
-                        문항인지 화면이 구별할 수 없어서인데(서버가 qitem_ver를 내려주지 않는다),
-                        `-`를 넣으면 "답이 없다"는 한 가지 뜻으로 굳는다. 비워 두면 읽는 사람이
-                        표의 다른 칸과 비교해 판단한다.
-                      */}
-                      {text}
-                    </td>
+                      text={answerText(rspnsCn, c.qitemId)}
+                      long={c.long}
+                      open={open}
+                      onToggle={() => setExpanded(open ? null : cellKey)}
+                    />
                   );
                 })}
               </tr>
@@ -145,5 +111,56 @@ export function ResponseAnswerTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/**
+ * 답 한 칸 — 답이 있을 때만 펼침이 걸린다.
+ *
+ * **`role="button"`을 얹은 `td`가 아니라 `td` 안의 `button`이다**(#658 · S6819 · S3776). 바로
+ * 왼쪽의 회원명 칸(#473)과 같은 규약이고, 버튼이 Enter·Space를 스스로 받으므로 `onKeyActivate`도
+ * 필요 없다. 자르기·펼치기와 누르는 자리는 버튼으로 내려가고 `td`에는 여백과 폭만 남는다 —
+ * 칸을 한 바퀴 도는 삼항이 여기로 모이면서 부르는 쪽의 인지 복잡도도 함께 내려간다.
+ *
+ * 답이 없으면 빈 칸이다. 눌러도 아무 일이 없는 자리를 Tab 정거장으로 두면 사용자는 고장으로
+ * 읽는다(D8).
+ */
+function AnswerCell({
+  text,
+  long,
+  open,
+  onToggle,
+}: Readonly<{
+  text: string;
+  /** 서술형인가 — 자른 상태의 폭이 갈린다 */
+  long: boolean;
+  open: boolean;
+  onToggle: () => void;
+}>) {
+  /* 펼치면 폭을 풀어 전문이 줄바꿈으로 흐르게 한다 */
+  const maxWidth = open ? undefined : long ? COL_WIDTH.long : COL_WIDTH.short;
+
+  /*
+   * 빈 칸을 `-`로 채우지 않는다. 답을 비워 둔 것인지 그 응답 당시에는 없던 문항인지 화면이
+   * 구별할 수 없어서인데(서버가 qitem_ver를 내려주지 않는다), `-`를 넣으면 "답이 없다"는 한
+   * 가지 뜻으로 굳는다. 비워 두면 읽는 사람이 표의 다른 칸과 비교해 판단한다.
+   */
+  if (!text) return <td className="px-3 py-2 align-top" style={{ maxWidth }} />;
+
+  return (
+    /* 마우스로 잠깐 올려도 전문이 보이게 — 누르는 것과 두 경로를 준다 */
+    <td className="px-3 py-2 align-top" style={{ maxWidth }} title={text}>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={onToggle}
+        className={cn(
+          "block w-full cursor-pointer rounded-[4px] text-left focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none",
+          open ? "whitespace-pre-wrap" : "truncate",
+        )}
+      >
+        {text}
+      </button>
+    </td>
   );
 }

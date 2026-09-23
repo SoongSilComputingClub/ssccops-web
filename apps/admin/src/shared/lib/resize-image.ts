@@ -101,7 +101,7 @@ export async function resizeImageForUpload(
   }
 
   /* webp가 안 나오거나(옛 Safari) 형식이 다르거나 원본보다 크면 축소가 뜻이 없다 — 원본으로 */
-  if (!blob || blob.type !== WEBP || blob.size >= file.size) return original(file);
+  if (blob?.type !== WEBP || blob.size >= file.size) return original(file);
 
   return { blob, fileExt: "webp", resized: true };
 }

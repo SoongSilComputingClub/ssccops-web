@@ -46,6 +46,10 @@ export async function middleware(request: NextRequest) {
  *
  * 매니페스트는 비밀이 없는 공개 자산이라 인증 판단이 필요 없고, 매처에서 빼면 요청마다
  * 붙던 Supabase 왕복도 함께 없어진다.
+ *
+ * **`\\.`를 `String.raw`로 펴지 않는다**(#658 · S7780). 매처는 Next가 빌드 때 **정적으로
+ * 읽는** 값이라 태그 템플릿을 평가하지 못한다 — 바꿔 보니 «Invalid segment configuration
+ * export detected»로 `next build`가 죽었다. 규칙이 옳아도 이 자리에서는 쓸 수 없다.
  */
 export const config = {
   matcher: [

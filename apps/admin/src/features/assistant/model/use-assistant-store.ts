@@ -10,7 +10,7 @@ import {
   type AssistantCorpusState,
 } from "@/entities/assistant";
 import { ApiError } from "@/shared/lib/api/client";
-import { toAssistantErrorMessage, toAssistantResetErrorMessage } from "./assistant-error";
+import { ASSISTANT_RESET_ERROR_MESSAGE, toAssistantErrorMessage } from "./assistant-error";
 
 /*
  * 규정 도우미의 상태 (#433 · 기획안 §7.4 · §13.1).
@@ -324,7 +324,7 @@ export const useAssistantStore = create<AssistantState>((set, get) => ({
       set((s) => ({
         messages: [
           ...s.messages,
-          { kind: "error", id: newId(), text: toAssistantResetErrorMessage(error) },
+          { kind: "error", id: newId(), text: ASSISTANT_RESET_ERROR_MESSAGE },
         ],
         resetting: false,
       }));
