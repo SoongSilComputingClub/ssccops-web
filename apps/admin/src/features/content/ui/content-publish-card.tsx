@@ -34,6 +34,7 @@ export function ContentPublishCard({
 }>) {
   const stts = pubSttsBadge(pubSttsCd);
   const published = pubSttsCd === "PUBLISHED";
+  const publishedAt = pubDt ? ` 게시 ${formatDt(pubDt)}` : "";
 
   return (
     <Card className="mb-4">
@@ -42,7 +43,7 @@ export function ContentPublishCard({
         <Badge tone={stts.tone}>{stts.label}</Badge>
         <div className="text-[13.5px] text-n500">
           {published
-            ? `공개 화면에 보이는 상태입니다.${pubDt ? ` 게시 ${formatDt(pubDt)}` : ""}`
+            ? `공개 화면에 보이는 상태입니다.${publishedAt}`
             : "게시 전에는 공개 화면에 보이지 않습니다."}
         </div>
         <div className="flex-1" />

@@ -187,7 +187,7 @@ export function assignableEditHint(
   memberId: number | null,
   current: AssignableCurrent | null,
 ): string {
-  if (current && memberId === current.memberId) {
+  if (memberId === current?.memberId) {
     return assignable.includes(current.memberId)
       ? "비우면 현재 담당자 그대로입니다"
       : "현재 담당자는 이제 지정할 수 없는 회원입니다 — 다른 회원으로 바꿔주세요";

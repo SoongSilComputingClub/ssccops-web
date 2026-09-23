@@ -255,45 +255,7 @@ function FormEditContent({ editor }: Readonly<{ editor: FormEditor }>) {
 
         <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.15fr]">
           <div className="flex flex-col gap-4">
-            {/*
-              시스템 폼과 문항 버전 안내 (ssccops-server #140).
-
-              저장을 누르기 전에 알아야 하는 두 가지를 같은 상자에서 말한다 — 이 폼에서 무엇이
-              잠겨 있고 무엇이 열려 있는가, 그리고 문항을 고치면 무엇이 남는가. 잠긴 것만 적으면
-              폼 전체가 굳은 줄 알고 아무도 손대지 않으므로 열려 있는 값도 함께 적는다.
-
-              문항 잠금 안내는 여기 없다 — 문항 편집기(QitemComposer)가 자기 자리에서 말한다
-              (#554). 여기서 되풀이하면 같은 화면에 같은 문장이 둘이 된다. 버전 뒤의 «문항을
-              바꾸면…»도 시스템 폼에는 붙이지 않는다 — 바꿀 수 없는 것을 바꾸면 어떻게 되는지
-              말할 이유가 없다.
-            */}
-            {(editor.sysYn || editor.qitemVer !== null) && (
-              <div className="rounded-[12px] border border-line bg-bg px-[14px] py-[10px] text-[13px] leading-[1.6] text-n400">
-                {editor.sysYn && (
-                  <div>
-                    <Badge tone={systemFormBadge(editor.sysFormCd).tone}>
-                      {systemFormBadge(editor.sysFormCd).label}
-                    </Badge>{" "}
-                    {/* 모집 지정 폼은 문항까지 열려 있다 — 기획안 문장으로는 «문항은?»이 빠진다 (#588) */}
-                    {editor.sysFormCd === RECRUIT_SYS_FORM_CD ? (
-                      RECRUIT_FORM_NOTE
-                    ) : (
-                      <>
-                        {SYSTEM_FORM_DELETE_LOCKED}. {SYSTEM_FORM_OPEN_PARTS}.
-                      </>
-                    )}
-                  </div>
-                )}
-                {/* 버전은 서버가 준 값만 말한다 — 신규 폼은 아직 저장된 구성이 없다 */}
-                {editor.qitemVer !== null && (
-                  <div className={editor.sysYn ? "mt-2" : undefined}>
-                    {FIELD_LABEL.qitemVersion} v{editor.qitemVer}
-                    {/* 문항이 잠긴 폼에는 «바꾸면…»을 붙이지 않는다 — 바꿀 수 없는 것의 결과를 말할 이유가 없다 */}
-                    {editor.questionsLocked ? "" : ` · ${QITEM_VERSION_NOTE}`}
-                  </div>
-                )}
-              </div>
-            )}
+            <FormEditNotice editor={editor} />
 
             <Card>
               <SectionLabel className="mb-3">기본정보</SectionLabel>
@@ -511,5 +473,51 @@ function FormEditContent({ editor }: Readonly<{ editor: FormEditor }>) {
         onSave={(input) => void saveAsTemplate(input)}
       />
     </>
+  );
+}
+
+/**
+ * 시스템 폼과 문항 버전 안내 (ssccops-server #140).
+ *
+ * 저장을 누르기 전에 알아야 하는 두 가지를 같은 상자에서 말한다 — 이 폼에서 무엇이 잠겨 있고
+ * 무엇이 열려 있는가, 그리고 문항을 고치면 무엇이 남는가. 잠긴 것만 적으면 폼 전체가 굳은 줄
+ * 알고 아무도 손대지 않으므로 열려 있는 값도 함께 적는다.
+ *
+ * 문항 잠금 안내는 여기 없다 — 문항 편집기(QitemComposer)가 자기 자리에서 말한다 (#554).
+ * 여기서 되풀이하면 같은 화면에 같은 문장이 둘이 된다. 버전 뒤의 «문항을 바꾸면…»도 시스템
+ * 폼에는 붙이지 않는다 — 바꿀 수 없는 것을 바꾸면 어떻게 되는지 말할 이유가 없다.
+ *
+ * 화면 안의 조건문이 아니라 따로 선 것은 편집 화면의 인지 복잡도 때문이다(#658 · S3776) —
+ * 이 상자 하나가 갈래 여섯을 쥐고 있었다.
+ */
+function FormEditNotice({ editor }: Readonly<{ editor: FormEditor }>) {
+  if (!editor.sysYn && editor.qitemVer === null) return null;
+
+  return (
+    <div className="rounded-[12px] border border-line bg-bg px-[14px] py-[10px] text-[13px] leading-[1.6] text-n400">
+      {editor.sysYn && (
+        <div>
+          <Badge tone={systemFormBadge(editor.sysFormCd).tone}>
+            {systemFormBadge(editor.sysFormCd).label}
+          </Badge>{" "}
+          {/* 모집 지정 폼은 문항까지 열려 있다 — 기획안 문장으로는 «문항은?»이 빠진다 (#588) */}
+          {editor.sysFormCd === RECRUIT_SYS_FORM_CD ? (
+            RECRUIT_FORM_NOTE
+          ) : (
+            <>
+              {SYSTEM_FORM_DELETE_LOCKED}. {SYSTEM_FORM_OPEN_PARTS}.
+            </>
+          )}
+        </div>
+      )}
+      {/* 버전은 서버가 준 값만 말한다 — 신규 폼은 아직 저장된 구성이 없다 */}
+      {editor.qitemVer !== null && (
+        <div className={editor.sysYn ? "mt-2" : undefined}>
+          {FIELD_LABEL.qitemVersion} v{editor.qitemVer}
+          {/* 문항이 잠긴 폼에는 «바꾸면…»을 붙이지 않는다 — 바꿀 수 없는 것의 결과를 말할 이유가 없다 */}
+          {editor.questionsLocked ? "" : ` · ${QITEM_VERSION_NOTE}`}
+        </div>
+      )}
+    </div>
   );
 }

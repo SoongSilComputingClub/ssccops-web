@@ -157,7 +157,7 @@ export function withCitationMarkers(answer: string, citations: AssistantCitation
     const refs = group.split(",").map((ref) => Number(ref.trim()));
     const labels = refs.map((ref) => markers.get(ref));
     /* 하나라도 짝이 없으면 통째로 둔다 — 반만 갈아 그리면 무엇이 근거인지가 흐려진다 */
-    if (labels.some((label) => label === undefined)) return whole;
+    if (labels.includes(undefined)) return whole;
     return `[${labels.join(", ")}]`;
   });
 }

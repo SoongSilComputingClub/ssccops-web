@@ -92,7 +92,7 @@ function LockedQitemBody({
         <div className="mt-2">
           <div className="text-n500">선택지</div>
           <ul className="list-disc pl-5">
-            {/* key=index — 선택지 글자는 겹칠 수 있다 (아래 편집 본문의 주석) */}
+            {/* key=index — 선택지 글자는 겹칠 수 있다 (아래 편집 본문의 주석 · #658 S6479 오탐) */}
             {q.optionList.map((o, oi) => (
               <li key={oi}>{o}</li>
             ))}

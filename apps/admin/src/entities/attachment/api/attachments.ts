@@ -33,7 +33,7 @@ function toAttachment(res: AttachmentResponse): Attachment {
     fileName: res.fileName ?? "",
     fileSize: res.fileSize,
     uploader:
-      res.uploader && res.uploader.memberId != null
+      res.uploader?.memberId != null
         ? { memberId: res.uploader.memberId, name: res.uploader.name ?? "" }
         : null,
     uploadedAt: res.uploadedAt,

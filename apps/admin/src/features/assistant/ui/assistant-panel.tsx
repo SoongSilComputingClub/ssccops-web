@@ -102,7 +102,7 @@ export function AssistantPanel() {
   const streaming = messages.some((message) => message.kind === "streaming");
 
   const [draft, setDraft] = useState("");
-  const panelRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const tailRef = useRef<HTMLDivElement>(null);
 
@@ -140,6 +140,29 @@ export function AssistantPanel() {
     inputRef.current?.focus();
     return () => document.removeEventListener("keydown", onKey);
   }, [open, closePanel, confirmingReset]);
+
+  /*
+   * Tab을 패널 안에 가둔다 — 핸들러를 JSX가 아니라 요소에 직접 건다 (#658 · S6847).
+   *
+   * `<dialog>`는 대화 요소가 아니라 «창»이라, 거기 붙은 `onKeyDown`은 정적 요소에 키보드
+   * 동작을 얹은 것으로 읽힌다. 실제로 이 핸들러가 하는 일은 사용자의 키를 처리하는 것이
+   * 아니라 **초점이 패널 밖으로 새지 않게 되돌리는 것**이므로, Esc를 document에서 받는 위
+   * 효과와 같은 방식으로 요소에 건다. 버블 단계에서 받는 것도 그대로다.
+   *
+   * 확인 시트가 떠 있는 동안에는 가두지 않는다 (#434). 시트는 패널 밖(형제)에 그려지고
+   * `z-[90]`으로 그 위에 있으므로, 여기서 계속 Tab을 패널 안으로 되돌리면 초점이
+   * «지우기»·«취소»에 닿지 못한다 — 확인을 물어 놓고 키보드로는 답할 수 없게 된다.
+   */
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!open || !panel) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (confirmingReset) return;
+      trapFocus(e, panel);
+    };
+    panel.addEventListener("keydown", onKey);
+    return () => panel.removeEventListener("keydown", onKey);
+  }, [open, confirmingReset]);
 
   /* 새 말풍선이 붙으면 끝으로 따라간다 — 답이 화면 아래에 숨은 채 도착하지 않게 한다 */
   useEffect(() => {
@@ -181,21 +204,25 @@ export function AssistantPanel() {
         className="fixed inset-0 z-[88] animate-fade-in bg-scrim lg:hidden"
       />
 
-      <div
+      {/*
+        `role="dialog"`을 붙인 div가 아니라 `<dialog>`다 (#658 · S6819) — 같은 역할이 태그에
+        들어 있다. **`open` 속성만 쓰고 `showModal()`은 쓰지 않는다**: 최상위 레이어로 올라가면
+        z-index가 뜻을 잃어, 위의 스크림도 아래의 확인 시트(`z-[90]`)도 패널 뒤로 밀린다.
+
+        브라우저 기본 스타일 중 Tailwind preflight가 되돌리지 않는 셋을 여기서 맞춘다 —
+        `width`·`height: fit-content`는 `w-auto h-auto`로(그대로 두면 `inset-0`이 화면을 채우지
+        못한다), `color: CanvasText`는 `text-[color:inherit]`로, 엔진에 따라 붙는 `overflow: auto`는
+        `overflow-visible`로. 여백·테두리는 preflight의 `* { margin: 0; padding: 0; border: 0 }`이
+        이미 지운다.
+
+        Tab 가두기는 JSX의 `onKeyDown`이 아니라 위 `useEffect`가 이 요소에 직접 건다 (S6847).
+      */}
+      <dialog
         ref={panelRef}
-        role="dialog"
+        open
         aria-modal="true"
         aria-labelledby={TITLE_ID}
-        onKeyDown={(e) => {
-          /*
-            확인 시트가 떠 있는 동안에는 가두지 않는다 (#434). 시트는 패널 밖(형제)에 그려지고
-            `z-[90]`으로 그 위에 있으므로, 여기서 계속 Tab을 패널 안으로 되돌리면 초점이
-            «지우기»·«취소»에 닿지 못한다 — 확인을 물어 놓고 키보드로는 답할 수 없게 된다.
-          */
-          if (confirmingReset) return;
-          trapFocus(e, panelRef.current);
-        }}
-        className="fixed inset-0 z-[89] flex animate-fade-in flex-col border-line-strong bg-surface outline-none lg:inset-auto lg:right-6 lg:bottom-[92px] lg:h-[min(620px,calc(100dvh-140px))] lg:w-[380px] lg:animate-pop-in lg:rounded-2xl lg:border lg:shadow-[0_16px_40px_rgb(0_0_0/.28)]"
+        className="fixed inset-0 z-[89] flex h-auto w-auto animate-fade-in flex-col overflow-visible border-line-strong bg-surface text-[color:inherit] outline-none lg:inset-auto lg:right-6 lg:bottom-[92px] lg:h-[min(620px,calc(100dvh-140px))] lg:w-[380px] lg:animate-pop-in lg:rounded-2xl lg:border lg:shadow-[0_16px_40px_rgb(0_0_0/.28)]"
       >
         <header className="flex flex-none items-center gap-[9px] border-b border-hairline-strong px-[16px] py-[13px]">
           <span
@@ -318,7 +345,7 @@ export function AssistantPanel() {
             </div>
           )}
         </form>
-      </div>
+      </dialog>
 
       {/*
         초기화 확인 (#434) — **되돌릴 수 없어서 묻는다**(#432의 기준). 말풍선의 정본이 store
@@ -351,7 +378,7 @@ export function AssistantPanel() {
  * `aria-modal="true"`는 보조기기에게 «뒤는 없다»고 말할 뿐 Tab을 막지 못한다. 좁은 화면에서는
  * 패널이 화면을 덮고 있어 초점이 보이지 않는 곳으로 가면 사용자가 되돌아올 길을 잃는다.
  */
-function trapFocus(e: KeyboardEvent<HTMLElement>, panel: HTMLElement | null) {
+function trapFocus(e: globalThis.KeyboardEvent, panel: HTMLElement | null) {
   if (e.key !== "Tab" || !panel) return;
 
   const focusable = panel.querySelectorAll<HTMLElement>(

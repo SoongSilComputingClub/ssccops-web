@@ -73,10 +73,10 @@ export function toAssistantErrorMessage(error: unknown): string {
  * 403 `CONVERSATION_FORBIDDEN`이 여기 없는 것은 **그것이 실패가 아니기** 때문이다. 지우려던
  * 대화에 이미 닿을 수 없다는 뜻이고, 그 결과는 사용자가 바란 것과 같아 store가 성공으로
  * 받는다(`reset` 주석).
+ *
+ * **함수가 아니라 상수다**(#658 · S3516). 코드로 가르지 않기로 한 자리라 `error`를 받아도
+ * 쓸 데가 없었고, 그러면서도 `NETWORK_ERROR` 갈래가 남아 두 갈래가 같은 문장을 돌려주고
+ * 있었다 — 읽는 사람에게는 «여기서 갈린다»로 보이는 죽은 분기였다. 갈래가 다시 필요해지면
+ * 그때 함수로 되돌린다.
  */
-export function toAssistantResetErrorMessage(error: unknown): string {
-  if (error instanceof ApiError && error.code === API_ERROR.NETWORK_ERROR) {
-    return "대화를 지우지 못했습니다 — 잠시 후 다시 시도해주세요";
-  }
-  return "대화를 지우지 못했습니다 — 잠시 후 다시 시도해주세요";
-}
+export const ASSISTANT_RESET_ERROR_MESSAGE = "대화를 지우지 못했습니다 — 잠시 후 다시 시도해주세요";
