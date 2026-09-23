@@ -15,7 +15,8 @@
         "NEXT_PUBLIC_*",
         "VERCEL_GIT_COMMIT_SHA",
         "WORKERS_CI_COMMIT_SHA",
-        "SOURCE_COMMIT"
+        "SOURCE_COMMIT",
+        "CONTAINER_BUILD"
       ],
       "outputs": [".next/**", "!.next/cache/**"]
     },
