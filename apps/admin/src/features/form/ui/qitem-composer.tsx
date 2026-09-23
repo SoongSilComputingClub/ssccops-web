@@ -19,7 +19,7 @@ import {
   type QitemTypeCd,
 } from "@/shared/config/codes";
 import { FormDescription } from "@ssccops/form-renderer";
-import { Badge, Card, Chip, SectionLabel, TextArea, TextField, Toggle, flash, Button } from "@/shared/ui";
+import { Badge, Button, Card, Chip, Field, SectionLabel, TextArea, TextField, Toggle, flash } from "@/shared/ui";
 import { nextQitemId, parseMaxSlctCnt } from "../model/form-draft";
 
 /*
@@ -68,11 +68,13 @@ function LockedQitemBody({
   return (
     <div className="border-t border-line p-3 text-[13.5px] leading-[1.7] text-n400">
       <TextField
+        aria-label="질문 문구"
         value={q.qitemLblNm}
         onChange={(e) => onPatch({ qitemLblNm: e.target.value })}
         placeholder="질문 문구"
       />
       <TextArea
+        aria-label="문항 설명"
         className="mt-2"
         value={q.qitemDescCn ?? ""}
         onChange={(e) => onPatch({ qitemDescCn: e.target.value })}
@@ -426,6 +428,7 @@ export function QitemComposer({
         </div>
         <div className="mt-2 flex flex-col gap-2">
           <TextField
+            aria-label="페이지 제목"
             value={pages[page]?.pageTtl ?? ""}
             onChange={(e) =>
               onChange((c) => ({
@@ -438,6 +441,7 @@ export function QitemComposer({
             placeholder="페이지 제목"
           />
           <TextArea
+            aria-label="페이지 설명"
             value={pages[page]?.pageDescCn ?? ""}
             onChange={(e) =>
               onChange((c) => ({
@@ -459,15 +463,9 @@ export function QitemComposer({
           이 페이지의 문항 {pageQitems.length}개
         </div>
         <div className="flex-1" />
-        <button
-          type="button"
-          onClick={addQitem}
-          disabled={locked}
-          title={lockedTitle}
-          className="cursor-pointer text-[14px] text-accent disabled:cursor-not-allowed disabled:opacity-45"
-        >
+        <Button variant="link" onClick={addQitem} disabled={locked} title={lockedTitle}>
           + 문항 추가
-        </button>
+        </Button>
       </div>
 
       {pageQitems.length === 0 ? (
@@ -536,11 +534,13 @@ export function QitemComposer({
                 {open && !locked && (
                   <div className="border-t border-line p-3">
                     <TextField
+                      aria-label="질문 문구"
                       value={q.qitemLblNm}
                       onChange={(e) => patchQ(q.qitemId, { qitemLblNm: e.target.value })}
                       placeholder="질문 문구"
                     />
                     <TextArea
+                      aria-label="문항 설명"
                       className="mt-2"
                       value={q.qitemDescCn ?? ""}
                       onChange={(e) => patchQ(q.qitemId, { qitemDescCn: e.target.value })}
@@ -617,6 +617,7 @@ export function QitemComposer({
                           {q.optionList.map((o, oi) => (
                             <div key={oi} className="flex items-center gap-2">
                               <TextField
+                                aria-label={`선택지 ${oi + 1}`}
                                 value={o}
                                 onChange={(e) =>
                                   patchQ(q.qitemId, {
@@ -682,10 +683,7 @@ export function QitemComposer({
                         </div>
 
                         {q.qitemTypeCd === "MULTI_CHOICE" && (
-                          <div>
-                            <div className="mb-[6px] text-[13.5px] text-n400">
-                              최대 선택 개수
-                            </div>
+                          <Field label="최대 선택 개수">
                             {/*
                               빈 값만 '제한 없음'이다. 숫자가 아니면 초안을 바꾸지 않고
                               알린다 — 예전의 `Number(v) || undefined`는 "0"도 "abc"도
@@ -709,7 +707,7 @@ export function QitemComposer({
                               placeholder="제한 없음"
                               className="w-[120px]"
                             />
-                          </div>
+                          </Field>
                         )}
 
                         {isTextQitemType(q.qitemTypeCd) && (
@@ -753,6 +751,7 @@ export function QitemComposer({
                               lg:에서 원래의 13.5px 고정폭을 되살린다.
                             */}
                             <TextField
+                              aria-label="정규식"
                               value={q.ptrnCn ?? ""}
                               invalid={!isCompilableRegExp(q.ptrnCn)}
                               onChange={(e) => patchQ(q.qitemId, { ptrnCn: e.target.value })}
@@ -766,6 +765,7 @@ export function QitemComposer({
                               </div>
                             )}
                             <TextField
+                              aria-label="형식 오류 안내 문구"
                               value={q.ptrnMsgCn ?? ""}
                               onChange={(e) =>
                                 patchQ(q.qitemId, { ptrnMsgCn: e.target.value })

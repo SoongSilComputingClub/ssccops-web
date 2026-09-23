@@ -32,8 +32,14 @@ const VARIANT: Record<Variant, string> = {
   link: "text-accent hover:text-accent-strong",
   "link-danger": "text-danger hover:text-danger-strong",
 };
+/*
+ * `min-w-6`도 높이와 같은 이유다 (UI 감사 · #486) — «수정»처럼 두 글자면 패딩을 넣어도 폭이
+ * 24px에 못 미쳐(21×29) 세로로만 24px인 띠가 된다. 글자가 24px보다 넓은 자리는 그대로이고
+ * 좁은 자리만 늘어나므로 `justify-center`로 글자를 가운데 둔다 — 안 그러면 늘어난 폭이
+ * 왼쪽으로 쏠려 «↑»·«↓» 같은 한 글자 버튼이 제자리에서 벗어난 것처럼 보인다.
+ */
 const LINK_SHAPE =
-  "-mx-1 -my-1 inline-flex min-h-6 items-center px-1 py-1 text-[14px] rounded-[6px] focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none";
+  "-mx-1 -my-1 inline-flex min-h-6 min-w-6 items-center justify-center px-1 py-1 text-[14px] rounded-[6px] focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none";
 
 export function Button({
   variant = "primary",

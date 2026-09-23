@@ -161,13 +161,13 @@ function ProposalReviewDetail({
                 },
               ]}
             />
-            <button
-              type="button"
+            <Button
+              variant="link"
               onClick={() => router.push(ROUTES.memberDetail(member.mbrId))}
-              className="mt-4 cursor-pointer text-[14px] text-accent"
+              className="mt-4"
             >
               회원 상세로 이동 ›
-            </button>
+            </Button>
           </Card>
 
           <Card>

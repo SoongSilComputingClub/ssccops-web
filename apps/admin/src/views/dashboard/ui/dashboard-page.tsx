@@ -109,7 +109,7 @@ export function DashboardPage() {
           <button
             type="button"
             onClick={() => goToSubWorkApproval(item.subWorkId)}
-            className="max-w-full cursor-pointer overflow-hidden text-left text-ellipsis font-semibold hover:text-accent"
+            className="min-h-6 max-w-full cursor-pointer overflow-hidden text-left text-ellipsis font-semibold hover:text-accent"
           >
             {item.title}
           </button>
@@ -155,7 +155,7 @@ export function DashboardPage() {
         <button
           type="button"
           onClick={() => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
-          className="max-w-full cursor-pointer overflow-hidden text-left text-ellipsis font-semibold hover:text-accent"
+          className="min-h-6 max-w-full cursor-pointer overflow-hidden text-left text-ellipsis font-semibold hover:text-accent"
         >
           {sw.title}
         </button>

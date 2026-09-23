@@ -147,8 +147,14 @@ export function RoleLabelsPage() {
         <div className="mb-4 max-w-[820px]">
           {/* 코드 220px + 이름 240px + 추가 버튼은 좁은 화면에 한 줄로 들어가지 않는다 —
               세로로 쌓고 lg 부터 예전처럼 한 줄에 나란히 둔다 */}
+          {/*
+            추가 행에는 라벨을 세우지 않는다 — 코드·이름·버튼이 한 줄에 서는 자리라 라벨을 얹으면
+            행이 두 층이 된다. 대신 placeholder에 이미 보이는 이름을 `aria-label`로 붙인다 (#486) —
+            아래 표의 인라인 편집 칸이 쓰는 방식과 같다.
+          */}
           <div className="flex flex-col items-stretch gap-2 lg:flex-row lg:items-center">
             <TextField
+              aria-label={FIELD_LABEL.roleClassificationCode}
               value={newCd}
               onChange={(e) => setNewCd(e.target.value)}
               disabled={!canManage}
@@ -159,6 +165,7 @@ export function RoleLabelsPage() {
               className="w-full font-mono text-[16px] lg:w-[220px] lg:text-[15.5px]"
             />
             <TextField
+              aria-label={FIELD_LABEL.roleClassificationName}
               value={newNm}
               onChange={(e) => setNewNm(e.target.value)}
               onKeyDown={(e) => {

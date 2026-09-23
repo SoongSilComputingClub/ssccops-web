@@ -46,7 +46,9 @@ export function RejectSheet({
       }}
       okLabel="반려"
     >
+      {/* 시트의 `hint`는 `<label>`이 아니라 이름이 되지 못한다 — 같은 문구를 한 줄 더 세우지 않고 이름만 붙인다 (#486) */}
       <TextField
+        aria-label="반려 사유"
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         placeholder="예: 예산 초과"
