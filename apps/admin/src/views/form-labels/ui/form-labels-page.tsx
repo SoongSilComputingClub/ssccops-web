@@ -56,8 +56,13 @@ export function FormLabelsPage() {
       <PageHeader title="라벨 관리" subtitle="사용_여부 토글" />
       <PageBody>
         <div className="mb-4 max-w-[640px]">
+          {/*
+            추가 행에는 라벨을 세우지 않는다 — 입력과 «추가» 버튼이 한 줄에 서는 자리다. 대신
+            placeholder에 이미 보이는 이름을 `aria-label`로 붙인다 (#486).
+          */}
           <div className="flex items-center gap-2">
             <TextField
+              aria-label="라벨_명"
               value={newLblNm}
               onChange={(e) => setNewLblNm(e.target.value)}
               // 엔터로도 추가한다 — 여러 개를 이어서 넣는 화면이라 매번 버튼까지 가지 않게

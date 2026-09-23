@@ -228,7 +228,9 @@ export function SubWorkTypeListPage() {
                     ))}
                     {draft.minAgreeCountNeeded && (
                       <>
+                        {/* 칩과 «인 동의» 사이에 끼는 숫자 칸이라 라벨을 세울 자리가 없다 — 위의 묶음 라벨을 이름으로 쓴다 (#486) */}
                         <TextField
+                          aria-label="최소_필요_동의_수"
                           inset
                           value={draft.minAgreeCount ?? ""}
                           onChange={(e) =>
@@ -422,15 +424,15 @@ export function SubWorkTypeListPage() {
                     <div className="mt-2 text-[13.5px] break-words text-n400">
                       완료 점검 · {t.completionCheckArticles.join(" · ") || "-"}
                     </div>
-                    <button
-                      type="button"
+                    <Button
+                      variant="link"
                       disabled={!canManage}
                       title={canManage ? undefined : NO_MANAGE}
                       onClick={() => startEdit(t)}
-                      className="mt-2 cursor-pointer text-[14px] text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="mt-2"
                     >
                       수정
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>

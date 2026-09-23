@@ -6,7 +6,7 @@ import { useCan } from "@/features/auth";
 import { useRoleEditor } from "@/features/role";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { ROUTES } from "@/shared/config/routes";
-import { Badge, Button, Card, Chip, EmptyState, PageBody, PageHeader, SectionLabel, TextField, flash } from "@/shared/ui";
+import { Badge, Button, Card, Chip, EmptyState, Field, PageBody, PageHeader, SectionLabel, TextField, flash } from "@/shared/ui";
 import type { RoleMember } from "@/entities/role";
 
 /*
@@ -97,19 +97,26 @@ function RoleEditorView({ roleId }: Readonly<{ roleId?: number }>) {
                 <SectionLabel className="mb-3">
                   {editor.editing ? "역할 수정" : "새 역할 추가"}
                 </SectionLabel>
-                <div className="mb-[6px] text-[13.5px] text-n400">{FIELD_LABEL.roleName}</div>
-                <TextField
-                  value={editor.roleNm}
-                  onChange={(e) => editor.setRoleNm(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") void save();
-                  }}
-                  invalid={Boolean(editor.saveErrorMessage)}
-                  placeholder="역할명"
-                  /* iOS Safari 는 16px 미만 입력란에 포커스가 가면 페이지를 통째로 확대한다.
-                     TextField 기본값이 15.5px 이라 여기 걸린다 — lg 부터는 예전 값 그대로다 */
-                  className="text-[16px] lg:text-[15.5px]"
-                />
+                {/*
+                  라벨 div + 입력을 `Field`로 바꿨다 (#486) — 그리는 결과는 같고(`Field`의 라벨이
+                  같은 `mb-[6px] text-[13.5px] text-n400`이다) `<label htmlFor>`이 붙어 칸에 이름이
+                  생긴다. 오류 문구는 `Field`의 `error`로 옮기지 않았다 — 그쪽은 12.5px 한 줄이고
+                  여기는 13.5px에 줄 간격까지 둔 문단이라 옮기면 화면이 바뀐다.
+                */}
+                <Field label={FIELD_LABEL.roleName}>
+                  <TextField
+                    value={editor.roleNm}
+                    onChange={(e) => editor.setRoleNm(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void save();
+                    }}
+                    invalid={Boolean(editor.saveErrorMessage)}
+                    placeholder="역할명"
+                    /* iOS Safari 는 16px 미만 입력란에 포커스가 가면 페이지를 통째로 확대한다.
+                       TextField 기본값이 15.5px 이라 여기 걸린다 — lg 부터는 예전 값 그대로다 */
+                    className="text-[16px] lg:text-[15.5px]"
+                  />
+                </Field>
                 {editor.saveErrorMessage && (
                   <div className="mt-[6px] text-[13.5px] leading-[1.6] text-danger">
                     {editor.saveErrorMessage}
