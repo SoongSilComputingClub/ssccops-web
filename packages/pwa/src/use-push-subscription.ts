@@ -62,9 +62,12 @@ function pushSupported(): boolean {
  */
 function toApplicationServerKey(base64Url: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64Url.length % 4)) % 4);
-  const base64 = (base64Url + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const base64 = (base64Url + padding).replaceAll("-", "+").replaceAll("_", "/");
   const raw = atob(base64);
   const bytes = new Uint8Array(raw.length);
+  // `atob`가 주는 것은 코드유닛이 전부 0~255인 이진 문자열이라 서로게이트 쌍이 생길 수 없다 —
+  // `charCodeAt`와 `codePointAt`의 결과가 언제나 같다. 뒤엣것은 `undefined`까지 돌려주는 타입이라
+  // 닿지 않는 기본값 한 줄이 늘 뿐이다(S7758은 여기서 오탐이다).
   for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i);
   return bytes;
 }
@@ -101,7 +104,8 @@ export function usePushSubscription({
 }: UsePushSubscriptionOptions): PushSubscriptionControls {
   // 서버 렌더와 첫 클라이언트 렌더가 같아야 한다 — 판정은 effect에서
   const [state, setState] = useState<PushSubscriptionState>("pending");
-  const [error, setError] = useState<string | null>(null);
+  // 이름이 `error`가 아닌 것은 catch 파라미터를 `error`로 두기 위해서다(S7718) — 같은 이름이면 가린다
+  const [lastError, setLastError] = useState<string | null>(null);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
@@ -134,7 +138,7 @@ export function usePushSubscription({
     const registration = registrationRef.current;
     if (!registration || state === "pending" || state === "unsupported") return;
     setState("pending");
-    setError(null);
+    setLastError(null);
 
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
@@ -147,7 +151,7 @@ export function usePushSubscription({
       const { publicKey } = await getConfig();
       if (!publicKey) {
         // 구독은 만들 수 있지만 받을 일이 없다 — 켜진 것처럼 보이는 쪽이 더 나쁘다
-        setError("이 서버에는 푸시가 꺼져 있어요 — 운영진에게 알려 주세요");
+        setLastError("이 서버에는 푸시가 꺼져 있어요 — 운영진에게 알려 주세요");
         setState("off");
         return;
       }
@@ -159,13 +163,13 @@ export function usePushSubscription({
         }));
       await subscribe(toRequest(subscription, app));
       setState("on");
-    } catch (failure: unknown) {
+    } catch (error: unknown) {
       /*
        * 서버 등록이 실패했으면 브라우저 구독을 되돌린다 — 남겨 두면 다음 마운트에서 `on`으로
        * 보이는데 서버는 이 기기를 모른다.
        */
       await subscription?.unsubscribe().catch(() => false);
-      setError(errorMessage(failure));
+      setLastError(errorMessage(error));
       setState("off");
     }
   }, [app, getConfig, state, subscribe]);
@@ -174,7 +178,7 @@ export function usePushSubscription({
     const registration = registrationRef.current;
     if (!registration || state !== "on") return;
     setState("pending");
-    setError(null);
+    setLastError(null);
     try {
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
@@ -187,11 +191,11 @@ export function usePushSubscription({
         await subscription.unsubscribe();
       }
       setState("off");
-    } catch (failure: unknown) {
-      setError(errorMessage(failure));
+    } catch (error: unknown) {
+      setLastError(errorMessage(error));
       setState("on");
     }
   }, [state, unsubscribe]);
 
-  return { state, enable, disable, error };
+  return { state, enable, disable, error: lastError };
 }

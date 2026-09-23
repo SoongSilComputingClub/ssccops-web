@@ -27,10 +27,20 @@ export type NotificationType =
   | "APPLICATION_CANCELLED"
   | "TEST";
 
+/**
+ * 서버가 내려주는 그대로의 `noti_type_cd` — 아는 열둘 + **아직 모르는 것**.
+ *
+ * `NotificationType | string`으로 적으면 TypeScript가 통째로 `string`으로 접어 열두 이름이 자동완성에
+ * 남지 않고, 그 무의미한 유니온을 S6571이 잡는다. `string & Record<never, never>`는 `string`과 같은
+ * 집합이면서 접히지 않아 열두 이름이 후보로 뜬다 — 서버가 새 유형을 더해도 화면은
+ * `NOTIFICATION_TYPE_LABEL[type] ?? type`으로 견딘다(그래서 `string`을 남겨 둔다).
+ */
+export type NotificationTypeCd = NotificationType | (string & Record<never, never>);
+
 /** `GET /v1/notifications`의 한 행 · 푸시 페이로드의 상위 집합 */
 export interface NotificationItem {
   notificationId: number;
-  type: NotificationType | string;
+  type: NotificationTypeCd;
   title: string;
   body: string;
   app: PushApp;

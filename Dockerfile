@@ -79,13 +79,16 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
 
-# 헬스체크용 curl (#655). alpine에는 `wget`만 있는데 **Coolify의 헬스체크는 `curl`로 돈다** —
-# 없으면 매 검사가 실패해 컨테이너가 unhealthy로 종료된다(2026-09-23 admin 배포에서 실측).
-# 약 4 MB이고, 아래 HEALTHCHECK도 같은 바이너리를 쓴다.
-RUN apk add --no-cache curl
-
-# 비루트로 돈다. standalone은 자기 파일만 읽으므로 쓰기 권한이 필요 없다.
-RUN addgroup -g 1001 -S nodejs && adduser -u 1001 -G nodejs -S nextjs
+# 런타임 준비를 한 RUN에 모은다 — 나누면 레이어가 그만큼 늘고 순서 말고는 서로 상관이 없다
+# (docker:S7031).
+#
+# ① 헬스체크용 curl (#655). alpine에는 `wget`만 있는데 **Coolify의 헬스체크는 `curl`로 돈다** —
+#    없으면 매 검사가 실패해 컨테이너가 unhealthy로 종료된다(2026-09-23 admin 배포에서 실측).
+#    약 4 MB이고, 아래 HEALTHCHECK도 같은 바이너리를 쓴다.
+# ② 비루트로 돈다. standalone은 자기 파일만 읽으므로 쓰기 권한이 필요 없다.
+RUN apk add --no-cache curl \
+    && addgroup -g 1001 -S nodejs \
+    && adduser -u 1001 -G nodejs -S nextjs
 
 ARG APP
 ENV APP=$APP
