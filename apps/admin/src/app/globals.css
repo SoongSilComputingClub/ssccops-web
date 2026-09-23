@@ -12,6 +12,8 @@
 @source "../../../../packages/form-renderer/src";
 @source "../../../../packages/ui/src";
 @source "../../../../packages/pwa/src";
+/* 가입 화면 (#664). 이 앱의 가입은 `/signup` 화면이 따로 그리지만 «패키지마다 한 줄» 규칙은 지킨다 */
+@source "../../../../packages/signup/src";
 
 /*
  * SSCC Admin 디자인 토큰 — 라이트 값은 원본 디자인(Toss 라이트 테마) 그대로다.

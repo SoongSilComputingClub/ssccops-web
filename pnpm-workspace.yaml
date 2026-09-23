@@ -2,7 +2,8 @@
 # (packages/form-renderer = 폼 렌더러 · #152 · packages/share-meta = 공유 카드 문구 · ssccops#201 ·
 #  packages/ui = 표시 요소 · ssccops#243 · packages/date = 일시 표기 규칙 · ssccops-web#328 ·
 #  packages/auth = 로그인 왕복·세션 · ssccops-web#329 · packages/content = 콘텐츠 페이지 카탈로그 · ssccops#392 ·
-#  packages/pwa = 서비스워커·푸시·설치·오프라인 · ADR-0045 · ssccops#447).
+#  packages/pwa = 서비스워커·푸시·설치·오프라인 · ADR-0045 · ssccops#447 ·
+#  packages/signup = 가입 화면 한 벌 · ssccops-web#664).
 packages:
   - apps/*
   - packages/*

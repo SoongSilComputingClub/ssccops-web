@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { linkExistingMember } from "@/entities/member";
-import { Card, Field, TextField } from "@/shared/ui";
+import { Card, Field, TextField } from "@ssccops/ui";
+import type { AuthedApiFetch } from "../model/api-failure";
+import { linkExistingMember } from "../model/link-api";
 import {
   buildMemberLinkRequest,
   hasMemberLinkErrors,
@@ -24,7 +25,7 @@ import {
  * 요구하지 않고(`MemberLinkController`) 이 화면은 이미 구글 로그인을 마쳤으므로, 필요한 것은
  * 폼 하나였다.
  *
- * `NEXT_PUBLIC_ADMIN_ORIGIN`에 기대지 않는다 — 연결을 여기서 끝내므로 그 값이 비어 있어도
+ * 어드민 오리진에 기대지 않는다(그 변수는 #451에서 사라졌다) — 연결을 여기서 끝내므로 그 값이 비어 있어도
  * 화면이 성립한다(예전에는 값이 없으면 문의 안내만 남고 갈 곳이 없었다).
  * **어드민의 연결 화면(`/signup/link`)은 그대로 둔다** — 신청 흐름 밖에서 연결할 길이고,
  * 운영진에게 그 주소를 안내한 상태다.
@@ -37,9 +38,12 @@ import {
  * 근거는 `../model/link-form.ts`와 어드민의 같은 이름 파일에 있다.
  */
 export function MemberLinkStep({
+  apiFetch,
   initialValues,
   onLinked,
 }: Readonly<{
+  /** 이 앱의 인증 호출 — 부모(`SignupStep`)가 그대로 내려 준다 */
+  apiFetch: AuthedApiFetch;
   /**
    * 가입 폼에서 방금 친 값 — **첫 렌더의 초깃값으로만 쓴다.**
    *
@@ -94,7 +98,7 @@ export function MemberLinkStep({
        * (서버가 그렇게 맞춰 둔 계약이고 가입 경로가 이미 그 위에서 돈다). 가입과 마찬가지로
        * 이 화면은 응답 값을 쓰지 않는다 — 다음 단계인 신청서가 필요한 것을 스스로 부른다.
        */
-      await linkExistingMember(buildMemberLinkRequest(values));
+      await linkExistingMember(apiFetch, buildMemberLinkRequest(values));
       // 성공하면 잠금을 풀지 않는다 — 넘어가는 사이에 버튼이 살아나면 한 번 더 나간다
       onLinked();
       return;
