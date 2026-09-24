@@ -301,6 +301,37 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: pnpm build
 
+      # ── 컨테이너 경로 검증 (#688 · ssccops#506) ─────────────────────────────
+      #
+      # 배포 경로가 셋인데(Vercel prod · Cloudflare dev · 컨테이너 Coolify) **CI 는 그중 어느
+      # 것도 돌지 않았다** — 위 `pnpm build` 는 `next build` 하나다. #681 이 정확히 그 구멍이었다:
+      # `output: "standalone"` 은 `next build` 를 통과하고 Cloudflare 도 통과했는데 **Vercel 의
+      # 빌드 후처리에서만 `ENOENT ... next-server.js.nft.json`** 이었고, Vercel 빌드는 `main`
+      # 푸시에서만 돌아 **릴리스가 그 설정을 처음 시험한 자리**였다.
+      #
+      # 여기서 닫는 것은 **컨테이너 경로 하나**다. `CONTAINER_BUILD=1` 이면 `next.config.ts` 가
+      # `output: "standalone"` 을 켜므로, 도커 없이 `next build` 한 번으로 그 조합이 서는지
+      # 확인된다. ADR-0048 이 기각한 것은 «이미지를 CI 에서 만들어 GHCR 로 배포하는 길» 이지
+      # 검증 빌드가 아니다.
+      #
+      # 한 앱으로 충분하다 — 이 설정은 세 앱의 `next.config.ts` 가 같은 모양으로 읽는다.
+      # 실패하면 볼 것은 `.next/standalone` 유무와 `.next/next-server.js.nft.json` 유무다
+      # (둘이 배타적인 것이 #681 의 내용이다).
+      #
+      # Vercel Preview·Cloudflare 빌드는 이번 범위 밖이다(2026-09-24 결정).
+      - name: Build (container path)
+        env:
+          CONTAINER_BUILD: "1"
+          NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          pnpm build --filter=@ssccops/www --force
+          if [ ! -d apps/www/.next/standalone ]; then
+            echo "::error::CONTAINER_BUILD=1 인데 .next/standalone 이 없다 — next.config.ts 의 output 분기와 .next/next-server.js.nft.json 유무를 본다"
+            exit 1
+          fi
+
       - name: Integration Summary
         run: |
           echo "## Integration Summary" >> $GITHUB_STEP_SUMMARY
