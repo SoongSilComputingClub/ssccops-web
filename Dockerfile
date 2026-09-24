@@ -23,12 +23,22 @@ WORKDIR /repo
 # ── 2. prune — 이 앱이 쓰는 워크스페이스만 남긴다 ──────────────────────────────
 # `out/json`(package.json + 락파일)과 `out/full`(소스)로 갈라 주므로, 의존성 설치 레이어가
 # 소스 변경에 무효화되지 않는다. turbo는 devDependency지만 설치 전에 필요하므로 여기서만
-# `pnpm dlx`로 받는다 — 버전은 package.json과 같은 값으로 고정한다(갈리면 prune 결과가 달라진다).
+# `pnpm dlx`로 받는다.
+#
+# ⚠️ **버전의 정본은 `pnpm-lock.yaml`이다** (#688 · ssccops#506). 여기에는 «package.json과 같은
+# 값으로 고정한다»고 적혀 있었는데 그쪽은 `"turbo": "^2.5.8"`(**범위**)이라 정본이 될 수 없었고,
+# 실제로 락파일이 잡은 값은 `2.10.11`이었다 — **prune 은 2.5.8 이, 그 뒤 `pnpm turbo run build`는
+# 2.10.11 이 돌고 있었다.** prune 결과가 달라지면 이미지가 필요한 워크스페이스를 빠뜨린 채
+# 나가고, **그 실패는 빌드가 아니라 실행 시점에 나타난다.** 지금 이미지가 도는 것은 두 버전의
+# prune 결과가 우연히 같아서다.
+#
+# `pnpm update` 로 turbo 가 오르면 **이 줄을 함께 본다.** 락파일 값은
+# `grep -A1 '^  turbo@' pnpm-lock.yaml` 로 읽는다.
 FROM base AS pruner
 ARG APP
 RUN test -n "$APP" || (echo "APP 빌드 인자가 필요하다 (admin|www|lms)" >&2; exit 1)
 COPY . .
-RUN pnpm dlx turbo@2.5.8 prune "@ssccops/${APP}" --docker
+RUN pnpm dlx turbo@2.10.11 prune "@ssccops/${APP}" --docker
 
 # ── 3. 설치 · 빌드 ────────────────────────────────────────────────────────────
 FROM base AS installer
