@@ -59,6 +59,18 @@ export async function fetchCurriculumItems(
  * 회차 수만큼 출석부를 따로 조회하는 것은 로더(`load-attendance-roster`)의 몫이다 — 이
  * 함수는 회차 목록만 책임진다.
  */
+/*
+ * 커서 순회 상한 (#687 · ssccops#505).
+ *
+ * 서버가 `hasNext: true`를 주면서 `nextCursor`를 전진시키지 못하면 이 루프는 끝나지 않는다.
+ * **이 함수는 SSR 로더가 부르므로 화면 요청 자체가 멈춘다** — dev(Cloudflare)에서는 CPU 한도로
+ * 1102, prod(Vercel)에서는 함수 타임아웃이라 «같은 버그가 두 플랫폼에서 다른 얼굴로» 나온다.
+ *
+ * 20 × size 100 = 2,000회차다. 한 프로그램의 회차가 그만큼일 수 없으므로 여기 닿는 것 자체가
+ * 계약이 깨졌다는 신호다. 상한에 걸려도 모은 것을 돌려준다 — 표가 통째로 비는 것보다 낫다.
+ */
+const MAX_PAGE_FETCHES = 20;
+
 export async function fetchAcademicSessions(
   academicProgramId: number,
   filter: AcademicSessionSummaryFilter = {},
@@ -66,8 +78,8 @@ export async function fetchAcademicSessions(
   const rows: SessionSummaryResponse[] = [];
   let cursor: string | null = null;
 
-  // 커서 페이징 — 마지막 페이지(hasNext=false)까지 이어 받는다
-  do {
+  // 커서 페이징 — 마지막 페이지(hasNext=false)까지, **다만 상한 안에서** (#687)
+  for (let fetched = 0; fetched < MAX_PAGE_FETCHES; fetched += 1) {
     const query = toQuery({
       sesnSttsCd: filter.sesnSttsCd ?? undefined,
       size: 100,
@@ -86,7 +98,8 @@ export async function fetchAcademicSessions(
     );
     rows.push(...page.data);
     cursor = page.page?.hasNext ? page.page.nextCursor : null;
-  } while (cursor !== null);
+    if (cursor === null) break;
+  }
 
   return rows.map(toSessionSummary);
 }

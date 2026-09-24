@@ -70,8 +70,19 @@ export function SessionHistoryPage() {
     setKeywordInput(keyword);
   }
 
-  const setQuery = (patch: Record<string, string | null>) => {
-    const next = new URLSearchParams(searchParams);
+  /*
+   * `base` 는 **어느 주소 위에 얹을 것인가**다 (#687 · ssccops#505).
+   *
+   * 기본은 이 렌더의 `searchParams` 지만, **디바운스 타이머는 `window.location.search` 를 준다.**
+   * 타이머가 걸려 있는 동안 검색어가 아닌 축(등급 칩 등)이 바뀌면 이 효과는 다시 돌지 않아
+   * 정리 함수도 돌지 않는다 — 그 상태로 렌더 시점의 주소를 쓰면 300ms 뒤 **칩을 누르기 전의
+   * 주소**로 replace 해 방금 누른 필터가 소리 없이 풀린다. 왜 풀렸는지 화면 어디에도 없다.
+   */
+  const setQuery = (
+    patch: Record<string, string | null>,
+    base: string | URLSearchParams = searchParams,
+  ) => {
+    const next = new URLSearchParams(base);
     for (const [key, value] of Object.entries(patch)) {
       if (value) next.set(key, value);
       else next.delete(key);
@@ -88,10 +99,12 @@ export function SessionHistoryPage() {
     const trimmed = keywordInput.trim();
     if (trimmed === keyword) return;
     const timer = setTimeout(
-      () => setQuery({ [QUERY_KEYWORD]: trimmed || null }),
+      // 타이머가 **터지는 순간**의 주소 — 그 사이 누른 회차 상태 칩이 살아 있다 (#687)
+      () => setQuery({ [QUERY_KEYWORD]: trimmed || null }, window.location.search),
       400,
     );
     return () => clearTimeout(timer);
+    // 주소는 의존성이 아니라 타이머 안에서 직접 읽는다 (#687 · 위 base 주석)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keywordInput, keyword]);
 
