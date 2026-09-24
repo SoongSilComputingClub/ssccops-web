@@ -200,6 +200,7 @@ export function ContentListPage() {
       />
       <PageBody>
         <Segmented
+          label="콘텐츠 종류"
           options={TABS}
           value={tab}
           onChange={(next) => setQuery(next, pubSttsCd)}

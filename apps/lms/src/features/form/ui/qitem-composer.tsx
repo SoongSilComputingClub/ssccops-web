@@ -550,8 +550,10 @@ export function QitemComposer({
                       </div>
                     )}
 
+                    {/* admin 사본과 같은 자리 — 위 문항 머리글에는 있는데 여기만 빠져 있었다 (#692) */}
                     <button
                       type="button"
+                      aria-expanded={advQ === q.qitemId}
                       onClick={() => setAdvQ(advQ === q.qitemId ? null : q.qitemId)}
                       className="mt-3 cursor-pointer text-[13.5px] text-accent"
                     >

@@ -31,6 +31,7 @@ export {
   type DeployMarks,
   type ManifestIcon,
 } from "./lib/deploy-env";
+export { trapFocus, useFocusTrap } from "./lib/focus-trap";
 export { onKeyActivate } from "./lib/key-activate";
 export {
   THEMES,
