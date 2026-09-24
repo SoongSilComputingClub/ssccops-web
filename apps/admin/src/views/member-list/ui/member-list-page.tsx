@@ -208,8 +208,20 @@ function MemberListView() {
    * 조건 축을 바꿀 때는 커서를 **전부 버린다.** 커서는 그 조건 위에서만 뜻이 있어서,
    * 남겨 두면 새 조건의 목록을 옛 조건의 경계에서 잘라 보여주게 된다.
    */
-  const applyCondition = (mutate: (params: URLSearchParams) => void, replace = false) => {
-    const params = new URLSearchParams(searchParams.toString());
+  const applyCondition = (
+    mutate: (params: URLSearchParams) => void,
+    replace = false,
+  /*
+   * `base` 는 **어느 주소 위에 얹을 것인가**다 (#687 · ssccops#505).
+   *
+   * 기본은 이 렌더의 `searchParams` 지만, **디바운스 타이머는 `window.location.search` 를 준다.**
+   * 타이머가 걸려 있는 동안 검색어가 아닌 축(등급 칩 등)이 바뀌면 이 효과는 다시 돌지 않아
+   * 정리 함수도 돌지 않는다 — 그 상태로 렌더 시점의 주소를 쓰면 300ms 뒤 **칩을 누르기 전의
+   * 주소**로 replace 해 방금 누른 필터가 소리 없이 풀린다. 왜 풀렸는지 화면 어디에도 없다.
+   */
+    base: string = searchParams.toString(),
+  ) => {
+    const params = new URLSearchParams(base);
     params.delete(QUERY_CURSOR);
     mutate(params);
     pushParams(params, replace);
@@ -229,13 +241,20 @@ function MemberListView() {
   useEffect(() => {
     if (qInput === q) return;
     const timer = setTimeout(() => {
-      applyCondition((params) => {
-        if (qInput.trim()) params.set(QUERY_Q, qInput);
-        else params.delete(QUERY_Q);
-      }, true);
+      applyCondition(
+        (params) => {
+          if (qInput.trim()) params.set(QUERY_Q, qInput);
+          else params.delete(QUERY_Q);
+        },
+        true,
+        // 타이머가 **터지는 순간**의 주소 — 그 사이 누른 칩이 살아 있다 (#687)
+        window.location.search,
+      );
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-    // applyCondition은 렌더마다 새로 만들어진다 — 값 축만 의존성에 둔다
+    // applyCondition은 렌더마다 새로 만들어진다 — 값 축만 의존성에 둔다.
+    // 주소는 의존성이 아니라 타이머 안에서 직접 읽는다(위 base 주석) — 의존성에 넣으면
+    // 주소가 바뀔 때마다 효과가 다시 돌아 «값이 같으면 아무것도 안 한다» 가드에 기대게 된다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qInput, q]);
 

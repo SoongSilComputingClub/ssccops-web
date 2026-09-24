@@ -227,13 +227,29 @@ export async function publishContentPage(pageId: number, publish: boolean): Prom
  * 페이지 전부 — 카탈로그 화면(#534)이 슬러그로 짝지으려고 커서 끝까지 읽는다. 페이지는 카탈로그
  * 항목 13 + 기수 몇 장이라 두세 번이면 끝난다(목록 상한 100). 포스트에는 이런 것을 두지 않는다.
  */
+/*
+ * 커서 순회 상한 (#687 · ssccops#505).
+ *
+ * 서버가 `hasNext: true`를 주면서 `nextCursor`를 전진시키지 못하는 순간 이 루프는 끝나지
+ * 않는다 — 페이징 버그 한 건이면 되고, 이 레포는 이미 #305에서 계약 불일치를 겪었다.
+ * **같은 버그가 두 플랫폼에서 다른 얼굴로 나온다**: dev(Cloudflare)는 CPU 한도로 1102,
+ * prod(Vercel)는 함수 타임아웃이다.
+ *
+ * 이 레포에 이미 옳은 모양이 셋 있다 — `use-academic-program-dashboard`의 `guard < 20`,
+ * `public-content`의 `SEMESTER_PAGE_LIMIT = 20`, `sitemap`의 `POST_CAP`.
+ */
+const MAX_PAGE_FETCHES = 20;
+
 export async function fetchAllContentPages(): Promise<ContentPageSummary[]> {
   const all: ContentPageSummary[] = [];
   let cursor: string | null = null;
-  do {
+  for (let fetched = 0; fetched < MAX_PAGE_FETCHES; fetched += 1) {
     const page: ContentListPage<ContentPageSummary> = await fetchContentPages({ cursor, size: 100 });
     all.push(...page.items);
     cursor = page.hasNext ? page.nextCursor : null;
-  } while (cursor);
+    if (!cursor) break;
+  }
+  // 상한에 걸려도 모은 것을 돌려준다 — 카탈로그가 통째로 비는 것보다 낫고,
+  // 페이지가 2,000장을 넘는 일은 없으므로 여기 닿는 것 자체가 계약이 깨졌다는 신호다.
   return all;
 }
