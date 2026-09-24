@@ -195,7 +195,8 @@ export interface SessionTransitionInput {
 /** 전이 결과 (SessionTransitionResponse) */
 export interface SessionTransitionResult {
   sessionId: number;
-  beforeSttsCd: SesnSttsCd;
+  /** 전이 **전** 상태 — 서버가 주지 않으면 `null`이다. 위 학술 프로그램과 같은 자리 (#686) */
+  beforeSttsCd: SesnSttsCd | null;
   afterSttsCd: SesnSttsCd;
 }
 

@@ -156,7 +156,13 @@ export interface SubWorkCreateInput {
 export interface SubWorkCreateResult {
   subWorkId: number;
   workId: number | null;
-  title: string;
+  /**
+   * 서버가 돌려준 제목 — 주지 않으면 `null`이다 (#686).
+   *
+   * 그전에는 `?? input.title.trim()`으로 **보낸 값을 받은 값인 척**했다. 서버가 제목을
+   * 다듬는 경우 새로고침 전까지 화면과 서버가 다른 글자를 들고 있었다.
+   */
+  title: string | null;
   subWorkTypeName: string;
   workStatus: WorkSttsCd;
   approvalStatus: AprvSttsCd | null;
@@ -203,7 +209,9 @@ export async function createSubWork(
   return {
     subWorkId: res.subWorkId,
     workId: res.workId ?? input.workId,
-    title: res.title ?? input.title.trim(),
+    // `?? input.title.trim()`을 걷었다 (#686) — **보낸 값을 받은 값인 척**했다.
+    // 서버가 다듬은 제목이 있으면 그것이고, 없으면 없는 것이다(새로고침 전까지 다르게 보였다).
+    title: res.title ?? null,
     subWorkTypeName: res.subWorkTypeName ?? "",
     // 서버가 기획(PLANNING)으로 고정하는 값이라 폴백도 같은 값이다
     workStatus: res.workStatus ?? "PLANNING",

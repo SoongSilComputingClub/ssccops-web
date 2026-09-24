@@ -138,7 +138,8 @@ export interface FormDetail extends FormSummary {
   qitemCpstCn: QitemCpstCn;
   creatr: FormCreator;
   responseSummary: FormResponseSummary;
-  crtDt: string;
+  /** 만든 시각 — 서버가 주지 않으면 `null`이다. `?? mdfcnDt`로 빌려 오지 않는다 (#686) */
+  crtDt: string | null;
   /**
    * 코드가 요구해 지울 수 없는 문항 ID들 (ssccops-server #155 · `SystemFormContract`).
    *

@@ -63,8 +63,14 @@ function toApps(apps: string[] | null): NotificationApp[] {
 function toRoute(res: NotificationTypeRouteResponse): NotificationTypeRoute {
   return {
     type: res.type,
-    // label이 비면 코드로 떨어진다 — 줄 제목이 글자 없이 그려지는 것보다 낫다
-    label: res.label ?? res.type,
+    /*
+     * `?? res.type`을 걷었다 (#686 · ssccops#504).
+     *
+     * «글자 없이 그려지는 것보다 낫다»가 근거였는데, 그 결과는 줄 제목이
+     * `APPROVAL_REQUESTED`가 되는 것이다 — 운영진이 읽는 화면에 코드가 나간다.
+     * 무엇을 보일지는 그리는 쪽이 정한다(`label ?? type`을 화면에서 하면 그 판단이 한 곳이다).
+     */
+    label: res.label ?? null,
     apps: toApps(res.apps),
     followsSendingApp: res.followsSendingApp,
   };

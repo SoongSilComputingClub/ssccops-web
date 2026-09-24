@@ -146,7 +146,9 @@ export function RoleSheet({
                   title={
                     locked
                       ? "이 기간에 이미 부여돼 있습니다 — 겹치지 않는 시작일을 고르세요"
-                      : role.roleClsfNm
+                      : // 분류 표시명이 없으면 툴팁을 달지 않는다 (#686) — 그전에는 매퍼가
+                        // `?? roleClsfCd`로 메워 «SYSTEM» 같은 코드가 툴팁에 그대로 떴다.
+                        (role.roleClsfNm ?? undefined)
                   }
                   onClick={() => {
                     setPick(role.roleId);

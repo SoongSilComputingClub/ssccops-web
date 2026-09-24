@@ -116,7 +116,9 @@ function toCitation(response: AssistantCitationResponse): AssistantCitation {
      */
     ref: response.ref ?? 0,
     marker: response.marker ?? null,
-    citationType: response.citationType ?? "PAGE",
+    // `?? "PAGE"`를 걷었다 (#686) — 조문 인용이 페이지 인용 **서식**으로 그려졌다.
+    // 바로 위 `ref ?? 0`은 주석이 그 값을 변호하는데 이 줄에는 근거가 없었다.
+    citationType: response.citationType ?? null,
     docTitle: response.docTitle ?? null,
     chapter: response.chapter ?? null,
     supplementary: response.supplementary ?? null,
