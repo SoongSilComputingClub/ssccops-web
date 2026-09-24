@@ -381,6 +381,7 @@ export function EventListPage() {
         <div className="mb-3 flex flex-wrap items-center gap-2">
           {/* 카드·리스트 — 필터 줄 왼쪽. 선택은 브라우저가 기억한다 (use-event-view-mode) */}
           <Segmented
+            label="행사 목록 보기 방식"
             options={EVENT_VIEW_MODES}
             value={viewMode}
             onChange={setViewMode}

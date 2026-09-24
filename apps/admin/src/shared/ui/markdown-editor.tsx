@@ -215,6 +215,7 @@ export function MarkdownEditor({
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <SectionLabel>{label} (Markdown)</SectionLabel>
         <Segmented
+          label="본문 보기 방식"
           options={BODY_TABS}
           value={bodyTab}
           onChange={setBodyTab}

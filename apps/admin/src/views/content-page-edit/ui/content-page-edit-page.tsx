@@ -126,7 +126,13 @@ function ContentPageEditView({
           canManage={canManage}
           onTransition={(next) => void transition(next)}
         />
-        <Segmented options={TABS} value={tab} onChange={setTab} className="mb-4 w-[180px]" />
+        <Segmented
+          label="페이지 보기"
+          options={TABS}
+          value={tab}
+          onChange={setTab}
+          className="mb-4 w-[180px]"
+        />
         {/*
           편집 폼은 이력 탭에서도 언마운트하지 않고 접는다 — 탭을 오가는 사이 쓰던 본문이 사라지면
           안 된다. 이력은 탭을 열 때 마운트되어 그때 부른다.

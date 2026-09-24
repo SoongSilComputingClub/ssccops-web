@@ -583,6 +583,7 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
                 </div>
 
                 <ChipGroup
+                  label="안건 대상 종류"
                   className="mt-3"
                   options={AGENDA_TARGET_KINDS}
                   value={targetKind}

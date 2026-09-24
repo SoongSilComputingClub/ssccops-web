@@ -93,6 +93,7 @@ export function ManualRegisterSheet({
       <div className="flex flex-col gap-3">
         {registerStatuses.length > 1 ? (
           <Segmented
+            label="참가 상태"
             options={registerStatuses.map((cd) => PTCP_STTS_NM[cd])}
             value={sttsLabel}
             onChange={setSttsLabel}

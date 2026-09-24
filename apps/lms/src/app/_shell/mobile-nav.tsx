@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { InstallMenuItem } from "@ssccops/pwa/ui";
-import { AccountSections } from "@ssccops/ui";
+import { AccountSections, useFocusTrap } from "@ssccops/ui";
 import { ACCOUNT_LINKS, SignInButton, accountApps, useAuthSession } from "@/features/auth";
 import { visibleNavGroups } from "./nav-links";
 
@@ -50,13 +50,20 @@ export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    panelRef.current?.focus();
-
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
   }, [open]);
+
+  /*
+   * 초점 — 안으로 넣고, 가두고, 닫히면 **햄버거 버튼으로 돌려준다** (#692 · ssccops#511).
+   *
+   * 위 effect가 하던 것은 «안으로 넣기» 하나뿐이었다. 그래서 Escape로 닫으면 초점이 사라진
+   * 패널에 남아 다음 Tab이 문서 맨 위에서 다시 시작했고, 열려 있는 동안에는 Tab이 스크림 뒤
+   * 화면을 돌았다. 세 앱의 드로어와 어드민 Sheet가 같은 한 벌을 쓴다.
+   */
+  useFocusTrap(open, panelRef);
 
   return (
     <>

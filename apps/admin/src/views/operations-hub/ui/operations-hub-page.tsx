@@ -335,6 +335,7 @@ export function OperationsHubPage() {
                   </div>
                   {/* 유형 탭과 나란히 둔다 — 탭은 무엇을 볼지, 이쪽은 어떻게 볼지다 */}
                   <Segmented
+                    label="운영 통합 보기 방식"
                     options={VIEWS}
                     value={view}
                     onChange={setView}
