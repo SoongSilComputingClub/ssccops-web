@@ -12,16 +12,31 @@ import type { FormReceiptStatus, RecruitmentForm, RecruitmentFormView } from "..
  * **서버 응답의 모양을 아는 곳은 이 파일 하나다.**
  */
 
-/** 서버 `FormDetailResponse` — 화면이 쓰는 필드만 적는다(라벨·생성자·응답 집계는 이 앱에 화면이 없다) */
+/*
+ * 서버 `FormDetailResponse` — 화면이 쓰는 필드만 적는다(라벨·생성자·응답 집계는 이 앱에 화면이 없다).
+ *
+ * **2026-09-24에 서버를 열어 보고 옵셔널을 걷었다** (#686 · ssccops#504). 세 필드는 서버가
+ * 비워 보낼 수 없다:
+ *
+ *   · `qitemVer` — 자바 `int`다. **원시형이라 null 이 될 수 없다**
+ *   · `systemRequiredQitemIds` — `Set.stream().sorted().toList()`라 비어도 배열이다
+ *   · `receiptStatus` — `FormReceiptPolicy`가 늘 파생한다(저장된 값이 아니라 계산값이다)
+ *
+ * 그전에는 셋 다 `| null`로 잡고 아래에서 `?? 0`·`?? []`·`?? "DRAFT"`로 메웠다 — **존재할 수 없는
+ * 서버를 방어하면서, 그 대가로 «서버가 이 필드를 모른다»와 «서버가 이 값을 줬다»를 구별할 수 없게
+ * 만들고 있었다.** admin 쪽 주석이 그 대가를 이미 적어 두었다(«0이나 1로 채우면 "아직 안 바뀐
+ * 폼"을 지어내게 된다»). 실제 증상은 `receiptStatus`에서 났다 — 빠진 응답을 받으면 접수 중(`OPEN`)인
+ * 모집 폼을 admin 은 «접수중», lms 는 «작성 중»으로 그려 지원자가 돌아간다.
+ */
 interface FormDetailApiResponse {
   formId: number;
   formTtlNm: string | null;
-  receiptStatus: FormReceiptStatus | null;
+  receiptStatus: FormReceiptStatus;
   rcptBgngDt: string | null;
   rcptEndDt: string | null;
   qitemCpstCn: QitemCpstCn | null;
-  qitemVer: number | null;
-  systemRequiredQitemIds: string[] | null;
+  qitemVer: number;
+  systemRequiredQitemIds: string[];
   responseCount: number | null;
 }
 
@@ -57,21 +72,20 @@ export function toRecruitmentFormView(res: RecruitmentFormApiResponse): Recruitm
 /*
  * 없는 값을 만들어 내지 않는다(AGENTS.md) — 빈 제목을 "-"로 채우는 것은 표시 규칙이고 그것은
  * 그리는 쪽이 정한다. 여기서 채우면 «값이 없다»와 «서버가 그렇게 줬다»를 구별할 수 없다.
- * 아래에서 기본값을 두는 것은 **없으면 화면이 그려지지 않는 구조적 자리**뿐이다(문항 구성 ·
- * 계약 문항 목록 · 숫자 집계).
+ * 아래에서 기본값을 두는 것은 **없으면 화면이 그려지지 않는 구조적 자리**뿐이다 — 지금은
+ * 문항 구성과 숫자 집계 둘이다. `qitemVer`·`systemRequiredQitemIds`·`receiptStatus`는
+ * 2026-09-24에 서버 계약을 확인하고 걷었다(위 인터페이스 주석 · #686).
  */
 function toRecruitmentForm(res: FormDetailApiResponse): RecruitmentForm {
   return {
     formId: res.formId,
     formTtlNm: res.formTtlNm ?? "",
-    // 서버가 늘 파생해 내리는 값이다 — 없으면 아직 접수 일시가 없는 폼으로 본다
-    receiptStatus: res.receiptStatus ?? "DRAFT",
+    receiptStatus: res.receiptStatus,
     rcptBgngDt: res.rcptBgngDt,
     rcptEndDt: res.rcptEndDt,
     qitemCpstCn: toQitemCpstCn(res.qitemCpstCn),
-    qitemVer: res.qitemVer ?? 0,
-    // 서버는 «없음»과 «비어 있음»을 섞지 않고 빈 배열로 내린다(AP-15) — null은 옛 배포 대비
-    systemRequiredQitemIds: res.systemRequiredQitemIds ?? [],
+    qitemVer: res.qitemVer,
+    systemRequiredQitemIds: res.systemRequiredQitemIds,
     responseCount: res.responseCount ?? 0,
   };
 }

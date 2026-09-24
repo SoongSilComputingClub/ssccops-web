@@ -315,8 +315,14 @@ export async function transitionSession(
 
   return {
     sessionId: res.sessionId ?? sessionId,
-    // 전이가 성공했으면 before 도 서버가 준다 — 없으면 after 로 폴백(값을 만들어 내지 않되 표시가 깨지지 않게)
-    beforeSttsCd: res.beforeSttsCd ?? res.afterSttsCd,
+    /*
+     * `?? res.afterSttsCd`를 걷었다 (#686 · ssccops#504).
+     *
+     * 폴백의 근거는 «표시가 깨지지 않게»였는데, 그 대가는 before == after 인 이력 줄이다 —
+     * 화면이 «승인 → 승인»으로 그려 **아무것도 바뀌지 않은 것처럼 보인다.** 표시가 깨지는
+     * 것보다 나쁘다: 깨지면 보이지만 이건 그럴듯해서 아무도 못 본다.
+     */
+    beforeSttsCd: res.beforeSttsCd ?? null,
     afterSttsCd: res.afterSttsCd,
   };
 }

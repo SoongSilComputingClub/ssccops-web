@@ -158,7 +158,14 @@ export interface AcademicProgramTransitionInput {
 /** 전이 결과 (AcademicProgramTransitionResponse) */
 export interface AcademicProgramTransitionResult {
   academicProgramId: number;
-  beforeSttsCd: AcdmActvSttsCd;
+  /**
+   * 전이 **전** 상태 — 서버가 주지 않으면 `null`이다 (#686).
+   *
+   * 그전에는 `?? afterSttsCd`로 메웠는데, 그러면 before == after 인 이력 줄이 생겨
+   * 화면이 «승인 → 승인»으로 그린다 — **아무것도 바뀌지 않은 것처럼 보인다.** 표시가
+   * 깨지는 것보다 나쁘다: 깨지면 보이지만 이건 그럴듯해서 아무도 못 본다.
+   */
+  beforeSttsCd: AcdmActvSttsCd | null;
   afterSttsCd: AcdmActvSttsCd;
   /** START_RECRUITMENT 직후의 파생 접수 상태(FormReceiptStatus 문자열). APPROVE_COMPLETION 은 null */
   formReceiptStatus: string | null;

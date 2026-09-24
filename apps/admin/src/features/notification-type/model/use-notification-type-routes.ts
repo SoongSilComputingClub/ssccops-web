@@ -55,7 +55,8 @@ interface LoadedRoutes {
 /** 화면이 그리는 한 줄 — 저장된 값 위에 고친 값을 얹은 것 */
 export interface NotificationTypeRouteRow {
   type: string;
-  label: string;
+  /** 유형 이름 — 서버가 주지 않으면 `null`이고, 그리는 쪽이 `type`으로 떨어뜨린다 (#686) */
+  label: string | null;
   /** 지금 체크된 앱. 고치지 않았으면 저장된 값과 같다 */
   apps: NotificationApp[];
   /** 저장된 값과 다른가 — «저장하지 않음» 표시와 저장 버튼의 조건 */

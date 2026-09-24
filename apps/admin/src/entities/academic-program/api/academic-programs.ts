@@ -329,8 +329,9 @@ export async function transitionAcademicProgram(
 
   return {
     academicProgramId: res.academicProgramId ?? academicProgramId,
-    // 전이가 성공했으면 before 도 서버가 준다 — 없으면 after 로 폴백(값을 만들어 내지 않되 표시가 깨지지 않게)
-    beforeSttsCd: res.beforeSttsCd ?? res.afterSttsCd,
+    // 위 sessions.ts 와 같은 자리다 (#686) — before == after 는 «승인 → 승인»이 되어
+    // 아무것도 바뀌지 않은 것처럼 보인다.
+    beforeSttsCd: res.beforeSttsCd ?? null,
     afterSttsCd: res.afterSttsCd,
     formReceiptStatus: res.formReceiptStatus ?? null,
   };

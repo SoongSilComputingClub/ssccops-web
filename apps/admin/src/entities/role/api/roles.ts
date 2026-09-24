@@ -33,7 +33,13 @@ export interface RoleSummary {
   indctSeqno: number;
   roleNm: string;
   roleClsfCd: string;
-  roleClsfNm: string;
+  /**
+   * 분류 표시명 — 서버가 주지 않으면 `null`이다 (#686).
+   *
+   * 그전에는 `?? roleClsfCd`였다. 표시명 자리에 코드가 그대로 들어가(`SYSTEM`) **진짜 그런
+   * 이름과 구별되지 않았다.** 코드가 필요하면 바로 위 `roleClsfCd`에 이미 있다.
+   */
+  roleClsfNm: string | null;
   /**
    * **지금** 이 역할을 맡고 있는 회원 수 (서버 집계).
    *
@@ -128,7 +134,9 @@ function toRoleSummary(res: RoleResponse): RoleSummary {
      */
     roleNm: res.roleNm ?? "",
     roleClsfCd: res.roleClsfCd,
-    roleClsfNm: res.roleClsfNm ?? res.roleClsfCd,
+    // `?? res.roleClsfCd`를 걷었다 (#686) — 표시명 자리에 코드가 그대로 들어가(`SYSTEM`)
+    // 진짜 그런 이름과 구별되지 않았다. 코드는 바로 위 `roleClsfCd`에 이미 있다.
+    roleClsfNm: res.roleClsfNm ?? null,
     memberCount: res.memberCount ?? 0,
     crtDt: res.crtDt,
     mdfcnDt: res.mdfcnDt,
