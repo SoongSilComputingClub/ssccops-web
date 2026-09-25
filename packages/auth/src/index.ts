@@ -11,6 +11,7 @@
  * |---|---|
  * | `next-path` | `?next=` 목적지 검증. 세 앱이 글자까지 같았다 (`withNextParam`만 admin 전용) |
  * | `oauth-next` | OAuth 왕복 목적지 쿠키. 세 앱이 코드까지 같았다(주석만 길이가 달랐다) |
+ * | `request-origin` | 요청의 공개 오리진. 콜백이 `request.url`을 믿다가 컨테이너에서 `0.0.0.0:3000`으로 보냈다(#696) |
  * | `supabase/client` | 브라우저 클라이언트. **세 앱의 코드가 바이트까지 같았다** |
  * | `supabase/server` | 서버 클라이언트. 같음 — `setAll` 예외를 삼키는 이유까지 같다 |
  * | `supabase/proxy` | 세션 갱신. **여기만 admin이 달랐다** — 아래 |
@@ -48,3 +49,4 @@
  */
 export { safeNextPath, withNextParam, currentPath } from "./next-path";
 export { OAUTH_NEXT_COOKIE, OAUTH_NEXT_COOKIE_PATH, rememberOAuthNext } from "./oauth-next";
+export { requestOrigin } from "./request-origin";
