@@ -1,3 +1,11 @@
+/*
+ * 같은 레이어 슬라이스에서 타입을 가져오는 자리다 — **근거는 아래 `updateMyProfile` 주석에 있다**
+ * (#698 · ssccops#516: 감사가 «근거 없음»으로 분류했는데 근거가 이 줄에서 멀었을 뿐이다).
+ *
+ * 한 줄로 옮겨 적으면: 서버가 이 응답을 세션의 member 블록과 **같은 모양**으로 주므로 타입을
+ * 두 벌 적으면 서버가 필드를 늘릴 때 갈리고, 그 갈림은 사이드바에 옛 이름이 남는 식으로만
+ * 드러난다. `import type` 이라 런타임 의존은 없다.
+ */
 import type { MemberProfile } from "@/entities/session";
 import type { MbrGrdCd, MbrSttsCd } from "@/shared/config/codes";
 import { apiFetch, apiFetchList } from "@/shared/lib/api/client";

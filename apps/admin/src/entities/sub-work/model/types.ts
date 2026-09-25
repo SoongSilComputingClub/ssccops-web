@@ -3,6 +3,7 @@ import type {
   OperTypeCd,
   PrrtyRnkCd,
   TkcgSeCd,
+  VoteChoice,
   WorkSttsCd,
 } from "@/shared/config/codes";
 
@@ -299,11 +300,14 @@ export interface SubWorkChecklistRemoval {
   checklistSummary: SubWorkChecklistSummary | null;
 }
 
-/**
- * 정족수 승인 투표 선택지 (OPS-015). 기권은 없다 — 승인함 화면에 기권 버튼이 없다
- * (서버 VoteChoice 주석).
+/*
+ * 정족수 승인 투표 선택지 — **선언은 `shared/config/codes` 에 있다** (#698 · ssccops#516).
+ *
+ * 서버 enum 이고 `approval`·`dashboard` 슬라이스도 쓰므로, 여기 두면 그 둘이 이 슬라이스를
+ * 가져오게 된다(같은 레이어 슬라이스 참조 · 루트 `AGENTS.md`). 이 슬라이스의 소비처가 종전대로
+ * 이 배럴에서 받도록 재export 만 남긴다.
  */
-export type VoteChoice = "AGREE" | "DISAGREE";
+export type { VoteChoice };
 
 /**
  * 투표 결과 (OPS-015).

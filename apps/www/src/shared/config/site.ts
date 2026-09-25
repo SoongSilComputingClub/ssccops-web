@@ -17,6 +17,11 @@ import { CONTACT } from "./contact";
  * 정본 주소가 무엇인가»를 검색엔진에 말하는 값이라 요청이 어떤 호스트로 왔는지와 무관해야
  * 한다(프록시·프리뷰 도메인으로 온 요청이 그 주소를 정본이라고 선언하면 안 된다). lms의
  * OG 카드가 헤더로 origin을 만드는 것(#556)은 og:image 하나라 자리가 다르다.
+ *
+ * ⚠️ **이 앱의 공개 폼도 그렇게 하고 있었고, #698에서 걷었다.** 그 자리의 근거가 «이 앱에는
+ * `metadataBase`가 없다»였는데 #602가 그것을 없앴다 — 즉 **근거가 사라진 뒤에도 코드가 남아**
+ * 있었다. 지금은 상대 경로를 두고 `metadataBase`가 절대화한다. 위 lms 예외를 근거로 이 앱에
+ * 헤더 읽기를 다시 들이지 말 것 — 그쪽 예외는 «오리진 env가 없다»에 매여 있다.
  */
 export function siteOrigin(): string | null {
   return withoutTrailingSlash(process.env.NEXT_PUBLIC_PUBLIC_FORM_ORIGIN) || null;
