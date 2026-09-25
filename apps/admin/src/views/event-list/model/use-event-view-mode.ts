@@ -10,6 +10,28 @@ const STORAGE_KEY = "ssccops.admin.events.view";
 const DEFAULT_MODE: EventViewMode = "카드";
 
 /*
+ * ══ 저장값은 화면 문구가 아니다 (#698 · ssccops#516) ═════════
+ *
+ * 그전에는 `localStorage` 에 «카드»·«리스트» 를 **그대로** 넣고 읽을 때 `=== "리스트"` 로
+ * 비교했다. 위 상수의 주석이 «세그먼트에 그대로 글자로 나간다»고 적고 있는 그 글자다.
+ *
+ * **이 레포는 화면 문구를 자주 다듬는다** — #492 에서 42건을 한꺼번에 바꿨다. 그때 «리스트»를
+ * «목록»으로 고치면 이미 저장된 «리스트»가 어느 모드와도 맞지 않아 **사람들의 선택이 조용히
+ * 기본값으로 돌아간다.** 오류도 경고도 없고, 고친 사람은 그 일이 일어난 것을 모른다.
+ *
+ * 그래서 저장하는 것은 **문구와 함께 바뀌지 않는 키**다. 표가 둘뿐이라 한 줄로 오간다.
+ * 옛 저장값(«카드»·«리스트»)은 읽을 때 함께 받아 준다 — 한 번 더 고르게 만들 이유가 없고,
+ * 다음에 쓸 때 새 키로 덮인다.
+ */
+const MODE_KEYS: Record<EventViewMode, string> = { 카드: "card", 리스트: "list" };
+
+function toMode(stored: string | null): EventViewMode | null {
+  if (stored === MODE_KEYS.리스트 || stored === "리스트") return "리스트";
+  if (stored === MODE_KEYS.카드 || stored === "카드") return "카드";
+  return null;
+}
+
+/*
  * 카드·리스트 선택을 브라우저에 기억한다.
  *
  * URL 쿼리에 두지 않는 것은 상태·분류 필터와 성격이 달라서다 — 필터는 «무엇을 보나»라 링크로
@@ -25,7 +47,7 @@ const listeners = new Set<() => void>();
 
 function read(): EventViewMode {
   try {
-    return window.localStorage.getItem(STORAGE_KEY) === "리스트" ? "리스트" : DEFAULT_MODE;
+    return toMode(window.localStorage.getItem(STORAGE_KEY)) ?? DEFAULT_MODE;
   } catch {
     return DEFAULT_MODE;
   }
@@ -43,7 +65,7 @@ function subscribe(listener: () => void) {
 
 function write(next: EventViewMode) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, next);
+    window.localStorage.setItem(STORAGE_KEY, MODE_KEYS[next]);
   } catch {
     /* 기억하지 못하면 이 탭에서는 기본값이 남는다 — 저장소 없이 상태를 따로 들지 않는다 */
   }

@@ -1,5 +1,4 @@
-import type { AprvSttsCd, EmrgSeCd } from "@/shared/config/codes";
-import type { VoteChoice } from "@/entities/sub-work";
+import type { AprvSttsCd, EmrgSeCd, VoteChoice } from "@/shared/config/codes";
 
 /** table: sub_work_aprv — 하위_업무_승인 */
 export interface SubWorkAprv {

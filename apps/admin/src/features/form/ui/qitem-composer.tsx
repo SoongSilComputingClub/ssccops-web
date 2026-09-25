@@ -10,6 +10,7 @@ import {
   type Qitem,
   type QitemCpstCn,
 } from "@/entities/form";
+import { matchesPatternPreset } from "@ssccops/form-renderer";
 import { PATTERN_PRESETS } from "@/shared/config/constants";
 import {
   isChoiceQitemType,
@@ -722,7 +723,7 @@ export function QitemComposer({
                                 <Chip
                                   key={p.name}
                                   active={
-                                    p.name === "자유 입력" ? !q.ptrnCn : q.ptrnNm === p.name
+                                    matchesPatternPreset(p, q.ptrnCn)
                                   }
                                   onClick={() =>
                                     patchQ(

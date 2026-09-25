@@ -13,12 +13,8 @@ import {
 } from "@ssccops/form-renderer";
 import { SectionLabel } from "@ssccops/ui";
 import { Badge, Card, Chip, Field, TextArea, TextField, Toggle } from "@/shared/ui";
-import {
-  isCompilableRegExp,
-  nextQitemId,
-  parseMaxSlctCnt,
-  PATTERN_PRESETS,
-} from "../model/qitem-draft";
+import { matchesPatternPreset, PATTERN_PRESETS } from "@ssccops/form-renderer";
+import { isCompilableRegExp, nextQitemId, parseMaxSlctCnt } from "../model/qitem-draft";
 
 /*
  * 문항 구성 편집기 (#528) — 어드민 `features/form/ui/qitem-composer.tsx`에서 옮겨 왔다.
@@ -613,7 +609,7 @@ export function QitemComposer({
                               {PATTERN_PRESETS.map((p) => (
                                 <Chip
                                   key={p.name}
-                                  active={p.name === "자유 입력" ? !q.ptrnCn : q.ptrnNm === p.name}
+                                  active={matchesPatternPreset(p, q.ptrnCn)}
                                   disabled={readOnly}
                                   onClick={() =>
                                     patchQ(

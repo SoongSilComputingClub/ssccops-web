@@ -16,12 +16,14 @@
  */
 
 export type { AnswerValue, FormPage, Qitem, QitemCpstCn, RspnsCn } from "./model/types";
-export type { QitemTypeCd } from "./model/qitem-type";
+export type { PatternPreset, QitemTypeCd } from "./model/qitem-type";
 export {
+  PATTERN_PRESETS,
   QITEM_TYPE_CDS,
   QITEM_TYPE_NM,
   isChoiceQitemType,
   isTextQitemType,
+  matchesPatternPreset,
 } from "./model/qitem-type";
 export {
   nextPageSeq,

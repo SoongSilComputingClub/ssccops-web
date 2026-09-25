@@ -80,19 +80,3 @@ export function isCompilableRegExp(pattern: string | undefined): boolean {
   }
 }
 
-/**
- * 입력 형식 프리셋 — 어드민 `shared/config/constants.ts`의 `PATTERN_PRESETS`와 같은 값이다.
- *
- * 두 앱이 같은 폼을 그리므로 프리셋이 갈리면 «어드민에서 고른 학번 형식»과 «여기서 고른
- * 학번 형식»이 다른 정규식이 된다.
- *
- * 이메일만 `String.raw`인 것은 백슬래시를 겹쳐 적던 자리라서다 (#660 · S7780) — 글자는
- * 그대로이고 나머지 넷은 백슬래시가 없어 겹쳐 적을 것이 없다. 어드민 쪽은 #658이 본다.
- */
-export const PATTERN_PRESETS = [
-  { name: "자유 입력", pattern: "" },
-  { name: "이메일", pattern: String.raw`^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$` },
-  { name: "휴대전화", pattern: "^01[016-9]-[0-9]{3,4}-[0-9]{4}$" },
-  { name: "숫자만", pattern: "^[0-9]+$" },
-  { name: "학번(8자리)", pattern: "^[0-9]{8}$" },
-] as const;

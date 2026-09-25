@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { toShareDescription } from "@ssccops/share-meta";
 import { fetchPublicFormMeta, isFormRef } from "@/entities/form";
 import { PublicFormPage } from "@/views/public-form";
@@ -44,11 +43,25 @@ export async function generateMetadata({
     : "숭실컴퓨팅클럽(SSCC) 신청서입니다";
 
   /*
-   * 카드 이미지는 요청 시점에 그리는 라우트(`/f/{ref}/og`, ssccops#361)다. og:image는 절대 주소여야
-   * 하는데 `metadataBase`가 없고 dev·prod 도메인이 다르므로 요청 헤더에서 origin을 만든다 — 프록시
-   * 뒤라 `x-forwarded-proto`를 먼저 본다. 호스트를 못 읽으면 이미지를 빼고 텍스트 카드로 떨어진다.
+   * 카드 이미지는 요청 시점에 그리는 라우트(`/f/{ref}/og`, ssccops#361)다. og:image 는 절대
+   * 주소여야 하는데 **여기서는 상대 경로만 쓴다** — 루트 레이아웃의 `metadataBase`(#602)가
+   * 절대화한다.
+   *
+   * ── 요청 헤더로 오리진을 만들던 자리다 (#698 · ssccops#516) ──
+   *
+   * 그전에는 `x-forwarded-host`를 읽어 조립했고, 그 근거로 «`metadataBase`가 없다»고 적혀
+   * 있었다. **그 전제가 #602 에서 없어졌다** — 이 앱은 `siteOrigin()`을 갖게 됐고 루트
+   * 레이아웃이 `metadataBase`를 건다. 근거가 사라진 뒤에도 코드가 남아 있었던 것이다.
+   *
+   * 남겨 두면 `X-Forwarded-Host: evil.example` 을 실은 요청이 이 페이지를 가져갈 때 그 응답의
+   * `og:image` 가 **남의 도메인**이 된다(링크 미리보기 서비스가 그 헤더를 넘기는 경우). 피해는
+   * 그림 한 장이지만 고치는 값은 이 몇 줄이다. `apps/www/AGENTS.md` 가 «요청 헤더로 오리진을
+   * 지어내지 않는다»고 적어 둔 규칙이 이 자리에만 적용되지 않고 있었다.
+   *
+   * **lms 는 그대로다**(`shared/lib/og-image-url.ts`) — 자기 오리진 env 가 여전히 없어 예외의
+   * 근거가 살아 있다. 그쪽에 env 가 생기면 같은 이유로 함께 걷는다.
    */
-  const imageUrl = await ogImageUrl(formId);
+  const imageUrl = `/f/${formId}/og`;
 
   return {
     title: meta.formTtlNm,
@@ -58,23 +71,16 @@ export async function generateMetadata({
       title: `${meta.formTtlNm} · SSCC`,
       description,
       type: "website",
-      images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630 }] : undefined,
+      images: [{ url: imageUrl, width: 1200, height: 630 }],
     },
     twitter: {
-      card: imageUrl ? "summary_large_image" : "summary",
+      // 이미지가 «있을 때만» 큰 카드였다 — 이제 언제나 있으므로 분기가 없다
+      card: "summary_large_image",
       title: `${meta.formTtlNm} · SSCC`,
       description,
-      images: imageUrl ? [imageUrl] : undefined,
+      images: [imageUrl],
     },
   };
-}
-
-async function ogImageUrl(formRef: string): Promise<string | null> {
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  if (!host) return null;
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}/f/${formRef}/og`;
 }
 
 export default async function Page({ params }: Readonly<PageProps<"/f/[formId]">>) {
