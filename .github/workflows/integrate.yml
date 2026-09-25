@@ -311,8 +311,8 @@ jobs:
       #
       # 여기서 닫는 것은 **컨테이너 경로 하나**다. `CONTAINER_BUILD=1` 이면 `next.config.ts` 가
       # `output: "standalone"` 을 켜므로, 도커 없이 `next build` 한 번으로 그 조합이 서는지
-      # 확인된다. ADR-0048 이 기각한 것은 «이미지를 CI 에서 만들어 GHCR 로 배포하는 길» 이지
-      # 검증 빌드가 아니다.
+      # 확인된다. 이미지 자체는 머지 뒤 `deploy-dev.yml` 이 만든다(#694) — PR 에서 그 경로를
+      # 미리 보는 것은 이 step 하나다.
       #
       # 한 앱으로 충분하다 — 이 설정은 세 앱의 `next.config.ts` 가 같은 모양으로 읽는다.
       # 실패하면 볼 것은 `.next/standalone` 유무와 `.next/next-server.js.nft.json` 유무다
