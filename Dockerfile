@@ -49,8 +49,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY --from=pruner /repo/out/full/ ./
 
-# 화면·서비스워커가 읽는 값들. 앱마다 다르므로(오리진이 서로를 가리킨다) 배포 쪽에서 앱별로 넣는다.
-# 비워 두면 각 앱의 `.env.example`에 적힌 «비었을 때의 동작»으로 떨어진다 — 빌드는 막지 않는다.
+# 화면·서비스워커가 읽는 값들. 앱마다 읽는 이름이 다르지만 이름마다 값은 하나라(오리진이 서로를
+# 가리킨다) `deploy-dev.yml`이 Environment `dev`의 Variables를 세 앱에 똑같이 넘긴다(#694). 비워 두면 각 앱의 `.env.example`에 적힌 «비었을 때의 동작»으로 떨어진다 — 빌드는 막지 않는다.
 ARG NEXT_PUBLIC_API_BASE_URL=""
 ARG NEXT_PUBLIC_SUPABASE_URL=""
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=""
@@ -73,7 +73,7 @@ ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
     NEXT_PUBLIC_NAVER_SITE_VERIFICATION=$NEXT_PUBLIC_NAVER_SITE_VERIFICATION
 
 # 빌드된 커밋. `.git`을 이미지에 넣지 않으므로(.dockerignore) `next.config.ts`의 git 경로는
-# 여기서 답을 못 낸다 — Coolify가 주는 `SOURCE_COMMIT`을 그 해석 순서에 더해 두었다.
+# 여기서 답을 못 낸다 — 빌드 인자 `SOURCE_COMMIT`(`deploy-dev.yml`이 넘긴다)을 그 해석 순서에 더해 두었다.
 # 없으면 `/version`의 sha가 "unknown"이고 배포 이력이 `unverified`로 남을 뿐, 빌드는 산다.
 ARG SOURCE_COMMIT=""
 ENV SOURCE_COMMIT=$SOURCE_COMMIT
