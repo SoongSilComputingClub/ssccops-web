@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { requestOrigin } from "@ssccops/auth";
 import { toShareDescription } from "@ssccops/share-meta";
 import { fetchPublicFormMeta, isFormRef } from "@/entities/form";
 import { ORGANIZATION_NAME } from "@/shared/config/site";
@@ -31,7 +32,7 @@ function clampTitle(title: string): string {
 
 export async function GET(request: Request, context: RouteContext<"/f/[formId]/og">) {
   const { formId } = await context.params;
-  const origin = new URL(request.url).origin;
+  const origin = requestOrigin(request);
 
   const meta = isFormRef(formId) ? await fetchPublicFormMeta(formId) : null;
   const title = meta ? clampTitle(meta.formTtlNm) : "SSCC 신청서";
