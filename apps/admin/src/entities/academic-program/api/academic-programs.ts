@@ -1,7 +1,6 @@
-import type { AcdmActvSttsCd, SesnSttsCd } from "@/shared/config/codes";
+import type { AcdmActvSttsCd } from "@/shared/config/codes";
 import { ApiError, apiFetch, apiFetchList } from "@/shared/lib/api/client";
 import { withServiceOffset } from "@/shared/lib/date";
-import type { CurriculumItemWithSession } from "@/entities/curriculum-item";
 import type {
   AcademicProgramDetail,
   AcademicProgramListFilter,
@@ -115,18 +114,6 @@ interface AcademicProgramDetailResponse {
   updatedAt: string | null;
 }
 
-interface CurriculumItemWithSessionResponse {
-  curriculumItemId: number;
-  seqno: number | null;
-  ttl: string | null;
-  planYmd: string | null;
-  sessionId: number | null;
-  sesnSttsCd: SesnSttsCd;
-  actlYmd: string | null;
-  prgrsCn: string | null;
-  isEditable: boolean;
-}
-
 interface AcademicProgramTransitionResponse {
   academicProgramId: number | null;
   beforeSttsCd: AcdmActvSttsCd | null;
@@ -201,22 +188,6 @@ function toDetail(res: AcademicProgramDetailResponse): AcademicProgramDetail {
   };
 }
 
-function toCurriculumItem(
-  res: CurriculumItemWithSessionResponse,
-): CurriculumItemWithSession {
-  return {
-    curriculumItemId: res.curriculumItemId,
-    seqno: res.seqno,
-    title: res.ttl ?? "",
-    planYmd: res.planYmd,
-    sessionId: res.sessionId,
-    sesnSttsCd: res.sesnSttsCd,
-    actualYmd: res.actlYmd,
-    progressContent: res.prgrsCn,
-    isEditable: res.isEditable,
-  };
-}
-
 /* ── 목록 ──────────────────────────────────────────────────── */
 
 /**
@@ -269,24 +240,15 @@ export async function fetchAcademicProgram(
   return toDetail(res);
 }
 
-/* ── 커리큘럼 ──────────────────────────────────────────────── */
-
-/**
- * GET /v1/academic-programs/{academicProgramId}/curriculum-items — 커리큘럼 (#134).
+/*
+ * ── 커리큘럼은 `entities/curriculum-item` 이 조회한다 (#701 · ssccops#516) ──
  *
- * 계획(crclm_artcl) + 실적(sesn) 조인 배열이다. 활동 상세 화면의 "커리큘럼 대비 진행" 표
- * 하나가 이 배열을 그대로 쓴다. 페이징이 없다(활동당 회차 수가 적다) — `apiFetch` 로 받는다.
- * 실적이 없는 회차도 `sesnSttsCd` 에 NOT_SUBMITTED 가 채워지므로 화면은 null 분기를 두지
- * 않는다.
+ * `fetchCurriculumItems` · 그 응답 타입 · 매퍼가 여기 있었고, 그래서 이 파일이 **다른 슬라이스의
+ * 도메인 타입**(`CurriculumItemWithSession`)을 가져다 썼다 — 같은 레이어끼리 참조하지 않는다는
+ * 규칙에 어긋나는 자리였다. 조회를 타입이 있는 쪽으로 옮겨 그 참조를 없앴다.
+ *
+ * 활동 상세의 `curriculumItemCount` 는 여기 남는다 — 그것은 활동 응답의 필드다.
  */
-export async function fetchCurriculumItems(
-  academicProgramId: number,
-): Promise<CurriculumItemWithSession[]> {
-  const items = await apiFetch<CurriculumItemWithSessionResponse[] | null>(
-    `/v1/academic-programs/${academicProgramId}/curriculum-items`,
-  );
-  return (items ?? []).map(toCurriculumItem);
-}
 
 /* ── 상태 전이 ─────────────────────────────────────────────── */
 
