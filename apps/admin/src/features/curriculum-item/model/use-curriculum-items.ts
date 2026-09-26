@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { fetchCurriculumItems } from "@/entities/academic-program";
-import type { CurriculumItemWithSession } from "@/entities/curriculum-item";
+import {
+  fetchCurriculumItems,
+  type CurriculumItemWithSession,
+} from "@/entities/curriculum-item";
 import { toAcademicProgramErrorMessage } from "@/features/academic-program";
 
 /*
