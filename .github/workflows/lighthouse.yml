@@ -5,7 +5,13 @@ name: Lighthouse
 # **리포트만 한다 — 게이트가 아니다.** 값이 몇 주 안정된 뒤 `assertions`로 임계값을 건다(그때는
 # ssccops#443 코멘트에 기준선을 적고 온다). 대상이 PR 프리뷰가 아니라 dev 배포 URL인 것은 이 레포에
 # 프리뷰 배포가 없어서다(develop 푸시가 곧 dev) — 그래서 PR에 붙지 않고 스케줄로 돈다.
-# 어드민·LMS 내부 화면은 로그인 벽 뒤라 재지 않는다 — 워크플로에 세션을 넣지 않는다.
+# **어드민·LMS의 로그인 뒤 화면은 재지 않는다 — 워크플로에 세션을 넣지 않는다.** 토큰 보관·회전이
+# 붙고 그 값이 Actions 로그로 새는 경로가 하나 생긴다. 내부 화면 성능은 실사용자 쪽(Speed Insights ·
+# 세 앱 모두 · #705)이 답한다.
+#
+# 그래서 어드민은 **익명으로 열리는 둘만** 잰다 — `/login`·`/offline`(2026-09-26 실측: 그 둘이 200,
+# `/`는 307 → `/login?next=%2F`). **`/`를 넣지 않는 것은** 리다이렉트를 따라가 `/login`이 두 번
+# 측정되기 때문이다. `/offline`은 셸 밖 정적 화면이라 값이 흔들리지 않아 기준선 노릇을 한다.
 #
 # 러너의 Chrome으로 재므로 절대값은 사람의 브라우저와 다르다. 비교는 이 워크플로의 이전 실행과만 한다.
 # 결과는 job 요약(점수 표)과 아티팩트(HTML 리포트)로 남고, 실패 이력이 필요하면 temporaryPublicStorage
@@ -25,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Audit dev www · lms
+      - name: Audit dev www · lms · admin
         id: lhci
         uses: treosh/lighthouse-ci-action@v12
         with:
@@ -37,6 +43,8 @@ jobs:
             https://dev.www.sscc-ssu.com/records
             https://dev.www.sscc-ssu.com/join
             https://dev.lms.sscc-ssu.com/
+            https://dev.admin.sscc-ssu.com/login
+            https://dev.admin.sscc-ssu.com/offline
           runs: 3
           uploadArtifacts: true
           temporaryPublicStorage: false
@@ -49,7 +57,7 @@ jobs:
         run: |
           set -euo pipefail
           {
-            echo "## Lighthouse (dev · mobile · 3회 중앙값)"
+            echo "## Lighthouse (dev · mobile · 3회 중앙값 — www 6 · lms 홈 · admin 공개 2)"
             echo
             echo "| URL | 성능 | 접근성 | 모범 사례 | SEO |"
             echo "|---|---|---|---|---|"

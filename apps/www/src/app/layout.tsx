@@ -195,10 +195,15 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
          */}
         <ServiceWorkerRegister />
         {/*
-         * 측정 둘 — 방문 통계와 실사용자 Web Vitals (#600 · ssccops#443). Vercel에서만(가드는
-         * shared/lib/vercel.ts). Speed Insights는 세 앱이 한 할당(30일 1만)을 나누므로 **www에만**
-         * 싣는다 — 어드민·LMS는 회원 소수라 데이터가 적고 그 트래픽이 www 할당을 깎는다. 둘 다
-         * 쿠키 없이 돌고 개인을 식별하지 않는다(/privacy가 그것을 말한다).
+         * 측정 둘 — 방문 통계와 실사용자 Web Vitals (#600 · ssccops#443 → #705 · ssccops#524).
+         * Vercel 에서만 실린다(가드는 `shared/lib/vercel.ts`) — dev 는 Coolify 컨테이너라(ADR-0051)
+         * 어느 앱에도 실리지 않고 측정은 prod 에서만 모인다. 둘 다 쿠키 없이 돌고 개인을 식별하지
+         * 않는다(`/privacy` «6. 쿠키»가 그것을 말한다).
+         *
+         * **Speed Insights 는 세 앱이 30일 1만 이벤트를 나눠 쓴다.** 그래도 셋 다 켠 것은, 아껴서
+         * 빼 두면 어드민이 성능 신호 없이 남고(운영진이 매일 쓰는 앱인데 느려지는 것을 알아차릴
+         * 방법이 없다) **무엇이 얼마나 먹는지는 켜 봐야 알기** 때문이다. 넘치면 만지는 순서는
+         * 루트 `AGENTS.md` 측정 bullet 에 있다 — 표본율이 아니라 **페이지**부터다.
          */}
         {ON_VERCEL && (
           <>
