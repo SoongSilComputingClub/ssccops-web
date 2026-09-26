@@ -13,7 +13,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 SSCC(숭실컴퓨팅클럽) 운영 시스템의 웹 — **pnpm workspace + Turborepo 모노레포**(앱 3 · 패키지 9).
 Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4. 백엔드는 별도 저장소
 **`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth), 배포는 **prod = Vercel
-Hobby(`main`) · dev = Cloudflare Workers 무료(OpenNext, `develop`)** — 아래 «배포 — 두 플랫폼» 절.
+Hobby(`main`) · dev = 동아리방 Coolify 컨테이너(GHCR 이미지, `develop`)** — 아래 «배포» 절.
 
 ## 영역 — 앱 3 · 패키지 9
 
@@ -247,30 +247,30 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**. 서버 
 '어떻게'**다. 주석에서 ADR을 가리키면(`ADR-0003 참고`) 둘이 갈라지지 않는다. 아래 절들은
 여전히 이 저장소의 규칙이며 ADR로 옮기지 않는다.
 
-## 배포 — 두 플랫폼 ([ADR-0030](https://github.com/SoongSilComputingClub/ssccops/blob/develop/docs/decisions/0030-prod-web-on-vercel-hobby-dev-on-cloudflare-free.md))
+## 배포 — dev는 컨테이너, prod는 Vercel ([ADR-0030](https://github.com/SoongSilComputingClub/ssccops/blob/develop/docs/decisions/0030-prod-web-on-vercel-hobby-dev-on-cloudflare-free.md) · dev 절반은 [ADR-0051](https://github.com/SoongSilComputingClub/ssccops/blob/develop/docs/decisions/0051-dev-web-moves-to-coolify-containers.md)이 대체)
 
 | | dev | prod |
 |---|---|---|
-| 플랫폼 | Cloudflare Workers 무료(OpenNext) | Vercel Hobby |
-| 브랜치 | `develop` 푸시 → dev 워커 자동 빌드 | `main` 푸시 → Production. **Production Branch를 `main`으로 명시**했다 — 레포 기본 브랜치가 `develop`이라 기본값이 틀리고, 실제로 develop이 prod로 나간 뒤 잡았다 |
-| 빌드 변수 | 대시보드 «Build → Variables»(`NEXT_PUBLIC_*`는 빌드 인라인) | 프로젝트 Environment Variables(Production). **두 곳을 같이 고친다** — 릴리스 «배포 시 주의»에 대조 항목 |
-| 리전 | — | 서울. 미들웨어가 Supabase·API를 왕복하므로 기본값(미국)이면 요청마다 두 번 건넌다 |
-| 로그 | Workers Observability(켜 둠) | Vercel 런타임 로그 **1시간** 보존 — 장애는 그 안에 본다 |
-| 요청당 CPU | **10ms 한도 → 1102**가 날 수 있다. dev에서 보이면 «dev만 그렇다» | 상한 없음(월 총량만) |
+| 플랫폼 | **동아리방 Coolify 컨테이너**(GHCR 이미지 · 루트 `Dockerfile`) | Vercel Hobby |
+| 브랜치 | `develop` 푸시 → CI → **`deploy-dev.yml`이 앱마다 이미지를 빌드해 GHCR에 올리고 Coolify 배포 웹훅을 부른다**(ADR-0050) — Coolify는 받아 띄우기만 한다 | `main` 푸시 → Production. **Production Branch를 `main`으로 명시**했다 — 레포 기본 브랜치가 `develop`이라 기본값이 틀리고, 실제로 develop이 prod로 나간 뒤 잡았다 |
+| 빌드 변수 | **GitHub Environment `dev`의 Variables가 정본**(`NEXT_PUBLIC_*`는 이미지에 굳는다) — 값을 바꾸면 Coolify Redeploy가 아니라 **Deploy Dev를 다시 돌린다** | 프로젝트 Environment Variables(Production). **두 곳을 같이 고친다** — 릴리스 «배포 시 주의»에 대조 항목 |
+| 도메인 | `dev.{admin,www,lms}.sscc-ssu.com` — Cloudflare 시절 주소를 그대로 옮겼다(ADR-0051) | 각 Vercel 프로젝트 |
+| 리전 | 동아리방(서울) | 서울. 미들웨어가 Supabase·API를 왕복하므로 기본값(미국)이면 요청마다 두 번 건넌다 |
+| 로그 | Coolify Runtime Logs | Vercel 런타임 로그 **1시간** 보존 — 장애는 그 안에 본다 |
 
-2026-09-13 실측으로 무료 Workers에서 성공 요청 CPU P50이 20ms(한도 2배)·콜드 스타트 200~600ms였고 prod에서 1102가 나고 있었다. 결제 승인이 안 되어 prod만 Vercel로 옮겼다(ADR-0030 «검토한 선택지»에 Workers Paid·Pages·Vercel Pro 비교).
+**dev가 Cloudflare Workers였던 동안의 제약은 사라졌다** — 요청당 CPU 10ms 한도(`1102`)와 R2 캐시 부재가 그것이며, 그것을 감수하기로 한 것이 ADR-0030이었다. prod를 Vercel로 옮긴 판단(2026-09-13 실측 — 무료 Workers에서 성공 요청 CPU P50 20ms·콜드 스타트 200~600ms·prod에서 1102)은 **그대로 유효하다.** 옛 dev 워커 셋은 Git 연결을 끊고 남겨 두었다(ADR-0051 · 롤백용).
 
-**코드는 두 플랫폼에서 같은 뜻이어야 한다** — Vercel에만 있는 기능을 쓰면 dev에서 못 보는 버그가 생긴다:
+**그래도 코드는 플랫폼에 중립이어야 한다** — Vercel에만 있는 기능을 쓰면 dev에서 못 보는 버그가 생기고, **prod 롤백용 워커가 여전히 `main`에서 OpenNext로 빌드된다**(ADR-0051 «뒤집는다면»). 즉 아래 규칙이 완화된 것이 아니다:
 
-- ISR(`revalidate`)·`use cache`·PPR **금지** — Cloudflare dev는 R2 캐시가 없어 매번 렌더한다. 지금 구조(정적 셸 + 브라우저 fetch)를 유지한다.
+- ISR(`revalidate`)·`use cache`·PPR **금지** — 롤백 경로인 Workers에 R2 캐시가 없어 매번 렌더하고, 지금 구조(정적 셸 + 브라우저 fetch)가 세 플랫폼에서 같은 뜻이다.
 - `middleware.ts`를 `proxy.ts`로 바꾸지 않는다(«인증 · 권한» 절).
 - `next/image` 최적화에 기대지 않는다 — `<img>` + 직접 URL.
 - 미들웨어에 Node 전용 API를 쓰지 않는다(Workers 런타임에 없다).
-- OpenNext 파일(`wrangler.jsonc`·`open-next.config.ts`)은 dev용이라 지우지 않는다. Vercel 빌드는 `next build`만 돌리므로 있어도 무방하다.
-- **컨테이너로도 띄울 수 있다 — 루트 `Dockerfile` 하나**(#653 · ssccops#471). `--build-arg APP=admin|www|lms`로 어느 앱을 만들지 고르고 `output: "standalone"` 산출물만 담는다(이미지 180 MB대 · 런타임 메모리 60 MB대 실측). 쓰는 곳은 **동아리방 Coolify의 시험 환경**(`ssccops` 프로젝트 dev)이고 **Cloudflare·Vercel은 이 파일을 읽지 않는다** — ADR-0030은 그대로다. 이미지는 **`deploy-dev.yml`이 Actions에서 앱마다 빌드해** GHCR(`ssccops-web-{app}` · 태그 `dev`·`sha-<7>`)에 올리고 Coolify는 받아 띄우기만 한다(#694 · ssccops#515). `NEXT_PUBLIC_*`는 이미지에 굳어 Coolify에 넣어도 효과가 없으므로 **정본은 GitHub Environment `dev`의 Variables**다 — 값을 바꾸면 Redeploy가 아니라 Deploy Dev를 다시 돌린다. 함정 둘: ① `initOpenNextCloudflareForDev()`는 가드가 `globalThis.AsyncLocalStorage` 하나뿐이라 **`next build`에서도 돌아** wrangler/workerd를 띄운다(alpine에서는 그 spawn이 빌드를 죽인다) — 그래서 `NODE_ENV === "development"`로 감쌌다. ② **turbo 2는 기본이 strict 환경 모드**라 `turbo.json`의 `build.env`에 없는 변수는 태스크에 닿지 않는다 — 커밋 sha를 넘기는 `SOURCE_COMMIT`을 그 목록에 함께 적어야 `/version`이 `unknown`이 되지 않는다.
+- OpenNext 파일(`wrangler.jsonc`·`open-next.config.ts`)은 **롤백용 워커가 읽으므로** 지우지 않는다(ADR-0051 — dev가 컨테이너로 옮긴 뒤에도 그렇다). Vercel·컨테이너 빌드는 `next build`만 돌리므로 있어도 무방하다.
+- **컨테이너로도 띄울 수 있다 — 루트 `Dockerfile` 하나**(#653 · ssccops#471). `--build-arg APP=admin|www|lms`로 어느 앱을 만들지 고르고 `output: "standalone"` 산출물만 담는다(이미지 180 MB대 · 런타임 메모리 60 MB대 실측). **이것이 지금 dev의 배포 산출물이다**(`SSCCOps / dev`의 admin·www·lms · ADR-0051 — 처음에는 `test.*` 시험 환경용이었다) 그리고 **Cloudflare·Vercel은 이 파일을 읽지 않는다** — prod는 ADR-0030 그대로다. 이미지는 **`deploy-dev.yml`이 Actions에서 앱마다 빌드해** GHCR(`ssccops-web-{app}` · 태그 `dev`·`sha-<7>`)에 올리고 Coolify는 받아 띄우기만 한다(#694 · ssccops#515). `NEXT_PUBLIC_*`는 이미지에 굳어 Coolify에 넣어도 효과가 없으므로 **정본은 GitHub Environment `dev`의 Variables**다 — 값을 바꾸면 Redeploy가 아니라 Deploy Dev를 다시 돌린다. 함정 둘: ① `initOpenNextCloudflareForDev()`는 가드가 `globalThis.AsyncLocalStorage` 하나뿐이라 **`next build`에서도 돌아** wrangler/workerd를 띄운다(alpine에서는 그 spawn이 빌드를 죽인다) — 그래서 `NODE_ENV === "development"`로 감쌌다. ② **turbo 2는 기본이 strict 환경 모드**라 `turbo.json`의 `build.env`에 없는 변수는 태스크에 닿지 않는다 — 커밋 sha를 넘기는 `SOURCE_COMMIT`을 그 목록에 함께 적어야 `/version`이 `unknown`이 되지 않는다.
 - **라우트 핸들러에서 `new URL(request.url).origin`으로 자기 주소를 만들지 않는다 — `requestOrigin(request)`(`@ssccops/auth`)를 쓴다**(#696). Vercel·Cloudflare는 `request.url`에 공개 도메인을 넣지만 컨테이너의 standalone 서버는 **자기가 듣는 주소**(`HOSTNAME=0.0.0.0`·`PORT=3000`)로 만들고 스킴만 `x-forwarded-proto`를 따른다 — 그래서 세 앱의 로그인 콜백이 `https://0.0.0.0:3000/…`으로 튕겼고, OG 라우트는 폰트·마크를 받지 못해 **오류 없이** 기본 글꼴·글자 상자로 그렸다. 두 플랫폼에서는 재현되지 않아 컨테이너에 올리고서야 드러났다. 미들웨어 리다이렉트는 Next가 상대 경로로 바꿔 주므로 괜찮고, `searchParams`를 읽는 데는 `request.url`을 그대로 써도 된다 — 틀리는 것은 **오리진**뿐이다.
-- Cloudflare의 prod 워커 3개는 DNS 롤백용으로 남겨 둔다(ADR-0030). 지우려면 ADR을 뒤집는다.
-- **배포 이력은 `deploy-history.yml`이 남긴다**(ssccops#340 · ssccops#344 · #442 · #445) — 릴리스 게시(prod)·`develop` 푸시(dev)마다 세 앱의 `GET /version`(`{version, sha, builtAt}` — `next.config.ts`가 빌드 때 인라인, `middleware.ts` 매처에서 제외)을 최대 10분 폴링해 **메타 레포(`ssccops`) orphan 브랜치 `deploy-history`**의 `web-prod.jsonl`·`web-dev.jsonl`에 한 줄 append([ADR-0033](https://github.com/SoongSilComputingClub/ssccops/blob/develop/docs/decisions/0033-deploy-history-in-meta-repo-via-app-token.md) — 서버는 같은 브랜치의 `server-*.jsonl`, 조회는 서버 레포 `scripts/deploy-history.sh current web prod`). 쓰기 토큰은 조직 GitHub App `sscc-devops`의 설치 토큰(`actions/create-github-app-token`, `repositories: ssccops`)이고 같은 토큰이 **private 메타 레포의 sub-issue Parent도 읽어** `parent_issue`·`adr_refs`가 직접 채워진다(PR 본문의 «근거» `ssccops#N`·`ADR-NNNN`은 fallback이자 `pr-guard.yml` 검사 대상으로 남는다). 이 레포에는 쓰지 않는다(`permissions.contents: read`). 도메인·앱 정보는 **조직 변수·시크릿**에서만 온다 — `SSCCOPS_DEPLOY_HISTORY_APP_ID` · `SSCCOPS_DEPLOY_HISTORY_APP_KEY` · `SSCCOPS_DEPLOY_HISTORY_ENV`(.env 모양 여러 줄, 이 레포는 `WEB_{DEV,PROD}_{ADMIN,WWW,LMS}_URL` 여섯 개만 읽는다). URL이 없으면 그 앱은 `unverified`, 앱 변수·시크릿이 없으면 워크플로가 실패한다(자기 레포에 쓰는 fallback을 두면 «두 곳» 상태로 돌아간다).
+- **Cloudflare 워커 여섯을 롤백용으로 남겨 둔다** — prod 셋은 DNS 롤백용(ADR-0030), dev 셋은 Git 연결을 끊은 채(ADR-0051). 지우려면 그 ADR들의 «뒤집는다면»을 뒤집는 결정이 먼저이며, 판단 시점은 ADR-0030의 «한 달 뒤 재검토»(2026-10 중순)와 함께다(ssccops#517 ④).
+- **배포 이력은 `deploy-history.yml`이 남긴다**(ssccops#340 · ssccops#344 · #442 · #445) — 릴리스 게시(prod)·`develop` 푸시(dev)마다 세 앱의 `GET /version`(`{version, sha, builtAt}` — `next.config.ts`가 빌드 때 인라인, `middleware.ts` 매처에서 제외)을 폴링해(상한 `VERIFY_TIMEOUT_SECONDS` **40분** · job `timeout-minutes` 50이 그보다 커야 한다 — #700 · server#583) **메타 레포(`ssccops`) orphan 브랜치 `deploy-history`**의 `web-prod.jsonl`·`web-dev.jsonl`에 한 줄 append([ADR-0033](https://github.com/SoongSilComputingClub/ssccops/blob/develop/docs/decisions/0033-deploy-history-in-meta-repo-via-app-token.md) — 서버는 같은 브랜치의 `server-*.jsonl`, 조회는 서버 레포 `scripts/deploy-history.sh current web prod`). 쓰기 토큰은 조직 GitHub App `sscc-devops`의 설치 토큰(`actions/create-github-app-token`, `repositories: ssccops`)이고 같은 토큰이 **private 메타 레포의 sub-issue Parent도 읽어** `parent_issue`·`adr_refs`가 직접 채워진다(PR 본문의 «근거» `ssccops#N`·`ADR-NNNN`은 fallback이자 `pr-guard.yml` 검사 대상으로 남는다). 이 레포에는 쓰지 않는다(`permissions.contents: read`). 도메인·앱 정보는 **조직 변수·시크릿**에서만 온다 — `SSCCOPS_DEPLOY_HISTORY_APP_ID` · `SSCCOPS_DEPLOY_HISTORY_APP_KEY` · `SSCCOPS_DEPLOY_HISTORY_ENV`(.env 모양 여러 줄, 이 레포는 `WEB_{DEV,PROD}_{ADMIN,WWW,LMS}_URL` 여섯 개만 읽는다). URL이 없으면 그 앱은 `unverified`, 앱 변수·시크릿이 없으면 워크플로가 실패한다(자기 레포에 쓰는 fallback을 두면 «두 곳» 상태로 돌아간다). **창이 10분이던 동안 dev가 «실제로 떴는데 `unverified`»였다**(#700) — 컨테이너 전환 뒤 푸시부터 세 앱이 새 sha를 내기까지 실측 9분 34초에 여유가 1분뿐이었고 두 번은 넘겼다. 갈리는 것은 Coolify pull·기동(3~6분)이며 **`unverified`가 늘면 이 값이 아니라 실제 배포 소요부터 다시 잰다.**
 
 ## 함정
 
@@ -290,8 +290,8 @@ D-day·마감 임박·진행률은 **저장하지 않고 파생한다**. 서버 
   표시명은 서버 시드와 글자까지 계약이다(`packages/codes/AGENTS.md`).
 - **`.env*`는 통째로 ignore되고 `.env.example`만 예외다.** `NEXT_PUBLIC_*`은 빌드 타임에
   인라인되므로 **값을 바꾸면 `pnpm dev`를 재시작해야** 반영된다.
-- **측정은 Vercel에서만 실린다**(#600 · ssccops#443). `@vercel/analytics`(세 앱 · 쿠키 없는 방문 통계 · Hobby 월 5만 이벤트)와 `@vercel/speed-insights`(**www만** — 30일 1만 이벤트를 프로젝트들이 나누므로)는 루트 레이아웃(서버 컴포넌트)이 `ON_VERCEL`(`shared/lib/vercel.ts` = `process.env.VERCEL === "1"`)로 가른다 — dev(Cloudflare)에는 `/_vercel/insights` 경로가 없어 404 소음이고, `VERCEL`은 `NEXT_PUBLIC_`이 아니라 브라우저 번들엔 없으니 판정은 서버에서만 된다. 대시보드 «Enable»은 사람이 켠다(www·admin·lms Analytics, www Speed Insights). www `/privacy` «6. 쿠키»가 이 통계를 말한다. **Lighthouse는 `.github/workflows/lighthouse.yml`** — 매일 04:30 KST + 수동, dev www 6경로·lms 홈, `treosh/lighthouse-ci-action` 리포트만(게이트 아님 · 기준선은 ssccops#443).
-- **`NEXT_PUBLIC_DEPLOY_ENV`는 dev 워커의 Cloudflare 빌드 변수에만 `dev`다**(#413). 없으면
+- **측정은 Vercel에서만 실린다**(#600 · ssccops#443). `@vercel/analytics`(세 앱 · 쿠키 없는 방문 통계 · Hobby 월 5만 이벤트)와 `@vercel/speed-insights`(**www만** — 30일 1만 이벤트를 프로젝트들이 나누므로)는 루트 레이아웃(서버 컴포넌트)이 `ON_VERCEL`(`shared/lib/vercel.ts` = `process.env.VERCEL === "1"`)로 가른다 — dev(Coolify 컨테이너)에는 `/_vercel/insights` 경로가 없어 404 소음이고, `VERCEL`은 `NEXT_PUBLIC_`이 아니라 브라우저 번들엔 없으니 판정은 서버에서만 된다. 대시보드 «Enable»은 사람이 켠다(www·admin·lms Analytics, www Speed Insights). www `/privacy` «6. 쿠키»가 이 통계를 말한다. **Lighthouse는 `.github/workflows/lighthouse.yml`** — 매일 04:30 KST + 수동, dev www 6경로·lms 홈, `treosh/lighthouse-ci-action` 리포트만(게이트 아님 · 기준선은 ssccops#443).
+- **`NEXT_PUBLIC_DEPLOY_ENV`는 dev 이미지를 만드는 `deploy-dev.yml`이 `dev`로 못 박는다**(#413 · ADR-0051 — Cloudflare 빌드 변수였던 자리다). 없으면
   prod — 잊으면 dev가 prod 아이콘·제목으로 보일 뿐 반대는 없다. 판정(`deployMarks`)은
   `@ssccops/ui`에 있지만 **`process.env.NEXT_PUBLIC_DEPLOY_ENV`는 각 앱 `layout.tsx`·`manifest.ts`가
   글자 그대로 읽어 넘긴다** — 패키지 안에서 읽으면 인라인을 못 받아 빈 값이 된다. 아이콘
