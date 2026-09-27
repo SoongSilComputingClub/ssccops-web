@@ -1,7 +1,7 @@
 import { CONTENT_CATEGORIES } from "@/entities/content/model/category";
 import { ROUTES } from "@/shared/config/routes";
 import { SECTION_TABS } from "@/shared/config/section-tabs";
-import { NAV_LINKS, externalNavLinks } from "./nav-links";
+import { NAV_LINKS, externalNavLinks, type NavLink } from "./nav-links";
 
 /*
  * 푸터 «전체 메뉴»의 재료 (#633 · ssccops#460).
@@ -11,9 +11,13 @@ import { NAV_LINKS, externalNavLinks } from "./nav-links";
  * 푸터를 두르고 있어 «어느 화면에서든 한 번 스크롤이면 전체가 보인다»가 되기 때문이다
  * (크롤러용 `sitemap.xml`은 별개 · #602).
  *
- * **손으로 두 벌 적지 않는다.** 열 = 상단 바 항목(`NAV_LINKS`), 열 안의 줄 = 그 축의 탭
- * (`SECTION_TABS`)과 기록의 분류(`CONTENT_CATEGORIES`). 상단 바나 탭이 바뀌면 여기가 저절로
- * 따라온다. 운영진 축의 대수 탭은 서버 목록이라(#571) 여기서는 «지금»만 — 대수는 그 화면에서.
+ * **손으로 두 벌 적지 않는다.** 열 = 상단 바 축(`NAV_LINKS`), 열 안의 줄 = 그 축의 하위
+ * (`NavLink.children` — 드롭다운과 같은 목록이고 그 재료는 `SECTION_TABS`다)와 기록의 분류
+ * (`CONTENT_CATEGORIES`). 상단 바나 탭이 바뀌면 여기가 저절로 따라온다.
+ *
+ * 축이 다섯으로 접히면서(#712 · ADR-0056) «운영진»·«문의»는 열이 아니라 «소개» 열의 줄이 됐다 —
+ * 푸터가 상단 바를 그대로 비추는 것이 이 표의 뜻이다. 대수 탭은 서버 목록이라(#571) 여기에도
+ * 없다 — 대수는 그 화면에서.
  * 마지막 열 «내 것»은 로그인 뒤 화면(`/me`)과 다른 앱(LMS)이다 — 세션을 보지 않고 링크만 둔다
  * (푸터는 서버 컴포넌트이고 홈은 세션을 보지 않는다 · ssccops#385).
  */
@@ -24,27 +28,26 @@ export interface SiteMapColumn {
   rows: readonly { href: string; label: string; external?: boolean }[];
 }
 
-function rowsOf(href: string): SiteMapColumn["rows"] {
-  switch (href) {
-    case ROUTES.about:
-      return SECTION_TABS.about.filter((t) => t.href !== href);
-    case ROUTES.join:
-      return SECTION_TABS.join.filter((t) => t.href !== href);
-    case ROUTES.records:
-      return CONTENT_CATEGORIES.map((c) => ({
-        href: ROUTES.recordsCategory(c.slug),
-        label: c.label,
-      }));
-    default:
-      return [];
+function rowsOf(link: NavLink): SiteMapColumn["rows"] {
+  if (link.children?.length) {
+    return link.children
+      .filter((c) => c.href !== link.href)
+      .map(({ href, label }) => ({ href, label }));
   }
+  if (link.href === ROUTES.records) {
+    return CONTENT_CATEGORIES.map((c) => ({
+      href: ROUTES.recordsCategory(c.slug),
+      label: c.label,
+    }));
+  }
+  return [];
 }
 
 export function siteMapColumns(): readonly SiteMapColumn[] {
   const axes = NAV_LINKS.map((link) => ({
     title: link.label,
     href: link.href,
-    rows: rowsOf(link.href),
+    rows: rowsOf(link),
   }));
   const mine: SiteMapColumn = {
     title: "내 것",
