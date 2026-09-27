@@ -170,7 +170,14 @@ function AgendaCard({
           </Button>
         )}
       </div>
-      {agenda.targetOperation ? (
+      {/*
+       * 안건은 언제나 운영 건을 가리킨다 (ADR-0055 · 서버 #593) — `oper_id`가 NOT NULL이라
+       * `targetOperation`이 없는 안건은 존재할 수 없다. 그전에 있던 «제목 없음 · 연결된 운영 없음»
+       * 분기는 닿을 수 없는 코드가 되어 걷었다. 옵셔널 체이닝을 남겨 둔 것은 타입이 아직
+       * nullable이어서가 아니라 **서버가 옛 버전이면 값이 빌 수 있어서**다(루트 AGENTS.md
+       * «서버와 버전을 맞춰 띄워야 채워지는 화면이 있다»).
+       */}
+      {agenda.targetOperation && (
         /* 키보드 접근(#403) */
         <button
           type="button"
@@ -193,10 +200,6 @@ function AgendaCard({
           </div>
           <div className="mt-1 text-[15.5px] font-semibold">{agenda.targetOperation.title}</div>
         </button>
-      ) : (
-        <div className="mt-3 rounded-[10px] bg-bg p-3 text-[14px] text-n500">
-          {agenda.agendaName ?? "제목 없음"} · 연결된 운영 없음
-        </div>
       )}
       <div className="mt-3 flex flex-wrap gap-[7px] lg:flex-nowrap">
         {AGND_PRCS_SE_CDS.map((cd) => (
@@ -375,7 +378,6 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
 
     const { result, message } = await addAgenda({
       targetOperationId,
-      agendaName: null,
       processStatus: newProcessStatus,
       content: newContent.trim() || null,
     });

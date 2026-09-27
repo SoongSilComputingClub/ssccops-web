@@ -117,8 +117,6 @@ export interface MeetingAgendaTarget {
 export interface MeetingAgenda {
   agendaId: number;
   meetingId: number;
-  /** 운영 건에 연결된 안건은 NULL — targetOperation.title이 제목이다 */
-  agendaName: string | null;
   processStatus: AgndPrcsSeCd | null;
   agendaOrder: number | null;
   targetOperation: MeetingAgendaTarget | null;
