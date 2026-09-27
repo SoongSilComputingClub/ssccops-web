@@ -11,8 +11,9 @@
  * 본다(폼·행사·팀원 도메인이 세운 규칙).
  *
  * ── 서버 record 필드명은 리네임(ssccops-server#178) 이후가 기준이다 ──
- * `actlYmd`·`prgrsCn`·`ntcCn`·`atndYn`·`fileUrlAddr`이 최신 이름이다. 옛 이름
- * (`realDt`·`cn`·`noticeCn`·`presentYn`·`fileUrl`)으로 쓰면 타입은 통과하고 값만 조용히 빈다.
+ * `actlYmd`·`prgrsCn`·`ntcCn`·`atndYn`·`fileUrlAddr`·`aprvSeCd`가 최신 이름이다. 옛 이름
+ * (`realDt`·`cn`·`noticeCn`·`presentYn`·`fileUrl`·`aprvPntCd`)으로 쓰면 타입은 통과하고 값만
+ * 조용히 빈다. 쿼리 파라미터도 같다 — 서버가 모르는 이름을 버려 필터 없는 요청이 된다(#709).
  *
  * 날짜는 서버가 `LocalDate`("2026-03-01")로 내려준다 — 일자, 일시 아님.
  */
@@ -206,17 +207,17 @@ export interface AttendanceCorrection {
  * 스터디장 본인 + 학술국장으로 제한한다(서버 #139 결정 1). 이 앱은 스터디장이 자기 활동을
  * 보는 화면이라 문제되지 않는다.
  *
- * `aprvPntCd`는 `SESSION`·`COMPLETION` 두 값만 온다(서버가 필터). 대시보드는 SESSION만 그린다
+ * `aprvSeCd`는 `SESSION`·`COMPLETION` 두 값만 온다(서버가 필터). 대시보드는 SESSION만 그린다
  * — 회차 기록에 대한 국장의 승인·수정요청이 스터디장이 확인해야 할 것이다.
  */
 export interface AcademicProgramApproval {
   /** acdm_actv_aprv_id · PK */
   approvalId: number;
-  /** 승인 지점 — SESSION(회차) · COMPLETION(종료). 코드로 비교한다 */
-  aprvPntCd: string;
+  /** 승인 구분 — SESSION(회차) · COMPLETION(종료). 코드로 비교한다 */
+  aprvSeCd: string;
   /** 승인 상태 — APPROVED · REVISION_REQUESTED 등. 코드로 비교한다 */
   aprvSttsCd: string;
-  /** SESSION 지점이면 대상 회차. COMPLETION 이면 null */
+  /** SESSION 구분이면 대상 회차. COMPLETION 이면 null */
   sessionId: number | null;
   /** 처리한 사람 이름 (운영 데이터). 없으면 "" */
   approverMemberName: string;

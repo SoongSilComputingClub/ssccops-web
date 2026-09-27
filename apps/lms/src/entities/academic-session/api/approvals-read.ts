@@ -16,7 +16,7 @@ export { ACADEMIC_APPROVAL_ERROR } from "./error-codes";
  * `apiFetchAuthedList`가 `next/headers`를 타므로 서버 컴포넌트에서만 부를 수 있다. 로더
  * (`features/academic-program/model/load-leader-dashboard.ts`)가 직접 임포트한다.
  *
- * `aprvPntCd`는 `SESSION`·`COMPLETION`만 받는다(그 밖은 400). 대시보드는 `SESSION`으로 좁힌다.
+ * `aprvSeCd`는 `SESSION`·`COMPLETION`만 받는다(그 밖은 400). 대시보드는 `SESSION`으로 좁힌다.
  * 페이징이 붙지만(활동당 이력이 적다) 최근 몇 줄만 보여 주므로 첫 페이지만 받는다.
  *
  * 날짜는 서버가 Asia/Seoul 오프셋을 붙여 내려준다("2026-03-01T00:00:00+09:00").
@@ -26,7 +26,7 @@ export { ACADEMIC_APPROVAL_ERROR } from "./error-codes";
 
 interface AcademicProgramApprovalResponse {
   approvalId: number;
-  aprvPntCd: string;
+  aprvSeCd: string;
   aprvSttsCd: string;
   sessionId: number | null;
   aprvrMbrNm: string | null;
@@ -39,7 +39,7 @@ interface AcademicProgramApprovalResponse {
 function toApproval(res: AcademicProgramApprovalResponse): AcademicProgramApproval {
   return {
     approvalId: res.approvalId,
-    aprvPntCd: res.aprvPntCd,
+    aprvSeCd: res.aprvSeCd,
     aprvSttsCd: res.aprvSttsCd,
     sessionId: res.sessionId,
     // 빈 이름을 "-"로 채우는 것은 표시 규칙이라 뷰가 정한다 — 변환기는 "값이 없다"만 남긴다
@@ -52,14 +52,14 @@ function toApproval(res: AcademicProgramApprovalResponse): AcademicProgramApprov
 /* ── 조회 ──────────────────────────────────────────────────── */
 
 /**
- * GET /v1/academic-programs/{academicProgramId}/approvals?aprvPntCd=SESSION — 회차 승인 이력.
+ * GET /v1/academic-programs/{academicProgramId}/approvals?aprvSeCd=SESSION — 회차 승인 이력.
  *
  * 서버가 처리 일시 내림차순으로 준다(최근 처리가 위) — 화면이 다시 정렬하지 않는다.
  */
 export async function fetchAcademicProgramApprovals(
   academicProgramId: number,
 ): Promise<AcademicProgramApproval[]> {
-  const query = toQuery({ aprvPntCd: "SESSION" });
+  const query = toQuery({ aprvSeCd: "SESSION" });
   const { data } = await apiFetchAuthedList<AcademicProgramApprovalResponse>(
     `/v1/academic-programs/${academicProgramId}/approvals${query}`,
   );

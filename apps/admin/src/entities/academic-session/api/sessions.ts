@@ -136,7 +136,7 @@ interface StandaloneAttendanceResponse {
 /** 승인 이력 한 줄 (AcademicProgramApprovalResponse) — 서버 #139 */
 interface AcademicProgramApprovalResponse {
   approvalId: number;
-  aprvPntCd: string;
+  aprvSeCd: string;
   aprvSttsCd: string;
   sessionId: number | null;
   aprvrMbrNm: string | null;
@@ -187,7 +187,7 @@ function toApproval(
 ): AcademicProgramApproval {
   return {
     approvalId: res.approvalId,
-    aprvPntCd: res.aprvPntCd,
+    aprvSeCd: res.aprvSeCd,
     aprvSttsCd: res.aprvSttsCd,
     sessionId: res.sessionId,
     approverMemberName: res.aprvrMbrNm ?? "",
@@ -391,7 +391,7 @@ export async function fetchSessionAttendances(
 /**
  * GET /v1/academic-programs/{academicProgramId}/approvals — 승인 이력 (#139).
  *
- * 회차 상세(#130)의 "승인 이력" 블록이 부른다. `aprvPntCd` 는 `SESSION`·`COMPLETION`
+ * 회차 상세(#130)의 "승인 이력" 블록이 부른다. `aprvSeCd` 는 `SESSION`·`COMPLETION`
  * 만 받고(그 밖은 400), 회차 상세는 `sessionId` 로 좁혀 그 회차의 SESSION 이력만 받는다.
  * 열람 범위가 스터디장 본인 + 학술국장으로 제한되지만(서버 #139) 이 화면은 국장 전용이다.
  * 페이징이 붙지만(활동당 이력이 적다) 회차 하나로 좁히면 몇 줄뿐이라 첫 페이지만 받는다.
@@ -401,7 +401,7 @@ export async function fetchAcademicProgramApprovals(
   filter: AcademicProgramApprovalFilter = {},
 ): Promise<AcademicProgramApproval[]> {
   const query = new URLSearchParams();
-  if (filter.aprvPntCd) query.set("aprvPntCd", filter.aprvPntCd);
+  if (filter.aprvSeCd) query.set("aprvSeCd", filter.aprvSeCd);
   if (filter.sessionId != null) query.set("sessionId", String(filter.sessionId));
 
   const qs = query.toString();

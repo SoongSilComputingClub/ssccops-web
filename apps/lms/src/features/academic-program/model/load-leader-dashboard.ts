@@ -26,7 +26,7 @@ import { toLeaderDashboardErrorMessage } from "./leader-dashboard-error";
  *    `pickPrimary`가 `isLeader`를 보지 않아도 되는 이유다.
  *    없으면 승인(APPROVED)이나 첫 활동. 하나도 없으면 빈 상태.
  * 2. 그 활동의 커리큘럼(#134) — 회차 진행 스트립·미기록 회차·진행률의 재료.
- * 3. 그 활동의 회차 승인 이력(#139 · `aprvPntCd=SESSION`) — "내 기록 처리 현황".
+ * 3. 그 활동의 회차 승인 이력(#139 · `aprvSeCd=SESSION`) — "내 기록 처리 현황".
  *
  * ── "본인 활동 1건"을 어떻게 고르는가 (#126 결정) ────────────────
  * `/studio`는 이 앱의 첫 화면이고 주소에 활동을 싣지 않는다(스터디장이 여러 활동을 맡아도
