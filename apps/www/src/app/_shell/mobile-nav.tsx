@@ -101,33 +101,70 @@ export function MobileNav() {
               </button>
             </div>
             <div className="flex flex-1 flex-col overflow-y-auto [overscroll-behavior:contain]">
+              {/*
+               * 축과 하위를 **펼친 채** 그린다 (#712 · ssccops#533 · ADR-0056).
+               *
+               * 아코디언을 만들지 않는 것이 이 결정의 절반이다 — 접으면 «지금 무엇이 접혀
+               * 있나»라는 상태와 그것을 기억할지가 따라오고(어드민의 `use-nav-accordion.ts` ·
+               * #635), 그 상태가 바로 #524가 드롭다운을 기각했던 근거였다. 축 다섯 · 하위 여덟이라
+               * 접을 이유가 없고, 길어지는 만큼은 스크롤로 감당한다.
+               */}
               <nav aria-label="주 메뉴" className="flex flex-col px-[10px]">
                 {NAV_LINKS.map((link) => {
                   const active = link.isActive(pathname);
+                  // 하위가 있는 축의 «켜짐»은 «이 축 안에 있다»이지 «이 페이지다»가 아니다 —
+                  // 지금 화면은 아래 줄 중 하나가 말한다. 같은 칠을 둘에 하면 어느 쪽이 현재
+                  // 위치인지 흐려진다
+                  const axisFill = active && !link.children?.length;
                   return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다.
-                      // 경로 변화를 effect로 감시하지 않고 클릭에서 닫는 것은, 상태 변경을
-                      // 렌더 뒤 effect에 미루면 한 프레임 열린 채 그려지기 때문이다(react-hooks 규칙).
-                      onClick={() => setOpen(false)}
-                      aria-current={active ? "page" : undefined}
-                      className={
-                        active
-                          ? "rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
-                          : "rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
-                      }
-                    >
-                      {link.label}
-                    </Link>
+                    <div key={link.href} className="flex flex-col">
+                      <Link
+                        href={link.href}
+                        // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다.
+                        // 경로 변화를 effect로 감시하지 않고 클릭에서 닫는 것은, 상태 변경을
+                        // 렌더 뒤 effect에 미루면 한 프레임 열린 채 그려지기 때문이다(react-hooks 규칙).
+                        onClick={() => setOpen(false)}
+                        aria-current={active ? "page" : undefined}
+                        className={
+                          axisFill
+                            ? "rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
+                            : active
+                              ? "rounded-[10px] px-[12px] py-[11px] text-[15px] font-semibold text-ink"
+                              : "rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
+                        }
+                      >
+                        {link.label}
+                      </Link>
+                      {link.children?.length ? (
+                        <div className="mt-[2px] mb-[6px] ml-[20px] flex flex-col border-l border-line pl-[8px]">
+                          {link.children.map((child) => {
+                            const on = child.isActive(pathname);
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                onClick={() => setOpen(false)}
+                                aria-current={on ? "page" : undefined}
+                                className={
+                                  on
+                                    ? "rounded-[8px] bg-accent-soft px-[12px] py-[9px] text-[14px] font-semibold text-accent"
+                                    : "rounded-[8px] px-[12px] py-[9px] text-[14px] text-n300 hover:bg-bg hover:text-ink"
+                                }
+                              >
+                                {child.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
                   );
                 })}
               </nav>
 
               {/*
-               * 계정 절은 목차 아래 발치 — `mt-auto`로 아래에 붙이는 것은 목차(일곱 항목)가 끝난
-               * 바로 밑에 떠 있지 않게 하려는 것이다. 판정 전(null)은 아무것도 그리지 않는다.
+               * 계정 절은 목차 아래 발치 — `mt-auto`로 아래에 붙이는 것은 목차(축 다섯 + 하위)가
+               * 끝난 바로 밑에 떠 있지 않게 하려는 것이다. 판정 전(null)은 아무것도 그리지 않는다.
                */}
               <div className="mt-auto px-[10px] pt-4">
                 {signedIn === true && (
