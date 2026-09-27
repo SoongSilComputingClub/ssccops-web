@@ -45,7 +45,6 @@ interface AgendaTargetOperationResponse {
 interface MeetingAgendaResponse {
   agendaId: number;
   meetingId: number;
-  agendaName: string | null;
   processStatus: AgndPrcsSeCd | null;
   agendaOrder: number | null;
   targetOperation: AgendaTargetOperationResponse | null;
@@ -117,7 +116,6 @@ function toAgenda(res: MeetingAgendaResponse): MeetingAgenda {
   return {
     agendaId: res.agendaId,
     meetingId: res.meetingId,
-    agendaName: res.agendaName,
     processStatus: res.processStatus,
     agendaOrder: res.agendaOrder,
     targetOperation: toAgendaTarget(res.targetOperation),
@@ -226,12 +224,16 @@ export async function fetchMeeting(meetingId: number): Promise<MeetingDetail> {
 
 /* ── 등록 ──────────────────────────────────────────────────── */
 
-/** 등록·상정 시 함께 보내는 안건 한 건 (OPS-024 agendas[] · OPS-027) */
+/**
+ * 등록·상정 시 함께 보내는 안건 한 건 (OPS-024 agendas[] · OPS-027).
+ *
+ * **안건은 언제나 운영 건을 가리킨다**(ADR-0055 · 서버 #593) — 제목은 그 운영 건의 것이고 안건이
+ * 따로 제목을 갖지 않는다. 그전에는 `agendaName`과 상호 배타였는데 **이 화면에는 그것을 입력할 칸이
+ * 없었다**(언제나 null을 보냈다) — 쓰지 않던 자리를 계약에서도 걷은 것이다.
+ */
 export interface MeetingAgendaInput {
-  /** 연결할 운영 건. agendaName과 상호 배타적이다 — 둘 중 하나만 채운다 */
-  targetOperationId: number | null;
-  /** 독립 안건 제목. targetOperationId와 상호 배타적이다 */
-  agendaName: string | null;
+  /** 연결할 운영 건. 필수다 — 안건의 제목이 여기서 온다 */
+  targetOperationId: number;
   processStatus: AgndPrcsSeCd | null;
   content: string | null;
 }
@@ -263,7 +265,6 @@ export interface MeetingCreateInput {
 function toAgendaRequestBody(input: MeetingAgendaInput) {
   return {
     targetOperationId: input.targetOperationId,
-    agendaName: input.agendaName?.trim() || null,
     processStatus: input.processStatus,
     content: input.content?.trim() || null,
   };
