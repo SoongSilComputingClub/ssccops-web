@@ -26,6 +26,11 @@ export type {
   StartRecruitment,
   StartRecruitmentInput,
 } from "./model/use-start-recruitment";
+export { useProgramCompletion } from "./model/use-program-completion";
+export type {
+  ProgramCompletion,
+  ProgramCompletionTransition,
+} from "./model/use-program-completion";
 export { useRecruitmentSelect } from "./model/use-recruitment-select";
 export type {
   RecruitmentApplicationsStatus,

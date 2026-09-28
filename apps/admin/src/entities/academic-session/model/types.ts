@@ -211,13 +211,13 @@ export interface SessionTransitionResult {
  * (서버 #139 설계 결정 1) — `opnnCn`(수정요청 사유)이 활동 운영진 개인에게 민감할 수
  * 있어서다. 이 화면은 국장 전용이라 문제되지 않는다.
  *
- * `aprvSeCd` 는 `SESSION`·`COMPLETION` 두 값만 온다(서버가 필터). 회차 상세는
+ * `aprvSeCd` 는 `SESSION`·`COMPLETION`·`REOPEN`(재시작 · 서버 #597)이 온다. 회차 상세는
  * `sessionId` 로 좁혀 SESSION 이력만 받는다.
  */
 export interface AcademicProgramApproval {
   /** acdm_actv_aprv_id · PK */
   approvalId: number;
-  /** 승인 구분 — SESSION(회차) · COMPLETION(종료). 코드로 비교한다 */
+  /** 승인 구분 — SESSION(회차) · COMPLETION(종료) · REOPEN(재시작). 코드로 비교한다 */
   aprvSeCd: string;
   /** 승인 상태 — APPROVED · REVISION_REQUESTED 등. 코드로 비교한다 */
   aprvSttsCd: string;
@@ -233,8 +233,8 @@ export interface AcademicProgramApproval {
 
 /** 승인 이력 조회 필터 — 회차 상세는 sessionId 로 좁힌다 */
 export interface AcademicProgramApprovalFilter {
-  /** SESSION · COMPLETION 만. 그 밖의 값은 서버가 400 으로 끊는다 */
-  aprvSeCd?: "SESSION" | "COMPLETION" | null;
+  /** SESSION · COMPLETION · REOPEN 만. 그 밖의 값은 서버가 400 으로 끊는다 */
+  aprvSeCd?: "SESSION" | "COMPLETION" | "REOPEN" | null;
   /** 특정 회차의 이력만 */
   sessionId?: number | null;
 }

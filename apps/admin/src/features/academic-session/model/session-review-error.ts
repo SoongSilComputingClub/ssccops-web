@@ -12,6 +12,10 @@ import { API_ERROR, ApiError } from "@/shared/lib/api/client";
  * 없다. 전이에서만 나오는 409(INVALID_SESSION_TRANSITION)는 "다른 사람이 방금 처리했다"는
  * 뜻이라 재시도 대신 목록 새로고침을 안내한다.
  *
+ * 409 `ACADEMIC_PROGRAM_COMPLETED`(ADR-0057 · 서버 #597)는 새로고침으로 풀리지 않는다 — 회차를
+ * 처리하려면 프로그램을 재시작해야 해서 그것을 안내한다. 승인 대기 목록은 서버가 종료된 프로그램의
+ * 회차를 빼므로 화면이 미리 거르지 않고, 회차 이력에서 연 상세나 열어 둔 사이 종료된 경우에 온다.
+ *
  * 알 수 없는 코드는 서버 메시지를 그대로 보여 준다 — 임의로 뭉개면 원인을 알려주려고 서버가
  * 내려보낸 문장이 사라진다.
  */
@@ -27,6 +31,8 @@ export function toSessionReviewErrorMessage(error: unknown): string {
       return "회차를 승인할 권한이 없습니다 — 학술 프로그램 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다";
     case SESSION_REVIEW_ERROR.INVALID_SESSION_TRANSITION:
       return "이미 처리된 회차입니다 — 목록을 새로고침해주세요";
+    case SESSION_REVIEW_ERROR.ACADEMIC_PROGRAM_COMPLETED:
+      return "종료된 프로그램의 회차입니다 — 프로그램을 재시작한 뒤 처리해주세요";
     case SESSION_REVIEW_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
     case SESSION_REVIEW_ERROR.SESSION_NOT_FOUND:
       return "회차가 없습니다 — 목록을 새로고침해주세요";
