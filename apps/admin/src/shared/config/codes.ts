@@ -466,11 +466,13 @@ export const SESN_STTS_CDS = codesOf(SESN_STTS_NM);
  * 유일해야 하는데 `aprv_stts_cd` 그룹이 이미 하위 업무용으로 있고 값 집합이 다르다.
  * PROPOSAL은 없다 — 기획안 승인은 폼 응답 검토(form_rspns_rvw_hstry)가 정본이다.
  */
-export type AcdmActvAprvSeCd = "SESSION" | "COMPLETION";
+export type AcdmActvAprvSeCd = "SESSION" | "COMPLETION" | "REOPEN";
 
 export const ACDM_ACTV_APRV_SE_NM: Record<AcdmActvAprvSeCd, string> = {
   SESSION: "회차 승인",
   COMPLETION: "종료·수료 승인",
+  // 종료 → 진행 중으로 되돌린 기록. 종료 줄은 지우지 않고 한 줄 더한다(ADR-0057 · 서버 #597)
+  REOPEN: "재시작",
 };
 
 export const ACDM_ACTV_APRV_SE_CDS = codesOf(ACDM_ACTV_APRV_SE_NM);

@@ -136,17 +136,19 @@ export interface AcademicProgramListPage {
 /* ── 상태 전이 (POST /v1/academic-programs/{id}/transitions) ──── */
 
 /**
- * 학술국장이 부르는 전이 두 종 (AcademicProgramTransition).
+ * 학술국장이 부르는 전이 세 종 (AcademicProgramTransition).
  *
  * 다음 상태가 아니라 "무엇을 하겠다"를 보낸다 — work·form 도메인과 같은 패턴이다.
  * START_RECRUITMENT 는 APPROVED → ONGOING(연결된 폼을 OPEN 전이),
- * APPROVE_COMPLETION 은 ONGOING → COMPLETED. 되돌리는 전이는 없다.
+ * APPROVE_COMPLETION 은 ONGOING → COMPLETED(그 프로그램의 쓰기를 멈추고 접수 중인 모집 폼을
+ * 마감), REOPEN 은 COMPLETED → ONGOING(모집 폼은 다시 열지 않는다) — ADR-0057 · 서버 #597.
  */
 export type AcademicProgramTransition =
   | "START_RECRUITMENT"
-  | "APPROVE_COMPLETION";
+  | "APPROVE_COMPLETION"
+  | "REOPEN";
 
-/** 전이 입력 — 모집 기간은 START_RECRUITMENT 에서만 쓰인다(APPROVE_COMPLETION 에 실려도 서버가 무시) */
+/** 전이 입력 — 모집 기간은 START_RECRUITMENT 에서만 쓰인다(다른 전이에 실려도 서버가 무시) */
 export interface AcademicProgramTransitionInput {
   transition: AcademicProgramTransition;
   /** 모집 시작일 (ISO-8601, 오프셋 포함). START_RECRUITMENT 전용 */
@@ -167,7 +169,10 @@ export interface AcademicProgramTransitionResult {
    */
   beforeSttsCd: AcdmActvSttsCd | null;
   afterSttsCd: AcdmActvSttsCd;
-  /** START_RECRUITMENT 직후의 파생 접수 상태(FormReceiptStatus 문자열). APPROVE_COMPLETION 은 null */
+  /**
+   * 전이 직후의 파생 접수 상태(FormReceiptStatus 문자열). START_RECRUITMENT 가 채운다 —
+   * 종료·재시작 뒤에는 화면이 이 값을 읽지 않고 상세를 다시 부른다(#715).
+   */
   formReceiptStatus: string | null;
 }
 

@@ -59,6 +59,11 @@ export const SESSION_REVIEW_ERROR = {
   AUTHORITY_REQUIRED: "AUTHORITY_REQUIRED",
   /** SUBMITTED 가 아닌 회차에 전이를 시도 (409) — APPROVED 재전이 등 */
   INVALID_SESSION_TRANSITION: "INVALID_SESSION_TRANSITION",
+  /**
+   * 종료된 프로그램의 회차를 승인·수정요청 (409 · ADR-0057 · 서버 #597). 승인 대기 목록은 서버가
+   * 종료된 프로그램의 회차를 빼므로 회차 이력·주소로 들어온 상세나, 열어 둔 사이 종료된 경우에 온다.
+   */
+  ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
 } as const;
 
 /* ── 서버 응답(Response DTO) ────────────────────────────────── */
@@ -391,8 +396,9 @@ export async function fetchSessionAttendances(
 /**
  * GET /v1/academic-programs/{academicProgramId}/approvals — 승인 이력 (#139).
  *
- * 회차 상세(#130)의 "승인 이력" 블록이 부른다. `aprvSeCd` 는 `SESSION`·`COMPLETION`
- * 만 받고(그 밖은 400), 회차 상세는 `sessionId` 로 좁혀 그 회차의 SESSION 이력만 받는다.
+ * 회차 상세(#130)의 "승인 이력" 블록이 부른다. `aprvSeCd` 는 `SESSION`·`COMPLETION`·
+ * `REOPEN`(서버 #597)만 받고(그 밖은 400), 회차 상세는 `sessionId` 로 좁혀 그 회차의 SESSION
+ * 이력만 받는다.
  * 열람 범위가 스터디장 본인 + 학술국장으로 제한되지만(서버 #139) 이 화면은 국장 전용이다.
  * 페이징이 붙지만(활동당 이력이 적다) 회차 하나로 좁히면 몇 줄뿐이라 첫 페이지만 받는다.
  */

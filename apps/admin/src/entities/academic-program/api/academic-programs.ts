@@ -59,6 +59,11 @@ export const ACADEMIC_PROGRAM_ERROR = {
   FORBIDDEN: "FORBIDDEN",
   /** 전이표에 없는 조합 (409) — START_RECRUITMENT 를 ONGOING 에서 다시 부르는 등 */
   INVALID_ACADEMIC_PROGRAM_TRANSITION: "INVALID_ACADEMIC_PROGRAM_TRANSITION",
+  /**
+   * 종료된 프로그램에 쓰기 (409 · ADR-0057 · 서버 #597) — 모집 선발·일정 · 회차 승인 등.
+   * 권한 판정(403) 뒤에 온다 — 권한 없는 사람에게 «종료됐다»를 먼저 알리지 않는다.
+   */
+  ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
   /** START_RECRUITMENT 인데 연결된 모집 폼이 없다 (409) — 데이터 정합성이 깨진 경우 */
   FORM_NOT_LINKED: "FORM_NOT_LINKED",
 } as const;
@@ -255,12 +260,12 @@ export async function fetchAcademicProgram(
 /**
  * POST /v1/academic-programs/{academicProgramId}/transitions — 상태 전이 (#133).
  *
- * 모집 시작(START_RECRUITMENT)·종료 승인(APPROVE_COMPLETION) 두 액션이 이 하나의 경로를
- * 쓴다. 다음 상태를 직접 쓰는 PATCH 경로는 없다 — 화면이 액션을 보내고 다음 상태는 전이표가
- * 정한다(work·form 도메인의 전이 엔드포인트 선례).
+ * 모집 시작(START_RECRUITMENT)·종료 승인(APPROVE_COMPLETION)·재시작(REOPEN · 서버 #597)
+ * 세 액션이 이 하나의 경로를 쓴다. 다음 상태를 직접 쓰는 PATCH 경로는 없다 — 화면이 액션을
+ * 보내고 다음 상태는 전이표가 정한다(work·form 도메인의 전이 엔드포인트 선례).
  *
  * `recruitmentStartAt`·`recruitmentEndAt` 는 START_RECRUITMENT 에서만 쓰인다 —
- * APPROVE_COMPLETION 에 실려 와도 서버가 무시한다. 일시에는 **오프셋을 반드시 붙인다**
+ * 다른 전이에 실려 와도 서버가 무시한다. 일시에는 **오프셋을 반드시 붙인다**
  * (`datetime-local` 입력은 오프셋 없는 값을 주는데 서버는 `OffsetDateTime` 이라 본문 파싱
  * 단계에서 400 으로 튕긴다 — `withServiceOffset` 주석 참고).
  *
