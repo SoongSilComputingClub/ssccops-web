@@ -30,6 +30,8 @@ export const SESSION_PHOTO_ERROR = {
   UNSUPPORTED_IMAGE_TYPE: "UNSUPPORTED_IMAGE_TYPE",
   /** 409 — 승인 완료된 회차의 사진을 바꾸려 함 */
   SESSION_NOT_EDITABLE: "SESSION_NOT_EDITABLE",
+  /** 409 — 종료된 프로그램의 회차 (ADR-0057). 기록 저장과 발급 사이에 종료된 경우다 */
+  ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
   /** 404 — 회차 행이 없거나 다른 활동의 회차 */
   SESSION_NOT_FOUND: "SESSION_NOT_FOUND",
   /** 403 — 스터디장 본인이 아님 */

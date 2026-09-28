@@ -18,6 +18,13 @@ export const ACADEMIC_SESSION_ERROR = {
   SESSION_ALREADY_EXISTS: "SESSION_ALREADY_EXISTS",
   /** 지금 쓸 수 있는 상태가 아닌 회차에 재제출(PUT) (409) */
   SESSION_NOT_EDITABLE: "SESSION_NOT_EDITABLE",
+  /**
+   * 종료된 프로그램에 제출·재제출 (409 · ADR-0057 · 서버 #597).
+   *
+   * 화면은 커리큘럼 항목의 `isEditable`로 폼을 닫으므로, 여기까지 오는 것은 폼을 열어 둔
+   * 사이 종료된 경우다.
+   */
+  ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
   /** attendances에 확정 팀원이 아닌 대상이 있거나 같은 참가자가 중복 (400) */
   INVALID_ATTENDANCE_TARGET: "INVALID_ATTENDANCE_TARGET",
   /** 스터디장 본인이 아님 (403) */
@@ -34,6 +41,11 @@ export const ACADEMIC_ATTENDANCE_ERROR = {
   SESSION_NOT_FOUND: "SESSION_NOT_FOUND",
   /** 승인 완료(APPROVED)된 회차의 출석을 고치려 함 (409) */
   SESSION_NOT_EDITABLE: "SESSION_NOT_EDITABLE",
+  /**
+   * 종료된 프로그램의 출석을 고치려 함 (409 · ADR-0057). 출석부가 종료를 알고 칸을 잠그므로
+   * 화면을 열어 둔 사이 종료된 경우에만 온다
+   */
+  ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
   /** 그 회차 출석부에 줄이 없는 참가자거나 중복 (400) */
   INVALID_ATTENDANCE_TARGET: "INVALID_ATTENDANCE_TARGET",
   /** 스터디장 본인이 아님 (403) */
