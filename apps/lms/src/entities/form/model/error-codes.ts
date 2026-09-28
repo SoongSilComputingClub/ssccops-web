@@ -24,6 +24,13 @@ export const RECRUITMENT_FORM_ERROR = {
    * 경우다. 그래서 문구가 새로고침을 권한다.
    */
   RECRUITMENT_FORM_NOT_EDITABLE: "RECRUITMENT_FORM_NOT_EDITABLE",
+  /**
+   * 종료된 프로그램의 문항을 고치려 했다 (409 · ADR-0057 · 서버 #597).
+   *
+   * 이것도 **저장에서만 나온다** — 조회는 `isEditable: false`로 온다. 편집 화면을 열어 둔 사이
+   * 종료된 경우다.
+   */
+  ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
   /** 문항 구성이 서버 규칙을 어겼다 (400 · `QuestionCompositionValidator`) */
   INVALID_QUESTION_COMPOSITION: "INVALID_QUESTION_COMPOSITION",
   /**

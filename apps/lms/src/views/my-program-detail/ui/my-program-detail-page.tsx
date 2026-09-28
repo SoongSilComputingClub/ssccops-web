@@ -8,6 +8,7 @@ import {
 } from "@/entities/academic-session";
 import {
   loadMyProgramDetail,
+  ProgramCompletedNotice,
   type MyProgramDetailReady,
 } from "@/features/academic-program";
 import { LoginGate } from "@/features/auth";
@@ -36,6 +37,11 @@ import { SignupRequiredNotice } from "@/features/signup";
  * ── 회차 진입 버튼을 새로 만들지 않는다 ────────────────────────
  * 회차 기록은 커리큘럼 항목 행에서 `studioRecordUrl`로(#128), 출석부는 헤더의 링크로(#172).
  * 이 화면에 `+ 회차 기록` 같은 버튼을 따로 두지 않는다.
+ *
+ * ── 종료된 프로그램 (#716 · ADR-0057) ────────────────────────
+ * 조회는 막지 않으므로 화면은 그대로 그리고 헤더 카드 위에 안내 한 줄을 얹는다. «기록 작성»
+ * 링크는 서버 `isEditable`을 따르므로 종료되면 저절로 사라진다. 공유 버튼은 그대로다 —
+ * 공유는 내용을 바꾸지 않아 서버도 막지 않는다.
  */
 
 export async function MyProgramDetailPage({
@@ -125,6 +131,8 @@ function DetailBody({ data }: Readonly<{ data: MyProgramDetailReady }>) {
 
   return (
     <div className="flex flex-col gap-[16px]">
+      {program.sttsCd === "COMPLETED" && <ProgramCompletedNotice />}
+
       {/* 헤더 카드 */}
       <Card>
         <div className="flex flex-wrap items-center gap-[8px]">

@@ -23,14 +23,21 @@ import { Card, Field, TextField } from "@/shared/ui";
  * ── 접수 기간은 잠긴 입력란으로 보여 준다 ───────────────────
  * 값을 감추지 않는 것은 리더가 «언제부터 접수인가»를 알아야 문항을 언제까지 고칠 수 있는지
  * 알기 때문이다. 고칠 수 없다는 것은 `disabled`와 도움말 한 줄로 밝힌다(#528 요구 3).
+ *
+ * ── 잠긴 이유는 둘이다 (#716 · ADR-0057) ────────────────────
+ * 접수가 시작됐거나 프로그램이 종료됐다. 잠글지는 여전히 서버 `isEditable` 하나로 정하고
+ * (#528 결정 — 화면이 다시 계산하지 않는다), 프로그램 상태는 **띠의 문구를 고르는 데만** 쓴다.
  */
 
 export function RecruitmentFormEditor({
   academicProgramId,
   initialView,
+  programCompleted,
 }: Readonly<{
   academicProgramId: number;
   initialView: RecruitmentFormView;
+  /** 프로그램이 종료됐는가 — 잠긴 이유 문구만 바꾼다 (ADR-0057) */
+  programCompleted: boolean;
 }>) {
   const [view, setView] = useState(initialView);
   const [cpst, setCpst] = useState<QitemCpstCn>(initialView.form.qitemCpstCn);
@@ -106,7 +113,8 @@ export function RecruitmentFormEditor({
         </p>
       ) : (
         <p className="rounded-[12px] border border-line bg-bg px-[14px] py-[11px] text-[13.5px] leading-[1.7] text-n400">
-          접수가 시작돼 문항을 고칠 수 없습니다. 고쳐야 하면 학술국장에게 문의해주세요.
+          {programCompleted ? "종료된 프로그램이라" : "접수가 시작돼"} 문항을 고칠 수 없습니다.
+          고쳐야 하면 학술국장에게 문의해주세요.
         </p>
       )}
 

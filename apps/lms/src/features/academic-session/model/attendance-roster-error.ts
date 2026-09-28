@@ -42,6 +42,9 @@ export function loadAttendanceRosterErrorMessage(error: unknown): string {
  *
  * 정정은 브라우저에서 칸을 눌러 일어난다 — 실패하면 그 칸을 눌러 바꾸기 전 값으로 되돌린다
  * (화면 책임). 이 함수는 코드 → 문구만 옮긴다.
+ *
+ * 409 `ACADEMIC_PROGRAM_COMPLETED`(ADR-0057)는 출석부를 열어 둔 사이 프로그램이 종료된 경우다
+ * — 종료를 알고 연 출석부는 칸이 이미 잠겨 있다. 회차 제출과 같은 문장이다.
  */
 export function correctAttendanceErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
@@ -51,6 +54,8 @@ export function correctAttendanceErrorMessage(error: unknown): string {
   switch (error.code) {
     case ACADEMIC_ATTENDANCE_ERROR.SESSION_NOT_EDITABLE:
       return "승인된 회차는 출석을 바꿀 수 없습니다 — 새로고침해주세요";
+    case ACADEMIC_ATTENDANCE_ERROR.ACADEMIC_PROGRAM_COMPLETED:
+      return "종료된 프로그램입니다 — 학술국장에게 재시작을 요청해주세요";
     case ACADEMIC_ATTENDANCE_ERROR.INVALID_ATTENDANCE_TARGET:
       return "이 회차 출석부에 없는 팀원입니다 — 회차 기록을 다시 제출해주세요";
     case ACADEMIC_ATTENDANCE_ERROR.SESSION_NOT_FOUND:

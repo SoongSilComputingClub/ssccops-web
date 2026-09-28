@@ -12,6 +12,7 @@ import {
 } from "@/entities/academic-session";
 import {
   loadLeaderDashboard,
+  ProgramCompletedNotice,
   type LeaderDashboardReady,
 } from "@/features/academic-program";
 import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher";
@@ -46,6 +47,11 @@ import { SignupRequiredNotice } from "@/features/signup";
  * "이번 주"·"지연" 판정은 `loadLeaderDashboard`가 `todayInSeoul()` 기준으로 계산해 넘긴다 —
  * 같은 계산이 여러 곳에 흩어지지 않게. 이 뷰는 그 결과를 커리큘럼 배열에서 세어 통계 칸으로
  * 그리기만 한다(진행률·미기록·승인 대기).
+ *
+ * ── 종료된 프로그램 (#716 · ADR-0057) ────────────────────────
+ * 기본 선택은 진행 중을 먼저 고르므로(`pickPrimary`) 종료된 프로그램은 드롭다운·`?programId=`로만
+ * 온다. 그때 드롭다운 아래에 안내 한 줄을 얹는다. «기록 작성» 링크는 서버 `isEditable`을 따라
+ * 저절로 사라진다.
  */
 
 /** 커리큘럼에서 파생하는 통계 — 서버가 요약을 주지 않아 화면이 센다(진행률은 목록 응답의 progressRatio를 우선) */
@@ -264,6 +270,8 @@ function DashboardBody({ data }: Readonly<{ data: LeaderDashboardReady }>) {
         selectedId={program.academicProgramId}
         basePath={ROUTES.studio}
       />
+
+      {program.sttsCd === "COMPLETED" && <ProgramCompletedNotice />}
 
       {/* 통계 4칸 */}
       <div className="grid grid-cols-2 gap-[12px] lg:grid-cols-4">

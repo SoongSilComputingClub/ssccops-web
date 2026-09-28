@@ -1,6 +1,7 @@
 import {
   BackToProgramsNotice,
   NoProgramNotice,
+  ProgramCompletedNotice,
   ProgramSignupNotice,
   selectProgram,
 } from "@/features/academic-program";
@@ -27,6 +28,10 @@ import { AttendanceRosterMatrix } from "./attendance-roster-matrix";
  * 상단 활동 선택 드롭다운(`ProgramSwitcher`)으로 고른다. 첫 진입은 목록 맨 위 활동이 디폴트.
  * `?programId=`가 있으면 그 활동, 없으면 맨 위 — 어느 쪽이든 드롭다운으로 언제든 바꾼다.
  * SSR 셸이 `mine=leader` 목록 전체(드롭다운 항목)와 선택 활동을 함께 받는다(`selectProgram`).
+ *
+ * ── 종료된 프로그램 (#716 · ADR-0057) ────────────────────────────
+ * 모든 칸을 잠그고 표 위에 안내 띠를 얹는다. 종료 여부는 그 선택 활동의 `sttsCd`다 — 출석부
+ * 로더에는 프로그램 상태가 없지만 셸이 이미 들고 있어 조회를 더하지 않는다.
  */
 
 export async function AttendanceRosterPage({
@@ -69,14 +74,24 @@ export async function AttendanceRosterPage({
             selectedId={selection.selected.academicProgramId}
             basePath={ROUTES.studioRoster}
           />
-          <RosterBody academicProgramId={selection.selected.academicProgramId} />
+          {selection.selected.sttsCd === "COMPLETED" && <ProgramCompletedNotice />}
+          <RosterBody
+            academicProgramId={selection.selected.academicProgramId}
+            programCompleted={selection.selected.sttsCd === "COMPLETED"}
+          />
         </>
       )}
     </div>
   );
 }
 
-async function RosterBody({ academicProgramId }: Readonly<{ academicProgramId: number }>) {
+async function RosterBody({
+  academicProgramId,
+  programCompleted,
+}: Readonly<{
+  academicProgramId: number;
+  programCompleted: boolean;
+}>) {
   const result = await loadAttendanceRoster(academicProgramId);
 
   if (result.outcome === "unauthenticated") {
@@ -121,6 +136,7 @@ async function RosterBody({ academicProgramId }: Readonly<{ academicProgramId: n
       academicProgramId={academicProgramId}
       members={members}
       columns={columns}
+      programCompleted={programCompleted}
     />
   );
 }
