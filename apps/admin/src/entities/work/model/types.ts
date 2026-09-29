@@ -25,8 +25,7 @@ export interface Work {
   workSttsCd: WorkSttsCd;
   /** 내용T — 행사 종료 회고 */
   grvwCn: string | null;
-  /** 율N5,2 — 하위 완료율 집계 */
-  workPrgrsRt: number;
+  /* 진행률은 저장하지 않는다 (#719 · 서버 V25) — 정본은 하위 업무 체크리스트 완료율의 평균이고 조회 API가 계산해 준다 */
 }
 
 /* ── 서버 연동 타입 (ssccops-server OPS-002·003·020) ──────────── */

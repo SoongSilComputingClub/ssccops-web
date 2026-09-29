@@ -463,7 +463,7 @@ interface SubWorkTransitionResponse {
   approvalStatus: AprvSttsCd | null;
   isSelfApproval: boolean | null;
   completedAt: string | null;
-  /* parentWorkProgressRate는 받지 않는다 — 이 화면에 상위 업무 진행률 표기가 없다 */
+  /* 상위 업무 진행률은 이 응답에 없다 — 저장 컬럼이 사라졌다 (#719 · 서버 V25). 이 화면에 표기도 없다 */
   changedAt: string | null;
 }
 
