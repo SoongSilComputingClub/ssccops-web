@@ -254,6 +254,7 @@ function EventParticipantsView({
         </Card>
 
         <Segmented
+          label="참가자 화면"
           className="mb-4 lg:w-[320px]"
           options={TABS}
           value={tab}

@@ -129,7 +129,10 @@ export function RoleLabelsPage() {
       <PageHeader title="역할 관리" subtitle="분류 추가 · 이름 변경 · 삭제" />
       <PageBody>
         <div className="mb-4 flex items-center gap-3">
+          {/* 누르면 다른 주소로 간다 - «켜져 있다»가 아니라 «지금 이 화면이다» (#692) */}
           <Segmented
+            as="nav"
+            label="역할 화면"
             options={["역할 목록", "역할 분류"] as const}
             value="역할 분류"
             onChange={(v) => {

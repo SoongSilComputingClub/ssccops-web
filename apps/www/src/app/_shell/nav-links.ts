@@ -1,5 +1,6 @@
 import { lmsOrigin } from "@/shared/config/lms-routes";
 import { ROUTES } from "@/shared/config/routes";
+import { SECTION_TABS } from "@/shared/config/section-tabs";
 
 /**
  * 상단 바 메뉴 목차 — 데스크톱 메뉴와 모바일 드로어가 **이 한 벌**을 함께 쓴다 (#167).
@@ -7,41 +8,89 @@ import { ROUTES } from "@/shared/config/routes";
  * 목차를 컴포넌트 밖에 둔 이유는 어드민 셸(`use-shell-nav.ts`)과 같다 — 한쪽에만 메뉴를
  * 더하면 다른 쪽에서 빠진다.
  *
- * ── 일곱 항목 (#520 · ssccops#382 · #529 · ssccops#389 · #550 · ssccops#412) ─────────
- * SSCC · 운영진 · 기록 · 행사 · 학술 · 모집 · 문의. **«지원하기» CTA는 없다** — 지원은 학기 초뿐이라
- * 평소의 상단 바에 세워 둘 것이 아니고, 모집 때는 홈 배너(#524 · ssccops#385)가 안내한다.
- * «행사»는 #520에서 «활동» 축 안에 넣었는데(행사 목록에서 «활동»이 켜졌다) 2026-09-19 검토에서
- * 행사 목록으로 가는 길이 홈의 «행사 전체 보기» 하나뿐이라 항목으로 세웠다(ssccops#389) —
- * `/events`에서는 «행사»가, `/records`에서는 «기록»이 켜진다(홈은 어느 것도 켜지 않는다).
- * «문의»는 #520에서는 푸터 블록으로 가는 앵커였는데 #524에서 화면
- * (`/contact`)이 됐다 — 앵커는 켜지지도 않고 공유할 주소도 없었다. 하위 페이지(연혁·역대·FAQ…)로
- * 가는 길은 상단 바가 아니라 페이지 제목 아래 탭 줄(`shared/config/section-tabs.ts`)이다.
+ * ── 다섯 축과 그 하위 (#712 · ssccops#533 · ADR-0056) ─────────
+ * 소개 ▾(소개·연혁·핵심 가치·운영진·문의) · 기록 · 행사 · 학술 · 모집 ▾(안내·FAQ·지난 모집).
+ *
+ * 그전에는 일곱 항목이 평평했고 하위 페이지로 가는 길은 **그 축에 착지한 뒤의** 탭 줄뿐이었다 —
+ * `/about`을 열기 전에는 연혁이 있는지 알 수 없었다. 축이 자랄 때마다 1차가 한 칸씩 길어진 것도
+ * 같은 구조의 값이다(#520 여섯 → #529 «행사» → #524 «문의»). ADR-0056이 그것을 접었다.
+ *
+ * **«운영진»·«문의»는 «소개» 축 안이다.** 그래서 이 둘의 주소에서도 상단 바는 «소개»가 켜진다 —
+ * `aboutAxisActive`가 셋을 함께 받는다. 주소·화면은 그대로다(옮긴 것은 목차뿐).
+ *
+ * **«지원하기» CTA는 없다** — 지원은 학기 초뿐이라 평소의 상단 바에 세워 둘 것이 아니고, 모집
+ * 때는 홈 배너(#524 · ssccops#385)가 안내한다.
+ *
+ * **하위 목록은 한 벌이다.** «소개»·«모집»의 `children`은 페이지 탭 줄이 쓰는
+ * `SECTION_TABS`(`shared/config/section-tabs.ts`) **그 자체다** — 축에 항목이 하나 늘면 드롭다운과
+ * 탭 줄이 함께 는다. 탭 줄을 없애지는 않았다: 드롭다운은 **착지 전의 길**이고 탭 줄은
+ * **착지한 뒤의 현재 위치**다(ADR-0056).
+ *
+ * #712에서는 드롭다운에만 «운영진»·«문의»를 뒤에 붙였다. 그래서 착지하면 길이 오히려 줄었고
+ * (`/operators`의 탭 줄은 셋이었다) `/contact`에는 탭 줄이 아예 없었다 — #723이 그 자리를 없앴다.
+ *
+ * **역대 대수(«44대»·«43대»)는 목차 어디에도 없다**(#571 → #723) — 게시된 페이지 수만큼 자라는
+ * 목록이라 드롭다운에 넣으면 학기마다 길어진다. 대수는 축의 자매 페이지가 아니라 운영진 문서의
+ * 과거 판본이라 **그 문서 아래**에 목록으로 선다. 드롭다운·탭 줄의 «운영진»은 `/operators`
+ * 한 줄이고, `/operators/44`에서도 그 줄이 켜진다(접두 판정).
  *
  * 로그인 상태에 따라 갈리는 항목('내 활동'·로그아웃)은 여기 없다 — 그것은 `AuthNav`가
  * 클라이언트에서 판정해 그린다(익명 공개인 목록·상세 렌더에 세션 조회를 끼워 넣지 않으려고).
  */
+export type NavChild = {
+  href: string;
+  label: string;
+  /**
+   * 지금 주소가 이 줄인가. 탭에서 온 줄은 그 탭의 판정(정확히 일치)을 그대로 쓰고, 하위 주소가
+   * 있는 줄(운영진의 `/operators/43`)은 접두로 받는다 — 아니면 대수 페이지에서 드롭다운의
+   * 어느 줄도 켜지지 않아 «어디에 있나»가 사라진다.
+   */
+  isActive: (pathname: string) => boolean;
+};
+
 export type NavLink = {
   href: string;
   label: string;
   /** 현재 경로가 이 항목에 속하는지 — 상세(/records/news/x)에서도 '기록'이 켜져야 한다 */
   isActive: (pathname: string) => boolean;
+  /** 축 안의 하위 — 있으면 드롭다운(데스크톱)·들여쓴 줄(드로어)이 된다 */
+  children?: readonly NavChild[];
 };
 
 const startsWith = (prefix: string) => (pathname: string) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
+/** «소개» 축은 소개·운영진·문의 세 주소를 품는다 (ADR-0056) */
+const aboutAxisActive = (pathname: string) =>
+  startsWith(ROUTES.about)(pathname) ||
+  startsWith(ROUTES.operators)(pathname) ||
+  startsWith(ROUTES.contact)(pathname);
+
+const tabsAsChildren = (
+  tabs: readonly { href: string; label: string; isActive: (p: string) => boolean }[],
+): readonly NavChild[] => tabs.map(({ href, label, isActive }) => ({ href, label, isActive }));
+
 export const NAV_LINKS: readonly NavLink[] = [
   // «소개»(#633 · ssccops#460) — «SSCC»였는데 브랜드 «SSCC» 바로 옆이라 같은 글자가 둘이었다.
   // 페이지 제목·탭 축 이름과 같은 «소개»로. 주소(`/about`)는 그대로
-  { href: ROUTES.about, label: "소개", isActive: startsWith(ROUTES.about) },
-  { href: ROUTES.operators, label: "운영진", isActive: startsWith(ROUTES.operators) },
+  {
+    href: ROUTES.about,
+    label: "소개",
+    isActive: aboutAxisActive,
+    children: tabsAsChildren(SECTION_TABS.about),
+  },
   // «기록»(#585 · ssccops#437) — 포스트 아카이브. «활동»이었는데 학술 프로그램(ADR-0043)과 이름이 부딪혔다. 주소도 #591에서 `/records`(ssccops#439)
+  // 분류 탭(학술·행사·소식)이 화면 안에 이미 있어 드롭다운을 두지 않는다
   { href: ROUTES.records, label: "기록", isActive: startsWith(ROUTES.records) },
   { href: ROUTES.events, label: "행사", isActive: startsWith(ROUTES.events) },
   // 학술은 설명 페이지 → LMS (#550) — 상단 바에서 다른 앱으로 바로 나가지 않는다
   { href: ROUTES.academic, label: "학술", isActive: startsWith(ROUTES.academic) },
-  { href: ROUTES.join, label: "모집", isActive: startsWith(ROUTES.join) },
-  { href: ROUTES.contact, label: "문의", isActive: startsWith(ROUTES.contact) },
+  {
+    href: ROUTES.join,
+    label: "모집",
+    isActive: startsWith(ROUTES.join),
+    children: tabsAsChildren(SECTION_TABS.join),
+  },
 ];
 
 /*

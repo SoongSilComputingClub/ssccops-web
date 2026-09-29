@@ -22,6 +22,7 @@ export {
 export {
   BackToProgramsNotice,
   NoProgramNotice,
+  ProgramCompletedNotice,
   ProgramSignupNotice,
 } from "./ui/program-chooser";
 /*

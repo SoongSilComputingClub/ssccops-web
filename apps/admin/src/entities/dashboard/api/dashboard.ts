@@ -1,4 +1,4 @@
-import type { AprvSttsCd, WorkSttsCd } from "@/shared/config/codes";
+import type { AprvSttsCd, VoteChoice, WorkSttsCd } from "@/shared/config/codes";
 import { apiFetch } from "@/shared/lib/api/client";
 import type {
   ApprovalChecklistSummary,
@@ -9,7 +9,6 @@ import type {
   SubWorkListItem,
   SubWorkMemberRef,
   SubWorkWorkRef,
-  VoteChoice,
 } from "@/entities/sub-work";
 import type { DashboardData } from "../model/types";
 

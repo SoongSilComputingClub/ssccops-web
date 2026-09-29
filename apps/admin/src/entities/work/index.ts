@@ -5,7 +5,7 @@ export type {
   WorkMemberRef,
   WorkSubWorkSummary,
 } from "./model/types";
-export { useWorkStore, workPrgrsRtText, workSttsTone } from "./model/store";
+export { useWorkStore, workSttsTone } from "./model/store";
 export {
   WORK_ERROR,
   createWork,

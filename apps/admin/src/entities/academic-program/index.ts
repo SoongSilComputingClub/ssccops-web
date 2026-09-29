@@ -21,7 +21,6 @@ export {
   ACADEMIC_PROGRAM_ERROR,
   fetchAcademicProgram,
   fetchAcademicPrograms,
-  fetchCurriculumItems,
   transitionAcademicProgram,
 } from "./api/academic-programs";
 

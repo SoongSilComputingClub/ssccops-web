@@ -13,6 +13,7 @@ import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
 import { SiteFooter } from "./_shell/site-footer";
+import { SiteHeader } from "./_shell/site-header";
 import { ON_VERCEL } from "@/shared/lib/vercel";
 import "./globals.css";
 
@@ -156,8 +157,10 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
       {/*
        * 푸터가 짧은 화면에서도 바닥에 붙도록 body를 세로 flex로 두고 main이 남는 높이를 차지한다
        * (#520). 상단 바는 `[☰(lg 미만)] [브랜드] [1차 메뉴(lg)] ──── [종 자리] [계정 메뉴 | 로그인]`
-       * (#167 → #614 · ssccops#452). 메뉴 목차는 `_shell/nav-links.ts` 한 벌(일곱 항목)을 데스크톱
-       * 메뉴와 모바일 드로어가 함께 쓴다. 로그인 여부에 따라 갈리는 오른쪽 끝만 클라이언트
+       * (#167 → #614 · ssccops#452). 메뉴 목차는 `_shell/nav-links.ts` 한 벌(다섯 축 · ADR-0056)을
+       * 데스크톱 메뉴와 모바일 드로어가 함께 쓴다. **껍데기는 `_shell/site-header.tsx`**다 —
+       * 고정(`sticky`)과 «스크롤한 뒤에만 경계»가 브라우저 값이라 그 한 겹만 클라이언트다(#721).
+       * 로그인 여부에 따라 갈리는 오른쪽 끝만 클라이언트
        * 컴포넌트(AuthNav)로 두어, 익명 공개인 목록·상세 렌더에 세션 조회가 끼어들지 않게 한다(#150).
        * 테마 라디오는 상단 바에 없다 — 로그인한 사람은 계정 메뉴 안에서, 누구나는 푸터에서 고른다.
        * 종(#616 · ssccops#453)은 `AuthNav`의 로그인한 가지에만 꽂힌다 — 배지 값을 듣는 `UnreadCountSync`도
@@ -166,26 +169,24 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
       <body className="flex min-h-screen flex-col antialiased">
         {/* 연결이 없을 때 맨 위 한 줄 (#607 · ADR-0045) */}
         <OfflineBanner />
-        <header className="border-b border-line bg-surface">
-          <div className="mx-auto flex max-w-[1000px] items-center gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
-            <MobileNav />
-            <Link href={ROUTES.home} className="flex items-center gap-[8px]">
-              <BrandMark src={DEPLOY.mark} size={26} />
-              <b className="text-[15px]">SSCC</b>
-            </Link>
-            <DesktopNav />
-            <div className="flex-1" />
-            <AuthNav
-              signedInSlot={
-                <>
-                  <UnreadCountSync />
-                  <NotificationBell />
-                </>
-              }
-            />
-          </div>
-        </header>
-        <main className="mx-auto w-full max-w-[1000px] flex-1 px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">
+        <SiteHeader>
+          <MobileNav />
+          <Link href={ROUTES.home} className="flex items-center gap-[8px]">
+            <BrandMark src={DEPLOY.mark} size={26} />
+            <b className="text-[15px]">SSCC</b>
+          </Link>
+          <DesktopNav />
+          <div className="flex-1" />
+          <AuthNav
+            signedInSlot={
+              <>
+                <UnreadCountSync />
+                <NotificationBell />
+              </>
+            }
+          />
+        </SiteHeader>
+        <main className="mx-auto w-full max-w-shell flex-1 px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">
           {children}
         </main>
         <SiteFooter />
@@ -195,10 +196,15 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
          */}
         <ServiceWorkerRegister />
         {/*
-         * 측정 둘 — 방문 통계와 실사용자 Web Vitals (#600 · ssccops#443). Vercel에서만(가드는
-         * shared/lib/vercel.ts). Speed Insights는 세 앱이 한 할당(30일 1만)을 나누므로 **www에만**
-         * 싣는다 — 어드민·LMS는 회원 소수라 데이터가 적고 그 트래픽이 www 할당을 깎는다. 둘 다
-         * 쿠키 없이 돌고 개인을 식별하지 않는다(/privacy가 그것을 말한다).
+         * 측정 둘 — 방문 통계와 실사용자 Web Vitals (#600 · ssccops#443 → #705 · ssccops#524).
+         * Vercel 에서만 실린다(가드는 `shared/lib/vercel.ts`) — dev 는 Coolify 컨테이너라(ADR-0051)
+         * 어느 앱에도 실리지 않고 측정은 prod 에서만 모인다. 둘 다 쿠키 없이 돌고 개인을 식별하지
+         * 않는다(`/privacy` «6. 쿠키»가 그것을 말한다).
+         *
+         * **Speed Insights 는 세 앱이 30일 1만 이벤트를 나눠 쓴다.** 그래도 셋 다 켠 것은, 아껴서
+         * 빼 두면 어드민이 성능 신호 없이 남고(운영진이 매일 쓰는 앱인데 느려지는 것을 알아차릴
+         * 방법이 없다) **무엇이 얼마나 먹는지는 켜 봐야 알기** 때문이다. 넘치면 만지는 순서는
+         * 루트 `AGENTS.md` 측정 bullet 에 있다 — 표본율이 아니라 **페이지**부터다.
          */}
         {ON_VERCEL && (
           <>

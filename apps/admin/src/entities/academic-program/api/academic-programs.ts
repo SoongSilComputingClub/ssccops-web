@@ -1,7 +1,6 @@
-import type { AcdmActvSttsCd, SesnSttsCd } from "@/shared/config/codes";
+import type { AcdmActvSttsCd } from "@/shared/config/codes";
 import { ApiError, apiFetch, apiFetchList } from "@/shared/lib/api/client";
 import { withServiceOffset } from "@/shared/lib/date";
-import type { CurriculumItemWithSession } from "@/entities/curriculum-item";
 import type {
   AcademicProgramDetail,
   AcademicProgramListFilter,
@@ -60,6 +59,11 @@ export const ACADEMIC_PROGRAM_ERROR = {
   FORBIDDEN: "FORBIDDEN",
   /** 전이표에 없는 조합 (409) — START_RECRUITMENT 를 ONGOING 에서 다시 부르는 등 */
   INVALID_ACADEMIC_PROGRAM_TRANSITION: "INVALID_ACADEMIC_PROGRAM_TRANSITION",
+  /**
+   * 종료된 프로그램에 쓰기 (409 · ADR-0057 · 서버 #597) — 모집 선발·일정 · 회차 승인 등.
+   * 권한 판정(403) 뒤에 온다 — 권한 없는 사람에게 «종료됐다»를 먼저 알리지 않는다.
+   */
+  ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
   /** START_RECRUITMENT 인데 연결된 모집 폼이 없다 (409) — 데이터 정합성이 깨진 경우 */
   FORM_NOT_LINKED: "FORM_NOT_LINKED",
 } as const;
@@ -113,18 +117,6 @@ interface AcademicProgramDetailResponse {
   curriculumItemCount: number | null;
   createdAt: string | null;
   updatedAt: string | null;
-}
-
-interface CurriculumItemWithSessionResponse {
-  curriculumItemId: number;
-  seqno: number | null;
-  ttl: string | null;
-  planYmd: string | null;
-  sessionId: number | null;
-  sesnSttsCd: SesnSttsCd;
-  actlYmd: string | null;
-  prgrsCn: string | null;
-  isEditable: boolean;
 }
 
 interface AcademicProgramTransitionResponse {
@@ -201,22 +193,6 @@ function toDetail(res: AcademicProgramDetailResponse): AcademicProgramDetail {
   };
 }
 
-function toCurriculumItem(
-  res: CurriculumItemWithSessionResponse,
-): CurriculumItemWithSession {
-  return {
-    curriculumItemId: res.curriculumItemId,
-    seqno: res.seqno,
-    title: res.ttl ?? "",
-    planYmd: res.planYmd,
-    sessionId: res.sessionId,
-    sesnSttsCd: res.sesnSttsCd,
-    actualYmd: res.actlYmd,
-    progressContent: res.prgrsCn,
-    isEditable: res.isEditable,
-  };
-}
-
 /* ── 목록 ──────────────────────────────────────────────────── */
 
 /**
@@ -269,36 +245,27 @@ export async function fetchAcademicProgram(
   return toDetail(res);
 }
 
-/* ── 커리큘럼 ──────────────────────────────────────────────── */
-
-/**
- * GET /v1/academic-programs/{academicProgramId}/curriculum-items — 커리큘럼 (#134).
+/*
+ * ── 커리큘럼은 `entities/curriculum-item` 이 조회한다 (#701 · ssccops#516) ──
  *
- * 계획(crclm_artcl) + 실적(sesn) 조인 배열이다. 활동 상세 화면의 "커리큘럼 대비 진행" 표
- * 하나가 이 배열을 그대로 쓴다. 페이징이 없다(활동당 회차 수가 적다) — `apiFetch` 로 받는다.
- * 실적이 없는 회차도 `sesnSttsCd` 에 NOT_SUBMITTED 가 채워지므로 화면은 null 분기를 두지
- * 않는다.
+ * `fetchCurriculumItems` · 그 응답 타입 · 매퍼가 여기 있었고, 그래서 이 파일이 **다른 슬라이스의
+ * 도메인 타입**(`CurriculumItemWithSession`)을 가져다 썼다 — 같은 레이어끼리 참조하지 않는다는
+ * 규칙에 어긋나는 자리였다. 조회를 타입이 있는 쪽으로 옮겨 그 참조를 없앴다.
+ *
+ * 활동 상세의 `curriculumItemCount` 는 여기 남는다 — 그것은 활동 응답의 필드다.
  */
-export async function fetchCurriculumItems(
-  academicProgramId: number,
-): Promise<CurriculumItemWithSession[]> {
-  const items = await apiFetch<CurriculumItemWithSessionResponse[] | null>(
-    `/v1/academic-programs/${academicProgramId}/curriculum-items`,
-  );
-  return (items ?? []).map(toCurriculumItem);
-}
 
 /* ── 상태 전이 ─────────────────────────────────────────────── */
 
 /**
  * POST /v1/academic-programs/{academicProgramId}/transitions — 상태 전이 (#133).
  *
- * 모집 시작(START_RECRUITMENT)·종료 승인(APPROVE_COMPLETION) 두 액션이 이 하나의 경로를
- * 쓴다. 다음 상태를 직접 쓰는 PATCH 경로는 없다 — 화면이 액션을 보내고 다음 상태는 전이표가
- * 정한다(work·form 도메인의 전이 엔드포인트 선례).
+ * 모집 시작(START_RECRUITMENT)·종료 승인(APPROVE_COMPLETION)·재시작(REOPEN · 서버 #597)
+ * 세 액션이 이 하나의 경로를 쓴다. 다음 상태를 직접 쓰는 PATCH 경로는 없다 — 화면이 액션을
+ * 보내고 다음 상태는 전이표가 정한다(work·form 도메인의 전이 엔드포인트 선례).
  *
  * `recruitmentStartAt`·`recruitmentEndAt` 는 START_RECRUITMENT 에서만 쓰인다 —
- * APPROVE_COMPLETION 에 실려 와도 서버가 무시한다. 일시에는 **오프셋을 반드시 붙인다**
+ * 다른 전이에 실려 와도 서버가 무시한다. 일시에는 **오프셋을 반드시 붙인다**
  * (`datetime-local` 입력은 오프셋 없는 값을 주는데 서버는 `OffsetDateTime` 이라 본문 파싱
  * 단계에서 400 으로 튕긴다 — `withServiceOffset` 주석 참고).
  *
@@ -329,8 +296,9 @@ export async function transitionAcademicProgram(
 
   return {
     academicProgramId: res.academicProgramId ?? academicProgramId,
-    // 전이가 성공했으면 before 도 서버가 준다 — 없으면 after 로 폴백(값을 만들어 내지 않되 표시가 깨지지 않게)
-    beforeSttsCd: res.beforeSttsCd ?? res.afterSttsCd,
+    // 위 sessions.ts 와 같은 자리다 (#686) — before == after 는 «승인 → 승인»이 되어
+    // 아무것도 바뀌지 않은 것처럼 보인다.
+    beforeSttsCd: res.beforeSttsCd ?? null,
     afterSttsCd: res.afterSttsCd,
     formReceiptStatus: res.formReceiptStatus ?? null,
   };

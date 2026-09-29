@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { LOGIN_ERROR_QUERY, ROUTES } from "@/shared/config/routes";
-import { safeNextPath, OAUTH_NEXT_COOKIE, OAUTH_NEXT_COOKIE_PATH } from "@ssccops/auth";
+import {
+  requestOrigin,
+  safeNextPath,
+  OAUTH_NEXT_COOKIE,
+  OAUTH_NEXT_COOKIE_PATH,
+} from "@ssccops/auth";
 import { createClient } from "@ssccops/auth/supabase/server";
 
 /**
@@ -55,7 +60,9 @@ function resolveNext(request: NextRequest): string {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  // `request.url`의 오리진은 컨테이너에서 `0.0.0.0:3000`이다 — 돌려보낼 주소는 공개 오리진(#696)
+  const origin = requestOrigin(request);
 
   // 사용자가 동의 화면에서 취소하면 Supabase가 code 없이 error를 붙여 돌려보낸다
   const oauthError = searchParams.get("error");

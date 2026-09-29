@@ -102,7 +102,14 @@ export interface EventDetail extends EventSummary {
  */
 export interface EventParticipant {
   eventPtcpId: number;
-  mbrId: number;
+  /**
+   * 회원 식별자 — 서버 응답의 `member`가 없으면 `null`이다 (#686).
+   *
+   * 그전에는 `?? 0`이었다. 바로 아래 `mbrNm`·`stdntNo`는 같은 자리에서 `""`로 두는데
+   * **식별자만 0을 주고 있었다** — `0`은 «없다»가 아니라 «0번»이고, 타입이 `number`가
+   * 되는 순간 이후 어느 코드도 «없음»을 다시 물을 수 없다.
+   */
+  mbrId: number | null;
   mbrNm: string;
   stdntNo: string;
   ptcpSttsCd: PtcpSttsCd;

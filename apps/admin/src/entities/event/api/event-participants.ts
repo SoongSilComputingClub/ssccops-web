@@ -80,7 +80,9 @@ interface EventParticipantRegistrationResponse {
 function toEventParticipant(res: EventParticipantResponse): EventParticipant {
   return {
     eventPtcpId: res.eventPtcpId,
-    mbrId: res.member?.mbrId ?? 0,
+    // `?? 0`을 걷었다 (#686) — `0`은 «없다»가 아니라 «0번»이다. 바로 아래 `mbrNm`·`stdntNo`는
+    // 같은 파일이 이미 `""`로 두는데 **식별자만 0을 주고 있었다.**
+    mbrId: res.member?.mbrId ?? null,
     mbrNm: res.member?.mbrNm ?? "",
     stdntNo: res.member?.stdntNo ?? "",
     ptcpSttsCd: res.ptcpSttsCd,

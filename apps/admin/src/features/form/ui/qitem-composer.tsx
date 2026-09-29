@@ -10,6 +10,7 @@ import {
   type Qitem,
   type QitemCpstCn,
 } from "@/entities/form";
+import { matchesPatternPreset } from "@ssccops/form-renderer";
 import { PATTERN_PRESETS } from "@/shared/config/constants";
 import {
   isChoiceQitemType,
@@ -654,8 +655,10 @@ export function QitemComposer({
                       </div>
                     )}
 
+                    {/* 같은 파일 위쪽 문항 머리글에는 있던 것이 여기엔 없었다 (#692) */}
                     <button
                       type="button"
+                      aria-expanded={advQ === q.qitemId}
                       onClick={() => setAdvQ(advQ === q.qitemId ? null : q.qitemId)}
                       className="mt-3 cursor-pointer text-[13.5px] text-accent"
                     >
@@ -720,7 +723,7 @@ export function QitemComposer({
                                 <Chip
                                   key={p.name}
                                   active={
-                                    p.name === "자유 입력" ? !q.ptrnCn : q.ptrnNm === p.name
+                                    matchesPatternPreset(p, q.ptrnCn)
                                   }
                                   onClick={() =>
                                     patchQ(

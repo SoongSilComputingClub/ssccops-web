@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useFocusTrap } from "@ssccops/ui";
 import { Button } from "./button";
 
 /** 중앙 모달 시트 — 등급/상태/역할 변경, 반려 사유 입력 등 */
@@ -70,21 +71,22 @@ export function Sheet({
   }, [open, onClose]);
 
   /*
-   * 초점을 안으로 옮기고, 닫히면 열었던 자리로 돌려놓는다 (UI 감사 D7 · #470).
+   * 초점을 안으로 옮기고, **가두고**, 닫히면 열었던 자리로 돌려놓는다 (UI 감사 D7 · #470 ·
+   * 가두기는 #692).
    *
    * 그전에는 열려도 초점이 `body`에 남아 Tab이 시트 뒤의 화면을 돌았고, 보조기기는 시트가 열린
-   * 것을 알 수 없었다(`role`·`aria-modal`이 없었다). 드로어(mobile-nav)와 같은 방식이다 —
-   * 패널에 `tabIndex={-1}`을 주고 거기에 초점을 두면 안의 첫 입력이 무엇이든 다음 Tab이 그것으로
-   * 간다. 위의 Esc 처리는 그대로 두었다 — 초점이 안에 있어도 document 리스너가 먼저 받는다.
+   * 것을 알 수 없었다(`role`·`aria-modal`이 없었다). 패널에 `tabIndex={-1}`을 주고 거기에 초점을
+   * 두면 안의 첫 입력이 무엇이든 다음 Tab이 그것으로 간다. 위의 Esc 처리는 그대로 두었다 —
+   * 초점이 안에 있어도 document 리스너가 먼저 받는다.
+   *
+   * **이동·반환은 있었는데 가두기가 없었다.** 아래 `<dialog>`는 `open` 속성으로만 열려
+   * top-layer inert를 못 받으므로(그 자리의 근거 참조) Tab이 마지막 버튼에서 스크림 뒤 화면으로
+   * 넘어갔다 — 시트 약 12개가 전부 그랬다. 이 파일의 옛 주석은 «드로어와 같은 방식»이라고 적고
+   * 있었지만 실제로 같지 않았고, 이제 **정말로 같은 한 벌**(`@ssccops/ui`)을 쓴다.
    */
   const panelRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
-  useEffect(() => {
-    if (!open) return;
-    const opener = document.activeElement as HTMLElement | null;
-    panelRef.current?.focus();
-    return () => opener?.focus?.();
-  }, [open]);
+  useFocusTrap(open, panelRef);
 
   if (!open) return null;
   return (

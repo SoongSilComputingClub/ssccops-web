@@ -87,7 +87,7 @@ interface WorkCreateResponse {
   endAt: string | null;
   priority: PrrtyRnkCd | null;
   review: string | null;
-  progressRate: number | null;
+  /* 진행률은 등록 응답에 없다 — 저장 컬럼이 사라졌다 (#719 · 서버 V25). 목록·상세는 서버가 조회 때 계산해 준다 */
   createdAt: string | null;
 }
 

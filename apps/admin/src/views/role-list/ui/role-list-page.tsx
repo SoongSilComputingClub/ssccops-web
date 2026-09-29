@@ -227,7 +227,10 @@ function RoleListView() {
 function RoleTabs({ value }: Readonly<{ value: "역할 목록" | "역할 분류" }>) {
   const router = useRouter();
   return (
+    /* 누르면 다른 주소로 간다 (#692 - role-labels 와 같은 판단) */
     <Segmented
+      as="nav"
+      label="역할 화면"
       options={["역할 목록", "역할 분류"] as const}
       value={value}
       onChange={(v) => {

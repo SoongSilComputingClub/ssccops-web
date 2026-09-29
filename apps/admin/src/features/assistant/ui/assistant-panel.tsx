@@ -8,6 +8,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { trapFocus } from "@ssccops/ui";
 import { ASSISTANT_QUESTION_MAX_LENGTH } from "@/entities/assistant";
 import { Button, Sheet } from "@/shared/ui";
 import { useAssistantStore } from "../model/use-assistant-store";
@@ -372,27 +373,3 @@ export function AssistantPanel() {
   );
 }
 
-/**
- * 포커스 트랩 — Tab이 패널 밖으로 새지 않게 양 끝을 잇는다.
- *
- * `aria-modal="true"`는 보조기기에게 «뒤는 없다»고 말할 뿐 Tab을 막지 못한다. 좁은 화면에서는
- * 패널이 화면을 덮고 있어 초점이 보이지 않는 곳으로 가면 사용자가 되돌아올 길을 잃는다.
- */
-function trapFocus(e: globalThis.KeyboardEvent, panel: HTMLElement | null) {
-  if (e.key !== "Tab" || !panel) return;
-
-  const focusable = panel.querySelectorAll<HTMLElement>(
-    'button:not([disabled]), textarea:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-  );
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  if (!first || !last) return;
-
-  if (e.shiftKey && document.activeElement === first) {
-    e.preventDefault();
-    last.focus();
-  } else if (!e.shiftKey && document.activeElement === last) {
-    e.preventDefault();
-    first.focus();
-  }
-}

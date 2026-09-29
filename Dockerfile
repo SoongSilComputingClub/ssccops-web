@@ -23,12 +23,22 @@ WORKDIR /repo
 # ── 2. prune — 이 앱이 쓰는 워크스페이스만 남긴다 ──────────────────────────────
 # `out/json`(package.json + 락파일)과 `out/full`(소스)로 갈라 주므로, 의존성 설치 레이어가
 # 소스 변경에 무효화되지 않는다. turbo는 devDependency지만 설치 전에 필요하므로 여기서만
-# `pnpm dlx`로 받는다 — 버전은 package.json과 같은 값으로 고정한다(갈리면 prune 결과가 달라진다).
+# `pnpm dlx`로 받는다.
+#
+# ⚠️ **버전의 정본은 `pnpm-lock.yaml`이다** (#688 · ssccops#506). 여기에는 «package.json과 같은
+# 값으로 고정한다»고 적혀 있었는데 그쪽은 `"turbo": "^2.5.8"`(**범위**)이라 정본이 될 수 없었고,
+# 실제로 락파일이 잡은 값은 `2.10.11`이었다 — **prune 은 2.5.8 이, 그 뒤 `pnpm turbo run build`는
+# 2.10.11 이 돌고 있었다.** prune 결과가 달라지면 이미지가 필요한 워크스페이스를 빠뜨린 채
+# 나가고, **그 실패는 빌드가 아니라 실행 시점에 나타난다.** 지금 이미지가 도는 것은 두 버전의
+# prune 결과가 우연히 같아서다.
+#
+# `pnpm update` 로 turbo 가 오르면 **이 줄을 함께 본다.** 락파일 값은
+# `grep -A1 '^  turbo@' pnpm-lock.yaml` 로 읽는다.
 FROM base AS pruner
 ARG APP
 RUN test -n "$APP" || (echo "APP 빌드 인자가 필요하다 (admin|www|lms)" >&2; exit 1)
 COPY . .
-RUN pnpm dlx turbo@2.5.8 prune "@ssccops/${APP}" --docker
+RUN pnpm dlx turbo@2.10.11 prune "@ssccops/${APP}" --docker
 
 # ── 3. 설치 · 빌드 ────────────────────────────────────────────────────────────
 FROM base AS installer
@@ -39,8 +49,8 @@ RUN pnpm install --frozen-lockfile
 
 COPY --from=pruner /repo/out/full/ ./
 
-# 화면·서비스워커가 읽는 값들. 앱마다 다르므로(오리진이 서로를 가리킨다) 배포 쪽에서 앱별로 넣는다.
-# 비워 두면 각 앱의 `.env.example`에 적힌 «비었을 때의 동작»으로 떨어진다 — 빌드는 막지 않는다.
+# 화면·서비스워커가 읽는 값들. 앱마다 읽는 이름이 다르지만 이름마다 값은 하나라(오리진이 서로를
+# 가리킨다) `deploy-dev.yml`이 Environment `dev`의 Variables를 세 앱에 똑같이 넘긴다(#694). 비워 두면 각 앱의 `.env.example`에 적힌 «비었을 때의 동작»으로 떨어진다 — 빌드는 막지 않는다.
 ARG NEXT_PUBLIC_API_BASE_URL=""
 ARG NEXT_PUBLIC_SUPABASE_URL=""
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=""
@@ -63,7 +73,7 @@ ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
     NEXT_PUBLIC_NAVER_SITE_VERIFICATION=$NEXT_PUBLIC_NAVER_SITE_VERIFICATION
 
 # 빌드된 커밋. `.git`을 이미지에 넣지 않으므로(.dockerignore) `next.config.ts`의 git 경로는
-# 여기서 답을 못 낸다 — Coolify가 주는 `SOURCE_COMMIT`을 그 해석 순서에 더해 두었다.
+# 여기서 답을 못 낸다 — 빌드 인자 `SOURCE_COMMIT`(`deploy-dev.yml`이 넘긴다)을 그 해석 순서에 더해 두었다.
 # 없으면 `/version`의 sha가 "unknown"이고 배포 이력이 `unverified`로 남을 뿐, 빌드는 산다.
 ARG SOURCE_COMMIT=""
 ENV SOURCE_COMMIT=$SOURCE_COMMIT

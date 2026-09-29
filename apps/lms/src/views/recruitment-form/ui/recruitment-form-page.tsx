@@ -26,6 +26,11 @@ import { RecruitmentFormEditor } from "./recruitment-form-editor";
  * 접수 시작·종료 일시를 이 화면에서 바꿀 수 없다. 서버가 본문에서 받지 않으므로 덮어쓸
  * 길이 애초에 없고(첫 번째 방어선), 화면은 그 값을 입력란 모양으로 보여 주되 잠그고 누가
  * 정하는지 밝힌다(두 번째).
+ *
+ * ── 종료된 프로그램 (#716 · ADR-0057) ────────────────────────
+ * 서버가 `isEditable: false`로 내려 편집기는 읽기 전용으로 열린다. 화면은 잠긴 이유만 바꾼다 —
+ * 종료 여부는 머리글용으로 이미 받은 `program.sttsCd`다. 목록 조회가 실패해 `program`이 없으면
+ * «접수가 시작돼»로 떨어진다(잠금 자체는 `isEditable`이라 그대로다).
  */
 
 export async function RecruitmentFormPage({
@@ -88,7 +93,11 @@ export async function RecruitmentFormPage({
         </p>
       </header>
 
-      <RecruitmentFormEditor academicProgramId={academicProgramId} initialView={view} />
+      <RecruitmentFormEditor
+        academicProgramId={academicProgramId}
+        initialView={view}
+        programCompleted={program?.sttsCd === "COMPLETED"}
+      />
     </div>
   );
 }

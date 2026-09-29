@@ -169,16 +169,30 @@ export const TKCG_SE_NM: Record<TkcgSeCd, string> = {
 
 export const TKCG_SE_CDS = codesOf(TKCG_SE_NM);
 
-/* ── 긴급_구분 (sub_work_aprv.emrg_se_cd) ───────────────────── */
+/* ── 정족수 승인 투표 선택지 (OPS-015) ─────────────────────── */
 
-export type EmrgSeCd = "NORMAL" | "URGENT";
+/**
+ * 기권은 없다 — 승인함 화면에 기권 버튼이 없다(서버 `VoteChoice` 주석).
+ *
+ * **여기 있는 이유** (#698 · ssccops#516): `entities/sub-work` 가 들고 있었고
+ * `entities/approval` · `entities/dashboard` 가 그 슬라이스에서 가져다 썼다. 루트 `AGENTS.md` 는
+ * 같은 레이어의 슬라이스끼리 참조하지 않는다고 못 박는데, 더 나쁜 것은 `approval/api` 의 머리
+ * 주석이 **그 반대를 적고 있었다는 것**이다 — «quorum·checklistSummary 는 하위 업무 상세와
+ * 모양이 같지만 타입을 공유하지 않고 이 파일이 따로 옮긴다». 세 줄 위에서 `VoteChoice` 를
+ * 가져오면서.
+ *
+ * 그 주석이 틀린 것은 아니다 — **다른 것을 말하고 있었다.** 거기서 공유하지 않기로 한 것은
+ * «응답의 모양»이고(화면이 무엇을 필요로 하는지는 그 화면의 사정이다), 이것은 **서버 enum** 이다.
+ * 이 파일에 있는 `AprvSttsCd`·`MtgSeCd` 와 같은 종류이고, 값이 갈리면 어느 화면에서든 같이
+ * 깨진다. 그래서 응답 모양은 슬라이스마다 두고 enum 은 여기 한 벌 둔다.
+ */
+export type VoteChoice = "AGREE" | "DISAGREE";
 
-export const EMRG_SE_NM: Record<EmrgSeCd, string> = {
-  NORMAL: "일반",
-  URGENT: "긴급",
-};
-
-export const EMRG_SE_CDS = codesOf(EMRG_SE_NM);
+/*
+ * 긴급_구분(`EmrgSeCd`·`EMRG_SE_NM`)은 여기 없다 (#719 · ssccops#537 · 서버 V25).
+ * 긴급 예외 집행(OPS-016)의 자리로 `sub_work_aprv.emrg_se_cd` 컬럼만 있었고 **서버에는 그 enum이
+ * 만들어진 적이 없다** — 컬럼이 사라지면서 웹 쪽 사본도 근거를 잃었다.
+ */
 
 /* ── 회의_구분 (mtg.mtg_se_cd) · DB 명시 ────────────────────── */
 
@@ -447,11 +461,13 @@ export const SESN_STTS_CDS = codesOf(SESN_STTS_NM);
  * 유일해야 하는데 `aprv_stts_cd` 그룹이 이미 하위 업무용으로 있고 값 집합이 다르다.
  * PROPOSAL은 없다 — 기획안 승인은 폼 응답 검토(form_rspns_rvw_hstry)가 정본이다.
  */
-export type AcdmActvAprvSeCd = "SESSION" | "COMPLETION";
+export type AcdmActvAprvSeCd = "SESSION" | "COMPLETION" | "REOPEN";
 
 export const ACDM_ACTV_APRV_SE_NM: Record<AcdmActvAprvSeCd, string> = {
   SESSION: "회차 승인",
   COMPLETION: "종료·수료 승인",
+  // 종료 → 진행 중으로 되돌린 기록. 종료 줄은 지우지 않고 한 줄 더한다(ADR-0057 · 서버 #597)
+  REOPEN: "재시작",
 };
 
 export const ACDM_ACTV_APRV_SE_CDS = codesOf(ACDM_ACTV_APRV_SE_NM);

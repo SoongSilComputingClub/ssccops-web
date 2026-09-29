@@ -26,12 +26,13 @@ export { allowsRecording } from "./model/types";
 
 export { SESN_STTS_BADGE, sesnSttsBadge } from "./model/display";
 
+/* 출석률 판정은 `@ssccops/academic` 이 정본이다 — admin 과 같은 파일이다 (#698 · ssccops#516) */
 export {
   attendanceRatePercent,
   formatAttendanceRate,
   isLowAttendanceRate,
   LOW_ATTENDANCE_RATE,
-} from "./model/attendance-rate";
+} from "@ssccops/academic";
 
 // 오류 코드는 전송 계층에 의존하지 않는 순수 모듈에 있다 (조회 함수는 재export 하지 않는다)
 export {

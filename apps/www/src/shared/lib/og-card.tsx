@@ -29,17 +29,25 @@ const MARK_PATH = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV).mark;
 
 const assetCache = new Map<string, Promise<ArrayBuffer>>();
 
-/** 자기 origin의 정적 자산을 받아 모듈 변수에 둔다 — 같은 인스턴스에서는 한 번만 받는다 */
+/**
+ * 자기 origin의 정적 자산을 받아 모듈 변수에 둔다 — 같은 인스턴스에서는 한 번만 받는다.
+ * `origin`은 `requestOrigin(request)`로 넘긴다 — `request.url`의 오리진은 컨테이너에서
+ * `0.0.0.0:3000`이라 받으러 나가지 못한다(#696).
+ */
 function loadAsset(origin: string, path: string): Promise<ArrayBuffer> {
   let cached = assetCache.get(path);
   if (!cached) {
-    cached = fetch(`${origin}${path}`, { cache: "force-cache" }).then((res) => {
-      if (!res.ok) {
+    cached = fetch(`${origin}${path}`, { cache: "force-cache" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`${path} ${res.status}`);
+        return res.arrayBuffer();
+      })
+      .catch((error: unknown) => {
+        // 실패는 캐시에 남기지 않는다 — 예전에는 `!res.ok`만 지워서 연결 자체의 실패(거절·TLS·DNS)가
+        // 그대로 남았다. 인스턴스가 오래 사는 컨테이너에서는 한 번의 실패가 재시작까지 간다(#696)
         assetCache.delete(path);
-        throw new Error(`${path} ${res.status}`);
-      }
-      return res.arrayBuffer();
-    });
+        throw error;
+      });
     assetCache.set(path, cached);
   }
   return cached;

@@ -43,6 +43,12 @@ import { correctAttendanceErrorMessage } from "./attendance-roster-error";
  * `APPROVED`가 아니면 정정할 수 있다. 화면은 `column.locked`로 칸을 비활성화하고 사유를
  * `title`로 붙인다.
  *
+ * ── 종료된 프로그램은 모든 칸을 잠근다 (#716 · ADR-0057) ──────────
+ * 서버가 종료된 프로그램의 정정을 409 `ACADEMIC_PROGRAM_COMPLETED`로 막는다. 출석부에는
+ * 회차 기록의 `isEditable` 같은 서버 판정이 없어 **프로그램 상태를 직접 본다**(이 화면만의
+ * 예외 — 폼을 여는 곳은 `isEditable`만 본다). 상태는 셸이 이미 받은 `mine=leader` 목록의
+ * `sttsCd`라 조회가 늘지 않는다. 승인 잠금과 사유가 달라 `lockReason`으로 가른다.
+ *
  * ── 연타/경합 ────────────────────────────────────────────────
  * 같은 회차에 정정이 진행 중이면 그 회차의 다음 클릭을 막는다(`pendingRef`). 회차가 다르면
  * 동시에 진행해도 무방하다(서로 다른 열이라 갱신이 겹치지 않는다).
@@ -51,11 +57,21 @@ import { correctAttendanceErrorMessage } from "./attendance-roster-error";
 /** 칸 하나의 상태 */
 export type RosterCellState = "present" | "absent" | "none";
 
+/**
+ * 칸을 잠근 이유 — 종료가 승인보다 먼저다(종료된 프로그램이면 승인 여부와 무관하게 전부 잠긴다).
+ * 잠기지 않았으면 null.
+ */
+export type RosterLockReason = "program-completed" | "approved" | null;
+
 /** 표의 한 열(회차) — 화면이 그릴 값으로 가공한 것 */
 export interface RosterColumn {
   session: AcademicSessionSummary;
-  /** 정정할 수 없는 회차인가(APPROVED) */
+  /** 승인된 회차인가 — 머리글의 «승인» 표식 */
+  approved: boolean;
+  /** 정정할 수 없는 회차인가(승인됨 · 프로그램 종료) */
   locked: boolean;
+  /** 잠근 이유 — 칸의 `title` */
+  lockReason: RosterLockReason;
   /** 이 회차에 정정 요청이 진행 중인가 */
   saving: boolean;
   /** eventPtcpId → 이 회차에서의 출석 상태 */
@@ -101,6 +117,8 @@ export function useAttendanceRoster(
   academicProgramId: number,
   initialColumns: RosterSessionColumn[],
   members: AcademicProgramMember[],
+  /** 프로그램이 종료됐는가 — 모든 칸을 잠근다 (ADR-0057) */
+  programCompleted: boolean,
 ): AttendanceRosterView {
   /*
    * 회차별 상태(출석부 줄 + 합계)를 sessionId로 쥔다. 초깃값은 로더가 넘긴 값이라 동기화용
@@ -134,6 +152,7 @@ export function useAttendanceRoster(
     (sessionId: number, eventPtcpId: number) => {
       setError(null);
 
+      if (programCompleted) return;
       const session = sessionOrder.find((s) => s.sessionId === sessionId);
       if (!session || session.sesnSttsCd === "APPROVED") return;
       if (pendingRef.current.has(sessionId)) return;
@@ -178,19 +197,29 @@ export function useAttendanceRoster(
         }
       })();
     },
-    [academicProgramId, cellMaps, sessionOrder],
+    [academicProgramId, cellMaps, programCompleted, sessionOrder],
   );
 
   /* ── 파생: 열 ──────────────────────────────────────────────── */
   const columns = useMemo<RosterColumn[]>(
     () =>
-      sessionOrder.map((session) => ({
-        session,
-        locked: session.sesnSttsCd === "APPROVED",
-        saving: savingIds.has(session.sessionId),
-        cellByMember: cellMaps.get(session.sessionId) ?? new Map(),
-      })),
-    [sessionOrder, savingIds, cellMaps],
+      sessionOrder.map((session) => {
+        const approved = session.sesnSttsCd === "APPROVED";
+        const lockReason: RosterLockReason = programCompleted
+          ? "program-completed"
+          : approved
+            ? "approved"
+            : null;
+        return {
+          session,
+          approved,
+          locked: lockReason !== null,
+          lockReason,
+          saving: savingIds.has(session.sessionId),
+          cellByMember: cellMaps.get(session.sessionId) ?? new Map(),
+        };
+      }),
+    [sessionOrder, programCompleted, savingIds, cellMaps],
   );
 
   /* ── 파생: 행(팀원별 출석률) ───────────────────────────────── */

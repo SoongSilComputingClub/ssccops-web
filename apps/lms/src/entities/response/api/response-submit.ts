@@ -26,7 +26,7 @@ interface FormResponseSubmitApiResponse {
 }
 
 export interface ResponseSubmitResult {
-  formRspnsId: number;
+  formRspnsId: number | null;
   sbmsnDt: string | null;
 }
 
@@ -39,5 +39,9 @@ export async function submitFormResponse(
     `/v1/forms/${formId}/responses`,
     { method: "POST", body: JSON.stringify({ rspnsCn }) },
   );
-  return { formRspnsId: res?.formRspnsId ?? 0, sbmsnDt: res?.sbmsnDt ?? null };
+  /*
+   * `?? 0`을 걷었다 (#686 · ssccops#504) — 서버가 `Long`이고 `0`은 «없다»가 아니라 «0번»이다.
+   * 제출 응답의 식별자를 지어내면 그 값을 쓰는 다음 요청이 없는 행을 가리키고 실패가 조용하다.
+   */
+  return { formRspnsId: res?.formRspnsId ?? null, sbmsnDt: res?.sbmsnDt ?? null };
 }

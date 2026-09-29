@@ -55,6 +55,12 @@ export function toRecruitmentFormSaveErrorMessage(error: unknown): string {
        * 접수 시작 시각이 지난** 경우다 — 그래서 새로고침을 권한다.
        */
       return "접수가 시작돼 문항을 고칠 수 없습니다 — 새로고침해주세요";
+    case RECRUITMENT_FORM_ERROR.ACADEMIC_PROGRAM_COMPLETED:
+      /*
+       * 편집 화면을 열어 둔 사이 종료된 경우다(ADR-0057). 회차·출석처럼 재시작을 권하지 않는다 —
+       * 종료가 접수를 마감하고 재시작은 다시 열지 않아, 재시작만으로는 문항을 고칠 수 있게 되지 않는다.
+       */
+      return "종료된 프로그램이라 문항을 고칠 수 없습니다 — 새로고침해주세요";
     case RECRUITMENT_FORM_ERROR.QUESTION_ITEM_IN_USE:
       return "이미 응답이 있는 문항은 고칠 수 없습니다 — 새로고침해주세요";
     case RECRUITMENT_FORM_ERROR.INVALID_QUESTION_COMPOSITION:

@@ -29,7 +29,17 @@ interface FormResponseDraftApiResponse {
 
 /** 작성 중(DRAFT) 응답 한 건 */
 export interface ResponseDraft {
-  formRspnsId: number;
+  /*
+   * 서버가 `Long`이라 **비어 올 수 있다** — `?? 0`으로 메우지 않는다 (#686 · ssccops#504).
+   *
+   * `0`은 «없다»가 아니라 «0번»이고, 타입이 `number`가 되는 순간 이후 어느 코드도 «없음»을 다시
+   * 물을 수 없다. 루트 `AGENTS.md`의 «없는 값을 만들어 내지 않는다» 정면 위반이었다.
+   *
+   * 지금 이 값을 읽는 화면은 없다(초안은 `rspnsCn`·`mdfcnDt`로만 쓰인다). 그래서 «0으로 메워도
+   * 아무 일도 안 일어났다»가 사실이지만, **그 상태로 두면 다음 사람이 이 값을 그대로 쓴다** —
+   * 없는 행을 가리키는 식별자로 저장·제출을 하면 실패가 조용하다.
+   */
+  formRspnsId: number | null;
   /**
    * 서버가 **정리한 뒤의** 답 — 빈 값인 key가 빠지고 단일선택 배열은 문자열로 벗겨져 있다.
    * 방금 보낸 값과 언제나 같지는 않으므로, 화면은 이 값을 다음 저장의 기준으로 삼는다.
@@ -41,7 +51,7 @@ export interface ResponseDraft {
 
 function toResponseDraft(res: FormResponseDraftApiResponse): ResponseDraft {
   return {
-    formRspnsId: res.formRspnsId ?? 0,
+    formRspnsId: res.formRspnsId,
     rspnsCn: res.rspnsCn ?? {},
     mdfcnDt: res.mdfcnDt,
   };
@@ -82,5 +92,6 @@ export async function saveMyResponseDraft(
     `/v1/forms/${formId}/responses/draft`,
     { method: "PUT", body: JSON.stringify({ rspnsCn }) },
   );
-  return res === null ? { formRspnsId: 0, rspnsCn, mdfcnDt: null } : toResponseDraft(res);
+  // 서버가 본문 없이 200을 준 경우다 — 그 응답에는 식별자가 없으므로 지어내지 않는다
+  return res === null ? { formRspnsId: null, rspnsCn, mdfcnDt: null } : toResponseDraft(res);
 }

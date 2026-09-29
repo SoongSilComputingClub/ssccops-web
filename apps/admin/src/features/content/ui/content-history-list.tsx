@@ -38,7 +38,8 @@ function HistoryRow({ item }: Readonly<{ item: HistoryItem }>) {
         <div className="text-[13px] text-n500">
           {item.chgMbrNm ?? "-"} · {formatDt(item.chgDt)}
         </div>
-        <Button variant="link" onClick={() => setOpen((v) => !v)}>
+        {/* aria-expanded — 눌러도 «펼쳐졌다»가 안 들리던 자리다 (#692) */}
+        <Button variant="link" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
           {open ? "본문 접기" : "본문 보기"}
         </Button>
       </div>

@@ -211,7 +211,9 @@ function toFormDetail(res: FormDetailResponse): FormDetail {
     qitemCpstCn: toQitemComposition(res.qitemCpstCn),
     creatr: { mbrId: res.creatrMbrId, mbrNm: res.creatrMbrNm },
     responseSummary: toResponseSummary(res.responseSummary, summary.responseCount),
-    crtDt: res.crtDt ?? res.mdfcnDt,
+    // `?? res.mdfcnDt`를 걷었다 (#686) — 3월에 만든 폼이 «생성 2026-09-xx»로 보이고,
+    // 부른 쪽은 그것이 빌려 온 값인지 알 수 없었다.
+    crtDt: res.crtDt ?? null,
     // 서버가 선언한 잠금을 그대로 옮긴다 — 웹이 손댈 여지가 없는 값이다
     systemRequiredQitemIds: res.systemRequiredQitemIds,
     // 없으면(일반 폼 또는 옛 서버) null로 굳힌다 — 없는 학술 연결을 지어내지 않는다

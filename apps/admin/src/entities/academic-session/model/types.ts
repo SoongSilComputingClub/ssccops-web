@@ -10,8 +10,9 @@ import type { SesnSttsCd } from "@/shared/config/codes";
  * 회차 제출·재제출·조회 API 자체는 이 이슈 범위 밖이다(서버 #135·#136). 여기 두는 것은
  * 화면이 쓰게 될 도메인 타입뿐이다 — 커리큘럼 조회(#134)가 회차 상태(sesnSttsCd)를 항목에
  * 붙여 내려주므로, 그 값을 담을 타입이 지금 필요하다. 실제 서버 record 필드명(리네임 이후,
- * ssccops-server#178)을 그대로 옮겨 둔다 — 옛 이름(cn·noticeCn·realDt·presentYn·fileUrl)으로
- * 쓰면 타입은 통과하고 값만 조용히 빈다.
+ * ssccops-server#178)을 그대로 옮겨 둔다 — 옛 이름(cn·noticeCn·realDt·presentYn·fileUrl·
+ * aprvPntCd)으로 쓰면 타입은 통과하고 값만 조용히 빈다. 쿼리 파라미터도 같다 — 서버가 모르는
+ * 이름을 버려 필터 없는 요청이 된다(#709).
  *
  * 날짜는 서버가 LocalDate("2026-03-01")로 내려준다(일자, 일시 아님).
  */
@@ -195,7 +196,8 @@ export interface SessionTransitionInput {
 /** 전이 결과 (SessionTransitionResponse) */
 export interface SessionTransitionResult {
   sessionId: number;
-  beforeSttsCd: SesnSttsCd;
+  /** 전이 **전** 상태 — 서버가 주지 않으면 `null`이다. 위 학술 프로그램과 같은 자리 (#686) */
+  beforeSttsCd: SesnSttsCd | null;
   afterSttsCd: SesnSttsCd;
 }
 
@@ -209,17 +211,17 @@ export interface SessionTransitionResult {
  * (서버 #139 설계 결정 1) — `opnnCn`(수정요청 사유)이 활동 운영진 개인에게 민감할 수
  * 있어서다. 이 화면은 국장 전용이라 문제되지 않는다.
  *
- * `aprvPntCd` 는 `SESSION`·`COMPLETION` 두 값만 온다(서버가 필터). 회차 상세는
+ * `aprvSeCd` 는 `SESSION`·`COMPLETION`·`REOPEN`(재시작 · 서버 #597)이 온다. 회차 상세는
  * `sessionId` 로 좁혀 SESSION 이력만 받는다.
  */
 export interface AcademicProgramApproval {
   /** acdm_actv_aprv_id · PK */
   approvalId: number;
-  /** 승인 지점 — SESSION(회차) · COMPLETION(종료). 코드로 비교한다 */
-  aprvPntCd: string;
+  /** 승인 구분 — SESSION(회차) · COMPLETION(종료) · REOPEN(재시작). 코드로 비교한다 */
+  aprvSeCd: string;
   /** 승인 상태 — APPROVED · REVISION_REQUESTED 등. 코드로 비교한다 */
   aprvSttsCd: string;
-  /** SESSION 지점이면 대상 회차. COMPLETION 이면 null */
+  /** SESSION 구분이면 대상 회차. COMPLETION 이면 null */
   sessionId: number | null;
   /** 처리한 사람 이름 (운영 데이터). 없으면 "" */
   approverMemberName: string;
@@ -231,8 +233,8 @@ export interface AcademicProgramApproval {
 
 /** 승인 이력 조회 필터 — 회차 상세는 sessionId 로 좁힌다 */
 export interface AcademicProgramApprovalFilter {
-  /** SESSION · COMPLETION 만. 그 밖의 값은 서버가 400 으로 끊는다 */
-  aprvPntCd?: "SESSION" | "COMPLETION" | null;
+  /** SESSION · COMPLETION · REOPEN 만. 그 밖의 값은 서버가 400 으로 끊는다 */
+  aprvSeCd?: "SESSION" | "COMPLETION" | "REOPEN" | null;
   /** 특정 회차의 이력만 */
   sessionId?: number | null;
 }

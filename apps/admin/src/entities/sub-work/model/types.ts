@@ -3,13 +3,14 @@ import type {
   OperTypeCd,
   PrrtyRnkCd,
   TkcgSeCd,
+  VoteChoice,
   WorkSttsCd,
 } from "@/shared/config/codes";
 
 /**
  * table: sub_work — 하위_업무
  * 담당자는 sub_work_pic_altmnt, 점검 목록은 sub_work_chck_list 로 분리되어 있다.
- * 화면의 D-day·마감임박·진행률은 저장하지 않고 ddlnDt·dlyYn·chckList 에서 파생한다.
+ * 화면의 D-day·마감임박·진행률은 저장하지 않고 ddlnDt·chckList 에서 파생한다.
  *
  * **아래 SubWork는 아직 목 스토어(model/store.ts)를 쓰는 화면 전용이다.** 상세·전이·체크리스트는
  * 서버 연동(#39)으로 옮겨 갔고 그쪽은 이 파일 뒤쪽의 SubWorkDetail을 쓴다. 남은 사용처는
@@ -33,8 +34,7 @@ export interface SubWork {
   workCn: string | null;
   /** 내용T — 완료 조건 */
   cmptnCrtrCn: string | null;
-  /** 여부B — 지연 자동 판정 */
-  dlyYn: boolean;
+  /* 지연 여부는 저장하지 않는다 (#719 · 서버 V25) — 서버가 조회 때 마감 일시로 판정해 내려준다 */
   /** 주소V200 — 상세 논의 외부 링크 */
   otsdUrlAddr: string | null;
   /** 일시TS */
@@ -299,11 +299,14 @@ export interface SubWorkChecklistRemoval {
   checklistSummary: SubWorkChecklistSummary | null;
 }
 
-/**
- * 정족수 승인 투표 선택지 (OPS-015). 기권은 없다 — 승인함 화면에 기권 버튼이 없다
- * (서버 VoteChoice 주석).
+/*
+ * 정족수 승인 투표 선택지 — **선언은 `shared/config/codes` 에 있다** (#698 · ssccops#516).
+ *
+ * 서버 enum 이고 `approval`·`dashboard` 슬라이스도 쓰므로, 여기 두면 그 둘이 이 슬라이스를
+ * 가져오게 된다(같은 레이어 슬라이스 참조 · 루트 `AGENTS.md`). 이 슬라이스의 소비처가 종전대로
+ * 이 배럴에서 받도록 재export 만 남긴다.
  */
-export type VoteChoice = "AGREE" | "DISAGREE";
+export type { VoteChoice };
 
 /**
  * 투표 결과 (OPS-015).

@@ -87,7 +87,7 @@ export function useSessionDetail(
       let approvals: AcademicProgramApproval[] = [];
       try {
         approvals = await fetchAcademicProgramApprovals(academicProgramId, {
-          aprvPntCd: "SESSION",
+          aprvSeCd: "SESSION",
           sessionId,
         });
       } catch {

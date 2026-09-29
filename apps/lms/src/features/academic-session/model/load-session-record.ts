@@ -1,6 +1,7 @@
 import {
   fetchAcademicProgramMembers,
   type AcademicProgramMember,
+  type AcdmActvSttsCd,
 } from "@/entities/academic-program";
 import {
   allowsRecording,
@@ -30,10 +31,15 @@ import { loadSessionRecordErrorMessage } from "./session-record-error";
  * 3. (재제출일 때만) 회차 상세(#135) — 진행 내용·전달사항·출석·수정요청 사유의 폼 초깃값.
  *
  * ── 폼을 언제 여는가 ────────────────────────────────────────
- * 서버 판정 `isEditable`(스터디장 본인 × 작성 가능 상태)이 유일한 기준이다 — `leadrMbrId`를
- * 웹에서 다시 계산하지 않는다. `isEditable`이 false면 상태로 사유를 가른다: 작성 가능 상태
- * (`NOT_SUBMITTED`·`REVISION_REQUESTED`)인데 false면 "스터디장이 아님", 아니면 "지금 쓸 수 없는
- * 상태"(제출·승인 완료).
+ * 서버 판정 `isEditable`(스터디장 본인 × 작성 가능 상태 × 프로그램이 종료가 아님)이 유일한
+ * 기준이다 — `leadrMbrId`를 웹에서 다시 계산하지 않는다. `isEditable`이 false면 사유만 가른다:
+ * 프로그램이 종료면 "종료된 프로그램"(#716 · ADR-0057), 작성 가능 상태(`NOT_SUBMITTED`·
+ * `REVISION_REQUESTED`)인데 false면 "스터디장이 아님", 아니면 "지금 쓸 수 없는 상태"(제출·승인 완료).
+ *
+ * 종료를 먼저 보는 것은 그것이 회차 상태와 무관하게 프로그램 전체를 멈추기 때문이다 — 종료된
+ * 프로그램의 미제출 회차를 "스터디장이 아님"으로 안내하면 틀린 말이 된다. **프로그램 상태는
+ * 사유를 고르는 데만 쓴다** — 종료인데 `isEditable`이 true면(서버가 아직 종료를 반영하지 않은
+ * 배포) 폼을 연다. 판정이 두 벌이 되지 않게 하는 쪽을 택했다(#716 «택하지 않은 길»).
  */
 
 export type SessionRecordLoad =
@@ -47,6 +53,8 @@ export type SessionRecordLoad =
       /** 재제출일 때만 채워진다 — 폼 초깃값과 "학술국장이 요청한 수정 사항" */
       session: AcademicSessionDetail | null;
     }
+  /** 프로그램이 종료돼 기록할 수 없다 — 재시작은 학술국장이 한다 (ADR-0057) */
+  | { outcome: "program-completed" }
   /** 스터디장 본인이 아니라 이 회차를 기록할 수 없다 */
   | { outcome: "not-leader" }
   /** 이미 제출됐거나(SUBMITTED) 승인 완료(APPROVED)라 작성 화면을 열지 않는다 */
@@ -61,6 +69,8 @@ export type SessionRecordLoad =
 export async function loadSessionRecord(
   academicProgramId: number,
   curriculumItemId: number,
+  /** 셸이 고른 프로그램의 상태(`mine=leader` 목록) — 폼을 못 여는 사유를 고르는 데만 쓴다 */
+  programSttsCd: AcdmActvSttsCd,
 ): Promise<SessionRecordLoad> {
   try {
     // 커리큘럼과 팀원은 서로 독립이라 함께 부른다
@@ -82,6 +92,9 @@ export async function loadSessionRecord(
     }
 
     if (!curriculumItem.isEditable) {
+      if (programSttsCd === "COMPLETED") {
+        return { outcome: "program-completed" };
+      }
       if (allowsRecording(curriculumItem.sesnSttsCd)) {
         return { outcome: "not-leader" };
       }

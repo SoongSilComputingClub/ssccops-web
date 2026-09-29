@@ -35,7 +35,19 @@ export function ChecklistHistory({
     <Card>
       <div className="flex items-center justify-between gap-2">
         <SectionLabel>점검 목록 변경 이력</SectionLabel>
-        <Button variant="ghost" onClick={() => setOpen((v) => !v)}>
+        {/*
+          aria-expanded + 라벨에 대상 (#692).
+
+          그전에는 «보기, 버튼»으로만 들려 **무엇을 보는 것인지** 알 수 없었다. 옆의
+          `SectionLabel`은 시각적으로만 이어져 있다. 펼치면 조회가 도는 자리라(위 훅의 `open`
+          인자) 잘못 눌렀다는 것도 늦게 안다.
+        */}
+        <Button
+          variant="ghost"
+          aria-expanded={open}
+          aria-label={open ? "점검 목록 변경 이력 접기" : "점검 목록 변경 이력 보기"}
+          onClick={() => setOpen((v) => !v)}
+        >
           {open ? "접기" : "보기"}
         </Button>
       </div>

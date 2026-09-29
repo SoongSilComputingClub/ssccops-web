@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ROUTES } from "@/shared/config/routes";
-import { safeNextPath, OAUTH_NEXT_COOKIE, OAUTH_NEXT_COOKIE_PATH } from "@ssccops/auth";
+import {
+  requestOrigin,
+  safeNextPath,
+  OAUTH_NEXT_COOKIE,
+  OAUTH_NEXT_COOKIE_PATH,
+} from "@ssccops/auth";
 import { createClient } from "@ssccops/auth/supabase/server";
 
 /**
@@ -64,7 +69,9 @@ function resolveNext(request: NextRequest): string {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  // `request.url`의 오리진은 컨테이너에서 `0.0.0.0:3000`이다 — 돌려보낼 주소는 공개 오리진(#696)
+  const origin = requestOrigin(request);
 
   /*
    * next는 사용자가 조작할 수 있는 값이다. 검증 없이 `${origin}${next}`로 이어 붙이면

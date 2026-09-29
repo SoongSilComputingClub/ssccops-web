@@ -40,8 +40,14 @@ export const NOTIFICATION_APP_LABEL: Record<NotificationApp, string> = {
 export interface NotificationTypeRoute {
   /** 유형 코드 (서버 `NotificationType`) — 저장 주소의 경로 값이다 */
   type: string;
-  /** 화면에 그대로 쓰는 유형 이름. 서버 enum의 label이라 웹이 사전을 따로 두지 않는다 */
-  label: string;
+  /**
+   * 화면에 그대로 쓰는 유형 이름. 서버 enum의 label이라 웹이 사전을 따로 두지 않는다.
+   *
+   * **서버가 주지 않으면 `null`이다** (#686). 그전에는 `?? type`으로 메워 줄 제목이
+   * `APPROVAL_REQUESTED`가 됐다 — 운영진이 읽는 화면에 코드가 나갔다. 무엇을 보일지는
+   * 그리는 쪽이 정한다(코드는 바로 위 `type`에 이미 있다).
+   */
+  label: string | null;
   /** 이 유형의 알림이 보일 앱. `followsSendingApp`이면 빈 배열이다 */
   apps: NotificationApp[];
   /**

@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { requestOrigin } from "@ssccops/auth";
 import { OG_CARDS, resolveOgCard } from "@/shared/config/og-cards";
 import { OgCardFrame, loadOgCardAssets, ogCardResponseOptions } from "@/shared/lib/og-card";
 
@@ -23,7 +24,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const card = OG_CARDS[resolveOgCard(url.searchParams.get("card"))];
-  const assets = await loadOgCardAssets(url.origin);
+  const assets = await loadOgCardAssets(requestOrigin(request));
 
   return new ImageResponse(
     (

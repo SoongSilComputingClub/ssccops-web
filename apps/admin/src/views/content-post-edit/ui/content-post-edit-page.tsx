@@ -117,7 +117,13 @@ function ContentPostEditView({
           canManage={canManage}
           onTransition={(next) => void transition(next)}
         />
-        <Segmented options={TABS} value={tab} onChange={setTab} className="mb-4 w-[180px]" />
+        <Segmented
+          label="포스트 보기"
+          options={TABS}
+          value={tab}
+          onChange={setTab}
+          className="mb-4 w-[180px]"
+        />
         {/* 편집 폼은 이력 탭에서도 접어 둘 뿐 언마운트하지 않는다 — 쓰던 본문·갤러리 상태를 지킨다 */}
         <div hidden={tab !== "편집"}>
           <ContentPostForm

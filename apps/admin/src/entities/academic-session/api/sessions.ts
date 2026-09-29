@@ -59,6 +59,11 @@ export const SESSION_REVIEW_ERROR = {
   AUTHORITY_REQUIRED: "AUTHORITY_REQUIRED",
   /** SUBMITTED 가 아닌 회차에 전이를 시도 (409) — APPROVED 재전이 등 */
   INVALID_SESSION_TRANSITION: "INVALID_SESSION_TRANSITION",
+  /**
+   * 종료된 프로그램의 회차를 승인·수정요청 (409 · ADR-0057 · 서버 #597). 승인 대기 목록은 서버가
+   * 종료된 프로그램의 회차를 빼므로 회차 이력·주소로 들어온 상세나, 열어 둔 사이 종료된 경우에 온다.
+   */
+  ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
 } as const;
 
 /* ── 서버 응답(Response DTO) ────────────────────────────────── */
@@ -136,7 +141,7 @@ interface StandaloneAttendanceResponse {
 /** 승인 이력 한 줄 (AcademicProgramApprovalResponse) — 서버 #139 */
 interface AcademicProgramApprovalResponse {
   approvalId: number;
-  aprvPntCd: string;
+  aprvSeCd: string;
   aprvSttsCd: string;
   sessionId: number | null;
   aprvrMbrNm: string | null;
@@ -187,7 +192,7 @@ function toApproval(
 ): AcademicProgramApproval {
   return {
     approvalId: res.approvalId,
-    aprvPntCd: res.aprvPntCd,
+    aprvSeCd: res.aprvSeCd,
     aprvSttsCd: res.aprvSttsCd,
     sessionId: res.sessionId,
     approverMemberName: res.aprvrMbrNm ?? "",
@@ -315,8 +320,14 @@ export async function transitionSession(
 
   return {
     sessionId: res.sessionId ?? sessionId,
-    // 전이가 성공했으면 before 도 서버가 준다 — 없으면 after 로 폴백(값을 만들어 내지 않되 표시가 깨지지 않게)
-    beforeSttsCd: res.beforeSttsCd ?? res.afterSttsCd,
+    /*
+     * `?? res.afterSttsCd`를 걷었다 (#686 · ssccops#504).
+     *
+     * 폴백의 근거는 «표시가 깨지지 않게»였는데, 그 대가는 before == after 인 이력 줄이다 —
+     * 화면이 «승인 → 승인»으로 그려 **아무것도 바뀌지 않은 것처럼 보인다.** 표시가 깨지는
+     * 것보다 나쁘다: 깨지면 보이지만 이건 그럴듯해서 아무도 못 본다.
+     */
+    beforeSttsCd: res.beforeSttsCd ?? null,
     afterSttsCd: res.afterSttsCd,
   };
 }
@@ -385,8 +396,9 @@ export async function fetchSessionAttendances(
 /**
  * GET /v1/academic-programs/{academicProgramId}/approvals — 승인 이력 (#139).
  *
- * 회차 상세(#130)의 "승인 이력" 블록이 부른다. `aprvPntCd` 는 `SESSION`·`COMPLETION`
- * 만 받고(그 밖은 400), 회차 상세는 `sessionId` 로 좁혀 그 회차의 SESSION 이력만 받는다.
+ * 회차 상세(#130)의 "승인 이력" 블록이 부른다. `aprvSeCd` 는 `SESSION`·`COMPLETION`·
+ * `REOPEN`(서버 #597)만 받고(그 밖은 400), 회차 상세는 `sessionId` 로 좁혀 그 회차의 SESSION
+ * 이력만 받는다.
  * 열람 범위가 스터디장 본인 + 학술국장으로 제한되지만(서버 #139) 이 화면은 국장 전용이다.
  * 페이징이 붙지만(활동당 이력이 적다) 회차 하나로 좁히면 몇 줄뿐이라 첫 페이지만 받는다.
  */
@@ -395,7 +407,7 @@ export async function fetchAcademicProgramApprovals(
   filter: AcademicProgramApprovalFilter = {},
 ): Promise<AcademicProgramApproval[]> {
   const query = new URLSearchParams();
-  if (filter.aprvPntCd) query.set("aprvPntCd", filter.aprvPntCd);
+  if (filter.aprvSeCd) query.set("aprvSeCd", filter.aprvSeCd);
   if (filter.sessionId != null) query.set("sessionId", String(filter.sessionId));
 
   const qs = query.toString();

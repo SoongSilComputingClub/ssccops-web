@@ -8,66 +8,42 @@
       "subWorkId": 2,
       "mbrId": 1,
       "subWorkAprvDt": null,
-      "rgtrAprvYn": false,
-      "emrgSeCd": "NORMAL",
-      "emrgRsn": null,
-      "epfcAprvTermYmd": null,
-      "aprvStp": "2"
+      "rgtrAprvYn": false
     },
     {
       "subWorkAprvId": 2,
       "subWorkId": 3,
       "mbrId": 2,
       "subWorkAprvDt": null,
-      "rgtrAprvYn": false,
-      "emrgSeCd": "NORMAL",
-      "emrgRsn": null,
-      "epfcAprvTermYmd": null,
-      "aprvStp": "1"
+      "rgtrAprvYn": false
     },
     {
       "subWorkAprvId": 3,
       "subWorkId": 4,
       "mbrId": 1,
       "subWorkAprvDt": null,
-      "rgtrAprvYn": false,
-      "emrgSeCd": "URGENT",
-      "emrgRsn": "스터디 개강 전 교재 확보 필요",
-      "epfcAprvTermYmd": null,
-      "aprvStp": "1"
+      "rgtrAprvYn": false
     },
     {
       "subWorkAprvId": 4,
       "subWorkId": 1,
       "mbrId": 2,
       "subWorkAprvDt": null,
-      "rgtrAprvYn": false,
-      "emrgSeCd": "NORMAL",
-      "emrgRsn": null,
-      "epfcAprvTermYmd": "2026-08-15",
-      "aprvStp": "1"
+      "rgtrAprvYn": false
     },
     {
       "subWorkAprvId": 5,
       "subWorkId": 5,
       "mbrId": 2,
       "subWorkAprvDt": "2026-08-08T11:20:00",
-      "rgtrAprvYn": false,
-      "emrgSeCd": "NORMAL",
-      "emrgRsn": null,
-      "epfcAprvTermYmd": null,
-      "aprvStp": "1"
+      "rgtrAprvYn": false
     },
     {
       "subWorkAprvId": 6,
       "subWorkId": 7,
       "mbrId": 1,
       "subWorkAprvDt": null,
-      "rgtrAprvYn": false,
-      "emrgSeCd": "NORMAL",
-      "emrgRsn": null,
-      "epfcAprvTermYmd": null,
-      "aprvStp": "1"
+      "rgtrAprvYn": false
     }
   ]
 }

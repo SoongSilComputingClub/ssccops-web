@@ -191,19 +191,37 @@ export function useContentHistory<T extends ContentPageHistory | ContentPostHist
     };
   }, []);
 
+  /*
+   * 지금 날아가 있는 요청의 대상 (#687 · ssccops#505).
+   *
+   * `aliveRef`(언마운트)만 있고 이것이 없었다 — **이 레포의 다른 모든 목록 훅은 갖고 있다**
+   * (`use-academic-program-list`의 `inFlightRef` + `prev.key === current.key` 판정이 표준이다).
+   * 느린 회선에서 «다시 시도»를 두 번 누르면 두 요청이 동시에 날고, 먼저 보낸 쪽이 늦게
+   * 도착하면 **더 최신 목록을 옛 목록이 덮는다.** 이력 화면이라 사용자는 그것이 낡았다는
+   * 사실을 알 방법이 없다.
+   */
+  const inFlightRef = useRef<number | null>(null);
+
   const load = useCallback(
     async (id: number) => {
+      // 같은 대상이 이미 날아가 있으면 두 번째 호출은 아무것도 하지 않는다
+      if (inFlightRef.current === id) return;
+      inFlightRef.current = id;
       setStatus("loading");
       try {
         const next = await fetchHistory(id);
-        if (!aliveRef.current) return;
+        // 늦게 도착한 옛 응답은 버린다 — 그 사이 다른 대상을 부른 것이다
+        if (!aliveRef.current || inFlightRef.current !== id) return;
         setItems(next);
         setErrorMessage("");
         setStatus("ready");
       } catch (error: unknown) {
-        if (!aliveRef.current) return;
+        if (!aliveRef.current || inFlightRef.current !== id) return;
         setErrorMessage(toContentErrorMessage(error));
         setStatus("error");
+      } finally {
+        // 실패했어도 «다시 시도»가 먹혀야 하므로 성공·실패를 가리지 않고 푼다
+        if (inFlightRef.current === id) inFlightRef.current = null;
       }
     },
     [fetchHistory],

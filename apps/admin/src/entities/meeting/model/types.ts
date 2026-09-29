@@ -117,8 +117,6 @@ export interface MeetingAgendaTarget {
 export interface MeetingAgenda {
   agendaId: number;
   meetingId: number;
-  /** 운영 건에 연결된 안건은 NULL — targetOperation.title이 제목이다 */
-  agendaName: string | null;
   processStatus: AgndPrcsSeCd | null;
   agendaOrder: number | null;
   targetOperation: MeetingAgendaTarget | null;
@@ -150,10 +148,11 @@ export interface MeetingDetail {
   endAt: string | null;
   priority: PrrtyRnkCd;
   location: string | null;
-  /** 내부 상세본 — 화면은 그리지 않는다 — 서버에 쓰는 경로가 없다(ssccops#334). 복구는 회의 수정 API부터 */
-  internalDetail: string | null;
-  /** 제출 요약본 — 화면은 그리지 않는다 — 서버에 쓰는 경로가 없다(ssccops#334). 복구는 회의 수정 API부터 */
-  externalSummary: string | null;
+  /*
+   * 회의록 본문은 여기 없다 (#719 · ssccops#537 · 서버 V25). 내부 상세본·제출 요약본
+   * (`insd_mtg_dtl_cn`·`otsd_mtg_dtl_cn`)이 응답에 있었지만 서버에 쓰는 경로가 없어 늘 null이었고,
+   * 컬럼째 사라지면서 응답에서도 빠졌다. 논의·결과 내용은 안건(`agendas`)이 갖는다.
+   */
   agendas: MeetingAgenda[];
   createdAt: string | null;
   updatedAt: string | null;

@@ -1,6 +1,5 @@
-import type { AprvSttsCd } from "@/shared/config/codes";
+import type { AprvSttsCd, VoteChoice } from "@/shared/config/codes";
 import { apiFetchList } from "@/shared/lib/api/client";
-import type { VoteChoice } from "@/entities/sub-work";
 import type {
   ApprovalChecklistSummary,
   ApprovalInboxItem,

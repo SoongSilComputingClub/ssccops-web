@@ -87,7 +87,13 @@ export interface AssistantCitation {
    * (`(회원의 구분)`)도 들어 있지 않다. 카드는 넓고 본문의 대괄호는 좁다.
    */
   marker: string | null;
-  citationType: CitationType;
+  /**
+   * 인용의 종류 — 서버가 주지 않으면 `null`이다 (#686).
+   *
+   * 그전에는 `?? "PAGE"`로 메웠다. 그러면 **조문 인용이 페이지 인용 서식으로** 그려진다 —
+   * 바로 위 `ref ?? 0`은 주석이 그 값을 길게 변호하는데 이 줄에는 근거가 없었다.
+   */
+  citationType: CitationType | null;
   docTitle: string | null;
   /** ARTICLE 전용 — `제2장 회원` */
   chapter: string | null;

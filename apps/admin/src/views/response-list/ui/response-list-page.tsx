@@ -363,6 +363,7 @@ export function ResponseListPage({ formId }: Readonly<{ formId: number }>) {
             카드로 바뀌는 규칙과 부딪힌다) 누를 수 있는데 아무것도 안 바뀌는 버튼을 두지 않는다.
           */}
           <Segmented
+            label="응답 보기 방식"
             options={VIEWS}
             value={view}
             onChange={setView}
