@@ -5,7 +5,8 @@ import {
   type PublicContentPage,
 } from "@/entities/content";
 import { CONTACT } from "@/shared/config/contact";
-import { Card, ContentMarkdoc, EmptyState } from "@/shared/ui";
+import { ROUTES } from "@/shared/config/routes";
+import { Card, ContentMarkdoc, EmptyState, SectionTabs } from "@/shared/ui";
 
 /**
  * 문의 (SSR · #524) — 페이지 `contact`의 본문(게시돼 있으면) + 문의처 블록.
@@ -42,6 +43,9 @@ export async function ContactPage({
           {page?.ttl ?? fallbackTitle}
         </h1>
       </header>
+
+      {/* 소개 축의 탭 줄 (#723) — «문의»가 그 축 안으로 들어왔는데 이 화면에만 줄이 없었다 */}
+      <SectionTabs axis="about" pathname={ROUTES.contact} />
 
       {errorMessage && <EmptyState title={errorMessage} />}
       {page?.mtxt.trim() && (
