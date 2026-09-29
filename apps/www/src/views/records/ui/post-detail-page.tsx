@@ -47,7 +47,8 @@ export async function PostDetailPage({
   const semester = semesterOf(post.actvYmd);
 
   return (
-    <article className="flex flex-col gap-[14px]">
+    /* 글 폭은 셸보다 좁다 — `content-page.tsx`와 같은 규칙 (#721). 사진 격자도 이 폭 안이다 */
+    <article className="mx-auto flex w-full max-w-reading flex-col gap-[16px]">
       <BackLink category={actual} />
 
       {post.coverImageUrl && (

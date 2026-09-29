@@ -46,7 +46,11 @@ export async function EventDetailPage({ eventId }: Readonly<{ eventId: number }>
   const receipt = eventReceiptBadge(event.receiptStatus);
 
   return (
-    <article className="flex flex-col gap-[14px]">
+    /*
+     * 여기는 읽기 폭을 따로 묶지 않는다 (#721) — 본문이 신청 패널과 나란히 서는 2단이라
+     * 셸이 넓어져도 글이 차지하는 폭은 그 비율(`lg:flex-[1.9]`)이 정한다.
+     */
+    <article className="flex flex-col gap-[16px]">
       <JsonLd data={eventJsonLd(event)} />
       <BackLink />
 

@@ -28,7 +28,7 @@ import { siteMapColumns } from "./site-map";
 export function SiteFooter() {
   return (
     <footer className="mt-[40px] border-t border-line bg-surface">
-      <div className="mx-auto flex max-w-[1000px] flex-col gap-[22px] px-[20px] py-[28px] lg:px-[28px]">
+      <div className="mx-auto flex max-w-shell flex-col gap-[22px] px-[20px] py-[28px] lg:px-[28px]">
         <nav aria-label="전체 메뉴" className="grid grid-cols-2 gap-x-[16px] gap-y-[18px] sm:grid-cols-4 lg:grid-cols-8">
           {siteMapColumns().map((column) => (
             <div key={column.href} className="flex min-w-0 flex-col gap-[6px]">

@@ -35,7 +35,8 @@ export async function ContactPage({
   }
 
   return (
-    <article className="flex flex-col gap-[16px]">
+    /* 글 폭은 셸보다 좁다 — `content-page.tsx`와 같은 규칙 (#721) */
+    <article className="mx-auto flex w-full max-w-reading flex-col gap-[16px]">
       <header className="flex flex-col gap-[2px]">
         <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">
           {page?.ttl ?? fallbackTitle}
