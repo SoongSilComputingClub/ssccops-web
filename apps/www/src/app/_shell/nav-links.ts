@@ -21,14 +21,18 @@ import { SECTION_TABS } from "@/shared/config/section-tabs";
  * **«지원하기» CTA는 없다** — 지원은 학기 초뿐이라 평소의 상단 바에 세워 둘 것이 아니고, 모집
  * 때는 홈 배너(#524 · ssccops#385)가 안내한다.
  *
- * **하위 목록을 두 벌 적지 않는다.** «소개»·«모집»의 `children`은 페이지 탭 줄이 쓰는
- * `SECTION_TABS`(`shared/config/section-tabs.ts`)를 **읽어서** 만든다 — 축에 탭이 하나 늘면
- * 드롭다운도 함께 는다. 탭 줄을 없애지는 않았다: 드롭다운은 **착지 전의 길**이고 탭 줄은
+ * **하위 목록은 한 벌이다.** «소개»·«모집»의 `children`은 페이지 탭 줄이 쓰는
+ * `SECTION_TABS`(`shared/config/section-tabs.ts`) **그 자체다** — 축에 항목이 하나 늘면 드롭다운과
+ * 탭 줄이 함께 는다. 탭 줄을 없애지는 않았다: 드롭다운은 **착지 전의 길**이고 탭 줄은
  * **착지한 뒤의 현재 위치**다(ADR-0056).
  *
- * **대수 탭(«44대»·«43대»)은 드롭다운에 넣지 않는다**(#571) — 게시된 페이지 수만큼 자라는
- * 목록이라 학기마다 드롭다운이 길어진다. 드롭다운의 «운영진»은 `/operators` 한 줄이고 대수는
- * 그 화면의 탭 줄이 계속 맡는다.
+ * #712에서는 드롭다운에만 «운영진»·«문의»를 뒤에 붙였다. 그래서 착지하면 길이 오히려 줄었고
+ * (`/operators`의 탭 줄은 셋이었다) `/contact`에는 탭 줄이 아예 없었다 — #723이 그 자리를 없앴다.
+ *
+ * **역대 대수(«44대»·«43대»)는 목차 어디에도 없다**(#571 → #723) — 게시된 페이지 수만큼 자라는
+ * 목록이라 드롭다운에 넣으면 학기마다 길어진다. 대수는 축의 자매 페이지가 아니라 운영진 문서의
+ * 과거 판본이라 **그 문서 아래**에 목록으로 선다. 드롭다운·탭 줄의 «운영진»은 `/operators`
+ * 한 줄이고, `/operators/44`에서도 그 줄이 켜진다(접두 판정).
  *
  * 로그인 상태에 따라 갈리는 항목('내 활동'·로그아웃)은 여기 없다 — 그것은 `AuthNav`가
  * 클라이언트에서 판정해 그린다(익명 공개인 목록·상세 렌더에 세션 조회를 끼워 넣지 않으려고).
@@ -73,11 +77,7 @@ export const NAV_LINKS: readonly NavLink[] = [
     href: ROUTES.about,
     label: "소개",
     isActive: aboutAxisActive,
-    children: [
-      ...tabsAsChildren(SECTION_TABS.about),
-      { href: ROUTES.operators, label: "운영진", isActive: startsWith(ROUTES.operators) },
-      { href: ROUTES.contact, label: "문의", isActive: startsWith(ROUTES.contact) },
-    ],
+    children: tabsAsChildren(SECTION_TABS.about),
   },
   // «기록»(#585 · ssccops#437) — 포스트 아카이브. «활동»이었는데 학술 프로그램(ADR-0043)과 이름이 부딪혔다. 주소도 #591에서 `/records`(ssccops#439)
   // 분류 탭(학술·행사·소식)이 화면 안에 이미 있어 드롭다운을 두지 않는다
