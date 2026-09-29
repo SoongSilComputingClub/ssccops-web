@@ -31,11 +31,6 @@ export const useWorkStore = create<WorkState>((set) => ({
     })),
 }));
 
-/** 업무_진행_률 표기 — "25%" */
-export function workPrgrsRtText(work: Work): string {
-  return `${Math.round(work.workPrgrsRt)}%`;
-}
-
 /** 업무 상태 배지 톤 */
 export function workSttsTone(cd: WorkSttsCd): "blue" | "amber" | "grey" {
   if (cd === "IN_PROGRESS") return "blue";

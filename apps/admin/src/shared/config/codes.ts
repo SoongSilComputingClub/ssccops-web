@@ -169,10 +169,6 @@ export const TKCG_SE_NM: Record<TkcgSeCd, string> = {
 
 export const TKCG_SE_CDS = codesOf(TKCG_SE_NM);
 
-/* ── 긴급_구분 (sub_work_aprv.emrg_se_cd) ───────────────────── */
-
-export type EmrgSeCd = "NORMAL" | "URGENT";
-
 /* ── 정족수 승인 투표 선택지 (OPS-015) ─────────────────────── */
 
 /**
@@ -187,17 +183,16 @@ export type EmrgSeCd = "NORMAL" | "URGENT";
  *
  * 그 주석이 틀린 것은 아니다 — **다른 것을 말하고 있었다.** 거기서 공유하지 않기로 한 것은
  * «응답의 모양»이고(화면이 무엇을 필요로 하는지는 그 화면의 사정이다), 이것은 **서버 enum** 이다.
- * 이 파일에 있는 `AprvSttsCd`·`EmrgSeCd` 와 같은 종류이고, 값이 갈리면 어느 화면에서든 같이
+ * 이 파일에 있는 `AprvSttsCd`·`MtgSeCd` 와 같은 종류이고, 값이 갈리면 어느 화면에서든 같이
  * 깨진다. 그래서 응답 모양은 슬라이스마다 두고 enum 은 여기 한 벌 둔다.
  */
 export type VoteChoice = "AGREE" | "DISAGREE";
 
-export const EMRG_SE_NM: Record<EmrgSeCd, string> = {
-  NORMAL: "일반",
-  URGENT: "긴급",
-};
-
-export const EMRG_SE_CDS = codesOf(EMRG_SE_NM);
+/*
+ * 긴급_구분(`EmrgSeCd`·`EMRG_SE_NM`)은 여기 없다 (#719 · ssccops#537 · 서버 V25).
+ * 긴급 예외 집행(OPS-016)의 자리로 `sub_work_aprv.emrg_se_cd` 컬럼만 있었고 **서버에는 그 enum이
+ * 만들어진 적이 없다** — 컬럼이 사라지면서 웹 쪽 사본도 근거를 잃었다.
+ */
 
 /* ── 회의_구분 (mtg.mtg_se_cd) · DB 명시 ────────────────────── */
 

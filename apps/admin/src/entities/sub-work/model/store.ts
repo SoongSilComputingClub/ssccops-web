@@ -142,5 +142,5 @@ export function isSubWorkDone(subWork: SubWork): boolean {
 
 /** 완료 처리 — 상태·완료_일시를 함께 기록한다 */
 export function completedPatch(): Partial<SubWork> {
-  return { workSttsCd: "DONE", cmptnDt: `${TODAY}T10:00:00`, dlyYn: false };
+  return { workSttsCd: "DONE", cmptnDt: `${TODAY}T10:00:00` };
 }

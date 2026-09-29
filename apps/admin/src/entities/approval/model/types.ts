@@ -1,4 +1,4 @@
-import type { AprvSttsCd, EmrgSeCd, VoteChoice } from "@/shared/config/codes";
+import type { AprvSttsCd, VoteChoice } from "@/shared/config/codes";
 
 /** table: sub_work_aprv — 하위_업무_승인 */
 export interface SubWorkAprv {
@@ -12,14 +12,11 @@ export interface SubWorkAprv {
   subWorkAprvDt: string | null;
   /** 여부B — 등록자=승인자 식별 */
   rgtrAprvYn: boolean;
-  /** 일반 / 긴급 */
-  emrgSeCd: EmrgSeCd;
-  /** 사유T — 긴급 시 필수 */
-  emrgRsn: string | null;
-  /** 일자D — 사후 승인 기한 */
-  epfcAprvTermYmd: string | null;
-  /** 단계V20 — 위험도 기반 승인 단계 */
-  aprvStp: string | null;
+  /*
+   * 긴급 구분·긴급 사유·사후 승인 기한·승인 단계는 없다 (#719 · ssccops#537 · 서버 V25).
+   * 긴급 예외 집행(OPS-016)과 위험도 기반 승인 단계의 자리였는데 채우는 경로가 끝내 생기지
+   * 않아 컬럼째 사라졌다 — 서버에는 그 enum도 없다. 기능을 만들 때 그때 요구에 맞게 다시 둔다.
+   */
 }
 
 /** table: sub_work_aprv_vote — 하위_업무_승인_투표 */

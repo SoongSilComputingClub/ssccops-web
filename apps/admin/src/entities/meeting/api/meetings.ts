@@ -82,8 +82,6 @@ interface MeetingDetailResponse {
   endAt: string | null;
   priority: PrrtyRnkCd;
   location: string | null;
-  internalDetail: string | null;
-  externalSummary: string | null;
   agendas: MeetingAgendaResponse[] | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -157,8 +155,6 @@ function toMeetingDetail(res: MeetingDetailResponse): MeetingDetail {
     endAt: res.endAt,
     priority: res.priority,
     location: res.location,
-    internalDetail: res.internalDetail,
-    externalSummary: res.externalSummary,
     agendas: (res.agendas ?? []).map(toAgenda),
     createdAt: res.createdAt,
     updatedAt: res.updatedAt,
