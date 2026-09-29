@@ -13,6 +13,7 @@ import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
 import { SiteFooter } from "./_shell/site-footer";
+import { SiteHeader } from "./_shell/site-header";
 import { ON_VERCEL } from "@/shared/lib/vercel";
 import "./globals.css";
 
@@ -156,8 +157,10 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
       {/*
        * 푸터가 짧은 화면에서도 바닥에 붙도록 body를 세로 flex로 두고 main이 남는 높이를 차지한다
        * (#520). 상단 바는 `[☰(lg 미만)] [브랜드] [1차 메뉴(lg)] ──── [종 자리] [계정 메뉴 | 로그인]`
-       * (#167 → #614 · ssccops#452). 메뉴 목차는 `_shell/nav-links.ts` 한 벌(일곱 항목)을 데스크톱
-       * 메뉴와 모바일 드로어가 함께 쓴다. 로그인 여부에 따라 갈리는 오른쪽 끝만 클라이언트
+       * (#167 → #614 · ssccops#452). 메뉴 목차는 `_shell/nav-links.ts` 한 벌(다섯 축 · ADR-0056)을
+       * 데스크톱 메뉴와 모바일 드로어가 함께 쓴다. **껍데기는 `_shell/site-header.tsx`**다 —
+       * 고정(`sticky`)과 «스크롤한 뒤에만 경계»가 브라우저 값이라 그 한 겹만 클라이언트다(#721).
+       * 로그인 여부에 따라 갈리는 오른쪽 끝만 클라이언트
        * 컴포넌트(AuthNav)로 두어, 익명 공개인 목록·상세 렌더에 세션 조회가 끼어들지 않게 한다(#150).
        * 테마 라디오는 상단 바에 없다 — 로그인한 사람은 계정 메뉴 안에서, 누구나는 푸터에서 고른다.
        * 종(#616 · ssccops#453)은 `AuthNav`의 로그인한 가지에만 꽂힌다 — 배지 값을 듣는 `UnreadCountSync`도
@@ -166,26 +169,24 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
       <body className="flex min-h-screen flex-col antialiased">
         {/* 연결이 없을 때 맨 위 한 줄 (#607 · ADR-0045) */}
         <OfflineBanner />
-        <header className="border-b border-line bg-surface">
-          <div className="mx-auto flex max-w-[1000px] items-center gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
-            <MobileNav />
-            <Link href={ROUTES.home} className="flex items-center gap-[8px]">
-              <BrandMark src={DEPLOY.mark} size={26} />
-              <b className="text-[15px]">SSCC</b>
-            </Link>
-            <DesktopNav />
-            <div className="flex-1" />
-            <AuthNav
-              signedInSlot={
-                <>
-                  <UnreadCountSync />
-                  <NotificationBell />
-                </>
-              }
-            />
-          </div>
-        </header>
-        <main className="mx-auto w-full max-w-[1000px] flex-1 px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">
+        <SiteHeader>
+          <MobileNav />
+          <Link href={ROUTES.home} className="flex items-center gap-[8px]">
+            <BrandMark src={DEPLOY.mark} size={26} />
+            <b className="text-[15px]">SSCC</b>
+          </Link>
+          <DesktopNav />
+          <div className="flex-1" />
+          <AuthNav
+            signedInSlot={
+              <>
+                <UnreadCountSync />
+                <NotificationBell />
+              </>
+            }
+          />
+        </SiteHeader>
+        <main className="mx-auto w-full max-w-shell flex-1 px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">
           {children}
         </main>
         <SiteFooter />

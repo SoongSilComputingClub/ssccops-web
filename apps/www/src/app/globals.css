@@ -55,6 +55,18 @@
   --color-scrim: rgb(0 0 0 / 0.45); /* 드로어 뒤 */
 
   /*
+   * 고정 헤더 (#721 · ssccops#534). 이 둘은 **이 앱에만 있던 이름이 아니라 아직 아무 앱에도
+   * 없던 이름**이다 — 라이트 값을 여기서 정하고 다크를 아래 두 블록에 함께 적는다.
+   *
+   * `header`는 본문이 밑으로 지나가는 것이 비쳐야 해서 반투명이다. `surface`를 그대로 쓰면
+   * 스크롤이 헤더 아래에서 끊겨 보이고, 알파를 수정자(`bg-surface/80`)로 주면 다크에서
+   * 그 자리만 라이트 값에 알파가 걸린다 — `hairline`과 같은 이유로 값에 담는다.
+   * `header-edge`는 그 아래 그림자 색이다(맨 위에서는 켜지 않는다).
+   */
+  --color-header: rgb(255 255 255 / 0.82);
+  --color-header-edge: rgb(0 0 0 / 0.06);
+
+  /*
    * 진한 면(accent) 위의 글자.
    *
    * 라이트에서는 흰색이지만 **다크에서는 어두운 잉크다.** accent를 어두운 배경에서
@@ -66,6 +78,17 @@
   --color-white: #ffffff;
   --color-black: #000000;
   --color-transparent: transparent;
+
+  /*
+   * 폭 (#721 · ssccops#534). 셸은 1120px — 1000px는 `/events` 표·`/academic`·`/records` 목록에
+   * 좁았다. **글 본문은 따로 944px로 묶는다**: 셸을 넓힌 만큼 한 줄이 길어지면 읽기 어려워지고,
+   * 944는 옛 셸 폭 그대로라 문단의 글자 수가 바뀌지 않는다.
+   *
+   * 1200px 이상으로 가지 않는 것은 푸터 «전체 메뉴»(8열)와 카드 격자가 그 폭에서 성기게
+   * 벌어져서다.
+   */
+  --container-shell: 1120px;
+  --container-reading: 944px;
 
   --font-sans: "Pretendard Variable", Pretendard, -apple-system,
     BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
@@ -117,6 +140,10 @@
     --color-hairline-strong: rgb(255 255 255 / 0.13);
     --color-scrim: rgb(0 0 0 / 0.66);
 
+    /* 고정 헤더 — 면은 다크 surface(#1f1f26)에 같은 알파, 그림자는 어두운 바탕이라 더 진하게 */
+    --color-header: rgb(31 31 38 / 0.82);
+    --color-header-edge: rgb(0 0 0 / 0.5);
+
     --color-on-solid: #12131a;
   }
 }
@@ -144,6 +171,9 @@
   --color-hairline: rgb(255 255 255 / 0.09);
   --color-hairline-strong: rgb(255 255 255 / 0.13);
   --color-scrim: rgb(0 0 0 / 0.66);
+
+  --color-header: rgb(31 31 38 / 0.82);
+  --color-header-edge: rgb(0 0 0 / 0.5);
 
   --color-on-solid: #12131a;
 }

@@ -55,7 +55,11 @@ export async function ContentPage({
   }
 
   return (
-    <article className="flex flex-col gap-[16px]">
+    /*
+     * 글은 셸보다 좁다 (#721 · ssccops#534) — `max-w-reading`(944px)은 셸이 1120px로 넓어지기
+     * 전의 폭 그대로라 문단의 글자 수가 바뀌지 않는다. 목록·표가 있는 화면은 넓은 셸을 그대로 쓴다.
+     */
+    <article className="mx-auto flex w-full max-w-reading flex-col gap-[16px]">
       <header className="flex flex-col gap-[2px]">
         <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">
           {page?.ttl ?? fallbackTitle}

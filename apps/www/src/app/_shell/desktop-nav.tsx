@@ -67,9 +67,17 @@ export function DesktopNav() {
   );
 }
 
+/*
+ * hover와 active가 같아 보이지 않게 한다 (#721 · ssccops#534).
+ *
+ * 그전에는 hover가 글자색(`n300`→`ink`), active가 굵기뿐이라 둘이 비슷했다 — «지금 어디»가
+ * 손에 잡히지 않았다. 이제 hover는 옅은 면(`bg-bg`), 켜진 항목은 `accent-soft` 위 `accent`다.
+ * **드롭다운 줄·모바일 드로어와 같은 어휘**를 쓴다(#712에서 그 둘을 이미 이 모양으로 뒀다) —
+ * 한 화면에서 같은 뜻을 세 가지 색으로 말하지 않는다.
+ */
 const AXIS_BASE = "rounded-lg px-[10px] py-[6px] text-[14.5px]";
-const AXIS_ACTIVE = `${AXIS_BASE} font-semibold text-ink`;
-const AXIS_IDLE = `${AXIS_BASE} text-n300 hover:text-ink`;
+const AXIS_ACTIVE = `${AXIS_BASE} bg-accent-soft font-semibold text-accent`;
+const AXIS_IDLE = `${AXIS_BASE} text-n300 hover:bg-bg hover:text-ink`;
 
 function NavAxis({
   link,
@@ -110,7 +118,12 @@ function NavAxis({
   return (
     <div
       ref={groupRef}
-      className="relative flex items-center"
+      /*
+       * 면(hover·active)은 축 이름과 ▾를 **함께** 덮는다 — 이름에만 칠하면 그 옆의 ▾가 면 밖에
+       * 떠서 둘이 한 항목으로 읽히지 않는다. 그래서 `AXIS_*`의 색·굵기는 이 묶음이 들고,
+       * 안쪽 링크·버튼은 배경 없이 글자만 그린다.
+       */
+      className={`relative flex items-center ${active ? AXIS_ACTIVE : AXIS_IDLE}`}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       // 묶음 밖으로 포커스가 나가면 닫는다 — 키보드로 연 메뉴가 Tab으로 빠져나간 뒤 남지 않게
@@ -118,11 +131,7 @@ function NavAxis({
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false);
       }}
     >
-      <Link
-        href={link.href}
-        aria-current={active ? "page" : undefined}
-        className={`${active ? AXIS_ACTIVE : AXIS_IDLE} pr-[4px]`}
-      >
+      <Link href={link.href} aria-current={active ? "page" : undefined} className="pr-[4px]">
         {link.label}
       </Link>
       <button
@@ -132,9 +141,7 @@ function NavAxis({
         aria-haspopup="true"
         aria-controls={menuId}
         aria-label={`${link.label} 하위 메뉴`}
-        className={`flex size-[22px] cursor-pointer items-center justify-center rounded-md text-[10px] ${
-          active ? "text-ink" : "text-n400 hover:text-ink"
-        }`}
+        className="flex size-[18px] cursor-pointer items-center justify-center rounded-md text-[10px]"
       >
         <span aria-hidden="true" className={open ? "rotate-180" : undefined}>
           ▾
