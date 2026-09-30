@@ -22,13 +22,15 @@ import { Badge, Card, CardTitle, EmptyState, ProgressBar, PageBody, PageHeader, 
  * **역할로 분기하는 코드를 넣지 않는다**(#126 「결정해서 남길 것」).
  *
  * ── 통계 카드를 누르면 목록으로 간다 ──────────────────────────
- * 진행 중·지연은 활동 목록으로(상태 필터를 걸고), 승인 대기는 회차·출석 승인
- * 화면으로 — 운영 대시보드의 카드가 승인함으로 가는 것과 같은 판단이다.
+ * 진행 중은 활동 목록의 상태 필터로, 지연은 지연 필터(`?delayed=true`)로, 승인 대기는 회차·출석
+ * 승인 화면으로 — 운영 대시보드의 카드가 승인함으로 가는 것과 같은 판단이다. 지연 칸이 진행 중
+ * 목록으로 가던 동안은 지연이 아닌 것까지 섞여 «어느 것이 지연인가»를 다시 찾아야 했다(#740).
  *
- * ── "이번 주"·"지연"은 훅이 판정한다 ─────────────────────────
+ * ── "이번 주"는 훅이, "지연"은 서버가 판정한다 ───────────────────
  * 집계 로직은 use-academic-program-dashboard 훅 하나에만 둔다(#126 결정). 화면은 그 값을
- * 그리기만 한다. "지연"은 진행률 근사이고(정확한 계획 대비 회차 미달은 대시보드 범위 밖),
- * "이번 주 회차"는 진행일 기준이라(계획일이 활동 횡단 회차 응답에 없다) 그 뜻을 문구가 밝힌다.
+ * 그리기만 한다. "지연"은 서버의 `isDelayed`이고(server#610) 칸의 수와 카드 배지가 같은 필드를
+ * 본다 — 따로 계산하던 동안 둘이 어긋났다. "이번 주 회차"는 진행일 기준이라(계획일이 활동 횡단
+ * 회차 응답에 없다) 그 뜻을 문구가 밝힌다.
  */
 
 function DashboardSkeleton() {
@@ -79,7 +81,7 @@ function OngoingProgramCard({
   onClick: () => void;
 }>) {
   const ratio = Math.round(program.progressRatio);
-  const delayed = program.sttsCd === "ONGOING" && ratio < 40;
+  const delayed = program.isDelayed;
 
   return (
     /* 키보드 접근(#403) — grid 항목이라 늘어난 높이에서 내용이 가운데로 몰리지 않게 content-start */
@@ -156,13 +158,9 @@ export function AcademicProgramDashboardPage() {
   const { data, status, errorMessage, reload } = useAcademicProgramDashboard();
   const today = todayInSeoul();
 
-  // 활동 목록은 상태 필터를 `?status=` 쿼리로 받는다(views/academic-program-list)
-  const goPrograms = (status?: string) =>
-    router.push(
-      status
-        ? `${ROUTES.academicPrograms}?status=${status}`
-        : ROUTES.academicPrograms,
-    );
+  // 활동 목록은 상태 필터를 `?status=`, 지연 필터를 `?delayed=true`로 받는다(views/academic-program-list)
+  const goPrograms = (query?: string) =>
+    router.push(query ? `${ROUTES.academicPrograms}?${query}` : ROUTES.academicPrograms);
 
   return (
     <>
@@ -193,14 +191,14 @@ export function AcademicProgramDashboardPage() {
                         .join(" · ")
                     : "진행 중인 프로그램이 없습니다"
                 }
-                onClick={() => goPrograms("ONGOING")}
+                onClick={() => goPrograms("status=ONGOING")}
               />
               <StatCard
                 label="지연 프로그램"
                 value={data.delayedCount}
-                hint="진행률 40% 미만 (근사)"
+                hint="운영 기간이 끝났는데 진행률 100% 미만"
                 tone={data.delayedCount > 0 ? "danger" : "default"}
-                onClick={() => goPrograms("ONGOING")}
+                onClick={() => goPrograms("delayed=true")}
               />
               <StatCard
                 label="승인 대기"

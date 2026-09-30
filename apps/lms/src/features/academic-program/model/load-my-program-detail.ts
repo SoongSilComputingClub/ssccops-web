@@ -19,23 +19,24 @@ import { toLeaderDashboardErrorMessage } from "./leader-dashboard-error";
  * 활동 하나의 상세(`/studio/programs/{id}`) SSR 로더 (#188 · 서버 #131·#134·#135·#139).
  *
  * ── 활동 단건을 어디서 얻는가 ──────────────────────────────
- * `GET /v1/academic-programs/{id}` 상세 엔드포인트가 있지만 **그 응답의 `progress`는 아직
- * 0으로 고정돼 있다**(서버 `AcademicProgramDetailResponse.of`가 `zero()`를 넣는다 — #135
- * 이전 시안). 진행률이 실제로 계산돼 오는 곳은 `?mine=leader` **목록**의 `progressRatio`
- * 하나뿐이라, 대시보드가 목록에서 대상 활동을 고르는 것과 같은 방식으로 여기서도 목록에서
+ * 대시보드가 목록에서 대상 활동을 고르는 것과 같은 방식으로 여기서도 `?mine=leader` **목록**에서
  * `academicProgramId`로 찾는다. 목록에 없으면 **내 활동이 아니거나 없는 활동**이므로
  * `not-found`로 가른다(어드민 `useAcademicProgramDetail`의 "없는 활동" 판단과 같다).
+ * 처음 목록을 고른 이유는 상세의 `progress`가 0으로 고정돼 있어서였는데, 이제 목록·상세 모두
+ * 서버가 같은 계산으로 채운다(server#609).
  *
  * ── 무엇을 모으는가 ────────────────────────────────────────
- * 1. 커리큘럼(#134) — 계획+실적 조인. "커리큘럼 대비 진행" 표와 진행률 근사의 재료.
+ * 1. 커리큘럼(#134) — 계획+실적 조인. "커리큘럼 대비 진행" 표와 지연 회차의 재료.
  * 2. 회차 목록(#135) — 실제 `sesn` 행만. "회차 이력"과 완료 회차 수·평균 출석률의 재료.
  * 3. 회차 승인 이력(#139 · SESSION 지점) — 회차별 국장 처리 결과.
  * 셋은 서로 독립이라 함께 부른다.
  *
  * ── 집계는 여기서 한다 (#126·#172와 같은 규칙) ────────────────
- * 서버가 상세 요약을 주지 않으므로 진행률·완료 회차·평균 출석률·지연 회차를 이 로더가 한
- * 자리에서 계산해 넘긴다. "지연"은 `todayInSeoul()` 기준으로 계획일이 지난 미제출 회차다.
+ * 서버가 상세 요약을 주지 않으므로 완료 회차·평균 출석률·지연 회차를 이 로더가 한 자리에서
+ * 계산해 넘긴다. "지연"은 `todayInSeoul()` 기준으로 계획일이 지난 미제출 회차다 — 프로그램
+ * 단위의 지연(운영 기간이 끝났는데 100% 미만 · server#610)과는 다른 질문이다.
  * 출석 합계는 서버 `presentCount`/`totalCount`를 그대로 더한다(웹 재계산 금지 · #172).
+ * **진행률은 계산하지 않는다** — 서버의 `progressRatio` 그대로다(#740 · 어드민 상세 #125와 같다).
  */
 
 export interface MyProgramStats {
@@ -45,7 +46,7 @@ export interface MyProgramStats {
   approvedSessions: number;
   /** 실적이 기록된(제출 이상) 회차 수 */
   recordedSessions: number;
-  /** 진행률 0~100 — 목록 응답의 progressRatio 우선, 없으면 승인/전체 근사 */
+  /** 진행률 0~100 — 서버 `progressRatio`를 반올림만 한다(재계산 금지 · #740) */
   progressPercent: number;
   /** 계획일이 지났는데 아직 실적이 없는(NOT_SUBMITTED) 회차 — 계획일 오름차순 */
   delayedItems: CurriculumItemWithSession[];
@@ -90,12 +91,7 @@ function deriveStats(
   const approvedSessions = sessions.filter((s) => s.sesnSttsCd === "APPROVED").length;
   const recordedSessions = sessions.length;
 
-  const progressPercent =
-    program.progressRatio > 0
-      ? Math.round(program.progressRatio)
-      : curriculumTotal > 0
-        ? Math.round((approvedSessions / curriculumTotal) * 100)
-        : 0;
+  const progressPercent = Math.round(program.progressRatio);
 
   const delayedItems = curriculum
     .filter(

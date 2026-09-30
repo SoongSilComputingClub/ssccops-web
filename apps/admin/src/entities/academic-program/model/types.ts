@@ -39,8 +39,15 @@ export interface AcademicProgramSummary {
   leaderName: string | null;
   eventBeginAt: string | null;
   eventEndAt: string | null;
-  /** 0~100 (DECIMAL) — 계획 항목 수 대비 승인 회차 수. Session 엔티티 신설 전에는 0 */
+  /** 0~100 (DECIMAL) — 계획 항목 수 대비 승인 회차 수 (서버 계산 · #609) */
   progressRatio: number;
+  /**
+   * 지연 — 진행 중인데 운영 기간이 끝났고 진행률이 100% 미만이다 (서버 판정 · server#610).
+   *
+   * 목록의 `delayed=true` 필터와 같은 정의다. 화면이 진행률·종료일로 다시 계산하지 않는다 —
+   * 대시보드가 40% 근사로 셀 때 수와 배지가 따로 계산해 서로 어긋났다(#740).
+   */
+  isDelayed: boolean;
   /** 내가 이 활동의 스터디장/팀장인가 — 서버 판정(재계산 금지) */
   isLeader: boolean;
 }
@@ -111,6 +118,8 @@ export interface AcademicProgramListFilter {
   keyword?: string | null;
   /** 내가 스터디장/팀장인 활동만 */
   mine?: boolean | null;
+  /** 지연된 활동만 (`isDelayed`와 같은 정의 · server#610). `sttsCd`와 함께 주면 AND */
+  delayed?: boolean | null;
   /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
   cursor?: string | null;
   /** 1~100 · 서버 기본 20 */

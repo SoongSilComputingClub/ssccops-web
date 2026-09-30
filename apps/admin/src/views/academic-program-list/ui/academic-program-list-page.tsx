@@ -43,6 +43,11 @@ import {
  * "진행 중인 스터디 목록 좀 봐줘"를 링크 하나로 넘길 수 있다. 값 이름을 서버 쿼리
  * 파라미터와 똑같이(status·keyword) 맞춰 URL과 요청이 1:1이 되게 했다.
  *
+ * ── «지연» 칩은 상태 칩과 다른 축이다 (#740 · server#610) ─────
+ * `?delayed=true` → 서버 `delayed=true`. 판정은 서버의 것이고(카드 배지의 `isDelayed`와 같은
+ * 정의) 상태 칩과 함께 쓰면 AND다 — 지연은 진행 중에서만 나오므로 «수료 + 지연»은 빈 목록이다.
+ * 대시보드의 «지연 프로그램» 칸이 이 주소로 온다.
+ *
  * ── 유형 칩은 코드값을 문자열로 노출한다 ──────────────────────
  * 활동 유형(typeCd)은 런타임 코드테이블이고 표시명은 상세 응답에만 온다 — 목록 응답에는
  * typeCd 문자열뿐이다. 유형 목록 엔드포인트를 이 이슈에서 붙이지 않으므로(#125 범위 밖),
@@ -53,6 +58,9 @@ import {
 const QUERY_STATUS = "status";
 const QUERY_TYPE = "typeCd";
 const QUERY_KEYWORD = "keyword";
+const QUERY_DELAYED = "delayed";
+
+const DELAYED_HINT = "운영 기간이 끝났는데 진행률 100% 미만인 프로그램만 보입니다.";
 
 /** URL은 사용자가 손으로 고칠 수 있다 — 모르는 값은 필터 없음으로 떨어뜨린다 */
 function parseSttsCd(value: string | null): AcdmActvSttsCd | null {
@@ -79,14 +87,16 @@ function ProgramCard({
   program: AcademicProgramSummary;
   onClick: () => void;
 }>) {
-  // 진행률은 서버가 계산한 값이다(#125) — 화면은 반올림해 보여 주기만 한다
+  // 진행률·지연은 서버가 계산한 값이다(#125 · #740) — 화면은 반올림해 보여 주기만 한다
   const ratio = Math.round(program.progressRatio);
+  const delayed = program.isDelayed;
 
   return (
     <Card onClick={onClick}>
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={acdmActvSttsTone(program.sttsCd)}>
-          {ACDM_ACTV_STTS_NM[program.sttsCd]}
+        {/* 대시보드 카드와 같은 모양 — 지연은 진행 중에서만 나오므로 상태 배지 자리를 쓴다 */}
+        <Badge tone={delayed ? "outline-red" : acdmActvSttsTone(program.sttsCd)}>
+          {delayed ? "지연" : ACDM_ACTV_STTS_NM[program.sttsCd]}
         </Badge>
         <Badge tone="grey">{acdmActvTypeNm(program.typeCd)}</Badge>
         <div className="flex-1" />
@@ -106,7 +116,7 @@ function ProgramCard({
         {formatYmd(program.eventEndAt) || "-"}
       </div>
       <div className="mt-3 flex items-center gap-[10px]">
-        <ProgressBar value={ratio} />
+        <ProgressBar value={ratio} danger={delayed} />
         <div className="w-[38px] text-right text-[14px] text-n500">{ratio}%</div>
       </div>
     </Card>
@@ -120,6 +130,8 @@ export function AcademicProgramListPage() {
   const sttsCd = parseSttsCd(searchParams.get(QUERY_STATUS));
   const typeCd = searchParams.get(QUERY_TYPE) || null;
   const keyword = searchParams.get(QUERY_KEYWORD) || "";
+  // `true` 말고는 필터 없음 — 서버도 false·생략을 같게 본다
+  const delayed = searchParams.get(QUERY_DELAYED) === "true";
 
   /*
    * 검색어는 타이핑마다 URL을 바꾸면 히스토리가 지저분해지므로 로컬 입력을 두고 디바운스해
@@ -179,7 +191,7 @@ export function AcademicProgramListPage() {
     loadingMore,
     loadMore,
     reload,
-  } = useAcademicProgramList({ sttsCd, typeCd, keyword: keyword || null });
+  } = useAcademicProgramList({ sttsCd, typeCd, keyword: keyword || null, delayed });
 
   const { types } = useAcademicProgramTypes();
 
@@ -220,7 +232,7 @@ export function AcademicProgramListPage() {
   const typeNameOf = (code: string) =>
     types.find((t) => t.typeCd === code)?.typeName || acdmActvTypeNm(code);
 
-  const filtered = Boolean(sttsCd || typeCd || keyword.trim());
+  const filtered = Boolean(sttsCd || typeCd || keyword.trim() || delayed);
 
   const runLoadMore = async () => {
     const message = await loadMore();
@@ -238,7 +250,7 @@ export function AcademicProgramListPage() {
             placeholder="프로그램 제목으로 검색"
             className="max-w-[360px]"
           />
-          <div className="flex flex-wrap gap-[7px]">
+          <div className="flex flex-wrap items-center gap-[7px]">
             <Chip active={!sttsCd} onClick={() => setQuery({ [QUERY_STATUS]: null })}>
               전체 상태
             </Chip>
@@ -251,6 +263,18 @@ export function AcademicProgramListPage() {
                 {ACDM_ACTV_STTS_NM[code]}
               </Chip>
             ))}
+            {/*
+              상태와 다른 축이라 구분선을 두고 뒤에 놓는다 — 나란히 두면 넷째 상태로 읽혀
+              하나를 고르면 앞의 것이 풀리는 줄 안다(하위 업무 목록의 «내 업무»와 같은 판단).
+            */}
+            <span aria-hidden className="mx-[3px] h-[16px] w-px bg-fill-strong" />
+            <Chip
+              active={delayed}
+              onClick={() => setQuery({ [QUERY_DELAYED]: delayed ? null : "true" })}
+              title={DELAYED_HINT}
+            >
+              지연
+            </Chip>
           </div>
           {typeOptions.length > 0 && (
             <div className="flex flex-wrap gap-[7px]">
@@ -302,6 +326,7 @@ export function AcademicProgramListPage() {
                           [QUERY_STATUS]: null,
                           [QUERY_TYPE]: null,
                           [QUERY_KEYWORD]: null,
+                          [QUERY_DELAYED]: null,
                         }),
                     }
                   : undefined
