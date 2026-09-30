@@ -86,6 +86,8 @@ interface AcademicProgramSummaryResponse {
   eventBgngDt: string | null;
   eventEndDt: string | null;
   progressRatio: number | null;
+  /** server#610 — 그 전 서버는 싣지 않는다 */
+  isDelayed?: boolean;
   isLeader: boolean;
 }
 
@@ -156,6 +158,7 @@ function toSummary(
     eventBeginAt: res.eventBgngDt,
     eventEndAt: res.eventEndDt,
     progressRatio: toRatio(res.progressRatio),
+    isDelayed: res.isDelayed === true,
     isLeader: res.isLeader,
   };
 }
@@ -210,6 +213,8 @@ export async function fetchAcademicPrograms(
   if (filter.sttsCd) query.set("sttsCd", filter.sttsCd);
   if (filter.keyword) query.set("keyword", filter.keyword);
   if (filter.mine) query.set("mine", "true");
+  // false·생략은 서버에서도 필터 없음이라 켤 때만 싣는다
+  if (filter.delayed) query.set("delayed", "true");
   if (filter.cursor) query.set("cursor", filter.cursor);
   if (filter.size != null) query.set("size", String(filter.size));
   if (filter.sort) query.set("sort", filter.sort);
