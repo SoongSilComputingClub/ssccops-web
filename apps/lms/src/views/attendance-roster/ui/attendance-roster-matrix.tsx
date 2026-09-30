@@ -1,6 +1,6 @@
 "use client";
 
-import type { AcademicProgramMember } from "@/entities/academic-program";
+import type { AcademicProgramMember, ProgramStop } from "@/entities/academic-program";
 import {
   formatAttendanceRate,
   LOW_ATTENDANCE_RATE,
@@ -38,7 +38,7 @@ import { cn } from "@/shared/lib/cn";
  *
  * ── 정정 동선 ──────────────────────────────────────────────────
  * 칸(버튼)을 누르면 그 회차만 `PATCH`가 나가고 응답으로 그 열만 갱신된다. 승인된 회차와
- * 종료된 프로그램의 모든 회차(`column.locked`)는 칸을 비활성화하고 사유(`column.lockReason`)를
+ * 종료·폐지된 프로그램의 모든 회차(`column.locked`)는 칸을 비활성화하고 사유(`column.lockReason`)를
  * `title`로 붙인다. 출석부에 줄이 없는 칸(`none`)도 누를 수 없다(명단 변경은 재제출의 몫).
  */
 
@@ -54,14 +54,19 @@ const CELL_MARK: Record<RosterCellState, string> = {
   none: "·",
 };
 
-function cellTitle(column: RosterColumn, state: RosterCellState, memberName: string): string {
+function cellTitle(
+  column: RosterColumn,
+  state: RosterCellState,
+  memberName: string,
+  programStop: ProgramStop | null,
+): string {
   const seq = column.session.seqno === null ? "" : `${column.session.seqno}회차 `;
   if (state === "none") {
     return `${memberName} — 이 회차 출석부에 없습니다`;
   }
   const now = state === "present" ? "출석" : "결석";
-  if (column.lockReason === "program-completed") {
-    return `${memberName} · ${seq}${now} — 종료된 프로그램이라 고칠 수 없습니다`;
+  if (column.lockReason === "program-stopped" && programStop) {
+    return `${memberName} · ${seq}${now} — ${programStop.adjective} 프로그램이라 고칠 수 없습니다`;
   }
   if (column.lockReason === "approved") {
     return `${seq}승인 완료 — 출석을 고칠 수 없습니다`;
@@ -74,16 +79,16 @@ export function AttendanceRosterMatrix({
   academicProgramId,
   members,
   columns: initialColumns,
-  programCompleted,
+  programStop,
 }: Readonly<{
   academicProgramId: number;
   members: AcademicProgramMember[];
   columns: RosterSessionColumn[];
-  /** 프로그램이 종료됐는가 — 모든 칸이 잠긴다 (ADR-0057) */
-  programCompleted: boolean;
+  /** 쓰기가 멈춘 프로그램이면 그 사유(종료·폐지) — 모든 칸이 잠긴다 (ADR-0057 · ADR-0058) */
+  programStop: ProgramStop | null;
 }>) {
   const { rows, columns, periodAverage, sessionRangeLabel, error, toggleCell, clearError } =
-    useAttendanceRoster(academicProgramId, initialColumns, members, programCompleted);
+    useAttendanceRoster(academicProgramId, initialColumns, members, programStop);
 
   return (
     <section className="flex flex-col gap-[10px]">
@@ -180,8 +185,8 @@ export function AttendanceRosterMatrix({
                           toggleCell(column.session.sessionId, row.member.eventPtcpId)
                         }
                         disabled={!interactive || column.saving}
-                        aria-label={cellTitle(column, state, name)}
-                        title={cellTitle(column, state, name)}
+                        aria-label={cellTitle(column, state, name, programStop)}
+                        title={cellTitle(column, state, name, programStop)}
                         className={cn(
                           "inline-flex h-[26px] w-[30px] items-center justify-center rounded-[7px] text-[12px] transition-colors",
                           CELL_STYLE[state],

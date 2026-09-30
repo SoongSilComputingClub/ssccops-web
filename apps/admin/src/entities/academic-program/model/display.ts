@@ -13,11 +13,24 @@ import type { AcdmActvSttsCd, SesnSttsCd } from "@/shared/config/codes";
  * 배포 없이 늘어나는 런타임 코드테이블이라 그 모양에 들어가지 않는다.
  */
 
-/** 활동 상태 배지 톤 — 승인(대기 느낌) · 진행 중(파랑) · 수료(회색으로 마감) */
+/**
+ * 활동 상태 배지 톤 — 승인(대기 느낌) · 진행 중(파랑) · 수료(회색으로 마감) · 폐지(빨강).
+ *
+ * switch로 상태를 전부 적는다 — «그 밖은 amber»로 두던 동안 폐지(#741)가 들어오자 «승인»과 같은
+ * 색으로 섞였다. 상태를 더하면 타입이 이 자리를 다시 묻는다. 폐지는 «지연»(outline-red)과 같은
+ * 빨강 계열이되 채운 면이라 둘이 갈린다.
+ */
 export function acdmActvSttsTone(cd: AcdmActvSttsCd): BadgeTone {
-  if (cd === "ONGOING") return "blue";
-  if (cd === "COMPLETED") return "grey";
-  return "amber";
+  switch (cd) {
+    case "APPROVED":
+      return "amber";
+    case "ONGOING":
+      return "blue";
+    case "COMPLETED":
+      return "grey";
+    case "DISCONTINUED":
+      return "red";
+  }
 }
 
 /** 회차 실적 상태 배지 톤 — 미제출은 옅게, 제출은 검토 대기(amber), 승인은 파랑, 수정요청은 빨강 */

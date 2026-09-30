@@ -52,7 +52,8 @@ export function loadSessionRecordErrorMessage(error: unknown): string {
  *
  * 409 `ACADEMIC_PROGRAM_COMPLETED`(ADR-0057)는 폼을 열어 둔 사이 프로그램이 종료된 경우다.
  * 새로고침으로 풀리지 않고 재시작은 학술국장의 일이라 그것을 안내한다 — 출석 정정
- * (`correctAttendanceErrorMessage`)과 같은 문장이다.
+ * (`correctAttendanceErrorMessage`)과 같은 문장이다. 폐지(`ACADEMIC_PROGRAM_DISCONTINUED` ·
+ * ADR-0058)도 같고 복원을 안내한다.
  */
 export function submitSessionErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
@@ -66,6 +67,8 @@ export function submitSessionErrorMessage(error: unknown): string {
       return "검토 중이거나 승인된 회차는 수정할 수 없습니다";
     case ACADEMIC_SESSION_ERROR.ACADEMIC_PROGRAM_COMPLETED:
       return "종료된 프로그램입니다 — 학술국장에게 재시작을 요청해주세요";
+    case ACADEMIC_SESSION_ERROR.ACADEMIC_PROGRAM_DISCONTINUED:
+      return "폐지된 프로그램입니다 — 학술국장에게 복원을 요청해주세요";
     case ACADEMIC_SESSION_ERROR.INVALID_ATTENDANCE_TARGET:
       return "출석 대상이 아닌 팀원이 있습니다 — 새로고침해주세요";
     case ACADEMIC_SESSION_ERROR.VALIDATION_FAILED:
@@ -104,6 +107,8 @@ export function sessionPhotoErrorMessage(error: unknown): string {
       return "회차 기록은 저장됐습니다 — 승인된 회차라 인증사진은 바꿀 수 없습니다";
     case SESSION_PHOTO_ERROR.ACADEMIC_PROGRAM_COMPLETED:
       return "회차 기록은 저장됐습니다 — 종료된 프로그램이라 인증사진은 올릴 수 없습니다";
+    case SESSION_PHOTO_ERROR.ACADEMIC_PROGRAM_DISCONTINUED:
+      return "회차 기록은 저장됐습니다 — 폐지된 프로그램이라 인증사진은 올릴 수 없습니다";
     case SESSION_PHOTO_ERROR.PUT_FAILED:
       return "회차 기록은 저장됐지만 사진 저장소에 올리지 못했습니다. 잠시 후 다시 시도해주세요";
     case API_ERROR.NETWORK_ERROR:

@@ -22,8 +22,9 @@ import { Badge, Card, CardTitle, EmptyState, ProgressBar, PageBody, PageHeader, 
  * **역할로 분기하는 코드를 넣지 않는다**(#126 「결정해서 남길 것」).
  *
  * ── 통계 카드를 누르면 목록으로 간다 ──────────────────────────
- * 진행 중은 활동 목록의 상태 필터로, 지연은 지연 필터(`?delayed=true`)로, 승인 대기는 회차·출석
- * 승인 화면으로 — 운영 대시보드의 카드가 승인함으로 가는 것과 같은 판단이다. 지연 칸이 진행 중
+ * 진행 중·폐지는 활동 목록의 상태 필터로, 지연은 지연 필터(`?delayed=true`)로, 승인 대기는
+ * 회차·출석 승인 화면으로 — 운영 대시보드의 카드가 승인함으로 가는 것과 같은 판단이다. 폐지
+ * 칸(#741 · ADR-0058)에는 버튼을 두지 않는다 — 폐지·복원은 사유를 받는 시트가 있는 상세에서 한다. 지연 칸이 진행 중
  * 목록으로 가던 동안은 지연이 아닌 것까지 섞여 «어느 것이 지연인가»를 다시 찾아야 했다(#740).
  *
  * ── "이번 주"는 훅이, "지연"은 서버가 판정한다 ───────────────────
@@ -36,8 +37,8 @@ import { Badge, Card, CardTitle, EmptyState, ProgressBar, PageBody, PageHeader, 
 function DashboardSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-3">
-        {[0, 1, 2].map((i) => (
+      <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
           <Card key={i} className="animate-pulse">
             <div className="h-[16px] w-2/5 rounded bg-fill" />
             <div className="mt-3 h-[28px] w-1/4 rounded bg-fill" />
@@ -180,7 +181,7 @@ export function AcademicProgramDashboardPage() {
 
         {status === "ready" && (
           <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2 lg:grid-cols-4">
               <StatCard
                 label="진행 중 프로그램"
                 value={data.ongoingCount}
@@ -199,6 +200,12 @@ export function AcademicProgramDashboardPage() {
                 hint="운영 기간이 끝났는데 진행률 100% 미만"
                 tone={data.delayedCount > 0 ? "danger" : "default"}
                 onClick={() => goPrograms("delayed=true")}
+              />
+              <StatCard
+                label="폐지 프로그램"
+                value={data.discontinuedCount}
+                hint="운영을 멈춘 프로그램"
+                onClick={() => goPrograms("status=DISCONTINUED")}
               />
               <StatCard
                 label="승인 대기"

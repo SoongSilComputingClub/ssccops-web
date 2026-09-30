@@ -2,13 +2,13 @@ import Link from "next/link";
 import {
   BackToProgramsNotice,
   NoProgramNotice,
-  ProgramCompletedNotice,
   ProgramSignupNotice,
+  ProgramStoppedNotice,
   selectProgram,
 } from "@/features/academic-program";
 import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher";
 import { loadRecordTargets, loadSessionRecord } from "@/features/academic-session";
-import type { AcdmActvSttsCd } from "@/entities/academic-program";
+import { programStopOf, type AcdmActvSttsCd } from "@/entities/academic-program";
 import { sesnSttsBadge } from "@/entities/academic-session";
 import { LoginGate } from "@/features/auth";
 import { ROUTES, studioRecordUrl } from "@/shared/config/routes";
@@ -36,8 +36,8 @@ import { SessionRecordForm } from "./session-record-form";
  *   - 내 활동 상세·대시보드는 회차별로 그 둘을 다 붙여 이으므로 곧바로 폼이 열린다.
  *   - 활동 드롭다운으로 활동을 바꾸면 `?curriculumItemId=`는 떨어진다(다른 활동의 회차다).
  *
- * ── 종료된 프로그램 (#716 · ADR-0057) ────────────────────────
- * 서버가 종료된 프로그램의 커리큘럼 항목을 전부 `isEditable: false`로 내리므로 폼은 저절로
+ * ── 종료·폐지된 프로그램 (#716 · ADR-0057 · #741 · ADR-0058) ─────
+ * 서버가 종료·폐지된 프로그램의 커리큘럼 항목을 전부 `isEditable: false`로 내리므로 폼은 저절로
  * 닫힌다. 화면이 더하는 것은 **닫힌 이유**뿐이다 — 선택 목록 위의 안내 띠와 잠긴 줄의 `title`,
  * 폼 자리의 빈 상태. 프로그램 상태는 셸이 이미 받은 `mine=leader` 목록의 `sttsCd`라 조회가
  * 늘지 않는다.
@@ -145,16 +145,16 @@ async function CurriculumPicker({
   const editable = result.items.filter((item) => item.isEditable);
   const rest = result.items.filter((item) => !item.isEditable);
   const ordered = [...editable, ...rest];
-  const completed = programSttsCd === "COMPLETED";
-  // 잠긴 줄의 이유 — 종료된 프로그램은 회차 상태와 무관하게 전부 잠긴다(ADR-0057)
-  const lockedTitle = completed
-    ? "종료된 프로그램이라 기록할 수 없습니다"
+  const stop = programStopOf(programSttsCd);
+  // 잠긴 줄의 이유 — 종료·폐지된 프로그램은 회차 상태와 무관하게 전부 잠긴다(ADR-0057 · ADR-0058)
+  const lockedTitle = stop
+    ? `${stop.adjective} 프로그램이라 기록할 수 없습니다`
     : "제출·승인된 회차는 이 화면에서 다시 쓸 수 없습니다";
 
   return (
     <div className="flex flex-col gap-[12px]">
-      {completed ? (
-        <ProgramCompletedNotice />
+      {stop ? (
+        <ProgramStoppedNotice sttsCd={programSttsCd} />
       ) : (
         <p className="text-[14px] text-n400">어느 회차를 기록할지 고르세요.</p>
       )}
@@ -224,11 +224,11 @@ async function RecordBody({
     return <ProgramSignupNotice />;
   }
 
-  if (result.outcome === "program-completed") {
+  if (result.outcome === "program-stopped") {
     return (
       <EmptyState
-        title="종료된 프로그램입니다"
-        description="이 회차를 기록하려면 학술국장에게 재시작을 요청해주세요."
+        title={`${result.stop.adjective} 프로그램입니다`}
+        description={`이 회차를 기록하려면 학술국장에게 ${result.stop.undo}을 요청해주세요.`}
       />
     );
   }

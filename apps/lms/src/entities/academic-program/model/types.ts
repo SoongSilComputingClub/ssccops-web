@@ -70,11 +70,12 @@ export interface AcademicProgramMemberFilter {
  * 학술_활동_상태 (acdm_actv.acdm_actv_stts_cd).
  *
  * 고정 enum(서버 `AcademicProgramStatus`)이라 표준코드 시드가 없다 — 응답은 raw enum 문자열만
- * 온다. 어드민 `shared/config/codes.ts`의 `AcdmActvSttsCd`와 같은 계약이다. 세 값뿐이다 —
- * `RECRUITING`은 없다(모집 시작은 `APPROVED → ONGOING` 전이라 "모집 중"을 별도 상태로 두지
- * 않는다 · #122).
+ * 온다. 어드민 `shared/config/codes.ts`의 `AcdmActvSttsCd`와 같은 계약이다. `RECRUITING`은
+ * 없다(모집 시작은 `APPROVED → ONGOING` 전이라 "모집 중"을 별도 상태로 두지 않는다 · #122).
+ * `DISCONTINUED`(폐지 · #741 · ADR-0058)는 운영이 중단된 것이다 — 종료처럼 쓰기가 멈추고
+ * 학술국장이 어드민에서 복원한다.
  */
-export type AcdmActvSttsCd = "APPROVED" | "ONGOING" | "COMPLETED";
+export type AcdmActvSttsCd = "APPROVED" | "ONGOING" | "COMPLETED" | "DISCONTINUED";
 
 /**
  * 접수 상태 — 서버 `FormReceiptStatus`(기간까지 본 파생값).
