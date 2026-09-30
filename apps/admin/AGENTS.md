@@ -108,6 +108,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## 함정
 
+- **상단 바나 그 조상에 `backdrop-filter`·`transform`·`filter`를 걸면 그 안의 `fixed` 자손이 갇힌다**(#733 · ssccops#545). 이 셋은 요소를 `position: fixed`의 **기준 상자**로 만든다 — v1.0.0에서 www가 고정 헤더에 `backdrop-blur`를 넣자 헤더 안의 모바일 드로어가 64px에 갇혀 prod에서 메뉴가 열리지 않았다(web#729). 타입·린트·빌드는 전부 초록이었다. 이 앱의 드로어(`app/(admin)/_shell/mobile-nav.tsx`)는 그래서 **`createPortal`로 `document.body`에 그린다** — ssccops#535가 www의 헤더를 이 앱에 가져가기 전에 옮겨 두었다. **셸 스타일을 바꿀 때는 그 안에서 여는 것(드로어·시트·메뉴)을 375px에서 실제로 열어 본다.**
 - **`README.md`에는 PoC 시절 서술이 남아 있다**("API 미연동 PoC", zustand 시드). 목 스토어는 `features/approval/model/use-approval-actions.ts`(어디서도 쓰지 않는다)에만 잔재로 남아 있다 — 승인함은 `useApprovalDecisions`를 쓴다.
 - **`shared/config/codes.ts`는 서버 표준코드와 함께 움직인다.** 공유 코드값은 `@ssccops/codes`를 재export 하고 admin 전용 70여 개는 여기 있다. 서버가 코드를 추가하면 여기도 더해야 하고, 표시명은 서버 시드와 글자까지 계약이다.
 - **supabase-js `auth.oauth`의 `getAuthorizationDetails` 응답은 두 모양이다**(#430) — 동의가 필요하면 `authorization_id`·`client`·`redirect_uri`·`scope`, **이미 동의한 적이 있으면 `redirect_url` 하나뿐**이라 화면을 그리지 않고 그 주소로 보내야 한다. `in`으로 가르지 않고 `data.client.name`을 바로 읽으면 두 번째 연결부터 죽는다. 4xx는 전부 «요청이 유효하지 않습니다»(«다시 시도» 버튼을 두지 않는다), 401·`AuthSessionMissingError`만 로그인으로.
