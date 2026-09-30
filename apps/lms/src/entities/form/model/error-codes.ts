@@ -31,6 +31,8 @@ export const RECRUITMENT_FORM_ERROR = {
    * 종료된 경우다.
    */
   ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
+  /** 폐지된 프로그램의 문항을 고치려 했다 (409 · ADR-0058 · 서버 #611) — 종료와 같은 자리에서 온다 */
+  ACADEMIC_PROGRAM_DISCONTINUED: "ACADEMIC_PROGRAM_DISCONTINUED",
   /** 문항 구성이 서버 규칙을 어겼다 (400 · `QuestionCompositionValidator`) */
   INVALID_QUESTION_COMPOSITION: "INVALID_QUESTION_COMPOSITION",
   /**

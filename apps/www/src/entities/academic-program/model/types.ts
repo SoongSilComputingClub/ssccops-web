@@ -11,9 +11,11 @@
  * 학술_활동_상태 (acdm_actv.acdm_actv_stts_cd).
  *
  * 고정 enum(서버 `AcademicProgramStatus`)이라 표준코드 시드가 없다 — 응답은 raw enum 문자열만
- * 온다. 세 값뿐이다 — `RECRUITING`은 없다(모집 시작은 `APPROVED → ONGOING` 전이).
+ * 온다. `RECRUITING`은 없다(모집 시작은 `APPROVED → ONGOING` 전이). `DISCONTINUED`(폐지 ·
+ * #741 · ADR-0058)는 운영이 중단된 것이다 — `/me`의 내 프로그램 카드에만 보인다. 공개 목록에서는
+ * 서버가 모집 폼을 마감해 빠지므로 이 앱이 거를 것이 없다.
  */
-export type AcdmActvSttsCd = "APPROVED" | "ONGOING" | "COMPLETED";
+export type AcdmActvSttsCd = "APPROVED" | "ONGOING" | "COMPLETED" | "DISCONTINUED";
 
 /**
  * table: acdm_actv — 내가 스터디장/팀장인 활동 한 건 (`AcademicProgramSummaryResponse`).

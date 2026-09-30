@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { QitemCpstCn } from "@ssccops/form-renderer";
 import { SectionLabel } from "@ssccops/ui";
+import type { ProgramStop } from "@/entities/academic-program";
 import type { RecruitmentFormView } from "@/entities/form";
 import { QitemComposer, validateQitemCpst } from "@/features/form";
 import { useSaveRecruitmentForm } from "@/features/form/model/use-save-recruitment-form";
@@ -32,12 +33,12 @@ import { Card, Field, TextField } from "@/shared/ui";
 export function RecruitmentFormEditor({
   academicProgramId,
   initialView,
-  programCompleted,
+  programStop,
 }: Readonly<{
   academicProgramId: number;
   initialView: RecruitmentFormView;
-  /** 프로그램이 종료됐는가 — 잠긴 이유 문구만 바꾼다 (ADR-0057) */
-  programCompleted: boolean;
+  /** 쓰기가 멈춘 프로그램이면 그 사유(종료·폐지) — 잠긴 이유 문구만 바꾼다 (ADR-0057 · ADR-0058) */
+  programStop: ProgramStop | null;
 }>) {
   const [view, setView] = useState(initialView);
   const [cpst, setCpst] = useState<QitemCpstCn>(initialView.form.qitemCpstCn);
@@ -113,7 +114,7 @@ export function RecruitmentFormEditor({
         </p>
       ) : (
         <p className="rounded-[12px] border border-line bg-bg px-[14px] py-[11px] text-[13.5px] leading-[1.7] text-n400">
-          {programCompleted ? "종료된 프로그램이라" : "접수가 시작돼"} 문항을 고칠 수 없습니다.
+          {programStop ? `${programStop.adjective} 프로그램이라` : "접수가 시작돼"} 문항을 고칠 수 없습니다.
           고쳐야 하면 학술국장에게 문의해주세요.
         </p>
       )}

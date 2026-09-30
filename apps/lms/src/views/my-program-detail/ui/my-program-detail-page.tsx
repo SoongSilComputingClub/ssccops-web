@@ -8,7 +8,7 @@ import {
 } from "@/entities/academic-session";
 import {
   loadMyProgramDetail,
-  ProgramCompletedNotice,
+  ProgramStoppedNotice,
   type MyProgramDetailReady,
 } from "@/features/academic-program";
 import { LoginGate } from "@/features/auth";
@@ -131,7 +131,7 @@ function DetailBody({ data }: Readonly<{ data: MyProgramDetailReady }>) {
 
   return (
     <div className="flex flex-col gap-[16px]">
-      {program.sttsCd === "COMPLETED" && <ProgramCompletedNotice />}
+      <ProgramStoppedNotice sttsCd={program.sttsCd} />
 
       {/* 헤더 카드 */}
       <Card>

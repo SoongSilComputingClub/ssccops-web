@@ -64,6 +64,13 @@ export const ACADEMIC_PROGRAM_ERROR = {
    * 권한 판정(403) 뒤에 온다 — 권한 없는 사람에게 «종료됐다»를 먼저 알리지 않는다.
    */
   ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
+  /**
+   * 폐지된 프로그램에 쓰기 (409 · ADR-0058 · 서버 #611). 막는 자리·순서는 종료와 같고 코드만
+   * 다르다 — 되돌리는 길이 재시작이 아니라 복원이라서다.
+   */
+  ACADEMIC_PROGRAM_DISCONTINUED: "ACADEMIC_PROGRAM_DISCONTINUED",
+  /** DISCONTINUE 인데 사유가 비었다 (400 · 공백만 있는 문자열 포함) */
+  DISCONTINUATION_REASON_REQUIRED: "DISCONTINUATION_REASON_REQUIRED",
   /** START_RECRUITMENT 인데 연결된 모집 폼이 없다 (409) — 데이터 정합성이 깨진 경우 */
   FORM_NOT_LINKED: "FORM_NOT_LINKED",
 } as const;
@@ -265,9 +272,11 @@ export async function fetchAcademicProgram(
 /**
  * POST /v1/academic-programs/{academicProgramId}/transitions — 상태 전이 (#133).
  *
- * 모집 시작(START_RECRUITMENT)·종료 승인(APPROVE_COMPLETION)·재시작(REOPEN · 서버 #597)
- * 세 액션이 이 하나의 경로를 쓴다. 다음 상태를 직접 쓰는 PATCH 경로는 없다 — 화면이 액션을
- * 보내고 다음 상태는 전이표가 정한다(work·form 도메인의 전이 엔드포인트 선례).
+ * 모집 시작(START_RECRUITMENT)·종료 승인(APPROVE_COMPLETION)·재시작(REOPEN · 서버 #597)·
+ * 폐지(DISCONTINUE)·복원(REINSTATE · 서버 #611) 다섯 액션이 이 하나의 경로를 쓴다. 다음 상태를
+ * 직접 쓰는 PATCH 경로는 없다 — 화면이 액션을 보내고 다음 상태는 전이표가 정한다(work·form
+ * 도메인의 전이 엔드포인트 선례). 복원만 목적 상태를 폐지 이력이 정하므로 `afterSttsCd`를 그대로
+ * 읽는다.
  *
  * `recruitmentStartAt`·`recruitmentEndAt` 는 START_RECRUITMENT 에서만 쓰인다 —
  * 다른 전이에 실려 와도 서버가 무시한다. 일시에는 **오프셋을 반드시 붙인다**
@@ -288,6 +297,7 @@ export async function transitionAcademicProgram(
         transition: input.transition,
         recruitmentStartDt: withServiceOffset(input.recruitmentStartAt ?? null),
         recruitmentEndDt: withServiceOffset(input.recruitmentEndAt ?? null),
+        reason: input.reason ?? null,
       }),
     },
   );

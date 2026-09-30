@@ -21,7 +21,7 @@ import { toAcademicProgramErrorMessage } from "./academic-program-error";
  * 조회를 한 훅에서 병렬로 모아 화면이 그릴 값으로 가공한다 — 같은 집계가 여러 화면에 흩어지지
  * 않게 "이번 주" 판정과 수 세기를 여기 한 곳에 가둔다(이슈 「결정해서 남길 것」).
  *
- *  1. GET /v1/academic-programs               — 전체 활동. 진행 중(ONGOING) 수·지연 수·최근 활동.
+ *  1. GET /v1/academic-programs               — 전체 활동. 진행 중(ONGOING)·지연·폐지 수·최근 활동.
  *  2. GET /v1/academic-programs/sessions      — 활동 횡단 회차(전 상태). "이번 주 회차".
  *  3. GET /v1/academic-programs/reviews/sessions — SUBMITTED 회차. "승인 대기" 수.
  *
@@ -56,6 +56,11 @@ export interface AcademicProgramDashboardData {
   ongoingByType: { typeCd: string; count: number }[];
   /** 지연 활동 수 — 서버 `isDelayed`를 센다 */
   delayedCount: number;
+  /**
+   * 폐지(DISCONTINUED) 활동 수 (#741 · ADR-0058). 진행 중·지연 수에 섞이지 않게 따로 센다 —
+   * 폐지를 상태로 두기 전에는 멈춘 프로그램이 «진행 중»에 남아 두 칸을 부풀렸다
+   */
+  discontinuedCount: number;
   /** 승인 대기 회차 수 (SUBMITTED) */
   pendingSessionCount: number;
   /** 이번 주 회차 (진행일이 이번 주 안) — 진행일 오름차순 */
@@ -92,6 +97,7 @@ const EMPTY: AcademicProgramDashboardData = {
   ongoingCount: 0,
   ongoingByType: [],
   delayedCount: 0,
+  discontinuedCount: 0,
   pendingSessionCount: 0,
   thisWeekSessions: [],
   ongoingPrograms: [],
@@ -141,6 +147,7 @@ function summarize(
   }
 
   const delayedCount = programs.filter((p) => p.isDelayed).length;
+  const discontinuedCount = programs.filter((p) => p.sttsCd === "DISCONTINUED").length;
 
   // fetchAcademicPrograms의 기본 정렬은 서버가 등록 최신순(-createdAt)으로 잡는다 —
   // 받은 순서가 곧 최근순이다(웹에서 다시 세지 않는다).
@@ -154,6 +161,7 @@ function summarize(
       (a, b) => b.count - a.count,
     ),
     delayedCount,
+    discontinuedCount,
     pendingSessionCount,
     thisWeekSessions: thisWeekSorted,
     ongoingPrograms: ongoing.slice(0, 8),

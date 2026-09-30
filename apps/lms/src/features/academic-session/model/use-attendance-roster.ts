@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { AcademicProgramMember } from "@/entities/academic-program";
+import type { AcademicProgramMember, ProgramStop } from "@/entities/academic-program";
 import {
   attendanceRatePercent,
   correctSessionAttendances,
@@ -43,11 +43,13 @@ import { correctAttendanceErrorMessage } from "./attendance-roster-error";
  * `APPROVED`가 아니면 정정할 수 있다. 화면은 `column.locked`로 칸을 비활성화하고 사유를
  * `title`로 붙인다.
  *
- * ── 종료된 프로그램은 모든 칸을 잠근다 (#716 · ADR-0057) ──────────
- * 서버가 종료된 프로그램의 정정을 409 `ACADEMIC_PROGRAM_COMPLETED`로 막는다. 출석부에는
- * 회차 기록의 `isEditable` 같은 서버 판정이 없어 **프로그램 상태를 직접 본다**(이 화면만의
- * 예외 — 폼을 여는 곳은 `isEditable`만 본다). 상태는 셸이 이미 받은 `mine=leader` 목록의
- * `sttsCd`라 조회가 늘지 않는다. 승인 잠금과 사유가 달라 `lockReason`으로 가른다.
+ * ── 종료·폐지된 프로그램은 모든 칸을 잠근다 (#716 · ADR-0057 · #741 · ADR-0058) ──
+ * 서버가 종료·폐지된 프로그램의 정정을 409 `ACADEMIC_PROGRAM_COMPLETED`·
+ * `ACADEMIC_PROGRAM_DISCONTINUED`로 막는다. 출석부에는 회차 기록의 `isEditable` 같은 서버 판정이
+ * 없어 **프로그램 상태를 직접 본다**(이 화면만의 예외 — 폼을 여는 곳은 `isEditable`만 본다).
+ * 상태는 셸이 이미 받은 `mine=leader` 목록의 `sttsCd`를 `programStopOf`로 읽은 값이라 조회가
+ * 늘지 않는다. 승인 잠금과 사유가 달라 `lockReason`으로 가른다. 폐지(#741)가 들어오기 전에는
+ * `programCompleted`라는 불리언이라 폐지된 프로그램의 칸이 열려 있다가 누르면 409가 났을 것이다.
  *
  * ── 연타/경합 ────────────────────────────────────────────────
  * 같은 회차에 정정이 진행 중이면 그 회차의 다음 클릭을 막는다(`pendingRef`). 회차가 다르면
@@ -58,17 +60,17 @@ import { correctAttendanceErrorMessage } from "./attendance-roster-error";
 export type RosterCellState = "present" | "absent" | "none";
 
 /**
- * 칸을 잠근 이유 — 종료가 승인보다 먼저다(종료된 프로그램이면 승인 여부와 무관하게 전부 잠긴다).
- * 잠기지 않았으면 null.
+ * 칸을 잠근 이유 — 프로그램(종료·폐지)이 승인보다 먼저다(쓰기가 멈춘 프로그램이면 승인 여부와
+ * 무관하게 전부 잠긴다). 잠기지 않았으면 null.
  */
-export type RosterLockReason = "program-completed" | "approved" | null;
+export type RosterLockReason = "program-stopped" | "approved" | null;
 
 /** 표의 한 열(회차) — 화면이 그릴 값으로 가공한 것 */
 export interface RosterColumn {
   session: AcademicSessionSummary;
   /** 승인된 회차인가 — 머리글의 «승인» 표식 */
   approved: boolean;
-  /** 정정할 수 없는 회차인가(승인됨 · 프로그램 종료) */
+  /** 정정할 수 없는 회차인가(승인됨 · 프로그램 종료·폐지) */
   locked: boolean;
   /** 잠근 이유 — 칸의 `title` */
   lockReason: RosterLockReason;
@@ -117,8 +119,8 @@ export function useAttendanceRoster(
   academicProgramId: number,
   initialColumns: RosterSessionColumn[],
   members: AcademicProgramMember[],
-  /** 프로그램이 종료됐는가 — 모든 칸을 잠근다 (ADR-0057) */
-  programCompleted: boolean,
+  /** 쓰기가 멈춘 프로그램이면 그 사유(종료·폐지) — 모든 칸을 잠근다 (ADR-0057 · ADR-0058) */
+  programStop: ProgramStop | null,
 ): AttendanceRosterView {
   /*
    * 회차별 상태(출석부 줄 + 합계)를 sessionId로 쥔다. 초깃값은 로더가 넘긴 값이라 동기화용
@@ -152,7 +154,7 @@ export function useAttendanceRoster(
     (sessionId: number, eventPtcpId: number) => {
       setError(null);
 
-      if (programCompleted) return;
+      if (programStop) return;
       const session = sessionOrder.find((s) => s.sessionId === sessionId);
       if (!session || session.sesnSttsCd === "APPROVED") return;
       if (pendingRef.current.has(sessionId)) return;
@@ -197,7 +199,7 @@ export function useAttendanceRoster(
         }
       })();
     },
-    [academicProgramId, cellMaps, programCompleted, sessionOrder],
+    [academicProgramId, cellMaps, programStop, sessionOrder],
   );
 
   /* ── 파생: 열 ──────────────────────────────────────────────── */
@@ -205,8 +207,8 @@ export function useAttendanceRoster(
     () =>
       sessionOrder.map((session) => {
         const approved = session.sesnSttsCd === "APPROVED";
-        const lockReason: RosterLockReason = programCompleted
-          ? "program-completed"
+        const lockReason: RosterLockReason = programStop
+          ? "program-stopped"
           : approved
             ? "approved"
             : null;
@@ -219,7 +221,7 @@ export function useAttendanceRoster(
           cellByMember: cellMaps.get(session.sessionId) ?? new Map(),
         };
       }),
-    [sessionOrder, programCompleted, savingIds, cellMaps],
+    [sessionOrder, programStop, savingIds, cellMaps],
   );
 
   /* ── 파생: 행(팀원별 출석률) ───────────────────────────────── */

@@ -12,7 +12,7 @@ import {
 } from "@/entities/academic-session";
 import {
   loadLeaderDashboard,
-  ProgramCompletedNotice,
+  ProgramStoppedNotice,
   type LeaderDashboardReady,
 } from "@/features/academic-program";
 import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher";
@@ -266,7 +266,7 @@ function DashboardBody({ data }: Readonly<{ data: LeaderDashboardReady }>) {
         basePath={ROUTES.studio}
       />
 
-      {program.sttsCd === "COMPLETED" && <ProgramCompletedNotice />}
+      <ProgramStoppedNotice sttsCd={program.sttsCd} />
 
       {/* 통계 4칸 */}
       <div className="grid grid-cols-2 gap-[12px] lg:grid-cols-4">

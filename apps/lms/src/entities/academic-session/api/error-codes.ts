@@ -25,6 +25,8 @@ export const ACADEMIC_SESSION_ERROR = {
    * 사이 종료된 경우다.
    */
   ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
+  /** 폐지된 프로그램에 제출·재제출 (409 · ADR-0058 · 서버 #611) — 종료와 같은 자리에서 온다 */
+  ACADEMIC_PROGRAM_DISCONTINUED: "ACADEMIC_PROGRAM_DISCONTINUED",
   /** attendances에 확정 팀원이 아닌 대상이 있거나 같은 참가자가 중복 (400) */
   INVALID_ATTENDANCE_TARGET: "INVALID_ATTENDANCE_TARGET",
   /** 스터디장 본인이 아님 (403) */
@@ -46,6 +48,8 @@ export const ACADEMIC_ATTENDANCE_ERROR = {
    * 화면을 열어 둔 사이 종료된 경우에만 온다
    */
   ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
+  /** 폐지된 프로그램의 출석을 고치려 함 (409 · ADR-0058) — 종료와 같이 칸이 이미 잠겨 있다 */
+  ACADEMIC_PROGRAM_DISCONTINUED: "ACADEMIC_PROGRAM_DISCONTINUED",
   /** 그 회차 출석부에 줄이 없는 참가자거나 중복 (400) */
   INVALID_ATTENDANCE_TARGET: "INVALID_ATTENDANCE_TARGET",
   /** 스터디장 본인이 아님 (403) */

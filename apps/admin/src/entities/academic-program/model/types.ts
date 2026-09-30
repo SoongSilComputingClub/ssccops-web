@@ -145,25 +145,38 @@ export interface AcademicProgramListPage {
 /* ── 상태 전이 (POST /v1/academic-programs/{id}/transitions) ──── */
 
 /**
- * 학술국장이 부르는 전이 세 종 (AcademicProgramTransition).
+ * 학술국장이 부르는 전이 다섯 종 (AcademicProgramTransition).
  *
  * 다음 상태가 아니라 "무엇을 하겠다"를 보낸다 — work·form 도메인과 같은 패턴이다.
  * START_RECRUITMENT 는 APPROVED → ONGOING(연결된 폼을 OPEN 전이),
  * APPROVE_COMPLETION 은 ONGOING → COMPLETED(그 프로그램의 쓰기를 멈추고 접수 중인 모집 폼을
  * 마감), REOPEN 은 COMPLETED → ONGOING(모집 폼은 다시 열지 않는다) — ADR-0057 · 서버 #597.
+ * DISCONTINUE 는 APPROVED·ONGOING → DISCONTINUED(종료처럼 쓰기를 멈추고 모집 폼을 마감 · 사유
+ * 필수), REINSTATE 는 DISCONTINUED → **폐지 전 상태**(서버가 폐지 이력에서 읽는다 · 모집 폼은
+ * 다시 열지 않는다) — ADR-0058 · 서버 #611.
  */
 export type AcademicProgramTransition =
   | "START_RECRUITMENT"
   | "APPROVE_COMPLETION"
-  | "REOPEN";
+  | "REOPEN"
+  | "DISCONTINUE"
+  | "REINSTATE";
 
-/** 전이 입력 — 모집 기간은 START_RECRUITMENT 에서만 쓰인다(다른 전이에 실려도 서버가 무시) */
+/**
+ * 전이 입력 — 모집 기간은 START_RECRUITMENT 에서만, 사유는 DISCONTINUE·REINSTATE 에서만 쓰인다
+ * (다른 전이에 실려도 서버가 무시)
+ */
 export interface AcademicProgramTransitionInput {
   transition: AcademicProgramTransition;
   /** 모집 시작일 (ISO-8601, 오프셋 포함). START_RECRUITMENT 전용 */
   recruitmentStartAt?: string | null;
   /** 모집 종료일 (ISO-8601, 오프셋 포함). START_RECRUITMENT 전용 */
   recruitmentEndAt?: string | null;
+  /**
+   * 폐지·복원 사유 — 승인 이력(`opnn_cn`)에 남는다. DISCONTINUE 는 필수(비면 400
+   * `DISCONTINUATION_REASON_REQUIRED`), REINSTATE 는 선택
+   */
+  reason?: string | null;
 }
 
 /** 전이 결과 (AcademicProgramTransitionResponse) */

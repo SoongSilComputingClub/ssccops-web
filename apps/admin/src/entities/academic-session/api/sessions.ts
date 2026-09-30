@@ -64,6 +64,8 @@ export const SESSION_REVIEW_ERROR = {
    * 종료된 프로그램의 회차를 빼므로 회차 이력·주소로 들어온 상세나, 열어 둔 사이 종료된 경우에 온다.
    */
   ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
+  /** 폐지된 프로그램의 회차를 승인·수정요청 (409 · ADR-0058 · 서버 #611) — 종료와 같은 자리에서 온다 */
+  ACADEMIC_PROGRAM_DISCONTINUED: "ACADEMIC_PROGRAM_DISCONTINUED",
 } as const;
 
 /* ── 서버 응답(Response DTO) ────────────────────────────────── */

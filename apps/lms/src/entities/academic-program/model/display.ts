@@ -38,15 +38,17 @@ export function memberRoleBadge(isLeader: boolean): { label: string; tone: Badge
  *
  * **`APPROVED`("승인")는 배지를 그리지 않는다.** lms의 학술 화면은 이미 승인된 활동만
  * 다루므로(스터디장/팀장으로 지정된 활동 = `mine=leader`) "승인" 라벨은 아무것도 구별해 주지
- * 않는다. 진행 중·수료만 상태로 표시한다 — 그 둘은 "지금 굴러가는가"를 가른다.
+ * 않는다. 진행 중·수료·폐지만 상태로 표시한다 — 셋은 "지금 굴러가는가"를 가른다.
  *
- * 어휘는 어드민 `ACDM_ACTV_STTS_NM`과 맞춘다(진행 중·수료).
+ * 어휘·색은 어드민 `ACDM_ACTV_STTS_NM`·`acdmActvSttsTone`과 맞춘다(진행 중·수료·폐지). 폐지(#741)는
+ * 빨강 면이다 — 수료와 같은 회색이면 «끝까지 한 것»과 «중단된 것»이 한눈에 갈리지 않는다.
  */
 const ACDM_ACTV_STTS_BADGE: Partial<
   Record<AcdmActvSttsCd, { label: string; tone: BadgeTone }>
 > = {
   ONGOING: { label: "진행 중", tone: "blue" },
   COMPLETED: { label: "수료", tone: "grey" },
+  DISCONTINUED: { label: "폐지", tone: "red" },
 };
 
 /** 상태 배지 정보 — `APPROVED`는 `null`(배지 없음). 호출부가 null이면 배지 요소를 건너뛴다 */
@@ -54,6 +56,39 @@ export function acdmActvSttsBadge(
   code: AcdmActvSttsCd,
 ): { label: string; tone: BadgeTone } | null {
   return ACDM_ACTV_STTS_BADGE[code] ?? null;
+}
+
+/**
+ * 쓰기가 멈춘 프로그램 — 종료(#716 · ADR-0057)와 폐지(#741 · ADR-0058).
+ *
+ * 둘 다 서버가 그 프로그램의 쓰기를 409로 막고 학술국장이 어드민에서 되돌린다. 되돌리는 이름만
+ * 다르다 — 종료는 «재시작», 폐지는 «복원». 화면은 이 값으로 **왜 잠겼나 · 누구에게 무엇을
+ * 요청하나**를 말한다(안내 띠 · 잠긴 줄의 `title` · 회차 기록의 빈 상태).
+ *
+ * **폼을 여닫는 판정은 여전히 서버 `isEditable`이다** — 이 값은 사유를 고르는 데만 쓴다(#716).
+ * 예외는 `isEditable`이 없는 출석부 하나다(`use-attendance-roster.ts`).
+ *
+ * 종료만 알던 자리들이 `sttsCd === "COMPLETED"`를 저마다 적고 있어 폐지가 들어오자 한 곳씩
+ * 빠질 뻔했다. 상태를 한 번에 읽는 자리를 여기 하나로 둔다 — switch라 상태가 늘면 타입이 묻는다.
+ */
+export interface ProgramStop {
+  /** «종료된»·«폐지된» — «~ 프로그램»으로 잇는다 */
+  adjective: "종료된" | "폐지된";
+  /** 학술국장에게 요청할 되돌리기 — «재시작»·«복원» */
+  undo: "재시작" | "복원";
+}
+
+/** 쓰기가 멈춘 상태면 그 사유, 승인·진행 중이면 `null` */
+export function programStopOf(code: AcdmActvSttsCd): ProgramStop | null {
+  switch (code) {
+    case "APPROVED":
+    case "ONGOING":
+      return null;
+    case "COMPLETED":
+      return { adjective: "종료된", undo: "재시작" };
+    case "DISCONTINUED":
+      return { adjective: "폐지된", undo: "복원" };
+  }
 }
 
 /**
