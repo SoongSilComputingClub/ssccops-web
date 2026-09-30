@@ -40,14 +40,15 @@ import {
   flash,
   type GridColumn,
 } from "@/shared/ui";
+import { ProgramMembersCard } from "./program-members-card";
 
 /*
  * 학술 프로그램 상세 (#125 · ssccops-server #131 상세 · #134 커리큘럼).
  *
- * 학술국장이 개별 활동의 진행률·커리큘럼 대비 진행을 확인하는 화면이다. 두 번의 조회를
- * 쓴다 — GET /v1/academic-programs/{id}(요약 카드)와 .../curriculum-items(진행 표).
- * 커리큘럼 조회가 실패해도 상세 카드는 이미 그려져 있으므로 표만 오류 블록으로 바꾸고
- * 화면 전체를 오류로 덮지 않는다.
+ * 학술국장이 개별 활동의 진행률·커리큘럼 대비 진행·팀원을 확인하는 화면이다. 세 번의 조회를
+ * 쓴다 — GET /v1/academic-programs/{id}(요약 카드), .../members(팀원 절 · #742), .../curriculum-items
+ * (진행 표). 팀원·커리큘럼 조회가 실패해도 상세 카드는 이미 그려져 있으므로 그 절만 오류 블록으로
+ * 바꾸고 화면 전체를 오류로 덮지 않는다. 팀원 명단 변경 이력은 펼칠 때 네 번째로 부른다.
  *
  * ── 진행률은 서버 값을 그대로 쓴다 ───────────────────────────
  * progress { totalSessionCount, approvedSessionCount, ratio }를 화면에서 다시 세지
@@ -373,6 +374,9 @@ export function AcademicProgramDetailPage({
               ]}
             />
           </Card>
+
+          {/* 팀원 명단·이력 — 조회만(넣고 빼는 것은 스터디장이 LMS에서 한다 · #742) */}
+          <ProgramMembersCard academicProgramId={academicProgramId} />
 
           <Card>
             <SectionLabel className="mb-3">커리큘럼 대비 진행</SectionLabel>

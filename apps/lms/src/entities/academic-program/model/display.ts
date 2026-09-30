@@ -1,3 +1,4 @@
+import { PTCP_STTS_NM } from "@/shared/config/codes";
 import type { BadgeTone } from "@/shared/ui";
 import type { AcdmActvSttsCd, PtcpSttsCd } from "./types";
 
@@ -11,9 +12,10 @@ import type { AcdmActvSttsCd, PtcpSttsCd } from "./types";
 
 /** 참가_상태 배지 — 라벨과 색 */
 export const PTCP_STTS_BADGE: Record<PtcpSttsCd, { label: string; tone: BadgeTone }> = {
-  CONFIRMED: { label: "확정", tone: "blue" },
-  WAITLISTED: { label: "대기", tone: "amber" },
-  CANCELLED: { label: "취소", tone: "grey" },
+  CONFIRMED: { label: PTCP_STTS_NM.CONFIRMED, tone: "blue" },
+  WAITLISTED: { label: PTCP_STTS_NM.WAITLISTED, tone: "amber" },
+  // 명단의 «취소»는 이 앱의 팀원 화면에서 «제외»다(#742) — 스터디장이 뺀 사람이지 본인이 취소한 신청이 아니다
+  CANCELLED: { label: "제외", tone: "grey" },
 };
 
 export function ptcpSttsBadge(code: PtcpSttsCd) {

@@ -6,3 +6,4 @@ export { Markdown } from "./markdown";
 export { TextArea } from "./textarea";
 export { Toggle } from "./toggle";
 export { Notice } from "./notice";
+export { Sheet } from "./sheet";

@@ -10,12 +10,17 @@
  * 이 앱만 쓰는 코드값이 생기면 여기 더하면 된다 — 공유 코드값과 한 자리에서 온다.
  */
 export {
+  PTCP_CHG_PATH_SE_NM,
+  PTCP_STTS_NM,
   RSPNS_STTS_CDS,
   RSPNS_STTS_NM,
   RSPNS_STTS_TERMINAL_CDS,
   RVW_PRCS_SE_CDS,
   RVW_PRCS_SE_NM,
   isRspnsSttsTerminal,
+  ptcpChangeNm,
+  type PtcpChgPathSeCd,
+  type PtcpSttsCd,
   type RspnsSttsCd,
   type RvwPrcsSeCd,
 } from "@ssccops/codes";

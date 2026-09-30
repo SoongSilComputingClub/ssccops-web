@@ -37,3 +37,22 @@ export function toAcademicProgramErrorMessage(error: unknown): string {
       return error.message;
   }
 }
+
+/**
+ * 팀원 명단 변경 이력 조회 실패 → 한 줄 (#742 · server#612).
+ *
+ * 이력은 명단과 달리 **스터디장 본인 또는 학술국장**만 본다 — 서비스가 판정해 403 `FORBIDDEN`으로
+ * 끊는다. 어드민에서 그 판정에 걸리는 사람은 학술 프로그램 관리 권한이 없는 운영진이라 그 이름을
+ * 적는다. 나머지는 프로그램 조회와 같은 문장이다.
+ */
+export function toProgramMemberHistoryErrorMessage(error: unknown): string {
+  if (
+    error instanceof ApiError &&
+    (error.code === ACADEMIC_PROGRAM_ERROR.FORBIDDEN ||
+      error.code === API_ERROR.FORBIDDEN ||
+      error.code === API_ERROR.ACCESS_DENIED)
+  ) {
+    return "명단 이력을 볼 권한이 없습니다 — 학술 프로그램 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다";
+  }
+  return toAcademicProgramErrorMessage(error);
+}

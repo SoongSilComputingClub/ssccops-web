@@ -378,24 +378,23 @@ export const EVENT_STTS_CDS = codesOf(EVENT_STTS_NM);
 
 /* ── 참가_상태 (event_ptcp.ptcp_stts_cd) · ssccops#146 D5·D14·D16 ── */
 
-/**
- * 참가자 명단의 상태 세 값.
+/*
+ * 참가자 명단의 상태 세 값 · 명단 이력의 변경 경로 — `@ssccops/codes`에서 온다 (#742).
  *
- * **거절(REJECTED)이 없다.** 거절은 신청(폼 응답)에 대한 심사 결과라 `form_rspns_hstry`에
- * 남고, 명단에는 애초에 오르지 않는다 — 여기에 값을 하나 더 두면 "거절된 참가자"라는 없는
- * 상태가 생긴다.
- *
- * 취소(CANCELLED)도 행을 지우는 대신 남기는 상태다(D16 — 명단은 활동 이력으로 영구 보존).
+ * lms가 팀원을 직접 추가·제외하고 두 앱이 같은 명단 이력을 그리게 되면서 올렸다. 거절이 없는
+ * 이유·취소가 행을 남기는 이유는 그쪽 주석에 있다.
  */
-export type PtcpSttsCd = "CONFIRMED" | "WAITLISTED" | "CANCELLED";
+export {
+  PTCP_CHG_PATH_SE_CDS,
+  PTCP_CHG_PATH_SE_NM,
+  PTCP_STTS_CDS,
+  PTCP_STTS_NM,
+  ptcpChangeNm,
+  type PtcpChgPathSeCd,
+  type PtcpSttsCd,
+} from "@ssccops/codes";
 
-export const PTCP_STTS_NM: Record<PtcpSttsCd, string> = {
-  CONFIRMED: "확정",
-  WAITLISTED: "대기",
-  CANCELLED: "취소",
-};
-
-export const PTCP_STTS_CDS = codesOf(PTCP_STTS_NM);
+import type { PtcpSttsCd } from "@ssccops/codes";
 
 /**
  * 등록 시점에 고를 수 있는 상태 — 확정·대기뿐이다.
