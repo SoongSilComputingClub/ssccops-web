@@ -62,6 +62,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## 함정
 
+- **상단 바나 그 조상에 `backdrop-filter`·`transform`·`filter`를 걸면 그 안의 `fixed` 자손이 갇힌다**(#733 · ssccops#545). 이 셋은 요소를 `position: fixed`의 **기준 상자**로 만든다 — v1.0.0에서 www가 고정 헤더에 `backdrop-blur`를 넣자 헤더 안의 모바일 드로어가 64px에 갇혀 prod에서 메뉴가 열리지 않았다(web#729). 타입·린트·빌드는 전부 초록이었다. 이 앱의 드로어(`app/_shell/mobile-nav.tsx`)는 그래서 **`createPortal`로 `document.body`에 그린다** — ssccops#535가 www의 헤더를 이 앱에 가져가기 전에 옮겨 두었다. **셸 스타일을 바꿀 때는 그 안에서 여는 것(드로어·시트·메뉴)을 375px에서 실제로 열어 본다.**
 - **어드민이 멀쩡한 것은 근거가 되지 않는다** — 공유 패키지 클래스가 빠지는 사고(#316)는 앱이 작은 www·lms에서 먼저 드러난다.
 - 다크모드·테마 토글은 `@ssccops/ui`의 `useTheme`·`ThemeToggle`(#341)이고 색은 토큰 이름으로만(`text-on-solid` 등 — admin과 같은 팔레트). 토글이 그려지는 자리는 계정 메뉴 절 ③뿐이다(#614).
 - 반응형은 `lg` 하나(admin과 같다). 입력란 글자는 좁은 화면에서 16px 아래로 내리지 않는다(#105).

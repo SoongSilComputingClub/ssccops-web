@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { InstallMenuItem } from "@ssccops/pwa/ui";
 import { AccountSections, useFocusTrap } from "@ssccops/ui";
 import { ACCOUNT_LINKS, SignInButton, accountApps, useAuthSession } from "@/features/auth";
@@ -77,102 +78,113 @@ export function MobileNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
         ☰
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-[80] lg:hidden">
-          {/*
-            스크림 — 클릭으로 닫히지만 키보드로 «누르는» 대상이 아니다. Esc는 위 effect가
-            document에서 받는다. 보조기기에서는 치운다 (ssccops-web#403 · Sheet와 같은 판단).
-          */}
-          <div
-            aria-hidden="true"
-            onClick={() => setOpen(false)}
-            className="absolute inset-0 animate-fade-in bg-scrim motion-reduce:animate-none"
-          />
-          <div
-            ref={panelRef}
-            tabIndex={-1}
-            role="dialog"
-            aria-modal="true"
-            aria-label="메뉴"
-            className="absolute inset-y-0 left-0 flex w-[78%] max-w-[280px] flex-col border-r border-hairline-strong bg-surface pt-[22px] pb-4 outline-none"
-          >
-            <div className="mb-3 flex items-center justify-between border-b border-bg px-[18px] pb-4">
-              <b className="text-[15px]">메뉴</b>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label="메뉴 닫기"
-                className="flex size-8 items-center justify-center rounded-[8px] text-[18px] text-n400 hover:text-ink"
-              >
-                ×
-              </button>
-            </div>
-            <div className="flex flex-1 flex-col overflow-y-auto [overscroll-behavior:contain]">
-              <nav aria-label="주 메뉴" className="flex flex-col gap-[14px] px-[10px]">
-                {visibleNavGroups(isLeader).map((group) => (
-                  <div key={group.label} className="flex flex-col">
-                    {/*
-                      항목이 하나뿐인 묶음(학술 대시보드)은 제목을 그리지 않는다 — 같은 글자가
-                      바로 아래 링크로 한 번 더 나온다.
-                    */}
-                    {group.links.length > 1 && (
-                      <div className="px-[12px] pb-[4px] text-[12px] font-semibold text-n500">
-                        {group.label}
-                      </div>
-                    )}
-                    {group.links.map((link) => {
-                      const active = link.isActive(pathname);
-                      return (
-                        <Link
-                          key={link.label}
-                          href={link.href}
-                          // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다.
-                          // 경로 변화를 effect로 감시하지 않고 클릭에서 닫는 것은, 상태 변경을
-                          // 렌더 뒤 effect에 미루면 한 프레임 열린 채 그려지기 때문이다(react-hooks 규칙).
-                          onClick={() => setOpen(false)}
-                          aria-current={active ? "page" : undefined}
-                          className={
-                            active
-                              ? "rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
-                              : "rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
-                          }
-                        >
-                          {link.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                ))}
-              </nav>
+      {/*
+       * **오버레이는 `document.body`에 그린다** (#733 · ssccops#535 · ssccops#545).
+       *
+       * 이 컴포넌트는 상단 바(`app/layout.tsx`의 `<header>`) 안에 있다. 그 조상에 `backdrop-filter`·`transform`·`filter`가
+       * 걸리면 조상이 **`position: fixed` 자손의 기준 상자**가 되어 `fixed inset-0`이 화면이 아니라
+       * 그 조상 크기에 갇힌다 — v1.0.0에서 www 모바일 메뉴가 그렇게 64px에 갇혀 열리지 않았다(#729).
+       * 지금 이 앱의 상단 바에는 그런 속성이 없지만 ssccops#535가 www의 고정 헤더(흐림 포함)를 이 앱에
+       * 가져간다 — 그 전에 기준 상자에서 벗어나 둔다. `open`이 브라우저 상태라 서버 렌더에는 이 가지가 없다.
+       */}
+      {open &&
+        createPortal(
+          <div className="fixed inset-0 z-[80] lg:hidden">
+            {/*
+              스크림 — 클릭으로 닫히지만 키보드로 «누르는» 대상이 아니다. Esc는 위 effect가
+              document에서 받는다. 보조기기에서는 치운다 (ssccops-web#403 · Sheet와 같은 판단).
+            */}
+            <div
+              aria-hidden="true"
+              onClick={() => setOpen(false)}
+              className="absolute inset-0 animate-fade-in bg-scrim motion-reduce:animate-none"
+            />
+            <div
+              ref={panelRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-label="메뉴"
+              className="absolute inset-y-0 left-0 flex w-[78%] max-w-[280px] flex-col border-r border-hairline-strong bg-surface pt-[22px] pb-4 outline-none"
+            >
+              <div className="mb-3 flex items-center justify-between border-b border-bg px-[18px] pb-4">
+                <b className="text-[15px]">메뉴</b>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="메뉴 닫기"
+                  className="flex size-8 items-center justify-center rounded-[8px] text-[18px] text-n400 hover:text-ink"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="flex flex-1 flex-col overflow-y-auto [overscroll-behavior:contain]">
+                <nav aria-label="주 메뉴" className="flex flex-col gap-[14px] px-[10px]">
+                  {visibleNavGroups(isLeader).map((group) => (
+                    <div key={group.label} className="flex flex-col">
+                      {/*
+                        항목이 하나뿐인 묶음(학술 대시보드)은 제목을 그리지 않는다 — 같은 글자가
+                        바로 아래 링크로 한 번 더 나온다.
+                      */}
+                      {group.links.length > 1 && (
+                        <div className="px-[12px] pb-[4px] text-[12px] font-semibold text-n500">
+                          {group.label}
+                        </div>
+                      )}
+                      {group.links.map((link) => {
+                        const active = link.isActive(pathname);
+                        return (
+                          <Link
+                            key={link.label}
+                            href={link.href}
+                            // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다.
+                            // 경로 변화를 effect로 감시하지 않고 클릭에서 닫는 것은, 상태 변경을
+                            // 렌더 뒤 effect에 미루면 한 프레임 열린 채 그려지기 때문이다(react-hooks 규칙).
+                            onClick={() => setOpen(false)}
+                            aria-current={active ? "page" : undefined}
+                            className={
+                              active
+                                ? "rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
+                                : "rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
+                            }
+                          >
+                            {link.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </nav>
 
-              {/*
-               * 계정 절은 목차 아래 발치 — `mt-auto`로 아래에 붙이는 것은 목차가 짧은 일반 회원
-               * (항목 둘)의 드로어에서 메뉴 바로 밑에 떠 있지 않게 하려는 것이다. 판정 전(null)은
-               * 아무것도 그리지 않는다 — 판정은 하이드레이션 직후 끝난다.
-               */}
-              <div className="mt-auto px-[10px] pt-4">
-                {signedIn === true && (
-                  <AccountSections
-                    links={ACCOUNT_LINKS}
-                    apps={accountApps()}
-                    install={<InstallMenuItem />}
-                    onSignOut={() => void signOut()}
-                    signingOut={signingOut}
-                    onNavigate={(href) => router.push(href)}
-                    onSelect={() => setOpen(false)}
-                    pathname={pathname}
-                  />
-                )}
-                {signedIn === false && (
-                  <div className="px-[8px]">
-                    <SignInButton variant="ghost" />
-                  </div>
-                )}
+                {/*
+                 * 계정 절은 목차 아래 발치 — `mt-auto`로 아래에 붙이는 것은 목차가 짧은 일반 회원
+                 * (항목 둘)의 드로어에서 메뉴 바로 밑에 떠 있지 않게 하려는 것이다. 판정 전(null)은
+                 * 아무것도 그리지 않는다 — 판정은 하이드레이션 직후 끝난다.
+                 */}
+                <div className="mt-auto px-[10px] pt-4">
+                  {signedIn === true && (
+                    <AccountSections
+                      links={ACCOUNT_LINKS}
+                      apps={accountApps()}
+                      install={<InstallMenuItem />}
+                      onSignOut={() => void signOut()}
+                      signingOut={signingOut}
+                      onNavigate={(href) => router.push(href)}
+                      onSelect={() => setOpen(false)}
+                      pathname={pathname}
+                    />
+                  )}
+                  {signedIn === false && (
+                    <div className="px-[8px]">
+                      <SignInButton variant="ghost" />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
