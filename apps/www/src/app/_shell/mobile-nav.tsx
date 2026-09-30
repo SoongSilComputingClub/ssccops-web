@@ -29,7 +29,29 @@ export function MobileNav() {
   const router = useRouter();
   const { signedIn, signOut, signingOut } = useAuthSession();
   const [open, setOpen] = useState(false);
+  /*
+   * 펼친 축 (#731 · ssccops#533). **드로어를 열 때마다 «지금 화면이 속한 축만»으로 다시 정한다** —
+   * 여는 버튼에서 정하므로 effect가 없고, 기억하지도 않는다(아래 목차 주석).
+   */
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   const panelRef = useRef<HTMLDivElement>(null);
+
+  const openDrawer = () => {
+    setExpanded(
+      new Set(
+        NAV_LINKS.filter((l) => l.children?.length && l.isActive(pathname)).map((l) => l.href),
+      ),
+    );
+    setOpen(true);
+  };
+
+  const toggleAxis = (href: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(href)) next.delete(href);
+      else next.add(href);
+      return next;
+    });
 
   useEffect(() => {
     if (!open) return;
@@ -62,7 +84,7 @@ export function MobileNav() {
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openDrawer}
         aria-label="메뉴 열기"
         aria-expanded={open}
         className="flex size-10 flex-none cursor-pointer items-center justify-center rounded-[10px] border border-line text-[17px] text-n400 hover:border-accent hover:text-accent lg:hidden"
@@ -117,42 +139,72 @@ export function MobileNav() {
               </div>
               <div className="flex flex-1 flex-col overflow-y-auto [overscroll-behavior:contain]">
                 {/*
-                 * 축과 하위를 **펼친 채** 그린다 (#712 · ssccops#533 · ADR-0056).
+                 * 하위가 있는 축은 **접고 펼친다** (#731 · ssccops#533 · ADR-0056 추신).
                  *
-                 * 아코디언을 만들지 않는 것이 이 결정의 절반이다 — 접으면 «지금 무엇이 접혀
-                 * 있나»라는 상태와 그것을 기억할지가 따라오고(어드민의 `use-nav-accordion.ts` ·
-                 * #635), 그 상태가 바로 #524가 드롭다운을 기각했던 근거였다. 축 다섯 · 하위 여덟이라
-                 * 접을 이유가 없고, 길어지는 만큼은 스크롤로 감당한다.
+                 * #712에서는 축 다섯 · 하위 여덟을 펼친 채 그렸다 — 접으면 «지금 무엇이 접혀 있나»와
+                 * 그것을 기억할지가 따라오고, 그 상태가 #524가 드롭다운을 기각했던 근거였다. 써 보니
+                 * 펼친 채로는 산만했다(2026-09-30). 그래서 **기억하지 않는 아코디언**이다 — 드로어를
+                 * 열 때마다 지금 화면이 속한 축만 펼쳐지고, localStorage도 URL도 없다. 드로어는
+                 * 잠깐 열었다 닫는 자리라 기억할 값이 아니고, 기억하지 않으면 «상태를 저장할지»라는
+                 * 결정 자체가 사라진다. 어드민 사이드바(`use-nav-accordion.ts` · #635)가 기억하는 것은
+                 * 늘 떠 있는 목차라서다.
+                 *
+                 * **축 머리는 토글이지 이동이 아니다.** 축 주소(`/about`·`/join`)는 하위 첫 줄(«소개»·
+                 * «안내»)이 같은 곳으로 가므로 잃는 길이 없고, 한 줄에 링크와 ▾ 버튼을 나란히 두면
+                 * 좁은 화면에서 누를 자리가 둘로 쪼개진다.
                  */}
                 <nav aria-label="주 메뉴" className="flex flex-col px-[10px]">
                   {NAV_LINKS.map((link) => {
                     const active = link.isActive(pathname);
+                    const hasChildren = Boolean(link.children?.length);
+                    const isOpen = expanded.has(link.href);
+                    const panelId = `mnav-${link.href.replaceAll("/", "")}`;
                     // 하위가 있는 축의 «켜짐»은 «이 축 안에 있다»이지 «이 페이지다»가 아니다 —
                     // 지금 화면은 아래 줄 중 하나가 말한다. 같은 칠을 둘에 하면 어느 쪽이 현재
                     // 위치인지 흐려진다
-                    const axisFill = active && !link.children?.length;
+                    const axisFill = active && !hasChildren;
+                    const axisClass = axisFill
+                      ? "rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
+                      : active
+                        ? "rounded-[10px] px-[12px] py-[11px] text-[15px] font-semibold text-ink"
+                        : "rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg";
                     return (
                       <div key={link.href} className="flex flex-col">
-                        <Link
-                          href={link.href}
-                          // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다.
-                          // 경로 변화를 effect로 감시하지 않고 클릭에서 닫는 것은, 상태 변경을
-                          // 렌더 뒤 effect에 미루면 한 프레임 열린 채 그려지기 때문이다(react-hooks 규칙).
-                          onClick={() => setOpen(false)}
-                          aria-current={active ? "page" : undefined}
-                          className={
-                            axisFill
-                              ? "rounded-[10px] bg-accent-soft px-[12px] py-[11px] text-[15px] font-semibold text-accent"
-                              : active
-                                ? "rounded-[10px] px-[12px] py-[11px] text-[15px] font-semibold text-ink"
-                                : "rounded-[10px] px-[12px] py-[11px] text-[15px] text-ink hover:bg-bg"
-                          }
-                        >
-                          {link.label}
-                        </Link>
-                        {link.children?.length ? (
-                          <div className="mt-[2px] mb-[6px] ml-[20px] flex flex-col border-l border-line pl-[8px]">
-                            {link.children.map((child) => {
+                        {hasChildren ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleAxis(link.href)}
+                            aria-expanded={isOpen}
+                            aria-controls={panelId}
+                            className={`flex cursor-pointer items-center justify-between text-left ${axisClass}`}
+                          >
+                            {link.label}
+                            <span
+                              aria-hidden="true"
+                              className={`text-[11px] text-n400 transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
+                            >
+                              ▾
+                            </span>
+                          </button>
+                        ) : (
+                          <Link
+                            href={link.href}
+                            // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다.
+                            // 경로 변화를 effect로 감시하지 않고 클릭에서 닫는 것은, 상태 변경을
+                            // 렌더 뒤 effect에 미루면 한 프레임 열린 채 그려지기 때문이다(react-hooks 규칙).
+                            onClick={() => setOpen(false)}
+                            aria-current={active ? "page" : undefined}
+                            className={axisClass}
+                          >
+                            {link.label}
+                          </Link>
+                        )}
+                        {hasChildren && isOpen ? (
+                          <div
+                            id={panelId}
+                            className="mt-[2px] mb-[6px] ml-[20px] flex flex-col border-l border-line pl-[8px]"
+                          >
+                            {(link.children ?? []).map((child) => {
                               const on = child.isActive(pathname);
                               return (
                                 <Link
