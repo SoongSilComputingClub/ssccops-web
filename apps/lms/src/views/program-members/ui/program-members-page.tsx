@@ -1,30 +1,38 @@
+import type { AcdmActvSttsCd } from "@/entities/academic-program";
 import {
   BackToProgramsNotice,
   loadAcademicProgramMembers,
   NoProgramNotice,
   ProgramSignupNotice,
+  ProgramStoppedNotice,
   selectProgram,
 } from "@/features/academic-program";
 import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher";
 import { LoginGate } from "@/features/auth";
 import { ROUTES } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui";
-import { MemberCardMobile, MemberRowDesktop } from "./member-row";
+import { MembersManager } from "./members-manager";
 
 /*
- * 팀원 관리 (#131 · ssccops-server#138 · GET /v1/academic-programs/{id}/members).
+ * 팀원 관리 (#131 · ssccops-server#138 · 추가·제외 #742 · server#612).
  *
  * ── 무엇을 하는 화면인가 ────────────────────────────────────────
- * 스터디장이 자기 활동에 확정·대기 중인 팀원 명단을 보는 **조회 전용** 화면이다. `event_ptcp`를
- * 그대로 프록시한다 — 팀원 추가·제외 버튼이 없다(팀원은 학술국장의 선발 #127로만 확정되고
- * 서버에 추가·제외 API가 없다). 프로토타입 헤더의 `+ 팀원 추가`는 선발 권한이 국장으로
- * 정정되기 전의 시안이다.
+ * 스터디장이 자기 활동의 팀원 명단을 보고 **직접 고치는** 화면이다(#742 · ssccops#553 — 모집 뒤
+ * 개인 사정으로 빠지는 팀원을 스터디장이 정리하게 해 달라는 피드백). 동아리 회원 누구나 신청서
+ * 없이 넣을 수 있고, 빼는 것은 참가 취소(지난 출석은 남는다)이며, 잘못 뺀 사람은 다시 넣는다.
+ * **학술국장 승인이 없다** — 그 대신 명단 변경 이력이 이 화면에 보인다(ADR-0042). 처음(#131)에는
+ * 서버에 추가·제외 API가 없어 조회 전용이었고 팀원은 학술국장의 선발(#127)로만 들어왔다.
  *
- * ── 왜 SSR인가 ────────────────────────────────────────────────
- * 이 앱은 조회 화면을 서버 컴포넌트로 그린다(AGENTS.md · apps/www MyApplicationsPage와 같은
- * 규약). 쿠키의 Supabase 세션을 서버에서 읽어 토큰을 브라우저 코드에 싣지 않고, 읽기 전용
- * 화면에 데이터 페칭 상태 기계를 들이지 않는다. 로그인 상태로 갈리는 부분(`LoginGate`)만
- * 클라이언트다.
+ * ── 왜 SSR 셸 + 클라이언트 명단인가 ─────────────────────────────
+ * 명단 조회는 이 앱의 규약대로 서버 컴포넌트가 한다(쿠키의 세션을 서버에서 읽어 토큰을 브라우저
+ * 코드에 싣지 않는다). 누르는 부분(추가·제외·이력 펼치기)만 클라이언트이고, 바꾼 뒤에는
+ * `router.refresh()`로 이 서버 렌더를 다시 받는다(`MembersManager`).
+ *
+ * ── 버튼은 서버 `isEditable`을 따른다 ──────────────────────────
+ * 명단 응답이 줄마다 «요청자가 이 명단을 고칠 수 있는가»를 싣는다(스터디장·학술국장 × 진행 중).
+ * 종료·폐지·모집 전에는 버튼이 없고, 종료·폐지면 안내 띠가 이유를 말한다. **명단이 비었을 때만**
+ * 그 값을 받을 줄이 없어 셸이 이미 받은 프로그램 상태(진행 중)로 대신 정한다 — `mine=leader`
+ * 목록의 프로그램이라 요청자는 스터디장이다. 빈 명단에 버튼이 없으면 첫 팀원을 넣을 길이 없다.
  *
  * ── 활동을 어떻게 고르는가 (#192) ──────────────────────────────
  * 상단 활동 선택 드롭다운(`ProgramSwitcher`)으로 고른다. `?programId=`가 있으면 그 활동,
@@ -50,7 +58,7 @@ export async function ProgramMembersPage({
       <header className="flex flex-col gap-[2px]">
         <h1 className="text-[22px] font-medium tracking-[-.3px] lg:text-[24px]">팀원 관리</h1>
         <p className="text-[13.5px] text-n500">
-          확정·대기 중인 팀원 명단입니다. 선발과 변경은 학술국장이 합니다.
+          확정·대기 중인 팀원 명단입니다. 넣고 뺀 기록은 이력에 남습니다.
         </p>
       </header>
 
@@ -77,14 +85,26 @@ export async function ProgramMembersPage({
             selectedId={selection.selected.academicProgramId}
             basePath={ROUTES.studioMembers}
           />
-          <MembersBody academicProgramId={selection.selected.academicProgramId} />
+          <ProgramStoppedNotice sttsCd={selection.selected.sttsCd} />
+          <MembersBody
+            academicProgramId={selection.selected.academicProgramId}
+            programSttsCd={selection.selected.sttsCd}
+          />
         </>
       )}
     </div>
   );
 }
 
-async function MembersBody({ academicProgramId }: Readonly<{ academicProgramId: number }>) {
+async function MembersBody({
+  academicProgramId,
+  programSttsCd,
+}: Readonly<{
+  academicProgramId: number;
+  /** 셸이 고른 프로그램의 상태 — 명단이 비어 `isEditable`을 받을 줄이 없을 때만 쓴다 */
+  programSttsCd: AcdmActvSttsCd;
+}>) {
+  // 상태로 거르지 않고 전부 받는다 — 확정·대기는 명단, 제외(취소)는 접힌 절로 화면이 가른다
   const result = await loadAcademicProgramMembers(academicProgramId);
 
   if (result.outcome === "unauthenticated") {
@@ -105,41 +125,9 @@ async function MembersBody({ academicProgramId }: Readonly<{ academicProgramId: 
   }
 
   const { members } = result;
-
-  if (members.length === 0) {
-    return (
-      <EmptyState
-        title="아직 확정된 팀원이 없습니다"
-        description="모집이 끝나고 학술국장이 팀원을 선발하면 이 명단에 나타납니다."
-      />
-    );
-  }
+  const editable = members.length > 0 ? members[0].isEditable : programSttsCd === "ONGOING";
 
   return (
-    <section className="rounded-2xl bg-surface p-[6px] shadow-[0_0_0_1px_var(--color-line)] lg:p-[10px]">
-      {/* 데스크톱: 표 */}
-      <table className="hidden w-full border-collapse lg:table">
-        <thead>
-          <tr className="text-left text-[12.5px] font-semibold uppercase tracking-[.4px] text-n500">
-            <th className="px-[12px] pb-[10px] pt-[8px]">이름</th>
-            <th className="px-[12px] pb-[10px] pt-[8px]">역할</th>
-            <th className="px-[12px] pb-[10px] pt-[8px]">합류일</th>
-            <th className="px-[12px] pb-[10px] pt-[8px]">상태</th>
-          </tr>
-        </thead>
-        <tbody>
-          {members.map((member) => (
-            <MemberRowDesktop key={member.eventPtcpId} member={member} />
-          ))}
-        </tbody>
-      </table>
-
-      {/* 모바일: 카드 */}
-      <div className="flex flex-col px-[8px] py-[4px] lg:hidden">
-        {members.map((member) => (
-          <MemberCardMobile key={member.eventPtcpId} member={member} />
-        ))}
-      </div>
-    </section>
+    <MembersManager academicProgramId={academicProgramId} members={members} editable={editable} />
   );
 }

@@ -2,7 +2,7 @@
 
 **이 파일이 정본이고 루트 `AGENTS.md`는 링크만 든다**(ssccops#349). «왜 그 모양인가»는 `src/index.ts` 머리 주석에 있다.
 
-서버 표준코드와 그 표시명 중 **admin과 lms가 실제로 함께 쓰는 것**(응답 상태 등). 앱은 `shared/config/codes.ts`에서 재export 하므로 화면 코드는 `@/shared/config/codes`를 부른다.
+서버 표준코드와 그 표시명 중 **admin과 lms가 실제로 함께 쓰는 것**(응답 상태 · 검토 처리 구분 · 참가 상태와 명단 이력의 변경 경로·«무엇을» — 뒤의 셋은 #742에서 올라왔다). 앱은 `shared/config/codes.ts`에서 재export 하므로 화면 코드는 `@/shared/config/codes`를 부른다.
 
 ## 규칙
 

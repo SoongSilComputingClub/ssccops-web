@@ -1,5 +1,6 @@
 import type {
   AcdmActvSttsCd,
+  PtcpChgPathSeCd,
   PtcpSttsCd,
   RspnsSttsCd,
 } from "@/shared/config/codes";
@@ -281,6 +282,31 @@ export interface RecruitmentTeamMember {
   isLeader: boolean;
   /** 명단에 오른 일시 */
   joinedAt: string | null;
+}
+
+/**
+ * 팀원 명단 변경 이력 한 줄 (#742 · server#612 · GET .../members/history · event_ptcp_stts_hstry).
+ *
+ * 누가 · 언제 · 무엇을(이전 → 이후 참가 상태) · 어느 화면에서. 회원 정보는 이름뿐이다(서버가 학번·
+ * 학과를 싣지 않는다). «무엇을»을 사람의 말로 옮기는 것은 `ptcpChangeNm`(`@ssccops/codes`)이다 —
+ * LMS 팀원 관리의 이력과 같은 말이다.
+ */
+export interface AcademicProgramMemberHistory {
+  historyId: number;
+  /** 바뀐 명단 행 (event_ptcp PK) */
+  eventParticipantId: number;
+  memberId: number | null;
+  /** 빈 이름은 빈 문자열로 굳힌다(표시 규칙은 뷰) */
+  memberName: string;
+  /** 처음 명단에 오른 줄이면 null */
+  beforeSttsCd: PtcpSttsCd | null;
+  afterSttsCd: PtcpSttsCd;
+  /** 어느 화면이 바꿨나 — 행사 참가자 · 모집 선발 · 팀원 관리 */
+  changePath: PtcpChgPathSeCd;
+  performerId: number | null;
+  performerName: string;
+  /** 변경 일시(Asia/Seoul 오프셋) */
+  changedAt: string | null;
 }
 
 /**

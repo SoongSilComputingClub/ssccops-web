@@ -1,4 +1,14 @@
-export { toAcademicProgramErrorMessage } from "./model/academic-program-error";
+export {
+  toAcademicProgramErrorMessage,
+  toProgramMemberHistoryErrorMessage,
+} from "./model/academic-program-error";
+export { useProgramMemberHistory, useProgramMembers } from "./model/use-program-members";
+export type {
+  ProgramMemberHistory,
+  ProgramMemberHistoryStatus,
+  ProgramMembers,
+  ProgramMembersStatus,
+} from "./model/use-program-members";
 export { useAcademicProgramList } from "./model/use-academic-program-list";
 export type {
   AcademicProgramList,

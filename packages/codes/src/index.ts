@@ -94,3 +94,69 @@ export const RVW_PRCS_SE_NM: Record<RvwPrcsSeCd, string> = {
 };
 
 export const RVW_PRCS_SE_CDS = codesOf(RVW_PRCS_SE_NM);
+
+/* ── 참가_상태 (event_ptcp.ptcp_stts_cd) · DB 명시 ──────────── */
+
+/**
+ * 행사·학술 명단의 상태 세 값.
+ *
+ * admin(행사 참가자 명단 · 모집 선발)과 lms(팀원 관리)가 **각자 들고 있었다** — admin은
+ * `shared/config/codes.ts`에, lms는 `entities/academic-program` 타입에. lms가 팀원을 직접
+ * 추가·제외하고 두 앱이 같은 명단 이력을 그리게 되면서(#742 · ssccops#553) 여기로 올렸다.
+ *
+ * **거절(REJECTED)이 없다.** 거절은 신청(폼 응답)에 대한 심사 결과라 `form_rspns_hstry`에
+ * 남고, 명단에는 애초에 오르지 않는다 — 여기에 값을 하나 더 두면 "거절된 참가자"라는 없는
+ * 상태가 생긴다.
+ *
+ * 취소(CANCELLED)도 행을 지우는 대신 남기는 상태다(D16 — 명단은 활동 이력으로 영구 보존). 학술
+ * 팀원 화면은 이 상태를 «제외»라고 부른다 — 같은 값이고 말만 그 화면의 것이다.
+ */
+export type PtcpSttsCd = "CONFIRMED" | "WAITLISTED" | "CANCELLED";
+
+export const PTCP_STTS_NM: Record<PtcpSttsCd, string> = {
+  CONFIRMED: "확정",
+  WAITLISTED: "대기",
+  CANCELLED: "취소",
+};
+
+export const PTCP_STTS_CDS = codesOf(PTCP_STTS_NM);
+
+/* ── 참가_상태_변경_경로 (event_ptcp_stts_hstry.chg_path_se_cd) · #742 ─ */
+
+/**
+ * 명단 이력 한 줄을 **어느 화면이** 남겼나 (ssccops-server#612 · ADR-0042).
+ *
+ * 명단을 바꾸는 길은 셋이고 자격이 다 다르다 — 학술국장은 셋을 다 쓸 수 있어 수행자 이름만으로는
+ * 어느 권한으로 한 일인지 알 수 없다. 그래서 이력이 경로를 함께 싣는다.
+ *
+ * **시드가 없는 고정 enum이다**(CHECK 제약) — 표시명은 서버 시드가 아니라 화면 어휘다(admin
+ * `ACDM_ACTV_STTS_NM`과 같은 자리). 선언 순서는 서버 enum 순서다.
+ */
+export type PtcpChgPathSeCd = "EVENT_PARTICIPANTS" | "RECRUITMENT_SELECTION" | "TEAM_MEMBERS";
+
+export const PTCP_CHG_PATH_SE_NM: Record<PtcpChgPathSeCd, string> = {
+  EVENT_PARTICIPANTS: "행사 참가자",
+  RECRUITMENT_SELECTION: "모집 선발",
+  TEAM_MEMBERS: "팀원 관리",
+};
+
+export const PTCP_CHG_PATH_SE_CDS = codesOf(PTCP_CHG_PATH_SE_NM);
+
+/**
+ * 명단 이력 한 줄의 «무엇을» — 이전·이후 참가 상태에서 읽는다 (#742).
+ *
+ * 서버는 상태 쌍만 준다(`bfrPtcpSttsCd`가 null이면 처음 명단에 오른 줄). 그 쌍을 사람의 말로
+ * 옮기는 것은 표시 규칙이라 여기 한 곳에 둔다 — admin 프로그램 상세와 lms 팀원 관리가 같은
+ * 이력을 그리는데 두 벌이면 한쪽 말만 바뀐다.
+ *
+ * 전이표는 서버의 것이다(승격 · 강등 · 제외 · 재합류). 표에 없는 쌍이 오면 뜻을 지어내지 않고
+ * 이후 상태의 이름을 그대로 쓴다.
+ */
+export function ptcpChangeNm(before: PtcpSttsCd | null, after: PtcpSttsCd): string {
+  if (before === null) return "추가";
+  if (before === "CANCELLED" && after === "CONFIRMED") return "재합류";
+  if (after === "CANCELLED") return "제외";
+  if (after === "CONFIRMED") return "확정";
+  if (after === "WAITLISTED") return "대기";
+  return PTCP_STTS_NM[after];
+}

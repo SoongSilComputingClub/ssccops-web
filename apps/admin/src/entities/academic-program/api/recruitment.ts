@@ -9,6 +9,7 @@ import type {
   RecruitmentSelection,
   RecruitmentTeamMember,
 } from "../model/types";
+import { toTeamMember, type AcademicProgramMemberResponse } from "./members";
 
 /*
  * 모집 신청자 조회·선발 API (#127 · ssccops-server #138).
@@ -103,21 +104,10 @@ interface RecruitmentApplicationResponse {
   ptcpSttsCd: PtcpSttsCd | null;
 }
 
-/**
- * 선발 응답 한 줄 (AcademicProgramMemberResponse).
- *
- * `GET .../members`(#131)와 같은 모양이다 — 선발이 끝난 뒤의 팀원 목록을 그대로 돌려준다.
- * 서버 이슈 #138 본문은 `List<MemberResponse>`라고만 적었으나 #127 이슈가 이 필드 집합을
- * 명시했다. 배포에 따라 필드명이 흔들릴 수 있어 옵셔널로 받아 굳힌다.
+/*
+ * 선발 응답 한 줄(`AcademicProgramMemberResponse`)과 그 변환(`toTeamMember`)은 `members.ts`에 있다 —
+ * `GET .../members`(#131)와 같은 모양이고, 프로그램 상세의 «팀원» 절(#742)이 같은 변환을 쓴다.
  */
-interface RecruitmentTeamMemberResponse {
-  eventPtcpId: number;
-  mbrId: number | null;
-  mbrNm: string | null;
-  ptcpSttsCd: PtcpSttsCd;
-  isLeader: boolean;
-  joinedAt: string | null;
-}
 
 /* ── 응답 → 도메인 ─────────────────────────────────────────── */
 
@@ -141,19 +131,6 @@ function toApplication(
      */
     ptcpSttsCd: res.ptcpSttsCd ?? null,
     eventParticipantId: res.eventPtcpId ?? null,
-  };
-}
-
-function toTeamMember(
-  res: RecruitmentTeamMemberResponse,
-): RecruitmentTeamMember {
-  return {
-    eventParticipantId: res.eventPtcpId,
-    memberId: res.mbrId ?? null,
-    memberName: res.mbrNm ?? "",
-    ptcpSttsCd: res.ptcpSttsCd,
-    isLeader: res.isLeader,
-    joinedAt: res.joinedAt,
   };
 }
 
@@ -219,7 +196,7 @@ export async function selectRecruitmentApplicants(
   academicProgramId: number,
   selections: RecruitmentSelection[],
 ): Promise<RecruitmentTeamMember[]> {
-  const res = await apiFetch<RecruitmentTeamMemberResponse[] | null>(
+  const res = await apiFetch<AcademicProgramMemberResponse[] | null>(
     `/v1/academic-programs/${academicProgramId}/recruitment/select`,
     {
       method: "POST",
