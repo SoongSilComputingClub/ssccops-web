@@ -116,6 +116,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## 함정
 
+- **헤더에 `backdrop-filter`·`transform`·`filter`를 걸면 그 안의 `fixed` 자손이 헤더에 갇힌다**(#729 · ssccops#545). 이 셋은 요소를 `position: fixed`의 **기준 상자**로 만든다 — #721이 고정 헤더에 `backdrop-blur`를 넣자 헤더 안의 모바일 드로어(`fixed inset-0`)가 화면이 아니라 64px짜리 헤더에 맞춰 잡혀, **v1.0.0 prod 모바일에서 메뉴가 열리지 않았다**(«메뉴 ×»만 뜨고 목차 13줄이 잘렸다). 타입·린트·빌드는 전부 초록이었고 #721의 375px 확인(가로 스크롤·헤더 경계·다크)도 통과했다 — **드로어를 열어 보지 않아서** 놓쳤다. 지금은 드로어가 `createPortal`로 `document.body`에 그려져 헤더를 어떻게 꾸미든 깨지지 않는다(`_shell/mobile-nav.tsx`). **헤더나 그 조상의 스타일을 바꿀 때는 그 안에서 여는 것(드로어·시트)을 실제로 열어 본다.**
 - **어드민이 멀쩡한 것은 근거가 되지 않는다** — 공유 패키지 클래스가 빠지는 사고(#316)는 앱이 작은 www·lms에서 먼저 드러난다. `globals.css`의 `@source` 목록을 확인한다.
 - 조회 실패를 던지지 않고 화면 안에서 안내로 그린다 — 서버가 잠깐 닿지 않을 때 공개 도메인이 통째로 오류 화면이 되는 편보다 낫다.
 - www 고유 날짜 표기(행사 기간)는 `shared/lib/date.ts`에 남아 있다 — 세 앱이 같던 것만 `@ssccops/date`로 올라갔다.
