@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AccountMenu,
   AccountSections,
@@ -105,64 +106,75 @@ export function MobileNav() {
         </UtilityCluster>
       </div>
 
-      {open && (
-        <div className="fixed inset-0 z-[80] lg:hidden">
-          {/*
-            스크림 — 클릭으로 닫히지만 키보드로 «누르는» 대상이 아니다. Esc는 위 effect가
-            document에서 받는다. 보조기기에서는 치운다 (ssccops-web#403 · Sheet와 같은 판단).
-          */}
-          <div
-            aria-hidden="true"
-            onClick={() => setOpen(false)}
-            className="absolute inset-0 animate-fade-in bg-scrim motion-reduce:animate-none"
-          />
-          <div
-            ref={panelRef}
-            tabIndex={-1}
-            role="dialog"
-            aria-modal="true"
-            aria-label="메뉴"
-            className="absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col border-r border-hairline-strong bg-surface pt-[22px] pb-4 outline-none"
-          >
-            <div className="mb-3 flex items-center gap-[10px] border-b border-bg px-[18px] pb-4">
-              <BrandMark src={DEPLOY.mark} size={28} />
-              <div className="min-w-0 text-[16px] whitespace-nowrap">SSCC 운영관리</div>
-              <div className="flex-1" />
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label="메뉴 닫기"
-                className="flex size-7 flex-none cursor-pointer items-center justify-center rounded-[9px] border border-line text-[14px] text-n400 hover:border-accent hover:text-accent"
-              >
-                ✕
-              </button>
-            </div>
+      {/*
+       * **오버레이는 `document.body`에 그린다** (#733 · ssccops#535 · ssccops#545).
+       *
+       * 이 컴포넌트는 사이드바 대신 뜨는 모바일 상단 바 안에 있다. 그 조상에 `backdrop-filter`·`transform`·`filter`가
+       * 걸리면 조상이 **`position: fixed` 자손의 기준 상자**가 되어 `fixed inset-0`이 화면이 아니라
+       * 그 조상 크기에 갇힌다 — v1.0.0에서 www 모바일 메뉴가 그렇게 64px에 갇혀 열리지 않았다(#729).
+       * 지금 이 앱의 상단 바에는 그런 속성이 없지만 ssccops#535가 www의 고정 헤더(흐림 포함)를 이 앱에
+       * 가져간다 — 그 전에 기준 상자에서 벗어나 둔다. `open`이 브라우저 상태라 서버 렌더에는 이 가지가 없다.
+       */}
+      {open &&
+        createPortal(
+          <div className="fixed inset-0 z-[80] lg:hidden">
+            {/*
+              스크림 — 클릭으로 닫히지만 키보드로 «누르는» 대상이 아니다. Esc는 위 effect가
+              document에서 받는다. 보조기기에서는 치운다 (ssccops-web#403 · Sheet와 같은 판단).
+            */}
+            <div
+              aria-hidden="true"
+              onClick={() => setOpen(false)}
+              className="absolute inset-0 animate-fade-in bg-scrim motion-reduce:animate-none"
+            />
+            <div
+              ref={panelRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-label="메뉴"
+              className="absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col border-r border-hairline-strong bg-surface pt-[22px] pb-4 outline-none"
+            >
+              <div className="mb-3 flex items-center gap-[10px] border-b border-bg px-[18px] pb-4">
+                <BrandMark src={DEPLOY.mark} size={28} />
+                <div className="min-w-0 text-[16px] whitespace-nowrap">SSCC 운영관리</div>
+                <div className="flex-1" />
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="메뉴 닫기"
+                  className="flex size-7 flex-none cursor-pointer items-center justify-center rounded-[9px] border border-line text-[14px] text-n400 hover:border-accent hover:text-accent"
+                >
+                  ✕
+                </button>
+              </div>
 
-            {/* 목차와 계정 절이 함께 스크롤된다 — 짧은 화면에서 로그아웃이 잘리지 않게 */}
-            <div className="flex-1 overflow-y-auto [overscroll-behavior:contain]">
-              <NavPanel
-                groups={groups}
-                pathname={pathname}
-                onNavigate={go}
-                isOpen={accordion.isOpen}
-                onToggle={accordion.toggle}
-              />
-              <SitemapLink pathname={pathname} onNavigate={go} className="mt-1 border-t border-bg" />
-              <AccountSections
-                links={ACCOUNT_LINKS}
-                apps={apps}
-                install={<InstallMenuItem />}
-                onSignOut={signOut}
-                onNavigate={navigate}
-                onSelect={() => setOpen(false)}
-                pathname={pathname}
-                className="mt-2 px-[10px]"
-              />
-              <AppVersion />
+              {/* 목차와 계정 절이 함께 스크롤된다 — 짧은 화면에서 로그아웃이 잘리지 않게 */}
+              <div className="flex-1 overflow-y-auto [overscroll-behavior:contain]">
+                <NavPanel
+                  groups={groups}
+                  pathname={pathname}
+                  onNavigate={go}
+                  isOpen={accordion.isOpen}
+                  onToggle={accordion.toggle}
+                />
+                <SitemapLink pathname={pathname} onNavigate={go} className="mt-1 border-t border-bg" />
+                <AccountSections
+                  links={ACCOUNT_LINKS}
+                  apps={apps}
+                  install={<InstallMenuItem />}
+                  onSignOut={signOut}
+                  onNavigate={navigate}
+                  onSelect={() => setOpen(false)}
+                  pathname={pathname}
+                  className="mt-2 px-[10px]"
+                />
+                <AppVersion />
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
