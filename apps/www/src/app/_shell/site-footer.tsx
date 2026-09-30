@@ -25,28 +25,42 @@ import { siteMapColumns } from "./site-map";
  *
  * 값을 링크로 그릴 때 `rel="noreferrer"`는 외부 링크의 기본이다(본문 렌더러와 같다).
  */
+/*
+ * 누르는 영역 24px (#734 · ssccops#548 — WCAG 2.2 AA 2.5.8).
+ *
+ * 375px 실측에서 «전체 메뉴» 줄이 22×16px · 줄 사이 4px였다 — 손가락으로 누르면 옆 줄이 눌린다. 모바일 메뉴가
+ * 열리지 않던 동안(#545) 다른 페이지로 가는 유일한 길이 이 목록이었다.
+ *
+ * - `TAP_ROW` — 목록 줄. **링크가 스스로 높이 24px를 갖고** 줄 사이 간격을 없앤다. 촘촘한 줄에 여백만 늘리면
+ *   누르는 영역이 서로 겹쳐 기준을 넘지 못한다(24px 원이 이웃과 닿으면 안 된다).
+ * - `TAP_INLINE` — 한 줄에 옆으로 놓인 링크. **보이는 모양은 그대로** 두고 위아래 여백과 같은 크기의 음수 여백으로
+ *   누르는 영역만 넓힌다 — 옆 링크와는 가로로 떨어져 있어 겹치지 않는다.
+ */
+const TAP_ROW = "inline-flex min-h-[24px] items-center";
+const TAP_INLINE = "inline-block py-[4px] -my-[4px]";
+
 export function SiteFooter() {
   return (
     <footer className="mt-[40px] border-t border-line bg-surface">
       <div className="mx-auto flex max-w-shell flex-col gap-[22px] px-[20px] py-[28px] lg:px-[28px]">
         <nav aria-label="전체 메뉴" className="grid grid-cols-2 gap-x-[16px] gap-y-[18px] sm:grid-cols-4 lg:grid-cols-8">
           {siteMapColumns().map((column) => (
-            <div key={column.href} className="flex min-w-0 flex-col gap-[6px]">
-              <Link href={column.href} className="text-[14px] font-semibold hover:text-accent-strong">
+            <div key={column.href} className="flex min-w-0 flex-col gap-[2px]">
+              <Link href={column.href} className={`${TAP_ROW} text-[14px] font-semibold hover:text-accent-strong`}>
                 {column.title}
               </Link>
               {column.rows.length > 0 && (
-                <ul className="flex flex-col gap-[4px] text-[13px] text-n300">
+                <ul className="flex flex-col text-[13px] text-n300">
                   {column.rows.map((row) =>
                     row.external ? (
                       <li key={row.href}>
-                        <a href={row.href} className="hover:text-ink">
+                        <a href={row.href} className={`${TAP_ROW} hover:text-ink`}>
                           {row.label} ↗
                         </a>
                       </li>
                     ) : (
                       <li key={row.href}>
-                        <Link href={row.href} className="hover:text-ink">
+                        <Link href={row.href} className={`${TAP_ROW} hover:text-ink`}>
                           {row.label}
                         </Link>
                       </li>
@@ -63,7 +77,7 @@ export function SiteFooter() {
           <address className="flex flex-col gap-[4px] text-[14px] not-italic text-n300">
             <span>{CONTACT.address}</span>
             {CONTACT.email && (
-              <a href={`mailto:${CONTACT.email}`} className="text-accent-strong">
+              <a href={`mailto:${CONTACT.email}`} className={`${TAP_INLINE} text-accent-strong`}>
                 {CONTACT.email}
               </a>
             )}
@@ -72,7 +86,7 @@ export function SiteFooter() {
                 href={CONTACT.instagram}
                 target="_blank"
                 rel="noreferrer"
-                className="text-accent-strong"
+                className={`${TAP_INLINE} text-accent-strong`}
               >
                 Instagram
               </a>
@@ -80,13 +94,13 @@ export function SiteFooter() {
                 href={CONTACT.github}
                 target="_blank"
                 rel="noreferrer"
-                className="text-accent-strong"
+                className={`${TAP_INLINE} text-accent-strong`}
               >
                 GitHub
               </a>
               {/* 학술 LMS — 누구에게나 닿는 자리는 여기뿐이다 (#577 → #614: 상단 바에서는 계정 메뉴 안으로) */}
               {externalNavLinks().map((link) => (
-                <a key={link.href} href={link.href} className="text-accent-strong">
+                <a key={link.href} href={link.href} className={`${TAP_INLINE} text-accent-strong`}>
                   {link.label}
                 </a>
               ))}
@@ -95,14 +109,14 @@ export function SiteFooter() {
         </section>
 
         <div className="flex flex-wrap items-center justify-between gap-[12px]">
-          <nav aria-label="안내 문서" className="flex flex-wrap gap-x-[14px] gap-y-[6px] text-[13.5px]">
-            <Link href={ROUTES.privacy} className="text-n300 hover:text-ink">
+          <nav aria-label="안내 문서" className="flex flex-wrap gap-x-[14px] text-[13.5px]">
+            <Link href={ROUTES.privacy} className={`${TAP_ROW} text-n300 hover:text-ink`}>
               개인정보처리방침
             </Link>
-            <Link href={ROUTES.photoNotice} className="text-n300 hover:text-ink">
+            <Link href={ROUTES.photoNotice} className={`${TAP_ROW} text-n300 hover:text-ink`}>
               사진 게재 안내
             </Link>
-            <Link href={ROUTES.terms} className="text-n300 hover:text-ink">
+            <Link href={ROUTES.terms} className={`${TAP_ROW} text-n300 hover:text-ink`}>
               이용약관
             </Link>
           </nav>
