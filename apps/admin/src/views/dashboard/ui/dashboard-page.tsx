@@ -27,11 +27,23 @@ import { Badge, Card, CardTitle, Chip, EmptyState, GridTable, PageBody, PageHead
  */
 
 /*
- * 내 업무 목록의 필터 칩. 어휘·순서는 하위 업무 목록의 칩
+ * 내 업무 목록의 필터 칩. «마감임박»·«지연»·«완료»·«전체»의 어휘는 하위 업무 목록의 칩
  * (features/sub-work/model/use-sub-work-list.ts의 SUB_WORK_LIST_TABS)을 따른다 —
  * 같은 자원을 보는 두 화면이 다른 말로 같은 것을 가리키면 목차를 믿을 수 없다.
+ *
+ * «미완료»는 이 화면에만 있고 맨 앞이며 기본값이다(#743 · ssccops#554). 대시보드는 «지금 할
+ * 일»을 찾는 자리인데, «전체»가 기본이던 동안 끝낸 일이 섞여 남은 일이 묻혔다. 완료가 아닌
+ * 전부(기획·진행·검토)다 — 검토는 반려로 되돌아올 수 있는 아직 안 끝난 일이라 빼지 않는다.
+ * 하위 업무 목록에 이 칩을 두지 않은 것은 그쪽이 칩마다 서버에 다시 묻는 화면이라서다.
  */
-const MY_FILTERS = ["전체", "마감임박", "지연", "완료"] as const;
+const MY_FILTERS = ["미완료", "마감임박", "지연", "완료", "전체"] as const;
+
+type MyFilter = (typeof MY_FILTERS)[number];
+
+/* 이름만으로 범위가 들리지 않는 칩의 툴팁 — SUB_WORK_LIST_TAB_HINTS와 같은 자리 */
+const MY_FILTER_HINTS: Partial<Record<MyFilter, string>> = {
+  미완료: "완료가 아닌 하위 업무(기획·진행·검토)",
+};
 
 function DashboardSkeleton() {
   return (
@@ -52,7 +64,7 @@ export function DashboardPage() {
   /* 헤더의 '+ 등록'은 운영 등록 화면으로 간다 — 그 화면의 업무·하위 업무 등록과 같은 권한이다 */
   const canManageWork = useCan(CAPABILITY.WORK_MANAGE);
 
-  const [myFilter, setMyFilter] = useState<(typeof MY_FILTERS)[number]>("전체");
+  const [myFilter, setMyFilter] = useState<MyFilter>("미완료");
   // 서버가 Asia/Seoul 오프셋으로 내려주는 마감_일시와 같은 시간대로 D-day를 센다 (withServiceOffset과 같은 판단)
   const today = todayInSeoul();
 
@@ -89,14 +101,30 @@ export function DashboardPage() {
 
   /*
    * 필터는 서버 재요청 없이 화면에서 거른다 — my-sub-works가 완료 건 포함 전량을 이미
-   * 내려준다(entities/dashboard/model/types.ts). "전체"는 이름 그대로 완료 건도 포함하고,
-   * 완료만 따로 보려는 사람은 "완료" 칩을 쓴다.
+   * 내려준다(entities/dashboard/model/types.ts). 기본은 "미완료"다(#743). "전체"는 여전히
+   * 이름 그대로 완료 건도 포함한다 — 뜻을 «완료 제외»로 좁히면 이름과 뜻이 어긋난다.
+   * 완료만 따로 보려는 사람은 "완료" 칩을 쓴다. "마감임박"·"지연"은 따로 거르지 않아도
+   * 완료가 빠진다 — deadlineFlag가 완료 건에는 배지를 달지 않는다.
    */
   const myTasks = data.myTasks.filter((sw) => {
     if (myFilter === "전체") return true;
+    if (myFilter === "미완료") return sw.workStatus !== "DONE";
     if (myFilter === "완료") return sw.workStatus === "DONE";
     return flagOf(sw) === myFilter;
   });
+  const myDoneCount = data.myTasks.filter((sw) => sw.workStatus === "DONE").length;
+
+  /*
+   * 빈 목록의 문구. 남은 일이 없는데 끝낸 일은 있으면, 기본 칩이 비어 보이는 이유와 그 건들이
+   * 있는 칩을 함께 말한다 — 기본값이 바뀐 뒤 «내 업무가 사라졌다»로 읽히지 않게. 나머지는 하위
+   * 업무 목록과 같은 문장이다.
+   */
+  const myTasksEmptyMessage =
+    data.myTasks.length === 0
+      ? "담당하고 있는 하위 업무가 없습니다."
+      : myFilter === "미완료"
+        ? `남은 업무가 없습니다 — 완료 ${myDoneCount}건은 «완료»에서`
+        : "조건에 맞는 하위 업무가 없습니다.";
 
   const approvalColumns: GridColumn<ApprovalInboxItem>[] = [
     {
@@ -318,12 +346,18 @@ export function DashboardPage() {
                 줄바꿈을 열어 두지 않으면 flex 항목끼리 밀어내다 제목이 38px까지 찌그러져
                 "내 업 무 목 록"처럼 글자마다 줄이 바뀐다(#103). 칩을 마지막 순서로 내려
                 제목과 건수가 첫 줄에 온전히 남게 하고, lg에서는 기존 한 줄 배치로 되돌린다.
+                칩 줄도 접힌다 — «미완료»가 더해져(#743) 다섯 개가 375px 카드 폭(약 300px)을 넘는다.
               */}
               <div className="mb-[14px] flex flex-wrap items-center gap-3 lg:flex-nowrap">
                 <div className="shrink-0 text-[18px] font-medium">내 업무 목록</div>
-                <div className="order-last flex gap-[7px] lg:order-none">
+                <div className="order-last flex flex-wrap gap-[7px] lg:order-none">
                   {MY_FILTERS.map((f) => (
-                    <Chip key={f} active={myFilter === f} onClick={() => setMyFilter(f)}>
+                    <Chip
+                      key={f}
+                      active={myFilter === f}
+                      onClick={() => setMyFilter(f)}
+                      title={MY_FILTER_HINTS[f]}
+                    >
                       {f}
                     </Chip>
                   ))}
@@ -336,6 +370,7 @@ export function DashboardPage() {
                 rows={myTasks}
                 rowKey={(sw) => String(sw.subWorkId)}
                 dense
+                empty={<EmptyState message={myTasksEmptyMessage} padding="sm" />}
               />
             </Card>
           </>

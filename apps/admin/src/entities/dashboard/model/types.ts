@@ -15,6 +15,6 @@ export interface DashboardData {
   pendingApproval: ApprovalInboxItem[];
   /** 조회 시점 기준 ±5일 범위에 마감이 있고 완료되지 않은 하위 업무 */
   upcomingDeadlines: SubWorkListItem[];
-  /** 담당자가 조회 주체 본인인 하위 업무 전량(완료 건 포함) — 전체·마감임박·지연 필터는 화면 몫 */
+  /** 담당자가 조회 주체 본인인 하위 업무 전량(완료 건 포함) — 미완료·마감임박·지연·완료·전체 필터는 화면 몫 */
   myTasks: SubWorkListItem[];
 }
