@@ -32,7 +32,7 @@ export function RecentPosts({
     <section className="flex flex-col gap-[12px]">
       <div className="flex items-baseline justify-between gap-[10px]">
         <h2 className="text-[19px] font-semibold tracking-[-.2px]">최근 기록</h2>
-        <Link href={ROUTES.records} className="text-[14px] text-accent-strong">
+        <Link href={ROUTES.records} className="inline-block py-[4px] -my-[4px] text-[14px] text-accent-strong">
           전체 보기 ›
         </Link>
       </div>

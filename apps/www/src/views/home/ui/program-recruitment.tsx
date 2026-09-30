@@ -37,7 +37,7 @@ export function ProgramRecruitment({
         <h2 className="text-[19px] font-semibold tracking-[-.2px]">학술 프로그램 모집</h2>
         <Link
           href={ROUTES.academic}
-          className="text-[13.5px] text-accent-strong hover:underline underline-offset-2"
+          className="inline-block py-[4px] -my-[4px] text-[13.5px] text-accent-strong hover:underline underline-offset-2"
         >
           학술 전체 보기 ›
         </Link>
