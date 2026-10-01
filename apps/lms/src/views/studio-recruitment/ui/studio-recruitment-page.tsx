@@ -1,10 +1,9 @@
 import { BackToProgramsNotice, ProgramSignupNotice } from "@/features/academic-program";
 import { LoginGate } from "@/features/auth";
 import { loadRecruitments } from "@/features/form/model/load-recruitments";
-import { recruitmentPhaseOf } from "@/entities/form";
 import type { AcademicProgramSummary } from "@/entities/academic-program";
 import { EmptyState } from "@/shared/ui";
-import { PhaseFilterChips, type PhaseFilter } from "./phase-filter";
+import { cardPhaseOf, PhaseFilterChips, type PhaseFilter } from "./phase-filter";
 import { RecruitmentCard } from "./recruitment-card";
 
 /*
@@ -82,17 +81,14 @@ function RecruitmentList({
     before: 0,
     open: 0,
     closed: 0,
+    stopped: 0,
   };
   for (const program of programs) {
-    counts[recruitmentPhaseOf(program.formReceiptStatus ?? "DRAFT")] += 1;
+    counts[cardPhaseOf(program)] += 1;
   }
 
   const shown =
-    phase === "all"
-      ? programs
-      : programs.filter(
-          (program) => recruitmentPhaseOf(program.formReceiptStatus ?? "DRAFT") === phase,
-        );
+    phase === "all" ? programs : programs.filter((program) => cardPhaseOf(program) === phase);
 
   return (
     <>

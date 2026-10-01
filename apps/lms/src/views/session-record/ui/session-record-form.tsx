@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { AcademicProgramMember } from "@/entities/academic-program";
 import {
   sesnSttsBadge,
   type AcademicSessionDetail,
   type CurriculumItemWithSession,
 } from "@/entities/academic-session";
 // 클라이언트 훅은 피처 배럴이 아니라 직접 임포트한다(배럴은 서버 전용 로더를 끌어온다)
+import type { AttendanceTarget } from "@/features/academic-session/model/attendance-targets";
 import {
   useSubmitSession,
   type SubmitMode,
@@ -30,7 +30,8 @@ import { PhotoField } from "./photo-field";
  * ── 신규(create) / 재제출(resubmit) ─────────────────────────
  * `mode`로 POST/PUT을 가른다(훅이 실제 분기). 재제출이면 이전 제출 내용(진행 내용·전달사항·
  * 출석·사진)이 초깃값으로 채워지고, 국장이 남긴 수정요청 사유(`latestOpinion`)를 상단에 보여
- * 준다.
+ * 준다. 출석 줄과 처음 체크 값은 로더가 정한다(`attendanceTargetsOf` · #748) — 재제출은 지금
+ * 명단이 아니라 그 회차의 기록에서 시작한다.
  *
  * ── 임시저장이 없다 ────────────────────────────────────────
  * 서버에 초안이 없다(이슈 「지킬 것」). 버튼은 "제출" 하나뿐이고, 저장되지 않는 값이 사라지는
@@ -48,13 +49,14 @@ export function SessionRecordForm({
   academicProgramId,
   mode,
   curriculumItem,
-  members,
+  targets,
   session,
 }: Readonly<{
   academicProgramId: number;
   mode: SubmitMode;
   curriculumItem: CurriculumItemWithSession;
-  members: AcademicProgramMember[];
+  /** 출석 줄 — 확정 팀원, 재제출이면 그 회차에 기록된 사람까지 */
+  targets: AttendanceTarget[];
   /** 재제출일 때만 채워진다 */
   session: AcademicSessionDetail | null;
 }>) {
@@ -69,15 +71,10 @@ export function SessionRecordForm({
   const [prgrsCn, setPrgrsCn] = useState<string>(session?.progressContent ?? "");
   const [ntcCn, setNtcCn] = useState<string>(session?.noticeContent ?? "");
 
-  /** eventPtcpId → 참석 여부. 재제출이면 이전 출석을, 신규면 전원 참석으로 시작한다 */
-  const [present, setPresent] = useState<Record<number, boolean>>(() => {
-    const seed: Record<number, boolean> = {};
-    for (const member of members) seed[member.eventPtcpId] = true;
-    if (session) {
-      for (const row of session.attendances) seed[row.eventPtcpId] = row.atndYn;
-    }
-    return seed;
-  });
+  /** eventPtcpId → 참석 여부. 처음 값은 로더가 정했다(신규 전원 출석 · 재제출 이전 기록 · 기록 뒤 합류는 결석) */
+  const [present, setPresent] = useState<Record<number, boolean>>(() =>
+    Object.fromEntries(targets.map((target) => [target.eventPtcpId, target.initialPresent])),
+  );
 
   const [photo, setPhoto] = useState<File | null>(null);
 
@@ -93,13 +90,17 @@ export function SessionRecordForm({
   const badge = sesnSttsBadge(curriculumItem.sesnSttsCd);
   const seqLabel = curriculumItem.seqno === null ? "" : `${curriculumItem.seqno}회차 · `;
 
+  /*
+   * 기록에만 남은 사람(제외·대기)도 싣는다 — 빼도 서버가 그 줄을 지우지 않지만(#617), 화면에
+   * 보이는 체크와 보낸 본문이 같아야 고친 값이 반영된다.
+   */
   const attendances = useMemo(
     () =>
-      members.map((member) => ({
-        eventPtcpId: member.eventPtcpId,
-        atndYn: present[member.eventPtcpId] ?? false,
+      targets.map((target) => ({
+        eventPtcpId: target.eventPtcpId,
+        atndYn: present[target.eventPtcpId] ?? false,
       })),
-    [members, present],
+    [targets, present],
   );
 
   const toggleAttendance = (eventPtcpId: number) => {
@@ -232,7 +233,7 @@ export function SessionRecordForm({
       {/* ── 오른쪽: 출석 체크 · 제출 ── */}
       <Card className="flex flex-col gap-[16px]">
         <AttendanceChecklist
-          members={members}
+          targets={targets}
           present={present}
           onToggle={toggleAttendance}
           disabled={submitting}

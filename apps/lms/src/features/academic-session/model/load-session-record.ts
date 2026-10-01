@@ -1,7 +1,6 @@
 import {
   fetchAcademicProgramMembers,
   programStopOf,
-  type AcademicProgramMember,
   type AcdmActvSttsCd,
   type ProgramStop,
 } from "@/entities/academic-program";
@@ -16,6 +15,7 @@ import {
   fetchCurriculumItems,
 } from "@/entities/academic-session/api/sessions-read";
 import { isSignupRequired, isUnauthenticated } from "@/shared/api/auth-error";
+import { attendanceTargetsOf, type AttendanceTarget } from "./attendance-targets";
 import { loadSessionRecordErrorMessage } from "./session-record-error";
 
 /*
@@ -29,8 +29,12 @@ import { loadSessionRecordErrorMessage } from "./session-record-error";
  *
  * ── 무엇을 모으는가 ────────────────────────────────────────
  * 1. 커리큘럼 조회(#134)에서 대상 항목 하나 — 계획(제목·계획일·순번)과 회차 상태·`isEditable`.
- * 2. 팀원 목록(#131) — 출석 체크리스트(확정 팀원 전원).
+ * 2. 팀원 목록(#131) — **참가 상태 필터 없이** 받는다(#748). 출석 대상은 확정 팀원이지만, 재제출이면
+ *    그 회차에 기록된 뒤 제외·대기된 사람도 대상이라(서버 #617) 그 사람의 지금 상태를 같은 조회로
+ *    안다. 확정으로 좁혀 받던 동안 그 사람이 재제출에서 빠졌다.
  * 3. (재제출일 때만) 회차 상세(#135) — 진행 내용·전달사항·출석·수정요청 사유의 폼 초깃값.
+ *
+ * 출석 체크리스트에 그릴 줄과 처음 체크 값은 `attendanceTargetsOf`가 2·3으로 만든다.
  *
  * ── 폼을 언제 여는가 ────────────────────────────────────────
  * 서버 판정 `isEditable`(스터디장 본인 × 작성 가능 상태 × 프로그램이 종료·폐지가 아님)이 유일한
@@ -51,8 +55,8 @@ export type SessionRecordLoad =
       /** 신규 제출이면 "create", 재제출이면 "resubmit" */
       mode: "create" | "resubmit";
       curriculumItem: CurriculumItemWithSession;
-      /** 출석 체크리스트에 그릴 확정 팀원 전원 */
-      members: AcademicProgramMember[];
+      /** 출석 체크리스트에 그릴 줄 — 확정 팀원, 재제출이면 그 회차에 기록된 사람까지 (#748) */
+      targets: AttendanceTarget[];
       /** 재제출일 때만 채워진다 — 폼 초깃값과 "학술국장이 요청한 수정 사항" */
       session: AcademicSessionDetail | null;
     }
@@ -79,8 +83,8 @@ export async function loadSessionRecord(
     // 커리큘럼과 팀원은 서로 독립이라 함께 부른다
     const [curriculumItems, members] = await Promise.all([
       fetchCurriculumItems(academicProgramId),
-      // 확정 팀원만 출석 대상이다(서버 설계 결정 #3) — 필터로 좁혀 받는다
-      fetchAcademicProgramMembers(academicProgramId, { ptcpSttsCd: "CONFIRMED" }),
+      // 필터 없이 받는다 — 재제출의 «기록에만 남은 사람»도 출석 대상이다(#748 · 서버 #617)
+      fetchAcademicProgramMembers(academicProgramId),
     ]);
 
     const curriculumItem = curriculumItems.find(
@@ -117,7 +121,13 @@ export async function loadSessionRecord(
         ? await fetchAcademicSession(academicProgramId, curriculumItem.sessionId)
         : null;
 
-    return { outcome: "ready", mode, curriculumItem, members, session };
+    return {
+      outcome: "ready",
+      mode,
+      curriculumItem,
+      targets: attendanceTargetsOf(members, session),
+      session,
+    };
   } catch (error: unknown) {
     if (isUnauthenticated(error)) return { outcome: "unauthenticated" };
     if (isSignupRequired(error)) return { outcome: "signup-required" };

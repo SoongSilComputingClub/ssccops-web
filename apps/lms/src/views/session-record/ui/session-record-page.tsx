@@ -260,7 +260,7 @@ async function RecordBody({
       academicProgramId={academicProgramId}
       mode={result.mode}
       curriculumItem={result.curriculumItem}
-      members={result.members}
+      targets={result.targets}
       session={result.session}
     />
   );

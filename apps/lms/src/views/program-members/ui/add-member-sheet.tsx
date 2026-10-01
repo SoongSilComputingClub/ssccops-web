@@ -17,6 +17,9 @@ import { Sheet, TextField } from "@/shared/ui";
  * 이미 확정·대기인 사람은 목록에서 뺀다(서버도 409). **제외된 사람은 남긴다** — 추가하면 같은 행이
  * 되살아나는 재합류다(지난 출석이 이어진다). 탈퇴·제명 회원은 서버가 애초에 목록에 싣지 않는다.
  *
+ * 넣기가 실패하면 시트는 열린 채 남고 문구는 이 시트 안, 버튼 바로 위에 그린다(`error` · #748) —
+ * 페이지의 띠는 시트의 배경에 덮여 보이지 않는다.
+ *
  * 어드민 담당자 셀렉트(`AssignableMemberSelect`)를 옮겨 오지 않은 것은 그쪽이 검색 없는
  * `<select>`이고 이쪽은 좁혀 고르는 목록이라서다 — 같은 목록 API를 쓰되 모양이 다르다. 판정(누가
  * 후보인가)은 서버 한 곳이라 두 벌이 되지 않는다.
@@ -26,6 +29,7 @@ export function AddMemberSheet({
   openKey,
   members,
   busy,
+  error,
   onClose,
   onAdd,
 }: Readonly<{
@@ -34,6 +38,8 @@ export function AddMemberSheet({
   /** 지금 명단(확정·대기·제외) — 확정·대기인 사람을 후보에서 뺀다 */
   members: AcademicProgramMember[];
   busy: boolean;
+  /** 마지막 넣기의 실패 문구 — 없으면 빈 문자열 */
+  error: string;
   onClose: () => void;
   onAdd: (memberId: number, name: string) => Promise<void>;
 }>) {
@@ -137,6 +143,12 @@ export function AddMemberSheet({
             );
           })}
       </div>
+
+      {error && (
+        <p role="alert" className="mt-[10px] text-[13.5px] leading-[1.6] text-danger">
+          {error}
+        </p>
+      )}
     </Sheet>
   );
 }

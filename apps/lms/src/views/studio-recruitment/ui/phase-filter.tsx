@@ -1,5 +1,6 @@
 import Link from "next/link";
-import type { RecruitmentPhase } from "@/entities/form";
+import { programStopOf, type AcademicProgramSummary } from "@/entities/academic-program";
+import { recruitmentPhaseOf, type RecruitmentPhase } from "@/entities/form";
 import { ROUTES } from "@/shared/config/routes";
 
 /*
@@ -14,12 +15,31 @@ import { ROUTES } from "@/shared/config/routes";
  * 그린다. 접근성상으로도 «다른 주소로 간다»는 링크가 맞다.
  */
 
+/*
+ * 카드의 묶음 — 폼 접수 상태에 «쓰기가 멈춘 프로그램»(수료·폐지)을 더한다 (#748 · ssccops#557).
+ *
+ * 접수 상태만 보던 동안 **승인 상태에서 폐지된 프로그램이 «모집 시작 전»으로 보였다** — 폐지는
+ * 접수 중인 폼만 닫고(서버 `closeRecruitmentFormIfOpen` · 폼 상태표가 DRAFT → CLOSED를 막는다)
+ * 모집 전 폼은 DRAFT로 남는다. 승인으로 복원하면 그 폼으로 모집을 시작해야 하니 서버가 닫지
+ * 않는 것이 맞고, 화면이 프로그램 상태를 먼저 본다. 멈춘 상태는 `programStopOf` 한 곳에서
+ * 읽는다(AGENTS.md — 폐지만 따로 비교하면 다음 상태가 들어올 때 또 빠진다). 그래서 수료도
+ * «접수 종료»가 아니라 이 묶음이다.
+ */
+export type CardPhase = RecruitmentPhase | "stopped";
+
+export function cardPhaseOf(program: AcademicProgramSummary): CardPhase {
+  if (programStopOf(program.sttsCd)) return "stopped";
+  return recruitmentPhaseOf(program.formReceiptStatus ?? "DRAFT");
+}
+
 /** 주소의 `?phase=` 값 — 없거나 모르는 값이면 «전체» */
-export type PhaseFilter = RecruitmentPhase | "all";
+export type PhaseFilter = CardPhase | "all";
 
 export function toPhaseFilter(raw: string | string[] | undefined): PhaseFilter {
   const value = Array.isArray(raw) ? raw[0] : raw;
-  if (value === "before" || value === "open" || value === "closed") return value;
+  if (value === "before" || value === "open" || value === "closed" || value === "stopped") {
+    return value;
+  }
   return "all";
 }
 
@@ -28,6 +48,7 @@ const FILTERS: readonly { key: PhaseFilter; label: string }[] = [
   { key: "before", label: "모집 시작 전" },
   { key: "open", label: "접수중" },
   { key: "closed", label: "접수 종료" },
+  { key: "stopped", label: "수료·폐지" },
 ];
 
 export function PhaseFilterChips({
