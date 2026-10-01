@@ -3,7 +3,10 @@
 import { useId, useState, type ReactNode } from "react";
 import { cn } from "@ssccops/ui";
 import type { AcademicProgramMember, PtcpSttsCd } from "@/entities/academic-program";
-import { useTeamMemberActions } from "@/features/academic-program/model/use-team-member-actions";
+import {
+  useTeamMemberActions,
+  type TeamMemberRunResult,
+} from "@/features/academic-program/model/use-team-member-actions";
 import { EmptyState, Sheet } from "@/shared/ui";
 import { AddMemberSheet } from "./add-member-sheet";
 import { MemberHistorySection } from "./member-history-section";
@@ -30,6 +33,12 @@ import { MemberCardMobile, MemberRowDesktop } from "./member-row";
  * ── 제외된 사람은 접힌 절로 ──────────────────────────────────
  * 기본 명단은 확정·대기다. 제외된 사람은 행이 남으므로(지난 출석이 가리킨다) 절을 따로 두고 접어
  * 둔다 — 섞어 두면 «지금 팀원이 누구인가»가 흐려진다. 거기서 다시 넣는다.
+ *
+ * ── 결과 문구는 그 동작이 일어난 자리에 ───────────────────────
+ * 추가가 실패하면 시트가 열린 채 남으므로(고른 회원·검색어를 지키려고) 문구도 시트 안에 그린다
+ * (#748 · ssccops#558). 페이지 띠에 그리던 동안 시트의 배경이 그 위를 덮어, 버튼이 원래대로
+ * 돌아오는 것 말고는 아무 변화가 없었다. 성공은 시트를 닫고 페이지 띠로 알린다. 상태 변경은 확인
+ * 시트를 닫은 뒤(또는 시트 없이) 결과를 띄우므로 페이지 띠 그대로다.
  */
 
 /** 한 줄의 결과 문구 — 성공은 조용한 띠, 실패는 빨간 띠 */
@@ -133,6 +142,8 @@ export function MembersManager({
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   /** 추가 시트 — 열 때마다 새 값이라 회원 목록을 다시 받는다. 닫혀 있으면 null */
   const [addOpenKey, setAddOpenKey] = useState<number | null>(null);
+  /** 추가 실패 문구 — 시트 안에 그린다. 열거나 닫으면 비운다 */
+  const [addError, setAddError] = useState("");
   /** 제외 확인 시트의 대상 */
   const [excluding, setExcluding] = useState<AcademicProgramMember | null>(null);
   const [excludedOpen, setExcludedOpen] = useState(false);
@@ -145,33 +156,47 @@ export function MembersManager({
     member: AcademicProgramMember,
     next: PtcpSttsCd,
     done: string,
-  ): Promise<boolean> => {
+  ): Promise<TeamMemberRunResult["outcome"]> => {
     setFeedback(null);
-    const message = await actions.run({
+    const result = await actions.run({
       kind: "status",
       eventPtcpId: member.eventPtcpId,
       next,
     });
-    setFeedback(message ? { tone: "error", text: message } : { tone: "ok", text: done });
-    return !message;
+    if (result.outcome === "failed") setFeedback({ tone: "error", text: result.message });
+    if (result.outcome === "done") setFeedback({ tone: "ok", text: done });
+    return result.outcome;
   };
 
-  const addMember = async (memberId: number, name: string): Promise<boolean> => {
-    setFeedback(null);
-    const message = await actions.run({ kind: "add", memberId });
-    setFeedback(
-      message
-        ? { tone: "error", text: message }
-        : { tone: "ok", text: `${name || "회원"}님을 팀원으로 넣었습니다.` },
-    );
-    return !message;
+  const openAdd = () => {
+    setAddError("");
+    setAddOpenKey(Date.now());
+  };
+
+  const closeAdd = () => {
+    setAddError("");
+    setAddOpenKey(null);
+  };
+
+  const addMember = async (memberId: number, name: string) => {
+    setAddError("");
+    const result = await actions.run({ kind: "add", memberId });
+    if (result.outcome === "failed") {
+      setAddError(result.message);
+      return;
+    }
+    if (result.outcome === "done") {
+      setFeedback({ tone: "ok", text: `${name || "회원"}님을 팀원으로 넣었습니다.` });
+      setAddOpenKey(null);
+    }
   };
 
   const confirmExclude = async () => {
     if (!excluding) return;
     const target = excluding;
-    await changeStatus(target, "CANCELLED", `${nameOf(target)}님을 제외했습니다.`);
-    setExcluding(null);
+    const outcome = await changeStatus(target, "CANCELLED", `${nameOf(target)}님을 제외했습니다.`);
+    // 끊긴 호출이면 앞선 요청이 시트를 닫는다
+    if (outcome !== "ignored") setExcluding(null);
   };
 
   const activeActions = (member: AcademicProgramMember): ReactNode => {
@@ -221,7 +246,7 @@ export function MembersManager({
         {editable && (
           <button
             type="button"
-            onClick={() => setAddOpenKey(Date.now())}
+            onClick={openAdd}
             disabled={actions.busy}
             className="rounded-[12px] bg-accent px-[14px] py-[8px] text-[14px] font-semibold text-on-solid transition-colors hover:bg-accent-strong disabled:opacity-50"
           >
@@ -285,11 +310,9 @@ export function MembersManager({
         openKey={addOpenKey}
         members={members}
         busy={actions.busy}
-        onClose={() => setAddOpenKey(null)}
-        onAdd={async (memberId, name) => {
-          const ok = await addMember(memberId, name);
-          if (ok) setAddOpenKey(null);
-        }}
+        error={addError}
+        onClose={closeAdd}
+        onAdd={addMember}
       />
 
       <Sheet

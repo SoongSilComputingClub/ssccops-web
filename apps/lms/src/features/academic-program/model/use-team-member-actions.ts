@@ -23,20 +23,27 @@ import { toTeamMemberChangeErrorMessage } from "./team-members-error";
  * `version`은 명단을 바꿀 때마다 오른다 — 펼쳐 둔 이력 절이 그 값을 보고 다시 읽는다(이력은
  * 서버 렌더가 아니라 브라우저가 펼칠 때 부르는 조회다).
  *
- * 중복 클릭은 ref로 끊는다 — 상태만 보면 같은 렌더 안의 두 번째 클릭이 옛 값을 읽는다.
+ * 중복 클릭은 ref로 끊는다 — 상태만 보면 같은 렌더 안의 두 번째 클릭이 옛 값을 읽는다. 끊긴
+ * 호출은 `ignored`로 돌려준다(#748 · ssccops#558). 성공과 같은 빈 문자열로 돌려주던 동안 호출부가
+ * 그것을 성공으로 읽어 «넣었습니다»를 띄우고 시트를 닫았다 — 앞선 요청이 실패해도 그랬다.
  */
 
 export type TeamMemberChange =
   | { kind: "add"; memberId: number }
   | { kind: "status"; eventPtcpId: number; next: PtcpSttsCd };
 
+/** 한 번 누른 결과 — 끊긴 호출(`ignored`)은 아무것도 하지 않았으니 호출부도 아무 말을 하지 않는다 */
+export type TeamMemberRunResult =
+  | { outcome: "done" }
+  | { outcome: "failed"; message: string }
+  | { outcome: "ignored" };
+
 export interface TeamMemberActions {
   /** 요청 중이거나 명단을 다시 그리는 중 */
   busy: boolean;
   /** 명단을 바꾼 횟수 — 이력 절이 다시 읽는 신호 */
   version: number;
-  /** 성공하면 빈 문자열, 실패하면 보여 줄 한 줄 */
-  run: (change: TeamMemberChange) => Promise<string>;
+  run: (change: TeamMemberChange) => Promise<TeamMemberRunResult>;
 }
 
 export function useTeamMemberActions(academicProgramId: number): TeamMemberActions {
@@ -47,8 +54,8 @@ export function useTeamMemberActions(academicProgramId: number): TeamMemberActio
   const inFlightRef = useRef(false);
 
   const run = useCallback(
-    async (change: TeamMemberChange): Promise<string> => {
-      if (inFlightRef.current) return "";
+    async (change: TeamMemberChange): Promise<TeamMemberRunResult> => {
+      if (inFlightRef.current) return { outcome: "ignored" };
       inFlightRef.current = true;
       setRunning(true);
       try {
@@ -63,9 +70,9 @@ export function useTeamMemberActions(academicProgramId: number): TeamMemberActio
         }
         setVersion((v) => v + 1);
         startTransition(() => router.refresh());
-        return "";
+        return { outcome: "done" };
       } catch (error: unknown) {
-        return toTeamMemberChangeErrorMessage(error);
+        return { outcome: "failed", message: toTeamMemberChangeErrorMessage(error) };
       } finally {
         inFlightRef.current = false;
         setRunning(false);
