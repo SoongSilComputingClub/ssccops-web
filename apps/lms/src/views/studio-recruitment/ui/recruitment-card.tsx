@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { receiptStatusBadge, recruitmentPhaseOf } from "@/entities/form";
-import { acdmActvTypeNm, type AcademicProgramSummary } from "@/entities/academic-program";
+import {
+  acdmActvSttsBadge,
+  acdmActvTypeNm,
+  programStopOf,
+  type AcademicProgramSummary,
+} from "@/entities/academic-program";
 import { studioProgramFormUrl } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
 import { Badge, Card } from "@/shared/ui";
+import { cardPhaseOf } from "./phase-filter";
 
 /*
  * 모집 카드 한 장 (#528).
@@ -34,9 +40,16 @@ export function RecruitmentCard({ program }: Readonly<{ program: AcademicProgram
   /*
    * 폼이 없는 활동은 목록 로더가 이미 걸렀다 — 여기 오는 행에는 `formReceiptStatus`가 있다.
    * 그래도 없으면 «모집 시작 전»으로 읽는다(아직 접수 일시가 없는 폼과 같은 자리).
+   *
+   * 프로그램 상태를 먼저 본다(#748) — 수료·폐지면 폼이 DRAFT로 남아 있어도 고칠 수 없다.
+   * 배지는 접수 상태가 아니라 프로그램 상태(«수료»·«폐지»)다.
    */
-  const phase = recruitmentPhaseOf(program.formReceiptStatus ?? "DRAFT");
-  const badge = receiptStatusBadge(program.formReceiptStatus ?? "DRAFT");
+  const receiptPhase = recruitmentPhaseOf(program.formReceiptStatus ?? "DRAFT");
+  const phase = cardPhaseOf(program);
+  const stop = programStopOf(program.sttsCd);
+  const badge =
+    (stop ? acdmActvSttsBadge(program.sttsCd) : null) ??
+    receiptStatusBadge(program.formReceiptStatus ?? "DRAFT");
   const editable = phase === "before";
 
   return (
@@ -75,10 +88,11 @@ export function RecruitmentCard({ program }: Readonly<{ program: AcademicProgram
         {/*
           지원 건수는 접수 전에도 서버가 0을 그대로 준다 — «-»로 바꾸는 것은 표시 규칙이다.
           아직 받을 수 없는 구간에 «0건»을 그리면 «아무도 지원하지 않았다»로 읽힌다.
+          접수 상태로 가른다 — 모집 전에 폐지된 프로그램도 접수가 열린 적이 없다.
         */}
         <Cell
           label="지원"
-          value={phase === "before" ? "-" : `${program.applicationCount}건`}
+          value={receiptPhase === "before" ? "-" : `${program.applicationCount}건`}
         />
       </div>
 
@@ -93,6 +107,12 @@ export function RecruitmentCard({ program }: Readonly<{ program: AcademicProgram
             : "모집 일정이 아직 정해지지 않았습니다. 지금은 문항을 고칠 수 있습니다."}
           {program.qitemVer != null ? ` · 문항 버전 v${program.qitemVer}` : ""}
         </div>
+      )}
+
+      {stop && (
+        <p className="mt-3 rounded-[10px] border border-line bg-bg px-[12px] py-[10px] text-[13.5px] text-n400">
+          {stop.adjective} 프로그램입니다. 지원서 문항은 볼 수만 있습니다.
+        </p>
       )}
     </Card>
   );
