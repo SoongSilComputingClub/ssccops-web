@@ -22,8 +22,8 @@ export {
 export {
   BackToProgramsNotice,
   NoProgramNotice,
-  ProgramCompletedNotice,
   ProgramSignupNotice,
+  ProgramStoppedNotice,
 } from "./ui/program-chooser";
 /*
  * ⚠️ `ProgramSwitcher`(클라이언트)는 이 배럴에서 재export 하지 않는다 — 이 배럴은 SSR 로더

@@ -12,7 +12,7 @@ import {
 } from "@/entities/academic-session";
 import {
   loadLeaderDashboard,
-  ProgramCompletedNotice,
+  ProgramStoppedNotice,
   type LeaderDashboardReady,
 } from "@/features/academic-program";
 import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher";
@@ -54,7 +54,7 @@ import { SignupRequiredNotice } from "@/features/signup";
  * 저절로 사라진다.
  */
 
-/** 커리큘럼에서 파생하는 통계 — 서버가 요약을 주지 않아 화면이 센다(진행률은 목록 응답의 progressRatio를 우선) */
+/** 커리큘럼에서 파생하는 통계 — 서버가 요약을 주지 않아 화면이 센다(진행률만은 서버 progressRatio 그대로 · #740) */
 function deriveStats(
   program: AcademicProgramSummary,
   curriculum: CurriculumItemWithSession[],
@@ -62,13 +62,8 @@ function deriveStats(
 ) {
   const total = curriculum.length;
   const approved = curriculum.filter((c) => c.sesnSttsCd === "APPROVED").length;
-  // 목록 응답의 progressRatio(서버 계산)를 우선 쓰고, 없으면 커리큘럼에서 근사한다
-  const progress =
-    program.progressRatio > 0
-      ? Math.round(program.progressRatio)
-      : total > 0
-        ? Math.round((approved / total) * 100)
-        : 0;
+  // 진행률은 서버가 계산한다(server#609) — 0이어도 커리큘럼으로 다시 세지 않는다(#740)
+  const progress = Math.round(program.progressRatio);
 
   const pendingReview = curriculum.filter(
     (c) => c.sesnSttsCd === "SUBMITTED" || c.sesnSttsCd === "REVISION_REQUESTED",
@@ -271,7 +266,7 @@ function DashboardBody({ data }: Readonly<{ data: LeaderDashboardReady }>) {
         basePath={ROUTES.studio}
       />
 
-      {program.sttsCd === "COMPLETED" && <ProgramCompletedNotice />}
+      <ProgramStoppedNotice sttsCd={program.sttsCd} />
 
       {/* 통계 4칸 */}
       <div className="grid grid-cols-2 gap-[12px] lg:grid-cols-4">

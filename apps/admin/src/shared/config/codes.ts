@@ -378,24 +378,23 @@ export const EVENT_STTS_CDS = codesOf(EVENT_STTS_NM);
 
 /* ── 참가_상태 (event_ptcp.ptcp_stts_cd) · ssccops#146 D5·D14·D16 ── */
 
-/**
- * 참가자 명단의 상태 세 값.
+/*
+ * 참가자 명단의 상태 세 값 · 명단 이력의 변경 경로 — `@ssccops/codes`에서 온다 (#742).
  *
- * **거절(REJECTED)이 없다.** 거절은 신청(폼 응답)에 대한 심사 결과라 `form_rspns_hstry`에
- * 남고, 명단에는 애초에 오르지 않는다 — 여기에 값을 하나 더 두면 "거절된 참가자"라는 없는
- * 상태가 생긴다.
- *
- * 취소(CANCELLED)도 행을 지우는 대신 남기는 상태다(D16 — 명단은 활동 이력으로 영구 보존).
+ * lms가 팀원을 직접 추가·제외하고 두 앱이 같은 명단 이력을 그리게 되면서 올렸다. 거절이 없는
+ * 이유·취소가 행을 남기는 이유는 그쪽 주석에 있다.
  */
-export type PtcpSttsCd = "CONFIRMED" | "WAITLISTED" | "CANCELLED";
+export {
+  PTCP_CHG_PATH_SE_CDS,
+  PTCP_CHG_PATH_SE_NM,
+  PTCP_STTS_CDS,
+  PTCP_STTS_NM,
+  ptcpChangeNm,
+  type PtcpChgPathSeCd,
+  type PtcpSttsCd,
+} from "@ssccops/codes";
 
-export const PTCP_STTS_NM: Record<PtcpSttsCd, string> = {
-  CONFIRMED: "확정",
-  WAITLISTED: "대기",
-  CANCELLED: "취소",
-};
-
-export const PTCP_STTS_CDS = codesOf(PTCP_STTS_NM);
+import type { PtcpSttsCd } from "@ssccops/codes";
 
 /**
  * 등록 시점에 고를 수 있는 상태 — 확정·대기뿐이다.
@@ -414,16 +413,20 @@ export const PTCP_RGST_STTS_CDS: readonly PtcpSttsCd[] = ["CONFIRMED", "WAITLIST
  * 이 상태들은 표준코드 테이블이 아니라 서버 enum(AcademicProgramStatus)이 됐고
  * 응답도 코드+명칭이 아니라 raw enum만 내려온다. 표시명은 화면이 갖는 어휘다.
  *
- * 세 값뿐이다 — RECRUITING은 없다. 모집 시작(START_RECRUITMENT)은 APPROVED → ONGOING
- * 전이라 "모집 중"을 별도 상태로 그리지 않는다(#122). 진행 단계(예정·진행·종료)는
- * 행사 일시에서 파생하는 값이라 여기 두지 않는다(EventSttsCd와 같은 자리).
+ * RECRUITING은 없다. 모집 시작(START_RECRUITMENT)은 APPROVED → ONGOING 전이라 "모집 중"을
+ * 별도 상태로 그리지 않는다(#122). 진행 단계(예정·진행·종료)는 행사 일시에서 파생하는 값이라
+ * 여기 두지 않는다(EventSttsCd와 같은 자리).
+ *
+ * DISCONTINUED(폐지 · #741 · ADR-0058 · 서버 #611)는 운영이 **중단된** 것이다 — 끝까지 한
+ * COMPLETED(수료)와 가르려고 더한 값이다. 종료처럼 쓰기가 멈추고 학술국장이 폐지 전 상태로 복원한다.
  */
-export type AcdmActvSttsCd = "APPROVED" | "ONGOING" | "COMPLETED";
+export type AcdmActvSttsCd = "APPROVED" | "ONGOING" | "COMPLETED" | "DISCONTINUED";
 
 export const ACDM_ACTV_STTS_NM: Record<AcdmActvSttsCd, string> = {
   APPROVED: "승인",
   ONGOING: "진행 중",
   COMPLETED: "수료",
+  DISCONTINUED: "폐지",
 };
 
 export const ACDM_ACTV_STTS_CDS = codesOf(ACDM_ACTV_STTS_NM);
@@ -461,13 +464,21 @@ export const SESN_STTS_CDS = codesOf(SESN_STTS_NM);
  * 유일해야 하는데 `aprv_stts_cd` 그룹이 이미 하위 업무용으로 있고 값 집합이 다르다.
  * PROPOSAL은 없다 — 기획안 승인은 폼 응답 검토(form_rspns_rvw_hstry)가 정본이다.
  */
-export type AcdmActvAprvSeCd = "SESSION" | "COMPLETION" | "REOPEN";
+export type AcdmActvAprvSeCd =
+  | "SESSION"
+  | "COMPLETION"
+  | "REOPEN"
+  | "DISCONTINUE"
+  | "REINSTATE";
 
 export const ACDM_ACTV_APRV_SE_NM: Record<AcdmActvAprvSeCd, string> = {
   SESSION: "회차 승인",
   COMPLETION: "종료·수료 승인",
   // 종료 → 진행 중으로 되돌린 기록. 종료 줄은 지우지 않고 한 줄 더한다(ADR-0057 · 서버 #597)
   REOPEN: "재시작",
+  // 폐지 줄에는 사유와 폐지 전 상태가, 복원 줄에는 (있으면) 사유가 남는다(ADR-0058 · 서버 #611)
+  DISCONTINUE: "폐지",
+  REINSTATE: "복원",
 };
 
 export const ACDM_ACTV_APRV_SE_CDS = codesOf(ACDM_ACTV_APRV_SE_NM);

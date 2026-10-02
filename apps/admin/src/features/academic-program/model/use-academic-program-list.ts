@@ -13,7 +13,7 @@ import { toAcademicProgramErrorMessage } from "./academic-program-error";
  *
  * 페칭 방식(SWR·React Query를 넣지 않는 이유)과 "결과에 요청 식별자를 실어 로딩을
  * 파생시키는" 구조의 근거는 features/work/model/use-work-list.ts와 같다. 커서 페이징도
- * 같은 모양이라 그 훅을 거의 그대로 옮겼다 — 다른 점은 필터(유형·상태·검색어)가 붙는
+ * 같은 모양이라 그 훅을 거의 그대로 옮겼다 — 다른 점은 필터(유형·상태·검색어·지연)가 붙는
  * 것 하나다.
  *
  * ── 필터가 바뀌면 목록을 처음부터 다시 받는다 ─────────────────
@@ -61,6 +61,7 @@ function filterKey(filter: AcademicProgramListFilter): string {
     filter.sttsCd ?? "",
     filter.keyword ?? "",
     filter.mine ? "1" : "",
+    filter.delayed ? "1" : "",
     filter.sort ?? "",
   ].join("|");
 }

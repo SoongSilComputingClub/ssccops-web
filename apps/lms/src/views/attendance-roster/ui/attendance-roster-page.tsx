@@ -1,8 +1,9 @@
+import { programStopOf, type ProgramStop } from "@/entities/academic-program";
 import {
   BackToProgramsNotice,
   NoProgramNotice,
-  ProgramCompletedNotice,
   ProgramSignupNotice,
+  ProgramStoppedNotice,
   selectProgram,
 } from "@/features/academic-program";
 import { ProgramSwitcher } from "@/features/academic-program/ui/program-switcher";
@@ -29,8 +30,8 @@ import { AttendanceRosterMatrix } from "./attendance-roster-matrix";
  * `?programId=`가 있으면 그 활동, 없으면 맨 위 — 어느 쪽이든 드롭다운으로 언제든 바꾼다.
  * SSR 셸이 `mine=leader` 목록 전체(드롭다운 항목)와 선택 활동을 함께 받는다(`selectProgram`).
  *
- * ── 종료된 프로그램 (#716 · ADR-0057) ────────────────────────────
- * 모든 칸을 잠그고 표 위에 안내 띠를 얹는다. 종료 여부는 그 선택 활동의 `sttsCd`다 — 출석부
+ * ── 종료·폐지된 프로그램 (#716 · ADR-0057 · #741 · ADR-0058) ─────────
+ * 모든 칸을 잠그고 표 위에 안내 띠를 얹는다. 종료·폐지 여부는 그 선택 활동의 `sttsCd`다 — 출석부
  * 로더에는 프로그램 상태가 없지만 셸이 이미 들고 있어 조회를 더하지 않는다.
  */
 
@@ -74,10 +75,10 @@ export async function AttendanceRosterPage({
             selectedId={selection.selected.academicProgramId}
             basePath={ROUTES.studioRoster}
           />
-          {selection.selected.sttsCd === "COMPLETED" && <ProgramCompletedNotice />}
+          <ProgramStoppedNotice sttsCd={selection.selected.sttsCd} />
           <RosterBody
             academicProgramId={selection.selected.academicProgramId}
-            programCompleted={selection.selected.sttsCd === "COMPLETED"}
+            programStop={programStopOf(selection.selected.sttsCd)}
           />
         </>
       )}
@@ -87,10 +88,10 @@ export async function AttendanceRosterPage({
 
 async function RosterBody({
   academicProgramId,
-  programCompleted,
+  programStop,
 }: Readonly<{
   academicProgramId: number;
-  programCompleted: boolean;
+  programStop: ProgramStop | null;
 }>) {
   const result = await loadAttendanceRoster(academicProgramId);
 
@@ -136,7 +137,7 @@ async function RosterBody({
       academicProgramId={academicProgramId}
       members={members}
       columns={columns}
-      programCompleted={programCompleted}
+      programStop={programStop}
     />
   );
 }

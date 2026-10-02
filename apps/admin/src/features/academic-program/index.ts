@@ -1,4 +1,14 @@
-export { toAcademicProgramErrorMessage } from "./model/academic-program-error";
+export {
+  toAcademicProgramErrorMessage,
+  toProgramMemberHistoryErrorMessage,
+} from "./model/academic-program-error";
+export { useProgramMemberHistory, useProgramMembers } from "./model/use-program-members";
+export type {
+  ProgramMemberHistory,
+  ProgramMemberHistoryStatus,
+  ProgramMembers,
+  ProgramMembersStatus,
+} from "./model/use-program-members";
 export { useAcademicProgramList } from "./model/use-academic-program-list";
 export type {
   AcademicProgramList,
@@ -26,11 +36,11 @@ export type {
   StartRecruitment,
   StartRecruitmentInput,
 } from "./model/use-start-recruitment";
-export { useProgramCompletion } from "./model/use-program-completion";
+export { useProgramTransition } from "./model/use-program-transition";
 export type {
-  ProgramCompletion,
-  ProgramCompletionTransition,
-} from "./model/use-program-completion";
+  ProgramTransition,
+  ProgramTransitionState,
+} from "./model/use-program-transition";
 export { useRecruitmentSelect } from "./model/use-recruitment-select";
 export type {
   RecruitmentApplicationsStatus,

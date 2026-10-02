@@ -1,5 +1,6 @@
 import type {
   AcdmActvSttsCd,
+  PtcpChgPathSeCd,
   PtcpSttsCd,
   RspnsSttsCd,
 } from "@/shared/config/codes";
@@ -39,8 +40,15 @@ export interface AcademicProgramSummary {
   leaderName: string | null;
   eventBeginAt: string | null;
   eventEndAt: string | null;
-  /** 0~100 (DECIMAL) — 계획 항목 수 대비 승인 회차 수. Session 엔티티 신설 전에는 0 */
+  /** 0~100 (DECIMAL) — 계획 항목 수 대비 승인 회차 수 (서버 계산 · #609) */
   progressRatio: number;
+  /**
+   * 지연 — 진행 중인데 운영 기간이 끝났고 진행률이 100% 미만이다 (서버 판정 · server#610).
+   *
+   * 목록의 `delayed=true` 필터와 같은 정의다. 화면이 진행률·종료일로 다시 계산하지 않는다 —
+   * 대시보드가 40% 근사로 셀 때 수와 배지가 따로 계산해 서로 어긋났다(#740).
+   */
+  isDelayed: boolean;
   /** 내가 이 활동의 스터디장/팀장인가 — 서버 판정(재계산 금지) */
   isLeader: boolean;
 }
@@ -111,6 +119,8 @@ export interface AcademicProgramListFilter {
   keyword?: string | null;
   /** 내가 스터디장/팀장인 활동만 */
   mine?: boolean | null;
+  /** 지연된 활동만 (`isDelayed`와 같은 정의 · server#610). `sttsCd`와 함께 주면 AND */
+  delayed?: boolean | null;
   /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
   cursor?: string | null;
   /** 1~100 · 서버 기본 20 */
@@ -136,25 +146,38 @@ export interface AcademicProgramListPage {
 /* ── 상태 전이 (POST /v1/academic-programs/{id}/transitions) ──── */
 
 /**
- * 학술국장이 부르는 전이 세 종 (AcademicProgramTransition).
+ * 학술국장이 부르는 전이 다섯 종 (AcademicProgramTransition).
  *
  * 다음 상태가 아니라 "무엇을 하겠다"를 보낸다 — work·form 도메인과 같은 패턴이다.
  * START_RECRUITMENT 는 APPROVED → ONGOING(연결된 폼을 OPEN 전이),
  * APPROVE_COMPLETION 은 ONGOING → COMPLETED(그 프로그램의 쓰기를 멈추고 접수 중인 모집 폼을
  * 마감), REOPEN 은 COMPLETED → ONGOING(모집 폼은 다시 열지 않는다) — ADR-0057 · 서버 #597.
+ * DISCONTINUE 는 APPROVED·ONGOING → DISCONTINUED(종료처럼 쓰기를 멈추고 모집 폼을 마감 · 사유
+ * 필수), REINSTATE 는 DISCONTINUED → **폐지 전 상태**(서버가 폐지 이력에서 읽는다 · 모집 폼은
+ * 다시 열지 않는다) — ADR-0058 · 서버 #611.
  */
 export type AcademicProgramTransition =
   | "START_RECRUITMENT"
   | "APPROVE_COMPLETION"
-  | "REOPEN";
+  | "REOPEN"
+  | "DISCONTINUE"
+  | "REINSTATE";
 
-/** 전이 입력 — 모집 기간은 START_RECRUITMENT 에서만 쓰인다(다른 전이에 실려도 서버가 무시) */
+/**
+ * 전이 입력 — 모집 기간은 START_RECRUITMENT 에서만, 사유는 DISCONTINUE·REINSTATE 에서만 쓰인다
+ * (다른 전이에 실려도 서버가 무시)
+ */
 export interface AcademicProgramTransitionInput {
   transition: AcademicProgramTransition;
   /** 모집 시작일 (ISO-8601, 오프셋 포함). START_RECRUITMENT 전용 */
   recruitmentStartAt?: string | null;
   /** 모집 종료일 (ISO-8601, 오프셋 포함). START_RECRUITMENT 전용 */
   recruitmentEndAt?: string | null;
+  /**
+   * 폐지·복원 사유 — 승인 이력(`opnn_cn`)에 남는다. DISCONTINUE 는 필수(비면 400
+   * `DISCONTINUATION_REASON_REQUIRED`), REINSTATE 는 선택
+   */
+  reason?: string | null;
 }
 
 /** 전이 결과 (AcademicProgramTransitionResponse) */
@@ -259,6 +282,31 @@ export interface RecruitmentTeamMember {
   isLeader: boolean;
   /** 명단에 오른 일시 */
   joinedAt: string | null;
+}
+
+/**
+ * 팀원 명단 변경 이력 한 줄 (#742 · server#612 · GET .../members/history · event_ptcp_stts_hstry).
+ *
+ * 누가 · 언제 · 무엇을(이전 → 이후 참가 상태) · 어느 화면에서. 회원 정보는 이름뿐이다(서버가 학번·
+ * 학과를 싣지 않는다). «무엇을»을 사람의 말로 옮기는 것은 `ptcpChangeNm`(`@ssccops/codes`)이다 —
+ * LMS 팀원 관리의 이력과 같은 말이다.
+ */
+export interface AcademicProgramMemberHistory {
+  historyId: number;
+  /** 바뀐 명단 행 (event_ptcp PK) */
+  eventParticipantId: number;
+  memberId: number | null;
+  /** 빈 이름은 빈 문자열로 굳힌다(표시 규칙은 뷰) */
+  memberName: string;
+  /** 처음 명단에 오른 줄이면 null */
+  beforeSttsCd: PtcpSttsCd | null;
+  afterSttsCd: PtcpSttsCd;
+  /** 어느 화면이 바꿨나 — 행사 참가자 · 모집 선발 · 팀원 관리 */
+  changePath: PtcpChgPathSeCd;
+  performerId: number | null;
+  performerName: string;
+  /** 변경 일시(Asia/Seoul 오프셋) */
+  changedAt: string | null;
 }
 
 /**

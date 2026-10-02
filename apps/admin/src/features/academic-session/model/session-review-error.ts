@@ -15,6 +15,7 @@ import { API_ERROR, ApiError } from "@/shared/lib/api/client";
  * 409 `ACADEMIC_PROGRAM_COMPLETED`(ADR-0057 · 서버 #597)는 새로고침으로 풀리지 않는다 — 회차를
  * 처리하려면 프로그램을 재시작해야 해서 그것을 안내한다. 승인 대기 목록은 서버가 종료된 프로그램의
  * 회차를 빼므로 화면이 미리 거르지 않고, 회차 이력에서 연 상세나 열어 둔 사이 종료된 경우에 온다.
+ * 폐지(`ACADEMIC_PROGRAM_DISCONTINUED` · ADR-0058 · 서버 #611)도 같은 자리에서 오고 복원을 안내한다.
  *
  * 알 수 없는 코드는 서버 메시지를 그대로 보여 준다 — 임의로 뭉개면 원인을 알려주려고 서버가
  * 내려보낸 문장이 사라진다.
@@ -33,6 +34,8 @@ export function toSessionReviewErrorMessage(error: unknown): string {
       return "이미 처리된 회차입니다 — 목록을 새로고침해주세요";
     case SESSION_REVIEW_ERROR.ACADEMIC_PROGRAM_COMPLETED:
       return "종료된 프로그램의 회차입니다 — 프로그램을 재시작한 뒤 처리해주세요";
+    case SESSION_REVIEW_ERROR.ACADEMIC_PROGRAM_DISCONTINUED:
+      return "폐지된 프로그램의 회차입니다 — 프로그램을 복원한 뒤 처리해주세요";
     case SESSION_REVIEW_ERROR.ACADEMIC_PROGRAM_NOT_FOUND:
     case SESSION_REVIEW_ERROR.SESSION_NOT_FOUND:
       return "회차가 없습니다 — 목록을 새로고침해주세요";

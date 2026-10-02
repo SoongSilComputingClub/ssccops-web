@@ -10,15 +10,16 @@
  * 타입만 본다(폼·행사 도메인이 세운 규칙).
  */
 
+import type { PtcpChgPathSeCd, PtcpSttsCd } from "@/shared/config/codes";
+
 /**
- * 참가_상태 (event_ptcp.ptcp_stts_cd).
+ * 참가_상태 (event_ptcp.ptcp_stts_cd) — `@ssccops/codes`에서 온다 (#742).
  *
- * 팀원 명단의 상태 세 값 — 어드민 `shared/config/codes.ts`의 `PtcpSttsCd`와 같은 계약이다.
- * lms에는 아직 공유 `codes.ts`가 없어(apps/www도 슬라이스마다 코드를 두는 방식이다) 여기에
- * 둔다. **거절(REJECTED)이 없다** — 거절은 신청(폼 응답) 심사 결과라 명단에는 오르지 않는다.
- * 취소(CANCELLED)도 행을 지우는 대신 남기는 상태다(명단은 활동 이력으로 보존).
+ * 여기 따로 적어 두던 것을 어드민과 한 벌로 올렸다 — 두 앱이 같은 명단 이력을 그리게 됐다.
+ * 이 슬라이스를 부르던 자리가 그대로 쓰도록 재export 한다. 취소(CANCELLED)는 이 앱의 팀원
+ * 화면에서 «제외»다(같은 값 · 말만 그 화면의 것).
  */
-export type PtcpSttsCd = "CONFIRMED" | "WAITLISTED" | "CANCELLED";
+export type { PtcpSttsCd };
 
 /**
  * table: event_ptcp — 활동에 확정·대기 중인 팀원 한 줄 (`AcademicProgramMemberResponse`).
@@ -57,6 +58,35 @@ export interface AcademicProgramMember {
    * 로컬 시간대로 그리면 서울 밖에서 다른 날짜가 보인다. 값이 없으면 null.
    */
   joinedAt: string | null;
+  /**
+   * 요청자가 이 명단을 고칠 수 있는가 — **서버 판정**(#742 · server#612 · 스터디장·학술국장 ×
+   * 진행 중). 줄마다 같은 값이다(판정이 줄이 아니라 활동과 요청자에 달렸다). 추가·제외 버튼이
+   * 이 값만 본다 — 상태·권한으로 다시 판정하지 않는다(ADR-0057).
+   */
+  isEditable: boolean;
+}
+
+/**
+ * 명단 변경 이력 한 줄 (#742 · server#612 · GET .../members/history · event_ptcp_stts_hstry).
+ *
+ * 누가 · 언제 · 무엇을(이전 → 이후 상태) · 어느 화면에서. 회원 정보는 이름뿐이다.
+ */
+export interface AcademicProgramMemberHistory {
+  historyId: number;
+  /** 바뀐 명단 행 */
+  eventPtcpId: number;
+  memberId: number;
+  /** 빈 이름은 빈 문자열로 굳힌다(표시 규칙은 뷰) */
+  memberName: string;
+  /** 처음 명단에 오른 줄이면 null */
+  beforeSttsCd: PtcpSttsCd | null;
+  afterSttsCd: PtcpSttsCd;
+  /** 어느 화면이 바꿨나 — 모집 선발 · 행사 참가자 · 팀원 관리 */
+  changePath: PtcpChgPathSeCd;
+  performerId: number;
+  performerName: string;
+  /** 변경 일시(Asia/Seoul 오프셋) */
+  changedAt: string | null;
 }
 
 /** 팀원 목록 필터 — 값이 없으면(null) 상태로 거르지 않고 전원을 받는다 */
@@ -70,11 +100,12 @@ export interface AcademicProgramMemberFilter {
  * 학술_활동_상태 (acdm_actv.acdm_actv_stts_cd).
  *
  * 고정 enum(서버 `AcademicProgramStatus`)이라 표준코드 시드가 없다 — 응답은 raw enum 문자열만
- * 온다. 어드민 `shared/config/codes.ts`의 `AcdmActvSttsCd`와 같은 계약이다. 세 값뿐이다 —
- * `RECRUITING`은 없다(모집 시작은 `APPROVED → ONGOING` 전이라 "모집 중"을 별도 상태로 두지
- * 않는다 · #122).
+ * 온다. 어드민 `shared/config/codes.ts`의 `AcdmActvSttsCd`와 같은 계약이다. `RECRUITING`은
+ * 없다(모집 시작은 `APPROVED → ONGOING` 전이라 "모집 중"을 별도 상태로 두지 않는다 · #122).
+ * `DISCONTINUED`(폐지 · #741 · ADR-0058)는 운영이 중단된 것이다 — 종료처럼 쓰기가 멈추고
+ * 학술국장이 어드민에서 복원한다.
  */
-export type AcdmActvSttsCd = "APPROVED" | "ONGOING" | "COMPLETED";
+export type AcdmActvSttsCd = "APPROVED" | "ONGOING" | "COMPLETED" | "DISCONTINUED";
 
 /**
  * 접수 상태 — 서버 `FormReceiptStatus`(기간까지 본 파생값).

@@ -19,34 +19,32 @@ import { toAcademicProgramErrorMessage } from "./academic-program-error";
  * ── 전용 엔드포인트가 없다 ────────────────────────────────────
  * 운영 대시보드(`GET /v1/dashboard`)와 달리 학술에는 요약 응답이 없다. 이슈가 지정한 세
  * 조회를 한 훅에서 병렬로 모아 화면이 그릴 값으로 가공한다 — 같은 집계가 여러 화면에 흩어지지
- * 않게 "이번 주"·"지연" 판정을 여기 한 곳에 가둔다(이슈 「결정해서 남길 것」).
+ * 않게 "이번 주" 판정과 수 세기를 여기 한 곳에 가둔다(이슈 「결정해서 남길 것」).
  *
- *  1. GET /v1/academic-programs               — 전체 활동. 진행 중(ONGOING) 수·지연 수·최근 활동.
+ *  1. GET /v1/academic-programs               — 전체 활동. 진행 중(ONGOING)·지연·폐지 수·최근 활동.
  *  2. GET /v1/academic-programs/sessions      — 활동 횡단 회차(전 상태). "이번 주 회차".
  *  3. GET /v1/academic-programs/reviews/sessions — SUBMITTED 회차. "승인 대기" 수.
  *
  * 셋 다 `ACADEMIC_PROGRAM_MANAGE`를 요구한다 — 권한이 없으면 첫 조회부터 403이라, nav가 이
  * 화면을 감춘다(주소로 들어오면 오류 블록).
  *
- * ── "이번 주"·"지연"은 웹이 판정한다 ─────────────────────────────
- * 서버가 그 필터를 주지 않는다. 기준일은 `todayInSeoul()`이다(프로토타입의 고정 기준일
+ * ── "이번 주"는 웹이, "지연"은 서버가 판정한다 ─────────────────────
+ * 이번 주는 서버가 그 필터를 주지 않는다. 기준일은 `todayInSeoul()`이다(프로토타입의 고정 기준일
  * 2026-08-21을 쓰면 이미 지난 회차가 미래로 보인다).
  *  - 이번 주 회차: 회차의 `actualYmd`(실제 진행일)가 이번 주(월~일) 안에 드는 것.
  *    **계획일(planYmd)이 활동 횡단 회차 응답에 없다** — SessionCrossListItem은 진행일만 준다.
  *    그래서 "예정"이 아니라 "이번 주에 진행된/진행일이 잡힌 회차"를 보여 준다. 서버가 계획일을
  *    이 응답에 실어 주면 미래 회차까지 포함하도록 넓힌다(그 전까지는 있는 필드로 최대한).
- *  - 지연 활동: 서버가 활동별 지연 플래그를 주지 않으므로 진행률로 근사한다 — ONGOING인데
- *    진행률(progressRatio)이 40% 미만인 활동. 정확한 "계획 대비 회차 미달"은 활동별 커리큘럼
- *    일정이 필요해 대시보드 범위 밖이다(근사임을 화면 문구가 밝힌다).
+ *  - 지연 활동: 서버의 `isDelayed`를 센다(server#610) — 진행 중인데 운영 기간이 끝났고
+ *    진행률이 100% 미만인 활동. 목록의 `?delayed=true`와 같은 정의라 수를 누르면 그 목록이
+ *    그대로 나온다. 예전에는 «진행률 40% 미만»으로 근사했는데, 수는 여기서·배지는 화면에서
+ *    따로 계산해 39.6%에서 서로 어긋났다(#740).
  *
  * 페칭 방식(SWR·React Query를 넣지 않는 것)과 "결과에 요청 식별자를 실어 로딩을 파생시키는"
  * 구조는 features/dashboard/model/use-dashboard.ts와 같다.
  */
 
 export type AcademicProgramDashboardStatus = "loading" | "ready" | "error";
-
-/** 지연으로 볼 진행률 하한(%) — 이보다 낮은 ONGOING 활동을 "계획 대비 회차 미달"로 근사한다 */
-const DELAYED_PROGRESS_THRESHOLD = 40;
 
 /** 최근 활동 카드에 세울 활동 수 */
 const RECENT_LIMIT = 5;
@@ -56,8 +54,13 @@ export interface AcademicProgramDashboardData {
   ongoingCount: number;
   /** 그중 유형별 분해 — 키는 `typeCd`이고 표시명은 그리는 쪽이 붙인다(`acdmActvTypeNm` · #568) */
   ongoingByType: { typeCd: string; count: number }[];
-  /** 지연 근사 활동 수 (ONGOING × 진행률 < 40%) */
+  /** 지연 활동 수 — 서버 `isDelayed`를 센다 */
   delayedCount: number;
+  /**
+   * 폐지(DISCONTINUED) 활동 수 (#741 · ADR-0058). 진행 중·지연 수에 섞이지 않게 따로 센다 —
+   * 폐지를 상태로 두기 전에는 멈춘 프로그램이 «진행 중»에 남아 두 칸을 부풀렸다
+   */
+  discontinuedCount: number;
   /** 승인 대기 회차 수 (SUBMITTED) */
   pendingSessionCount: number;
   /** 이번 주 회차 (진행일이 이번 주 안) — 진행일 오름차순 */
@@ -94,6 +97,7 @@ const EMPTY: AcademicProgramDashboardData = {
   ongoingCount: 0,
   ongoingByType: [],
   delayedCount: 0,
+  discontinuedCount: 0,
   pendingSessionCount: 0,
   thisWeekSessions: [],
   ongoingPrograms: [],
@@ -142,9 +146,8 @@ function summarize(
     byType.set(p.typeCd, (byType.get(p.typeCd) ?? 0) + 1);
   }
 
-  const delayedCount = ongoing.filter(
-    (p) => p.progressRatio < DELAYED_PROGRESS_THRESHOLD,
-  ).length;
+  const delayedCount = programs.filter((p) => p.isDelayed).length;
+  const discontinuedCount = programs.filter((p) => p.sttsCd === "DISCONTINUED").length;
 
   // fetchAcademicPrograms의 기본 정렬은 서버가 등록 최신순(-createdAt)으로 잡는다 —
   // 받은 순서가 곧 최근순이다(웹에서 다시 세지 않는다).
@@ -158,6 +161,7 @@ function summarize(
       (a, b) => b.count - a.count,
     ),
     delayedCount,
+    discontinuedCount,
     pendingSessionCount,
     thisWeekSessions: thisWeekSorted,
     ongoingPrograms: ongoing.slice(0, 8),

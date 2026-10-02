@@ -1,6 +1,7 @@
 export type {
   AcademicProgramDetail,
   AcademicProgramListFilter,
+  AcademicProgramMemberHistory,
   AcademicProgramListPage,
   AcademicProgramProgress,
   AcademicProgramSummary,
@@ -31,6 +32,11 @@ export {
   selectRecruitmentApplicants,
   updateRecruitmentSchedule,
 } from "./api/recruitment";
+
+export {
+  fetchAcademicProgramMemberHistory,
+  fetchAcademicProgramMembers,
+} from "./api/members";
 
 export { acdmActvSttsTone, acdmActvTypeNm, sesnSttsTone } from "./model/display";
 
