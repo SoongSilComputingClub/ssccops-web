@@ -166,6 +166,53 @@ interface AgendaSave {
  * 없으면 감추지 않고 잠근 채 사유를 `title`로 붙인다(apps/admin/AGENTS.md «이동은 감추고, 동작은
  * 잠근다»). 종료·취소된 회의에서는 승격 자체가 없어(서버 409 MEETING_CLOSED) 버튼을 그리지 않는다.
  */
+function DraftAgendaBox({
+  agendaName,
+  name,
+  onNameChange,
+  editable,
+  promote,
+}: Readonly<{
+  agendaName: string | null;
+  name: string;
+  onNameChange: (name: string) => void;
+  editable: boolean;
+  promote: { blockReason: string; pending: boolean; onPromote: () => void } | null;
+}>) {
+  return (
+    <div className="mt-3 rounded-[10px] bg-bg p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge tone="outline">드래프트</Badge>
+        <span className="text-[12.5px] text-n500">업무 없이 올린 안건</span>
+        <div className="flex-1" />
+        {promote && (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={promote.pending || promote.blockReason !== ""}
+            title={promote.blockReason || undefined}
+            onClick={promote.onPromote}
+          >
+            업무로 만들기
+          </Button>
+        )}
+      </div>
+      {editable ? (
+        <TextField
+          aria-label={FIELD_LABEL.agendaName}
+          className="mt-2"
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          maxLength={AGENDA_NAME_MAX}
+          placeholder={`${FIELD_LABEL.agendaName}(필수)`}
+        />
+      ) : (
+        <div className="mt-1 text-[15.5px] font-semibold">{agendaName || "-"}</div>
+      )}
+    </div>
+  );
+}
+
 /**
  * 연결 안건이 가리키는 운영 건의 상세 경로 (#766 · ssccops#575).
  *
@@ -211,53 +258,6 @@ function AgendaTargetBox({ target }: Readonly<{ target: MeetingAgendaTarget }>) 
     >
       {body}
     </button>
-  );
-}
-
-function DraftAgendaBox({
-  agendaName,
-  name,
-  onNameChange,
-  editable,
-  promote,
-}: Readonly<{
-  agendaName: string | null;
-  name: string;
-  onNameChange: (name: string) => void;
-  editable: boolean;
-  promote: { blockReason: string; pending: boolean; onPromote: () => void } | null;
-}>) {
-  return (
-    <div className="mt-3 rounded-[10px] bg-bg p-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge tone="outline">드래프트</Badge>
-        <span className="text-[12.5px] text-n500">업무 없이 올린 안건</span>
-        <div className="flex-1" />
-        {promote && (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={promote.pending || promote.blockReason !== ""}
-            title={promote.blockReason || undefined}
-            onClick={promote.onPromote}
-          >
-            업무로 만들기
-          </Button>
-        )}
-      </div>
-      {editable ? (
-        <TextField
-          aria-label={FIELD_LABEL.agendaName}
-          className="mt-2"
-          value={name}
-          onChange={(e) => onNameChange(e.target.value)}
-          maxLength={AGENDA_NAME_MAX}
-          placeholder={`${FIELD_LABEL.agendaName}(필수)`}
-        />
-      ) : (
-        <div className="mt-1 text-[15.5px] font-semibold">{agendaName || "-"}</div>
-      )}
-    </div>
   );
 }
 
