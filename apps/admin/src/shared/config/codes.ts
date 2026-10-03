@@ -286,7 +286,8 @@ export {
   type RvwPrcsSeCd,
 } from "@ssccops/codes";
 
-import { RSPNS_STTS_CDS, type RspnsSttsCd } from "@ssccops/codes";
+// 이 파일이 쓰는 것은 한 줄로 가져온다 — 같은 모듈을 두 번 import하지 않는다(Sonar S3863 · #773)
+import { RSPNS_STTS_CDS, type PtcpSttsCd, type RspnsSttsCd } from "@ssccops/codes";
 
 /**
  * 심사 대상 상태 — DRAFT를 뺀 나머지. 목록 필터 칩이 도는 목록이다.
@@ -394,7 +395,6 @@ export {
   type PtcpSttsCd,
 } from "@ssccops/codes";
 
-import type { PtcpSttsCd } from "@ssccops/codes";
 
 /**
  * 등록 시점에 고를 수 있는 상태 — 확정·대기뿐이다.

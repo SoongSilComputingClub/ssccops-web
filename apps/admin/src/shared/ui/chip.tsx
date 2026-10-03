@@ -74,16 +74,16 @@ export function ChipGroup<T extends string>({
   className?: string;
 }>) {
   return (
-    <div
-      role="group"
+    // fieldset이 곧 group이다(#773 · Sonar S6819). 기본 최소 너비만 지운다 — margin·padding·border는 preflight가 지운다
+    <fieldset
       aria-label={label}
-      className={cn("flex flex-wrap items-center gap-[7px]", className)}
+      className={cn("flex min-w-0 flex-wrap items-center gap-[7px]", className)}
     >
       {options.map((option) => (
         <Chip key={option} active={option === value} onClick={() => onChange(option)}>
           {option}
         </Chip>
       ))}
-    </div>
+    </fieldset>
   );
 }
