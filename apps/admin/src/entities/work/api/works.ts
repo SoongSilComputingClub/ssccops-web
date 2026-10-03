@@ -12,6 +12,8 @@ import type {
   WorkListItem,
   WorkMemberRef,
   WorkSubWorkSummary,
+  WorkTransition,
+  WorkTransitionResult,
 } from "../model/types";
 
 /*
@@ -180,6 +182,13 @@ export const WORK_ERROR = {
   FORBIDDEN: "FORBIDDEN",
   /** 이미 소프트 삭제된 업무를 다시 삭제 시도 (409, 서버 #125) */
   ALREADY_DELETED: "ALREADY_DELETED",
+  /** 전이표에 없는 순서 (409, 서버 #622) — 화면을 열어 둔 사이 다른 사람이 상태를 옮겼을 때 */
+  TRANSITION_NOT_ALLOWED: "TRANSITION_NOT_ALLOWED",
+  /**
+   * 완료가 아닌 하위 업무가 남은 채 «완료» (409, 서버 #622). 남은 수는 코드가 아니라 값이라
+   * 서버가 메시지에 싣는다(«완료되지 않은 하위 업무가 2건 남아 있습니다.») — data 필드는 없다
+   */
+  SUB_WORK_UNFINISHED: "SUB_WORK_UNFINISHED",
 } as const;
 
 /* ── 목록 ──────────────────────────────────────────────────── */
@@ -293,6 +302,55 @@ export async function updateWork(
     }),
   });
   return toWorkDetail(res);
+}
+
+/* ── 상태 전이 ─────────────────────────────────────────────── */
+
+interface WorkTransitionResponse {
+  workId: number | null;
+  transition: WorkTransition | null;
+  previousWorkStatus: WorkSttsCd | null;
+  workStatus: WorkSttsCd | null;
+  changedAt: string | null;
+}
+
+/**
+ * POST /v1/works/{workId}/transitions — 상위 업무 상태 전이 (#755 · 서버 #622 · ssccops#563).
+ *
+ * 착수·검토 요청·완료·검토 되돌리기·재개가 **모두 이 하나의 경로**를 쓴다 — 하위 업무 전이
+ * (transitionSubWork)와 같은 모양이다. 상태를 PATCH로 쓰는 길은 없다(updateWork 주석 · POL-003).
+ * 권한은 WORK_MANAGE이고 사유(reason)는 받지 않는다(서버 WorkTransitionRequest — 이력 표가 없고
+ * 감사 로그가 남는다).
+ *
+ * 거절: 표에 없는 순서 409 `TRANSITION_NOT_ALLOWED` · 하위 업무가 남은 완료 409
+ * `SUB_WORK_UNFINISHED` · 기준 코드에 없는 액션 400 `INVALID_CODE_VALUE` · 권한 403 · 없는 업무 404.
+ */
+export async function transitionWork(
+  workId: number,
+  transition: WorkTransition,
+): Promise<WorkTransitionResult> {
+  const res = await apiFetch<WorkTransitionResponse | null>(
+    `/v1/works/${workId}/transitions`,
+    {
+      method: "POST",
+      body: JSON.stringify({ transition }),
+    },
+  );
+
+  if (!res?.workStatus) {
+    throw new ApiError(
+      WORK_ERROR.VALIDATION_FAILED,
+      "저장됐습니다 — 새로고침하면 반영됩니다",
+    );
+  }
+
+  return {
+    workId: res.workId ?? workId,
+    transition: res.transition ?? transition,
+    previousWorkStatus: res.previousWorkStatus ?? res.workStatus,
+    workStatus: res.workStatus,
+    changedAt: res.changedAt,
+  };
 }
 
 /* ── 등록 ──────────────────────────────────────────────────── */

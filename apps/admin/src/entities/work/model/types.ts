@@ -102,3 +102,33 @@ export interface WorkDetail {
   createdAt: string | null;
   updatedAt: string | null;
 }
+
+/**
+ * 상위 업무 상태 전이 액션 (#755 · 서버 #622 · ssccops#563).
+ *
+ * 하위 업무(SubWorkTransition)와 상태 어휘는 같지만 액션이 다르다 — 상위 업무에는 승인·반려가
+ * 없고, 대신 되돌리는 길이 둘(검토 되돌리기 · 재개)이다. 서버도 enum을 나눴다(WorkTransitionAction).
+ *
+ * | 액션 | 전 → 후 |
+ * |---|---|
+ * | START | 기획 → 진행 |
+ * | REQUEST_REVIEW | 진행 → 검토 |
+ * | COMPLETE | 검토 → 완료 (완료가 아닌 하위 업무가 남으면 409 SUB_WORK_UNFINISHED) |
+ * | REVERT_REVIEW | 검토 → 진행 |
+ * | REOPEN | 완료 → 진행 |
+ */
+export type WorkTransition =
+  | "START"
+  | "REQUEST_REVIEW"
+  | "COMPLETE"
+  | "REVERT_REVIEW"
+  | "REOPEN";
+
+/** 전이 결과 — 전이 전 상태까지 함께 온다(서버 WorkTransitionResponse) */
+export interface WorkTransitionResult {
+  workId: number;
+  transition: WorkTransition;
+  previousWorkStatus: WorkSttsCd;
+  workStatus: WorkSttsCd;
+  changedAt: string | null;
+}

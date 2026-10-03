@@ -4,6 +4,8 @@ export type {
   WorkListItem,
   WorkMemberRef,
   WorkSubWorkSummary,
+  WorkTransition,
+  WorkTransitionResult,
 } from "./model/types";
 export { useWorkStore, workSttsTone } from "./model/store";
 export {
@@ -12,6 +14,7 @@ export {
   deleteWork,
   fetchWork,
   fetchWorks,
+  transitionWork,
   updateWork,
 } from "./api/works";
 export type {
