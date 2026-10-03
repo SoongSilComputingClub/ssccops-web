@@ -31,9 +31,13 @@ export const useWorkStore = create<WorkState>((set) => ({
     })),
 }));
 
-/** 업무 상태 배지 톤 */
-export function workSttsTone(cd: WorkSttsCd): "blue" | "amber" | "grey" {
+/**
+ * 업무 상태 배지 톤. 완료는 테두리만(outline)이다 — 상위 업무에 전이가 생기기 전(#755)에는 모든
+ * 업무가 기획에 머물러 기획·완료가 같은 회색이어도 갈릴 일이 없었다.
+ */
+export function workSttsTone(cd: WorkSttsCd): "blue" | "amber" | "grey" | "outline" {
   if (cd === "IN_PROGRESS") return "blue";
   if (cd === "REVIEW") return "amber";
+  if (cd === "DONE") return "outline";
   return "grey";
 }
