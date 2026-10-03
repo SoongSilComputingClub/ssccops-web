@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchSubWork } from "@/entities/sub-work";
 import { fetchWork } from "@/entities/work";
-import { mtgSttsTone, prcsSeTone, type MeetingAgenda, type MeetingTransition } from "@/entities/meeting";
+import {
+  mtgSttsTone,
+  prcsSeTone,
+  type MeetingAgenda,
+  type MeetingAgendaPromoteInput,
+  type MeetingTransition,
+} from "@/entities/meeting";
 import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useMeetingActions, useMeetingDetail } from "@/features/meeting";
@@ -28,6 +34,7 @@ import { AttachmentSection } from "@/features/attachment";
 import { ROUTES } from "@/shared/config/routes";
 import { formatDt } from "@/shared/lib/date";
 import { Badge, Button, Card, Chip, ChipGroup, EmptyState, Field, KeyValueGrid, PageBody, PageHeader, SearchInput, SectionLabel, Sheet, TextArea, TextField, flash } from "@/shared/ui";
+import { PromoteAgendaSheet } from "./promote-agenda-sheet";
 
 /*
  * 회의 상세 (ssccops-server OPS-025 조회 · OPS-026 전이 · OPS-027~029 안건, #83 ·
@@ -52,6 +59,17 @@ import { Badge, Button, Card, Chip, ChipGroup, EmptyState, Field, KeyValueGrid, 
  */
 const AGENDA_TARGET_KINDS = ["전체", "업무", "하위 업무"] as const;
 type AgendaTargetKind = (typeof AGENDA_TARGET_KINDS)[number];
+
+/**
+ * 안건을 올리는 두 길 (ADR-0059). «업무 연결»은 기존 흐름(업무·하위 업무를 골라 연결 안건),
+ * «업무 없이 제목만»은 드래프트 안건이다 — 업무가 되기 전의 논의를 회의 중에 바로 올린다.
+ * ADR-0055가 독립 안건을 지운 근거가 «화면에 만들 길이 없었다»였으므로 이 선택지가 그 결정의 조건이다.
+ */
+const AGENDA_ADD_MODES = ["업무 연결", "업무 없이 제목만"] as const;
+type AgendaAddMode = (typeof AGENDA_ADD_MODES)[number];
+
+/** 안건_명 길이 — 서버 `@Size(max = 100)`과 같은 값이다 */
+const AGENDA_NAME_MAX = 100;
 
 /** 타이핑 도중 매 글자마다 조회하지 않는다 — use-members.ts와 같은 값 */
 const AGENDA_SEARCH_DEBOUNCE_MS = 300;
@@ -132,6 +150,68 @@ function CancelSheet({
   );
 }
 
+/** 안건 카드의 저장 값 — 드래프트 안건만 `agendaName`을 싣는다(연결 안건에 주면 서버가 400) */
+interface AgendaSave {
+  agendaName?: string;
+  content: string;
+  resultContent: string;
+  processStatus: AgndPrcsSeCd;
+}
+
+/**
+ * 드래프트 안건의 제목 상자 (ADR-0059). 연결 안건의 운영 건 상자와 같은 자리·모양이다.
+ *
+ * «업무로 만들기»는 업무 등록 권한(WORK_MANAGE)이라 안건 쓰기 권한과 따로 판정한다 — 권한이
+ * 없으면 감추지 않고 잠근 채 사유를 `title`로 붙인다(apps/admin/AGENTS.md «이동은 감추고, 동작은
+ * 잠근다»). 종료·취소된 회의에서는 승격 자체가 없어(서버 409 MEETING_CLOSED) 버튼을 그리지 않는다.
+ */
+function DraftAgendaBox({
+  agendaName,
+  name,
+  onNameChange,
+  editable,
+  promote,
+}: Readonly<{
+  agendaName: string | null;
+  name: string;
+  onNameChange: (name: string) => void;
+  editable: boolean;
+  promote: { blockReason: string; pending: boolean; onPromote: () => void } | null;
+}>) {
+  return (
+    <div className="mt-3 rounded-[10px] bg-bg p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge tone="outline">드래프트</Badge>
+        <span className="text-[12.5px] text-n500">업무 없이 올린 안건</span>
+        <div className="flex-1" />
+        {promote && (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={promote.pending || promote.blockReason !== ""}
+            title={promote.blockReason || undefined}
+            onClick={promote.onPromote}
+          >
+            업무로 만들기
+          </Button>
+        )}
+      </div>
+      {editable ? (
+        <TextField
+          aria-label={FIELD_LABEL.agendaName}
+          className="mt-2"
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          maxLength={AGENDA_NAME_MAX}
+          placeholder={`${FIELD_LABEL.agendaName}(필수)`}
+        />
+      ) : (
+        <div className="mt-1 text-[15.5px] font-semibold">{agendaName || "-"}</div>
+      )}
+    </div>
+  );
+}
+
 function AgendaCard({
   agenda,
   editable,
@@ -139,18 +219,42 @@ function AgendaCard({
   onUpdate,
   onWithdraw,
   withdrawable,
+  promote,
+  createdWorkId,
 }: Readonly<{
   agenda: MeetingAgenda;
   editable: boolean;
   pending: boolean;
-  onUpdate: (content: string, resultContent: string, processStatus: AgndPrcsSeCd) => void;
+  onUpdate: (save: AgendaSave) => void;
   onWithdraw: () => void;
   withdrawable: boolean;
+  /** 드래프트 안건의 «업무로 만들기». null이면 버튼이 없다(종료·취소된 회의) */
+  promote: { blockReason: string; onPromote: () => void } | null;
+  /** 이 화면에서 방금 «업무로 만들기»로 만든 업무의 work_id — «만든 업무 열기»가 이 값으로 간다 */
+  createdWorkId: number | null;
 }>) {
   const router = useRouter();
+  const [name, setName] = useState(agenda.agendaName ?? "");
   const [content, setContent] = useState(agenda.content ?? "");
   const [resultContent, setResultContent] = useState(agenda.resultContent ?? "");
-  const dirty = content !== (agenda.content ?? "") || resultContent !== (agenda.resultContent ?? "");
+  const dirty =
+    content !== (agenda.content ?? "") ||
+    resultContent !== (agenda.resultContent ?? "") ||
+    (agenda.draft && name.trim() !== (agenda.agendaName ?? ""));
+
+  /* 드래프트는 고쳐 둔 제목을 함께 보낸다 — 비우면 서버가 400이라 보내기 전에 막는다 */
+  const save = (processStatus: AgndPrcsSeCd) => {
+    if (agenda.draft && !name.trim()) {
+      flash("안건 제목을 입력해주세요");
+      return;
+    }
+    onUpdate({
+      ...(agenda.draft ? { agendaName: name } : {}),
+      content,
+      resultContent,
+      processStatus,
+    });
+  };
 
   return (
     <div className="rounded-[12px] border border-line p-[14px]">
@@ -171,13 +275,22 @@ function AgendaCard({
         )}
       </div>
       {/*
-       * 안건은 언제나 운영 건을 가리킨다 (ADR-0055 · 서버 #593) — `oper_id`가 NOT NULL이라
-       * `targetOperation`이 없는 안건은 존재할 수 없다. 그전에 있던 «제목 없음 · 연결된 운영 없음»
-       * 분기는 닿을 수 없는 코드가 되어 걷었다. 옵셔널 체이닝을 남겨 둔 것은 타입이 아직
-       * nullable이어서가 아니라 **서버가 옛 버전이면 값이 빌 수 있어서**다(루트 AGENTS.md
-       * «서버와 버전을 맞춰 띄워야 채워지는 화면이 있다»).
+       * 안건은 운영 건을 가리키거나(연결 안건) 제목만 갖는다(드래프트 · ADR-0059 · 서버 #625).
+       * 가르는 값은 서버의 `draft`이고, 드래프트는 «제목 없음»으로 그리지 않는다 — 제목이 곧
+       * 그 안건이다(ADR-0055가 지운 옛 분기가 «제목 없음 · 연결된 운영 없음»이었다). 연결 안건
+       * 쪽을 `targetOperation` 검사로 남긴 것은 서버가 옛 버전이면 값이 빌 수 있어서다(루트
+       * AGENTS.md «서버와 버전을 맞춰 띄워야 채워지는 화면이 있다»).
        */}
-      {agenda.targetOperation && (
+      {agenda.draft && (
+        <DraftAgendaBox
+          agendaName={agenda.agendaName}
+          name={name}
+          onNameChange={setName}
+          editable={editable}
+          promote={promote && { ...promote, pending }}
+        />
+      )}
+      {!agenda.draft && agenda.targetOperation && (
         /* 키보드 접근(#403) */
         <button
           type="button"
@@ -201,12 +314,24 @@ function AgendaCard({
           <div className="mt-1 text-[15.5px] font-semibold">{agenda.targetOperation.title}</div>
         </button>
       )}
+      {/*
+        «업무로 만들기» 직후에만 선다 — 응답의 `work.workId`가 업무 상세 경로의 값이고, 안건이
+        싣는 `targetOperation.operationId`(oper_id)와 다르다.
+      */}
+      {!agenda.draft && createdWorkId !== null && (
+        <div className="mt-2 flex items-center gap-2 text-[13.5px] text-n500">
+          업무를 만들었습니다.
+          <Button variant="link" onClick={() => router.push(ROUTES.workDetail(createdWorkId))}>
+            만든 업무 열기
+          </Button>
+        </div>
+      )}
       <div className="mt-3 flex flex-wrap gap-[7px] lg:flex-nowrap">
         {AGND_PRCS_SE_CDS.map((cd) => (
           <Chip
             key={cd}
             active={agenda.processStatus === cd}
-            onClick={() => editable && onUpdate(content, resultContent, cd)}
+            onClick={() => editable && save(cd)}
           >
             {AGND_PRCS_SE_NM[cd]}
           </Chip>
@@ -241,7 +366,7 @@ function AgendaCard({
           className="mt-3"
           size="sm"
           disabled={pending}
-          onClick={() => onUpdate(content, resultContent, agenda.processStatus ?? "PENDING")}
+          onClick={() => save(agenda.processStatus ?? "PENDING")}
         >
           안건 내용 저장
         </Button>
@@ -254,7 +379,7 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
   const router = useRouter();
   const { meeting, status, errorMessage, reload, applyAgendaUpsert, applyAgendaRemoval } =
     useMeetingDetail(mtgId);
-  const { pending, transition, addAgenda, updateAgenda, withdrawAgenda, remove } =
+  const { pending, transition, addAgenda, updateAgenda, withdrawAgenda, promoteAgenda, remove } =
     useMeetingActions(mtgId);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -274,6 +399,14 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
    * 개회·종료·취소(상태 전이)만 canManage 로 남긴다.
    */
   const canWriteAgenda = useCan(CAPABILITY.MEETING_AGENDA_WRITE);
+  /*
+   * «업무로 만들기»(ADR-0059)는 업무 등록과 같은 WORK_MANAGE다 — 서버가 승격에 그 코드를 건다.
+   * 안건 쓰기 권한(국원도 갖는다)만으로는 업무가 생기지 않으므로 위 canWriteAgenda와 따로 본다.
+   */
+  const canManageWork = useCan(CAPABILITY.WORK_MANAGE);
+  /* «업무로 만들기» 시트가 열린 안건과, 이 화면에서 방금 만든 업무(안건별 work_id) */
+  const [promotingAgendaId, setPromotingAgendaId] = useState<number | null>(null);
+  const [createdWorkIds, setCreatedWorkIds] = useState<Record<number, number>>({});
 
   /*
    * 안건으로 연결할 업무·하위 업무 후보. 목록 API(OPS-008·OPS-020)는 카드에 필요한 값만
@@ -307,6 +440,8 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
   const [resolvingTarget, setResolvingTarget] = useState(false);
   const [newProcessStatus, setNewProcessStatus] = useState<AgndPrcsSeCd>("PENDING");
   const [newContent, setNewContent] = useState("");
+  const [addMode, setAddMode] = useState<AgendaAddMode>("업무 연결");
+  const [newAgendaName, setNewAgendaName] = useState("");
 
   if (status !== "ready" || !meeting) {
     return (
@@ -362,7 +497,36 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
     }
   };
 
+  const resetNewAgenda = () => {
+    setSelectedTarget(null);
+    setNewAgendaName("");
+    setNewProcessStatus("PENDING");
+    setNewContent("");
+  };
+
+  /* 드래프트 안건 상정 (ADR-0059) — 운영 건 없이 제목만 보낸다. 업무 후보를 고르지 않는다 */
+  const submitDraftAgenda = async () => {
+    if (!newAgendaName.trim()) {
+      flash("안건 제목을 입력해주세요");
+      return;
+    }
+    const { result, message } = await addAgenda({
+      agendaName: newAgendaName.trim(),
+      processStatus: newProcessStatus,
+      content: newContent.trim() || null,
+    });
+    if (message) flash(message);
+    if (result) {
+      applyAgendaUpsert(result);
+      resetNewAgenda();
+    }
+  };
+
   const submitNewAgenda = async () => {
+    if (addMode === "업무 없이 제목만") {
+      await submitDraftAgenda();
+      return;
+    }
     if (!selectedTarget) {
       flash("안건으로 연결할 업무 또는 하위 업무를 선택하세요");
       return;
@@ -384,27 +548,41 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
     if (message) flash(message);
     if (result) {
       applyAgendaUpsert(result);
-      setSelectedTarget(null);
-      setNewProcessStatus("PENDING");
-      setNewContent("");
+      resetNewAgenda();
     }
   };
 
-  const saveAgenda = async (
-    agendaId: number,
-    content: string,
-    resultContent: string,
-    processStatus: AgndPrcsSeCd,
-  ) => {
+  const saveAgenda = async (agendaId: number, save: AgendaSave) => {
     const { result, message } = await updateAgenda(agendaId, {
-      content: content || null,
-      resultContent: resultContent || null,
-      processStatus,
+      ...(save.agendaName === undefined ? {} : { agendaName: save.agendaName }),
+      content: save.content || null,
+      resultContent: save.resultContent || null,
+      processStatus: save.processStatus,
     });
     // 처리 구분 칩은 즉시 반영되는 것 자체가 결과다 — 실패했을 때만 문구가 필요하다
     if (message) flash(message);
     if (result) applyAgendaUpsert(result);
   };
+
+  /*
+   * «업무로 만들기» (ADR-0059). 응답의 안건(이제 그 업무를 가리킨다)만 갈아 끼운다 — 상정·수정과
+   * 같이 바뀐 것이 안건 한 건뿐이라 다시 조회하지 않는다. 새 업무의 work_id는 응답에만 있어
+   * (안건은 oper_id를 싣는다) 화면 상태로 쥐고 «만든 업무 열기»에 쓴다.
+   */
+  const promoteDraftAgenda = async (agendaId: number, input: MeetingAgendaPromoteInput) => {
+    const { result, message } = await promoteAgenda(agendaId, input);
+    if (message) flash(message);
+    if (!result) return;
+    applyAgendaUpsert(result.agenda);
+    setCreatedWorkIds((ids) => ({ ...ids, [agendaId]: result.workId }));
+    setPromotingAgendaId(null);
+  };
+
+  const promotingAgenda =
+    meeting.agendas.find((a) => a.agendaId === promotingAgendaId && a.draft) ?? null;
+  const promoteBlockReason = canManageWork
+    ? ""
+    : "업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
 
   const removeAgenda = async (agendaId: number) => {
     const { result, message } = await withdrawAgenda(agendaId);
@@ -567,10 +745,17 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
                       editable={isEditable && canWriteAgenda}
                       pending={pending}
                       withdrawable={isWithdrawable}
-                      onUpdate={(content, resultContent, cd) =>
-                        void saveAgenda(a.agendaId, content, resultContent, cd)
-                      }
+                      onUpdate={(save) => void saveAgenda(a.agendaId, save)}
                       onWithdraw={() => void removeAgenda(a.agendaId)}
+                      promote={
+                        isEditable
+                          ? {
+                              blockReason: promoteBlockReason,
+                              onPromote: () => setPromotingAgendaId(a.agendaId),
+                            }
+                          : null
+                      }
+                      createdWorkId={createdWorkIds[a.agendaId] ?? null}
                     />
                   ))}
                 </div>
@@ -580,99 +765,121 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
             {isEditable && canWriteAgenda && (
               <div className="rounded-2xl border border-dashed border-line-strong bg-surface p-[18px]">
                 <div className="text-[16px] font-medium">안건 추가</div>
-                <div className="mt-1 text-[13.5px] text-n500">
-                  안건으로 올릴 업무 또는 하위 업무를 선택하고 내용을 작성하세요.
-                </div>
-
                 <ChipGroup
-                  label="안건 대상 종류"
+                  label="안건을 올리는 방법"
                   className="mt-3"
-                  options={AGENDA_TARGET_KINDS}
-                  value={targetKind}
-                  onChange={setTargetKind}
+                  options={AGENDA_ADD_MODES}
+                  value={addMode}
+                  onChange={setAddMode}
                 />
-                <SearchInput
-                  className="mt-2"
-                  value={targetQuery}
-                  onChange={setTargetQuery}
-                  placeholder="제목으로 찾기"
-                />
-
-                <div className="mt-3 flex max-h-[260px] flex-col gap-2 overflow-y-auto">
-                  {/* 로딩·오류는 **고른 종류에만** 걸린다 — 묶어 두면 `업무`만 보는 중에도
-                      하위 업무 조회 실패 문구가 뜬다 */}
-                  {((showWorks && workList.status === "loading") ||
-                    (showSubWorks && subWorkList.status === "loading")) && (
-                    <div className="p-3 text-[13.5px] text-n500">불러오는 중입니다</div>
-                  )}
-                  {showWorks && workList.status === "error" && (
-                    <div className="p-3 text-[13.5px] text-danger">
-                      {workList.errorMessage || "업무 목록을 불러오지 못했습니다."}
-                    </div>
-                  )}
-                  {showSubWorks && subWorkList.status === "error" && (
-                    <div className="p-3 text-[13.5px] text-danger">
-                      {subWorkList.errorMessage || "하위 업무 목록을 불러오지 못했습니다."}
-                    </div>
-                  )}
-                  {(!showWorks || workList.status === "ready") &&
-                    (!showSubWorks || subWorkList.status === "ready") &&
-                    targetOptions.length === 0 &&
-                    /* 결과 없음은 두 가지다 — 다음에 할 행동이 다르므로 문구를 나눈다 */
-                    (targetQuery.trim() ? (
-                      <div className="p-3 text-[13.5px] text-n500">
-                        검색 결과가 없습니다.
-                      </div>
-                    ) : (
-                      <div className="p-3 text-[13.5px] text-n500">
-                        연결할 업무·하위 업무가 없습니다.
-                      </div>
-                    ))}
-                  {targetOptions.map((ref) => (
-                    /* 키보드 접근(#403) */
-                    <button
-                      type="button"
-                      key={`${ref.kind}-${ref.refId}`}
-                      aria-pressed={!!selectedTarget && isSameTarget(selectedTarget, ref)}
-                      onClick={() => setSelectedTarget(ref)}
-                      className={
-                        selectedTarget && isSameTarget(selectedTarget, ref)
-                          ? "w-full cursor-pointer rounded-[10px] bg-accent/8 p-3 text-left shadow-[inset_0_0_0_1px_var(--color-accent)]"
-                          : "w-full cursor-pointer rounded-[10px] border border-line p-3 text-left hover:border-accent"
-                      }
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge tone={ref.kind === "WORK" ? "blue" : "grey"}>
-                          {ref.kind === "WORK" ? "업무" : "하위 업무"}
-                        </Badge>
-                      </div>
-                      <div className="mt-1 text-[15px] font-semibold">{ref.ttl}</div>
-                      <div className="mt-[2px] text-[13px] text-n500">{ref.meta}</div>
-                    </button>
-                  ))}
-                  {showWorks && workList.hasNext && (
-                    <button
-                      type="button"
-                      disabled={workList.loadingMore}
-                      onClick={() => void loadMoreTargets("WORK")}
-                      className="cursor-pointer py-1 text-[13.5px] text-accent hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {workList.loadingMore ? "업무 불러오는 중…" : "업무 더 보기"}
-                    </button>
-                  )}
-                  {showSubWorks && subWorkList.hasNext && (
-                    <button
-                      type="button"
-                      disabled={subWorkList.loadingMore}
-                      onClick={() => void loadMoreTargets("SUB_WORK")}
-                      className="cursor-pointer py-1 text-[13.5px] text-accent hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {subWorkList.loadingMore ? "하위 업무 불러오는 중…" : "하위 업무 더 보기"}
-                    </button>
-                  )}
+                <div className="mt-2 text-[13.5px] text-n500">
+                  {addMode === "업무 연결"
+                    ? "안건으로 올릴 업무 또는 하위 업무를 선택하고 내용을 작성하세요."
+                    : "제목만으로 올린 안건은 드래프트입니다. 업무가 필요해지면 «업무로 만들기»를 누르세요."}
                 </div>
-                {selectedTarget && (
-                  <div className="mt-3 text-[13.5px] text-accent">선택됨 · {selectedTarget.ttl}</div>
+
+                {addMode === "업무 없이 제목만" ? (
+                  <TextField
+                    aria-label={FIELD_LABEL.agendaName}
+                    className="mt-3"
+                    value={newAgendaName}
+                    onChange={(e) => setNewAgendaName(e.target.value)}
+                    maxLength={AGENDA_NAME_MAX}
+                    placeholder={`${FIELD_LABEL.agendaName}(필수)`}
+                  />
+                ) : (
+                  <>
+                    <ChipGroup
+                      label="안건 대상 종류"
+                      className="mt-3"
+                      options={AGENDA_TARGET_KINDS}
+                      value={targetKind}
+                      onChange={setTargetKind}
+                    />
+                    <SearchInput
+                      className="mt-2"
+                      value={targetQuery}
+                      onChange={setTargetQuery}
+                      placeholder="제목으로 찾기"
+                    />
+
+                    <div className="mt-3 flex max-h-[260px] flex-col gap-2 overflow-y-auto">
+                      {/* 로딩·오류는 **고른 종류에만** 걸린다 — 묶어 두면 `업무`만 보는 중에도
+                          하위 업무 조회 실패 문구가 뜬다 */}
+                      {((showWorks && workList.status === "loading") ||
+                        (showSubWorks && subWorkList.status === "loading")) && (
+                        <div className="p-3 text-[13.5px] text-n500">불러오는 중입니다</div>
+                      )}
+                      {showWorks && workList.status === "error" && (
+                        <div className="p-3 text-[13.5px] text-danger">
+                          {workList.errorMessage || "업무 목록을 불러오지 못했습니다."}
+                        </div>
+                      )}
+                      {showSubWorks && subWorkList.status === "error" && (
+                        <div className="p-3 text-[13.5px] text-danger">
+                          {subWorkList.errorMessage || "하위 업무 목록을 불러오지 못했습니다."}
+                        </div>
+                      )}
+                      {(!showWorks || workList.status === "ready") &&
+                        (!showSubWorks || subWorkList.status === "ready") &&
+                        targetOptions.length === 0 &&
+                        /* 결과 없음은 두 가지다 — 다음에 할 행동이 다르므로 문구를 나눈다 */
+                        (targetQuery.trim() ? (
+                          <div className="p-3 text-[13.5px] text-n500">
+                            검색 결과가 없습니다.
+                          </div>
+                        ) : (
+                          <div className="p-3 text-[13.5px] text-n500">
+                            연결할 업무·하위 업무가 없습니다.
+                          </div>
+                        ))}
+                      {targetOptions.map((ref) => (
+                        /* 키보드 접근(#403) */
+                        <button
+                          type="button"
+                          key={`${ref.kind}-${ref.refId}`}
+                          aria-pressed={!!selectedTarget && isSameTarget(selectedTarget, ref)}
+                          onClick={() => setSelectedTarget(ref)}
+                          className={
+                            selectedTarget && isSameTarget(selectedTarget, ref)
+                              ? "w-full cursor-pointer rounded-[10px] bg-accent/8 p-3 text-left shadow-[inset_0_0_0_1px_var(--color-accent)]"
+                              : "w-full cursor-pointer rounded-[10px] border border-line p-3 text-left hover:border-accent"
+                          }
+                        >
+                          <div className="flex items-center gap-2">
+                            <Badge tone={ref.kind === "WORK" ? "blue" : "grey"}>
+                              {ref.kind === "WORK" ? "업무" : "하위 업무"}
+                            </Badge>
+                          </div>
+                          <div className="mt-1 text-[15px] font-semibold">{ref.ttl}</div>
+                          <div className="mt-[2px] text-[13px] text-n500">{ref.meta}</div>
+                        </button>
+                      ))}
+                      {showWorks && workList.hasNext && (
+                        <button
+                          type="button"
+                          disabled={workList.loadingMore}
+                          onClick={() => void loadMoreTargets("WORK")}
+                          className="cursor-pointer py-1 text-[13.5px] text-accent hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {workList.loadingMore ? "업무 불러오는 중…" : "업무 더 보기"}
+                        </button>
+                      )}
+                      {showSubWorks && subWorkList.hasNext && (
+                        <button
+                          type="button"
+                          disabled={subWorkList.loadingMore}
+                          onClick={() => void loadMoreTargets("SUB_WORK")}
+                          className="cursor-pointer py-1 text-[13.5px] text-accent hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {subWorkList.loadingMore ? "하위 업무 불러오는 중…" : "하위 업무 더 보기"}
+                        </button>
+                      )}
+                    </div>
+                    {selectedTarget && (
+                      <div className="mt-3 text-[13.5px] text-accent">선택됨 · {selectedTarget.ttl}</div>
+                    )}
+                  </>
                 )}
 
                 <div className="mt-3 flex flex-wrap gap-[7px]">
@@ -696,7 +903,11 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
                 />
                 <Button
                   className="mt-3"
-                  disabled={pending || resolvingTarget || !selectedTarget}
+                  disabled={
+                    pending ||
+                    resolvingTarget ||
+                    (addMode === "업무 연결" ? !selectedTarget : !newAgendaName.trim())
+                  }
                   onClick={() => void submitNewAgenda()}
                 >
                   {resolvingTarget ? "연결하는 중…" : "안건 추가"}
@@ -705,6 +916,16 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
             )}
           </div>
         </div>
+
+        {promotingAgenda && (
+          <PromoteAgendaSheet
+            key={promotingAgenda.agendaId}
+            agenda={promotingAgenda}
+            pending={pending}
+            onClose={() => setPromotingAgendaId(null)}
+            onSubmit={(input) => void promoteDraftAgenda(promotingAgenda.agendaId, input)}
+          />
+        )}
 
         <CancelSheet
           open={cancelOpen}

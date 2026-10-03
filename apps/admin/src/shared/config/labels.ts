@@ -127,6 +127,8 @@ export const FIELD_LABEL = {
   internalMeetingDetail: "내부 회의 상세",
   /** extrl_mtg_dtl (외부_회의_상세) */
   externalMeetingSummary: "외부 회의 상세",
+  /** agnd_nm (안건_명) — 드래프트 안건의 제목 (ADR-0059) */
+  agendaName: "안건 제목",
   /** agnd_cn (안건_내용) */
   agendaContent: "안건 내용",
   /** rslt_cn (결과_내용) */
