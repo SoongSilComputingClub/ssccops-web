@@ -4,8 +4,12 @@ export {
   toWorkErrorMessage,
   toWorkTransitionErrorMessage,
 } from "./model/work-error";
-export { useWorkList } from "./model/use-work-list";
-export type { WorkList, WorkListStatus } from "./model/use-work-list";
+export {
+  useWorkList,
+  WORK_LIST_TAB_HINTS,
+  WORK_LIST_TABS,
+} from "./model/use-work-list";
+export type { WorkList, WorkListStatus, WorkListTab } from "./model/use-work-list";
 export { useWorkDetail } from "./model/use-work-detail";
 export type { WorkDetailQuery, WorkDetailStatus } from "./model/use-work-detail";
 export { useCreateWork } from "./model/use-create-work";

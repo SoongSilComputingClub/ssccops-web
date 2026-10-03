@@ -5,7 +5,12 @@ import { useState } from "react";
 import { CAPABILITY } from "@/entities/session";
 import { workSttsTone, type WorkListItem } from "@/entities/work";
 import { useCan } from "@/features/auth";
-import { useWorkList } from "@/features/work";
+import {
+  useWorkList,
+  WORK_LIST_TAB_HINTS,
+  WORK_LIST_TABS,
+  type WorkListTab,
+} from "@/features/work";
 import { WORK_STTS_NM, WORK_TYPE_NM } from "@/shared/config/codes";
 import { ROUTES } from "@/shared/config/routes";
 import { formatYmd } from "@/shared/lib/date";
@@ -25,6 +30,20 @@ const NO_WORK_MANAGE = "업무를 등록할 권한이 없습니다 — 업무 �
 
 /** 칩 이름만으로는 무엇을 거르는지 알기 어렵다 — 담당이지 등록이 아니라는 것을 말한다 */
 const MINE_HINT = "내가 담당인 것만 보입니다. 등록만 한 건은 빠집니다.";
+
+/**
+ * 빈 목록의 한 줄 (#756). 기본 칩 «미완료»가 비면 «업무가 사라졌다»로 읽히지 않게 남은 업무가
+ * 없다고 말하고, 화면이 «전체 보기»를 함께 둔다(대시보드 «내 업무 목록»과 같은 판단 · #743).
+ */
+function emptyMessageOf(tab: WorkListTab, mine: boolean): string {
+  if (tab === "미완료") {
+    return mine ? "담당하고 있는 남은 업무가 없습니다." : "남은 업무가 없습니다.";
+  }
+  if (tab === "전체") {
+    return mine ? "담당하고 있는 업무가 없습니다." : "등록된 업무가 없습니다.";
+  }
+  return mine ? "조건에 맞는 업무가 없습니다." : `${tab} 상태인 업무가 없습니다.`;
+}
 
 function WorkCardSkeleton() {
   return (
@@ -68,10 +87,14 @@ function WorkCard({ work, onClick }: Readonly<{ work: WorkListItem; onClick: () 
 export function WorkListPage() {
   const router = useRouter();
   /*
-   * 이 화면의 첫 필터다 (ssccops#225). 지금까지 업무 목록에는 필터 UI가 없었고 상태·유형은
-   * 카드 배지로만 보였다 — 축이 늘면 하위 업무 목록처럼 칩 줄이 자란다.
+   * «내 업무» (ssccops#225). 상태 칩과 다른 축이라 함께 걸린다(AND).
    */
   const [mine, setMine] = useState(false);
+  /*
+   * 상태 칩 (#756 · ssccops#564). 기본은 «미완료» — 끝난 업무가 쌓여 진행 중인 것이 묻힌다는
+   * 운영진 요구다. 주소에 남기지 않는 것은 «내 업무»와 같다(다시 들어오면 기본값).
+   */
+  const [tab, setTab] = useState<WorkListTab>("미완료");
   const {
     works,
     status,
@@ -81,7 +104,7 @@ export function WorkListPage() {
     loadingMore,
     loadMore,
     reload,
-  } = useWorkList("", mine);
+  } = useWorkList("", mine, tab);
 
   /*
    * 조회(GET /v1/works)는 WORK_READ만 있어도 되지만(서버 #101), 등록은 여전히 WORK_MANAGE다 —
@@ -91,6 +114,10 @@ export function WorkListPage() {
    */
   const canManage = useCan(CAPABILITY.WORK_MANAGE);
   const openCreate = () => router.push(ROUTES.operationNew);
+
+  let emptyAction: { label: string; onClick: () => void } | undefined;
+  if (tab === "미완료") emptyAction = { label: "전체 보기", onClick: () => setTab("전체") };
+  else if (tab === "전체" && canManage && !mine) emptyAction = { label: "+ 등록", onClick: openCreate };
 
   const runLoadMore = async () => {
     const message = await loadMore();
@@ -111,6 +138,18 @@ export function WorkListPage() {
       />
       <PageBody>
         <FilterBar trailing={status === "ready" ? <>{totalCount}건</> : null}>
+          {WORK_LIST_TABS.map((t) => (
+            <Chip
+              key={t}
+              active={tab === t}
+              onClick={() => setTab(t)}
+              title={WORK_LIST_TAB_HINTS[t]}
+            >
+              {t}
+            </Chip>
+          ))}
+          {/* 칩과 다른 축이라 구분선을 둔다 — 하위 업무 목록과 같은 배치 */}
+          <span aria-hidden className="mx-[3px] h-[16px] w-px bg-fill-strong" />
           <Chip active={mine} onClick={() => setMine((on) => !on)} title={MINE_HINT}>
             내 업무
           </Chip>
@@ -134,13 +173,13 @@ export function WorkListPage() {
         {status === "ready" &&
           (works.length === 0 ? (
             <EmptyState
-              message={mine ? "담당하고 있는 업무가 없습니다." : "등록된 업무가 없습니다."}
+              message={emptyMessageOf(tab, mine)}
               /*
-                유도 버튼은 감춘다 — 권하면서 누르지 못하게 하는 모순이고, 사유는 헤더가 말한다.
-                필터를 켠 상태에서도 감추는 것은 지금 없는 것이 '내 담당'이지 업무 자체가
-                아니어서다 — 등록을 권하는 것이 답이 아니다.
+                «미완료»가 비면 «전체 보기»로 끝난 업무를 찾게 한다. 등록 유도는 «전체»에서만 —
+                다른 칩에서 없는 것은 그 조건의 업무이지 업무 자체가 아니다. 권한이 없으면
+                감춘다(권하면서 누르지 못하게 하는 모순이고, 사유는 헤더가 말한다).
               */
-              action={canManage && !mine ? { label: "+ 등록", onClick: openCreate } : undefined}
+              action={emptyAction}
             />
           ) : (
             <>
