@@ -9,6 +9,7 @@ import {
   prcsSeTone,
   type MeetingAgenda,
   type MeetingAgendaPromoteInput,
+  type MeetingAgendaTarget,
   type MeetingTransition,
 } from "@/entities/meeting";
 import { CAPABILITY, useSessionStore } from "@/entities/session";
@@ -211,6 +212,54 @@ function DraftAgendaBox({
   );
 }
 
+/**
+ * 연결 안건이 가리키는 운영 건의 상세 경로 (#766 · ssccops#575).
+ *
+ * 경로의 값은 유형별 식별자(`targetId`)다 — `operationId`(oper_id)를 넣으면 같은 번호의 다른
+ * 업무가 열린다(#766이 고친 결함). `targetId`를 싣지 않는 옛 서버면 null을 돌려주고 화면은
+ * 링크 없이 제목만 그린다 — oper_id로 대신 열지 않는다.
+ */
+function agendaTargetHref(target: MeetingAgendaTarget): string | null {
+  if (target.targetId == null) return null;
+  switch (target.operationType) {
+    case "WORK":
+      return ROUTES.workDetail(target.targetId);
+    case "SUB_WORK":
+      return ROUTES.subWorkDetail(target.targetId);
+    case "MEETING":
+      return ROUTES.meetingDetail(target.targetId);
+  }
+}
+
+function AgendaTargetBox({ target }: Readonly<{ target: MeetingAgendaTarget }>) {
+  const router = useRouter();
+  const href = agendaTargetHref(target);
+  const body = (
+    <>
+      <div className="flex items-center gap-2">
+        <Badge tone={target.operationType === "WORK" ? "blue" : "grey"}>
+          {OPER_TYPE_NM[target.operationType]}
+        </Badge>
+        <span className="font-mono text-[12.5px] text-n500">운영 #{target.operationId}</span>
+      </div>
+      <div className="mt-1 text-[15.5px] font-semibold">{target.title}</div>
+    </>
+  );
+  if (href === null) {
+    return <div className="mt-3 rounded-[10px] bg-bg p-3">{body}</div>;
+  }
+  return (
+    /* 키보드 접근(#403) */
+    <button
+      type="button"
+      onClick={() => router.push(href)}
+      className="mt-3 block w-full cursor-pointer rounded-[10px] bg-bg p-3 text-left transition-opacity hover:opacity-80"
+    >
+      {body}
+    </button>
+  );
+}
+
 function AgendaCard({
   agenda,
   editable,
@@ -290,28 +339,7 @@ function AgendaCard({
         />
       )}
       {!agenda.draft && agenda.targetOperation && (
-        /* 키보드 접근(#403) */
-        <button
-          type="button"
-          onClick={() =>
-            router.push(
-              agenda.targetOperation!.operationType === "WORK"
-                ? ROUTES.workDetail(agenda.targetOperation!.operationId)
-                : ROUTES.subWorkDetail(agenda.targetOperation!.operationId),
-            )
-          }
-          className="mt-3 block w-full cursor-pointer rounded-[10px] bg-bg p-3 text-left transition-opacity hover:opacity-80"
-        >
-          <div className="flex items-center gap-2">
-            <Badge tone={agenda.targetOperation.operationType === "WORK" ? "blue" : "grey"}>
-              {OPER_TYPE_NM[agenda.targetOperation.operationType]}
-            </Badge>
-            <span className="font-mono text-[12.5px] text-n500">
-              운영 #{agenda.targetOperation.operationId}
-            </span>
-          </div>
-          <div className="mt-1 text-[15.5px] font-semibold">{agenda.targetOperation.title}</div>
-        </button>
+        <AgendaTargetBox target={agenda.targetOperation} />
       )}
       {/*
         «업무로 만들기» 직후에만 선다 — 응답의 `work.workId`가 업무 상세 경로의 값이고, 안건이
