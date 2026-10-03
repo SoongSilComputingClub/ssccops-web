@@ -202,7 +202,7 @@ export const MEETING_ERROR = {
   TRANSITION_NOT_ALLOWED: "TRANSITION_NOT_ALLOWED",
   /** 미처리 안건이 남은 채 회의 종료 시도 (409) */
   AGENDA_UNRESOLVED: "AGENDA_UNRESOLVED",
-  /** 종료·취소된 회의에 안건 상정·수정·승격 시도 (409) */
+  /** 종료·취소된 회의에 안건 상정·수정 시도 (409) — 승격은 ssccops#573부터 그 회의에서도 열린다 */
   MEETING_CLOSED: "MEETING_CLOSED",
   /** 이미 운영 건에 연결된 안건을 업무로 승격하려 할 때 (409, 서버 #625 · ADR-0059) */
   MEETING_AGENDA_ALREADY_LINKED: "MEETING_AGENDA_ALREADY_LINKED",
@@ -453,8 +453,12 @@ export interface MeetingAgendaPromotion {
  * (ADR-0059 · 서버 #625).
  *
  * 서버가 업무 등록과 안건 연결을 한 트랜잭션으로 한다 — 연결이 실패하면 업무도 남지 않는다.
- * 권한은 업무 등록과 같은 WORK_MANAGE다(안건 쓰기 권한이 아니다). 종료·취소된 회의는 409
- * `MEETING_CLOSED`, 이미 연결된 안건은 409 `MEETING_AGENDA_ALREADY_LINKED`다.
+ * 권한은 업무 등록과 같은 WORK_MANAGE다(안건 쓰기 권한이 아니다). 종료·취소된 회의에서도
+ * 승격할 수 있다(ssccops#573) — 그 전 서버는 409 `MEETING_CLOSED`를 준다. 이미 연결된 안건은 409
+ * `MEETING_AGENDA_ALREADY_LINKED`다.
+ *
+ * 시작 일시는 선택이다(#765) — 비우면 `startAt`을 싣지 않는다. 종료 일시가 시작보다 앞서면
+ * 서버가 400이다(시작이 없으면 따지지 않는다).
  *
  * `work.workId` 없이 성공으로 처리하지 않는다 — createWork와 같은 이유(만든 업무로 가는 길이 사라진다).
  */
@@ -471,7 +475,7 @@ export async function promoteMeetingAgenda(
         title: input.title.trim(),
         itemType: input.itemType,
         ownerId: input.ownerId,
-        startAt: withServiceOffset(input.startAt),
+        ...(input.startAt ? { startAt: withServiceOffset(input.startAt) } : {}),
         endAt: withServiceOffset(input.endAt),
         priority: input.priority,
         review: null,
