@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CAPABILITY } from "@/entities/session";
 import type { WorkDetail } from "@/entities/work";
@@ -56,6 +57,9 @@ import {
  *
  * 상태(workStatus)는 이 폼에 없다 — 서버 요청 DTO 자체에 그 필드가 없어(POL-003) 상태는
  * 상세 화면의 전이 버튼으로만 바뀐다.
+ *
+ * 태그도 이 폼에 없다 — 지정은 PUT /v1/works/{id}/tags 전체 교체 하나뿐이라 PATCH와 함께 보내면
+ * 한쪽만 성공하는 상태가 생긴다(#757). 상세의 «태그 편집»으로 가는 안내 한 줄만 둔다(#767).
  */
 
 function EditSkeleton() {
@@ -221,6 +225,12 @@ function WorkEditForm({
                 placeholder="운영이 끝난 뒤 쓰는 회고 (비워도 됩니다)"
               />
             </Field>
+            <div className="mt-4 text-[13.5px] text-n500">
+              태그는 업무 상세에서 편집합니다.{" "}
+              <Link href={ROUTES.workDetail(work.workId)} className="text-accent underline">
+                업무 상세로
+              </Link>
+            </div>
           </Card>
         </div>
 
