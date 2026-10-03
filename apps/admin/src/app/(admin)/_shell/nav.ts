@@ -390,6 +390,17 @@ export const NAV_GROUPS: NavGroup[] = [
         requires: CAPABILITY.SUB_WORK_TYPE_READ,
       },
       /*
+       * 업무 태그 관리 (#757 · ssccops#565). 첫 조회 GET /v1/work-tags는 WORK_READ다 — 만들기·이름
+       * 바꾸기·지우기만 WORK_MANAGE라 화면 안에서 가린다(폼 라벨 관리가 조회를 연 것과 같은 판단).
+       */
+      {
+        section: "운영",
+        label: "업무 태그 관리",
+        href: ROUTES.workTags,
+        isActive: starts("/operations/work-tags"),
+        requires: CAPABILITY.WORK_READ,
+      },
+      /*
        * 역할 관리에는 requires 를 두지 않는다 (#52).
        *
        * 역할·역할 분류 조회는 서버가 권한 없이 열어 두었고 등록·수정·삭제만 ROLE_MANAGE 를

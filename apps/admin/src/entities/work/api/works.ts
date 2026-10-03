@@ -12,6 +12,9 @@ import type {
   WorkListItem,
   WorkMemberRef,
   WorkSubWorkSummary,
+  WorkTagSummary,
+  WorkTransition,
+  WorkTransitionResult,
 } from "../model/types";
 
 /*
@@ -33,6 +36,12 @@ interface MemberSummaryResponse {
   name: string | null;
 }
 
+/** 태그 칩 (#757 · 서버 #631) — 서버 WorkTagSummaryResponse */
+interface WorkTagSummaryResponse {
+  workTagId: number;
+  tagNm: string | null;
+}
+
 interface WorkListItemResponse {
   workId: number;
   title: string | null;
@@ -43,6 +52,7 @@ interface WorkListItemResponse {
   endAt: string | null;
   progressRate: number | null;
   subWorkCount: number | null;
+  tags: WorkTagSummaryResponse[] | null;
 }
 
 interface WorkSubWorkSummaryResponse {
@@ -71,6 +81,7 @@ interface WorkDetailResponse {
   progressRate: number | null;
   subWorkCount: number | null;
   subWorks: WorkSubWorkSummaryResponse[] | null;
+  tags: WorkTagSummaryResponse[] | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -109,6 +120,11 @@ function toProgressRate(value: number | null): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
+/** 서버가 태그 필드를 아직 안 실은 응답(배포 순서가 갈린 dev)은 빈 배열로 읽는다 */
+function toTags(tags: WorkTagSummaryResponse[] | null | undefined): WorkTagSummary[] {
+  return (tags ?? []).map((t) => ({ workTagId: t.workTagId, tagNm: t.tagNm ?? "" }));
+}
+
 function toWorkListItem(res: WorkListItemResponse): WorkListItem {
   return {
     workId: res.workId,
@@ -120,6 +136,7 @@ function toWorkListItem(res: WorkListItemResponse): WorkListItem {
     endAt: res.endAt,
     progressRate: toProgressRate(res.progressRate),
     subWorkCount: res.subWorkCount ?? 0,
+    tags: toTags(res.tags),
   };
 }
 
@@ -154,6 +171,7 @@ function toWorkDetail(res: WorkDetailResponse): WorkDetail {
     // 건수는 목록 길이와 같은 값이지만 서버가 준 값을 그대로 쓴다 (분모가 갈리지 않게)
     subWorkCount: res.subWorkCount ?? subWorks.length,
     subWorks,
+    tags: toTags(res.tags),
     createdAt: res.createdAt,
     updatedAt: res.updatedAt,
   };
@@ -180,6 +198,13 @@ export const WORK_ERROR = {
   FORBIDDEN: "FORBIDDEN",
   /** 이미 소프트 삭제된 업무를 다시 삭제 시도 (409, 서버 #125) */
   ALREADY_DELETED: "ALREADY_DELETED",
+  /** 전이표에 없는 순서 (409, 서버 #622) — 화면을 열어 둔 사이 다른 사람이 상태를 옮겼을 때 */
+  TRANSITION_NOT_ALLOWED: "TRANSITION_NOT_ALLOWED",
+  /**
+   * 완료가 아닌 하위 업무가 남은 채 «완료» (409, 서버 #622). 남은 수는 코드가 아니라 값이라
+   * 서버가 메시지에 싣는다(«완료되지 않은 하위 업무가 2건 남아 있습니다.») — data 필드는 없다
+   */
+  SUB_WORK_UNFINISHED: "SUB_WORK_UNFINISHED",
 } as const;
 
 /* ── 목록 ──────────────────────────────────────────────────── */
@@ -187,6 +212,14 @@ export const WORK_ERROR = {
 /** 업무 목록 필터 — 값이 없으면(null) 그 축을 거르지 않는다 */
 export interface WorkListFilter {
   workStatus?: WorkSttsCd | null;
+  /**
+   * 뺄 상태 (#756 · 서버 #627 · ssccops#564). 업무 목록의 기본 «미완료»가 `["DONE"]`이다 — 단일
+   * `workStatus`로는 «기획·진행·검토»를 한 번에 말할 수 없고, 화면이 받은 페이지를 다시 거르면
+   * 커서 페이징이 빈 페이지를 낸다. 포함 목록이 아니라 제외 목록인 것은 상태가 늘 때 화면이 모르고
+   * 빠뜨리지 않게다(서버 WorkSearchCondition 주석). 서버가 반복 파라미터로 받고 `totalCount`도
+   * 이 조건으로 센다.
+   */
+  excludeWorkStatus?: readonly WorkSttsCd[] | null;
   workType?: WorkTypeCd | null;
   /**
    * 제목 부분 일치 (ssccops#216). 서버가 대소문자를 가리지 않고 `%`·`_`는 리터럴로 다룬다 —
@@ -202,6 +235,11 @@ export interface WorkListFilter {
    * (`ssccops-server#268`) 여기서는 필터를 켤지만 말한다 — 식별자를 보낼 자리가 애초에 없다.
    */
   mine?: boolean | null;
+  /**
+   * 태그 하나 (#757 · 서버 #631). 다른 조건과 AND이고 서버가 거르므로 커서·`totalCount`도 그
+   * 결과를 말한다. 없는 태그 id는 오류가 아니라 빈 결과다.
+   */
+  tagId?: number | null;
   /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
   cursor?: string | null;
   /** 1~100 · 서버 기본 20 */
@@ -227,9 +265,11 @@ export interface WorkListPage {
 export async function fetchWorks(filter: WorkListFilter = {}): Promise<WorkListPage> {
   const query = new URLSearchParams();
   if (filter.workStatus) query.set("workStatus", filter.workStatus);
+  for (const status of filter.excludeWorkStatus ?? []) query.append("excludeWorkStatus", status);
   if (filter.workType) query.set("workType", filter.workType);
   if (filter.keyword) query.set("keyword", filter.keyword);
   if (filter.mine) query.set("mine", "true");
+  if (filter.tagId != null) query.set("tagId", String(filter.tagId));
   if (filter.cursor) query.set("cursor", filter.cursor);
   if (filter.size != null) query.set("size", String(filter.size));
 
@@ -293,6 +333,55 @@ export async function updateWork(
     }),
   });
   return toWorkDetail(res);
+}
+
+/* ── 상태 전이 ─────────────────────────────────────────────── */
+
+interface WorkTransitionResponse {
+  workId: number | null;
+  transition: WorkTransition | null;
+  previousWorkStatus: WorkSttsCd | null;
+  workStatus: WorkSttsCd | null;
+  changedAt: string | null;
+}
+
+/**
+ * POST /v1/works/{workId}/transitions — 상위 업무 상태 전이 (#755 · 서버 #622 · ssccops#563).
+ *
+ * 착수·검토 요청·완료·검토 되돌리기·재개가 **모두 이 하나의 경로**를 쓴다 — 하위 업무 전이
+ * (transitionSubWork)와 같은 모양이다. 상태를 PATCH로 쓰는 길은 없다(updateWork 주석 · POL-003).
+ * 권한은 WORK_MANAGE이고 사유(reason)는 받지 않는다(서버 WorkTransitionRequest — 이력 표가 없고
+ * 감사 로그가 남는다).
+ *
+ * 거절: 표에 없는 순서 409 `TRANSITION_NOT_ALLOWED` · 하위 업무가 남은 완료 409
+ * `SUB_WORK_UNFINISHED` · 기준 코드에 없는 액션 400 `INVALID_CODE_VALUE` · 권한 403 · 없는 업무 404.
+ */
+export async function transitionWork(
+  workId: number,
+  transition: WorkTransition,
+): Promise<WorkTransitionResult> {
+  const res = await apiFetch<WorkTransitionResponse | null>(
+    `/v1/works/${workId}/transitions`,
+    {
+      method: "POST",
+      body: JSON.stringify({ transition }),
+    },
+  );
+
+  if (!res?.workStatus) {
+    throw new ApiError(
+      WORK_ERROR.VALIDATION_FAILED,
+      "저장됐습니다 — 새로고침하면 반영됩니다",
+    );
+  }
+
+  return {
+    workId: res.workId ?? workId,
+    transition: res.transition ?? transition,
+    previousWorkStatus: res.previousWorkStatus ?? res.workStatus,
+    workStatus: res.workStatus,
+    changedAt: res.changedAt,
+  };
 }
 
 /* ── 등록 ──────────────────────────────────────────────────── */
