@@ -10,7 +10,7 @@ import {
   type Qitem,
   type QitemCpstCn,
 } from "@/entities/form";
-import { matchesPatternPreset } from "@ssccops/form-renderer";
+import { FormDescription, matchesPatternPreset } from "@ssccops/form-renderer";
 import { PATTERN_PRESETS } from "@/shared/config/constants";
 import {
   isChoiceQitemType,
@@ -19,7 +19,6 @@ import {
   QITEM_TYPE_NM,
   type QitemTypeCd,
 } from "@/shared/config/codes";
-import { FormDescription } from "@ssccops/form-renderer";
 import { Badge, Button, Card, Chip, Field, SectionLabel, TextArea, TextField, Toggle, flash } from "@/shared/ui";
 import { nextQitemId, parseMaxSlctCnt } from "../model/form-draft";
 
