@@ -53,11 +53,11 @@ export function Segmented<T extends string>({
   className?: string;
 }>) {
   return (
-    <div
-      role="group"
+    // fieldset이 곧 group이다(#773 · Sonar S6819). 기본 최소 너비만 지운다
+    <fieldset
       aria-label={label}
       className={cn(
-        "flex rounded-[12px] border border-line bg-surface p-[3px]",
+        "flex min-w-0 rounded-[12px] border border-line bg-surface p-[3px]",
         className,
       )}
     >
@@ -78,6 +78,6 @@ export function Segmented<T extends string>({
           {option}
         </button>
       ))}
-    </div>
+    </fieldset>
   );
 }
