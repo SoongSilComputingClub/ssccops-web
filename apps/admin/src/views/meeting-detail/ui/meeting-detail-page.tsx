@@ -163,7 +163,8 @@ interface AgendaSave {
  *
  * «업무로 만들기»는 업무 등록 권한(WORK_MANAGE)이라 안건 쓰기 권한과 따로 판정한다 — 권한이
  * 없으면 감추지 않고 잠근 채 사유를 `title`로 붙인다(apps/admin/AGENTS.md «이동은 감추고, 동작은
- * 잠근다»). 종료·취소된 회의에서는 승격 자체가 없어(서버 409 MEETING_CLOSED) 버튼을 그리지 않는다.
+ * 잠근다»). 종료·취소된 회의에서도 버튼은 선다(#765) — 회의가 끝난 뒤에야 업무로 할 일이 드러나는
+ * 안건이 많아 서버가 그 상태의 승격을 연다(ssccops#573). 제목 고치기와 새 안건 올리기는 그대로 잠긴다.
  */
 function DraftAgendaBox({
   agendaName,
@@ -176,7 +177,7 @@ function DraftAgendaBox({
   name: string;
   onNameChange: (name: string) => void;
   editable: boolean;
-  promote: { blockReason: string; pending: boolean; onPromote: () => void } | null;
+  promote: { blockReason: string; pending: boolean; onPromote: () => void };
 }>) {
   return (
     <div className="mt-3 rounded-[10px] bg-bg p-3">
@@ -184,17 +185,15 @@ function DraftAgendaBox({
         <Badge tone="outline">드래프트</Badge>
         <span className="text-[12.5px] text-n500">업무 없이 올린 안건</span>
         <div className="flex-1" />
-        {promote && (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={promote.pending || promote.blockReason !== ""}
-            title={promote.blockReason || undefined}
-            onClick={promote.onPromote}
-          >
-            업무로 만들기
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={promote.pending || promote.blockReason !== ""}
+          title={promote.blockReason || undefined}
+          onClick={promote.onPromote}
+        >
+          업무로 만들기
+        </Button>
       </div>
       {editable ? (
         <TextField
@@ -228,8 +227,8 @@ function AgendaCard({
   onUpdate: (save: AgendaSave) => void;
   onWithdraw: () => void;
   withdrawable: boolean;
-  /** 드래프트 안건의 «업무로 만들기». null이면 버튼이 없다(종료·취소된 회의) */
-  promote: { blockReason: string; onPromote: () => void } | null;
+  /** 드래프트 안건의 «업무로 만들기» — 종료·취소된 회의에서도 선다(#765) */
+  promote: { blockReason: string; onPromote: () => void };
   /** 이 화면에서 방금 «업무로 만들기»로 만든 업무의 work_id — «만든 업무 열기»가 이 값으로 간다 */
   createdWorkId: number | null;
 }>) {
@@ -287,7 +286,7 @@ function AgendaCard({
           name={name}
           onNameChange={setName}
           editable={editable}
-          promote={promote && { ...promote, pending }}
+          promote={{ ...promote, pending }}
         />
       )}
       {!agenda.draft && agenda.targetOperation && (
@@ -747,14 +746,10 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
                       withdrawable={isWithdrawable}
                       onUpdate={(save) => void saveAgenda(a.agendaId, save)}
                       onWithdraw={() => void removeAgenda(a.agendaId)}
-                      promote={
-                        isEditable
-                          ? {
-                              blockReason: promoteBlockReason,
-                              onPromote: () => setPromotingAgendaId(a.agendaId),
-                            }
-                          : null
-                      }
+                      promote={{
+                        blockReason: promoteBlockReason,
+                        onPromote: () => setPromotingAgendaId(a.agendaId),
+                      }}
                       createdWorkId={createdWorkIds[a.agendaId] ?? null}
                     />
                   ))}
