@@ -5,6 +5,8 @@ import {
   FormDescription,
   isChoiceQitemType,
   isTextQitemType,
+  matchesPatternPreset,
+  PATTERN_PRESETS,
   QITEM_TYPE_CDS,
   QITEM_TYPE_NM,
   type Qitem,
@@ -13,7 +15,6 @@ import {
 } from "@ssccops/form-renderer";
 import { SectionLabel } from "@ssccops/ui";
 import { Badge, Card, Chip, Field, TextArea, TextField, Toggle } from "@/shared/ui";
-import { matchesPatternPreset, PATTERN_PRESETS } from "@ssccops/form-renderer";
 import { isCompilableRegExp, nextQitemId, parseMaxSlctCnt } from "../model/qitem-draft";
 
 /*

@@ -256,15 +256,15 @@ export function MembersManager({
       </div>
 
       {feedback && (
-        <p
-          role="status"
+        // `<output>`이 곧 role="status"다(#759 · S6819). 기본 display가 inline이라 `block`을 함께 적는다
+        <output
           className={cn(
-            "rounded-[12px] px-[14px] py-[10px] text-[13.5px]",
+            "block rounded-[12px] px-[14px] py-[10px] text-[13.5px]",
             feedback.tone === "error" ? "bg-danger/10 text-danger" : "bg-bg text-n400",
           )}
         >
           {feedback.text}
-        </p>
+        </output>
       )}
 
       {active.length === 0 ? (

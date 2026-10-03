@@ -99,18 +99,7 @@ export async function loadSessionRecord(
     }
 
     if (!curriculumItem.isEditable) {
-      const stop = programStopOf(programSttsCd);
-      if (stop) {
-        return { outcome: "program-stopped", stop };
-      }
-      if (allowsRecording(curriculumItem.sesnSttsCd)) {
-        return { outcome: "not-leader" };
-      }
-      return {
-        outcome: "not-recordable",
-        sesnSttsLabel:
-          curriculumItem.sesnSttsCd === "APPROVED" ? "이미 승인된" : "학술국장 검토 중인",
-      };
+      return closedOutcome(curriculumItem, programSttsCd);
     }
 
     const mode: "create" | "resubmit" =
@@ -133,4 +122,26 @@ export async function loadSessionRecord(
     if (isSignupRequired(error)) return { outcome: "signup-required" };
     return { outcome: "error", message: loadSessionRecordErrorMessage(error) };
   }
+}
+
+/**
+ * `isEditable`이 false일 때 폼을 못 여는 사유 — 순서는 위 «폼을 언제 여는가» 그대로다.
+ * 로더 본문의 인지 복잡도를 덜려고 떼어 냈다(#759 · S3776). 판정은 바뀌지 않았다.
+ */
+function closedOutcome(
+  curriculumItem: CurriculumItemWithSession,
+  programSttsCd: AcdmActvSttsCd,
+): SessionRecordLoad {
+  const stop = programStopOf(programSttsCd);
+  if (stop) {
+    return { outcome: "program-stopped", stop };
+  }
+  if (allowsRecording(curriculumItem.sesnSttsCd)) {
+    return { outcome: "not-leader" };
+  }
+  return {
+    outcome: "not-recordable",
+    sesnSttsLabel:
+      curriculumItem.sesnSttsCd === "APPROVED" ? "이미 승인된" : "학술국장 검토 중인",
+  };
 }

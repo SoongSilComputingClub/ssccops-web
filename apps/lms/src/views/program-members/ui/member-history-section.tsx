@@ -34,8 +34,7 @@ export function MemberHistorySection({
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-[6px] self-start text-[14px] text-n400 hover:text-ink"
       >
-        <span aria-hidden>{open ? "▾" : "▸"}</span>
-        명단 변경 이력
+        <span aria-hidden>{open ? "▾" : "▸"}</span>명단 변경 이력
       </button>
 
       <div

@@ -85,13 +85,13 @@ function NavAxis({
   pathname,
   open,
   setOpen,
-}: {
+}: Readonly<{
   link: NavLink;
   active: boolean;
   pathname: string;
   open: boolean;
   setOpen: (next: boolean) => void;
-}) {
+}>) {
   const groupRef = useRef<HTMLDivElement>(null);
   const menuId = `nav-${link.href.replaceAll("/", "")}`;
 

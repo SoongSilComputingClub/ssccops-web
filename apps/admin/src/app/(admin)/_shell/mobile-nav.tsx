@@ -41,7 +41,7 @@ export function MobileNav() {
   const { pathname, groups, navigate, signOut, meName, meLabel, apps } = useShellNav();
   const accordion = useNavAccordion(groups, pathname);
   const [open, setOpen] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDialogElement>(null);
 
   // 이동하면 닫는다 — 열린 드로어가 새 화면을 덮은 채 남지 않게 한다
   const go = (href: string) => {
@@ -127,13 +127,22 @@ export function MobileNav() {
               onClick={() => setOpen(false)}
               className="absolute inset-0 animate-fade-in bg-scrim motion-reduce:animate-none"
             />
-            <div
+            {/*
+              `role="dialog"`을 붙인 div가 아니라 `<dialog>`다 (#759 · S6819) — Sheet와 같은 판단이다.
+              **`open` 속성만 쓰고 `showModal()`은 쓰지 않는다**: 최상위 레이어로 올라가면 위의
+              스크림·`z-[80]`이 뜻을 잃는다. 여는 조건은 위의 `open &&` 그대로다.
+
+              브라우저 기본 스타일 중 Tailwind preflight가 되돌리지 않는 둘을 맞춘다 — `height:
+              fit-content`는 `h-auto`로(그대로 두면 `inset-y-0`이 화면 높이를 채우지 못한다),
+              `color: CanvasText`는 `text-[color:inherit]`로. 여백·테두리는 preflight가 이미 지운다.
+            */}
+            <dialog
               ref={panelRef}
+              open
               tabIndex={-1}
-              role="dialog"
               aria-modal="true"
               aria-label="메뉴"
-              className="absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col border-r border-hairline-strong bg-surface pt-[22px] pb-4 outline-none"
+              className="absolute inset-y-0 left-0 flex h-auto w-[82%] max-w-[300px] flex-col border-r border-hairline-strong bg-surface pt-[22px] pb-4 text-[color:inherit] outline-none"
             >
               <div className="mb-3 flex items-center gap-[10px] border-b border-bg px-[18px] pb-4">
                 <BrandMark src={DEPLOY.mark} size={28} />
@@ -171,7 +180,7 @@ export function MobileNav() {
                 />
                 <AppVersion />
               </div>
-            </div>
+            </dialog>
           </div>,
           document.body,
         )}
