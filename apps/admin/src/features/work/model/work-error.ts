@@ -90,3 +90,46 @@ export function toWorkDeleteErrorMessage(error: unknown): string {
       return error.message;
   }
 }
+
+/**
+ * 상위 업무 전이 실패 → 화면에 띄울 한 줄 (#755 · 서버 #622).
+ *
+ * 409 두 코드는 해소 방법이 달라 문구를 가른다(서버가 코드를 나눈 이유와 같다):
+ *
+ * - `TRANSITION_NOT_ALLOWED` — 화면은 지금 상태에서 할 수 있는 버튼만 그리므로, 여기 오면 열어
+ *   둔 사이 다른 사람이 상태를 옮긴 것이다. 할 일은 새로고침이다.
+ * - `SUB_WORK_UNFINISHED` — 하위 업무를 마무리하면 같은 버튼이 통과한다. 남은 수는 서버가
+ *   메시지에만 싣는다(data 없음) — 그 문장을 앞에 두고 할 일을 잇는다. 화면이 받아 둔 하위 업무로
+ *   세지 않는 것은 409가 났다는 것 자체가 그 목록이 낡았다는 뜻이라서다(호출부가 상세를 다시
+ *   불러 버튼 옆 안내가 새 수로 바뀐다).
+ *
+ * 403은 조회와 같은 권한(WORK_MANAGE)이지만 «바꿀 권한»으로 적는다. 버튼은 그 권한이 있을 때만
+ * 그리므로 여기 오면 권한이 방금 회수된 것이다(훅이 세션을 다시 맞춘다).
+ */
+export function toWorkTransitionErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "업무 상태를 바꾸지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case WORK_ERROR.SUB_WORK_UNFINISHED: {
+      const remaining = error.message.trim().replace(/[.]$/, "");
+      return `${remaining || "완료되지 않은 하위 업무가 남아 있습니다"} — 하위 업무를 먼저 완료해주세요`;
+    }
+    case WORK_ERROR.TRANSITION_NOT_ALLOWED:
+      return "이미 상태가 바뀐 업무입니다 — 새로고침해주세요";
+    case WORK_ERROR.WORK_NOT_FOUND:
+      return "업무가 없습니다 — 목록을 새로고침해주세요";
+    case WORK_ERROR.INVALID_CODE_VALUE:
+      return "선택지가 바뀌었습니다 — 새로고침해주세요";
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "업무 상태를 바꿀 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}

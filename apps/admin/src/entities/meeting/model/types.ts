@@ -113,10 +113,23 @@ export interface MeetingAgendaTarget {
   title: string;
 }
 
-/** 회의 상세(OPS-025)의 안건 한 건 */
+/**
+ * 회의 상세(OPS-025)의 안건 한 건.
+ *
+ * 안건은 **운영 건을 가리키거나(연결 안건), 제목만 갖는다(드래프트 안건)** — 둘 중 하나다
+ * (ADR-0059 · 서버 #625). 드래프트는 `targetOperation`이 null이고 제목이 `agendaName`이며,
+ * 연결 안건은 반대로 `agendaName`이 null이고 제목은 `targetOperation.title`이다.
+ */
 export interface MeetingAgenda {
   agendaId: number;
   meetingId: number;
+  /** 드래프트 안건의 제목(안건_명 · 100자). 연결 안건은 null */
+  agendaName: string | null;
+  /**
+   * 드래프트 여부 — 서버가 따로 싣는 값이다. «드래프트» 배지·«업무로 만들기»가 이 값 하나를
+   * 본다(`targetOperation`의 null 검사로 추론하지 않는다 — 옛 서버면 연결 안건도 그 값이 빌 수 있다).
+   */
+  draft: boolean;
   processStatus: AgndPrcsSeCd | null;
   agendaOrder: number | null;
   targetOperation: MeetingAgendaTarget | null;

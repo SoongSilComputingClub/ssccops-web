@@ -4,6 +4,10 @@ export type {
   WorkListItem,
   WorkMemberRef,
   WorkSubWorkSummary,
+  WorkTag,
+  WorkTagSummary,
+  WorkTransition,
+  WorkTransitionResult,
 } from "./model/types";
 export { useWorkStore, workSttsTone } from "./model/store";
 export {
@@ -12,6 +16,7 @@ export {
   deleteWork,
   fetchWork,
   fetchWorks,
+  transitionWork,
   updateWork,
 } from "./api/works";
 export type {
@@ -20,3 +25,12 @@ export type {
   WorkListFilter,
   WorkListPage,
 } from "./api/works";
+export {
+  TAG_NM_MAX_LENGTH,
+  WORK_TAG_ERROR,
+  createWorkTag,
+  deleteWorkTag,
+  fetchWorkTags,
+  renameWorkTag,
+  replaceWorkTags,
+} from "./api/work-tags";

@@ -23,6 +23,8 @@ export const ROUTES = {
   works: "/operations/works",
   workDetail: (workId: number) => `/operations/works/${workId}`,
   workEdit: (workId: number) => `/operations/works/${workId}/edit`,
+  /** 업무 태그 관리 (#757) — «설정 › 운영». `works/` 아래가 아닌 것은 `[workId]` 동적 세그먼트와 갈리게 */
+  workTags: "/operations/work-tags",
   subWorks: "/operations/sub-works",
   subWorkDetail: (subWorkId: number) => `/operations/sub-works/${subWorkId}`,
   subWorkEdit: (subWorkId: number) => `/operations/sub-works/${subWorkId}/edit`,
