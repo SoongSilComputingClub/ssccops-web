@@ -31,6 +31,10 @@ import { Chip, Field, Sheet, TextField, flash } from "@/shared/ui";
  * 등록 화면의 상태 기계를 가져올 수도 없다.
  *
  * 빠진 칸은 총평(회고) 하나다 — 운영이 끝난 뒤 쓰는 값이라 만드는 순간에는 늘 비어 있다.
+ * 시작 일시는 등록 화면과 달리 비워 둘 수 있다(#765) — DB·서버가 요구하지 않고, 종료된 회의의
+ * 안건을 뒤늦게 업무로 만들 때는 시작 시점이 아직 정해지지 않은 경우가 많다. 비우면 `startAt`을
+ * 보내지 않는다. 종료 일시는 시작 일시가 있을 때만 그보다 앞서지 않는지 본다 — 서버 규칙
+ * `startAt == null || endAt == null || !endAt.isBefore(startAt)`과 같다.
  *
  * 담당자 셀렉트·잠금 판정은 등록·수정 화면과 같은 `features/member` 한 벌이고, 후보는 업무 등록과
  * 같이 WORK_MANAGE 보유자다(#71). 시트는 열릴 때만 마운트되므로 `useState` 초깃값이 곧 폼 초깃값이다.
@@ -62,8 +66,13 @@ export function PromoteAgendaSheet({
   const ownerBlockReason = assignableBlockReason(assignable, ownerReady);
 
   const submit = () => {
-    if (!title.trim() || !bgngDt) {
-      flash("제목과 시작 일시는 필수입니다");
+    if (!title.trim()) {
+      flash("제목을 입력해주세요");
+      return;
+    }
+    /* datetime-local 값은 같은 길이의 "YYYY-MM-DDTHH:mm"이라 문자열 비교가 곧 시각 비교다 */
+    if (bgngDt && endDt && endDt < bgngDt) {
+      flash("종료 일시가 시작 일시보다 빠릅니다");
       return;
     }
     if (ownerId === null || !ownerReady) {
@@ -74,7 +83,7 @@ export function PromoteAgendaSheet({
       title: title.trim(),
       itemType: workTypeCd,
       ownerId,
-      startAt: fromInput(bgngDt, true),
+      startAt: bgngDt ? fromInput(bgngDt, true) : null,
       endAt: endDt ? fromInput(endDt, true) : null,
       priority: prrtyRnkCd,
     });
@@ -131,7 +140,7 @@ export function PromoteAgendaSheet({
             ))}
           </div>
         </Field>
-        <Field label={FIELD_LABEL.startAt} required>
+        <Field label={FIELD_LABEL.startAt}>
           <TextField
             type="datetime-local"
             value={bgngDt}
@@ -142,6 +151,7 @@ export function PromoteAgendaSheet({
           <TextField
             type="datetime-local"
             value={endDt}
+            min={bgngDt || undefined}
             onChange={(e) => setEndDt(e.target.value)}
           />
         </Field>

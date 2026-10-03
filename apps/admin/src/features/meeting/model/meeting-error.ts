@@ -132,7 +132,8 @@ export function toMeetingActionErrorMessage(error: unknown): string {
  *
  * `VALIDATION_FAILED`는 서버 문장을 그대로 쓴다 — 업무 등록과 같이 담당자 부적격·기간 역전이 같은
  * 코드로 온다(toWorkCreateErrorMessage와 같은 판단 · features 슬라이스끼리 참조하지 않아 여기 둔다).
- * 409 둘은 화면을 열어 둔 사이 회의가 끝났거나 다른 사람이 먼저 승격한 경우다.
+ * `MEETING_CLOSED`는 종료·취소된 회의의 승격을 열기 전 서버(ssccops#573 이전)에서만 온다.
+ * `MEETING_AGENDA_ALREADY_LINKED`는 화면을 열어 둔 사이 다른 사람이 먼저 승격한 경우다.
  */
 export function toMeetingPromoteErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
