@@ -196,6 +196,14 @@ export const WORK_ERROR = {
 /** 업무 목록 필터 — 값이 없으면(null) 그 축을 거르지 않는다 */
 export interface WorkListFilter {
   workStatus?: WorkSttsCd | null;
+  /**
+   * 뺄 상태 (#756 · 서버 #627 · ssccops#564). 업무 목록의 기본 «미완료»가 `["DONE"]`이다 — 단일
+   * `workStatus`로는 «기획·진행·검토»를 한 번에 말할 수 없고, 화면이 받은 페이지를 다시 거르면
+   * 커서 페이징이 빈 페이지를 낸다. 포함 목록이 아니라 제외 목록인 것은 상태가 늘 때 화면이 모르고
+   * 빠뜨리지 않게다(서버 WorkSearchCondition 주석). 서버가 반복 파라미터로 받고 `totalCount`도
+   * 이 조건으로 센다.
+   */
+  excludeWorkStatus?: readonly WorkSttsCd[] | null;
   workType?: WorkTypeCd | null;
   /**
    * 제목 부분 일치 (ssccops#216). 서버가 대소문자를 가리지 않고 `%`·`_`는 리터럴로 다룬다 —
@@ -236,6 +244,7 @@ export interface WorkListPage {
 export async function fetchWorks(filter: WorkListFilter = {}): Promise<WorkListPage> {
   const query = new URLSearchParams();
   if (filter.workStatus) query.set("workStatus", filter.workStatus);
+  for (const status of filter.excludeWorkStatus ?? []) query.append("excludeWorkStatus", status);
   if (filter.workType) query.set("workType", filter.workType);
   if (filter.keyword) query.set("keyword", filter.keyword);
   if (filter.mine) query.set("mine", "true");
