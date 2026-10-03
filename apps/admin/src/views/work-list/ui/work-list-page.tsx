@@ -7,8 +7,10 @@ import { workSttsTone, type WorkListItem } from "@/entities/work";
 import { useCan } from "@/features/auth";
 import {
   useWorkList,
+  useWorkTagOptions,
   WORK_LIST_TAB_HINTS,
   WORK_LIST_TABS,
+  WorkTagPills,
   type WorkListTab,
 } from "@/features/work";
 import { WORK_STTS_NM, WORK_TYPE_NM } from "@/shared/config/codes";
@@ -35,7 +37,9 @@ const MINE_HINT = "내가 담당인 것만 보입니다. 등록만 한 건은 �
  * 빈 목록의 한 줄 (#756). 기본 칩 «미완료»가 비면 «업무가 사라졌다»로 읽히지 않게 남은 업무가
  * 없다고 말하고, 화면이 «전체 보기»를 함께 둔다(대시보드 «내 업무 목록»과 같은 판단 · #743).
  */
-function emptyMessageOf(tab: WorkListTab, mine: boolean): string {
+function emptyMessageOf(tab: WorkListTab, mine: boolean, tagged: boolean): string {
+  // 태그로 거른 결과가 비면 칩 조합 탓이다 — «업무가 없다»로 읽히지 않게
+  if (tagged) return "조건에 맞는 업무가 없습니다.";
   if (tab === "미완료") {
     return mine ? "담당하고 있는 남은 업무가 없습니다." : "남은 업무가 없습니다.";
   }
@@ -72,6 +76,7 @@ function WorkCard({ work, onClick }: Readonly<{ work: WorkListItem; onClick: () 
         <div className="text-[13.5px] text-n500">하위 업무 {work.subWorkCount}건</div>
       </div>
       <div className="mt-2 text-[18px] font-semibold">{work.title}</div>
+      <WorkTagPills tags={work.tags} className="mt-[6px] flex flex-wrap gap-[6px]" />
       <div className="mt-1 text-[14px] text-n400">담당 {work.owner?.name || "-"}</div>
       <div className="mt-[2px] text-[13.5px] text-n500">
         {formatYmd(work.startAt) || "-"} ~ {formatYmd(work.endAt) || "-"}
@@ -95,6 +100,12 @@ export function WorkListPage() {
    * 운영진 요구다. 주소에 남기지 않는 것은 «내 업무»와 같다(다시 들어오면 기본값).
    */
   const [tab, setTab] = useState<WorkListTab>("미완료");
+  /*
+   * 태그 하나 (#757 · ssccops#565). 상태 칩·«내 업무»와 AND이고 서버가 거른다 — 바꾸면 훅이 커서를
+   * 버리고 처음부터 다시 받는다. 주소에 남기지 않는 것은 상태 칩과 같다.
+   */
+  const [tagId, setTagId] = useState<number | null>(null);
+  const tagOptions = useWorkTagOptions();
   const {
     works,
     status,
@@ -104,7 +115,7 @@ export function WorkListPage() {
     loadingMore,
     loadMore,
     reload,
-  } = useWorkList("", mine, tab);
+  } = useWorkList("", mine, tab, tagId);
 
   /*
    * 조회(GET /v1/works)는 WORK_READ만 있어도 되지만(서버 #101), 등록은 여전히 WORK_MANAGE다 —
@@ -116,7 +127,8 @@ export function WorkListPage() {
   const openCreate = () => router.push(ROUTES.operationNew);
 
   let emptyAction: { label: string; onClick: () => void } | undefined;
-  if (tab === "미완료") emptyAction = { label: "전체 보기", onClick: () => setTab("전체") };
+  if (tagId !== null) emptyAction = { label: "태그 해제", onClick: () => setTagId(null) };
+  else if (tab === "미완료") emptyAction = { label: "전체 보기", onClick: () => setTab("전체") };
   else if (tab === "전체" && canManage && !mine) emptyAction = { label: "+ 등록", onClick: openCreate };
 
   const runLoadMore = async () => {
@@ -155,6 +167,28 @@ export function WorkListPage() {
           </Chip>
         </FilterBar>
 
+        {/*
+          태그 줄 (#757). 상태 줄과 다른 축이라 줄을 가른다 — 태그는 운영진이 만드는 대로 늘어
+          한 줄에 섞으면 상태 칩이 밀려난다. 태그가 없거나 못 받았으면 줄째 없다(목록은 그대로 쓴다).
+        */}
+        {tagOptions.tags.length > 0 && (
+          <FilterBar className="-mt-[4px]">
+            <span className="mr-[2px] text-[13.5px] text-n500">태그</span>
+            <Chip active={tagId === null} onClick={() => setTagId(null)}>
+              전체
+            </Chip>
+            {tagOptions.tags.map((t) => (
+              <Chip
+                key={t.workTagId}
+                active={tagId === t.workTagId}
+                onClick={() => setTagId(tagId === t.workTagId ? null : t.workTagId)}
+              >
+                {t.tagNm}
+              </Chip>
+            ))}
+          </FilterBar>
+        )}
+
         {status === "loading" && (
           <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
             {[0, 1, 2, 3].map((i) => (
@@ -173,7 +207,7 @@ export function WorkListPage() {
         {status === "ready" &&
           (works.length === 0 ? (
             <EmptyState
-              message={emptyMessageOf(tab, mine)}
+              message={emptyMessageOf(tab, mine, tagId !== null)}
               /*
                 «미완료»가 비면 «전체 보기»로 끝난 업무를 찾게 한다. 등록 유도는 «전체»에서만 —
                 다른 칩에서 없는 것은 그 조건의 업무이지 업무 자체가 아니다. 권한이 없으면

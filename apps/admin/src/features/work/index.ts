@@ -5,6 +5,18 @@ export {
   toWorkTransitionErrorMessage,
 } from "./model/work-error";
 export {
+  toWorkTagAssignErrorMessage,
+  toWorkTagErrorMessage,
+  toWorkTagListErrorMessage,
+} from "./model/work-tag-error";
+export { useWorkTags } from "./model/use-work-tags";
+export type { WorkTagAdmin, WorkTagsStatus } from "./model/use-work-tags";
+export { useWorkTagOptions } from "./model/use-work-tag-options";
+export type { WorkTagOptions } from "./model/use-work-tag-options";
+export { useAssignWorkTags } from "./model/use-assign-work-tags";
+export type { WorkTagAssignControl, WorkTagAssignment } from "./model/use-assign-work-tags";
+export { WorkTagPicker, WorkTagPills } from "./ui/work-tag-picker";
+export {
   useWorkList,
   WORK_LIST_TAB_HINTS,
   WORK_LIST_TABS,

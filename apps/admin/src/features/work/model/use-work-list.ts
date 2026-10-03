@@ -32,6 +32,9 @@ import { toWorkErrorMessage } from "./work-error";
  * 이어 받기도 같은 값을 보내야 한 목록에 두 조건의 페이지가 섞이지 않는다.
  *
  * 대상 회원은 보내지 않는다. '나'는 서버가 인증 주체에서 정한다(ssccops-server#268).
+ *
+ * ── 태그 (#757 · 서버 #631) ──────────────────────────────────
+ * 태그 하나(`tagId`)도 같은 이유로 requestKey에 들어가고 서버가 거른다 — 상태 칩·«내 업무»와 AND다.
  */
 
 export type WorkListStatus = "loading" | "ready" | "error";
@@ -105,6 +108,7 @@ export function useWorkList(
   keyword = "",
   mine = false,
   tab: WorkListTab = "전체",
+  tagId: number | null = null,
 ): WorkList {
   const [loaded, setLoaded] = useState<LoadedWorkList | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -117,7 +121,7 @@ export function useWorkList(
   const aliveRef = useRef(true);
 
   // 칩도 requestKey에 든다 — 커서는 직전 조건으로 만든 값이라 조건이 바뀌면 처음부터 다시 받는다
-  const requestKey = `${keyword}:${mine}:${tab}:${reloadKey}`;
+  const requestKey = `${keyword}:${mine}:${tab}:${tagId ?? ""}:${reloadKey}`;
 
   useEffect(() => {
     loadedRef.current = loaded;
@@ -133,7 +137,7 @@ export function useWorkList(
   useEffect(() => {
     let alive = true;
 
-    fetchWorks({ keyword, mine, ...toStatusFilter(tab) })
+    fetchWorks({ keyword, mine, tagId, ...toStatusFilter(tab) })
       .then((page) => {
         if (!alive) return;
         setLoaded({
@@ -160,7 +164,7 @@ export function useWorkList(
     return () => {
       alive = false;
     };
-  }, [requestKey, keyword, mine, tab]);
+  }, [requestKey, keyword, mine, tab, tagId]);
 
   const loadMore = useCallback(async (): Promise<string> => {
     const current = loadedRef.current;
@@ -172,6 +176,7 @@ export function useWorkList(
       const page = await fetchWorks({
         keyword,
         mine,
+        tagId,
         ...toStatusFilter(tab),
         cursor: current.nextCursor,
       });
@@ -199,7 +204,7 @@ export function useWorkList(
       inFlightRef.current = false;
       if (aliveRef.current) setLoadingMore(false);
     }
-  }, [keyword, mine, tab]);
+  }, [keyword, mine, tab, tagId]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
