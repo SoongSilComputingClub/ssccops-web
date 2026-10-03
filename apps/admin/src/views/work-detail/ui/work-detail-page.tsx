@@ -99,10 +99,11 @@ const TRANSITION_UI: Record<WorkTransition, { label: string; variant: "primary" 
 };
 
 /**
- * 태그 줄 (#757 · ssccops#565). 칩을 보여 주고, WORK_MANAGE가 있으면 «태그 편집»으로 고른다.
+ * 태그 줄 (#757 · ssccops#565). 칩을 보여 주고, «태그 편집»으로 고른다.
  *
  * 저장은 고른 목록 통째로다(PUT /v1/works/{id}/tags · 전체 교체) — 업무 수정(PATCH) 본문은 태그를
- * 받지 않는다. 권한이 없으면 편집 버튼이 없다(전이 버튼 줄과 같은 판단 — 조회는 WORK_READ로 된다).
+ * 받지 않는다. WORK_MANAGE가 없으면 «태그 편집»을 잠그고 이유(`title`)를 보인다(수정·삭제와 같다 ·
+ * #767 — 조회는 WORK_READ로 된다).
  * 후보는 편집을 열 때 처음 받는다(WorkTagPicker가 마운트될 때).
  */
 function WorkTagSection({
@@ -155,16 +156,21 @@ function WorkTagSection({
     );
   }
 
-  if (tags.length === 0 && !canManage) return null;
   return (
     <div className="mt-3 flex flex-wrap items-center gap-[6px]">
       <WorkTagPills tags={tags} className="contents" />
       {tags.length === 0 && <span className="text-[13.5px] text-n500">태그 없음</span>}
-      {canManage && (
-        <Button variant="link" size="sm" onClick={open}>
-          태그 편집
-        </Button>
-      )}
+      <Button
+        variant="link"
+        size="sm"
+        onClick={open}
+        disabled={!canManage}
+        title={
+          canManage ? undefined : "태그를 편집할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다"
+        }
+      >
+        태그 편집
+      </Button>
     </div>
   );
 }
@@ -237,6 +243,10 @@ export function WorkDetailPage({ workId }: Readonly<{ workId: number }>) {
     unfinishedCount > 0
       ? `완료되지 않은 하위 업무가 ${unfinishedCount}건 남아 있습니다. 모두 완료해야 업무를 완료할 수 있습니다.`
       : "";
+  /* 권한 사유가 «완료» 잠금 사유보다 앞선다 — 버튼은 그대로 그리고 잠근다(#767) */
+  const transitionLockReason = canManage
+    ? ""
+    : "상태를 옮길 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
 
   /*
    * 전이 뒤에는 상세를 통째로 다시 부른다 — 응답에는 상태뿐인데 화면은 배지·버튼·하위 업무 표를
@@ -370,38 +380,37 @@ export function WorkDetailPage({ workId }: Readonly<{ workId: number }>) {
             </div>
 
             {/*
-              상태 전이 (#755 · ssccops#563). 권한(WORK_MANAGE)이 없으면 줄째 없다 — 수정·삭제처럼
-              잠근 채 두지 않는 것은 상태를 옮기는 일이 이 화면을 보는 사람 대부분의 일이 아니어서다
-              (Story 수용 기준 «어드민에는 버튼이 없다»). 조회는 WORK_READ로도 되므로 이 갈림이 생긴다.
+              상태 전이 (#755 · ssccops#563). 권한(WORK_MANAGE)이 없으면 지금 상태에서 갈 수 있는
+              버튼을 그대로 그리되 잠그고 이유(`title`)를 보인다 — 수정·삭제와 같다(#767). 조회는
+              WORK_READ로도 되므로 이 갈림이 생긴다.
             */}
-            {canManage && (
-              <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-hairline pt-4">
-                {transitionsOf(work.workStatus).map((transition) => {
-                  const blockReason = transition === "COMPLETE" ? completeBlockReason : "";
-                  return (
-                    <Button
-                      key={transition}
-                      variant={TRANSITION_UI[transition].variant}
-                      size="sm"
-                      disabled={workTransition.pending || blockReason !== ""}
-                      title={blockReason || undefined}
-                      onClick={() =>
-                        transition === "COMPLETE"
-                          ? setCompleteOpen(true)
-                          : void runTransition(transition)
-                      }
-                    >
-                      {TRANSITION_UI[transition].label}
-                    </Button>
-                  );
-                })}
-                {work.workStatus === "REVIEW" && unfinishedCount > 0 && (
-                  <span className="text-[13px] text-n500">
-                    완료되지 않은 하위 업무 {unfinishedCount}건
-                  </span>
-                )}
-              </div>
-            )}
+            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-hairline pt-4">
+              {transitionsOf(work.workStatus).map((transition) => {
+                const blockReason =
+                  transitionLockReason || (transition === "COMPLETE" ? completeBlockReason : "");
+                return (
+                  <Button
+                    key={transition}
+                    variant={TRANSITION_UI[transition].variant}
+                    size="sm"
+                    disabled={workTransition.pending || blockReason !== ""}
+                    title={blockReason || undefined}
+                    onClick={() =>
+                      transition === "COMPLETE"
+                        ? setCompleteOpen(true)
+                        : void runTransition(transition)
+                    }
+                  >
+                    {TRANSITION_UI[transition].label}
+                  </Button>
+                );
+              })}
+              {work.workStatus === "REVIEW" && unfinishedCount > 0 && (
+                <span className="text-[13px] text-n500">
+                  완료되지 않은 하위 업무 {unfinishedCount}건
+                </span>
+              )}
+            </div>
 
             <SectionLabel className="mt-5">상위 속성 · oper</SectionLabel>
             <KeyValueGrid

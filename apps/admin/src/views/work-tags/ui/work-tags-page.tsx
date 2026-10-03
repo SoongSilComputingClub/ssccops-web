@@ -16,8 +16,8 @@ import { Button, Card, EmptyState, PageBody, PageHeader, Sheet, TextField, flash
  *
  * ── 권한 ───────────────────────────────────────────────────────
  * 목록은 WORK_READ(국원도 목록 필터로 쓰는 태그가 무엇인지 본다), 만들기·이름 바꾸기·지우기는
- * WORK_MANAGE다. 권한이 없으면 추가 줄과 «관리» 열을 그리지 않고 사유 한 줄만 둔다 — 이 화면은
- * 조작이 전부라 잠긴 입력란·버튼을 줄줄이 두면 읽을 것이 없어진다.
+ * WORK_MANAGE다. 권한이 없으면 추가 줄과 «관리» 열의 수정·삭제를 잠그고 이유(`title`)와 사유 한
+ * 줄을 둔다 — 행사 분류 관리와 같다(#767 · 화면 안의 버튼은 숨기지 않고 잠근다).
  */
 
 const NO_MANAGE = "태그를 바꿀 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
@@ -75,43 +75,45 @@ export function WorkTagsPage() {
       <PageHeader title="업무 태그 관리" subtitle="업무에 다는 태그 목록" />
       <PageBody>
         <div className="mb-4 max-w-[640px]">
-          {canManage ? (
-            <>
-              {/*
-                추가 행에는 라벨을 세우지 않는다 — 입력과 «추가» 버튼이 한 줄에 서는 자리다.
-                placeholder에 보이는 이름을 `aria-label`로 붙인다 (폼 라벨 관리와 같다 · #486).
-              */}
-              <div className="flex items-center gap-2">
-                <TextField
-                  aria-label="태그 이름"
-                  value={newTagNm}
-                  onChange={(e) => setNewTagNm(e.target.value)}
-                  // 엔터로도 추가한다 — 여러 개를 이어서 넣는 화면이라 매번 버튼까지 가지 않게
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") void add();
-                  }}
-                  invalid={addError}
-                  aria-describedby={addError ? ADD_ERROR_ID : undefined}
-                  placeholder="새 태그 이름 (예: 학술국)"
-                  /* min-w-0: input 기본 폭 아래로 줄게 · 16px: iOS 확대 방지 (폼 라벨 관리와 같다) */
-                  className="w-full max-w-[260px] min-w-0 text-[16px] lg:text-[15.5px]"
-                />
-                <Button onClick={() => void add()} disabled={admin.busy}>
-                  {admin.busy ? "처리 중…" : "추가"}
-                </Button>
-              </div>
-              {addError && (
-                <div
-                  id={ADD_ERROR_ID}
-                  role="alert"
-                  className="mt-[6px] text-[13.5px] text-danger"
-                >
-                  {admin.mutationErrorMessage}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-[13px] text-n500">{NO_MANAGE}</div>
+          {/*
+            추가 행에는 라벨을 세우지 않는다 — 입력과 «추가» 버튼이 한 줄에 서는 자리다.
+            placeholder에 보이는 이름을 `aria-label`로 붙인다 (폼 라벨 관리와 같다 · #486).
+          */}
+          <div className="flex items-center gap-2">
+            <TextField
+              aria-label="태그 이름"
+              value={newTagNm}
+              onChange={(e) => setNewTagNm(e.target.value)}
+              // 엔터로도 추가한다 — 여러 개를 이어서 넣는 화면이라 매번 버튼까지 가지 않게
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && canManage) void add();
+              }}
+              disabled={!canManage}
+              invalid={addError}
+              aria-describedby={addError ? ADD_ERROR_ID : undefined}
+              placeholder="새 태그 이름 (예: 학술국)"
+              /* min-w-0: input 기본 폭 아래로 줄게 · 16px: iOS 확대 방지 (폼 라벨 관리와 같다) */
+              className="w-full max-w-[260px] min-w-0 text-[16px] lg:text-[15.5px]"
+            />
+            <Button
+              onClick={() => void add()}
+              disabled={admin.busy || !canManage}
+              title={canManage ? undefined : NO_MANAGE}
+            >
+              {admin.busy ? "처리 중…" : "추가"}
+            </Button>
+          </div>
+          {addError && (
+            <div
+              id={ADD_ERROR_ID}
+              role="alert"
+              className="mt-[6px] text-[13.5px] text-danger"
+            >
+              {admin.mutationErrorMessage}
+            </div>
+          )}
+          {!canManage && (
+            <div className="mt-[6px] text-[13px] text-n500">{NO_MANAGE}</div>
           )}
         </div>
 
@@ -138,14 +140,8 @@ export function WorkTagsPage() {
                 </div>
               )}
               <Card className="max-w-[640px] px-5 pt-4 pb-[6px]">
-                <div
-                  className={
-                    canManage
-                      ? "grid grid-cols-[1fr_64px_96px] lg:grid-cols-[1fr_96px_120px]"
-                      : "grid grid-cols-[1fr_64px] lg:grid-cols-[1fr_96px]"
-                  }
-                >
-                  {(canManage ? ["태그 이름", "업무", "관리"] : ["태그 이름", "업무"]).map((h) => (
+                <div className="grid grid-cols-[1fr_64px_96px] lg:grid-cols-[1fr_96px_120px]">
+                  {["태그 이름", "업무", "관리"].map((h) => (
                     <div key={h} className="pb-[10px] text-[13px] tracking-[.3px] text-n500">
                       {h}
                     </div>
@@ -246,44 +242,44 @@ function TagRow({
         )}
       </div>
       <div className="border-t border-hairline py-3 text-[14.5px] text-n400">{tag.usageCount}건</div>
-      {canManage && (
-        <div className="flex gap-3 border-t border-hairline py-3 text-[14px]">
-          {isEditing ? (
-            <>
-              <button
-                type="button"
-                onClick={onSave}
-                disabled={busy}
-                className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                저장
-              </button>
-              <button type="button" onClick={onCancel} className="cursor-pointer text-n400">
-                취소
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={onStartEdit}
-                disabled={busy}
-                className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                수정
-              </button>
-              <button
-                type="button"
-                onClick={onDelete}
-                disabled={busy}
-                className="cursor-pointer text-n400 hover:text-danger disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:text-n400"
-              >
-                삭제
-              </button>
-            </>
-          )}
-        </div>
-      )}
+      <div className="flex gap-3 border-t border-hairline py-3 text-[14px]">
+        {isEditing ? (
+          <>
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={busy}
+              className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              저장
+            </button>
+            <button type="button" onClick={onCancel} className="cursor-pointer text-n400">
+              취소
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={onStartEdit}
+              disabled={!canManage || busy}
+              title={canManage ? undefined : NO_MANAGE}
+              className="cursor-pointer text-accent disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              수정
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={!canManage || busy}
+              title={canManage ? undefined : NO_MANAGE}
+              className="cursor-pointer text-n400 hover:text-danger disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:text-n400"
+            >
+              삭제
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
