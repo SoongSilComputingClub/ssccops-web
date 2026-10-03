@@ -40,6 +40,8 @@ interface WorkListItemResponse {
   endAt: string | null;
   progressRate: number | null;
   subWorkCount: number | null;
+  /* 업무 목록과 같은 카드 DTO라 태그 칩도 실린다 (#757 · 서버 #631) */
+  tags: { workTagId: number; tagNm: string | null }[] | null;
 }
 
 interface SubWorkSummaryWorkResponse {
@@ -108,6 +110,7 @@ function toWorkListItem(res: WorkListItemResponse): WorkListItem {
     endAt: res.endAt,
     progressRate: toProgressRate(res.progressRate),
     subWorkCount: res.subWorkCount ?? 0,
+    tags: (res.tags ?? []).map((t) => ({ workTagId: t.workTagId, tagNm: t.tagNm ?? "" })),
   };
 }
 

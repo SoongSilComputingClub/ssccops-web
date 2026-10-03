@@ -6,11 +6,19 @@ import { CAPABILITY } from "@/entities/session";
 import {
   workSttsTone,
   type WorkSubWorkSummary,
+  type WorkTagSummary,
   type WorkTransition,
 } from "@/entities/work";
 import { useCan } from "@/features/auth";
 import { ShareButton } from "@/features/share";
-import { useDeleteWork, useWorkDetail, useWorkTransition } from "@/features/work";
+import {
+  useAssignWorkTags,
+  useDeleteWork,
+  useWorkDetail,
+  useWorkTransition,
+  WorkTagPicker,
+  WorkTagPills,
+} from "@/features/work";
 import {
   OPER_TYPE_NM,
   PRRTY_RNK_NM,
@@ -89,6 +97,77 @@ const TRANSITION_UI: Record<WorkTransition, { label: string; variant: "primary" 
   REVERT_REVIEW: { label: "검토 되돌리기", variant: "ghost" },
   REOPEN: { label: "재개", variant: "ghost" },
 };
+
+/**
+ * 태그 줄 (#757 · ssccops#565). 칩을 보여 주고, WORK_MANAGE가 있으면 «태그 편집»으로 고른다.
+ *
+ * 저장은 고른 목록 통째로다(PUT /v1/works/{id}/tags · 전체 교체) — 업무 수정(PATCH) 본문은 태그를
+ * 받지 않는다. 권한이 없으면 편집 버튼이 없다(전이 버튼 줄과 같은 판단 — 조회는 WORK_READ로 된다).
+ * 후보는 편집을 열 때 처음 받는다(WorkTagPicker가 마운트될 때).
+ */
+function WorkTagSection({
+  workId,
+  tags,
+  canManage,
+  onSaved,
+}: Readonly<{
+  workId: number;
+  tags: readonly WorkTagSummary[];
+  canManage: boolean;
+  onSaved: () => void;
+}>) {
+  const [editing, setEditing] = useState(false);
+  const [selected, setSelected] = useState<number[]>([]);
+  const { pending, assign } = useAssignWorkTags();
+
+  const open = () => {
+    setSelected(tags.map((t) => t.workTagId));
+    setEditing(true);
+  };
+  const toggle = (workTagId: number) =>
+    setSelected((ids) =>
+      ids.includes(workTagId) ? ids.filter((id) => id !== workTagId) : [...ids, workTagId],
+    );
+  const save = async () => {
+    const { tags: saved, message } = await assign(workId, selected);
+    if (!message) return; // 진행 중 중복 클릭
+    flash(message);
+    if (saved) {
+      setEditing(false);
+      onSaved();
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="mt-4 border-t border-hairline pt-4">
+        <SectionLabel className="mb-3">태그</SectionLabel>
+        <WorkTagPicker selected={selected} onToggle={toggle} disabled={pending} />
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" onClick={() => void save()} disabled={pending}>
+            {pending ? "저장하는 중…" : "저장"}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={pending}>
+            취소
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (tags.length === 0 && !canManage) return null;
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-[6px]">
+      <WorkTagPills tags={tags} className="contents" />
+      {tags.length === 0 && <span className="text-[13.5px] text-n500">태그 없음</span>}
+      {canManage && (
+        <Button variant="link" size="sm" onClick={open}>
+          태그 편집
+        </Button>
+      )}
+    </div>
+  );
+}
 
 function DetailSkeleton() {
   return (
@@ -277,6 +356,14 @@ export function WorkDetailPage({ workId }: Readonly<{ workId: number }>) {
               </Button>
             </div>
             <div className="mt-2 text-[23px] font-medium">{work.title}</div>
+            {/* key: 다시 불러온 상세가 오면 편집 상태를 버리고 새 칩으로 그린다 */}
+            <WorkTagSection
+              key={work.tags.map((t) => t.workTagId).join(",")}
+              workId={work.workId}
+              tags={work.tags}
+              canManage={canManage}
+              onSaved={reload}
+            />
             <div className="mt-3 flex items-center gap-[10px]">
               <ProgressBar value={prgrs} height={6} />
               <div className="text-[14px] text-accent">{prgrs}%</div>

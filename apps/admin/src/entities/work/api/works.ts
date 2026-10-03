@@ -12,6 +12,7 @@ import type {
   WorkListItem,
   WorkMemberRef,
   WorkSubWorkSummary,
+  WorkTagSummary,
   WorkTransition,
   WorkTransitionResult,
 } from "../model/types";
@@ -35,6 +36,12 @@ interface MemberSummaryResponse {
   name: string | null;
 }
 
+/** 태그 칩 (#757 · 서버 #631) — 서버 WorkTagSummaryResponse */
+interface WorkTagSummaryResponse {
+  workTagId: number;
+  tagNm: string | null;
+}
+
 interface WorkListItemResponse {
   workId: number;
   title: string | null;
@@ -45,6 +52,7 @@ interface WorkListItemResponse {
   endAt: string | null;
   progressRate: number | null;
   subWorkCount: number | null;
+  tags: WorkTagSummaryResponse[] | null;
 }
 
 interface WorkSubWorkSummaryResponse {
@@ -73,6 +81,7 @@ interface WorkDetailResponse {
   progressRate: number | null;
   subWorkCount: number | null;
   subWorks: WorkSubWorkSummaryResponse[] | null;
+  tags: WorkTagSummaryResponse[] | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -111,6 +120,11 @@ function toProgressRate(value: number | null): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
+/** 서버가 태그 필드를 아직 안 실은 응답(배포 순서가 갈린 dev)은 빈 배열로 읽는다 */
+function toTags(tags: WorkTagSummaryResponse[] | null | undefined): WorkTagSummary[] {
+  return (tags ?? []).map((t) => ({ workTagId: t.workTagId, tagNm: t.tagNm ?? "" }));
+}
+
 function toWorkListItem(res: WorkListItemResponse): WorkListItem {
   return {
     workId: res.workId,
@@ -122,6 +136,7 @@ function toWorkListItem(res: WorkListItemResponse): WorkListItem {
     endAt: res.endAt,
     progressRate: toProgressRate(res.progressRate),
     subWorkCount: res.subWorkCount ?? 0,
+    tags: toTags(res.tags),
   };
 }
 
@@ -156,6 +171,7 @@ function toWorkDetail(res: WorkDetailResponse): WorkDetail {
     // 건수는 목록 길이와 같은 값이지만 서버가 준 값을 그대로 쓴다 (분모가 갈리지 않게)
     subWorkCount: res.subWorkCount ?? subWorks.length,
     subWorks,
+    tags: toTags(res.tags),
     createdAt: res.createdAt,
     updatedAt: res.updatedAt,
   };
@@ -219,6 +235,11 @@ export interface WorkListFilter {
    * (`ssccops-server#268`) 여기서는 필터를 켤지만 말한다 — 식별자를 보낼 자리가 애초에 없다.
    */
   mine?: boolean | null;
+  /**
+   * 태그 하나 (#757 · 서버 #631). 다른 조건과 AND이고 서버가 거르므로 커서·`totalCount`도 그
+   * 결과를 말한다. 없는 태그 id는 오류가 아니라 빈 결과다.
+   */
+  tagId?: number | null;
   /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
   cursor?: string | null;
   /** 1~100 · 서버 기본 20 */
@@ -248,6 +269,7 @@ export async function fetchWorks(filter: WorkListFilter = {}): Promise<WorkListP
   if (filter.workType) query.set("workType", filter.workType);
   if (filter.keyword) query.set("keyword", filter.keyword);
   if (filter.mine) query.set("mine", "true");
+  if (filter.tagId != null) query.set("tagId", String(filter.tagId));
   if (filter.cursor) query.set("cursor", filter.cursor);
   if (filter.size != null) query.set("size", String(filter.size));
 

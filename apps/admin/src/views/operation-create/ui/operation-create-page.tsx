@@ -13,7 +13,12 @@ import {
 } from "@/features/member";
 import { useCreateSubWork } from "@/features/sub-work";
 import { useActiveSubWorkTypes } from "@/features/sub-work-type";
-import { useCreateWork, useWorkDetail } from "@/features/work";
+import {
+  useAssignWorkTags,
+  useCreateWork,
+  useWorkDetail,
+  WorkTagPicker,
+} from "@/features/work";
 import {
   ATND_TRGT_CDS,
   ATND_TRGT_NM,
@@ -180,6 +185,16 @@ export function OperationCreatePage({
   // work 확장
   const [workTypeCd, setWorkTypeCd] = useState<WorkTypeCd>("EVENT");
   const [grvwCn, setGrvwCn] = useState("");
+  /*
+   * 태그 (#757 · ssccops#565). 등록 본문은 태그를 받지 않아 등록이 성공한 뒤 PUT /v1/works/{id}/tags로
+   * 단다(전체 교체). 태그만 실패하면 업무는 이미 만들어졌으므로 상세로 옮기고 다시 지정하게 한다.
+   */
+  const [workTagIds, setWorkTagIds] = useState<number[]>([]);
+  const workTagAssign = useAssignWorkTags();
+  const toggleWorkTag = (workTagId: number) =>
+    setWorkTagIds((ids) =>
+      ids.includes(workTagId) ? ids.filter((id) => id !== workTagId) : [...ids, workTagId],
+    );
 
   /*
    * sub_work 확장. 상위 업무를 고르는 상태를 두지 않는 것은 **하위 업무가 상위 업무 안에서만
@@ -200,7 +215,11 @@ export function OperationCreatePage({
   const allowed = canManageKind(operTypeCd);
 
   /* 서버로 나가는 세 경로(업무·하위 업무·회의) 중 하나라도 응답을 기다리는 중이면 버튼을 잠근다 */
-  const pending = workCreation.pending || subWorkCreation.pending || meetingCreation.pending;
+  const pending =
+    workCreation.pending ||
+    workTagAssign.pending ||
+    subWorkCreation.pending ||
+    meetingCreation.pending;
 
   /* 고른 유형의 승인 규칙 — 서버 목록에서 온 값이라 화면과 실제 판정이 갈리지 않는다 */
   const rule =
@@ -239,7 +258,12 @@ export function OperationCreatePage({
     });
 
     if (!message) return; // 진행 중 중복 클릭 — 아무것도 보내지 않았다
-    flash(message);
+    if (workId && workTagIds.length > 0) {
+      const { tags } = await workTagAssign.assign(workId, workTagIds);
+      flash(tags ? message : "태그를 달지 못했습니다 — 상세에서 다시 지정해주세요");
+    } else {
+      flash(message);
+    }
     if (workId) router.replace(ROUTES.workDetail(workId));
   };
 
@@ -505,6 +529,10 @@ export function OperationCreatePage({
                       {WORK_TYPE_NM[cd]}
                     </Chip>
                   ))}
+                </div>
+                <div className="mb-2 text-[13.5px] text-n400">태그</div>
+                <div className="mb-4">
+                  <WorkTagPicker selected={workTagIds} onToggle={toggleWorkTag} />
                 </div>
                 <Field label={FIELD_LABEL.generalReview}>
                   <TextArea

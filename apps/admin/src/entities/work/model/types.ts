@@ -47,6 +47,21 @@ export interface WorkMemberRef {
   name: string;
 }
 
+/**
+ * 업무에 달린 태그 칩 (#757 · 서버 #631) — 목록 카드·상세에 실린다. 이름 오름차순, 없으면 빈 배열.
+ */
+export interface WorkTagSummary {
+  workTagId: number;
+  tagNm: string;
+}
+
+/** 태그 관리 화면의 한 행 — usageCount는 그 태그가 달린 살아 있는 업무 수(서버 집계) */
+export interface WorkTag extends WorkTagSummary {
+  usageCount: number;
+  crtDt: string | null;
+  mdfcnDt: string | null;
+}
+
 /** 업무 목록(OPS-020) 카드 한 장 */
 export interface WorkListItem {
   workId: number;
@@ -61,6 +76,7 @@ export interface WorkListItem {
   progressRate: number;
   /** 삭제된 하위 업무는 빠진 건수. 진행률의 분모와 같은 기준이다 */
   subWorkCount: number;
+  tags: WorkTagSummary[];
 }
 
 /** 업무 상세(OPS-003)의 하위 업무 요약 한 행 */
@@ -99,6 +115,7 @@ export interface WorkDetail {
   progressRate: number;
   subWorkCount: number;
   subWorks: WorkSubWorkSummary[];
+  tags: WorkTagSummary[];
   createdAt: string | null;
   updatedAt: string | null;
 }
