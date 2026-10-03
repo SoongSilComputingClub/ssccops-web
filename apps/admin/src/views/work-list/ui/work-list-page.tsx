@@ -5,12 +5,11 @@ import { useState } from "react";
 import { CAPABILITY } from "@/entities/session";
 import { workSttsTone, type WorkListItem } from "@/entities/work";
 import { useCan } from "@/features/auth";
+import { OperationTagFilter, OperationTagPills } from "@/features/operation-tag";
 import {
   useWorkList,
-  useWorkTagOptions,
   WORK_LIST_TAB_HINTS,
   WORK_LIST_TABS,
-  WorkTagPills,
   type WorkListTab,
 } from "@/features/work";
 import { WORK_STTS_NM, WORK_TYPE_NM } from "@/shared/config/codes";
@@ -76,7 +75,7 @@ function WorkCard({ work, onClick }: Readonly<{ work: WorkListItem; onClick: () 
         <div className="text-[13.5px] text-n500">하위 업무 {work.subWorkCount}건</div>
       </div>
       <div className="mt-2 text-[18px] font-semibold">{work.title}</div>
-      <WorkTagPills tags={work.tags} className="mt-[6px] flex flex-wrap gap-[6px]" />
+      <OperationTagPills tags={work.tags} className="mt-[6px] flex flex-wrap gap-[6px]" />
       <div className="mt-1 text-[14px] text-n400">담당 {work.owner?.name || "-"}</div>
       <div className="mt-[2px] text-[13.5px] text-n500">
         {formatYmd(work.startAt) || "-"} ~ {formatYmd(work.endAt) || "-"}
@@ -101,11 +100,10 @@ export function WorkListPage() {
    */
   const [tab, setTab] = useState<WorkListTab>("미완료");
   /*
-   * 태그 하나 (#757 · ssccops#565). 상태 칩·«내 업무»와 AND이고 서버가 거른다 — 바꾸면 훅이 커서를
-   * 버리고 처음부터 다시 받는다. 주소에 남기지 않는 것은 상태 칩과 같다.
+   * 태그 하나 (#757 · 운영 태그 #771). 상태 칩·«내 업무»와 AND이고 서버가 거른다 — 바꾸면 훅이
+   * 커서를 버리고 처음부터 다시 받는다. 주소에 남기지 않는 것은 상태 칩과 같다.
    */
   const [tagId, setTagId] = useState<number | null>(null);
-  const tagOptions = useWorkTagOptions();
   const {
     works,
     status,
@@ -167,27 +165,8 @@ export function WorkListPage() {
           </Chip>
         </FilterBar>
 
-        {/*
-          태그 줄 (#757). 상태 줄과 다른 축이라 줄을 가른다 — 태그는 운영진이 만드는 대로 늘어
-          한 줄에 섞으면 상태 칩이 밀려난다. 태그가 없거나 못 받았으면 줄째 없다(목록은 그대로 쓴다).
-        */}
-        {tagOptions.tags.length > 0 && (
-          <FilterBar className="-mt-[4px]">
-            <span className="mr-[2px] text-[13.5px] text-n500">태그</span>
-            <Chip active={tagId === null} onClick={() => setTagId(null)}>
-              전체
-            </Chip>
-            {tagOptions.tags.map((t) => (
-              <Chip
-                key={t.workTagId}
-                active={tagId === t.workTagId}
-                onClick={() => setTagId(tagId === t.workTagId ? null : t.workTagId)}
-              >
-                {t.tagNm}
-              </Chip>
-            ))}
-          </FilterBar>
-        )}
+        {/* 태그 줄 (#757 · #771) — 상태 줄과 다른 축이라 줄을 가른다 */}
+        <OperationTagFilter tagId={tagId} onChange={setTagId} />
 
         {status === "loading" && (
           <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">

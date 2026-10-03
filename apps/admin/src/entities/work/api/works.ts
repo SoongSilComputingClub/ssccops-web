@@ -12,10 +12,10 @@ import type {
   WorkListItem,
   WorkMemberRef,
   WorkSubWorkSummary,
-  WorkTagSummary,
   WorkTransition,
   WorkTransitionResult,
 } from "../model/types";
+import type { OperationTagSummary } from "@/entities/operation-tag";
 
 /*
  * 업무 API (ssccops-server OPS-002 등록 · OPS-003 상세 · OPS-020 목록 · #66).
@@ -36,9 +36,9 @@ interface MemberSummaryResponse {
   name: string | null;
 }
 
-/** 태그 칩 (#757 · 서버 #631) — 서버 WorkTagSummaryResponse */
-interface WorkTagSummaryResponse {
-  workTagId: number;
+/** 태그 칩 (#771 · 서버 #640) — 서버 OperationTagSummaryResponse. 태그는 운영 건(oper)에 달린다 */
+interface OperationTagSummaryResponse {
+  operationTagId: number;
   tagNm: string | null;
 }
 
@@ -52,7 +52,7 @@ interface WorkListItemResponse {
   endAt: string | null;
   progressRate: number | null;
   subWorkCount: number | null;
-  tags: WorkTagSummaryResponse[] | null;
+  tags: OperationTagSummaryResponse[] | null;
 }
 
 interface WorkSubWorkSummaryResponse {
@@ -81,7 +81,7 @@ interface WorkDetailResponse {
   progressRate: number | null;
   subWorkCount: number | null;
   subWorks: WorkSubWorkSummaryResponse[] | null;
-  tags: WorkTagSummaryResponse[] | null;
+  tags: OperationTagSummaryResponse[] | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -121,8 +121,8 @@ function toProgressRate(value: number | null): number {
 }
 
 /** 서버가 태그 필드를 아직 안 실은 응답(배포 순서가 갈린 dev)은 빈 배열로 읽는다 */
-function toTags(tags: WorkTagSummaryResponse[] | null | undefined): WorkTagSummary[] {
-  return (tags ?? []).map((t) => ({ workTagId: t.workTagId, tagNm: t.tagNm ?? "" }));
+function toTags(tags: OperationTagSummaryResponse[] | null | undefined): OperationTagSummary[] {
+  return (tags ?? []).map((t) => ({ operationTagId: t.operationTagId, tagNm: t.tagNm ?? "" }));
 }
 
 function toWorkListItem(res: WorkListItemResponse): WorkListItem {
@@ -236,7 +236,7 @@ export interface WorkListFilter {
    */
   mine?: boolean | null;
   /**
-   * 태그 하나 (#757 · 서버 #631). 다른 조건과 AND이고 서버가 거르므로 커서·`totalCount`도 그
+   * 태그 하나 (#757 · 운영 태그 #771 · 서버 #640). 다른 조건과 AND이고 서버가 거르므로 커서·`totalCount`도 그
    * 결과를 말한다. 없는 태그 id는 오류가 아니라 빈 결과다.
    */
   tagId?: number | null;

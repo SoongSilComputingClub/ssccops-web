@@ -23,6 +23,7 @@ import type {
   SubWorkChecklistChangeType,
   SubWorkChecklistHistoryItem,
 } from "../model/types";
+import type { OperationTagSummary } from "@/entities/operation-tag";
 
 /*
  * 하위 업무 API (ssccops-server OPS-007 등록 · #36 / OPS-009 상세 · OPS-010 전이 ·
@@ -232,6 +233,19 @@ interface SubWorkListMemberResponse {
   name: string | null;
 }
 
+/**
+ * 태그 칩 (#771 · 서버 #640) — 하위 업무 자기 운영 건의 태그다. 상위 업무의 태그를 물려받지 않는다.
+ */
+interface OperationTagSummaryResponse {
+  operationTagId: number;
+  tagNm: string | null;
+}
+
+/** 서버가 태그 필드를 아직 안 실은 응답(배포 순서가 갈린 dev)은 빈 배열로 읽는다 */
+function toTags(tags: OperationTagSummaryResponse[] | null | undefined): OperationTagSummary[] {
+  return (tags ?? []).map((t) => ({ operationTagId: t.operationTagId, tagNm: t.tagNm ?? "" }));
+}
+
 interface SubWorkListItemResponse {
   subWorkId: number;
   title: string | null;
@@ -246,6 +260,7 @@ interface SubWorkListItemResponse {
   isDelayed: boolean | null;
   isReadyForReview: boolean | null;
   isReviewStale: boolean | null;
+  tags: OperationTagSummaryResponse[] | null;
 }
 
 function toListMemberRef(member: SubWorkListMemberResponse | null): SubWorkMemberRef | null {
@@ -282,6 +297,7 @@ function toSubWorkListItem(res: SubWorkListItemResponse): SubWorkListItem {
      */
     isReadyForReview: res.isReadyForReview === true,
     isReviewStale: res.isReviewStale === true,
+    tags: toTags(res.tags),
   };
 }
 
@@ -318,6 +334,11 @@ export interface SubWorkListFilter {
    * (`ssccops-server#268`) 여기서는 필터를 켤지만 말한다 — 식별자를 보낼 자리가 애초에 없다.
    */
   mine?: boolean | null;
+  /**
+   * 태그 하나 (#771 · 서버 #640). 다른 조건과 AND이고 서버가 쿼리 안에서 거르므로 커서·건수도 그
+   * 결과를 말한다. 하위 업무 자기 태그만 본다(상위 업무 태그로 걸리지 않는다). 없는 태그 id는 빈 결과다.
+   */
+  tagId?: number | null;
   /** 직전 응답의 nextCursor. 첫 페이지는 생략한다 */
   cursor?: string | null;
   /** 1~100 · 서버 기본 20 */
@@ -358,6 +379,7 @@ export async function fetchSubWorks(
   if (filter.dueBefore) query.set("dueBefore", filter.dueBefore);
   if (filter.keyword) query.set("keyword", filter.keyword);
   if (filter.mine) query.set("mine", "true");
+  if (filter.tagId != null) query.set("tagId", String(filter.tagId));
   if (filter.cursor) query.set("cursor", filter.cursor);
   if (filter.size != null) query.set("size", String(filter.size));
 
@@ -452,6 +474,7 @@ interface SubWorkDetailResponse {
   canReject: boolean | null;
   createdAt: string | null;
   updatedAt: string | null;
+  tags: OperationTagSummaryResponse[] | null;
 }
 
 interface SubWorkTransitionResponse {
@@ -596,6 +619,7 @@ function toSubWorkDetail(res: SubWorkDetailResponse): SubWorkDetail {
     canReject: res.canReject === true,
     createdAt: res.createdAt,
     updatedAt: res.updatedAt,
+    tags: toTags(res.tags),
   };
 }
 

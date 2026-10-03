@@ -162,6 +162,8 @@ function toSubWorkListItem(res: SubWorkSummaryResponse): SubWorkListItem {
     // 정체 판정 둘 (ssccops#196) — 목록(entities/sub-work)과 같은 규칙으로 받는다
     isReadyForReview: res.isReadyForReview === true,
     isReviewStale: res.isReviewStale === true,
+    // 태그 칩(#771)은 대시보드가 그리지 않는다 — 읽지 않는다
+    tags: [],
   };
 }
 

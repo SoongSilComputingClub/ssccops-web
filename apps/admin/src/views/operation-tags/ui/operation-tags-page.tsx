@@ -1,18 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import type { WorkTag } from "@/entities/work";
+import type { OperationTag } from "@/entities/operation-tag";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
-import { useWorkTags } from "@/features/work";
+import { useOperationTags } from "@/features/operation-tag";
 import { Button, Card, EmptyState, PageBody, PageHeader, Sheet, TextField, flash } from "@/shared/ui";
 
 /*
- * 업무 태그 관리 (/operations/work-tags · #757 · 서버 #631 · ssccops#565).
+ * 태그 관리 (/operations/tags · #757 · 운영 건 단위 #771 · 서버 #640 · ssccops#576).
  *
- * 모양은 폼 라벨 관리(views/form-labels)이고 행 편집·삭제는 행사 분류 관리(views/event-categories)를
- * 따른다. 폼 라벨과 갈리는 자리는 서버와 같다 — 사용_여부 토글이 없고 **이름 바꾸기·지우기**가 있다.
- * 지우면 달려 있던 업무에서 태그만 떨어지고 업무는 그대로라, 삭제 확인 창이 그 건수를 말한다.
+ * 태그는 운영 건에 달린다 — 업무·하위 업무·회의가 이 한 목록을 함께 쓴다. 모양은 폼 라벨
+ * 관리(views/form-labels)이고 행 편집·삭제는 행사 분류 관리(views/event-categories)를 따른다. 폼
+ * 라벨과 갈리는 자리는 서버와 같다 — 사용_여부 토글이 없고 **이름 바꾸기·지우기**가 있다. 지우면
+ * 달려 있던 업무·하위 업무·회의에서 태그만 떨어지고 그 건은 그대로라, 삭제 확인 창이 그 건수를 말한다
+ * (`usageCount`는 셋을 합친 수다).
  *
  * ── 권한 ───────────────────────────────────────────────────────
  * 목록은 WORK_READ(국원도 목록 필터로 쓰는 태그가 무엇인지 본다), 만들기·이름 바꾸기·지우기는
@@ -23,17 +25,17 @@ import { Button, Card, EmptyState, PageBody, PageHeader, Sheet, TextField, flash
 const NO_MANAGE = "태그를 바꿀 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
 
 /* 오류 문구를 입력란에 묶어 준다 — 색과 위치만으로는 어느 칸의 이야기인지 전달되지 않는다 */
-const ADD_ERROR_ID = "work-tag-add-error";
-const ROW_ERROR_ID = "work-tag-row-error";
+const ADD_ERROR_ID = "operation-tag-add-error";
+const ROW_ERROR_ID = "operation-tag-row-error";
 
-export function WorkTagsPage() {
-  const admin = useWorkTags();
+export function OperationTagsPage() {
+  const admin = useOperationTags();
   const canManage = useCan(CAPABILITY.WORK_MANAGE);
 
   const [newTagNm, setNewTagNm] = useState("");
   const [editing, setEditing] = useState<number | null>(null);
   const [editTagNm, setEditTagNm] = useState("");
-  const [deleting, setDeleting] = useState<WorkTag | null>(null);
+  const [deleting, setDeleting] = useState<OperationTag | null>(null);
 
   /* 훅은 마지막 변이의 실패 사유 하나만 든다 — 어디에 붙일지는 화면이 정한다 (행사 분류와 같다) */
   const [errorScope, setErrorScope] = useState<"add" | "row">("add");
@@ -49,30 +51,30 @@ export function WorkTagsPage() {
     }
   };
 
-  const saveEdit = async (t: WorkTag) => {
+  const saveEdit = async (t: OperationTag) => {
     const next = editTagNm.trim();
     setErrorScope("row");
-    if (await admin.rename(t.workTagId, editTagNm)) {
+    if (await admin.rename(t.operationTagId, editTagNm)) {
       setEditing(null);
       flash(next === t.tagNm ? `${t.tagNm} 그대로 저장됨` : `${t.tagNm} → ${next}`);
     }
   };
 
-  const startEdit = (t: WorkTag) => {
+  const startEdit = (t: OperationTag) => {
     admin.clearMutationError();
-    setEditing(t.workTagId);
+    setEditing(t.operationTagId);
     setEditTagNm(t.tagNm);
   };
 
-  const confirmDelete = async (t: WorkTag) => {
+  const confirmDelete = async (t: OperationTag) => {
     setDeleting(null);
     setErrorScope("row");
-    if (await admin.remove(t.workTagId)) flash(`${t.tagNm} 태그 삭제됨`);
+    if (await admin.remove(t.operationTagId)) flash(`${t.tagNm} 태그 삭제됨`);
   };
 
   return (
     <>
-      <PageHeader title="업무 태그 관리" subtitle="업무에 다는 태그 목록" />
+      <PageHeader title="태그 관리" subtitle="업무·하위 업무·회의에 다는 태그 목록" />
       <PageBody>
         <div className="mb-4 max-w-[640px]">
           {/*
@@ -141,18 +143,18 @@ export function WorkTagsPage() {
               )}
               <Card className="max-w-[640px] px-5 pt-4 pb-[6px]">
                 <div className="grid grid-cols-[1fr_64px_96px] lg:grid-cols-[1fr_96px_120px]">
-                  {["태그 이름", "업무", "관리"].map((h) => (
+                  {["태그 이름", "달린 건", "관리"].map((h) => (
                     <div key={h} className="pb-[10px] text-[13px] tracking-[.3px] text-n500">
                       {h}
                     </div>
                   ))}
                   {admin.tags.map((t) => (
                     <TagRow
-                      key={t.workTagId}
+                      key={t.operationTagId}
                       tag={t}
                       canManage={canManage}
                       busy={admin.busy}
-                      isEditing={editing === t.workTagId}
+                      isEditing={editing === t.operationTagId}
                       editTagNm={editTagNm}
                       rowError={rowError}
                       onEditChange={setEditTagNm}
@@ -168,8 +170,8 @@ export function WorkTagsPage() {
           ))}
 
         <div className="mt-3 max-w-[640px] text-[13.5px] leading-[1.7] text-n500">
-          업무에는 여기서 만든 태그만 달 수 있습니다. 이름을 바꾸면 달려 있는 업무에도 새 이름으로
-          보입니다.
+          업무·하위 업무·회의에는 여기서 만든 태그만 달 수 있습니다. 이름을 바꾸면 달려 있는 곳에도
+          새 이름으로 보입니다.
         </div>
 
         <Sheet
@@ -177,8 +179,8 @@ export function WorkTagsPage() {
           title="태그 삭제"
           hint={
             deleting && deleting.usageCount > 0
-              ? `이 태그가 달린 업무 ${deleting.usageCount}건에서 태그가 떨어집니다. 업무는 그대로 남습니다.`
-              : "이 태그가 달린 업무는 없습니다."
+              ? `이 태그가 달린 업무·하위 업무·회의 ${deleting.usageCount}건에서 태그가 떨어집니다. 그 건들은 그대로 남습니다.`
+              : "이 태그가 달린 업무·하위 업무·회의는 없습니다."
           }
           okLabel="삭제"
           okDisabled={admin.busy}
@@ -208,7 +210,7 @@ function TagRow({
   onCancel,
   onDelete,
 }: Readonly<{
-  tag: WorkTag;
+  tag: OperationTag;
   canManage: boolean;
   busy: boolean;
   isEditing: boolean;

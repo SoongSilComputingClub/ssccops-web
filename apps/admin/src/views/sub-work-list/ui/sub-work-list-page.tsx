@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { type SubWorkListItem } from "@/entities/sub-work";
+import { OperationTagFilter, OperationTagPills } from "@/features/operation-tag";
 import {
   SUB_WORK_LIST_TABS,
   SUB_WORK_LIST_TAB_HINTS,
@@ -84,6 +85,11 @@ export function SubWorkListPage() {
    * 걸려야 하는 조건이다.
    */
   const [mine, setMine] = useState(false);
+  /*
+   * 태그 하나 (#771 · 서버 #640). 탭·«내 업무»와 AND이고 서버가 거른다 — 바꾸면 훅이 커서를 버리고
+   * 처음부터 다시 받는다. 하위 업무 자기 태그만 본다 — 상위 업무에 단 태그로는 걸리지 않는다.
+   */
+  const [tagId, setTagId] = useState<number | null>(null);
   const {
     subWorks,
     status,
@@ -94,7 +100,7 @@ export function SubWorkListPage() {
     loadingMore,
     loadMore,
     reload,
-  } = useSubWorkList(tab, "", mine);
+  } = useSubWorkList(tab, "", mine, tagId);
 
   const runLoadMore = async () => {
     const message = await loadMore();
@@ -106,7 +112,12 @@ export function SubWorkListPage() {
       key: "title",
       header: "하위 업무",
       width: "1.4fr",
-      render: (sw) => <span className="font-semibold hover:text-accent">{sw.title}</span>,
+      render: (sw) => (
+        <span className="flex min-w-0 flex-col gap-1">
+          <span className="font-semibold hover:text-accent">{sw.title}</span>
+          <OperationTagPills tags={sw.tags} className="flex flex-wrap gap-1" />
+        </span>
+      ),
     },
     {
       key: "work",
@@ -210,6 +221,9 @@ export function SubWorkListPage() {
           </Chip>
         </FilterBar>
 
+        {/* 태그 줄 (#771) — 탭 줄과 다른 축이라 줄을 가른다(업무 목록과 같다) */}
+        <OperationTagFilter tagId={tagId} onChange={setTagId} />
+
         {status === "loading" && <SubWorkTableSkeleton />}
 
         {status === "error" && (
@@ -231,9 +245,14 @@ export function SubWorkListPage() {
                 empty={
                   <EmptyState
                     message={
-                      mine
+                      mine && tagId === null
                         ? "담당하고 있는 하위 업무가 없습니다."
                         : "조건에 맞는 하위 업무가 없습니다."
+                    }
+                    action={
+                      tagId === null
+                        ? undefined
+                        : { label: "태그 해제", onClick: () => setTagId(null) }
                     }
                   />
                 }
