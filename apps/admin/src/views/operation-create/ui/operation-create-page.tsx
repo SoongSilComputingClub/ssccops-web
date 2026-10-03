@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useCreateMeeting } from "@/features/meeting";
+import { OperationTagPicker, useAssignOperationTags } from "@/features/operation-tag";
 import {
   AssignableMemberSelect,
   assignableBlockReason,
@@ -13,12 +14,7 @@ import {
 } from "@/features/member";
 import { useCreateSubWork } from "@/features/sub-work";
 import { useActiveSubWorkTypes } from "@/features/sub-work-type";
-import {
-  useAssignWorkTags,
-  useCreateWork,
-  useWorkDetail,
-  WorkTagPicker,
-} from "@/features/work";
+import { useCreateWork, useWorkDetail } from "@/features/work";
 import {
   ATND_TRGT_CDS,
   ATND_TRGT_NM,
@@ -186,14 +182,18 @@ export function OperationCreatePage({
   const [workTypeCd, setWorkTypeCd] = useState<WorkTypeCd>("EVENT");
   const [grvwCn, setGrvwCn] = useState("");
   /*
-   * 태그 (#757 · ssccops#565). 등록 본문은 태그를 받지 않아 등록이 성공한 뒤 PUT /v1/works/{id}/tags로
-   * 단다(전체 교체). 태그만 실패하면 업무는 이미 만들어졌으므로 상세로 옮기고 다시 지정하게 한다.
+   * 태그 (#757 · #771 · ssccops#576). 등록 본문은 태그를 받지 않아 등록이 성공한 뒤 응답의
+   * `operationId`로 PUT /v1/operations/{operationId}/tags를 부른다(전체 교체). 태그만 실패하면 업무는
+   * 이미 만들어졌으므로 상세로 옮기고 다시 지정하게 한다. 하위 업무·회의 등록에는 칩을 두지 않았다 —
+   * 이슈 범위가 업무 등록 하나이고, 둘은 상세의 «태그 편집»으로 단다.
    */
   const [workTagIds, setWorkTagIds] = useState<number[]>([]);
-  const workTagAssign = useAssignWorkTags();
-  const toggleWorkTag = (workTagId: number) =>
+  const workTagAssign = useAssignOperationTags();
+  const toggleWorkTag = (operationTagId: number) =>
     setWorkTagIds((ids) =>
-      ids.includes(workTagId) ? ids.filter((id) => id !== workTagId) : [...ids, workTagId],
+      ids.includes(operationTagId)
+        ? ids.filter((id) => id !== operationTagId)
+        : [...ids, operationTagId],
     );
 
   /*
@@ -247,7 +247,7 @@ export function OperationCreatePage({
    * 정하며, 화면이 값을 만들어 보내면 서버가 무시하는 필드가 늘 뿐이다.
    */
   const submitWork = async (ownerId: number) => {
-    const { workId, message } = await workCreation.create({
+    const { workId, operationId, message } = await workCreation.create({
       title: operTtl.trim(),
       itemType: workTypeCd,
       ownerId,
@@ -259,7 +259,10 @@ export function OperationCreatePage({
 
     if (!message) return; // 진행 중 중복 클릭 — 아무것도 보내지 않았다
     if (workId && workTagIds.length > 0) {
-      const { tags } = await workTagAssign.assign(workId, workTagIds);
+      // 응답에 operationId가 없으면 태그를 달 경로가 없다 — 태그 실패와 같은 안내로 상세에 보낸다
+      const { tags } = operationId
+        ? await workTagAssign.assign(operationId, workTagIds, "업무")
+        : { tags: null };
       flash(tags ? message : "태그를 달지 못했습니다 — 상세에서 다시 지정해주세요");
     } else {
       flash(message);
@@ -532,7 +535,7 @@ export function OperationCreatePage({
                 </div>
                 <div className="mb-2 text-[13.5px] text-n400">태그</div>
                 <div className="mb-4">
-                  <WorkTagPicker selected={workTagIds} onToggle={toggleWorkTag} />
+                  <OperationTagPicker selected={workTagIds} onToggle={toggleWorkTag} />
                 </div>
                 <Field label={FIELD_LABEL.generalReview}>
                   <TextArea

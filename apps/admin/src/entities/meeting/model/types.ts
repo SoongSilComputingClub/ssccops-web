@@ -6,6 +6,7 @@ import type {
   OperTypeCd,
   PrrtyRnkCd,
 } from "@/shared/config/codes";
+import type { OperationTagSummary } from "@/entities/operation-tag";
 
 /**
  * table: mtg — 회의
@@ -95,6 +96,8 @@ export interface MeetingListItem {
   startAt: string | null;
   endAt: string | null;
   createdAt: string | null;
+  /** 회의 운영 건에 달린 태그 칩 (#771 · 서버 #640) — 업무·하위 업무와 같은 태그 목록이다 */
+  tags: OperationTagSummary[];
 }
 
 /**
@@ -175,4 +178,5 @@ export interface MeetingDetail {
   agendas: MeetingAgenda[];
   createdAt: string | null;
   updatedAt: string | null;
+  tags: OperationTagSummary[];
 }

@@ -15,6 +15,7 @@ import {
 import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useMeetingActions, useMeetingDetail } from "@/features/meeting";
+import { OperationTagSection } from "@/features/operation-tag";
 import { ShareButton } from "@/features/share";
 import { useSubWorkList } from "@/features/sub-work";
 import { useWorkList } from "@/features/work";
@@ -429,6 +430,7 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
   /*
    * «업무로 만들기»(ADR-0059)는 업무 등록과 같은 WORK_MANAGE다 — 서버가 승격에 그 코드를 건다.
    * 안건 쓰기 권한(국원도 갖는다)만으로는 업무가 생기지 않으므로 위 canWriteAgenda와 따로 본다.
+   * «태그 편집»(#771)도 이 값으로 잠근다 — 운영 태그 지정이 업무·하위 업무·회의 모두 WORK_MANAGE다.
    */
   const canManageWork = useCan(CAPABILITY.WORK_MANAGE);
   /* «업무로 만들기» 시트가 열린 안건과, 이 화면에서 방금 만든 업무(안건별 work_id) */
@@ -718,6 +720,19 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
               </Button>
             </div>
             <div className="mt-2 text-[22px] font-medium">{meeting.title}</div>
+            {/*
+              태그 (#771 · 서버 #640). 회의에 다는 것도 WORK_MANAGE다(MEETING_MANAGE가 아니다) — 업무·하위
+              업무와 같은 칩 편집기가 화면마다 다르게 잠기지 않게 서버가 한 권한으로 묶었다.
+              key: 다시 불러온 상세가 오면 편집 상태를 버리고 새 칩으로 그린다.
+            */}
+            <OperationTagSection
+              key={meeting.tags.map((t) => t.operationTagId).join(",")}
+              operationId={meeting.operationId}
+              subject="회의"
+              tags={meeting.tags}
+              canManage={canManageWork}
+              onSaved={reload}
+            />
 
             <SectionLabel className="mt-5">상위 속성 · oper</SectionLabel>
             <KeyValueGrid

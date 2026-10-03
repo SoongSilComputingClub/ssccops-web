@@ -12,6 +12,7 @@ import { REJECT_REASON_MAX_LENGTH } from "@/entities/sub-work";
 import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { RejectSheet, useApprovalDecisions } from "@/features/approval";
+import { OperationTagSection } from "@/features/operation-tag";
 import { useDeleteSubWork, useSubWorkActions, useSubWorkDetail } from "@/features/sub-work";
 import { ShareButton } from "@/features/share";
 import {
@@ -396,6 +397,21 @@ export function SubWorkDetailPage({ subWorkId }: Readonly<{ subWorkId: number }>
               )
             )}
           </div>
+
+          {/*
+           * 태그 (#771 · 서버 #640) — 하위 업무 자기 운영 건의 태그다(상위 업무의 태그를 물려받지
+           * 않는다). 편집은 WORK_MANAGE이고 담당자 본인이어도 그 권한이 없으면 잠긴다 — 업무·회의와
+           * 같은 칩 편집기가 화면마다 다르게 잠기지 않게(서버가 셋을 한 권한으로 묶었다).
+           * key: 다시 불러온 상세가 오면 편집 상태를 버리고 새 칩으로 그린다.
+           */}
+          <OperationTagSection
+            key={subWork.tags.map((t) => t.operationTagId).join(",")}
+            operationId={subWork.operationId}
+            subject="하위 업무"
+            tags={subWork.tags}
+            canManage={canManage}
+            onSaved={reload}
+          />
 
           <CircleStepper
             steps={STAGE_LABELS}

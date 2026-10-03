@@ -4,8 +4,6 @@ export type {
   WorkListItem,
   WorkMemberRef,
   WorkSubWorkSummary,
-  WorkTag,
-  WorkTagSummary,
   WorkTransition,
   WorkTransitionResult,
 } from "./model/types";
@@ -25,12 +23,3 @@ export type {
   WorkListFilter,
   WorkListPage,
 } from "./api/works";
-export {
-  TAG_NM_MAX_LENGTH,
-  WORK_TAG_ERROR,
-  createWorkTag,
-  deleteWorkTag,
-  fetchWorkTags,
-  renameWorkTag,
-  replaceWorkTags,
-} from "./api/work-tags";

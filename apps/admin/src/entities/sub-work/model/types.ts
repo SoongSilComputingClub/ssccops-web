@@ -6,6 +6,7 @@ import type {
   VoteChoice,
   WorkSttsCd,
 } from "@/shared/config/codes";
+import type { OperationTagSummary } from "@/entities/operation-tag";
 
 /**
  * table: sub_work — 하위_업무
@@ -243,6 +244,8 @@ export interface SubWorkDetail {
   canReject: boolean;
   createdAt: string | null;
   updatedAt: string | null;
+  /** 자기 운영 건의 태그 칩 (#771 · 서버 #640) — 상위 업무의 태그를 물려받지 않는다 */
+  tags: OperationTagSummary[];
 }
 
 /**
@@ -364,4 +367,6 @@ export interface SubWorkListItem {
    * 승인자다**. 임계값 3일은 서버 상수(`DeadlinePolicy.REVIEW_STALE_DAYS`)라 화면은 모른다.
    */
   isReviewStale: boolean;
+  /** 자기 운영 건의 태그 칩 (#771 · 서버 #640). 대시보드는 칩을 그리지 않아 읽지 않고 빈 배열로 둔다 */
+  tags: OperationTagSummary[];
 }

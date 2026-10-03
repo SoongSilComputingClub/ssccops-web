@@ -17,6 +17,7 @@ import type {
   MeetingMemberRef,
   MeetingTransition,
 } from "../model/types";
+import type { OperationTagSummary } from "@/entities/operation-tag";
 
 /*
  * 회의 API (ssccops-server OPS-024 등록 · OPS-025 상세 · OPS-026 전이 · OPS-027~029 안건 ·
@@ -66,6 +67,12 @@ interface MeetingAgendaPromoteResponse {
   work: { workId: number; operationId: number | null } | null;
 }
 
+/** 태그 칩 (#771 · 서버 #640) — 서버 OperationTagSummaryResponse */
+interface OperationTagSummaryResponse {
+  operationTagId: number;
+  tagNm: string | null;
+}
+
 interface MeetingListItemResponse {
   meetingId: number;
   operationId: number;
@@ -79,6 +86,7 @@ interface MeetingListItemResponse {
   startAt: string | null;
   endAt: string | null;
   createdAt: string | null;
+  tags: OperationTagSummaryResponse[] | null;
 }
 
 interface MeetingDetailResponse {
@@ -98,6 +106,7 @@ interface MeetingDetailResponse {
   agendas: MeetingAgendaResponse[] | null;
   createdAt: string | null;
   updatedAt: string | null;
+  tags: OperationTagSummaryResponse[] | null;
 }
 
 interface MeetingTransitionResponse {
@@ -114,6 +123,11 @@ interface MeetingTransitionResponse {
 function toMemberRef(member: MemberSummaryResponse | null): MeetingMemberRef | null {
   if (member?.memberId == null) return null;
   return { memberId: member.memberId, name: member.name ?? "" };
+}
+
+/** 서버가 태그 필드를 아직 안 실은 응답(배포 순서가 갈린 dev)은 빈 배열로 읽는다 */
+function toTags(tags: OperationTagSummaryResponse[] | null | undefined): OperationTagSummary[] {
+  return (tags ?? []).map((t) => ({ operationTagId: t.operationTagId, tagNm: t.tagNm ?? "" }));
 }
 
 function toAgendaTarget(
@@ -157,6 +171,7 @@ function toMeetingListItem(res: MeetingListItemResponse): MeetingListItem {
     startAt: res.startAt,
     endAt: res.endAt,
     createdAt: res.createdAt,
+    tags: toTags(res.tags),
   };
 }
 
@@ -178,6 +193,7 @@ function toMeetingDetail(res: MeetingDetailResponse): MeetingDetail {
     agendas: (res.agendas ?? []).map(toAgenda),
     createdAt: res.createdAt,
     updatedAt: res.updatedAt,
+    tags: toTags(res.tags),
   };
 }
 
@@ -220,9 +236,13 @@ export const MEETING_ERROR = {
  * 커서 페이징이 없다 — '회의' 화면이 카드 그리드 하나로 페이징 없이 전량을 보여준다(서버가
  * page 봉투를 싣지 않는다). `apiFetchList`가 아니라 `apiFetch`를 쓰는 이유는
  * entities/sub-work-type/api/sub-work-types.ts의 같은 판단 참고.
+ *
+ * `tagId`(#771 · 서버 #640)를 주면 그 태그가 달린 회의만 온다. 없는 태그 id는 오류가 아니라 빈 목록이다.
  */
-export async function fetchMeetings(): Promise<MeetingListItem[]> {
-  const meetings = await apiFetch<MeetingListItemResponse[] | null>("/v1/meetings");
+export async function fetchMeetings(tagId: number | null = null): Promise<MeetingListItem[]> {
+  const meetings = await apiFetch<MeetingListItemResponse[] | null>(
+    tagId == null ? "/v1/meetings" : `/v1/meetings?tagId=${tagId}`,
+  );
   return (meetings ?? []).map(toMeetingListItem);
 }
 

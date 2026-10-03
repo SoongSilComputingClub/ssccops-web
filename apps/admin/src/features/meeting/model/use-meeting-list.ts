@@ -32,16 +32,20 @@ export interface MeetingList {
   reload: () => void;
 }
 
-export function useMeetingList(): MeetingList {
+/**
+ * `tagId`(#771 · 서버 #640)를 주면 그 태그가 달린 회의만 서버가 거른다. requestKey에 들어가 바꾸면
+ * 처음부터 다시 받는다.
+ */
+export function useMeetingList(tagId: number | null = null): MeetingList {
   const [loaded, setLoaded] = useState<LoadedMeetingList | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const requestKey = String(reloadKey);
+  const requestKey = `${tagId ?? ""}:${reloadKey}`;
 
   useEffect(() => {
     let alive = true;
 
-    fetchMeetings()
+    fetchMeetings(tagId)
       .then((meetings) => {
         if (!alive) return;
         setLoaded({ key: requestKey, meetings, errorMessage: "" });
@@ -54,7 +58,7 @@ export function useMeetingList(): MeetingList {
     return () => {
       alive = false;
     };
-  }, [requestKey]);
+  }, [requestKey, tagId]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
