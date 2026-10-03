@@ -108,8 +108,14 @@ export type MeetingTransition = "OPEN" | "WRITE_MINUTES" | "CLOSE" | "CANCEL";
 
 /** 안건이 연결한 운영 건(업무·하위 업무) 요약 */
 export interface MeetingAgendaTarget {
+  /** oper_id — 상세 경로의 값이 아니다 */
   operationId: number;
   operationType: OperTypeCd;
+  /**
+   * 유형별 식별자 — WORK면 work_id, SUB_WORK면 sub_work_id, MEETING이면 mtg_id(ssccops#575).
+   * 상세 경로는 이 값으로 연다. 그 필드를 싣기 전 서버면 null이다.
+   */
+  targetId: number | null;
   title: string;
 }
 

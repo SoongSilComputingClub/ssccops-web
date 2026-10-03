@@ -41,6 +41,8 @@ interface AgendaTargetOperationResponse {
   operationId: number;
   operationType: OperTypeCd;
   title: string | null;
+  /** 유형별 식별자(work_id·sub_work_id·mtg_id · ssccops#575). 그 전 서버는 싣지 않는다 */
+  targetId?: number | null;
 }
 
 interface MeetingAgendaResponse {
@@ -118,7 +120,12 @@ function toAgendaTarget(
   target: AgendaTargetOperationResponse | null,
 ): MeetingAgendaTarget | null {
   if (!target) return null;
-  return { operationId: target.operationId, operationType: target.operationType, title: target.title ?? "" };
+  return {
+    operationId: target.operationId,
+    operationType: target.operationType,
+    targetId: target.targetId ?? null,
+    title: target.title ?? "",
+  };
 }
 
 function toAgenda(res: MeetingAgendaResponse): MeetingAgenda {
