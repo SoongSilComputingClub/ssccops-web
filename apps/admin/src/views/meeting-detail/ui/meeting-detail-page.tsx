@@ -9,6 +9,7 @@ import {
   prcsSeTone,
   type MeetingAgenda,
   type MeetingAgendaPromoteInput,
+  type MeetingAgendaPromoteSubWorkInput,
   type MeetingAgendaTarget,
   type MeetingTransition,
 } from "@/entities/meeting";
@@ -163,9 +164,9 @@ interface AgendaSave {
 /**
  * 드래프트 안건의 제목 상자 (ADR-0059). 연결 안건의 운영 건 상자와 같은 자리·모양이다.
  *
- * «업무로 만들기»는 업무 등록 권한(WORK_MANAGE)이라 안건 쓰기 권한과 따로 판정한다 — 권한이
- * 없으면 감추지 않고 잠근 채 사유를 `title`로 붙인다(apps/admin/AGENTS.md «이동은 감추고, 동작은
- * 잠근다»). 종료·취소된 회의에서도 버튼은 선다(#765) — 회의가 끝난 뒤에야 업무로 할 일이 드러나는
+ * «업무로 만들기»(시트에서 업무·하위 업무를 고른다 · #775)는 업무 등록 권한(WORK_MANAGE)이라 안건
+ * 쓰기 권한과 따로 판정한다 — 권한이 없으면 감추지 않고 잠근 채 사유를 `title`로 붙인다
+ * (apps/admin/AGENTS.md «이동은 감추고, 동작은 잠근다»). 종료·취소된 회의에서도 버튼은 선다(#765) — 회의가 끝난 뒤에야 업무로 할 일이 드러나는
  * 안건이 많아 서버가 그 상태의 승격을 연다(ssccops#573). 제목 고치기와 새 안건 올리기는 그대로 잠긴다.
  */
 function DraftAgendaBox({
@@ -261,6 +262,30 @@ function AgendaTargetBox({ target }: Readonly<{ target: MeetingAgendaTarget }>) 
   );
 }
 
+/** 이 화면에서 방금 승격으로 만든 운영 건 — 종류와 상세 경로 값(work_id·sub_work_id) */
+interface CreatedOperation {
+  kind: "WORK" | "SUB_WORK";
+  id: number;
+}
+
+function CreatedOperationLink({ created }: Readonly<{ created: CreatedOperation }>) {
+  const router = useRouter();
+  const subWork = created.kind === "SUB_WORK";
+  return (
+    <div className="mt-2 flex items-center gap-2 text-[13.5px] text-n500">
+      {subWork ? "하위 업무를 만들었습니다." : "업무를 만들었습니다."}
+      <Button
+        variant="link"
+        onClick={() =>
+          router.push(subWork ? ROUTES.subWorkDetail(created.id) : ROUTES.workDetail(created.id))
+        }
+      >
+        {subWork ? "만든 하위 업무 열기" : "만든 업무 열기"}
+      </Button>
+    </div>
+  );
+}
+
 function AgendaCard({
   agenda,
   editable,
@@ -269,7 +294,7 @@ function AgendaCard({
   onWithdraw,
   withdrawable,
   promote,
-  createdWorkId,
+  created,
 }: Readonly<{
   agenda: MeetingAgenda;
   editable: boolean;
@@ -279,10 +304,9 @@ function AgendaCard({
   withdrawable: boolean;
   /** 드래프트 안건의 «업무로 만들기» — 종료·취소된 회의에서도 선다(#765) */
   promote: { blockReason: string; onPromote: () => void };
-  /** 이 화면에서 방금 «업무로 만들기»로 만든 업무의 work_id — «만든 업무 열기»가 이 값으로 간다 */
-  createdWorkId: number | null;
+  /** 이 화면에서 방금 «업무로 만들기»로 만든 업무·하위 업무 — «만든 … 열기»가 이 값으로 간다 */
+  created: CreatedOperation | null;
 }>) {
-  const router = useRouter();
   const [name, setName] = useState(agenda.agendaName ?? "");
   const [content, setContent] = useState(agenda.content ?? "");
   const [resultContent, setResultContent] = useState(agenda.resultContent ?? "");
@@ -343,17 +367,10 @@ function AgendaCard({
         <AgendaTargetBox target={agenda.targetOperation} />
       )}
       {/*
-        «업무로 만들기» 직후에만 선다 — 응답의 `work.workId`가 업무 상세 경로의 값이고, 안건이
-        싣는 `targetOperation.operationId`(oper_id)와 다르다.
+        «업무로 만들기» 직후에만 선다 — 응답의 `work.workId`·`subWork.subWorkId`가 상세 경로의 값이고,
+        안건이 싣는 `targetOperation.operationId`(oper_id)와 다르다.
       */}
-      {!agenda.draft && createdWorkId !== null && (
-        <div className="mt-2 flex items-center gap-2 text-[13.5px] text-n500">
-          업무를 만들었습니다.
-          <Button variant="link" onClick={() => router.push(ROUTES.workDetail(createdWorkId))}>
-            만든 업무 열기
-          </Button>
-        </div>
-      )}
+      {!agenda.draft && created !== null && <CreatedOperationLink created={created} />}
       <div className="mt-3 flex flex-wrap gap-[7px] lg:flex-nowrap">
         {AGND_PRCS_SE_CDS.map((cd) => (
           <Chip
@@ -407,8 +424,16 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
   const router = useRouter();
   const { meeting, status, errorMessage, reload, applyAgendaUpsert, applyAgendaRemoval } =
     useMeetingDetail(mtgId);
-  const { pending, transition, addAgenda, updateAgenda, withdrawAgenda, promoteAgenda, remove } =
-    useMeetingActions(mtgId);
+  const {
+    pending,
+    transition,
+    addAgenda,
+    updateAgenda,
+    withdrawAgenda,
+    promoteAgenda,
+    promoteAgendaToSubWork,
+    remove,
+  } = useMeetingActions(mtgId);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const sessionMember = useSessionStore((s) => s.member);
@@ -433,9 +458,9 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
    * «태그 편집»(#771)도 이 값으로 잠근다 — 운영 태그 지정이 업무·하위 업무·회의 모두 WORK_MANAGE다.
    */
   const canManageWork = useCan(CAPABILITY.WORK_MANAGE);
-  /* «업무로 만들기» 시트가 열린 안건과, 이 화면에서 방금 만든 업무(안건별 work_id) */
+  /* «업무로 만들기» 시트가 열린 안건과, 이 화면에서 방금 만든 업무·하위 업무(안건별) */
   const [promotingAgendaId, setPromotingAgendaId] = useState<number | null>(null);
-  const [createdWorkIds, setCreatedWorkIds] = useState<Record<number, number>>({});
+  const [createdByAgenda, setCreatedByAgenda] = useState<Record<number, CreatedOperation>>({});
 
   /*
    * 안건으로 연결할 업무·하위 업무 후보. 목록 API(OPS-008·OPS-020)는 카드에 필요한 값만
@@ -603,7 +628,23 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
     if (message) flash(message);
     if (!result) return;
     applyAgendaUpsert(result.agenda);
-    setCreatedWorkIds((ids) => ({ ...ids, [agendaId]: result.workId }));
+    setCreatedByAgenda((map) => ({ ...map, [agendaId]: { kind: "WORK", id: result.workId } }));
+    setPromotingAgendaId(null);
+  };
+
+  /* «하위 업무로» (#775 · ssccops#580) — 업무 승격과 같은 흐름이고 «만든 하위 업무 열기»는 subWorkId로 간다 */
+  const promoteDraftAgendaToSubWork = async (
+    agendaId: number,
+    input: MeetingAgendaPromoteSubWorkInput,
+  ) => {
+    const { result, message } = await promoteAgendaToSubWork(agendaId, input);
+    if (message) flash(message);
+    if (!result) return;
+    applyAgendaUpsert(result.agenda);
+    setCreatedByAgenda((map) => ({
+      ...map,
+      [agendaId]: { kind: "SUB_WORK", id: result.subWorkId },
+    }));
     setPromotingAgendaId(null);
   };
 
@@ -793,7 +834,7 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
                         blockReason: promoteBlockReason,
                         onPromote: () => setPromotingAgendaId(a.agendaId),
                       }}
-                      createdWorkId={createdWorkIds[a.agendaId] ?? null}
+                      created={createdByAgenda[a.agendaId] ?? null}
                     />
                   ))}
                 </div>
@@ -961,7 +1002,10 @@ export function MeetingDetailPage({ mtgId }: Readonly<{ mtgId: number }>) {
             agenda={promotingAgenda}
             pending={pending}
             onClose={() => setPromotingAgendaId(null)}
-            onSubmit={(input) => void promoteDraftAgenda(promotingAgenda.agendaId, input)}
+            onSubmitWork={(input) => void promoteDraftAgenda(promotingAgenda.agendaId, input)}
+            onSubmitSubWork={(input) =>
+              void promoteDraftAgendaToSubWork(promotingAgenda.agendaId, input)
+            }
           />
         )}
 
