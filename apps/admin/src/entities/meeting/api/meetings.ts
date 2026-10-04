@@ -67,6 +67,15 @@ interface MeetingAgendaPromoteResponse {
   work: { workId: number; operationId: number | null } | null;
 }
 
+/**
+ * 드래프트 안건 하위 업무 승격 응답 (서버 #644 · ssccops#580) — 하위 업무는 등록 응답(SubWorkCreateResponse)
+ * 모양이다. 화면이 쓰는 것은 상세 경로 값 `subWorkId`뿐이다.
+ */
+interface MeetingAgendaPromoteSubWorkResponse {
+  agenda: MeetingAgendaResponse;
+  subWork: { subWorkId: number; workId?: number | null } | null;
+}
+
 /** 태그 칩 (#771 · 서버 #640) — 서버 OperationTagSummaryResponse */
 interface OperationTagSummaryResponse {
   operationTagId: number;
@@ -511,6 +520,74 @@ export async function promoteMeetingAgenda(
   }
 
   return { agenda: toAgenda(res.agenda), workId: res.work.workId };
+}
+
+/**
+ * 드래프트 안건 하위 업무 승격 입력 — 하위 업무 등록 요청(서버 SubWorkCreateRequest)과 같은 필드다
+ * (서버 #644 · ssccops#580). entities/sub-work의 `SubWorkCreateInput`을 가져오지 않는 이유는 업무
+ * 승격 입력과 같다(entities 슬라이스끼리 참조하지 않는다).
+ */
+export interface MeetingAgendaPromoteSubWorkInput {
+  /** 상위 업무의 work_id */
+  workId: number;
+  title: string;
+  subWorkTypeId: number;
+  ownerId: number;
+  startAt: string | null;
+  /** oper의 종료_일시. 하위 업무 등록 화면처럼 «마감 일시» 한 칸이 dueAt과 함께 채운다 */
+  endAt: string | null;
+  dueAt: string | null;
+  priority: PrrtyRnkCd;
+}
+
+/** 하위 업무 승격 결과 — 운영 건을 가리키게 된 안건과 새 하위 업무의 식별자 */
+export interface MeetingAgendaSubWorkPromotion {
+  agenda: MeetingAgenda;
+  /** 새 하위 업무의 sub_work_id — 하위 업무 상세 경로가 이 값이다 */
+  subWorkId: number;
+}
+
+/**
+ * POST /v1/meetings/{meetingId}/agendas/{agendaId}/promote-sub-work — 드래프트 안건을 하위 업무로
+ * 만든다 (서버 #644 · ssccops#580).
+ *
+ * 업무 승격(`promoteMeetingAgenda`)과 같은 규칙이다 — 하위 업무 등록과 안건 연결이 한 트랜잭션이고,
+ * 권한은 WORK_MANAGE, 이미 연결된 안건은 409 `MEETING_AGENDA_ALREADY_LINKED`다. 본문은 하위 업무
+ * 등록(`POST /v1/sub-works`)과 같아서 없는 상위 업무·유형은 404, 꺼진 유형·담당자 부적격·기간
+ * 역전은 400 `VALIDATION_FAILED`다. 비운 일시는 싣지 않는다.
+ *
+ * `subWork.subWorkId` 없이 성공으로 처리하지 않는다 — 만든 하위 업무로 가는 길이 사라진다.
+ */
+export async function promoteMeetingAgendaToSubWork(
+  meetingId: number,
+  agendaId: number,
+  input: MeetingAgendaPromoteSubWorkInput,
+): Promise<MeetingAgendaSubWorkPromotion> {
+  const res = await apiFetch<MeetingAgendaPromoteSubWorkResponse | null>(
+    `/v1/meetings/${meetingId}/agendas/${agendaId}/promote-sub-work`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        workId: input.workId,
+        title: input.title.trim(),
+        subWorkTypeId: input.subWorkTypeId,
+        ownerId: input.ownerId,
+        ...(input.startAt ? { startAt: withServiceOffset(input.startAt) } : {}),
+        ...(input.endAt ? { endAt: withServiceOffset(input.endAt) } : {}),
+        ...(input.dueAt ? { dueAt: withServiceOffset(input.dueAt) } : {}),
+        priority: input.priority,
+      }),
+    },
+  );
+
+  if (!res?.agenda || !res.subWork?.subWorkId) {
+    throw new ApiError(
+      MEETING_ERROR.VALIDATION_FAILED,
+      "하위 업무를 만들었습니다 — 새로고침하면 반영됩니다",
+    );
+  }
+
+  return { agenda: toAgenda(res.agenda), subWorkId: res.subWork.subWorkId };
 }
 
 /**

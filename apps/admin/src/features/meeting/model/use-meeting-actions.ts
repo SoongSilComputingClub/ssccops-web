@@ -6,6 +6,7 @@ import {
   addMeetingAgenda,
   deleteMeeting,
   promoteMeetingAgenda,
+  promoteMeetingAgendaToSubWork,
   transitionMeeting,
   updateMeetingAgenda,
   withdrawMeetingAgenda,
@@ -13,6 +14,8 @@ import {
   type MeetingAgendaInput,
   type MeetingAgendaPromoteInput,
   type MeetingAgendaPromotion,
+  type MeetingAgendaPromoteSubWorkInput,
+  type MeetingAgendaSubWorkPromotion,
   type MeetingAgendaUpdateInput,
   type MeetingTransition,
   type MeetingTransitionResult,
@@ -21,6 +24,7 @@ import {
   toMeetingActionErrorMessage,
   toMeetingDeleteErrorMessage,
   toMeetingPromoteErrorMessage,
+  toMeetingSubWorkPromoteErrorMessage,
 } from "./meeting-error";
 
 /*
@@ -58,6 +62,11 @@ export interface MeetingActionControl {
     agendaId: number,
     input: MeetingAgendaPromoteInput,
   ) => Promise<MeetingActionOutcome<MeetingAgendaPromotion>>;
+  /** 드래프트 안건 «하위 업무로 만들기» (ssccops#580) — 하위 업무 등록과 같은 입력을 받는다 */
+  promoteAgendaToSubWork: (
+    agendaId: number,
+    input: MeetingAgendaPromoteSubWorkInput,
+  ) => Promise<MeetingActionOutcome<MeetingAgendaSubWorkPromotion>>;
   remove: () => Promise<MeetingActionOutcome<true>>;
 }
 
@@ -162,6 +171,17 @@ export function useMeetingActions(meetingId: number): MeetingActionControl {
     [run, meetingId],
   );
 
+  /* 하위 업무 승격 (서버 #644 · ssccops#580) — 업무 승격과 같은 잠금을 쓴다(같은 이유) */
+  const promoteAgendaToSubWork = useCallback(
+    (agendaId: number, input: MeetingAgendaPromoteSubWorkInput) =>
+      run(
+        () => promoteMeetingAgendaToSubWork(meetingId, agendaId, input),
+        "하위 업무를 만들었습니다",
+        toMeetingSubWorkPromoteErrorMessage,
+      ),
+    [run, meetingId],
+  );
+
   /*
    * 회의 삭제 (서버 #125). 안건 철회(withdrawAgenda)와 같은 잠금을 쓰지만 오류 문구는 다르다 —
    * 삭제 403은 "책임자만"이 아니라 "MEETING_DELETE 권한 없음"이라 toMeetingDeleteErrorMessage를
@@ -180,5 +200,14 @@ export function useMeetingActions(meetingId: number): MeetingActionControl {
     [run, meetingId],
   );
 
-  return { pending, transition, addAgenda, updateAgenda, withdrawAgenda, promoteAgenda, remove };
+  return {
+    pending,
+    transition,
+    addAgenda,
+    updateAgenda,
+    withdrawAgenda,
+    promoteAgenda,
+    promoteAgendaToSubWork,
+    remove,
+  };
 }
