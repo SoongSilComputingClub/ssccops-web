@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { MeetingListItem } from "@/entities/meeting";
 import { mtgSttsTone } from "@/entities/meeting";
+import type { OperationTagSummary } from "@/entities/operation-tag";
 import type { SubWorkListItem } from "@/entities/sub-work";
 import type { WorkListItem } from "@/entities/work";
 import { workSttsTone } from "@/entities/work";
 import { useOperationsHub } from "@/features/oper";
+import { OperationTagFilter, OperationTagPills } from "@/features/operation-tag";
 import {
   APRV_STTS_NM,
   MTG_SE_NM,
@@ -45,6 +47,13 @@ import {
  *
  * 탭 필터(전체/업무/하위업무/회의)와 우측 트리 묶음은 화면이 응답 배열 위에서 한다 — 서버는
  * 유형별 배열 세 개만 내리고, 트리는 subWorks[].work.workId로 상위 업무에 묶는다.
+ *
+ * ── 태그 (#771 · 서버 #640 · ssccops#576) ─────────────────────────
+ * 업무·하위 업무·회의가 한 태그 목록을 쓰므로 리스트 행마다 칩을 달고, 태그 줄 하나로 세 배열을 함께
+ * 거른다 — 거르기는 서버(`?tagId=`)가 한다. 하위 업무는 상위 업무의 태그를 물려받지 않으므로 거른
+ * 결과에는 **상위 업무가 빠진 하위 업무**가 있을 수 있다. 트리는 그 하위 업무를 버리지 않고 응답이 함께
+ * 준 상위 업무 이름(`work.title`) 아래 따로 묶는다 — 묶음 제목은 상태 배지 없이 흐리게 그려 그 업무는
+ * 결과에 없다는 것이 보이게 한다.
  */
 
 const KIND_TABS: ("전체" | OperTypeCd)[] = ["전체", "WORK", "SUB_WORK", "MEETING"];
@@ -86,6 +95,7 @@ interface OperRow {
   pic: string;
   ext: string;
   href: string;
+  tags: OperationTagSummary[];
 }
 
 /** 서버가 주는 일시 문자열에서 날짜만 잘라 쓴다 — 시각은 달력 칸에 필요 없다 */
@@ -114,6 +124,7 @@ function workRow(w: WorkListItem): OperRow {
     pic: w.owner?.name || "-",
     ext: `업무 유형 ${WORK_TYPE_NM[w.workType]} · 업무 상태 ${WORK_STTS_NM[w.workStatus]} · 하위 ${w.subWorkCount}건`,
     href: ROUTES.workDetail(w.workId),
+    tags: w.tags,
   };
 }
 
@@ -128,6 +139,7 @@ function subWorkRow(sw: SubWorkListItem): OperRow {
     pic: sw.owner?.name || "-",
     ext: `업무 상태 ${WORK_STTS_NM[sw.workStatus]} · 승인 ${APRV_STTS_NM[sw.approvalStatus]} · 진행 ${sw.progressRate}%`,
     href: ROUTES.subWorkDetail(sw.subWorkId),
+    tags: sw.tags,
   };
 }
 
@@ -144,6 +156,7 @@ function meetingRow(m: MeetingListItem): OperRow {
       m.meetingStatus ? MTG_STTS_NM[m.meetingStatus] : "-"
     } · 안건 ${m.agendaCount}건`,
     href: ROUTES.meetingDetail(m.meetingId),
+    tags: m.tags,
   };
 }
 
@@ -160,10 +173,85 @@ function OperationsHubSkeleton() {
   );
 }
 
+/** 상위 업무가 결과에 없는 하위 업무 묶음 — 태그로 거르면 생긴다 */
+interface OrphanGroup {
+  key: string;
+  workId: number | null;
+  title: string;
+  subWorks: SubWorkListItem[];
+}
+
+/**
+ * 응답의 하위 업무 중 상위 업무가 `works`에 없는 것을 상위 업무별로 묶는다. 순서는 응답 순서다.
+ * 상위 업무가 아예 없는 행(스키마상 없지만 방어적으로)은 «미연결» 한 묶음이다.
+ */
+function orphanGroupsOf(
+  works: readonly WorkListItem[],
+  subWorks: readonly SubWorkListItem[],
+): OrphanGroup[] {
+  const present = new Set(works.map((w) => w.workId));
+  const groups = new Map<string, OrphanGroup>();
+  for (const sw of subWorks) {
+    const workId = sw.work?.workId ?? null;
+    if (workId !== null && present.has(workId)) continue;
+    const key = workId === null ? "none" : String(workId);
+    const group = groups.get(key) ?? {
+      key,
+      workId,
+      title: sw.work?.title || (workId === null ? "미연결" : `업무 #${workId}`),
+      subWorks: [],
+    };
+    group.subWorks.push(sw);
+    groups.set(key, group);
+  }
+  return [...groups.values()];
+}
+
+/** 트리의 하위 업무 한 줄 — 상위 업무 아래와 상위가 빠진 묶음 아래가 같은 모양이다 */
+function SubWorkTreeRow({ sw, onOpen }: Readonly<{ sw: SubWorkListItem; onOpen: () => void }>) {
+  const badge = subWorkBadge(sw);
+  return (
+    /* 키보드 접근(#403) */
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex w-full cursor-pointer items-center gap-2 text-left"
+    >
+      <Badge tone={badge.tone}>{badge.label}</Badge>
+      <div className="min-w-0 truncate text-[14px] hover:text-accent">{sw.title}</div>
+      <div className="flex-none text-[12.5px] text-n500">
+        {WORK_STTS_NM[sw.workStatus]} · {sw.progressRate}%
+      </div>
+    </button>
+  );
+}
+
+/** 상위 업무가 빠진 묶음의 제목 — 상태 배지 없이 흐리게, 누르면 그 업무 상세 */
+function OrphanGroupTitle({
+  title,
+  workId,
+  onOpen,
+}: Readonly<{ title: string; workId: number; onOpen: (workId: number) => void }>) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(workId)}
+      className="w-full cursor-pointer text-left text-[14px] text-n500 hover:text-accent"
+    >
+      {title}
+    </button>
+  );
+}
+
 export function OperationsHubPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data, status, errorMessage, reload } = useOperationsHub();
+  /*
+   * 태그 하나 (#771). 주소에 남기지 않는 것은 업무·하위 업무·회의 목록의 태그 줄과 같다 — 보기
+   * 방식(`?view=`)과 달리 링크로 건넬 일이 드물고, 남기면 태그를 지운 뒤 낡은 링크가 빈 화면을 연다.
+   */
+  const [tagId, setTagId] = useState<number | null>(null);
+  const { data, status, errorMessage, reload } = useOperationsHub(tagId);
   const [tab, setTab] = useState<"전체" | OperTypeCd>("전체");
 
   /*
@@ -219,6 +307,8 @@ export function OperationsHubPage() {
     ...data.meetings.map(meetingRow),
   ];
   const filtered = rows.filter((r) => tab === "전체" || r.operTypeCd === tab);
+  const orphanGroups = orphanGroupsOf(data.works, data.subWorks);
+  const tagged = tagId !== null;
 
   /*
    * 보고 있는 범위를 여기서 계산해 화면 문구와 "이 범위 N건"에 함께 쓴다.
@@ -295,6 +385,9 @@ export function OperationsHubPage() {
     <>
       <PageHeader title="운영 통합" subtitle="업무·하위 업무·회의를 한 화면에서" />
       <PageBody>
+        {/* 태그 줄 (#771) — 세 배열을 함께 거르므로 유형 카드·리스트·트리가 모두 따른다 */}
+        <OperationTagFilter tagId={tagId} onChange={setTagId} className="mb-[14px]" />
+
         {status === "loading" && <OperationsHubSkeleton />}
 
         {status === "error" && (
@@ -430,7 +523,10 @@ export function OperationsHubPage() {
                     )}
                   </>
                 ) : filtered.length === 0 ? (
-                  <EmptyState message="표시할 운영 건이 없습니다" />
+                  <EmptyState
+                    message={tagged ? "조건에 맞는 운영 건이 없습니다" : "표시할 운영 건이 없습니다"}
+                    action={tagged ? { label: "태그 해제", onClick: () => setTagId(null) } : undefined}
+                  />
                 ) : (
                   /*
                    * 이 표는 GridTable이 아니라 손으로 짠 CSS 그리드다(제목 칸이 두 줄이고
@@ -475,6 +571,7 @@ export function OperationsHubPage() {
                           <div className="mt-[2px] text-[13.5px] text-n500 lg:truncate">
                             {r.ext}
                           </div>
+                          <OperationTagPills tags={r.tags} className="mt-1 flex flex-wrap gap-1" />
                         </button>
                         <div className="mt-2 text-[14px] text-n400 lg:mt-0 lg:border-t lg:border-hairline lg:py-3">
                           {r.date}
@@ -491,8 +588,10 @@ export function OperationsHubPage() {
               <Card>
                 <SectionLabel className="mb-3">상속 구조</SectionLabel>
                 <div className="flex flex-col gap-3">
-                  {data.works.length === 0 && (
-                    <div className="text-[13.5px] text-n500">등록된 업무가 없습니다</div>
+                  {data.works.length === 0 && orphanGroups.length === 0 && (
+                    <div className="text-[13.5px] text-n500">
+                      {tagged ? "조건에 맞는 업무가 없습니다" : "등록된 업무가 없습니다"}
+                    </div>
                   )}
                   {data.works.map((w) => (
                     <div key={w.workId}>
@@ -512,28 +611,40 @@ export function OperationsHubPage() {
                       <div className="mt-2 flex flex-col gap-2 border-l border-line pl-[14px]">
                         {data.subWorks
                           .filter((sw) => sw.work?.workId === w.workId)
-                          .map((sw) => {
-                            const badge = subWorkBadge(sw);
-                            return (
-                              /* 키보드 접근(#403) */
-                              <button
-                                type="button"
-                                key={sw.subWorkId}
-                                onClick={() =>
-                                  router.push(ROUTES.subWorkDetail(sw.subWorkId))
-                                }
-                                className="flex w-full cursor-pointer items-center gap-2 text-left"
-                              >
-                                <Badge tone={badge.tone}>{badge.label}</Badge>
-                                <div className="min-w-0 truncate text-[14px] hover:text-accent">
-                                  {sw.title}
-                                </div>
-                                <div className="flex-none text-[12.5px] text-n500">
-                                  {WORK_STTS_NM[sw.workStatus]} · {sw.progressRate}%
-                                </div>
-                              </button>
-                            );
-                          })}
+                          .map((sw) => (
+                            <SubWorkTreeRow
+                              key={sw.subWorkId}
+                              sw={sw}
+                              onOpen={() => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
+                            />
+                          ))}
+                      </div>
+                    </div>
+                  ))}
+                  {/*
+                    상위 업무가 결과에 없는 하위 업무 (#771) — 태그로 거르면 생긴다. 묶음 제목은
+                    응답이 준 상위 업무 이름이고, 상태 배지 없이 흐리게 그려 그 업무는 결과에 없다는
+                    것을 보인다. 누르면 그 업무 상세로 간다(id가 없으면 누를 곳이 없다).
+                  */}
+                  {orphanGroups.map((g) => (
+                    <div key={`orphan-${g.key}`}>
+                      {g.workId === null ? (
+                        <div className="text-[14px] text-n500">{g.title}</div>
+                      ) : (
+                        <OrphanGroupTitle
+                          title={g.title}
+                          workId={g.workId}
+                          onOpen={(workId) => router.push(ROUTES.workDetail(workId))}
+                        />
+                      )}
+                      <div className="mt-2 flex flex-col gap-2 border-l border-dashed border-line pl-[14px]">
+                        {g.subWorks.map((sw) => (
+                          <SubWorkTreeRow
+                            key={sw.subWorkId}
+                            sw={sw}
+                            onOpen={() => router.push(ROUTES.subWorkDetail(sw.subWorkId))}
+                          />
+                        ))}
                       </div>
                     </div>
                   ))}
@@ -541,7 +652,9 @@ export function OperationsHubPage() {
                   <div className="h-px bg-gradient-to-r from-transparent via-line to-transparent" />
                   <SectionLabel>회의</SectionLabel>
                   {data.meetings.length === 0 && (
-                    <div className="text-[13.5px] text-n500">등록된 회의가 없습니다</div>
+                    <div className="text-[13.5px] text-n500">
+                      {tagged ? "조건에 맞는 회의가 없습니다" : "등록된 회의가 없습니다"}
+                    </div>
                   )}
                   {data.meetings.map((m) => (
                     /* 키보드 접근(#403) */

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchWorks, type WorkListItem } from "@/entities/work";
+import { fetchWorks, type WorkListFilter, type WorkListItem } from "@/entities/work";
 import { toWorkErrorMessage } from "./work-error";
 
 /*
@@ -32,9 +32,47 @@ import { toWorkErrorMessage } from "./work-error";
  * 이어 받기도 같은 값을 보내야 한 목록에 두 조건의 페이지가 섞이지 않는다.
  *
  * 대상 회원은 보내지 않는다. '나'는 서버가 인증 주체에서 정한다(ssccops-server#268).
+ *
+ * ── 태그 (#757 · 서버 #631) ──────────────────────────────────
+ * 태그 하나(`tagId`)도 같은 이유로 requestKey에 들어가고 서버가 거른다 — 상태 칩·«내 업무»와 AND다.
  */
 
 export type WorkListStatus = "loading" | "ready" | "error";
+
+/**
+ * 업무 목록의 상태 칩 (#756 · ssccops#564). 순서가 화면 노출 순서이고 기본은 «미완료»다 — 운영
+ * 대시보드 «내 업무 목록»(v1.1.0 · #743)과 같은 말이다. «전체»는 이름 그대로 완료를 포함한다.
+ *
+ * 칩마다 **서버에 다시 묻는다**(하위 업무 목록의 칩과 같은 방식). 받은 페이지를 화면이 거르면
+ * 한 페이지가 통째로 완료일 때 빈 화면 + «더 보기»가 된다 — 그래서 서버가 `excludeWorkStatus`를
+ * 열었다(서버 #627).
+ */
+export const WORK_LIST_TABS = ["미완료", "기획", "진행", "검토", "완료", "전체"] as const;
+
+export type WorkListTab = (typeof WORK_LIST_TABS)[number];
+
+/** 칩에 마우스를 올렸을 때의 설명 — 대시보드 MY_FILTER_HINTS와 같은 자리 */
+export const WORK_LIST_TAB_HINTS: Partial<Record<WorkListTab, string>> = {
+  미완료: "완료가 아닌 업무(기획·진행·검토)",
+};
+
+/** 칩 → 서버 필터. 상태 칩 넷은 단일 `workStatus`, «미완료»는 완료 제외다 */
+function toStatusFilter(tab: WorkListTab): Pick<WorkListFilter, "workStatus" | "excludeWorkStatus"> {
+  switch (tab) {
+    case "미완료":
+      return { excludeWorkStatus: ["DONE"] };
+    case "기획":
+      return { workStatus: "PLANNING" };
+    case "진행":
+      return { workStatus: "IN_PROGRESS" };
+    case "검토":
+      return { workStatus: "REVIEW" };
+    case "완료":
+      return { workStatus: "DONE" };
+    case "전체":
+      return {};
+  }
+}
 
 /** 조회 결과 + 그 결과를 만든 요청의 식별자 */
 interface LoadedWorkList {
@@ -62,7 +100,16 @@ export interface WorkList {
   reload: () => void;
 }
 
-export function useWorkList(keyword = "", mine = false): WorkList {
+/**
+ * `tab`의 기본은 «전체»다 — 업무 목록 화면만 «미완료»를 넘긴다. 회의 안건 추가의 대상 검색은
+ * 지금처럼 모든 업무에서 찾는다.
+ */
+export function useWorkList(
+  keyword = "",
+  mine = false,
+  tab: WorkListTab = "전체",
+  tagId: number | null = null,
+): WorkList {
   const [loaded, setLoaded] = useState<LoadedWorkList | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -73,7 +120,8 @@ export function useWorkList(keyword = "", mine = false): WorkList {
   const inFlightRef = useRef(false);
   const aliveRef = useRef(true);
 
-  const requestKey = `${keyword}:${mine}:${reloadKey}`;
+  // 칩도 requestKey에 든다 — 커서는 직전 조건으로 만든 값이라 조건이 바뀌면 처음부터 다시 받는다
+  const requestKey = `${keyword}:${mine}:${tab}:${tagId ?? ""}:${reloadKey}`;
 
   useEffect(() => {
     loadedRef.current = loaded;
@@ -89,7 +137,7 @@ export function useWorkList(keyword = "", mine = false): WorkList {
   useEffect(() => {
     let alive = true;
 
-    fetchWorks({ keyword, mine })
+    fetchWorks({ keyword, mine, tagId, ...toStatusFilter(tab) })
       .then((page) => {
         if (!alive) return;
         setLoaded({
@@ -116,7 +164,7 @@ export function useWorkList(keyword = "", mine = false): WorkList {
     return () => {
       alive = false;
     };
-  }, [requestKey, keyword, mine]);
+  }, [requestKey, keyword, mine, tab, tagId]);
 
   const loadMore = useCallback(async (): Promise<string> => {
     const current = loadedRef.current;
@@ -125,7 +173,13 @@ export function useWorkList(keyword = "", mine = false): WorkList {
     inFlightRef.current = true;
     setLoadingMore(true);
     try {
-      const page = await fetchWorks({ keyword, mine, cursor: current.nextCursor });
+      const page = await fetchWorks({
+        keyword,
+        mine,
+        tagId,
+        ...toStatusFilter(tab),
+        cursor: current.nextCursor,
+      });
       if (!aliveRef.current) return "";
 
       /*
@@ -150,7 +204,7 @@ export function useWorkList(keyword = "", mine = false): WorkList {
       inFlightRef.current = false;
       if (aliveRef.current) setLoadingMore(false);
     }
-  }, [keyword, mine]);
+  }, [keyword, mine, tab, tagId]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 

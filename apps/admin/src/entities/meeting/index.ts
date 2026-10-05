@@ -15,12 +15,18 @@ export {
   deleteMeeting,
   fetchMeeting,
   fetchMeetings,
+  promoteMeetingAgenda,
+  promoteMeetingAgendaToSubWork,
   transitionMeeting,
   updateMeetingAgenda,
   withdrawMeetingAgenda,
 } from "./api/meetings";
 export type {
   MeetingAgendaInput,
+  MeetingAgendaPromoteInput,
+  MeetingAgendaPromotion,
+  MeetingAgendaPromoteSubWorkInput,
+  MeetingAgendaSubWorkPromotion,
   MeetingAgendaUpdateInput,
   MeetingCreateInput,
   MeetingTransitionResult,

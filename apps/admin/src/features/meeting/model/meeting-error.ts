@@ -113,7 +113,76 @@ export function toMeetingActionErrorMessage(error: unknown): string {
     case MEETING_ERROR.REASON_REQUIRED:
       return "취소 사유를 입력해주세요";
     case MEETING_ERROR.VALIDATION_FAILED:
-      return "운영 건 연결과 안건명 중 하나만 넣어주세요";
+      return "업무 연결과 안건 제목 중 하나만 넣어주세요";
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}
+
+/**
+ * 드래프트 안건 «업무로 만들기» 실패 → 화면에 띄울 한 줄 (ADR-0059 · 서버 #625).
+ *
+ * 403은 안건 쪽이 아니라 **업무 등록 권한**이다 — 서버가 승격에 WORK_MANAGE를 건다(안건 작성
+ * 권한만으로 업무가 생기는 길을 열지 않는다). 그래서 «회의 책임자만»(toMeetingActionErrorMessage)이
+ * 아니라 업무 등록과 같은 문장이다.
+ *
+ * `VALIDATION_FAILED`는 서버 문장을 그대로 쓴다 — 업무 등록과 같이 담당자 부적격·기간 역전이 같은
+ * 코드로 온다(toWorkCreateErrorMessage와 같은 판단 · features 슬라이스끼리 참조하지 않아 여기 둔다).
+ * `MEETING_CLOSED`는 종료·취소된 회의의 승격을 열기 전 서버(ssccops#573 이전)에서만 온다.
+ * `MEETING_AGENDA_ALREADY_LINKED`는 화면을 열어 둔 사이 다른 사람이 먼저 승격한 경우다.
+ */
+export function toMeetingPromoteErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "업무를 만들지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
+    case MEETING_ERROR.NOT_FOUND:
+      return "안건이 없습니다 — 목록을 새로고침해주세요";
+    case MEETING_ERROR.MEETING_CLOSED:
+      return "이미 끝났거나 취소된 회의입니다";
+    case MEETING_ERROR.MEETING_AGENDA_ALREADY_LINKED:
+      return "이미 업무에 연결된 안건입니다 — 새로고침해주세요";
+    case MEETING_ERROR.INVALID_CODE_VALUE:
+      return "선택지가 바뀌었습니다 — 새로고침해주세요";
+    case API_ERROR.CONFIG_MISSING:
+      return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
+    case API_ERROR.NETWORK_ERROR:
+      return "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요";
+    default:
+      return error.message;
+  }
+}
+
+/**
+ * 드래프트 안건 «하위 업무로 만들기» 실패 → 화면에 띄울 한 줄 (서버 #644 · ssccops#580).
+ *
+ * 업무 승격(toMeetingPromoteErrorMessage)과 같은 판단이되 대상이 하위 업무다. 403은 하위 업무 등록과
+ * 같은 WORK_MANAGE다. `VALIDATION_FAILED`·`NOT_FOUND`는 **서버 문장을 그대로 쓴다** — 하위 업무 등록과
+ * 같이 한 코드에 여러 사유가 겹친다(담당자 부적격·기간 역전·꺼진 유형 / 없는 안건·상위 업무·유형).
+ * 한 문장으로 뭉개면 어느 칸을 고쳐야 하는지가 사라진다(toSubWorkCreateErrorMessage와 같은 판단 ·
+ * features 슬라이스끼리 참조하지 않아 여기 둔다).
+ */
+export function toMeetingSubWorkPromoteErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "하위 업무를 만들지 못했습니다. 잠시 후 다시 시도해주세요";
+  }
+
+  switch (error.code) {
+    case API_ERROR.FORBIDDEN:
+    case API_ERROR.ACCESS_DENIED:
+      return "하위 업무를 등록할 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
+    case MEETING_ERROR.MEETING_AGENDA_ALREADY_LINKED:
+      return "이미 업무에 연결된 안건입니다 — 새로고침해주세요";
+    case MEETING_ERROR.INVALID_CODE_VALUE:
+      return "선택지가 바뀌었습니다 — 새로고침해주세요";
     case API_ERROR.CONFIG_MISSING:
       return "API 서버 주소가 설정되지 않았습니다 (NEXT_PUBLIC_API_BASE_URL)";
     case API_ERROR.NETWORK_ERROR:

@@ -6,6 +6,7 @@ import type {
   OperTypeCd,
   PrrtyRnkCd,
 } from "@/shared/config/codes";
+import type { OperationTagSummary } from "@/entities/operation-tag";
 
 /**
  * table: mtg — 회의
@@ -95,6 +96,8 @@ export interface MeetingListItem {
   startAt: string | null;
   endAt: string | null;
   createdAt: string | null;
+  /** 회의 운영 건에 달린 태그 칩 (#771 · 서버 #640) — 업무·하위 업무와 같은 태그 목록이다 */
+  tags: OperationTagSummary[];
 }
 
 /**
@@ -108,15 +111,34 @@ export type MeetingTransition = "OPEN" | "WRITE_MINUTES" | "CLOSE" | "CANCEL";
 
 /** 안건이 연결한 운영 건(업무·하위 업무) 요약 */
 export interface MeetingAgendaTarget {
+  /** oper_id — 상세 경로의 값이 아니다 */
   operationId: number;
   operationType: OperTypeCd;
+  /**
+   * 유형별 식별자 — WORK면 work_id, SUB_WORK면 sub_work_id, MEETING이면 mtg_id(ssccops#575).
+   * 상세 경로는 이 값으로 연다. 그 필드를 싣기 전 서버면 null이다.
+   */
+  targetId: number | null;
   title: string;
 }
 
-/** 회의 상세(OPS-025)의 안건 한 건 */
+/**
+ * 회의 상세(OPS-025)의 안건 한 건.
+ *
+ * 안건은 **운영 건을 가리키거나(연결 안건), 제목만 갖는다(드래프트 안건)** — 둘 중 하나다
+ * (ADR-0059 · 서버 #625). 드래프트는 `targetOperation`이 null이고 제목이 `agendaName`이며,
+ * 연결 안건은 반대로 `agendaName`이 null이고 제목은 `targetOperation.title`이다.
+ */
 export interface MeetingAgenda {
   agendaId: number;
   meetingId: number;
+  /** 드래프트 안건의 제목(안건_명 · 100자). 연결 안건은 null */
+  agendaName: string | null;
+  /**
+   * 드래프트 여부 — 서버가 따로 싣는 값이다. «드래프트» 배지·«업무로 만들기»가 이 값 하나를
+   * 본다(`targetOperation`의 null 검사로 추론하지 않는다 — 옛 서버면 연결 안건도 그 값이 빌 수 있다).
+   */
+  draft: boolean;
   processStatus: AgndPrcsSeCd | null;
   agendaOrder: number | null;
   targetOperation: MeetingAgendaTarget | null;
@@ -156,4 +178,5 @@ export interface MeetingDetail {
   agendas: MeetingAgenda[];
   createdAt: string | null;
   updatedAt: string | null;
+  tags: OperationTagSummary[];
 }

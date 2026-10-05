@@ -16,7 +16,7 @@ import { toOperationsHubErrorMessage } from "./operations-hub-error";
 export type OperationsHubStatus = "loading" | "ready" | "error";
 
 interface LoadedOperationsHub {
-  key: number;
+  key: string;
   data: OperationsHubData;
   /** 빈 문자열이면 성공 */
   errorMessage: string;
@@ -32,22 +32,28 @@ export interface OperationsHub {
 
 const EMPTY: OperationsHubData = { works: [], subWorks: [], meetings: [] };
 
-export function useOperationsHub(): OperationsHub {
+/**
+ * `tagId`(#771 · 서버 #640)를 주면 세 배열을 서버가 각자 자기 태그로 거른다. requestKey에 들어가
+ * 바꾸면 다시 받는다(그동안은 로딩 — 옛 태그의 결과를 새 칩 아래 남기지 않는다).
+ */
+export function useOperationsHub(tagId: number | null = null): OperationsHub {
   const [loaded, setLoaded] = useState<LoadedOperationsHub | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+
+  const requestKey = `${tagId ?? ""}:${reloadKey}`;
 
   useEffect(() => {
     let alive = true;
 
-    fetchOperationsHub()
+    fetchOperationsHub(tagId)
       .then((data) => {
         if (!alive) return;
-        setLoaded({ key: reloadKey, data, errorMessage: "" });
+        setLoaded({ key: requestKey, data, errorMessage: "" });
       })
       .catch((error: unknown) => {
         if (!alive) return;
         setLoaded({
-          key: reloadKey,
+          key: requestKey,
           data: EMPTY,
           errorMessage: toOperationsHubErrorMessage(error),
         });
@@ -56,12 +62,12 @@ export function useOperationsHub(): OperationsHub {
     return () => {
       alive = false;
     };
-  }, [reloadKey]);
+  }, [requestKey, tagId]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
   // 이번 요청의 결과가 아직 없으면(최초 진입이든 재시도 직후든) 로딩이다
-  const current = loaded?.key === reloadKey ? loaded : null;
+  const current = loaded?.key === requestKey ? loaded : null;
   const status: OperationsHubStatus =
     current === null ? "loading" : current.errorMessage ? "error" : "ready";
 

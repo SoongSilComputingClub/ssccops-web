@@ -129,11 +129,15 @@ export interface SubWorkList {
  *
  * tab·keyword와 같이 requestKey에 들어간다 — 조건이 바뀌면 목록이 처음부터 다시 와야 하고,
  * 이어 받기도 같은 값을 보내야 두 조건의 페이지가 한 목록에 섞이지 않는다.
+ *
+ * 태그 하나(`tagId` · #771 · 서버 #640)도 같은 이유로 requestKey에 들어가고 서버가 거른다 — 탭·
+ * «내 업무»와 AND다. 하위 업무 자기 운영 건의 태그만 본다(상위 업무의 태그를 물려받지 않는다).
  */
 export function useSubWorkList(
   tab: SubWorkListTab,
   keyword = "",
   mine = false,
+  tagId: number | null = null,
 ): SubWorkList {
   const [loaded, setLoaded] = useState<LoadedSubWorkList | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -145,7 +149,7 @@ export function useSubWorkList(
   const aliveRef = useRef(true);
   const inFlightRef = useRef(false);
 
-  const requestKey = `${tab}:${keyword}:${mine}:${reloadKey}`;
+  const requestKey = `${tab}:${keyword}:${mine}:${tagId ?? ""}:${reloadKey}`;
 
   useEffect(() => {
     loadedRef.current = loaded;
@@ -161,7 +165,7 @@ export function useSubWorkList(
   useEffect(() => {
     let alive = true;
 
-    fetchSubWorks({ ...toFilter(tab), keyword, mine })
+    fetchSubWorks({ ...toFilter(tab), keyword, mine, tagId })
       .then((page) => {
         if (!alive) return;
         setLoaded({
@@ -190,7 +194,7 @@ export function useSubWorkList(
     return () => {
       alive = false;
     };
-  }, [requestKey, tab, keyword, mine]);
+  }, [requestKey, tab, keyword, mine, tagId]);
 
   const loadMore = useCallback(async (): Promise<string> => {
     const current = loadedRef.current;
@@ -203,6 +207,7 @@ export function useSubWorkList(
         ...toFilter(tab),
         keyword,
         mine,
+        tagId,
         cursor: current.nextCursor,
       });
       if (!aliveRef.current) return "";
@@ -230,7 +235,7 @@ export function useSubWorkList(
       inFlightRef.current = false;
       if (aliveRef.current) setLoadingMore(false);
     }
-  }, [tab, keyword, mine]);
+  }, [tab, keyword, mine, tagId]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 

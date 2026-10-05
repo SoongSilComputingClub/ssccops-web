@@ -5,16 +5,27 @@ import { syncSessionOnForbidden } from "@/entities/session";
 import {
   addMeetingAgenda,
   deleteMeeting,
+  promoteMeetingAgenda,
+  promoteMeetingAgendaToSubWork,
   transitionMeeting,
   updateMeetingAgenda,
   withdrawMeetingAgenda,
   type MeetingAgenda,
   type MeetingAgendaInput,
+  type MeetingAgendaPromoteInput,
+  type MeetingAgendaPromotion,
+  type MeetingAgendaPromoteSubWorkInput,
+  type MeetingAgendaSubWorkPromotion,
   type MeetingAgendaUpdateInput,
   type MeetingTransition,
   type MeetingTransitionResult,
 } from "@/entities/meeting";
-import { toMeetingActionErrorMessage, toMeetingDeleteErrorMessage } from "./meeting-error";
+import {
+  toMeetingActionErrorMessage,
+  toMeetingDeleteErrorMessage,
+  toMeetingPromoteErrorMessage,
+  toMeetingSubWorkPromoteErrorMessage,
+} from "./meeting-error";
 
 /*
  * 회의 상세 화면의 수정 훅 (OPS-026 전이 · OPS-027 상정 · OPS-028 수정 · OPS-029 철회, #83).
@@ -46,6 +57,16 @@ export interface MeetingActionControl {
     input: MeetingAgendaUpdateInput,
   ) => Promise<MeetingActionOutcome<MeetingAgenda>>;
   withdrawAgenda: (agendaId: number) => Promise<MeetingActionOutcome<true>>;
+  /** 드래프트 안건 «업무로 만들기» (ADR-0059) — 업무 등록과 같은 입력을 받는다 */
+  promoteAgenda: (
+    agendaId: number,
+    input: MeetingAgendaPromoteInput,
+  ) => Promise<MeetingActionOutcome<MeetingAgendaPromotion>>;
+  /** 드래프트 안건 «하위 업무로 만들기» (ssccops#580) — 하위 업무 등록과 같은 입력을 받는다 */
+  promoteAgendaToSubWork: (
+    agendaId: number,
+    input: MeetingAgendaPromoteSubWorkInput,
+  ) => Promise<MeetingActionOutcome<MeetingAgendaSubWorkPromotion>>;
   remove: () => Promise<MeetingActionOutcome<true>>;
 }
 
@@ -136,6 +157,32 @@ export function useMeetingActions(meetingId: number): MeetingActionControl {
   );
 
   /*
+   * 드래프트 안건 승격 (ADR-0059 · 서버 #625). 같은 잠금을 쓰는 것은 승격도 안건을 바꾸는 일이라
+   * 처리 구분 칩·전이와 엇갈려 나가면 안 되기 때문이다. 연타하면 두 번째는 서버가 409
+   * MEETING_AGENDA_ALREADY_LINKED로 막지만, 잠금이 있어 그 왕복도 없다.
+   */
+  const promoteAgenda = useCallback(
+    (agendaId: number, input: MeetingAgendaPromoteInput) =>
+      run(
+        () => promoteMeetingAgenda(meetingId, agendaId, input),
+        "업무를 만들었습니다",
+        toMeetingPromoteErrorMessage,
+      ),
+    [run, meetingId],
+  );
+
+  /* 하위 업무 승격 (서버 #644 · ssccops#580) — 업무 승격과 같은 잠금을 쓴다(같은 이유) */
+  const promoteAgendaToSubWork = useCallback(
+    (agendaId: number, input: MeetingAgendaPromoteSubWorkInput) =>
+      run(
+        () => promoteMeetingAgendaToSubWork(meetingId, agendaId, input),
+        "하위 업무를 만들었습니다",
+        toMeetingSubWorkPromoteErrorMessage,
+      ),
+    [run, meetingId],
+  );
+
+  /*
    * 회의 삭제 (서버 #125). 안건 철회(withdrawAgenda)와 같은 잠금을 쓰지만 오류 문구는 다르다 —
    * 삭제 403은 "책임자만"이 아니라 "MEETING_DELETE 권한 없음"이라 toMeetingDeleteErrorMessage를
    * 따로 넘긴다.
@@ -153,5 +200,14 @@ export function useMeetingActions(meetingId: number): MeetingActionControl {
     [run, meetingId],
   );
 
-  return { pending, transition, addAgenda, updateAgenda, withdrawAgenda, remove };
+  return {
+    pending,
+    transition,
+    addAgenda,
+    updateAgenda,
+    withdrawAgenda,
+    promoteAgenda,
+    promoteAgendaToSubWork,
+    remove,
+  };
 }

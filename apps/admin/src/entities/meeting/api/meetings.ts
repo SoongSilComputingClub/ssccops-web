@@ -5,6 +5,7 @@ import type {
   MtgSttsCd,
   OperTypeCd,
   PrrtyRnkCd,
+  WorkTypeCd,
 } from "@/shared/config/codes";
 import { ApiError, apiFetch } from "@/shared/lib/api/client";
 import { withServiceOffset } from "@/shared/lib/date";
@@ -16,6 +17,7 @@ import type {
   MeetingMemberRef,
   MeetingTransition,
 } from "../model/types";
+import type { OperationTagSummary } from "@/entities/operation-tag";
 
 /*
  * 회의 API (ssccops-server OPS-024 등록 · OPS-025 상세 · OPS-026 전이 · OPS-027~029 안건 ·
@@ -40,6 +42,8 @@ interface AgendaTargetOperationResponse {
   operationId: number;
   operationType: OperTypeCd;
   title: string | null;
+  /** 유형별 식별자(work_id·sub_work_id·mtg_id · ssccops#575). 그 전 서버는 싣지 않는다 */
+  targetId?: number | null;
 }
 
 interface MeetingAgendaResponse {
@@ -51,6 +55,31 @@ interface MeetingAgendaResponse {
   content: string | null;
   resultContent: string | null;
   submitter: MemberSummaryResponse | null;
+  /** 드래프트 안건의 제목 (ADR-0059 · 서버 #625). 연결 안건은 null */
+  agendaName?: string | null;
+  /** 서버 #625 이전 버전은 이 필드를 싣지 않는다 — 없으면 연결 안건으로 읽는다 */
+  draft?: boolean;
+}
+
+/** 드래프트 안건 승격 응답 (서버 MeetingAgendaPromoteResponse) — 업무는 등록 응답 모양이다 */
+interface MeetingAgendaPromoteResponse {
+  agenda: MeetingAgendaResponse;
+  work: { workId: number; operationId: number | null } | null;
+}
+
+/**
+ * 드래프트 안건 하위 업무 승격 응답 (서버 #644 · ssccops#580) — 하위 업무는 등록 응답(SubWorkCreateResponse)
+ * 모양이다. 화면이 쓰는 것은 상세 경로 값 `subWorkId`뿐이다.
+ */
+interface MeetingAgendaPromoteSubWorkResponse {
+  agenda: MeetingAgendaResponse;
+  subWork: { subWorkId: number; workId?: number | null } | null;
+}
+
+/** 태그 칩 (#771 · 서버 #640) — 서버 OperationTagSummaryResponse */
+interface OperationTagSummaryResponse {
+  operationTagId: number;
+  tagNm: string | null;
 }
 
 interface MeetingListItemResponse {
@@ -66,6 +95,7 @@ interface MeetingListItemResponse {
   startAt: string | null;
   endAt: string | null;
   createdAt: string | null;
+  tags: OperationTagSummaryResponse[] | null;
 }
 
 interface MeetingDetailResponse {
@@ -85,6 +115,7 @@ interface MeetingDetailResponse {
   agendas: MeetingAgendaResponse[] | null;
   createdAt: string | null;
   updatedAt: string | null;
+  tags: OperationTagSummaryResponse[] | null;
 }
 
 interface MeetingTransitionResponse {
@@ -103,17 +134,29 @@ function toMemberRef(member: MemberSummaryResponse | null): MeetingMemberRef | n
   return { memberId: member.memberId, name: member.name ?? "" };
 }
 
+/** 서버가 태그 필드를 아직 안 실은 응답(배포 순서가 갈린 dev)은 빈 배열로 읽는다 */
+function toTags(tags: OperationTagSummaryResponse[] | null | undefined): OperationTagSummary[] {
+  return (tags ?? []).map((t) => ({ operationTagId: t.operationTagId, tagNm: t.tagNm ?? "" }));
+}
+
 function toAgendaTarget(
   target: AgendaTargetOperationResponse | null,
 ): MeetingAgendaTarget | null {
   if (!target) return null;
-  return { operationId: target.operationId, operationType: target.operationType, title: target.title ?? "" };
+  return {
+    operationId: target.operationId,
+    operationType: target.operationType,
+    targetId: target.targetId ?? null,
+    title: target.title ?? "",
+  };
 }
 
 function toAgenda(res: MeetingAgendaResponse): MeetingAgenda {
   return {
     agendaId: res.agendaId,
     meetingId: res.meetingId,
+    agendaName: res.agendaName ?? null,
+    draft: res.draft === true,
     processStatus: res.processStatus,
     agendaOrder: res.agendaOrder,
     targetOperation: toAgendaTarget(res.targetOperation),
@@ -137,6 +180,7 @@ function toMeetingListItem(res: MeetingListItemResponse): MeetingListItem {
     startAt: res.startAt,
     endAt: res.endAt,
     createdAt: res.createdAt,
+    tags: toTags(res.tags),
   };
 }
 
@@ -158,6 +202,7 @@ function toMeetingDetail(res: MeetingDetailResponse): MeetingDetail {
     agendas: (res.agendas ?? []).map(toAgenda),
     createdAt: res.createdAt,
     updatedAt: res.updatedAt,
+    tags: toTags(res.tags),
   };
 }
 
@@ -182,8 +227,10 @@ export const MEETING_ERROR = {
   TRANSITION_NOT_ALLOWED: "TRANSITION_NOT_ALLOWED",
   /** 미처리 안건이 남은 채 회의 종료 시도 (409) */
   AGENDA_UNRESOLVED: "AGENDA_UNRESOLVED",
-  /** 종료·취소된 회의에 안건 상정·수정 시도 (409) */
+  /** 종료·취소된 회의에 안건 상정·수정 시도 (409) — 승격은 ssccops#573부터 그 회의에서도 열린다 */
   MEETING_CLOSED: "MEETING_CLOSED",
+  /** 이미 운영 건에 연결된 안건을 업무로 승격하려 할 때 (409, 서버 #625 · ADR-0059) */
+  MEETING_AGENDA_ALREADY_LINKED: "MEETING_AGENDA_ALREADY_LINKED",
   /** 취소 사유 누락 (422) */
   REASON_REQUIRED: "REASON_REQUIRED",
   /** 이미 소프트 삭제된 회의를 다시 삭제 시도 (409, 서버 #125) */
@@ -198,9 +245,13 @@ export const MEETING_ERROR = {
  * 커서 페이징이 없다 — '회의' 화면이 카드 그리드 하나로 페이징 없이 전량을 보여준다(서버가
  * page 봉투를 싣지 않는다). `apiFetchList`가 아니라 `apiFetch`를 쓰는 이유는
  * entities/sub-work-type/api/sub-work-types.ts의 같은 판단 참고.
+ *
+ * `tagId`(#771 · 서버 #640)를 주면 그 태그가 달린 회의만 온다. 없는 태그 id는 오류가 아니라 빈 목록이다.
  */
-export async function fetchMeetings(): Promise<MeetingListItem[]> {
-  const meetings = await apiFetch<MeetingListItemResponse[] | null>("/v1/meetings");
+export async function fetchMeetings(tagId: number | null = null): Promise<MeetingListItem[]> {
+  const meetings = await apiFetch<MeetingListItemResponse[] | null>(
+    tagId == null ? "/v1/meetings" : `/v1/meetings?tagId=${tagId}`,
+  );
   return (meetings ?? []).map(toMeetingListItem);
 }
 
@@ -223,16 +274,29 @@ export async function fetchMeeting(meetingId: number): Promise<MeetingDetail> {
 /**
  * 등록·상정 시 함께 보내는 안건 한 건 (OPS-024 agendas[] · OPS-027).
  *
- * **안건은 언제나 운영 건을 가리킨다**(ADR-0055 · 서버 #593) — 제목은 그 운영 건의 것이고 안건이
- * 따로 제목을 갖지 않는다. 그전에는 `agendaName`과 상호 배타였는데 **이 화면에는 그것을 입력할 칸이
- * 없었다**(언제나 null을 보냈다) — 쓰지 않던 자리를 계약에서도 걷은 것이다.
+ * **`targetOperationId`와 `agendaName` 중 정확히 하나**를 채운다(ADR-0059 · 서버 #625). 운영 건을
+ * 주면 연결 안건이고 제목은 그 운영 건의 것이다. 제목만 주면 드래프트 안건이고, 나중에 «업무로
+ * 만들기»(promoteMeetingAgenda)로 업무를 가리키게 된다. 둘 다 주거나 둘 다 없으면(공백뿐인 제목
+ * 포함) 서버가 400 `VALIDATION_FAILED`다.
+ *
+ * ADR-0055(v1.0.0 · #708)가 이 자리에서 `agendaName`을 걷었던 것은 **화면에 입력할 칸이 없어서**
+ * 였다 — 회의 상세의 «업무 없이 제목만»이 그 칸이다.
  */
-export interface MeetingAgendaInput {
-  /** 연결할 운영 건. 필수다 — 안건의 제목이 여기서 온다 */
-  targetOperationId: number;
+export type MeetingAgendaInput = {
   processStatus: AgndPrcsSeCd | null;
   content: string | null;
-}
+} & (
+  | {
+      /** 연결할 운영 건 — 안건의 제목이 여기서 온다 */
+      targetOperationId: number;
+      agendaName?: null;
+    }
+  | {
+      targetOperationId?: null;
+      /** 드래프트 안건의 제목 (100자까지) */
+      agendaName: string;
+    }
+);
 
 /**
  * 회의 등록 입력 (OPS-024).
@@ -260,7 +324,8 @@ export interface MeetingCreateInput {
 
 function toAgendaRequestBody(input: MeetingAgendaInput) {
   return {
-    targetOperationId: input.targetOperationId,
+    targetOperationId: input.targetOperationId ?? null,
+    agendaName: input.agendaName?.trim() || null,
     processStatus: input.processStatus,
     content: input.content?.trim() || null,
   };
@@ -349,8 +414,14 @@ export async function addMeetingAgenda(
   return toAgenda(res);
 }
 
-/** 안건 수정 입력 (OPS-028). 연결 운영 건·제목·제출자는 이 API로 바꿀 수 없다 */
+/**
+ * 안건 수정 입력 (OPS-028). 연결 운영 건·제출자는 이 API로 바꿀 수 없다.
+ *
+ * `agendaName`은 **드래프트 안건에만** 준다(서버 #625) — 생략하면 그대로 두고, 연결 안건에 주면
+ * 400이다. 다른 필드와 달리 전체 교체가 아니라서(생략 = 유지) 연결 안건의 수정은 이 값을 싣지 않는다.
+ */
 export interface MeetingAgendaUpdateInput {
+  agendaName?: string;
   content: string | null;
   resultContent: string | null;
   processStatus: AgndPrcsSeCd;
@@ -372,6 +443,7 @@ export async function updateMeetingAgenda(
     {
       method: "PATCH",
       body: JSON.stringify({
+        ...(input.agendaName === undefined ? {} : { agendaName: input.agendaName.trim() }),
         content: input.content?.trim() || null,
         resultContent: input.resultContent?.trim() || null,
         processStatus: input.processStatus,
@@ -379,6 +451,143 @@ export async function updateMeetingAgenda(
     },
   );
   return toAgenda(res);
+}
+
+/**
+ * 드래프트 안건 승격 입력 — 업무 등록 요청(서버 WorkCreateRequest)과 같은 필드다.
+ *
+ * entities/work의 `WorkCreateInput`을 가져오지 않고 같은 모양을 여기 둔 것은 entities 슬라이스끼리
+ * 참조하지 않는 규칙 때문이다(루트 AGENTS.md «아키텍처 — FSD»). 필수 값(제목·유형·담당자)은 서버가
+ * 지어내지 않는다(ADR-0059 «승격의 필수 값») — 화면이 업무 등록과 같은 칸으로 받는다.
+ */
+export interface MeetingAgendaPromoteInput {
+  title: string;
+  /** 업무_유형 — 서버는 요청에서만 itemType으로 부른다 */
+  itemType: WorkTypeCd;
+  ownerId: number;
+  startAt: string | null;
+  endAt: string | null;
+  priority: PrrtyRnkCd;
+}
+
+/** 승격 결과 — 운영 건을 가리키게 된 안건과 새 업무의 식별자 */
+export interface MeetingAgendaPromotion {
+  agenda: MeetingAgenda;
+  /** 새 업무의 work_id — 업무 상세 경로가 이 값이다(안건의 `targetOperation.operationId`와 다르다) */
+  workId: number;
+}
+
+/**
+ * POST /v1/meetings/{meetingId}/agendas/{agendaId}/promote — 드래프트 안건을 업무로 만든다
+ * (ADR-0059 · 서버 #625).
+ *
+ * 서버가 업무 등록과 안건 연결을 한 트랜잭션으로 한다 — 연결이 실패하면 업무도 남지 않는다.
+ * 권한은 업무 등록과 같은 WORK_MANAGE다(안건 쓰기 권한이 아니다). 종료·취소된 회의에서도
+ * 승격할 수 있다(ssccops#573) — 그 전 서버는 409 `MEETING_CLOSED`를 준다. 이미 연결된 안건은 409
+ * `MEETING_AGENDA_ALREADY_LINKED`다.
+ *
+ * 시작 일시는 선택이다(#765) — 비우면 `startAt`을 싣지 않는다. 종료 일시가 시작보다 앞서면
+ * 서버가 400이다(시작이 없으면 따지지 않는다).
+ *
+ * `work.workId` 없이 성공으로 처리하지 않는다 — createWork와 같은 이유(만든 업무로 가는 길이 사라진다).
+ */
+export async function promoteMeetingAgenda(
+  meetingId: number,
+  agendaId: number,
+  input: MeetingAgendaPromoteInput,
+): Promise<MeetingAgendaPromotion> {
+  const res = await apiFetch<MeetingAgendaPromoteResponse | null>(
+    `/v1/meetings/${meetingId}/agendas/${agendaId}/promote`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        title: input.title.trim(),
+        itemType: input.itemType,
+        ownerId: input.ownerId,
+        ...(input.startAt ? { startAt: withServiceOffset(input.startAt) } : {}),
+        endAt: withServiceOffset(input.endAt),
+        priority: input.priority,
+        review: null,
+      }),
+    },
+  );
+
+  if (!res?.agenda || !res.work?.workId) {
+    throw new ApiError(
+      MEETING_ERROR.VALIDATION_FAILED,
+      "업무를 만들었습니다 — 새로고침하면 반영됩니다",
+    );
+  }
+
+  return { agenda: toAgenda(res.agenda), workId: res.work.workId };
+}
+
+/**
+ * 드래프트 안건 하위 업무 승격 입력 — 하위 업무 등록 요청(서버 SubWorkCreateRequest)과 같은 필드다
+ * (서버 #644 · ssccops#580). entities/sub-work의 `SubWorkCreateInput`을 가져오지 않는 이유는 업무
+ * 승격 입력과 같다(entities 슬라이스끼리 참조하지 않는다).
+ */
+export interface MeetingAgendaPromoteSubWorkInput {
+  /** 상위 업무의 work_id */
+  workId: number;
+  title: string;
+  subWorkTypeId: number;
+  ownerId: number;
+  startAt: string | null;
+  /** oper의 종료_일시. 하위 업무 등록 화면처럼 «마감 일시» 한 칸이 dueAt과 함께 채운다 */
+  endAt: string | null;
+  dueAt: string | null;
+  priority: PrrtyRnkCd;
+}
+
+/** 하위 업무 승격 결과 — 운영 건을 가리키게 된 안건과 새 하위 업무의 식별자 */
+export interface MeetingAgendaSubWorkPromotion {
+  agenda: MeetingAgenda;
+  /** 새 하위 업무의 sub_work_id — 하위 업무 상세 경로가 이 값이다 */
+  subWorkId: number;
+}
+
+/**
+ * POST /v1/meetings/{meetingId}/agendas/{agendaId}/promote-sub-work — 드래프트 안건을 하위 업무로
+ * 만든다 (서버 #644 · ssccops#580).
+ *
+ * 업무 승격(`promoteMeetingAgenda`)과 같은 규칙이다 — 하위 업무 등록과 안건 연결이 한 트랜잭션이고,
+ * 권한은 WORK_MANAGE, 이미 연결된 안건은 409 `MEETING_AGENDA_ALREADY_LINKED`다. 본문은 하위 업무
+ * 등록(`POST /v1/sub-works`)과 같아서 없는 상위 업무·유형은 404, 꺼진 유형·담당자 부적격·기간
+ * 역전은 400 `VALIDATION_FAILED`다. 비운 일시는 싣지 않는다.
+ *
+ * `subWork.subWorkId` 없이 성공으로 처리하지 않는다 — 만든 하위 업무로 가는 길이 사라진다.
+ */
+export async function promoteMeetingAgendaToSubWork(
+  meetingId: number,
+  agendaId: number,
+  input: MeetingAgendaPromoteSubWorkInput,
+): Promise<MeetingAgendaSubWorkPromotion> {
+  const res = await apiFetch<MeetingAgendaPromoteSubWorkResponse | null>(
+    `/v1/meetings/${meetingId}/agendas/${agendaId}/promote-sub-work`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        workId: input.workId,
+        title: input.title.trim(),
+        subWorkTypeId: input.subWorkTypeId,
+        ownerId: input.ownerId,
+        ...(input.startAt ? { startAt: withServiceOffset(input.startAt) } : {}),
+        ...(input.endAt ? { endAt: withServiceOffset(input.endAt) } : {}),
+        ...(input.dueAt ? { dueAt: withServiceOffset(input.dueAt) } : {}),
+        priority: input.priority,
+      }),
+    },
+  );
+
+  if (!res?.agenda || !res.subWork?.subWorkId) {
+    throw new ApiError(
+      MEETING_ERROR.VALIDATION_FAILED,
+      "하위 업무를 만들었습니다 — 새로고침하면 반영됩니다",
+    );
+  }
+
+  return { agenda: toAgenda(res.agenda), subWorkId: res.subWork.subWorkId };
 }
 
 /**

@@ -3,15 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CAPABILITY } from "@/entities/session";
-import { workSttsTone, type WorkSubWorkSummary } from "@/entities/work";
+import {
+  workSttsTone,
+  type WorkSubWorkSummary,
+  type WorkTransition,
+} from "@/entities/work";
 import { useCan } from "@/features/auth";
+import { OperationTagSection } from "@/features/operation-tag";
 import { ShareButton } from "@/features/share";
-import { useDeleteWork, useWorkDetail } from "@/features/work";
+import { useDeleteWork, useWorkDetail, useWorkTransition } from "@/features/work";
 import {
   OPER_TYPE_NM,
   PRRTY_RNK_NM,
   WORK_STTS_NM,
   WORK_TYPE_NM,
+  type WorkSttsCd,
 } from "@/shared/config/codes";
 import { FIELD_LABEL } from "@/shared/config/labels";
 import { AttachmentSection } from "@/features/attachment";
@@ -58,6 +64,33 @@ function subWorkBadge(subWork: WorkSubWorkSummary) {
   return { label: WORK_STTS_NM[subWork.workStatus], tone: "outline" as const };
 }
 
+/**
+ * 상태별로 지금 할 수 있는 전이 (#755 · 서버 #622 전이표). 검토에서만 둘(완료 · 검토 되돌리기)이고
+ * 둘 다 지금 할 수 있는 전이라 «한 번에 두 단계를 건너뛰지 않는다»(AGENTS.md)에 어긋나지 않는다.
+ * switch로 상태를 전부 적는다 — 상태가 늘면 타입이 이 자리를 다시 묻는다.
+ */
+function transitionsOf(status: WorkSttsCd): WorkTransition[] {
+  switch (status) {
+    case "PLANNING":
+      return ["START"];
+    case "IN_PROGRESS":
+      return ["REQUEST_REVIEW"];
+    case "REVIEW":
+      return ["COMPLETE", "REVERT_REVIEW"];
+    case "DONE":
+      return ["REOPEN"];
+  }
+}
+
+/** 전이별 버튼 — 되돌리는 쪽(검토 되돌리기 · 재개)은 앞으로 가는 쪽과 색을 가른다 */
+const TRANSITION_UI: Record<WorkTransition, { label: string; variant: "primary" | "ghost" }> = {
+  START: { label: "착수", variant: "primary" },
+  REQUEST_REVIEW: { label: "검토 요청", variant: "primary" },
+  COMPLETE: { label: "완료", variant: "primary" },
+  REVERT_REVIEW: { label: "검토 되돌리기", variant: "ghost" },
+  REOPEN: { label: "재개", variant: "ghost" },
+};
+
 function DetailSkeleton() {
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_1.3fr]">
@@ -87,6 +120,9 @@ export function WorkDetailPage({ workId }: Readonly<{ workId: number }>) {
   const canDelete = useCan(CAPABILITY.WORK_DELETE);
   const { pending: deletePending, remove } = useDeleteWork();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const workTransition = useWorkTransition(workId);
+  /* 확인 창은 «완료» 하나뿐이다 — 잘못 누른 완료는 재개가 있어도 목록에서 사라진다(#755) */
+  const [completeOpen, setCompleteOpen] = useState(false);
 
   if (status !== "ready" || !work) {
     return (
@@ -112,6 +148,31 @@ export function WorkDetailPage({ workId }: Readonly<{ workId: number }>) {
   }
 
   const prgrs = Math.round(work.progressRate);
+
+  /*
+   * 완료가 아닌 하위 업무 수 — «완료»를 잠그는 근거다(서버도 409 SUB_WORK_UNFINISHED로 막는다).
+   * 상세 응답의 하위 업무는 삭제된 것이 빠진 전부라 서버가 세는 범위와 같다. 열어 둔 사이 바뀌면
+   * 서버의 409가 이기고, 훅이 상세를 다시 불러 이 수도 따라 바뀐다.
+   */
+  const unfinishedCount = work.subWorks.filter((sw) => sw.workStatus !== "DONE").length;
+  const completeBlockReason =
+    unfinishedCount > 0
+      ? `완료되지 않은 하위 업무가 ${unfinishedCount}건 남아 있습니다. 모두 완료해야 업무를 완료할 수 있습니다.`
+      : "";
+  /* 권한 사유가 «완료» 잠금 사유보다 앞선다 — 버튼은 그대로 그리고 잠근다(#767) */
+  const transitionLockReason = canManage
+    ? ""
+    : "상태를 옮길 권한이 없습니다 — 업무 관리(WORK_MANAGE) 권한이 필요합니다";
+
+  /*
+   * 전이 뒤에는 상세를 통째로 다시 부른다 — 응답에는 상태뿐인데 화면은 배지·버튼·하위 업무 표를
+   * 함께 그린다. 화면이 낡아 거절된 경우(stale)도 다시 불러 버튼을 서버 상태에 맞춘다.
+   */
+  const runTransition = async (transition: WorkTransition) => {
+    const { done, stale, message } = await workTransition.run(transition);
+    if (message) flash(message);
+    if (done || stale) reload();
+  };
 
   const columns: GridColumn<WorkSubWorkSummary>[] = [
     {
@@ -221,9 +282,51 @@ export function WorkDetailPage({ workId }: Readonly<{ workId: number }>) {
               </Button>
             </div>
             <div className="mt-2 text-[23px] font-medium">{work.title}</div>
+            {/* key: 다시 불러온 상세가 오면 편집 상태를 버리고 새 칩으로 그린다 */}
+            <OperationTagSection
+              key={work.tags.map((t) => t.operationTagId).join(",")}
+              operationId={work.operationId}
+              subject="업무"
+              tags={work.tags}
+              canManage={canManage}
+              onSaved={reload}
+            />
             <div className="mt-3 flex items-center gap-[10px]">
               <ProgressBar value={prgrs} height={6} />
               <div className="text-[14px] text-accent">{prgrs}%</div>
+            </div>
+
+            {/*
+              상태 전이 (#755 · ssccops#563). 권한(WORK_MANAGE)이 없으면 지금 상태에서 갈 수 있는
+              버튼을 그대로 그리되 잠그고 이유(`title`)를 보인다 — 수정·삭제와 같다(#767). 조회는
+              WORK_READ로도 되므로 이 갈림이 생긴다.
+            */}
+            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-hairline pt-4">
+              {transitionsOf(work.workStatus).map((transition) => {
+                const blockReason =
+                  transitionLockReason || (transition === "COMPLETE" ? completeBlockReason : "");
+                return (
+                  <Button
+                    key={transition}
+                    variant={TRANSITION_UI[transition].variant}
+                    size="sm"
+                    disabled={workTransition.pending || blockReason !== ""}
+                    title={blockReason || undefined}
+                    onClick={() =>
+                      transition === "COMPLETE"
+                        ? setCompleteOpen(true)
+                        : void runTransition(transition)
+                    }
+                  >
+                    {TRANSITION_UI[transition].label}
+                  </Button>
+                );
+              })}
+              {work.workStatus === "REVIEW" && unfinishedCount > 0 && (
+                <span className="text-[13px] text-n500">
+                  완료되지 않은 하위 업무 {unfinishedCount}건
+                </span>
+              )}
             </div>
 
             <SectionLabel className="mt-5">상위 속성 · oper</SectionLabel>
@@ -296,6 +399,25 @@ export function WorkDetailPage({ workId }: Readonly<{ workId: number }>) {
           }}
           okLabel="삭제"
         />
+        <Sheet
+          open={completeOpen}
+          title="업무 완료"
+          hint="재개하면 진행으로 돌아갑니다."
+          okLabel={workTransition.pending ? "완료하는 중…" : "완료"}
+          okDisabled={workTransition.pending || completeBlockReason !== ""}
+          okTitle={completeBlockReason || undefined}
+          onClose={() => setCompleteOpen(false)}
+          onOk={() => {
+            setCompleteOpen(false);
+            void runTransition("COMPLETE");
+          }}
+        >
+          <div className="text-[13.5px] text-n500">
+            {work.subWorkCount > 0
+              ? `하위 업무 ${work.subWorkCount}건이 모두 완료됐습니다.`
+              : "연결된 하위 업무가 없습니다."}
+          </div>
+        </Sheet>
         {/* 첨부 (#546) — 업무를 고칠 수 있는 사람(WORK_MANAGE)이 올리고 지운다. 내려받기는 보는 사람 누구나 */}
         <AttachmentSection
           className="mt-4"

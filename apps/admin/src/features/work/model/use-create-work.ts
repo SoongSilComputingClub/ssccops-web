@@ -20,6 +20,8 @@ import { toWorkCreateErrorMessage } from "./work-error";
 export interface WorkCreation {
   /** 성공했을 때 등록된 업무 ID. 실패·중복 클릭이면 null */
   workId: number | null;
+  /** 등록된 업무의 상위 oper 식별자 — 등록 뒤 태그를 다는 경로가 이 값을 쓴다(#771) */
+  operationId: number | null;
   /** 사용자에게 보여줄 한 줄. 중복 클릭으로 아무것도 보내지 않았으면 빈 문자열 */
   message: string;
 }
@@ -29,7 +31,7 @@ export interface WorkCreateControl {
   create: (input: WorkCreateInput) => Promise<WorkCreation>;
 }
 
-const BUSY: WorkCreation = { workId: null, message: "" };
+const BUSY: WorkCreation = { workId: null, operationId: null, message: "" };
 
 export function useCreateWork(): WorkCreateControl {
   const [pending, setPending] = useState(false);
@@ -51,11 +53,15 @@ export function useCreateWork(): WorkCreateControl {
     try {
       const created = await createWork(input);
       // 상태는 서버가 기획(PLANNING)으로 고정한다 — 등록 화면에 상태 입력란이 없는 이유다
-      return { workId: created.workId, message: "업무를 등록했습니다" };
+      return {
+        workId: created.workId,
+        operationId: created.operationId,
+        message: "업무를 등록했습니다",
+      };
     } catch (error: unknown) {
       // 화면이 허용된 줄 알고 보낸 요청이 403이면 권한이 방금 회수된 것이다 — 세션을 맞춘다
       syncSessionOnForbidden(error);
-      return { workId: null, message: toWorkCreateErrorMessage(error) };
+      return { workId: null, operationId: null, message: toWorkCreateErrorMessage(error) };
     } finally {
       inFlightRef.current = false;
       if (aliveRef.current) setPending(false);

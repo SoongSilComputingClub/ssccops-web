@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CAPABILITY, useSessionStore } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import { useCreateMeeting } from "@/features/meeting";
+import { OperationTagPicker, useAssignOperationTags } from "@/features/operation-tag";
 import {
   AssignableMemberSelect,
   assignableBlockReason,
@@ -180,6 +181,20 @@ export function OperationCreatePage({
   // work 확장
   const [workTypeCd, setWorkTypeCd] = useState<WorkTypeCd>("EVENT");
   const [grvwCn, setGrvwCn] = useState("");
+  /*
+   * 태그 (#757 · #771 · ssccops#576). 등록 본문은 태그를 받지 않아 등록이 성공한 뒤 응답의
+   * `operationId`로 PUT /v1/operations/{operationId}/tags를 부른다(전체 교체). 태그만 실패하면 업무는
+   * 이미 만들어졌으므로 상세로 옮기고 다시 지정하게 한다. 하위 업무·회의 등록에는 칩을 두지 않았다 —
+   * 이슈 범위가 업무 등록 하나이고, 둘은 상세의 «태그 편집»으로 단다.
+   */
+  const [workTagIds, setWorkTagIds] = useState<number[]>([]);
+  const workTagAssign = useAssignOperationTags();
+  const toggleWorkTag = (operationTagId: number) =>
+    setWorkTagIds((ids) =>
+      ids.includes(operationTagId)
+        ? ids.filter((id) => id !== operationTagId)
+        : [...ids, operationTagId],
+    );
 
   /*
    * sub_work 확장. 상위 업무를 고르는 상태를 두지 않는 것은 **하위 업무가 상위 업무 안에서만
@@ -200,7 +215,11 @@ export function OperationCreatePage({
   const allowed = canManageKind(operTypeCd);
 
   /* 서버로 나가는 세 경로(업무·하위 업무·회의) 중 하나라도 응답을 기다리는 중이면 버튼을 잠근다 */
-  const pending = workCreation.pending || subWorkCreation.pending || meetingCreation.pending;
+  const pending =
+    workCreation.pending ||
+    workTagAssign.pending ||
+    subWorkCreation.pending ||
+    meetingCreation.pending;
 
   /* 고른 유형의 승인 규칙 — 서버 목록에서 온 값이라 화면과 실제 판정이 갈리지 않는다 */
   const rule =
@@ -228,7 +247,7 @@ export function OperationCreatePage({
    * 정하며, 화면이 값을 만들어 보내면 서버가 무시하는 필드가 늘 뿐이다.
    */
   const submitWork = async (ownerId: number) => {
-    const { workId, message } = await workCreation.create({
+    const { workId, operationId, message } = await workCreation.create({
       title: operTtl.trim(),
       itemType: workTypeCd,
       ownerId,
@@ -239,7 +258,15 @@ export function OperationCreatePage({
     });
 
     if (!message) return; // 진행 중 중복 클릭 — 아무것도 보내지 않았다
-    flash(message);
+    if (workId && workTagIds.length > 0) {
+      // 응답에 operationId가 없으면 태그를 달 경로가 없다 — 태그 실패와 같은 안내로 상세에 보낸다
+      const { tags } = operationId
+        ? await workTagAssign.assign(operationId, workTagIds, "업무")
+        : { tags: null };
+      flash(tags ? message : "태그를 달지 못했습니다 — 상세에서 다시 지정해주세요");
+    } else {
+      flash(message);
+    }
     if (workId) router.replace(ROUTES.workDetail(workId));
   };
 
@@ -505,6 +532,10 @@ export function OperationCreatePage({
                       {WORK_TYPE_NM[cd]}
                     </Chip>
                   ))}
+                </div>
+                <div className="mb-2 text-[13.5px] text-n400">태그</div>
+                <div className="mb-4">
+                  <OperationTagPicker selected={workTagIds} onToggle={toggleWorkTag} />
                 </div>
                 <Field label={FIELD_LABEL.generalReview}>
                   <TextArea

@@ -8,6 +8,7 @@ import type {
 } from "@/shared/config/codes";
 import { apiFetch } from "@/shared/lib/api/client";
 import type { MeetingListItem } from "@/entities/meeting";
+import type { OperationTagSummary } from "@/entities/operation-tag";
 import type { SubWorkListItem } from "@/entities/sub-work";
 import type { WorkListItem } from "@/entities/work";
 import type { OperationsHubData } from "../model/types";
@@ -21,9 +22,16 @@ import type { OperationsHubData } from "../model/types";
  * 계약을 다시 옮겨 적는다 — 세 계약 중 하나만 바뀌어도 이 파일이 따로 깨져야 알아챌 수 있다.
  *
  * 인가는 WORK_MANAGE 권한이다(서버 #9 · OperationController 클래스 애노테이션) — 업무·하위
- * 업무·대시보드와 같은 권한이다. 쿼리 파라미터·페이징이 없다 — 전체/업무/하위업무/회의 탭과
- * 우측 트리 묶음은 화면이 응답 배열 위에서 나눈다.
+ * 업무·대시보드와 같은 권한이다. 페이징이 없다 — 전체/업무/하위업무/회의 탭과 우측 트리 묶음은
+ * 화면이 응답 배열 위에서 나눈다. 쿼리 파라미터는 태그 하나(`tagId` · #771 · 서버 #640)뿐이고 세
+ * 배열을 모두 거른다.
  */
+
+/** 태그 칩 (#771 · 서버 #640) — 세 배열의 행마다 자기 운영 건의 태그가 실린다 */
+interface OperationTagSummaryResponse {
+  operationTagId: number;
+  tagNm: string | null;
+}
 
 interface MemberSummaryResponse {
   memberId: number | null;
@@ -40,6 +48,7 @@ interface WorkListItemResponse {
   endAt: string | null;
   progressRate: number | null;
   subWorkCount: number | null;
+  tags: OperationTagSummaryResponse[] | null;
 }
 
 interface SubWorkSummaryWorkResponse {
@@ -61,6 +70,7 @@ interface SubWorkSummaryResponse {
   isDelayed: boolean | null;
   isReadyForReview: boolean | null;
   isReviewStale: boolean | null;
+  tags: OperationTagSummaryResponse[] | null;
 }
 
 interface MeetingListItemResponse {
@@ -76,6 +86,7 @@ interface MeetingListItemResponse {
   startAt: string | null;
   endAt: string | null;
   createdAt: string | null;
+  tags: OperationTagSummaryResponse[] | null;
 }
 
 interface OperationHubResponse {
@@ -90,6 +101,11 @@ interface OperationHubResponse {
 function toMemberRef(member: MemberSummaryResponse | null) {
   if (member?.memberId == null) return null;
   return { memberId: member.memberId, name: member.name ?? "" };
+}
+
+/** 서버가 태그 필드를 아직 안 실은 응답(배포 순서가 갈린 dev)은 빈 배열로 읽는다 */
+function toTags(tags: OperationTagSummaryResponse[] | null | undefined): OperationTagSummary[] {
+  return (tags ?? []).map((t) => ({ operationTagId: t.operationTagId, tagNm: t.tagNm ?? "" }));
 }
 
 /** DECIMAL(5,2) — 서버는 70.00처럼 내려준다. 값이 없으면 0% */
@@ -108,6 +124,7 @@ function toWorkListItem(res: WorkListItemResponse): WorkListItem {
     endAt: res.endAt,
     progressRate: toProgressRate(res.progressRate),
     subWorkCount: res.subWorkCount ?? 0,
+    tags: toTags(res.tags),
   };
 }
 
@@ -131,6 +148,7 @@ function toSubWorkListItem(res: SubWorkSummaryResponse): SubWorkListItem {
     // 정체 판정 둘 (ssccops#196) — 운영 통합도 같은 요약 응답을 받는다
     isReadyForReview: res.isReadyForReview === true,
     isReviewStale: res.isReviewStale === true,
+    tags: toTags(res.tags),
   };
 }
 
@@ -148,6 +166,7 @@ function toMeetingListItem(res: MeetingListItemResponse): MeetingListItem {
     startAt: res.startAt,
     endAt: res.endAt,
     createdAt: res.createdAt,
+    tags: toTags(res.tags),
   };
 }
 
@@ -157,9 +176,14 @@ function toMeetingListItem(res: MeetingListItemResponse): MeetingListItem {
  * 화면 진입 한 번으로 세 배열을 함께 받는다 — 상단 유형 카드(건수)·좌측 목록(탭 필터)·
  * 우측 트리(업무→하위 업무 묶음 + 회의)가 전부 이 응답으로 그려진다. 트리는
  * `subWorks[].work.workId`로 묶는다.
+ *
+ * `tagId`를 주면 세 배열이 각자 자기 태그로 걸러진다 — 하위 업무는 상위 업무의 태그를 물려받지
+ * 않으므로 **상위 업무가 빠진 하위 업무 행**이 올 수 있다(트리는 그 묶음을 따로 그린다).
  */
-export async function fetchOperationsHub(): Promise<OperationsHubData> {
-  const res = await apiFetch<OperationHubResponse>("/v1/operations");
+export async function fetchOperationsHub(tagId: number | null = null): Promise<OperationsHubData> {
+  const res = await apiFetch<OperationHubResponse>(
+    tagId == null ? "/v1/operations" : `/v1/operations?tagId=${tagId}`,
+  );
   return {
     works: (res.works ?? []).map(toWorkListItem),
     subWorks: (res.subWorks ?? []).map(toSubWorkListItem),
