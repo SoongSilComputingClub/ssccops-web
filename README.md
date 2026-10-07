@@ -71,8 +71,9 @@ pnpm build
 ```
 
 PR마다 CI가 같은 셋과 테스트·Sonar를 돌립니다. 배포는 **prod = Vercel(`main`) ·
-dev = Cloudflare Workers(OpenNext, `develop`)**이고, 두 플랫폼에서 같은 뜻이어야 하므로
-ISR·`use cache`·이미지 최적화에 의존하지 않습니다.
+dev = 동아리방 Coolify 컨테이너(GHCR 이미지, `develop`)**입니다([ADR-0051](https://github.com/SoongSilComputingClub/ssccops/blob/develop/docs/decisions/0051-dev-web-moves-to-coolify-containers.md)).
+prod 롤백용 Cloudflare 워커도 `main`에서 OpenNext로 빌드되므로, 세 자리에서 같은 뜻이어야
+해 ISR·`use cache`·이미지 최적화에 의존하지 않습니다(자세한 것은 AGENTS.md «배포»).
 
 ## 기여
 
