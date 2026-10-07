@@ -10,12 +10,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENTS.md
 
-SSCC(숭실컴퓨팅클럽) 운영 시스템의 웹 — **pnpm workspace + Turborepo 모노레포**(앱 3 · 패키지 9).
+SSCC(숭실컴퓨팅클럽) 운영 시스템의 웹 — **pnpm workspace + Turborepo 모노레포**(앱 3 · 패키지 10).
 Next.js 16 App Router / React 19 / TypeScript 5 / Tailwind v4. 백엔드는 별도 저장소
 **`ssccops-server`**(Spring Boot), 인증은 Supabase Auth(Google OAuth), 배포는 **prod = Vercel
 Hobby(`main`) · dev = 동아리방 Coolify 컨테이너(GHCR 이미지, `develop`)** — 아래 «배포» 절.
 
-## 영역 — 앱 3 · 패키지 9
+## 영역 — 앱 3 · 패키지 10
 
 영역 고유 규칙(화면·인증 방식·주요 결정·함정)은 **각 영역의 `AGENTS.md`가 정본**이다(ssccops#349 —
 서버가 도메인별로 한 것과 같다). 여기서는 가리키기만 하고 `@`로 끌어오지 않는다 — 끌어오면 분리한
@@ -32,6 +32,7 @@ Hobby(`main`) · dev = 동아리방 Coolify 컨테이너(GHCR 이미지, `develo
 | `packages/form-renderer` | 폼 문항 렌더링·응답 검증 — 전송 계층을 모른다 | [packages/form-renderer/AGENTS.md](packages/form-renderer/AGENTS.md) |
 | `packages/share-meta` | 공유 카드 문구·공유 대상 → 착지 앱 규칙(ADR-0017) | [packages/share-meta/AGENTS.md](packages/share-meta/AGENTS.md) |
 | `packages/codes` | admin·lms가 함께 쓰는 서버 표준코드·표시명(계약) | [packages/codes/AGENTS.md](packages/codes/AGENTS.md) |
+| `packages/academic` | admin·lms가 같은 값이어야 하는 학술 판정 기준(출석률 수료 기준선 등) — 서버가 내리는 판정은 오지 않는다(#698) | [packages/academic/src/index.ts](packages/academic/src/index.ts) 머리 주석 |
 | `packages/date` | 서버 일시 문자열 → 표기(잘라 쓴다 · `todayInSeoul`) | [packages/date/AGENTS.md](packages/date/AGENTS.md) |
 | `packages/content` | 콘텐츠 페이지 카탈로그 — www 라우트 슬러그 표와 어드민 페이지 목록이 같은 표(#534) | [packages/content/AGENTS.md](packages/content/AGENTS.md) |
 | `packages/pwa` | 서비스워커 소스(`buildServiceWorker`)·등록·푸시 구독·설치·오프라인 훅·알림 목록 UI(`@ssccops/pwa/ui`) — ADR-0045 · #604. Workbox·next-pwa 없음 | [packages/pwa/README.md](packages/pwa/README.md) |
