@@ -27,8 +27,10 @@ Tailwind CSS v4.
 |---|---|
 | [`ui`](packages/ui) | 공용 표시 요소·테마·브랜드 마크 |
 | [`auth`](packages/auth) | Supabase 클라이언트·세션 갱신·OAuth 목적지 |
+| [`signup`](packages/signup) | www·lms가 함께 쓰는 가입 화면 |
 | [`form-renderer`](packages/form-renderer) | 폼 문항 렌더링·응답 검증 |
 | [`codes`](packages/codes) | 서버 표준코드와 표시명 |
+| [`academic`](packages/academic) | admin·lms가 함께 쓰는 학술 판정 기준(출석률 기준선 등) |
 | [`date`](packages/date) | 서버 일시 문자열 → 화면 표기 |
 | [`share-meta`](packages/share-meta) | 공유 카드 문구·착지 앱 규칙 |
 | [`content`](packages/content) | 콘텐츠 페이지 카탈로그 |
