@@ -9,12 +9,12 @@ body:
       value: |
         제목 앞 `[CHORE]`를 **지우지 마세요.** 이 접두사로 브랜치와 라벨이 자동 생성됩니다.
 
-        생성 후 상단 **Parent issue**에서 `ssccops`의 Story·Task를 연결하세요 —
-        Epic에 닿지 않는 이슈는 어디에도 잡히지 않습니다(ssccops ADR 0002).
+        생성 후 상단 **Parent issue**에서 `ssccops`의 Story·Task·Bug를 연결하세요 —
+        Parent가 없는 Sub-task는 보드와 배포 이력에서 «왜 했나»가 끊깁니다(ssccops ADR-0008 · ADR-0015).
 
         커밋 타입이 `docs`·`test`·`cicd`·`chore`인 작업이 전부 여기 해당합니다.
-        **세부 종류는 등록 후 라벨로 구분하세요** (`docs`·`test`·`cicd`) — 묻는 것이 같은 일을
-        템플릿으로 다시 가르지 않습니다.
+        **세부 종류는 라벨로 가르지 않습니다** — 이슈 유형은 넷(`feat`·`fix`·`refactor`·`chore`)뿐이고
+        `docs`·`test`·`cicd` 라벨은 지웠습니다. 무엇을 했는지는 커밋 타입(`docs(…)`·`test(…)`)이 말합니다.
 
   - type: dropdown
     id: target
