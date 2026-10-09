@@ -123,6 +123,15 @@ export type {
 } from "./api/member-imports";
 
 /*
+ * 회원명부 내려받기 (#785 · 서버 #674).
+ *
+ * 성공 응답이 봉투가 아니라 xlsx 파일이라 전송 경로가 다르다(`apiFetchFile`) — CSV 이관처럼
+ * 파일이 API 경계를 넘는 자리라 파일을 나눠 두었다.
+ */
+export { exportMemberRoster, fetchMemberRosterPreview, MEMBER_ROSTER_ERROR } from "./api/member-roster";
+export type { MemberRosterExportInput, MemberRosterPreview, RosterSemester } from "./api/member-roster";
+
+/*
  * 회원 변경 이력 통합 조회 (#51 · 서버 #82).
  *
  * 요구 권한은 회원 조회와 같은 `MEMBER_MANAGE`지만 응답의 nullable 자리가 상세의 '최근 변경'과

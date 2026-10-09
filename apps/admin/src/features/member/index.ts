@@ -35,6 +35,13 @@ export {
   toMemberImportErrorMessage,
   toMemberImportExecuteErrorMessage,
 } from "./model/import-error";
+/* 회원명부 내려받기 (#785 · 서버 #674) — 연도·학기와 포함할 상태만 받고 xlsx는 서버가 만든다 */
+export {
+  useMemberRosterExport,
+  type MemberRosterExport,
+  type MemberRosterExportStatus,
+} from "./model/use-member-roster-export";
+export { ROSTER_EXPORT_FORBIDDEN_MESSAGE } from "./model/roster-export-error";
 /* 회원 변경 이력 통합 조회 (#51 · 서버 #82) — 등급·상태·역할을 한 타임라인으로 받는다 */
 export {
   useMemberHistories,

@@ -27,8 +27,10 @@ Tailwind CSS v4.
 |---|---|
 | [`ui`](packages/ui) | 공용 표시 요소·테마·브랜드 마크 |
 | [`auth`](packages/auth) | Supabase 클라이언트·세션 갱신·OAuth 목적지 |
+| [`signup`](packages/signup) | www·lms가 함께 쓰는 가입 화면 |
 | [`form-renderer`](packages/form-renderer) | 폼 문항 렌더링·응답 검증 |
 | [`codes`](packages/codes) | 서버 표준코드와 표시명 |
+| [`academic`](packages/academic) | admin·lms가 함께 쓰는 학술 판정 기준(출석률 기준선 등) |
 | [`date`](packages/date) | 서버 일시 문자열 → 화면 표기 |
 | [`share-meta`](packages/share-meta) | 공유 카드 문구·착지 앱 규칙 |
 | [`content`](packages/content) | 콘텐츠 페이지 카탈로그 |
@@ -71,8 +73,9 @@ pnpm build
 ```
 
 PR마다 CI가 같은 셋과 테스트·Sonar를 돌립니다. 배포는 **prod = Vercel(`main`) ·
-dev = Cloudflare Workers(OpenNext, `develop`)**이고, 두 플랫폼에서 같은 뜻이어야 하므로
-ISR·`use cache`·이미지 최적화에 의존하지 않습니다.
+dev = 동아리방 Coolify 컨테이너(GHCR 이미지, `develop`)**입니다([ADR-0051](https://github.com/SoongSilComputingClub/ssccops/blob/develop/docs/decisions/0051-dev-web-moves-to-coolify-containers.md)).
+prod 롤백용 Cloudflare 워커도 `main`에서 OpenNext로 빌드되므로, 세 자리에서 같은 뜻이어야
+해 ISR·`use cache`·이미지 최적화에 의존하지 않습니다(자세한 것은 AGENTS.md «배포»).
 
 ## 기여
 

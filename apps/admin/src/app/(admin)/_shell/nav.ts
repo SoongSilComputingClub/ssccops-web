@@ -140,7 +140,8 @@ export const NAV_GROUPS: NavGroup[] = [
           !p.startsWith("/members/roles") &&
           !p.startsWith("/members/role-labels") &&
           !p.startsWith("/members/authorities") &&
-          !p.startsWith("/members/csv-import"),
+          !p.startsWith("/members/csv-import") &&
+          !p.startsWith("/members/roster-export"),
         requires: CAPABILITY.MEMBER_MANAGE,
       },
     ],
@@ -437,6 +438,18 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "CSV 회원 이관",
         href: ROUTES.csvImport,
         isActive: starts("/members/csv-import"),
+        requires: CAPABILITY.MEMBER_MANAGE,
+      },
+      /*
+       * 회원명부 내보내기 (#785 · 서버 #674). CSV 회원 이관 바로 아래다 — 명부를 통째로 다루는
+       * 두 화면을 같은 권한으로 모은다(Story ssccops#598 결정). 서버도 같은 MEMBER_MANAGE로
+       * 클래스 전체를 막아 메뉴와 실제 판정이 갈리지 않는다.
+       */
+      {
+        section: "회원",
+        label: "회원명부 내보내기",
+        href: ROUTES.rosterExport,
+        isActive: starts("/members/roster-export"),
         requires: CAPABILITY.MEMBER_MANAGE,
       },
       /*

@@ -291,6 +291,110 @@ export async function apiFetchList<T>(
   return { data: envelope.data ?? [], page: envelope.page ?? null };
 }
 
+/* ── 파일 받기 ─────────────────────────────────────────────── */
+
+/** 파일 응답 — 본문과 서버가 정한 파일 이름 */
+export interface ApiFile {
+  blob: Blob;
+  /**
+   * `Content-Disposition`에서 읽은 파일 이름. 헤더가 없거나 읽을 수 없으면 null이다 — 서버가
+   * CORS로 그 헤더를 노출하지 않으면 교차 출처 응답에서는 보이지 않는다.
+   */
+  filename: string | null;
+}
+
+/**
+ * 성공 응답이 **봉투가 아니라 파일 그대로**인 경로를 받는다 (회원명부 xlsx · #785 · 서버 #674).
+ *
+ * ⚠️ {@link apiFetchStream}(SSE)에 이은 봉투 규약의 두 번째 예외다. 파일을 봉투에 넣으면 base64가
+ * 되어 화면이 다시 풀어야 하고 크기가 3분의 4만큼 는다(서버 `MemberRosterController` 주석).
+ *
+ * **거절은 종전대로 상태 코드 + 봉투다.** 그래서 2xx가 아니면 본문을 파일로 보지 않고 봉투로
+ * 읽어 `ApiError`로 던진다 — 호출부의 오류 처리가 다른 경로와 같은 한 벌이 된다. Content-Type이
+ * JSON이면 2xx여도 같은 길로 보낸다. 서버의 오류 처리기가 봉투에 JSON을 박으므로 파일 자리에
+ * JSON이 왔다는 것은 파일이 아니라는 뜻이고, 그것을 저장하면 열리지 않는 xlsx가 남는다.
+ *
+ * 내려받기 주소를 `<a href>`로 열지 않는 것은 인증이 Bearer 헤더라서다 — 토큰을 쿼리에 싣는
+ * 것은 로그·기록에 남는다. 그래서 {@link sendAuthed}를 그대로 타고(토큰·401 갱신·재로그인이
+ * 다른 경로와 같다) 본문을 `Blob`으로 받는다. 저장은 호출부가 `downloadBlob`으로 한다.
+ */
+export async function apiFetchFile(path: string, init?: RequestInit): Promise<ApiFile> {
+  const response = await sendAuthed(path, init);
+
+  const contentType = response.headers.get("Content-Type") ?? "";
+  if (!response.ok || contentType.includes("application/json")) {
+    const envelope = await readEnvelope<unknown>(response);
+    throw toApiError(response, envelope?.code ?? null, envelope?.message ?? null);
+  }
+
+  let blob: Blob;
+  try {
+    blob = await response.blob();
+  } catch {
+    throw new ApiError(API_ERROR.NETWORK_ERROR, "서버 응답을 읽을 수 없습니다");
+  }
+  return { blob, filename: filenameFromDisposition(response.headers.get("Content-Disposition")) };
+}
+
+/**
+ * `Content-Disposition` → 파일 이름. **`filename*`(RFC 5987 · UTF-8)을 먼저 본다.**
+ *
+ * 한글 이름은 `filename*=UTF-8''%EC%9A%94…`에만 제대로 실린다. 스프링이 함께 싣는 `filename="…"`은
+ * 이름이 ASCII가 아니면 `=?UTF-8?Q?…?=`(RFC 2047) 덩어리라 그대로 쓰면 그 글자들이 파일 이름이
+ * 된다 — 그래서 `filename*`이 없거나 풀리지 않을 때만, 그리고 그 꼴이 아닐 때만 쓴다.
+ *
+ * 자르기·따옴표 벗기기·RFC 5987 풀기를 각자 함수로 둔 것은 한 함수에 몰았을 때 인지 복잡도가
+ * 한도를 넘었기 때문이다(Sonar S3776 · #786 머지 뒤 게이트 실패).
+ */
+function filenameFromDisposition(header: string | null): string | null {
+  if (!header) return null;
+
+  const params = dispositionParams(header);
+  const extended = params.get("filename*");
+  const decoded = extended ? decodeExtendedValue(extended) : null;
+  if (decoded) return decoded;
+
+  const plain = params.get("filename");
+  if (plain && !plain.startsWith("=?")) return plain;
+  return null;
+}
+
+/**
+ * 헤더 → 매개변수 이름(소문자)·값(따옴표를 벗긴 것).
+ *
+ * 정규식이 아니라 `;`로 자른다(#401 · S8786과 같은 이유 — 헤더는 서버가 주는 값이지만 되돌아가는
+ * 정규식을 둘 까닭이 없다). 따옴표 안의 `;`는 잘못 자르는데 그 경우는 `filename`뿐이다 —
+ * `filename*`은 퍼센트 인코딩이라 `;`가 날것으로 오지 않는다.
+ */
+function dispositionParams(header: string): Map<string, string> {
+  const params = new Map<string, string>();
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq !== -1) {
+      params.set(part.slice(0, eq).trim().toLowerCase(), unquote(part.slice(eq + 1).trim()));
+    }
+  }
+  return params;
+}
+
+function unquote(value: string): string {
+  const quoted = value.length >= 2 && value.startsWith('"') && value.endsWith('"');
+  return quoted ? value.slice(1, -1) : value;
+}
+
+/**
+ * RFC 5987 값(`charset'language'인코딩된_이름`) → 이름. 서버는 UTF-8만 쓴다.
+ * 깨진 퍼센트 인코딩이거나 비면 null — 호출부가 `filename`으로 내려간다.
+ */
+function decodeExtendedValue(value: string): string | null {
+  const quote = value.indexOf("''");
+  try {
+    return decodeURIComponent(quote === -1 ? value : value.slice(quote + 2)) || null;
+  } catch {
+    return null;
+  }
+}
+
 /* ── 흘려 받기 (SSE) ───────────────────────────────────────── */
 
 /**
