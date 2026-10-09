@@ -234,9 +234,13 @@ function NotationSection({ roster, disabled }: Readonly<{ roster: MemberRosterEx
                 onChange={() => roster.setNotation(option.value)}
                 disabled={disabled}
               />
-              <span className="min-w-0">
-                <span className="block text-[15px] font-medium">{option.label}</span>
-                <span className="mt-[2px] block text-[13.5px] leading-[1.6] text-n500">
+              {/*
+                이름은 `<label>` 아래 두 단계 안에 둔다 (Sonar S6853). 검사기가 라벨 글자를 두 단계까지만
+                찾아, span을 한 겹 더 씌우면 «글자 없는 라벨»이 된다(#786 머지 뒤 게이트가 이것으로 실패했다).
+              */}
+              <span className="min-w-0 text-[15px] font-medium">
+                {option.label}
+                <span className="mt-[2px] block text-[13.5px] font-normal leading-[1.6] text-n500">
                   {option.description}
                 </span>
               </span>

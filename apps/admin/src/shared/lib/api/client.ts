@@ -343,39 +343,56 @@ export async function apiFetchFile(path: string, init?: RequestInit): Promise<Ap
  * 이름이 ASCII가 아니면 `=?UTF-8?Q?…?=`(RFC 2047) 덩어리라 그대로 쓰면 그 글자들이 파일 이름이
  * 된다 — 그래서 `filename*`이 없거나 풀리지 않을 때만, 그리고 그 꼴이 아닐 때만 쓴다.
  *
- * 정규식이 아니라 `;`로 자른다(#401 · S8786과 같은 이유 — 헤더는 서버가 주는 값이지만 되돌아가는
- * 정규식을 둘 까닭이 없다). 따옴표 안의 `;`는 잘못 자르는데 그 경우는 `filename`뿐이다 —
- * `filename*`은 퍼센트 인코딩이라 `;`가 날것으로 오지 않는다.
+ * 자르기·따옴표 벗기기·RFC 5987 풀기를 각자 함수로 둔 것은 한 함수에 몰았을 때 인지 복잡도가
+ * 한도를 넘었기 때문이다(Sonar S3776 · #786 머지 뒤 게이트 실패).
  */
 function filenameFromDisposition(header: string | null): string | null {
   if (!header) return null;
 
-  const params = new Map<string, string>();
-  for (const part of header.split(";")) {
-    const eq = part.indexOf("=");
-    if (eq === -1) continue;
-    let value = part.slice(eq + 1).trim();
-    if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
-      value = value.slice(1, -1);
-    }
-    params.set(part.slice(0, eq).trim().toLowerCase(), value);
-  }
-
+  const params = dispositionParams(header);
   const extended = params.get("filename*");
-  if (extended) {
-    /* charset'language'인코딩된_이름 — 서버는 UTF-8만 쓴다 */
-    const quote = extended.indexOf("''");
-    try {
-      const decoded = decodeURIComponent(quote === -1 ? extended : extended.slice(quote + 2));
-      if (decoded) return decoded;
-    } catch {
-      /* 깨진 퍼센트 인코딩 — 아래 filename으로 내려간다 */
-    }
-  }
+  const decoded = extended ? decodeExtendedValue(extended) : null;
+  if (decoded) return decoded;
 
   const plain = params.get("filename");
   if (plain && !plain.startsWith("=?")) return plain;
   return null;
+}
+
+/**
+ * 헤더 → 매개변수 이름(소문자)·값(따옴표를 벗긴 것).
+ *
+ * 정규식이 아니라 `;`로 자른다(#401 · S8786과 같은 이유 — 헤더는 서버가 주는 값이지만 되돌아가는
+ * 정규식을 둘 까닭이 없다). 따옴표 안의 `;`는 잘못 자르는데 그 경우는 `filename`뿐이다 —
+ * `filename*`은 퍼센트 인코딩이라 `;`가 날것으로 오지 않는다.
+ */
+function dispositionParams(header: string): Map<string, string> {
+  const params = new Map<string, string>();
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq !== -1) {
+      params.set(part.slice(0, eq).trim().toLowerCase(), unquote(part.slice(eq + 1).trim()));
+    }
+  }
+  return params;
+}
+
+function unquote(value: string): string {
+  const quoted = value.length >= 2 && value.startsWith('"') && value.endsWith('"');
+  return quoted ? value.slice(1, -1) : value;
+}
+
+/**
+ * RFC 5987 값(`charset'language'인코딩된_이름`) → 이름. 서버는 UTF-8만 쓴다.
+ * 깨진 퍼센트 인코딩이거나 비면 null — 호출부가 `filename`으로 내려간다.
+ */
+function decodeExtendedValue(value: string): string | null {
+  const quote = value.indexOf("''");
+  try {
+    return decodeURIComponent(quote === -1 ? value : value.slice(quote + 2)) || null;
+  } catch {
+    return null;
+  }
 }
 
 /* ── 흘려 받기 (SSE) ───────────────────────────────────────── */
