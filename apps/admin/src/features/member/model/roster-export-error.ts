@@ -50,6 +50,17 @@ export function toMemberRosterExportErrorMessage(error: unknown): string {
   }
 }
 
+/**
+ * 미리보기 실패 → 한 줄. 서버가 돌려준 거절은 내려받기와 같은 코드라 같은 문장이고, 다른 것은
+ * 응답을 받지 못한 경우의 문장뿐이다(«내려받지 못했습니다»는 누르지 않은 사람에게 틀린 말이다).
+ */
+export function toMemberRosterPreviewErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return "인원을 불러오지 못했습니다 — 새로고침해주세요";
+  }
+  return toMemberRosterExportErrorMessage(error);
+}
+
 /** 회장이 없어 거절됐는가 — 화면이 오류 문구 옆에 «역할 관리» 링크를 둘지 정한다 */
 export function isRosterPresidentMissing(error: unknown): boolean {
   return error instanceof ApiError && error.code === MEMBER_ROSTER_ERROR.PRESIDENT_MISSING;
