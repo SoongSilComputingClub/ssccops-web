@@ -74,6 +74,8 @@ export const ROUTES = {
   authorities: "/members/authorities",
   roleLabels: "/members/role-labels",
   csvImport: "/members/csv-import",
+  /** 회원명부 내보내기 (#785) — CSV 이관 옆에 둔다. 명부를 통째로 다루는 두 화면이다 */
+  rosterExport: "/members/roster-export",
 
   forms: "/forms",
   formNew: "/forms/new",
