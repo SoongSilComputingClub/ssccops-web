@@ -32,7 +32,7 @@ export function toMemberRosterExportErrorMessage(error: unknown): string {
     case MEMBER_ERROR.VALIDATION_FAILED:
       return error.message;
     /*
-     * 400 — 기준 코드에 없는 상태·표기법이다. 상태 선택지는 `GET /v1/member-statuses`에서 오므로
+     * 400 — 기준 코드에 없는 상태다. 선택지가 `GET /v1/member-statuses`에서 오므로
      * 이 코드는 화면을 연 뒤 기준 코드가 바뀌었다는 뜻이다(회원 목록 필터와 같은 문장).
      */
     case MEMBER_ERROR.INVALID_CODE_VALUE:

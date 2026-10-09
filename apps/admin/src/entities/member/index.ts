@@ -129,13 +129,7 @@ export type {
  * 파일이 API 경계를 넘는 자리라 파일을 나눠 두었다.
  */
 export { exportMemberRoster, fetchMemberRosterPreview, MEMBER_ROSTER_ERROR } from "./api/member-roster";
-export type {
-  MemberRosterExportInput,
-  MemberRosterPreview,
-  MemberRosterPreviewInput,
-  RosterPositionNotation,
-  RosterSemester,
-} from "./api/member-roster";
+export type { MemberRosterExportInput, MemberRosterPreview, RosterSemester } from "./api/member-roster";
 
 /*
  * 회원 변경 이력 통합 조회 (#51 · 서버 #82).

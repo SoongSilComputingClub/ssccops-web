@@ -4,9 +4,13 @@ import { apiFetch, apiFetchFile, type ApiFile } from "@/shared/lib/api/client";
 /*
  * 회원명부 내려받기 (#785 · 서버 #674 · 상위 ssccops#598).
  *
- * 동아리연합회 회원명부 양식을 채운 xlsx를 서버가 만들어 준다 — 화면은 연도·학기와 옵션 둘을
+ * 동아리연합회 회원명부 양식을 채운 xlsx를 서버가 만들어 준다 — 화면은 연도·학기와 포함할 상태를
  * 넘기고 받은 파일을 저장할 뿐이다. 누구를 넣고 직책을 무엇으로 적을지, 제목과 파일 이름은
  * 전부 서버가 정한다. 화면이 그 규칙을 다시 만들면 두 벌이 된다.
+ *
+ * 직책은 언제나 동아리연합회 표기법이다 — 회장·부회장 외 모든 회원이 «정회원»이다(#791 · 서버 #678).
+ * 예전에는 `positionNotation`으로 SSCC 표기법(대표 역할 이름)을 고를 수 있었는데 회장이 연합회
+ * 표기법만 쓴다고 답해(ssccops#600) 서버가 옵션을 걷었다. 화면은 그 사실을 고정 안내로만 밝힌다.
  *
  * **성공 응답이 봉투가 아니라 파일이다** — 그래서 `apiFetch`가 아니라 `apiFetchFile`을 탄다.
  * 거절은 종전대로 상태 코드 + 봉투라 `ApiError`로 온다. 요구 권한은 CSV 회원 이관과 같은
@@ -17,14 +21,6 @@ import { apiFetch, apiFetchFile, type ApiFile } from "@/shared/lib/api/client";
  *
  * 미리보기(`/preview`)는 같은 조건으로 인원·제목을 먼저 받는 봉투 응답이라 `apiFetch`를 탄다.
  */
-
-/**
- * 직책 표기법 (서버 `RosterPositionNotation`).
- *
- * 회장·부회장은 어느 쪽이든 «회장»·«부회장»이고, 갈리는 것은 그 밖의 회원이다 — `FEDERATION`은
- * 전원 «정회원», `SSCC`는 그 회원의 대표 역할 이름(없으면 빈칸)이다.
- */
-export type RosterPositionNotation = "FEDERATION" | "SSCC";
 
 /** 학기 — 서버에는 학기 개념이 없어 이 값이 제목과 파일 이름에만 쓰인다(명단을 거르지 않는다) */
 export type RosterSemester = 1 | 2;
@@ -37,12 +33,13 @@ export type RosterSemester = 1 | 2;
  */
 export const MEMBER_ROSTER_ERROR = {
   /**
-   * 오늘 기준으로 유효한 회장이 없다 (409). **옵션과 무관하다** — 어떤 상태·표기법을 골라도 같다.
+   * 오늘 기준으로 유효한 회장이 없다 (409). **옵션과 무관하다** — 어떤 상태를 골라도 같다.
    * 역할 관리에서 회장을 배정해야 풀린다. 부회장은 없어도 거절하지 않는다.
    */
   PRESIDENT_MISSING: "ROSTER_PRESIDENT_MISSING",
 } as const;
 
+/** 내려받기와 미리보기가 함께 싣는 조건 */
 export interface MemberRosterExportInput {
   /** 서버가 2000~2999만 받는다 — 화면은 올해 앞뒤 한 해만 내놓는다 */
   year: number;
@@ -55,7 +52,6 @@ export interface MemberRosterExportInput {
    * 들어간다 — 서버의 고정 규칙이라 여기 옵션이 없다.
    */
   mbrSttsCds: readonly MbrSttsCd[];
-  positionNotation: RosterPositionNotation;
 }
 
 /**
@@ -64,18 +60,12 @@ export interface MemberRosterExportInput {
  * 상태는 회원 목록 필터처럼 같은 이름(`mbrSttsCd`)을 **여러 번** 싣는다. 파일 이름은 응답의
  * `Content-Disposition`(`filename*`)이며 서버가 CORS로 노출한다.
  *
- * 거절: 400 `VALIDATION_FAILED`(연도·학기) · 400 `INVALID_CODE_VALUE`(모르는 상태·표기법) ·
+ * 거절: 400 `VALIDATION_FAILED`(연도·학기) · 400 `INVALID_CODE_VALUE`(모르는 상태) ·
  * 403 `FORBIDDEN` · 409 `ROSTER_PRESIDENT_MISSING`.
  */
 export async function exportMemberRoster(input: MemberRosterExportInput): Promise<ApiFile> {
-  const query = rosterQuery(input);
-  query.set("positionNotation", input.positionNotation);
-
-  return apiFetchFile(`/v1/members/roster-export?${query.toString()}`);
+  return apiFetchFile(`/v1/members/roster-export?${rosterQuery(input).toString()}`);
 }
-
-/** 미리보기 조건 — 표기법은 인원·제목을 바꾸지 않아 싣지 않는다 */
-export type MemberRosterPreviewInput = Omit<MemberRosterExportInput, "positionNotation">;
 
 /**
  * 회원명부 미리보기 (#789 · 서버 `MemberRosterPreviewResponse`).
@@ -109,13 +99,13 @@ export interface MemberRosterPreview {
  * `VALIDATION_FAILED`·`INVALID_CODE_VALUE` · 403 `FORBIDDEN`.
  */
 export async function fetchMemberRosterPreview(
-  input: MemberRosterPreviewInput,
+  input: MemberRosterExportInput,
 ): Promise<MemberRosterPreview> {
   return apiFetch<MemberRosterPreview>(`/v1/members/roster-export/preview?${rosterQuery(input).toString()}`);
 }
 
 /* 내려받기와 미리보기가 같은 조건을 같은 모양으로 싣는다 — 상태는 같은 이름을 여러 번 */
-function rosterQuery(input: MemberRosterPreviewInput): URLSearchParams {
+function rosterQuery(input: MemberRosterExportInput): URLSearchParams {
   const query = new URLSearchParams();
   query.set("year", String(input.year));
   query.set("semester", String(input.semester));
