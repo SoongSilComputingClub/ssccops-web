@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { RosterPositionNotation, RosterSemester } from "@/entities/member";
+import type { RosterSemester } from "@/entities/member";
 import { CAPABILITY } from "@/entities/session";
 import { useCan } from "@/features/auth";
 import {
@@ -18,7 +18,7 @@ import { Button, Card, EmptyState, Field, PageBody, PageHeader, SelectField } fr
  * 회원명부 내보내기 (#785 · 서버 #674 · 상위 ssccops#598).
  *
  * 운영진이 학기마다 동아리연합회에 내는 회원명부를 서버가 원본 양식 그대로 xlsx로 만든다. 화면은
- * **연도·학기와 옵션 둘을 받아 내려받기만** 한다 — 누구를 넣고 무엇으로 적을지는 서버 규칙이다.
+ * **연도·학기와 포함할 상태를 받아 내려받기만** 한다 — 누구를 넣고 무엇으로 적을지는 서버 규칙이다.
  *
  * ── 순서가 «누가 들어가나 → 파일 이름»이다 (#789) ───────────────
  * 위에서부터 포함할 상태 · 직책 표기법 · 명단 미리보기(기준일 · 인원 · 빠지는 이유)이고, 연도·학기는
@@ -32,34 +32,9 @@ import { Button, Card, EmptyState, Field, PageBody, PageHeader, SelectField } fr
  * 하나뿐이라 잠긴 버튼만 남은 화면은 뜻이 없다.
  */
 
-/*
- * 직책 표기법 두 선택지 — 이름과 설명은 Story(ssccops#598) 표가 정본이다.
- *
- * 체크박스 하나(«실제 역할로 표기»)가 아니라 이름과 설명을 붙인 라디오인 것은 끈 상태가 무엇인지
- * 화면만 봐서는 알 수 없어서다. 체크박스 둘이 아닌 것은 서로 배타라 «둘 다»·«둘 다 아님»이라는
- * 뜻 없는 상태가 생기기 때문이다.
- */
-const NOTATION_OPTIONS: readonly {
-  value: RosterPositionNotation;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: "FEDERATION",
-    label: "동아리연합회 표기법",
-    description: "동아리연합회 제출용입니다. 회장·부회장 외 모든 회원을 ‘정회원’으로 적습니다.",
-  },
-  {
-    value: "SSCC",
-    label: "SSCC 표기법",
-    description:
-      "동아리 내부용입니다. SSCC 직책 체계대로 회장·부회장 외 회원은 대표 역할로 적고, 대표 역할이 없으면 비워 둡니다.",
-  },
-];
-
 const SEMESTERS: readonly RosterSemester[] = [1, 2];
 
-/* 묶음 제목 — `Field`의 라벨과 같은 모양이다(체크박스·라디오 묶음은 `<fieldset>`이라 직접 그린다) */
+/* 묶음 제목 — `Field`의 라벨과 같은 모양이다(체크박스 묶음은 `<fieldset>`이라 직접 그린다) */
 const LEGEND = "mb-[8px] block text-[13.5px] text-n400";
 
 export function MemberRosterExportPage() {
@@ -95,7 +70,7 @@ function RosterExportForm() {
 
         <Card className="flex max-w-[720px] flex-col gap-6">
           <StatusSection roster={roster} disabled={loading} />
-          <NotationSection roster={roster} disabled={loading} />
+          <NotationSection />
           <PreviewSection roster={roster} />
           <FileNameSection roster={roster} disabled={loading} />
 
@@ -301,46 +276,27 @@ function PreviewSection({ roster }: Readonly<{ roster: MemberRosterExport }>) {
   );
 }
 
-/** 직책 표기법 — 선택지마다 이름 아래 설명을 붙여 무엇이 다른지 화면에서 바로 읽히게 한다 */
-function NotationSection({ roster, disabled }: Readonly<{ roster: MemberRosterExport; disabled: boolean }>) {
+/**
+ * 직책 표기법 — 고를 것이 없는 고정 안내다 (#791 · 서버 #678).
+ *
+ * 직책은 언제나 동아리연합회 표기법이다(회장이 SSCC 표기법은 필요 없다고 답했다 · ssccops#600). 라디오를
+ * 지우기만 하면 직책이 무엇으로 적히는지 화면에서 사라지므로 같은 자리에 규칙을 적는다 — 임시회원
+ * 제외·회장단 포함을 체크박스 없이 한 줄로 밝히는 것과 같은 방식이다. 잠긴 라디오나 선택 카드 모양은
+ * 쓰지 않는다. 고를 수 없는 선택지는 «다른 선택지가 막혀 있다»로 읽혀 이유를 찾게 만든다.
+ *
+ * 등급과 무관하다는 둘째 줄이 요점이다. 연합회 양식의 «정회원»은 회원 등급의 정회원과 이름만 같아,
+ * 회원 목록에서 등급을 보고 온 운영진이 «준회원이 왜 정회원이냐»를 묻게 된다.
+ */
+function NotationSection() {
   return (
-    <fieldset className="min-w-0">
-      <legend className={LEGEND}>직책 표기법</legend>
-      <div className="flex flex-col gap-[10px]">
-        {NOTATION_OPTIONS.map((option) => {
-          const checked = roster.notation === option.value;
-          return (
-            <label
-              key={option.value}
-              className={cn(
-                "flex items-start gap-[10px] rounded-[12px] border px-[14px] py-3 transition-colors",
-                checked ? "border-accent bg-accent-soft" : "border-line bg-surface hover:border-line-strong",
-                disabled ? "cursor-default" : "cursor-pointer",
-              )}
-            >
-              <input
-                type="radio"
-                name="roster-position-notation"
-                value={option.value}
-                className="mt-[3px] size-[17px] flex-none accent-accent disabled:cursor-not-allowed"
-                checked={checked}
-                onChange={() => roster.setNotation(option.value)}
-                disabled={disabled}
-              />
-              {/*
-                이름은 `<label>` 아래 두 단계 안에 둔다 (Sonar S6853). 검사기가 라벨 글자를 두 단계까지만
-                찾아, span을 한 겹 더 씌우면 «글자 없는 라벨»이 된다(#786 머지 뒤 게이트가 이것으로 실패했다).
-              */}
-              <span className="min-w-0 text-[15px] font-medium">
-                {option.label}
-                <span className="mt-[2px] block text-[13.5px] font-normal leading-[1.6] text-n500">
-                  {option.description}
-                </span>
-              </span>
-            </label>
-          );
-        })}
+    <section aria-label="직책 표기법">
+      <div className={LEGEND}>직책 표기법</div>
+      <div className="text-[14px] leading-[1.6]">
+        동아리연합회 표기법으로 적습니다. 회장·부회장은 그대로, 그 외 모든 회원은 ‘정회원’입니다.
       </div>
-    </fieldset>
+      <div className="mt-[6px] text-[13px] leading-[1.6] text-n500">
+        회원 등급(준회원·활동회원 등)과 관계없이 ‘정회원’으로 적힙니다.
+      </div>
+    </section>
   );
 }

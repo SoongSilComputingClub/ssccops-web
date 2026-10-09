@@ -35,7 +35,7 @@ export {
   toMemberImportErrorMessage,
   toMemberImportExecuteErrorMessage,
 } from "./model/import-error";
-/* 회원명부 내려받기 (#785 · 서버 #674) — 연도·학기와 옵션 둘만 받고 xlsx는 서버가 만든다 */
+/* 회원명부 내려받기 (#785 · 서버 #674) — 연도·학기와 포함할 상태만 받고 xlsx는 서버가 만든다 */
 export {
   useMemberRosterExport,
   type MemberRosterExport,

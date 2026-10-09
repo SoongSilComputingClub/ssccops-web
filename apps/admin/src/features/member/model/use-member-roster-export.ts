@@ -6,7 +6,6 @@ import {
   fetchMemberRosterPreview,
   type MemberRosterPreview,
   type MemberStatusOption,
-  type RosterPositionNotation,
   type RosterSemester,
 } from "@/entities/member";
 import { syncSessionOnForbidden } from "@/entities/session";
@@ -23,7 +22,8 @@ import { useMemberCodes } from "./use-member-codes";
 /*
  * 회원명부 내려받기 화면의 상태 (#785 · 서버 #674 · 상위 ssccops#598).
  *
- * 화면이 받는 것은 연도·학기와 옵션 둘(포함할 상태 · 직책 표기법)뿐이고 나머지는 서버가 정한다.
+ * 화면이 받는 것은 연도·학기와 포함할 상태뿐이고 나머지는 서버가 정한다. 직책 표기법도 고르지
+ * 않는다 — 언제나 동아리연합회 표기법이다(#791 · 서버 #678).
  * 내려받기는 이펙트가 아니라 **누르는 순간의 함수**다 — 응답 CSV·참가자 명단 CSV와 같다.
  *
  * 미리보기는 반대로 **조건이 바뀔 때마다** 받는다(#789 · 서버 `/preview`). 회원 목록은 16명인데 명부는
@@ -33,9 +33,6 @@ import { useMemberCodes } from "./use-member-codes";
 
 /** 기본으로 체크해 두는 상태 — 재학만 (Story 결정) */
 const DEFAULT_STATUSES: readonly MbrSttsCd[] = ["ENROLLED"];
-
-/** 기본 직책 표기법 — 연합회 제출용이 이 화면의 본래 쓰임이다 */
-const DEFAULT_NOTATION: RosterPositionNotation = "FEDERATION";
 
 /*
  * 응답에서 파일 이름을 읽지 못했을 때만 쓰는 이름이다.
@@ -84,9 +81,6 @@ export interface MemberRosterExport {
   /** 고른 상태가 하나도 없다 — 버튼을 잠그고 사유를 체크박스 아래에 적는다 */
   noStatusChosen: boolean;
 
-  notation: RosterPositionNotation;
-  setNotation: (notation: RosterPositionNotation) => void;
-
   /** 버튼을 잠근 사유 — 잠겨 있지 않으면 null */
   blockReason: string | null;
   status: MemberRosterExportStatus;
@@ -125,7 +119,6 @@ export function useMemberRosterExport(): MemberRosterExport {
   const [year, setYear] = useState(initialTerm.year);
   const [semester, setSemester] = useState<RosterSemester>(initialTerm.semester);
   const [checked, setChecked] = useState<ReadonlySet<MbrSttsCd>>(() => new Set(DEFAULT_STATUSES));
-  const [notation, setNotation] = useState<RosterPositionNotation>(DEFAULT_NOTATION);
 
   const [status, setStatus] = useState<MemberRosterExportStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -203,7 +196,7 @@ export function useMemberRosterExport(): MemberRosterExport {
     setErrorMessage("");
     setPresidentMissing(false);
 
-    exportMemberRoster({ year, semester, mbrSttsCds: chosen, positionNotation: notation })
+    exportMemberRoster({ year, semester, mbrSttsCds: chosen })
       .then(({ blob, filename }) => {
         downloadBlob(filename ?? FALLBACK_FILENAME, blob);
         setStatus("idle");
@@ -232,8 +225,6 @@ export function useMemberRosterExport(): MemberRosterExport {
     isStatusChecked: (code) => checked.has(code),
     toggleStatus,
     noStatusChosen,
-    notation,
-    setNotation,
     blockReason,
     status,
     errorMessage,
