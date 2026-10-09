@@ -128,9 +128,11 @@ export type {
  * 성공 응답이 봉투가 아니라 xlsx 파일이라 전송 경로가 다르다(`apiFetchFile`) — CSV 이관처럼
  * 파일이 API 경계를 넘는 자리라 파일을 나눠 두었다.
  */
-export { exportMemberRoster, MEMBER_ROSTER_ERROR } from "./api/member-roster";
+export { exportMemberRoster, fetchMemberRosterPreview, MEMBER_ROSTER_ERROR } from "./api/member-roster";
 export type {
   MemberRosterExportInput,
+  MemberRosterPreview,
+  MemberRosterPreviewInput,
   RosterPositionNotation,
   RosterSemester,
 } from "./api/member-roster";

@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   exportMemberRoster,
+  fetchMemberRosterPreview,
+  type MemberRosterPreview,
   type MemberStatusOption,
   type RosterPositionNotation,
   type RosterSemester,
@@ -11,7 +13,11 @@ import { syncSessionOnForbidden } from "@/entities/session";
 import type { MbrSttsCd } from "@/shared/config/codes";
 import { todayInSeoul } from "@/shared/lib/date";
 import { downloadBlob } from "@/shared/lib/download-blob";
-import { isRosterPresidentMissing, toMemberRosterExportErrorMessage } from "./roster-export-error";
+import {
+  isRosterPresidentMissing,
+  toMemberRosterExportErrorMessage,
+  toMemberRosterPreviewErrorMessage,
+} from "./roster-export-error";
 import { useMemberCodes } from "./use-member-codes";
 
 /*
@@ -19,6 +25,10 @@ import { useMemberCodes } from "./use-member-codes";
  *
  * 화면이 받는 것은 연도·학기와 옵션 둘(포함할 상태 · 직책 표기법)뿐이고 나머지는 서버가 정한다.
  * 내려받기는 이펙트가 아니라 **누르는 순간의 함수**다 — 응답 CSV·참가자 명단 CSV와 같다.
+ *
+ * 미리보기는 반대로 **조건이 바뀔 때마다** 받는다(#789 · 서버 `/preview`). 회원 목록은 16명인데 명부는
+ * 8줄이라 «숫자가 안 맞는다»는 질문이 나왔고(2026-10-09 · 원인은 임시회원 제외), 연도 선택이
+ * 명단을 거르는 줄 알았다는 말도 함께 나왔다 — 줄 수·빠지는 이유·파일 제목을 누르기 전에 보여 준다.
  */
 
 /** 기본으로 체크해 두는 상태 — 재학만 (Story 결정) */
@@ -84,6 +94,24 @@ export interface MemberRosterExport {
   /** 회장이 없어 거절됐다 — 화면이 역할 관리 링크를 함께 둔다 */
   presidentMissing: boolean;
   download: () => void;
+
+  /**
+   * 지금 고른 연도·학기·상태의 미리보기. 버튼이 잠겨 있으면 묻지 않아 null이다.
+   *
+   * 조건을 바꾸는 동안에는 직전 값을 그대로 두고 `previewLoading`만 켠다 — 체크박스를 누를 때마다
+   * 숫자 자리가 비었다 채워지며 줄이 흔들리지 않게. 실패하면 null이고 사유는 `previewErrorMessage`다.
+   */
+  preview: MemberRosterPreview | null;
+  previewLoading: boolean;
+  /** 미리보기를 받지 못한 사유 — 내려받기는 막지 않는다. 비어 있으면 정상 */
+  previewErrorMessage: string;
+}
+
+/* 마지막으로 받은 미리보기와 그것을 물은 조건 — 조건이 바뀌면 key가 달라져 «받는 중»이 된다 */
+interface LoadedPreview {
+  key: string;
+  preview: MemberRosterPreview | null;
+  errorMessage: string;
 }
 
 export function useMemberRosterExport(): MemberRosterExport {
@@ -111,7 +139,10 @@ export function useMemberRosterExport(): MemberRosterExport {
    * 코드(기본값 `ENROLLED`가 기준 코드에서 빠진 경우)를 보내면 화면에 보이지 않는 조건으로
    * 내려받게 된다.
    */
-  const chosen = codes.statuses.filter((s) => checked.has(s.code)).map((s) => s.code);
+  const chosen = useMemo(
+    () => codes.statuses.filter((s) => checked.has(s.code)).map((s) => s.code),
+    [codes.statuses, checked],
+  );
   const statusesFailed = !codes.loading && codes.statuses.length === 0;
   const noStatusChosen = !codes.loading && !statusesFailed && chosen.length === 0;
 
@@ -119,6 +150,42 @@ export function useMemberRosterExport(): MemberRosterExport {
   if (codes.loading) blockReason = "회원 상태 목록을 불러오는 중입니다";
   else if (statusesFailed) blockReason = "회원 상태 목록을 불러오지 못했습니다 — 새로고침해주세요";
   else if (noStatusChosen) blockReason = "포함할 회원 상태를 하나 이상 골라주세요";
+
+  /*
+   * 미리보기. 잠긴 동안(상태 목록 대기·실패·아무것도 안 고름)은 묻지 않는다 — 내려받을 수 없는
+   * 조건의 인원은 보여 줄 이유가 없다. 늦게 온 옛 조건의 응답은 key가 달라 버린다(use-my-responses와 같다).
+   */
+  const previewKey = blockReason === null ? `${year}|${semester}|${chosen.join(",")}` : null;
+  const [loadedPreview, setLoadedPreview] = useState<LoadedPreview | null>(null);
+
+  useEffect(() => {
+    if (previewKey === null) return;
+    let alive = true;
+
+    fetchMemberRosterPreview({ year, semester, mbrSttsCds: chosen })
+      .then((preview) => {
+        if (alive) setLoadedPreview({ key: previewKey, preview, errorMessage: "" });
+      })
+      .catch((error: unknown) => {
+        syncSessionOnForbidden(error);
+        if (alive) {
+          setLoadedPreview({
+            key: previewKey,
+            preview: null,
+            errorMessage: toMemberRosterPreviewErrorMessage(error),
+          });
+        }
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [previewKey, year, semester, chosen]);
+
+  const previewCurrent = previewKey !== null && loadedPreview?.key === previewKey;
+  const preview = previewKey === null ? null : (loadedPreview?.preview ?? null);
+  const previewLoading = previewKey !== null && !previewCurrent;
+  const previewErrorMessage = previewCurrent ? loadedPreview.errorMessage : "";
 
   const toggleStatus = (code: MbrSttsCd) => {
     setChecked((prev) => {
@@ -172,5 +239,8 @@ export function useMemberRosterExport(): MemberRosterExport {
     errorMessage,
     presidentMissing,
     download,
+    preview,
+    previewLoading,
+    previewErrorMessage,
   };
 }
