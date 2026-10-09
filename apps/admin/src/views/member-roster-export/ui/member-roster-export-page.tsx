@@ -280,22 +280,23 @@ function PreviewSection({ roster }: Readonly<{ roster: MemberRosterExport }>) {
  * 직책 표기법 — 고를 것이 없는 고정 안내다 (#791 · 서버 #678).
  *
  * 직책은 언제나 동아리연합회 표기법이다(회장이 SSCC 표기법은 필요 없다고 답했다 · ssccops#600). 라디오를
- * 지우기만 하면 직책이 무엇으로 적히는지 화면에서 사라지므로 같은 자리에 규칙을 적는다 — 임시회원
- * 제외·회장단 포함을 체크박스 없이 한 줄로 밝히는 것과 같은 방식이다. 잠긴 라디오나 선택 카드 모양은
- * 쓰지 않는다. 고를 수 없는 선택지는 «다른 선택지가 막혀 있다»로 읽혀 이유를 찾게 만든다.
+ * 지우기만 하면 직책이 무엇으로 적히는지 화면에서 사라지므로 같은 자리에 규칙을 적는다.
  *
- * 등급과 무관하다는 둘째 줄이 요점이다. 연합회 양식의 «정회원»은 회원 등급의 정회원과 이름만 같아,
+ * 파란 테두리 상자(예전 «선택됨» 카드와 같은 색)로 «이 표기법으로 적힌다»를 눈에 띄게 둔다. 라디오
+ * 점·hover·포인터는 없다 — 고를 수 없는 선택지는 «다른 선택지가 막혀 있다»로 읽혀 이유를 찾게 만든다.
+ *
+ * 등급과 무관하다는 문장이 요점이다. 연합회 양식의 «정회원»은 회원 등급의 정회원과 이름만 같아,
  * 회원 목록에서 등급을 보고 온 운영진이 «준회원이 왜 정회원이냐»를 묻게 된다.
  */
 function NotationSection() {
   return (
     <section aria-label="직책 표기법">
       <div className={LEGEND}>직책 표기법</div>
-      <div className="text-[14px] leading-[1.6]">
-        동아리연합회 표기법으로 적습니다. 회장·부회장은 그대로, 그 외 모든 회원은 ‘정회원’입니다.
-      </div>
-      <div className="mt-[6px] text-[13px] leading-[1.6] text-n500">
-        회원 등급(준회원·활동회원 등)과 관계없이 ‘정회원’으로 적힙니다.
+      <div className="rounded-[12px] border border-accent bg-accent-soft px-[14px] py-3">
+        <div className="text-[15px] font-medium">동아리연합회 표기법</div>
+        <div className="mt-[2px] text-[13.5px] leading-[1.6] text-n500">
+          회장·부회장 외 모든 회원을 ‘정회원’으로 적습니다. 회원 등급(준회원·활동회원 등)과 관계없습니다.
+        </div>
       </div>
     </section>
   );
