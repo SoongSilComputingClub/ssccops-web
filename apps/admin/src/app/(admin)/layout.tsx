@@ -21,7 +21,11 @@ export default function AdminLayout({ children }: Readonly<LayoutProps<"/">>) {
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileNav />
-        <div className="flex min-h-0 flex-1 flex-col">
+        {/*
+          `group/page` — 페이지 제목(PageHeader)이 형제인 본문(PageBody)의 스크롤 상태를 읽는 자리다
+          (#798 · ssccops#535). `shared/ui/page-header.tsx` 주석.
+        */}
+        <div className="group/page flex min-h-0 flex-1 flex-col">
           <AuthGate>
             {children}
             {/*

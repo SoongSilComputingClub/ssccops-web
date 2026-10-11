@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Link from "next/link";
-import { BrandMark, deployMarks } from "@ssccops/ui";
+import { BrandMark, SiteHeader, deployMarks } from "@ssccops/ui";
 import { OfflineBanner, ServiceWorkerRegister } from "@ssccops/pwa/ui";
 import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { AuthNav } from "@/features/auth";
@@ -145,32 +145,33 @@ export default async function RootLayout({ children }: Readonly<LayoutProps<"/">
          * 드로어가 함께 쓴다. 로그인 여부에 따라 갈리는 오른쪽 끝만 클라이언트 컴포넌트(AuthNav)다 —
          * 테마·홈페이지 링크·«내 정보»·로그아웃은 그 안의 계정 메뉴에 들어갔고 상단 바에 따로
          * 서지 않는다.
+         *
+         * 껍데기는 `@ssccops/ui` `SiteHeader`(www와 한 벌 · #798 · ssccops#535) — 고정 + 스크롤한 뒤에만
+         * 경계, 폭은 www와 같은 `max-w-shell`(1120px). 그 안의 목차·역할 판정은 이 앱의 것이다.
          */}
-        <header className="border-b border-line bg-surface">
-          <div className="mx-auto flex max-w-[1000px] items-center gap-[10px] px-[20px] py-[12px] lg:px-[28px]">
-            <MobileNav isLeader={isLeader} />
-            {/* 로고는 첫 화면(`/`)으로 — 스터디장은 거기서 대시보드로 곧장 넘어간다 (#228) */}
-            <Link href={ROUTES.home} className="flex items-center gap-[8px]">
-              <BrandMark src={DEPLOY.mark} size={26} />
-              <b className="text-[15px]">SSCC 학술</b>
-            </Link>
-            <DesktopNav isLeader={isLeader} />
-            <div className="flex-1" />
-            {/*
-             * 종 + 배지 값 듣기 — 로그인한 사람에게만, `AuthNav`의 그 가지에 (#606 · ADR-0045).
-             * 드로어가 아니라 상단 바인 것은 열지 않고도 배지가 보여야 해서다.
-             */}
-            <AuthNav
-              signedInSlot={
-                <>
-                  <UnreadCountSync />
-                  <NotificationBell />
-                </>
-              }
-            />
-          </div>
-        </header>
-        <main className="mx-auto max-w-[1000px] px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">
+        <SiteHeader>
+          <MobileNav isLeader={isLeader} />
+          {/* 로고는 첫 화면(`/`)으로 — 스터디장은 거기서 대시보드로 곧장 넘어간다 (#228) */}
+          <Link href={ROUTES.home} className="flex items-center gap-[8px]">
+            <BrandMark src={DEPLOY.mark} size={26} />
+            <b className="text-[15px]">SSCC 학술</b>
+          </Link>
+          <DesktopNav isLeader={isLeader} />
+          <div className="flex-1" />
+          {/*
+           * 종 + 배지 값 듣기 — 로그인한 사람에게만, `AuthNav`의 그 가지에 (#606 · ADR-0045).
+           * 드로어가 아니라 상단 바인 것은 열지 않고도 배지가 보여야 해서다.
+           */}
+          <AuthNav
+            signedInSlot={
+              <>
+                <UnreadCountSync />
+                <NotificationBell />
+              </>
+            }
+          />
+        </SiteHeader>
+        <main className="mx-auto max-w-shell px-[20px] py-[22px] lg:px-[28px] lg:py-[26px]">
           {/*
            * 지금 묶음의 하위 탭줄 (#169 개편). 상단 바가 «어느 묶음인가»를, 이 줄이 «그
            * 묶음의 어느 화면인가»를 말한다 — 여덟 항목이 상단 바 한 줄에 서면서 라벨이 두

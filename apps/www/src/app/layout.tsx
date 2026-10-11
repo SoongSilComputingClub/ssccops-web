@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Link from "next/link";
-import { BrandMark, deployMarks } from "@ssccops/ui";
+import { BrandMark, SiteHeader, deployMarks } from "@ssccops/ui";
 import { AuthNav } from "@/features/auth";
 import { NotificationBell, UnreadCountSync } from "@/features/notification";
 import { OfflineBanner, ServiceWorkerRegister } from "@/features/pwa";
@@ -13,7 +13,6 @@ import { THEME_INIT_SCRIPT } from "@/shared/lib/theme";
 import { DesktopNav } from "./_shell/desktop-nav";
 import { MobileNav } from "./_shell/mobile-nav";
 import { SiteFooter } from "./_shell/site-footer";
-import { SiteHeader } from "./_shell/site-header";
 import { ON_VERCEL } from "@/shared/lib/vercel";
 import "./globals.css";
 
@@ -158,7 +157,7 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
        * 푸터가 짧은 화면에서도 바닥에 붙도록 body를 세로 flex로 두고 main이 남는 높이를 차지한다
        * (#520). 상단 바는 `[☰(lg 미만)] [브랜드] [1차 메뉴(lg)] ──── [종 자리] [계정 메뉴 | 로그인]`
        * (#167 → #614 · ssccops#452). 메뉴 목차는 `_shell/nav-links.ts` 한 벌(다섯 축 · ADR-0056)을
-       * 데스크톱 메뉴와 모바일 드로어가 함께 쓴다. **껍데기는 `_shell/site-header.tsx`**다 —
+       * 데스크톱 메뉴와 모바일 드로어가 함께 쓴다. **껍데기는 `@ssccops/ui` `SiteHeader`**다(lms와 한 벌 · #798) —
        * 고정(`sticky`)과 «스크롤한 뒤에만 경계»가 브라우저 값이라 그 한 겹만 클라이언트다(#721).
        * 로그인 여부에 따라 갈리는 오른쪽 끝만 클라이언트
        * 컴포넌트(AuthNav)로 두어, 익명 공개인 목록·상세 렌더에 세션 조회가 끼어들지 않게 한다(#150).

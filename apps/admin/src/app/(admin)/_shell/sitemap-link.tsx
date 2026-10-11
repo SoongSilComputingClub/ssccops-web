@@ -30,9 +30,9 @@ export function SitemapLink({
       aria-current={active ? "page" : undefined}
       onClick={onClick}
       className={cn(
-        "flex min-h-[40px] touch-manipulation items-center gap-[9px] px-[18px] py-[8px] text-[14px] hover:bg-accent/6",
+        "flex min-h-[40px] touch-manipulation items-center gap-[9px] px-[18px] py-[8px] text-[14px] hover:bg-bg",
         NAV_FOCUS,
-        active ? "text-accent-strong" : "text-n400",
+        active ? "text-accent" : "text-n400",
         className,
       )}
     >
