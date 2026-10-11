@@ -31,14 +31,20 @@
   --color-bg: #f2f4f6;
   --color-surface: #ffffff;
   --color-ink: #191f28;
-  --color-accent: #3182f6;
-  --color-accent-strong: #1b64da;
+  /*
+   * 라이트 글자 대비 (#797 · ssccops#570 — WCAG AA 4.5 기준으로 다시 잡았다, 세 앱 같은 값).
+   * accent 위 흰 글자 5.18 · accent-soft 위 accent 4.58 · n400 5.83 · n500 4.97(bg 위 4.50).
+   * 예전 값(accent #3182f6 · n500 #8b95a1)은 3.71 · 3.04였다. accent-strong은 새 accent와
+   * hover가 구별되도록 함께 내렸다. 다크 값은 아래 블록에서 따로 실측한 것이다.
+   */
+  --color-accent: #1a68dc;
+  --color-accent-strong: #1552b8;
   --color-accent-soft: #e8f2fe;
   --color-amber: #c2620a;
   --color-amber-soft: #fff4e6;
   --color-n300: #4e5968;
-  --color-n400: #6b7684;
-  --color-n500: #8b95a1;
+  --color-n400: #5c6673;
+  --color-n500: #66717e;
   --color-line: #e5e8eb;
   --color-line-strong: #d1d6db;
   --color-danger: #f04452;
