@@ -49,6 +49,7 @@ export { ContentMarkdoc } from "./ui/markdoc/content-markdoc";
 export { validateContentMarkdoc } from "./ui/markdoc/validate";
 export { CONTENT_TAG_SNIPPETS } from "./ui/markdoc/schema";
 export { Notice } from "./ui/notice";
+export { SiteHeader } from "./ui/site-header";
 export { TextField, Field, INPUT_BASE } from "./ui/field";
 export { ThemeToggle } from "./ui/theme-toggle";
 export { Toggle } from "./ui/toggle";

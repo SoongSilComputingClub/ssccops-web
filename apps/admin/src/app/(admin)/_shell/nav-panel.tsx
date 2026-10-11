@@ -43,13 +43,13 @@ function NavRow({
         onClick={() => onNavigate(item.href)}
         onKeyDown={onKeyActivate(() => onNavigate(item.href))}
         className={cn(
-          "flex min-h-[40px] cursor-pointer touch-manipulation items-center hover:bg-accent/6",
+          "flex min-h-[40px] cursor-pointer touch-manipulation items-center hover:bg-bg",
           NAV_FOCUS,
           child
             ? "gap-2 py-2 pr-[18px] pl-[53px] text-[14.5px]"
             : "gap-[9px] py-[9px] pr-[18px] pl-[37px] text-[15px]",
           active
-            ? "bg-accent/8 text-accent-strong"
+            ? "bg-accent-soft font-semibold text-accent"
             : child
               ? "text-n500"
               : "text-n300",
@@ -146,9 +146,9 @@ export function NavPanel({
               aria-controls={panelId}
               onClick={() => onToggle(g.id)}
               className={cn(
-                "flex min-h-[40px] w-full cursor-pointer touch-manipulation items-center gap-[9px] px-[18px] py-[8px] text-left text-[14px] font-medium hover:bg-accent/6",
+                "flex min-h-[40px] w-full cursor-pointer touch-manipulation items-center gap-[9px] px-[18px] py-[8px] text-left text-[14px] font-medium hover:bg-bg",
                 NAV_FOCUS,
-                active && !open ? "text-accent-strong" : "text-n300",
+                active && !open ? "text-accent" : "text-n300",
               )}
             >
               <GroupIcon emoji={g.emoji} />

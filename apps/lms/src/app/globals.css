@@ -59,6 +59,15 @@
   --color-hairline: rgb(0 0 0 / 0.05); /* 얇은 구분선 */
   --color-hairline-strong: rgb(0 0 0 / 0.08); /* 셸 경계 */
   --color-scrim: rgb(0 0 0 / 0.45); /* 모달·드로어 뒤 */
+
+  /*
+   * 고정 헤더 (#798 · ssccops#535 — www #721에서 정한 이름·값 그대로). `header`는 본문이 밑으로
+   * 지나가는 것이 비쳐야 해서 반투명이고, 알파를 수정자(`bg-surface/80`)로 주면 다크에서 그
+   * 자리만 라이트 값에 알파가 걸리므로 값에 담는다. `header-edge`는 스크롤한 뒤 헤더 아래 그림자다.
+   */
+  --color-header: rgb(255 255 255 / 0.82);
+  --color-header-edge: rgb(0 0 0 / 0.06);
+
   --color-subtle: #f9fafb; /* 살짝 눌린 배경 — 코드·인용 상자 */
 
   /*
@@ -73,6 +82,11 @@
   --color-white: #ffffff;
   --color-black: #000000;
   --color-transparent: transparent;
+
+  /*
+   * 셸 폭 (#798 · ssccops#535 — www #721과 같은 값). 상단 바와 본문이 www와 같은 폭에 선다.
+   */
+  --container-shell: 1120px;
 
   --font-sans: "Pretendard Variable", Pretendard, -apple-system,
     BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
@@ -125,6 +139,11 @@
     --color-hairline: rgb(255 255 255 / 0.09);
     --color-hairline-strong: rgb(255 255 255 / 0.13);
     --color-scrim: rgb(0 0 0 / 0.66);
+
+    /* 고정 헤더 — 면은 다크 surface(#1f1f26)에 같은 알파, 그림자는 어두운 바탕이라 더 진하게 */
+    --color-header: rgb(31 31 38 / 0.82);
+    --color-header-edge: rgb(0 0 0 / 0.5);
+
     --color-subtle: #232a33;
 
     --color-on-solid: #12131a;
@@ -158,6 +177,10 @@
   --color-hairline: rgb(255 255 255 / 0.09);
   --color-hairline-strong: rgb(255 255 255 / 0.13);
   --color-scrim: rgb(0 0 0 / 0.66);
+
+  --color-header: rgb(31 31 38 / 0.82);
+  --color-header-edge: rgb(0 0 0 / 0.5);
+
   --color-subtle: #232a33;
 
   --color-on-solid: #12131a;
