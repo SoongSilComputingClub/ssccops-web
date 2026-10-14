@@ -1,7 +1,12 @@
-import type { MyFormResponseDetail, QitemCpstCn } from "@/entities/response";
+import type {
+  MyFormResponseDetail,
+  ProposalAttachmentList,
+  QitemCpstCn,
+} from "@/entities/response";
 import { RESPONSE_ERROR } from "@/entities/response";
 // 서버 전용 조회는 배럴이 재export 하지 않는다 — 직접 임포트한다
 import { fetchMyResponseDetail } from "@/entities/response/api/my-response-detail";
+import { fetchMyProposalAttachments } from "@/entities/response/api/proposal-attachments-read";
 import {
   fetchSystemForm,
   PROPOSAL_SYS_FORM_CD,
@@ -18,8 +23,13 @@ import { loadProposalErrorMessage } from "./proposal-error";
  *    재제출 폼의 문항을 그리는 데 쓴다.
  * 2. 본인 응답 상세(서버 #177) — 이전 답 전체(`rspnsCn`)와 검토 이력. 프리필의 재료다.
  *
- * 두 조회는 서로 독립이라 함께 부른다. 상세가 404 `FORM_RESPONSE_NOT_FOUND`(없는 응답 ·
+ * 3. 첨부 자료 목록(server#685 · web#805) — 응답 행에 붙은 파일. 상세와 나란히 부른다.
+ *
+ * 폼 조회 뒤에 상세·첨부를 함께 부른다. 상세가 404 `FORM_RESPONSE_NOT_FOUND`(없는 응답 ·
  * 본인 것이 아닌 응답)면 "찾을 수 없음"으로 갈라 목록으로 돌려보낸다.
+ *
+ * **첨부 조회가 실패해도 상세는 그린다** — 낸 내용·검토 이력을 못 보는 것과 첨부 목록 하나를 못
+ * 받은 것은 무게가 다르다. 그때 `attachments`는 null이고, 카드가 브라우저에서 한 번 더 받는다.
  *
  * ── 폼을 언제 여는가는 뷰가 정한다 ──────────────────────────
  * 이 로더는 상태·답·이력·문항을 모아 줄 뿐이고, `CHANGES_REQUESTED`에서만 재제출 폼을
@@ -34,6 +44,8 @@ export type ProposalDetailLoad =
       formTtlNm: string;
       qitemCpstCn: QitemCpstCn;
       detail: MyFormResponseDetail;
+      /** 서버에서 받지 못했으면 null — 카드가 브라우저에서 다시 받는다 */
+      attachments: ProposalAttachmentList | null;
     }
   /** 없는 응답 · 본인 것이 아닌 응답 */
   | { outcome: "not-found" }
@@ -47,13 +59,17 @@ export async function loadProposalDetail(
 ): Promise<ProposalDetailLoad> {
   try {
     const form = await fetchSystemForm(PROPOSAL_SYS_FORM_CD);
-    const detail = await fetchMyResponseDetail(form.formId, formRspnsId);
+    const [detail, attachments] = await Promise.all([
+      fetchMyResponseDetail(form.formId, formRspnsId),
+      fetchMyProposalAttachments(form.formId, formRspnsId).catch(() => null),
+    ]);
     return {
       outcome: "ready",
       formId: form.formId,
       formTtlNm: form.formTtlNm,
       qitemCpstCn: form.qitemCpstCn,
       detail,
+      attachments,
     };
   } catch (error: unknown) {
     if (isUnauthenticated(error)) return { outcome: "unauthenticated" };

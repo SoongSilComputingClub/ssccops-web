@@ -100,3 +100,39 @@ export interface MyFormResponseDetail {
   /** 처리 이력 — 상세가 통째로 싣는다(별도 엔드포인트 없음) */
   reviewHistories: FormResponseReviewHistory[];
 }
+
+/**
+ * 기획안 첨부 자료 한 건 — `ProposalAttachmentResponse` (server#685 · web#805 · ssccops#607).
+ *
+ * 첨부는 폼 문항이 아니라 응답 **행**(`formRspnsId`)에 붙는다 — `rspnsCn`과 섞이지 않으므로 자동
+ * 저장 PUT이 초안을 통째로 덮어써도 첨부는 그대로다. 올린 사람은 싣지 않는다(작성자 한 명뿐이고,
+ * 승인 뒤 회원 전체에게 보이는 응답이다).
+ */
+export interface ProposalAttachment {
+  fileId: number;
+  fileName: string;
+  /** 바이트 */
+  fileSize: number;
+  /** 일시TS (Asia/Seoul) */
+  uploadedAt: string;
+}
+
+/**
+ * 첨부 목록 — `ProposalAttachmentListResponse`. 사용량과 상한을 **서버 값으로** 싣는다 — 화면이
+ * 20MB·5개를 박아 두면 서버 상수를 바꾸는 날 안내만 틀린 말을 한다.
+ */
+export interface ProposalAttachmentList {
+  /** 발급 순(fileId 오름차순) */
+  attachments: ProposalAttachment[];
+  totalSize: number;
+  maxTotalSize: number;
+  maxCount: number;
+}
+
+/** 업로드 허가 — `ProposalAttachmentUploadResponse`. `contentType`은 서명에 들어 있어 PUT 헤더에 그대로 쓴다 */
+export interface ProposalAttachmentTicket {
+  fileId: number;
+  uploadUrl: string;
+  contentType: string;
+  expiresInSeconds: number;
+}

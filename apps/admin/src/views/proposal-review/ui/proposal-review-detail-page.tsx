@@ -27,6 +27,7 @@ import {
   PageHeader,
   SectionLabel,
 } from "@/shared/ui";
+import { ProposalAttachmentsCard } from "./proposal-attachments-card";
 import { ProposalCurriculumCard } from "./proposal-curriculum-card";
 import { ProposalFormGate } from "./proposal-form-gate";
 
@@ -75,6 +76,10 @@ function acceptBlockReasonOf(response: FormResponseDetail): string | undefined {
  * 아래 기획안 내용에는 제출자가 적은 **원문 그대로**, 커리큘럼 카드에는 서버가 파싱한 **회차
  * 표**가 선다. 둘을 나란히 두는 것이 이 화면의 요점이다 — 파싱이 어긋난 기획안일수록 검토자가
  * 원문을 읽어야 하는데, 표만 그리면 화면이 제출자가 쓴 것을 조용히 삼킨다.
+ *
+ * ── 첨부 자료는 기획안 내용 바로 아래 (web#805) ────────────────
+ * 제출자가 문항 밖에 함께 낸 파일이다. 검토 패널보다 위, 기획안 내용과 같은 열에 둬 승인 전에
+ * 반드시 지나가게 한다 — 승인되면 지원하는 회원 누구나 내려받는 자료다.
  */
 function ProposalReviewDetail({
   formId,
@@ -170,28 +175,31 @@ function ProposalReviewDetail({
             </Button>
           </Card>
 
-          <Card>
-            <SectionLabel className="mb-3">기획안 내용</SectionLabel>
-            <div className="flex flex-col gap-3">
-              {/* 폼의 문항 순서가 기준이다 — 답이 없는 문항도 자리를 남긴다(필수 항목이 빈 것이 보여야 한다) */}
-              {form.qitemCpstCn.qitems.map((q) => {
-                const v = rspnsValueText(response.rspnsCn, q.qitemId);
-                return (
-                  <div key={q.qitemId}>
-                    <div className="text-[13.5px] text-n500">{q.qitemLblNm}</div>
-                    {/*
-                      제출자가 적은 그대로 그린다. 줄바꿈을 살리는 것이 특히 중요한 자리다 —
-                      커리큘럼은 한 줄에 한 회차씩 여러 줄로 적는 답이라, 줄바꿈을 접으면
-                      파싱이 어긋났을 때 검토자가 무엇이 잘못됐는지 볼 수 없다.
-                    */}
-                    <div className="mt-[2px] text-[16px] leading-[1.7] break-words whitespace-pre-wrap">
-                      {v || <span className="text-n500">(응답 없음)</span>}
+          <div className="flex flex-col gap-4">
+            <Card>
+              <SectionLabel className="mb-3">기획안 내용</SectionLabel>
+              <div className="flex flex-col gap-3">
+                {/* 폼의 문항 순서가 기준이다 — 답이 없는 문항도 자리를 남긴다(필수 항목이 빈 것이 보여야 한다) */}
+                {form.qitemCpstCn.qitems.map((q) => {
+                  const v = rspnsValueText(response.rspnsCn, q.qitemId);
+                  return (
+                    <div key={q.qitemId}>
+                      <div className="text-[13.5px] text-n500">{q.qitemLblNm}</div>
+                      {/*
+                        제출자가 적은 그대로 그린다. 줄바꿈을 살리는 것이 특히 중요한 자리다 —
+                        커리큘럼은 한 줄에 한 회차씩 여러 줄로 적는 답이라, 줄바꿈을 접으면
+                        파싱이 어긋났을 때 검토자가 무엇이 잘못됐는지 볼 수 없다.
+                      */}
+                      <div className="mt-[2px] text-[16px] leading-[1.7] break-words whitespace-pre-wrap">
+                        {v || <span className="text-n500">(응답 없음)</span>}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
+                  );
+                })}
+              </div>
+            </Card>
+            <ProposalAttachmentsCard formId={formId} formRspnsId={response.formRspnsId} />
+          </div>
         </div>
 
         {/* 원문 바로 아래에 파싱 결과가 오게 둔다 — 두 개를 견주는 것이 이 화면의 일이다 */}

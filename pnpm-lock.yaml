@@ -440,6 +440,9 @@ importers:
       '@markdoc/markdoc':
         specifier: ^0.5.10
         version: 0.5.10(@types/react@19.2.18)(react@19.2.8)
+      '@ssccops/date':
+        specifier: workspace:*
+        version: link:../date
       react:
         specifier: ^19.2.0
         version: 19.2.8

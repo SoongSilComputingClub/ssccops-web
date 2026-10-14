@@ -47,3 +47,27 @@ export interface AcademicProgramSummary {
   /** 내가 이 활동의 스터디장/팀장인가 — 서버 판정(재계산 금지) */
   isLeader: boolean;
 }
+
+/**
+ * 학술 프로그램이 태어난 기획안의 첨부 자료 한 건 — `ProposalAttachmentResponse`
+ * (server#685 · web#805 · ssccops#607). 이름은 서버 DTO 그대로다.
+ *
+ * 승인한 그대로가 보인다 — 활동 쪽에 따로 붙인 첨부가 아니라 원 기획안 응답의 첨부다. 올린 사람은
+ * 싣지 않는다.
+ */
+export interface ProposalAttachment {
+  fileId: number;
+  fileName: string;
+  /** 바이트 */
+  fileSize: number;
+  /** 일시TS (Asia/Seoul) */
+  uploadedAt: string;
+}
+
+/** 첨부 목록 — `ProposalAttachmentListResponse`. 이 앱은 목록만 쓰고 사용량·상한은 보이지 않는다 */
+export interface ProposalAttachmentList {
+  attachments: ProposalAttachment[];
+  totalSize: number;
+  maxTotalSize: number;
+  maxCount: number;
+}

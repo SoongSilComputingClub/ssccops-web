@@ -17,6 +17,8 @@ export type {
   ResponseDetailStatus,
 } from "./model/use-response-detail";
 export { useResponseReview } from "./model/use-response-review";
+export { useProposalAttachments } from "./model/use-proposal-attachments";
+export type { ProposalAttachmentsStatus } from "./model/use-proposal-attachments";
 export type { ResponseReview } from "./model/use-response-review";
 export { ResponseReviewPanel } from "./ui/response-review-panel";
 export { ResponseReviewTimeline } from "./ui/response-review-timeline";
