@@ -29,6 +29,7 @@ import {
   ScheduleField,
   isScheduleQitem,
 } from "@/features/proposal/ui/schedule-field";
+import { ProposalAttachments } from "@/features/proposal/ui/proposal-attachments";
 import { ROUTES } from "@/shared/config/routes";
 import { Card } from "@/shared/ui";
 
@@ -56,6 +57,12 @@ import { Card } from "@/shared/ui";
  * `QitemCard`가 그린다. **저장되는 값은 지금과 같은 문자열이다** — 표는 그 문자열을 손으로
  * 맞춰 적던 것을 대신할 뿐이고, 구조화는 여전히 승인 시점에 서버가 한다. 표로 열 수 없는
  * 답(자유 입력으로 낸 기존 기획안)은 지금까지 쓰던 자유 입력 그대로 둔다.
+ *
+ * ── 첨부 자료는 마지막 페이지, 제출 버튼 위 (web#805) ───────────
+ * 문항이 아니라 응답 행에 붙는 절이라 `ProposalQitems` 밖에 둔다. 제출 버튼이 서는 페이지에만
+ * 그린다 — 앞 페이지에 두면 «다음»을 누를 때마다 같은 카드가 따라와 문항 사이에 끼고, 제출 직전에
+ * 한 번 보는 자리가 «무엇을 함께 내는가»를 확인하기에 맞다. 대상은 자동 저장이 만든 초안이고,
+ * 아직 없으면 올리기가 같은 큐로 초안을 먼저 저장한다(`ensureDraft`).
  */
 export function ProposalForm({
   formId,
@@ -184,6 +191,15 @@ export function ProposalForm({
         errors={form.errors}
         onChange={form.setAnswer}
       />
+
+      {isLast && (
+        <ProposalAttachments
+          formId={formId}
+          formRspnsId={form.draftId}
+          editable
+          ensureTarget={form.ensureDraft}
+        />
+      )}
 
       <SaveLine save={form.save} onRetry={form.retrySave} />
 

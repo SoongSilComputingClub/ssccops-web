@@ -11,6 +11,7 @@ import {
   type QitemCpstCn,
   type RspnsCn,
 } from "@ssccops/form-renderer";
+import type { ProposalAttachmentList } from "@/entities/response";
 // 배럴을 거치지 않는다 — 배럴이 SSR 로더(→ next/headers)를 재export 해 클라 번들을 오염시킨다
 import { validateCurriculumDates } from "@/features/proposal/model/curriculum-rows";
 import { PROPOSAL_RESUBMIT_NOTE } from "@/features/proposal/model/proposal-error";
@@ -31,6 +32,7 @@ import {
   ScheduleField,
   isScheduleQitem,
 } from "@/features/proposal/ui/schedule-field";
+import { ProposalAttachments } from "@/features/proposal/ui/proposal-attachments";
 
 /*
  * 기획안 재제출 폼 (#171 · 클라이언트).
@@ -54,15 +56,26 @@ import {
  * 갈리고, 갈린 쪽으로 낸 기획안만 승인에서 막힌다. 이전 답을 표로 열 수 없으면(자유 입력으로
  * 낸 기존 기획안) 지금까지 쓰던 자유 입력 그대로 둔다 — 읽지 못한 줄을 버리면 제출자가 쓴
  * 내용이 사라진다.
+ *
+ * ── 첨부 자료는 여기서 바꾼다 (web#805) ───────────────────────
+ * 수정요청 상태에서만 서버가 첨부 올리기·지우기를 받는다. 재제출에는 초안이 없으므로 응답 id가 곧
+ * 대상이다. 신규 작성 화면과 같은 카드를 마지막 페이지의 제출 버튼 위에 둔다. **첨부는 제출 버튼과
+ * 무관하게 바로 바뀐다** — 올리거나 지운 것은 다시 제출하기 전에도 서버에 반영돼 있다.
  */
 export function ResubmitForm({
   formId,
+  formRspnsId,
   composition,
   initialAnswers,
+  initialAttachments,
 }: Readonly<{
   formId: number;
+  /** 수정요청받은 응답 — 첨부의 대상 */
+  formRspnsId: number;
   composition: QitemCpstCn;
   initialAnswers: RspnsCn;
+  /** SSR 로더가 받아 온 첫 목록 — 없으면(null) 카드가 받는다 */
+  initialAttachments: ProposalAttachmentList | null;
 }>) {
   const router = useRouter();
   const form = useResubmitForm(formId, composition, initialAnswers);
@@ -204,6 +217,15 @@ export function ResubmitForm({
             onChange={(value) => form.setAnswer(q.qitemId, value)}
           />
         ),
+      )}
+
+      {isLast && (
+        <ProposalAttachments
+          formId={formId}
+          formRspnsId={formRspnsId}
+          initial={initialAttachments}
+          editable
+        />
       )}
 
       {form.submitMessage && (

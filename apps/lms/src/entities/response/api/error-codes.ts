@@ -55,3 +55,31 @@ export const RESPONSE_ERROR = {
    */
   RESPONSE_SAVE_CONFLICT: "RESPONSE_SAVE_CONFLICT",
 } as const;
+
+/**
+ * 기획안 첨부 자료가 돌려주는 서버 오류 코드 (server#685 · `FormErrorCode`).
+ *
+ * 형식·총량·개수·잠김의 **판정과 문장은 서버 몫이다**(lms AGENTS — 웹은 파일 형식·크기를 검사하지
+ * 않는다). 총량 초과(413)의 메시지에는 남은 용량이 실려 오므로 화면은 그 문장을 그대로 보인다.
+ */
+export const PROPOSAL_ATTACHMENT_ERROR = {
+  /** 400 — pdf·txt·md가 아님 */
+  UNSUPPORTED_TYPE: "PROPOSAL_ATTACHMENT_UNSUPPORTED_TYPE",
+  /** 413 — 합계 상한을 넘음(메시지에 남은 용량) */
+  TOO_LARGE: "PROPOSAL_ATTACHMENT_TOO_LARGE",
+  /** 409 — 개수 상한 */
+  LIMIT_EXCEEDED: "PROPOSAL_ATTACHMENT_LIMIT_EXCEEDED",
+  /** 409 — 응답이 작성 중(접수 중)·수정요청이 아니다 */
+  LOCKED: "PROPOSAL_ATTACHMENT_LOCKED",
+  /** 400 — 기획안 시스템 폼의 응답이 아님 */
+  NOT_SUPPORTED: "PROPOSAL_ATTACHMENT_NOT_SUPPORTED",
+  /** 404 — 그 응답에 없는 fileId */
+  NOT_FOUND: "PROPOSAL_ATTACHMENT_NOT_FOUND",
+  /**
+   * 브라우저 → R2 PUT 실패 — 서버가 준 코드가 아니라 화면이 붙인다(`CLIENT_*` 관례 · 출석
+   * 인증사진의 `CLIENT_PHOTO_PUT_FAILED`와 같다).
+   */
+  PUT_FAILED: "CLIENT_PROPOSAL_ATTACHMENT_PUT_FAILED",
+  /** 올릴 대상(초안)을 만들지 못했다 — 서버가 초안 식별자 없이 답한 경우. 화면이 붙인다 */
+  TARGET_UNAVAILABLE: "CLIENT_PROPOSAL_ATTACHMENT_TARGET_UNAVAILABLE",
+} as const;
