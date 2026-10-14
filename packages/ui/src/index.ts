@@ -24,6 +24,7 @@
  */
 
 export { cn } from "./lib/cn";
+export { formatFileSize } from "./lib/file-size";
 export {
   deployEnv,
   deployMarks,
@@ -40,6 +41,7 @@ export {
   useTheme,
   type Theme,
 } from "./lib/theme";
+export { AttachmentList, type AttachmentListItem } from "./ui/attachment-list";
 export { Badge, Pill, type BadgeTone } from "./ui/badge";
 export { BrandMark } from "./ui/brand-mark";
 export { Card, CardTitle, SectionLabel } from "./ui/card";

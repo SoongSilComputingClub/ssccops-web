@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@markdoc/markdoc": "^0.5.10",
+    "@ssccops/date": "workspace:*",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
   },
