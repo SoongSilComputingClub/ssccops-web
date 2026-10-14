@@ -12,6 +12,7 @@ import { ROUTES } from "@/shared/config/routes";
 import { organizationJsonLd, siteOrigin } from "@/shared/config/site";
 import { Badge, Card, EmptyState, JsonLd, Markdown, Pill } from "@/shared/ui";
 import { ApplyPanel } from "./apply-panel";
+import { ProgramAttachments } from "./program-attachments";
 
 /**
  * 행사 상세 (SSR · wave2 D7).
@@ -27,6 +28,10 @@ import { ApplyPanel } from "./apply-panel";
  * 있어야 한다. 서버가 준 값만 싣는다(`eventJsonLd`): 일시·장소가 없으면 그 키가 없다.
  * **접수 상태·정원·마감은 싣지 않는다** — 공유 카드와 같은 규칙(AGENTS «공유 카드»)이고,
  * 검색 결과 스니펫도 한 번 굳으면 오래 남는다.
+ *
+ * **학술 프로그램이면 본문 아래에 «첨부 자료» 절**(web#805 · ssccops#607)이 붙는다 — 로그인한 회원만
+ * 보는 것이라 이 페이지는 익명 SSR 그대로 두고 그 절만 클라이언트(`ProgramAttachments`)가 그린다.
+ * 첫 HTML에는 첨부가 있는지조차 없다(익명 층을 넓히지 않는다 · ADR-0038).
  */
 export async function EventDetailPage({ eventId }: Readonly<{ eventId: number }>) {
   let event: PublicEventDetail;
@@ -72,19 +77,26 @@ export async function EventDetailPage({ eventId }: Readonly<{ eventId: number }>
       )}
 
       <div className="flex flex-col items-start gap-[16px] lg:flex-row">
-        <Card className="flex w-full flex-col gap-[10px] lg:flex-[1.9]">
-          <div className="flex flex-wrap items-center gap-[6px]">
-            {receipt && <Badge tone={receipt.tone}>{receipt.label}</Badge>}
-            {phase && <Badge tone={phase.tone}>{phase.label}</Badge>}
-            <Pill>{event.eventClsfNm}</Pill>
-          </div>
-          <h1 className="text-[22px] font-bold leading-[1.3] lg:text-[24px]">{event.eventTtl}</h1>
-          {event.mtxtCn.trim() ? (
-            <Markdown>{event.mtxtCn}</Markdown>
-          ) : (
-            <p className="text-[15px] text-n500">등록된 안내 내용이 없습니다</p>
+        <div className="flex w-full flex-col gap-[16px] lg:flex-[1.9]">
+          <Card className="flex w-full flex-col gap-[10px]">
+            <div className="flex flex-wrap items-center gap-[6px]">
+              {receipt && <Badge tone={receipt.tone}>{receipt.label}</Badge>}
+              {phase && <Badge tone={phase.tone}>{phase.label}</Badge>}
+              <Pill>{event.eventClsfNm}</Pill>
+            </div>
+            <h1 className="text-[22px] font-bold leading-[1.3] lg:text-[24px]">
+              {event.eventTtl}
+            </h1>
+            {event.mtxtCn.trim() ? (
+              <Markdown>{event.mtxtCn}</Markdown>
+            ) : (
+              <p className="text-[15px] text-n500">등록된 안내 내용이 없습니다</p>
+            )}
+          </Card>
+          {event.academicProgram && (
+            <ProgramAttachments academicProgramId={event.academicProgram.academicProgramId} />
           )}
-        </Card>
+        </div>
 
         <div className="w-full lg:flex-1">
           <ApplyPanel event={event} />
