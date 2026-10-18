@@ -267,6 +267,24 @@ export function hasCapability(
   return member?.capabilities.includes(capability) ?? false;
 }
 
+/**
+ * 이 회원이 어드민에 들어올 수 있는가 — **권한이 하나라도 있는가**다 (#809 · ssccops#611).
+ *
+ * 2026-10-18 제보: 스터디장 계정에 «학술» 묶음이 보였다. 원인은 서버가 그 역할에 권한을 준
+ * 것이었지만(server#687), 그것과 별개로 어드민은 **가입한 회원이면 누구나** 셸·전체 메뉴·주소 직접
+ * 입력으로 운영 화면의 존재를 알 수 있었다. 스터디장·프로젝트장·트랙장·일반 회원은 운영진이 아니며
+ * 서버 기준으로 권한이 없다 — 그래서 «빈 배열이면 어드민의 화면이 하나도 없다»가 경계다.
+ *
+ * 역할 이름으로 가르지 않는다 — 이름은 화면에서 바뀌고, 판정을 웹이 다시 만들면 서버와 갈린다
+ * (위 {@link hasCapability} 주석). 권한이 무엇인지는 보지 않고 **있는가**만 본다 — 국원(WORK_READ)·
+ * 홍보국(CONTENT_MANAGE)처럼 한 갈래만 가진 운영진도 들어와 자기 화면을 본다.
+ *
+ * 세션 전(member === null)은 거짓이다. 게이트는 세션이 도착한 뒤(AuthGate ready)에만 이 값을 본다.
+ */
+export function hasAdminAccess(member: MemberProfile | null): boolean {
+  return (member?.capabilities.length ?? 0) > 0;
+}
+
 /** 미가입 사용자도 200으로 내려온다 — signedUp 하나로 대시보드와 가입 화면을 가른다 */
 export interface AuthSession {
   signedUp: boolean;

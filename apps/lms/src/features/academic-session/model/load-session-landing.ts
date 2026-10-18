@@ -37,6 +37,11 @@ export type SessionLandingLoad =
   | { outcome: "unauthenticated" }
   /** 로그인은 됐지만 미가입 — 페이지가 어드민 `/signup` 안내를 그린다 */
   | { outcome: "signup-required" }
+  /**
+   * 회원이지만 그 프로그램의 관계자(팀원·리더·학술국장)가 아니다 — 서버 #688부터 회차 상세는 관계자만
+   * 본다. 공유 링크 토큰이 주는 것은 미리보기까지다(ADR-0016 · ssccops-web#809)
+   */
+  | { outcome: "forbidden" }
   /** 그 밖의 실패(네트워크 등) */
   | { outcome: "error"; message: string };
 
@@ -66,6 +71,8 @@ export async function loadSessionLanding(
     ) {
       return { outcome: "not-found" };
     }
+    // 미가입(403 SIGNUP_REQUIRED)은 위에서 이미 갈랐다 — 남은 403은 «관계자가 아니다»다(서버 #688)
+    if (error instanceof ApiError && error.status === 403) return { outcome: "forbidden" };
     return { outcome: "error", message: loadSessionRecordErrorMessage(error) };
   }
 }
