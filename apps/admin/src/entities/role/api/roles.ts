@@ -100,6 +100,11 @@ export const ROLE_ERROR = {
   ROLE_NAME_DUPLICATED: "ROLE_NAME_DUPLICATED",
   /** 409 — 배정 이력이 있거나 권한이 붙어 있어 지울 수 없다 */
   ROLE_IN_USE: "ROLE_IN_USE",
+  /**
+   * 409 — 리더 역할(스터디장·프로젝트장·트랙장)의 이름을 바꾸거나 지우려 했다 (server#687). 기획안
+   * 승인이 그 역할을 이름으로 찾는다. 분류·표시 순번은 바꿀 수 있다
+   */
+  LEADER_ROLE_PROTECTED: "LEADER_ROLE_PROTECTED",
   /** 404 — 없는 분류 코드를 지정했다. 분류 목록이 낡았다는 뜻이다 */
   ROLE_CLASSIFICATION_NOT_FOUND: "ROLE_CLASSIFICATION_NOT_FOUND",
 } as const;

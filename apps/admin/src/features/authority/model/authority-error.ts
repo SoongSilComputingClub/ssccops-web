@@ -83,6 +83,13 @@ export function toRoleAuthorityErrorMessage(error: unknown): string {
         "저장하지 않았습니다 — 내 권한 관리(ROLE_MANAGE) 권한을 스스로 회수하는 저장입니다. " +
         "넘기려면 먼저 다른 역할에 ROLE_MANAGE를 부여한 뒤 그쪽에서 회수해주세요"
       );
+    /*
+     * 리더 역할은 «체크 하나만 풀기»도 거절된다(server#687) — 교체는 목록 전체를 보내고, 리더 역할에
+     * 남길 수 있는 권한이 없다. 그래서 사용자가 할 일은 «전부 풀고 저장» 하나다. 어느 역할이 리더
+     * 역할인지는 서버가 정한다 — 화면이 역할 이름으로 미리 잠그지 않는다(판정 두 벌 금지).
+     */
+    case AUTHORITY_ERROR.LEADER_ROLE_AUTHORITY_FORBIDDEN:
+      return "스터디장·프로젝트장·트랙장 역할에는 권한을 붙일 수 없습니다 — 체크를 모두 풀고 저장해주세요";
     case AUTHORITY_ERROR.ROLE_NOT_FOUND:
       return "없는 역할입니다 — 역할 목록에서 다시 골라주세요";
     case AUTHORITY_ERROR.AUTHORITY_NOT_FOUND:

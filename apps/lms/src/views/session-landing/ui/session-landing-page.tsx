@@ -52,6 +52,19 @@ export async function SessionLandingPage({
     return <SignupRequiredNotice title="회원 가입을 마쳐야 학술 프로그램 화면을 볼 수 있습니다" />;
   }
 
+  /*
+   * 그 프로그램의 팀원·스터디장이 아닌 회원 (#809 · 서버 #688). 링크를 받았다고 상세가 열리지 않는다 —
+   * 토큰이 주는 것은 미리보기까지다(ADR-0016). 일반 오류로 떨어뜨리면 «다시 시도»할 일처럼 보인다.
+   */
+  if (result.outcome === "forbidden") {
+    return (
+      <EmptyState
+        title="볼 수 없는 회차입니다"
+        description="이 회차는 그 프로그램에 참여한 회원만 볼 수 있습니다."
+      />
+    );
+  }
+
   if (result.outcome === "not-found") {
     return (
       <EmptyState

@@ -403,12 +403,15 @@ export const NAV_GROUPS: NavGroup[] = [
         requires: CAPABILITY.WORK_READ,
       },
       /*
-       * 역할 관리에는 requires 를 두지 않는다 (#52).
+       * 역할 관리는 ROLE_MANAGE 다 (#809 · ssccops#611).
        *
-       * 역할·역할 분류 조회는 서버가 권한 없이 열어 두었고 등록·수정·삭제만 ROLE_MANAGE 를
-       * 요구한다 — 라벨 관리와 같은 모양이다. 메뉴를 감추면 볼 수 있는 것까지 막게 되므로
-       * 화면 안의 변경 버튼만 useCan 으로 잠근다(views/role-list 가 이미 그렇게 한다).
-       * 바로 아래 권한 관리와 갈리는 지점이 여기다 — 그쪽은 조회부터 막혀 있다.
+       * ⚠️ 2026-10-18 정정: 여기는 «requires 를 두지 않는다 — 역할 조회는 서버가 권한 없이 열어
+       * 두었다»(#52)였는데 사실과 달랐다. 서버 `RoleController`는 클래스 전체가 ROLE_MANAGE 이고
+       * (조회까지 · VR-M12), 화면(`views/role-list`)도 ROLE_MANAGE 가 없으면 «…권한 관리(ROLE_MANAGE)
+       * 권한이 필요합니다» 빈 상태만 그렸다. 그래서 권한 없는 회원(스터디장 제보 화면)에게 목차에는
+       * 보이는데 눌러 봐야 막힌 자리가 남아 있었다 — «이동은 감추고»를 어긴 자리라 감춘다.
+       * 같은 메뉴 아래의 «역할 분류» 탭(`/members/role-labels`)은 조회가 열려 있지만 함께 감춰진다 —
+       * 역할을 만지지 않는 운영진에게 분류 목록만 따로 쓸 곳이 없다.
        */
       {
         section: "회원",
@@ -416,6 +419,7 @@ export const NAV_GROUPS: NavGroup[] = [
         href: ROUTES.roles,
         isActive: (p) =>
           p.startsWith("/members/roles") || p.startsWith("/members/role-labels"),
+        requires: CAPABILITY.ROLE_MANAGE,
       },
       /*
        * 권한 트리 관리 (#32 · 서버 #65).
@@ -578,7 +582,9 @@ export function itemAllowed(member: MemberProfile | null, item: NavItem): boolea
  * 회원 한 번만 읽고(호출부가 이미 읽고 있다) 판정 함수를 직접 쓴다 — useCan 도 같은
  * hasCapability 를 부르므로 판정 규칙은 여전히 한 곳이다.
  *
- * 감추기는 어디까지나 안내다. 주소를 직접 치면 화면은 열리고, 실제 차단은 서버가 한다.
+ * 실제 차단은 여전히 서버가 한다. 다만 «감추기는 안내일 뿐, 주소를 직접 치면 화면은 열린다»는
+ * 2026-10-18에 닫혔다(#809 · ssccops#611) — 주소 직접 입력도 같은 표로 판정해 없는 주소로 그린다
+ * (아래 {@link routeAllowed} · `route-guard.tsx`).
  *
  * ── 부모를 못 열어도 자식은 최상위로 끌어올린다 ──────────────────
  * "운영 통합"은 자신은 더 넓은 권한(WORK_MANAGE)을 요구하는 화면(GET /v1/operations)으로
@@ -620,4 +626,38 @@ export function groupHasActive(group: NavGroup, pathname: string): boolean {
   return group.items.some(
     (i) => i.isActive(pathname) || i.children?.some((k) => k.isActive(pathname)),
   );
+}
+
+/* 목차의 모든 항목(자식 포함)을 한 줄로 — 주소 판정은 계층과 무관하다 */
+function flatten(groups: NavGroup[]): NavItem[] {
+  return groups.flatMap((group) =>
+    group.items.flatMap((item) => [item, ...(item.children ?? [])]),
+  );
+}
+
+/**
+ * 이 주소를 이 회원이 열 수 있는가 — **목차와 같은 표**로 판정한다 (#809 · ssccops#611).
+ *
+ * 주소가 속한 화면은 항목의 `isActive`가 이미 안다(상세·편집 같은 하위 주소까지 — 프로그램 상세는
+ * «프로그램 목록», 회차 상세는 «회차 이력», 기획안 상세는 «기획안 검토»). 그래서 따로 경로 표를
+ * 만들지 않는다 — 두 벌이면 메뉴는 감췄는데 주소는 열리는(또는 그 반대) 어긋남이 생긴다.
+ *
+ * - 걸리는 항목이 없으면 연다 — 목차 밖의 화면(내 정보·알림·전체 메뉴)이다.
+ * - 걸리는 항목 중 **하나라도** 열 수 있으면 연다. 부모(«운영 통합» WORK_MANAGE)와 자식이 같은
+ *   주소에 걸리는 일은 없지만, 생기더라도 목차가 보여 주는 쪽과 같은 답을 낸다.
+ */
+export function routeAllowed(member: MemberProfile | null, pathname: string): boolean {
+  const matched = flatten(NAV_GROUPS).filter((item) => item.isActive(pathname));
+  return matched.length === 0 || matched.some((item) => itemAllowed(member, item));
+}
+
+/**
+ * 이 회원이 열 수 있는 첫 화면 — 목차 순서 그대로다. 대시보드(`/` → `/dashboard`)를 못 여는 운영진
+ * (예: 홍보국 CONTENT_MANAGE만)을 없는 주소가 아니라 자기 첫 화면으로 보낸다. 없으면 null.
+ */
+export function firstAllowedHref(member: MemberProfile | null): string | null {
+  const first = flatten(visibleGroups(NAV_GROUPS, member)).find((item) =>
+    itemAllowed(member, item),
+  );
+  return first?.href ?? null;
 }

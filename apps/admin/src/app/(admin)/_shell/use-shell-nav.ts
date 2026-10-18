@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearServiceWorkerCache } from "@ssccops/pwa";
 import type { AccountMenuLink } from "@ssccops/ui";
-import { representativeRole, useSessionStore } from "@/entities/session";
+import { hasAdminAccess, representativeRole, useSessionStore } from "@/entities/session";
 import { ROUTES } from "@/shared/config/routes";
 import { siteLinks } from "@/shared/config/site-links";
 import { flash } from "@/shared/ui";
@@ -38,7 +38,17 @@ export function useShellNav() {
    * 세션이 아직 없으면(member === null) 아무 권한도 없는 것으로 본다 — 잠깐 보였다 사라지는
    * 편보다 처음부터 안 보이는 편이 낫다. 세션이 도착하면 다시 계산된다.
    */
-  const groups = useMemo(() => visibleGroups(NAV_GROUPS, member), [member]);
+  const adminAccess = hasAdminAccess(member);
+  /*
+   * 권한이 하나도 없는 회원(스터디장·일반 회원 등)에게는 목차를 통째로 비운다 (#809 · ssccops#611).
+   * 그전에는 `requires`가 없는 항목(«설정 › 폼 › 라벨 관리»)이 남아 «설정» 묶음이 떠 있었고 그 옆에
+   * «전체 메뉴»가 있었다 — 운영 화면이 있다는 것을 목차가 먼저 알려 줬다. 본문은 AdminAccessGate가
+   * 막고, 목차·«전체 메뉴»는 여기서 지운다(같은 hasAdminAccess).
+   */
+  const groups = useMemo(
+    () => (adminAccess ? visibleGroups(NAV_GROUPS, member) : []),
+    [adminAccess, member],
+  );
 
   /** 프로필 부제 — 대표 역할이 있으면 역할명, 없으면 등급명 · 등급명 */
   const meLabel = (() => {
@@ -76,5 +86,5 @@ export function useShellNav() {
     [],
   );
 
-  return { pathname, groups, navigate, signOut, meName, meLabel, apps };
+  return { pathname, groups, adminAccess, navigate, signOut, meName, meLabel, apps };
 }

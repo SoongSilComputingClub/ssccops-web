@@ -53,7 +53,8 @@ function RailTip({ label }: Readonly<{ label: string }>) {
  * 같은 규칙 · 레일에서 «지금 어디로 갈지»를 고르는 것은 펼친 뒤의 일이다).
  */
 export function Sidebar() {
-  const { pathname, groups, navigate, signOut, meName, meLabel, apps } = useShellNav();
+  const { pathname, groups, adminAccess, navigate, signOut, meName, meLabel, apps } =
+    useShellNav();
   const accordion = useNavAccordion(groups, pathname);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -95,29 +96,32 @@ export function Sidebar() {
             <RailTip label={g.label} />
           </button>
         ))}
-        <button
-          type="button"
-          aria-label="전체 메뉴"
-          aria-current={pathname.startsWith(ROUTES.sitemap) ? "page" : undefined}
-          onClick={() => navigate(ROUTES.sitemap)}
-          className={cn(
-            RAIL_BUTTON,
-            NAV_FOCUS,
-            pathname.startsWith(ROUTES.sitemap)
-              ? "border-accent bg-accent-soft text-accent"
-              : "border-line bg-surface text-n500 hover:border-accent hover:text-accent",
-          )}
-        >
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-            <path
-              d="M4 6.5h14M4 11h14M4 15.5h14"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            />
-          </svg>
-          <RailTip label="전체 메뉴" />
-        </button>
+        {/* 권한이 하나도 없으면 «전체 메뉴»도 없다 — 운영 화면이 있다는 것을 알리지 않는다 (#809) */}
+        {adminAccess && (
+          <button
+            type="button"
+            aria-label="전체 메뉴"
+            aria-current={pathname.startsWith(ROUTES.sitemap) ? "page" : undefined}
+            onClick={() => navigate(ROUTES.sitemap)}
+            className={cn(
+              RAIL_BUTTON,
+              NAV_FOCUS,
+              pathname.startsWith(ROUTES.sitemap)
+                ? "border-accent bg-accent-soft text-accent"
+                : "border-line bg-surface text-n500 hover:border-accent hover:text-accent",
+            )}
+          >
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+              <path
+                d="M4 6.5h14M4 11h14M4 15.5h14"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
+            <RailTip label="전체 메뉴" />
+          </button>
+        )}
         <div className="flex-1" />
         <div className="my-[2px] h-px w-6 bg-bg" />
         <NotificationBell size="sm" />
@@ -169,7 +173,7 @@ export function Sidebar() {
       </div>
 
       <div className="mt-2 border-t border-bg pt-1">
-        <SitemapLink pathname={pathname} onNavigate={navigate} />
+        {adminAccess && <SitemapLink pathname={pathname} onNavigate={navigate} />}
         <div className="mt-1 flex items-center gap-[6px] px-[10px]">
           <AccountMenu
             name={meName}

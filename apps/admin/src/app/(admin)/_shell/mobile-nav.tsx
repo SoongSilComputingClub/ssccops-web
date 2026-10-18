@@ -38,7 +38,8 @@ const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
  * 순간 현재 묶음만 펼쳐져 있어 375px에서도 계정 절까지 한 화면에 든다.
  */
 export function MobileNav() {
-  const { pathname, groups, navigate, signOut, meName, meLabel, apps } = useShellNav();
+  const { pathname, groups, adminAccess, navigate, signOut, meName, meLabel, apps } =
+    useShellNav();
   const accordion = useNavAccordion(groups, pathname);
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDialogElement>(null);
@@ -172,7 +173,14 @@ export function MobileNav() {
                   isOpen={accordion.isOpen}
                   onToggle={accordion.toggle}
                 />
-                <SitemapLink pathname={pathname} onNavigate={go} className="mt-1 border-t border-bg" />
+                {/* 권한이 하나도 없으면 «전체 메뉴»도 없다 (#809 · use-shell-nav의 adminAccess) */}
+                {adminAccess && (
+                  <SitemapLink
+                    pathname={pathname}
+                    onNavigate={go}
+                    className="mt-1 border-t border-bg"
+                  />
+                )}
                 <AccountSections
                   links={ACCOUNT_LINKS}
                   apps={apps}

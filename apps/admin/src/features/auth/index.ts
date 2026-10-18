@@ -40,5 +40,6 @@ export type {
   SignupRequest,
   SignupStatusCode,
 } from "./model/signup-form";
+export { AdminAccessGate } from "./ui/admin-access-gate";
 export { AuthGate } from "./ui/auth-gate";
 export { SignupGate } from "./ui/signup-gate";

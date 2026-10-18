@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { sesnSttsTone } from "@/entities/academic-program";
 import type { AcademicSessionDetail } from "@/entities/academic-session";
+import { CAPABILITY } from "@/entities/session";
 import type { SessionDetailStatus } from "@/features/academic-session";
+import { useCan } from "@/features/auth";
 import { SESN_STTS_NM } from "@/shared/config/codes";
 import { formatYmd } from "@/shared/lib/date";
 import {
@@ -44,6 +46,13 @@ interface SessionReviewDetailProps {
   onReload: () => void;
 }
 
+/*
+ * 회차 승인·수정요청은 ACADEMIC_PROGRAM_MANAGE다(서버 @RequireAuthority). 버튼이 권한 없이 켜져 있어
+ * «할 수 있다»고 말하고 누르면 403이었다 — 잠그고 사유를 title로 붙인다 (#809 · «동작은 잠근다»).
+ */
+const NO_REVIEW =
+  "회차를 검토할 권한이 없습니다 — 학술 프로그램 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다";
+
 function DetailSkeleton() {
   return (
     <Card className="animate-pulse">
@@ -64,6 +73,7 @@ export function SessionReviewDetail({
   onRequestRevision,
   onReload,
 }: Readonly<SessionReviewDetailProps>) {
+  const canReview = useCan(CAPABILITY.ACADEMIC_PROGRAM_MANAGE);
   const [revisionOpen, setRevisionOpen] = useState(false);
   const [reason, setReason] = useState("");
 
@@ -186,12 +196,17 @@ export function SessionReviewDetail({
               사유를 적어 수정요청으로 돌려주세요.
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Button disabled={transitioning} onClick={onApprove}>
+              <Button
+                disabled={!canReview || transitioning}
+                title={canReview ? undefined : NO_REVIEW}
+                onClick={onApprove}
+              >
                 승인
               </Button>
               <Button
                 variant="ghost-danger"
-                disabled={transitioning}
+                disabled={!canReview || transitioning}
+                title={canReview ? undefined : NO_REVIEW}
                 onClick={() => setRevisionOpen(true)}
               >
                 수정요청

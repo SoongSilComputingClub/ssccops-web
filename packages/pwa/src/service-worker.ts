@@ -20,6 +20,10 @@
  * - 리다이렉트 응답(화면 이동의 `opaqueredirect` — status 0). 브라우저가 따라가야 할 응답을
  *   캐시에서 꺼내 주면 보안 오류로 화면이 죽는다.
  * - API 오리진이 아닌 곳의 응답(Supabase·CDN 폰트). 그쪽은 브라우저 HTTP 캐시가 알아서 한다.
+ * - **로그인 세션(`/v1/auth/`)** (ssccops-web#809 · ssccops#611). 그 응답이 «누가 무엇을 할 수
+ *   있는가»(`member.capabilities`)다. 캐시 키는 주소뿐이고 꺼낼 때 `ignoreVary`라 토큰을 보지 않아,
+ *   공용 PC에서 로그아웃 없이 계정이 바뀐 채 네트워크가 끊기면 **앞 사람의 권한으로 메뉴를 그릴 수
+ *   있었다.** 세션은 오프라인에서 보여 줄 값이 아니라(로그인 여부부터 다시 물어야 한다) 아예 담지 않는다.
  *
  * ── 캐시 이름 ───────────────────────────────────────────────
  * `ssccops-pwa-<cacheVersion>` 하나다. 배포 sha가 바뀌면 activate에서 다른 버전의 캐시를 전부
@@ -155,6 +159,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   if (CONFIG.apiOrigin && url.origin === CONFIG.apiOrigin) {
+    // 세션은 담지 않는다 — 브라우저가 그대로 보낸다(위 «캐시하지 않는 것»)
+    if (url.pathname.includes("/v1/auth/")) return;
     event.respondWith(networkFirst(request));
   }
 });

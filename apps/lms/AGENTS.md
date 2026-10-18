@@ -62,6 +62,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 서버는 URL이 아니라 **토큰**을 주고 조립은 웹이 한다. **이 앱이 발급하는 대상은 전부 www가 받는다** — 갈래가 하나뿐이고 그 사실을 타입(`ShareTargetOf<"www">`)으로 적어 두었다. 오리진은 `NEXT_PUBLIC_PUBLIC_FORM_ORIGIN`(www). 익명 미리보기는 읽지 않는다(착지 화면의 일). 토큰은 미리보기 권한까지다(ADR-0016).
 
+- **회차 공유 착지(`/studio/sessions/{sessionId}` · `views/session-landing`)의 403은 «볼 수 없는 회차입니다»다**(#809 · ssccops#611 · 서버 #688). 서버 #688부터 회차 상세(`GET /v1/academic-sessions/{id}` 포함)·팀원 명단·회차 목록·출석부는 **그 프로그램의 관계자(팀원·리더·학술국장)만** 본다 — 공유 링크를 받은 사람이 관계자가 아니면 착지 로더가 403을 받는다. 토큰이 주는 것은 미리보기까지라(ADR-0016) 의도한 동작이고, 로더(`load-session-landing.ts`)가 `forbidden`으로 갈라 일반 오류(«다시 시도»할 일처럼 보인다)로 떨어뜨리지 않는다. 미가입 403(`SIGNUP_REQUIRED`)은 그 앞에서 이미 갈린다.
+
 ## 함정
 
 - **상단 바나 그 조상에 `backdrop-filter`·`transform`·`filter`를 걸면 그 안의 `fixed` 자손이 갇힌다**(#733 · ssccops#545). 이 셋은 요소를 `position: fixed`의 **기준 상자**로 만든다 — v1.0.0에서 www가 고정 헤더에 `backdrop-blur`를 넣자 헤더 안의 모바일 드로어가 64px에 갇혀 prod에서 메뉴가 열리지 않았다(web#729). 타입·린트·빌드는 전부 초록이었다. 이 앱의 드로어(`app/_shell/mobile-nav.tsx`)는 그래서 **`createPortal`로 `document.body`에 그린다** — 지금 상단 바가 www와 같은 `SiteHeader`(`backdrop-blur` 포함 · #798)라 포털을 걷어내면 바로 이 사고가 난다. **셸 스타일을 바꿀 때는 그 안에서 여는 것(드로어·시트·메뉴)을 375px에서 실제로 열어 본다.**
