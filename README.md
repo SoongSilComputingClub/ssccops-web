@@ -8,7 +8,7 @@ SSCC(숭실대학교 컴퓨팅 동아리) **운영 시스템의 웹**입니다. 
 세 앱 모두 하나의 백엔드([`ssccops-server`](https://github.com/SoongSilComputingClub/ssccops-server))를
 봅니다. 인증은 Supabase Auth(Google OAuth)입니다.
 
-공개 사이트: **[www.sscc-ssu.com](https://www.sscc-ssu.com)** · 사용 설명서: [guide.sscc-ssu.com](https://guide.sscc-ssu.com)
+공개 사이트: **[www.sscc-ssu.com](https://www.sscc-ssu.com)** · 사용 설명서: [ssccops.sscc-ssu.com/guide](https://ssccops.sscc-ssu.com/guide)
 
 ## 구성
 

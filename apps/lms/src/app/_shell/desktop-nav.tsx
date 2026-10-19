@@ -32,11 +32,7 @@ export function DesktopNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
             key={group.label}
             href={hrefOf(group)}
             aria-current={active ? "page" : undefined}
-            className={
-              active
-                ? "rounded-lg px-[10px] py-[6px] text-[14.5px] font-semibold whitespace-nowrap text-ink"
-                : "rounded-lg px-[10px] py-[6px] text-[14.5px] whitespace-nowrap text-n300 hover:text-ink"
-            }
+            className={active ? AXIS_ACTIVE : AXIS_IDLE}
           >
             {group.label}
           </Link>
@@ -45,3 +41,11 @@ export function DesktopNav({ isLeader }: Readonly<{ isLeader: boolean }>) {
     </nav>
   );
 }
+
+/*
+ * hover와 active가 같아 보이지 않게 한다 — www 상단 바와 같은 어휘(#798 · ssccops#535 · www #721).
+ * hover는 옅은 면(`bg-bg`), 켜진 묶음은 `accent-soft` 위 `accent`. 드로어 줄도 이미 이 모양이다.
+ */
+const AXIS_BASE = "rounded-lg px-[10px] py-[6px] text-[14.5px] whitespace-nowrap";
+const AXIS_ACTIVE = `${AXIS_BASE} bg-accent-soft font-semibold text-accent`;
+const AXIS_IDLE = `${AXIS_BASE} text-n300 hover:bg-bg hover:text-ink`;

@@ -38,7 +38,8 @@ const DEPLOY = deployMarks(process.env.NEXT_PUBLIC_DEPLOY_ENV);
  * 순간 현재 묶음만 펼쳐져 있어 375px에서도 계정 절까지 한 화면에 든다.
  */
 export function MobileNav() {
-  const { pathname, groups, navigate, signOut, meName, meLabel, apps } = useShellNav();
+  const { pathname, groups, adminAccess, navigate, signOut, meName, meLabel, apps } =
+    useShellNav();
   const accordion = useNavAccordion(groups, pathname);
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDialogElement>(null);
@@ -78,7 +79,12 @@ export function MobileNav() {
 
   return (
     <>
-      <div className="flex flex-none items-center gap-[10px] border-b border-hairline-strong bg-surface px-4 py-3 lg:hidden">
+      {/*
+        아래 경계가 없다 (#798 · ssccops#535) — 바로 밑의 페이지 제목이 같은 `surface`에서 시작하므로
+        둘이 한 덩어리로 읽힌다. 경계는 본문을 스크롤한 뒤에만 페이지 제목 아래에 생긴다(www 상단 바와
+        같은 규칙 · `shared/ui/page-header.tsx`).
+      */}
+      <div className="flex flex-none items-center gap-[10px] bg-surface px-4 py-3 lg:hidden">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -167,7 +173,14 @@ export function MobileNav() {
                   isOpen={accordion.isOpen}
                   onToggle={accordion.toggle}
                 />
-                <SitemapLink pathname={pathname} onNavigate={go} className="mt-1 border-t border-bg" />
+                {/* 권한이 하나도 없으면 «전체 메뉴»도 없다 (#809 · use-shell-nav의 adminAccess) */}
+                {adminAccess && (
+                  <SitemapLink
+                    pathname={pathname}
+                    onNavigate={go}
+                    className="mt-1 border-t border-bg"
+                  />
+                )}
                 <AccountSections
                   links={ACCOUNT_LINKS}
                   apps={apps}

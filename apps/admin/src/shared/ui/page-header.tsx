@@ -1,6 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactNode, UIEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "./button";
 
@@ -26,7 +27,17 @@ export function PageHeader({
   const router = useRouter();
   return (
     // 좌우 여백은 상단 바(mobile-nav)와 같은 px-4 — 375에서 본문 폭 311px이던 것을 343px로 (UI 감사 D15 · #470)
-    <div className="flex flex-none items-center gap-[14px] border-b border-hairline-strong bg-gradient-to-b from-surface to-bg px-4 py-5 lg:px-8">
+    <div
+      /*
+       * 경계는 본문을 스크롤한 뒤에만 (#798 · ssccops#535 — www 상단 바 #721과 같은 규칙).
+       *
+       * 어드민은 셸이 `h-dvh`라 창이 아니라 `PageBody`가 스크롤한다. 그래서 www처럼 창 스크롤을
+       * 듣지 않고, 형제인 `PageBody`가 `data-scrolled`를 달면 셸의 `group/page`를 거쳐 이 줄이
+       * 읽는다 — 둘 사이에 상태를 건네는 배선이 없다. `relative z-10`은 그림자가 바로 밑 본문에
+       * 덮이지 않게 하려는 것이다.
+       */
+      className="relative z-10 flex flex-none items-center gap-[14px] border-b border-transparent bg-gradient-to-b from-surface to-bg px-4 py-5 transition-[border-color,box-shadow] duration-150 group-has-[[data-scrolled]]/page:border-line group-has-[[data-scrolled]]/page:shadow-[0_2px_10px_var(--color-header-edge)] lg:px-8"
+    >
       {showBack && (
         <button
           type="button"
@@ -61,7 +72,12 @@ export function PageHeader({
   );
 }
 
-/** 스크롤 본문 래퍼 (max-width 1000px) */
+/**
+ * 스크롤 본문 래퍼 (max-width 1000px).
+ *
+ * 스크롤이 맨 위를 벗어나면 `data-scrolled`를 단다 — 위 `PageHeader`가 그것을 보고 경계를 켠다
+ * (#798). 상태 변경은 스크롤 이벤트 안에서만 일어난다(effect 없음).
+ */
 export function PageBody({
   children,
   maxWidth = 1000,
@@ -69,8 +85,15 @@ export function PageBody({
   children: ReactNode;
   maxWidth?: number;
 }>) {
+  const [scrolled, setScrolled] = useState(false);
+  // 4px — 관성 스크롤이 0 언저리에서 떠는 동안 경계가 깜빡이지 않을 만큼만 띄운다(www와 같은 값)
+  const onScroll = (e: UIEvent<HTMLDivElement>) => setScrolled(e.currentTarget.scrollTop > 4);
   return (
-    <div className="flex-1 overflow-y-auto px-4 pt-6 pb-[60px] lg:px-8">
+    <div
+      onScroll={onScroll}
+      data-scrolled={scrolled ? "" : undefined}
+      className="flex-1 overflow-y-auto px-4 pt-6 pb-[60px] lg:px-8"
+    >
       <div style={{ maxWidth }}>{children}</div>
     </div>
   );

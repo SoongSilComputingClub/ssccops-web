@@ -26,14 +26,20 @@
   --color-bg: #f2f4f6;
   --color-surface: #ffffff;
   --color-ink: #191f28;
-  --color-accent: #3182f6;
-  --color-accent-strong: #1b64da;
+  /*
+   * 라이트 글자 대비 (#797 · ssccops#570 — WCAG AA 4.5 기준으로 다시 잡았다, 세 앱 같은 값).
+   * accent 위 흰 글자 5.18 · accent-soft 위 accent 4.58 · n400 5.83 · n500 4.97(bg 위 4.50).
+   * 예전 값(accent #3182f6 · n500 #8b95a1)은 3.71 · 3.04였다. accent-strong은 새 accent와
+   * hover가 구별되도록 함께 내렸다. 다크 값은 아래 블록에서 따로 실측한 것이다.
+   */
+  --color-accent: #1a68dc;
+  --color-accent-strong: #1552b8;
   --color-accent-soft: #e8f2fe;
   --color-amber: #c2620a;
   --color-amber-soft: #fff4e6;
   --color-n300: #4e5968;
-  --color-n400: #6b7684;
-  --color-n500: #8b95a1;
+  --color-n400: #5c6673;
+  --color-n500: #66717e;
   --color-line: #e5e8eb;
   --color-line-strong: #d1d6db;
   --color-danger: #f04452;
@@ -53,6 +59,15 @@
   --color-hairline: rgb(0 0 0 / 0.05); /* 얇은 구분선 */
   --color-hairline-strong: rgb(0 0 0 / 0.08); /* 셸 경계 */
   --color-scrim: rgb(0 0 0 / 0.45); /* 모달·드로어 뒤 */
+
+  /*
+   * 고정 헤더 (#798 · ssccops#535 — www #721에서 정한 이름·값 그대로). `header`는 본문이 밑으로
+   * 지나가는 것이 비쳐야 해서 반투명이고, 알파를 수정자(`bg-surface/80`)로 주면 다크에서 그
+   * 자리만 라이트 값에 알파가 걸리므로 값에 담는다. `header-edge`는 스크롤한 뒤 헤더 아래 그림자다.
+   */
+  --color-header: rgb(255 255 255 / 0.82);
+  --color-header-edge: rgb(0 0 0 / 0.06);
+
   --color-subtle: #f9fafb; /* 살짝 눌린 배경 — 코드·인용 상자 */
 
   /*
@@ -67,6 +82,11 @@
   --color-white: #ffffff;
   --color-black: #000000;
   --color-transparent: transparent;
+
+  /*
+   * 셸 폭 (#798 · ssccops#535 — www #721과 같은 값). 상단 바와 본문이 www와 같은 폭에 선다.
+   */
+  --container-shell: 1120px;
 
   --font-sans: "Pretendard Variable", Pretendard, -apple-system,
     BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
@@ -119,6 +139,11 @@
     --color-hairline: rgb(255 255 255 / 0.09);
     --color-hairline-strong: rgb(255 255 255 / 0.13);
     --color-scrim: rgb(0 0 0 / 0.66);
+
+    /* 고정 헤더 — 면은 다크 surface(#1f1f26)에 같은 알파, 그림자는 어두운 바탕이라 더 진하게 */
+    --color-header: rgb(31 31 38 / 0.82);
+    --color-header-edge: rgb(0 0 0 / 0.5);
+
     --color-subtle: #232a33;
 
     --color-on-solid: #12131a;
@@ -152,6 +177,10 @@
   --color-hairline: rgb(255 255 255 / 0.09);
   --color-hairline-strong: rgb(255 255 255 / 0.13);
   --color-scrim: rgb(0 0 0 / 0.66);
+
+  --color-header: rgb(31 31 38 / 0.82);
+  --color-header-edge: rgb(0 0 0 / 0.5);
+
   --color-subtle: #232a33;
 
   --color-on-solid: #12131a;

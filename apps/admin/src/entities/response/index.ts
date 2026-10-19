@@ -7,6 +7,8 @@ export type {
   FormResponseItem,
   FormResponseReviewHistory,
   MyFormResponse,
+  ProposalAttachment,
+  ProposalAttachmentList,
   ResponseMember,
   ResponseMemberDetail,
 } from "./model/types";
@@ -37,6 +39,11 @@ export type {
   FormResponseReviewInput,
 } from "./api/responses";
 export { fetchMyFormResponses } from "./api/my-responses";
+export {
+  PROPOSAL_ATTACHMENT_ERROR,
+  fetchProposalAttachmentDownloadUrl,
+  fetchProposalAttachments,
+} from "./api/proposal-attachments";
 export {
   fetchMyResponseDraft,
   saveMyResponseDraft,

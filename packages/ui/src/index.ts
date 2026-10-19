@@ -24,6 +24,7 @@
  */
 
 export { cn } from "./lib/cn";
+export { formatFileSize } from "./lib/file-size";
 export {
   deployEnv,
   deployMarks,
@@ -40,6 +41,7 @@ export {
   useTheme,
   type Theme,
 } from "./lib/theme";
+export { AttachmentList, type AttachmentListItem } from "./ui/attachment-list";
 export { Badge, Pill, type BadgeTone } from "./ui/badge";
 export { BrandMark } from "./ui/brand-mark";
 export { Card, CardTitle, SectionLabel } from "./ui/card";
@@ -49,6 +51,7 @@ export { ContentMarkdoc } from "./ui/markdoc/content-markdoc";
 export { validateContentMarkdoc } from "./ui/markdoc/validate";
 export { CONTENT_TAG_SNIPPETS } from "./ui/markdoc/schema";
 export { Notice } from "./ui/notice";
+export { SiteHeader } from "./ui/site-header";
 export { TextField, Field, INPUT_BASE } from "./ui/field";
 export { ThemeToggle } from "./ui/theme-toggle";
 export { Toggle } from "./ui/toggle";

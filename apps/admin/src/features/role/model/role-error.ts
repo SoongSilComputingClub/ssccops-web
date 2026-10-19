@@ -51,6 +51,9 @@ export function toRoleErrorMessage(error: unknown): string {
      */
     case ROLE_ERROR.ROLE_IN_USE:
       return "배정된 적 있거나 권한이 붙은 역할은 지울 수 없습니다";
+    // 승인이 이름으로 찾는 역할이라 이름만 막힌다 — 분류·순번은 바뀐다 (server#687)
+    case ROLE_ERROR.LEADER_ROLE_PROTECTED:
+      return "스터디장·프로젝트장·트랙장 역할은 이름을 바꿀 수 없습니다 — 이름은 그대로 두고 저장해주세요";
     case ROLE_ERROR.ROLE_NOT_FOUND:
       return "없는 역할입니다 — 목록으로 돌아갑니다";
     case ROLE_ERROR.ROLE_CLASSIFICATION_NOT_FOUND:

@@ -9,7 +9,7 @@ import {
   type QitemCpstCn,
   type RspnsCn,
 } from "@ssccops/form-renderer";
-import { RESPONSE_ERROR } from "@/entities/response";
+import { PROPOSAL_ATTACHMENT_ERROR, RESPONSE_ERROR } from "@/entities/response";
 import {
   fetchMyResponseDraft,
   saveMyResponseDraft,
@@ -42,6 +42,13 @@ import {
  * 다시 판정하면 서버 `ResponseAnswerValidator`와 맞춰 둔 규칙이 두 벌이 된다(AGENTS.md).
  * **자동 저장 경로에는 검증을 걸지 않는다**(작성 중에 필수가 비어 있는 것이 정상이고 서버도
  * 초안 저장에서는 보지 않는다). 검증은 '다음'과 '제출'에서만 돈다.
+ *
+ * ── 초안 id — 첨부 자료가 붙을 행 (web#805) ─────────────────
+ * 첨부는 응답 행(`formRspnsId`)에 붙고 답(`rspnsCn`)과 섞이지 않는다 — 그래서 자동 저장 PUT이
+ * 초안을 통째로 덮어써도 첨부는 그대로다. 훅은 초안 복원·자동 저장 응답에서 그 id를 받아
+ * `draftId`로 내놓고, 아직 없으면 `ensureDraft`가 **같은 큐**로 초안을 한 번 저장해 만든다. 큐
+ * 밖에서 PUT을 따로 보내면 진행 중인 자동 저장·제출과 순서가 엇갈려, 제출 직후의 PUT이 새 초안을
+ * 하나 더 만들 수 있다.
  *
  * ── 폼 마운트 규칙 ─────────────────────────────────────────
  * SSR 로더가 `formId`·문항 구성을 이미 가져왔고, 뷰는 그 결과가 준비된 뒤에야 이 훅을 쓰는
@@ -100,6 +107,10 @@ export interface ProposalForm {
   /** 문항에 붙이지 못한 제출 오류 한 줄 */
   submitMessage: string;
   submit: () => Promise<ProposalSubmitOutcome>;
+  /** 이 화면이 아는 초안 행의 id — 첨부 자료의 대상. 아직 초안이 없으면 null */
+  draftId: number | null;
+  /** 초안 행을 확보해 그 id를 돌려준다 — 없으면 자동 저장 큐로 한 번 저장한다(web#805) */
+  ensureDraft: () => Promise<number>;
 }
 
 const EMPTY_ANSWERS: RspnsCn = {};
@@ -160,6 +171,7 @@ export function useProposalForm(
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [draftId, setDraftId] = useState<number | null>(null);
 
   const aliveRef = useRef(true);
   /** `savedKey`의 동기 사본 — 저장 함수가 렌더 밖에서 최신 값을 읽는다(state는 커밋 뒤에야 바뀐다) */
@@ -169,6 +181,8 @@ export function useProposalForm(
   const chainRef = useRef<Promise<unknown>>(Promise.resolve());
   /** 제출을 마친 뒤로는 자동 저장을 봉인한다(현황으로 넘어가는 몇 프레임 동안) */
   const sealedRef = useRef(false);
+  /** `draftId`의 동기 사본 — 큐 안의 작업이 렌더를 기다리지 않고 읽는다 */
+  const draftIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     aliveRef.current = true;
@@ -194,6 +208,10 @@ export function useProposalForm(
         setSavedKey(key);
         setAnswers(initial);
         setRestored(draft !== null);
+        if (draft?.formRspnsId != null) {
+          draftIdRef.current = draft.formRspnsId;
+          setDraftId(draft.formRspnsId);
+        }
         setSavedAt(draft?.mdfcnDt ? toEpochMs(draft.mdfcnDt) : 0);
         setLoadingDraft(false);
       })
@@ -253,10 +271,12 @@ export function useProposalForm(
       const draft = await saveMyResponseDraft(targetFormId, body);
       savedKeyRef.current = key;
       attemptsRef.current = { key: "", count: 0 };
+      if (draft.formRspnsId !== null) draftIdRef.current = draft.formRspnsId;
       if (aliveRef.current) {
         setSavedKey(key);
         setSavedAt(toEpochMs(draft.mdfcnDt));
         setFailure(null);
+        if (draft.formRspnsId !== null) setDraftId(draft.formRspnsId);
       }
     } catch (error: unknown) {
       const count =
@@ -283,6 +303,50 @@ export function useProposalForm(
     );
     return next;
   }, []);
+
+  /*
+   * 첨부를 올릴 행을 확보한다 (web#805). 큐에 이어 붙이므로 앞선 자동 저장이 먼저 끝나고, 그 저장이
+   * 초안을 만들었으면 여기서는 그 id를 돌려주기만 한다.
+   *
+   * 화면이 아는 id가 없으면 **먼저 서버에 묻는다** — 초안 복원 조회가 실패한 채 열린 화면이면
+   * 서버에 초안이 있는데도 화면은 빈 답을 들고 있고, 그 상태로 PUT을 보내면 서버의 초안을 빈 답으로
+   * 덮어쓴다(복원 실패 때 `savedKeyRef`를 맞춰 두는 것과 같은 이유). 있으면 id만 받고, 없을 때만
+   * 지금 답으로 초안을 만든다.
+   */
+  const ensureDraft = useCallback(
+    (): Promise<number> =>
+      enqueue(async () => {
+        if (draftIdRef.current !== null) return draftIdRef.current;
+        if (sealedRef.current) {
+          throw new ApiError(PROPOSAL_ATTACHMENT_ERROR.TARGET_UNAVAILABLE, "", 0);
+        }
+        const { formId: targetFormId, payloadKey: key, draftBody: body } =
+          contextRef.current;
+
+        const existing = await fetchMyResponseDraft(targetFormId);
+        let id = existing?.formRspnsId ?? null;
+        if (id === null) {
+          const draft = await saveMyResponseDraft(targetFormId, body);
+          id = draft.formRspnsId;
+          if (id !== null) {
+            savedKeyRef.current = key;
+            if (aliveRef.current) {
+              setSavedKey(key);
+              setSavedAt(toEpochMs(draft.mdfcnDt));
+              setFailure(null);
+            }
+          }
+        }
+        if (id === null) {
+          // 서버가 식별자 없이 답했다 — 지어내지 않는다(`ResponseDraft.formRspnsId` 주석)
+          throw new ApiError(PROPOSAL_ATTACHMENT_ERROR.TARGET_UNAVAILABLE, "", 0);
+        }
+        draftIdRef.current = id;
+        if (aliveRef.current) setDraftId(id);
+        return id;
+      }),
+    [enqueue],
+  );
 
   const retrySave = useCallback(() => {
     attemptsRef.current = { key: "", count: 0 };
@@ -429,6 +493,8 @@ export function useProposalForm(
       submitting,
       submitMessage,
       submit,
+      draftId,
+      ensureDraft,
     }),
     [
       loadingDraft,
@@ -441,6 +507,8 @@ export function useProposalForm(
       submitting,
       submitMessage,
       submit,
+      draftId,
+      ensureDraft,
     ],
   );
 }

@@ -1,7 +1,8 @@
 import { AssistantLauncher } from "@/features/assistant";
-import { AuthGate } from "@/features/auth";
+import { AdminAccessGate, AuthGate } from "@/features/auth";
 import { UnreadCountSync } from "@/features/notification";
 import { MobileNav } from "./_shell/mobile-nav";
+import { RouteGuard } from "./_shell/route-guard";
 import { Sidebar } from "./_shell/sidebar";
 
 /*
@@ -21,9 +22,20 @@ export default function AdminLayout({ children }: Readonly<LayoutProps<"/">>) {
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileNav />
-        <div className="flex min-h-0 flex-1 flex-col">
+        {/*
+          `group/page` — 페이지 제목(PageHeader)이 형제인 본문(PageBody)의 스크롤 상태를 읽는 자리다
+          (#798 · ssccops#535). `shared/ui/page-header.tsx` 주석.
+        */}
+        <div className="group/page flex min-h-0 flex-1 flex-col">
           <AuthGate>
-            {children}
+            {/*
+              진입 게이트 → 주소 가드 순서다 (#809 · ssccops#611). 권한이 하나도 없는 회원은 운영 화면이
+              있다는 것도 보지 않고(`AdminAccessGate`), 권한이 있는 운영진도 자기 권한 밖의 주소는 없는
+              주소로 본다(`RouteGuard` — 목차와 같은 표). 둘 다 세션이 도착한 뒤라 AuthGate 안이다.
+            */}
+            <AdminAccessGate>
+              <RouteGuard>{children}</RouteGuard>
+            </AdminAccessGate>
             {/*
               규정 도우미 FAB + 패널 (#433). **AuthGate 안**이다 — 로그인하지 않은 상태에서
               버튼이 보이면 누르는 순간 401이고, 가입 전(signup-required)에는 애초에 물을 수

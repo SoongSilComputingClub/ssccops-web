@@ -3,6 +3,7 @@ import {
   RSPNS_STTS_BADGE,
   rspnsValueText,
   type MyFormResponseDetail,
+  type ProposalAttachmentList,
   type QitemCpstCn,
 } from "@/entities/response";
 import {
@@ -12,6 +13,8 @@ import {
   PROPOSAL_REJECTED_LOCKED,
 } from "@/features/proposal";
 import { LoginGate } from "@/features/auth";
+// 클라이언트 카드는 배럴을 거치지 않는다 — 배럴이 SSR 로더를 재export 한다
+import { ProposalAttachments } from "@/features/proposal/ui/proposal-attachments";
 import { ROUTES } from "@/shared/config/routes";
 import { Badge, Card, EmptyState } from "@/shared/ui";
 import { formatDt } from "@/shared/lib/date";
@@ -30,6 +33,11 @@ import { SignupRequiredNotice } from "@/features/signup";
  *   · `CHANGES_REQUESTED` → 재제출 폼(이전 답 프리필). 서버가 재제출을 이 상태에서만 받는다.
  *   · `REJECTED` → 잠금 안내(반려는 되돌릴 수 없다).
  *   · 그 밖(`SUBMITTED`·`ACCEPTED`·`DRAFT`) → 상태 안내만.
+ *
+ * ── 첨부 자료 (web#805) ──────────────────────────────────
+ * 낸 내용 아래에 읽기 전용 목록(내려받기)을 둔다. 수정요청(`CHANGES_REQUESTED`)이면 그 자리를
+ * 비우고 재제출 폼 안의 카드가 올리기·지우기까지 맡는다 — 첨부는 판본이 없어(지우면 바로 사라진다)
+ * 두 자리에 같은 목록을 세우면 한쪽이 낡은 채 남는다. 서버도 올리기·지우기를 이 상태에서만 받는다.
  *
  * ── 왜 상태로 폼 노출을 가르는가 ──────────────────────────
  * 서버 `findContinuableResponse`가 재제출을 `CHANGES_REQUESTED`(또는 DRAFT)에서만 이어
@@ -117,7 +125,8 @@ function Body({
     );
   }
 
-  const { formId, detail, qitemCpstCn } = result;
+  const { formId, detail, qitemCpstCn, attachments } = result;
+  const resubmittable = detail.rspnsSttsCd === "CHANGES_REQUESTED";
   const badge = RSPNS_STTS_BADGE[detail.rspnsSttsCd];
 
   return (
@@ -147,13 +156,24 @@ function Body({
 
       <SubmittedContent detail={detail} qitemCpstCn={qitemCpstCn} />
 
+      {!resubmittable && (
+        <ProposalAttachments
+          formId={formId}
+          formRspnsId={detail.formRspnsId}
+          initial={attachments}
+          editable={false}
+        />
+      )}
+
       <ReviewTimeline histories={detail.reviewHistories} />
 
       <ProcessArea
         status={detail.rspnsSttsCd}
         formId={formId}
+        formRspnsId={detail.formRspnsId}
         qitemCpstCn={qitemCpstCn}
         rspnsCn={detail.rspnsCn}
+        attachments={attachments}
       />
     </div>
   );
@@ -209,13 +229,17 @@ function SubmittedContent({
 function ProcessArea({
   status,
   formId,
+  formRspnsId,
   qitemCpstCn,
   rspnsCn,
+  attachments,
 }: Readonly<{
   status: MyFormResponseDetail["rspnsSttsCd"];
   formId: number;
+  formRspnsId: number;
   qitemCpstCn: QitemCpstCn;
   rspnsCn: MyFormResponseDetail["rspnsCn"];
+  attachments: ProposalAttachmentList | null;
 }>) {
   if (status === "CHANGES_REQUESTED") {
     return (
@@ -227,8 +251,10 @@ function ProcessArea({
         </p>
         <ResubmitForm
           formId={formId}
+          formRspnsId={formRspnsId}
           composition={qitemCpstCn}
           initialAnswers={rspnsCn}
+          initialAttachments={attachments}
         />
       </section>
     );

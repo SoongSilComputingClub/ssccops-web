@@ -105,7 +105,7 @@ export function LoginPage() {
         <div className="text-[15px] font-semibold text-on-solid">
           {pending ? "Google로 이동 중…" : "Google로 계속하기"}
         </div>
-        <div className="mt-[2px] text-[13.5px] text-on-solid/72">
+        <div className="mt-[2px] text-[13.5px] text-on-solid">
           Google 계정으로 로그인 또는 회원 가입
         </div>
       </button>

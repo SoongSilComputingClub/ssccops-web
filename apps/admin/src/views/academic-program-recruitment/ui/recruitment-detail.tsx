@@ -187,6 +187,11 @@ function StartRecruitmentCard({
 }>) {
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
+  /*
+   * 모집 시작은 ACADEMIC_PROGRAM_MANAGE다(서버 전이 · @RequireAuthority). 일정 변경·선발 저장은 이미
+   * 잠갔는데 이 버튼만 빠져 있어 권한 없이도 «할 수 있다»고 말했다 — 누르면 403이었다 (#809).
+   */
+  const canManage = useCan(CAPABILITY.ACADEMIC_PROGRAM_MANAGE);
 
   // 기간을 둘 다 비워 시작할 수도 있으나(서버가 허용), 종료만 시작보다 빠르면 폼 도메인이 400
   const periodInvalid =
@@ -248,7 +253,12 @@ function StartRecruitmentCard({
 
       <div className="mt-4">
         <Button
-          disabled={starting || periodInvalid}
+          disabled={!canManage || starting || periodInvalid}
+          title={
+            canManage
+              ? undefined
+              : "모집을 시작할 권한이 없습니다 — 학술 프로그램 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다"
+          }
           onClick={() =>
             onStart({ recruitmentStartAt: startAt, recruitmentEndAt: endAt })
           }

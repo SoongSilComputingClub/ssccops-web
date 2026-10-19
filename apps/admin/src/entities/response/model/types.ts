@@ -251,3 +251,27 @@ export interface FormResponseDetail {
    */
   academicProgramPreview: AcademicProgramPreview | null;
 }
+
+/**
+ * 기획안 첨부 자료 한 건 — `ProposalAttachmentResponse` (server#685 · web#805 · ssccops#607).
+ *
+ * 응답 행에 붙는 파일이다(문항이 아니다). 올린 사람은 싣지 않는다 — 작성자 한 명뿐이라 응답의
+ * `member`가 곧 그 사람이다.
+ */
+export interface ProposalAttachment {
+  fileId: number;
+  fileName: string;
+  /** 바이트 */
+  fileSize: number;
+  /** 일시TS (Asia/Seoul) */
+  uploadedAt: string;
+}
+
+/** 첨부 목록 — `ProposalAttachmentListResponse`. 검토 화면은 목록만 쓰고 사용량·상한은 보이지 않는다 */
+export interface ProposalAttachmentList {
+  /** 발급 순(fileId 오름차순) */
+  attachments: ProposalAttachment[];
+  totalSize: number;
+  maxTotalSize: number;
+  maxCount: number;
+}

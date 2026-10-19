@@ -77,6 +77,11 @@ export const AUTHORITY_ERROR = {
   ROLE_NOT_FOUND: "ROLE_NOT_FOUND",
   /** 409 — 요청자 자신이 ROLE_MANAGE 를 잃게 되는 교체 (VR-M13) */
   CANNOT_REVOKE_OWN_ROLE_MANAGE: "CANNOT_REVOKE_OWN_ROLE_MANAGE",
+  /**
+   * 409 — 리더 역할(스터디장·프로젝트장·트랙장)에 권한을 붙이려 했다 (server#687 · ssccops#611).
+   * 리더는 운영진이 아니라 서버가 비어 있지 않은 교체를 전부 거절한다 — 빈 목록(전부 회수)만 통과한다
+   */
+  LEADER_ROLE_AUTHORITY_FORBIDDEN: "LEADER_ROLE_AUTHORITY_FORBIDDEN",
   /** 400 — 코드 표기·길이 등 입력값 오류. 서버 문장이 어느 칸이 왜 틀렸는지를 담고 있다 */
   VALIDATION_FAILED: "VALIDATION_FAILED",
 } as const;

@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { sesnSttsTone } from "@/entities/academic-program";
 import type { AcademicProgramApproval } from "@/entities/academic-session";
+import { CAPABILITY } from "@/entities/session";
 import { useSessionDetail } from "@/features/academic-session";
+import { useCan } from "@/features/auth";
 import {
   ACDM_ACTV_APRV_STTS_NM,
   SESN_STTS_NM,
@@ -45,6 +47,13 @@ import {
 const REVISION_REASON_MAX_LENGTH = 500;
 
 /** 승인 이력의 상태 코드는 고정 enum — 모르는 값은 코드를 그대로 보여 준다 */
+/*
+ * 회차 승인·수정요청은 ACADEMIC_PROGRAM_MANAGE다(서버 @RequireAuthority). 버튼이 권한 없이 켜져 있어
+ * «할 수 있다»고 말하고 누르면 403이었다 — 잠그고 사유를 title로 붙인다 (#809 · «동작은 잠근다»).
+ */
+const NO_REVIEW =
+  "회차를 검토할 권한이 없습니다 — 학술 프로그램 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다";
+
 function approvalStatusLabel(code: string): string {
   return (
     ACDM_ACTV_APRV_STTS_NM[code as AcdmActvAprvSttsCd] ?? code
@@ -121,6 +130,7 @@ export function SessionDetailPage({
     transitioning,
     runTransition,
   } = useSessionDetail(academicProgramId, sessionId);
+  const canReview = useCan(CAPABILITY.ACADEMIC_PROGRAM_MANAGE);
 
   const [revisionOpen, setRevisionOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -267,12 +277,17 @@ export function SessionDetailPage({
                   필요하면 사유를 적어 수정요청으로 돌려주세요.
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button disabled={transitioning} onClick={() => void onApprove()}>
+                  <Button
+                    disabled={!canReview || transitioning}
+                    title={canReview ? undefined : NO_REVIEW}
+                    onClick={() => void onApprove()}
+                  >
                     승인
                   </Button>
                   <Button
                     variant="ghost-danger"
-                    disabled={transitioning}
+                    disabled={!canReview || transitioning}
+                    title={canReview ? undefined : NO_REVIEW}
                     onClick={() => setRevisionOpen(true)}
                   >
                     수정요청

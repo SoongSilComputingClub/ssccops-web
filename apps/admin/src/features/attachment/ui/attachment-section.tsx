@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { formatFileSize } from "@ssccops/ui";
 import { formatDt } from "@/shared/lib/date";
 import { Button, Card, EmptyState, SectionLabel } from "@/shared/ui";
 import { useAttachments } from "../model/use-attachments";
@@ -13,14 +14,10 @@ import { useAttachments } from "../model/use-attachments";
  * 잠그지 않는다.
  *
  * 파일 형식은 고르는 창을 막지 않는다 — 허용 목록은 서버 한 곳이고 거절은 응답 코드로 안내한다.
+ *
+ * 크기 표기는 기획안 첨부(#805)와 같은 `formatFileSize`(`@ssccops/ui`)다 — 이 파일에 있던 사본은
+ * «25.0MB»처럼 `.0`을 남겼다.
  */
-
-function formatSize(bytes: number | null): string {
-  if (bytes == null) return "";
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-}
 
 export function AttachmentSection({
   operationId,
@@ -88,7 +85,7 @@ export function AttachmentSection({
                 {item.fileName}
               </button>
               <span className="shrink-0 text-[12.5px] text-n500">
-                {formatSize(item.fileSize)}
+                {formatFileSize(item.fileSize)}
                 {item.uploader ? ` · ${item.uploader.name}` : ""}
                 {item.uploadedAt ? ` · ${formatDt(item.uploadedAt)}` : ""}
               </span>
