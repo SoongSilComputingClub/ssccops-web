@@ -7,7 +7,7 @@ import {
   type RecruitmentSchedule,
   type RecruitmentScheduleInput,
 } from "@/entities/academic-program";
-import { toRecruitmentErrorMessage } from "./recruitment-error";
+import { toRecruitmentErrorMessage, toRecruitmentReadErrorMessage } from "./recruitment-error";
 
 /*
  * 모집 일정 조회·변경 훅 (GET·PATCH .../recruitment/schedule).
@@ -94,7 +94,7 @@ export function useRecruitmentSchedule(
         setLoaded({
           key: requestKey,
           outcome: "error",
-          errorMessage: toRecruitmentErrorMessage(error),
+          errorMessage: toRecruitmentReadErrorMessage(error),
           schedule: null,
         });
       });

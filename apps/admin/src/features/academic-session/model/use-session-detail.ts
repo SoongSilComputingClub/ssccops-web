@@ -11,7 +11,7 @@ import {
   type SessionTransition,
 } from "@/entities/academic-session";
 import { ApiError } from "@/shared/lib/api/client";
-import { toSessionReviewErrorMessage } from "./session-review-error";
+import { toSessionReadErrorMessage, toSessionReviewErrorMessage } from "./session-review-error";
 
 /*
  * 회차 상세 조회·전이 훅 (#130).
@@ -112,7 +112,7 @@ export function useSessionDetail(
         detail: null,
         approvals: [],
         outcome: notFound ? "not-found" : "error",
-        errorMessage: notFound ? "" : toSessionReviewErrorMessage(error),
+        errorMessage: notFound ? "" : toSessionReadErrorMessage(error),
       });
     });
 

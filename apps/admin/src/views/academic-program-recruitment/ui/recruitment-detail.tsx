@@ -80,13 +80,15 @@ import {
  * 이미 '모집 관리로 이동' 링크가 있다 — 새 탭이 벌어 주는 것이 그 복잡함만큼 크지 않다.
  * 그래서 평범한 앱 내 이동으로 되돌리고, 뒤로가기는 브라우저가 하던 대로 하게 둔다.
  *
- * 권한(FORM_WRITE) 판정은 편집 화면의 몫이라 여기서 링크를 감추지 않는다(편집 화면이
- * 목적지이므로 "이동은 감춘다"의 예외 — 권한이 없으면 그 화면이 안내한다).
+ * 쓰기 권한(FORM_WRITE) 판정은 편집 화면의 몫이다. 다만 **폼 조회(FORM_READ)가 없으면 감춘다**
+ * (#814) — 편집 주소는 «폼 목록» 항목이라 경로 가드가 «없는 주소»를 그리고(#809), 이 화면을
+ * 읽기만 하는 국원(ACADEMIC_PROGRAM_READ)에게는 그 권한이 없다. 갈 수 없는 링크를 남기지 않는다.
  *
  * `formId` 가 없으면(승인 전 활동이거나 서버 옛 배포) 링크 대신 안내 문구 — 없는 값을
  * 지어내지 않는다(AGENTS.md).
  */
 function FormEditLink({ formId, label }: Readonly<{ formId: number | null; label: string }>) {
+  const canOpenForm = useCan(CAPABILITY.FORM_READ);
   if (formId == null) {
     return (
       <div className="text-[13px] text-n500">
@@ -94,6 +96,7 @@ function FormEditLink({ formId, label }: Readonly<{ formId: number | null; label
       </div>
     );
   }
+  if (!canOpenForm) return null;
   return (
     <Link
       href={ROUTES.formEdit(formId)}
@@ -103,6 +106,15 @@ function FormEditLink({ formId, label }: Readonly<{ formId: number | null; label
     </Link>
   );
 }
+
+/**
+ * 선발을 저장할 수 없는 사유 — 저장 버튼과 신청자별 칩이 같은 문장을 쓴다.
+ *
+ * 칩은 저장 버튼의 입력이라 함께 잠근다(#814). 칩만 열어 두면 학술을 읽기만 하는 국원이 값을
+ * 바꿔 «N명 변경됨»까지 만든 뒤에야 저장이 잠긴 것을 알게 된다.
+ */
+const NO_SELECT =
+  "선발을 저장할 권한이 없습니다 — 학술 프로그램 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다";
 
 /** 신청자 한 명에게 지금 매길 선발 값 — 아직 아무것도 아닌 상태가 "none" */
 type SelectionChoice = PtcpSttsCd | "none";
@@ -676,6 +688,8 @@ function ApplicantsCard({
                       <Chip
                         key={opt.value}
                         active={choice === opt.value}
+                        disabled={!canManage}
+                        title={canManage ? undefined : NO_SELECT}
                         onClick={() => setChoice(app.formRspnsId, opt.value)}
                       >
                         {opt.label}
@@ -710,7 +724,7 @@ function ApplicantsCard({
           disabled={!canManage || selecting || selections.length === 0}
           title={
             !canManage
-              ? "선발을 저장할 권한이 없습니다 — 학술 프로그램 관리(ACADEMIC_PROGRAM_MANAGE) 권한이 필요합니다"
+              ? NO_SELECT
               : selections.length === 0
                 ? "바뀐 내용이 없습니다"
                 : undefined

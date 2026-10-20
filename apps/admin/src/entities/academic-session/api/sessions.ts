@@ -23,10 +23,10 @@ import type {
  * (`GET /v1/academic-programs/reviews/sessions`)를 따로 냈다 — 활동별 호출을 병렬로 모으면
  * 활동 수만큼 N+1이 되므로 서버 이슈 #136 설계 결정 1에서 그 방식을 버렸다.
  *
- * ── 세 엔드포인트의 인가가 갈린다 ────────────────────────────
- *  - GET .../reviews/sessions          — ACADEMIC_PROGRAM_MANAGE (학술국장)
- *  - POST .../{id}/sessions/{sid}/transitions — ACADEMIC_PROGRAM_MANAGE
- *  - GET .../{id}/sessions/{sid}        — 인증만 (선택 항목 상세는 누구나)
+ * ── 세 엔드포인트의 인가가 갈린다 (조회는 READ · 쓰기는 MANAGE — 서버 #694) ──
+ *  - GET .../reviews/sessions          — ACADEMIC_PROGRAM_READ (국원·학술국장)
+ *  - POST .../{id}/sessions/{sid}/transitions — ACADEMIC_PROGRAM_MANAGE (학술국장)
+ *  - GET .../{id}/sessions/{sid}        — 관계자(리더·팀원·ACADEMIC_PROGRAM_READ 보유자)
  *
  * ── 서버가 필드명을 리네임했다 (ssccops-server#178, 2026-08-28) ─
  * URL 경로는 그대로이고 JSON 필드명만 데이터사전 표준 약어로 바뀌었다 — 옛 이름
@@ -270,8 +270,8 @@ export async function fetchSessionReviews(
  * GET /v1/academic-programs/{academicProgramId}/sessions/{sessionId} — 회차 상세 (#129 · #135).
  *
  * 우측 상세 패널이 부른다 — 진행 내용·전달사항·출석부·인증사진을 승인 전에 확인한다.
- * 인증만 요구한다(목록·전이는 ACADEMIC_PROGRAM_MANAGE, 이 조회만 열려 있다). 없는 회차는
- * 404 `SESSION_NOT_FOUND` 다.
+ * 관계자(리더·팀원·ACADEMIC_PROGRAM_READ 보유자)만 받는다 — 아니면 403 `FORBIDDEN`(서버 #688 ·
+ * #694). 전이는 ACADEMIC_PROGRAM_MANAGE 다. 없는 회차는 404 `SESSION_NOT_FOUND` 다.
  */
 export async function fetchAcademicSession(
   academicProgramId: number,
@@ -344,7 +344,7 @@ export async function transitionSession(
  * 전체 활동의 회차 진행을 한 화면에서 훑는다. 커서 페이징이라 `page` 봉투가 필요해
  * `apiFetchList` 를 쓴다. `keyword` 는 활동명·회차 주제를 함께 검색한다.
  *
- * 권한은 `ACADEMIC_PROGRAM_MANAGE` 다(승인 대기 목록과 같다).
+ * 권한은 `ACADEMIC_PROGRAM_READ` 다(승인 대기 목록과 같다 · 서버 #694).
  */
 export async function fetchAcademicProgramSessions(
   filter: SessionHistoryFilter = {},
@@ -401,7 +401,8 @@ export async function fetchSessionAttendances(
  * 회차 상세(#130)의 "승인 이력" 블록이 부른다. `aprvSeCd` 는 `SESSION`·`COMPLETION`·
  * `REOPEN`(서버 #597)만 받고(그 밖은 400), 회차 상세는 `sessionId` 로 좁혀 그 회차의 SESSION
  * 이력만 받는다.
- * 열람 범위가 스터디장 본인 + 학술국장으로 제한되지만(서버 #139) 이 화면은 국장 전용이다.
+ * 열람 범위가 스터디장 본인 + 학술 프로그램 조회 권한 보유자로 제한되지만(서버 #139 · #694)
+ * 이 화면을 여는 사람은 모두 그 권한을 가진다(목차가 ACADEMIC_PROGRAM_READ로 감춘다).
  * 페이징이 붙지만(활동당 이력이 적다) 회차 하나로 좁히면 몇 줄뿐이라 첫 페이지만 받는다.
  */
 export async function fetchAcademicProgramApprovals(

@@ -50,9 +50,11 @@ export interface AuthUser {
  *  - ROLE_MANAGE         AuthorityController · RoleAuthorityController 전체 (#32 · 서버 #65)
  *  - MEMBER_MANAGE        MemberController 조회·수정·등급·상태 (#52 · 서버 #76)
  *  - ACADEMIC_PROGRAM_MANAGE  학술 활동 유형 쓰기 · 상태 전이(모집 시작·종료 승인) ·
- *                             회차 승인 (#122 · 서버 #130·#133·#136). 조회 셋(목록·상세·
- *                             커리큘럼)은 인증만 요구하므로 이 코드로 잠그지 않는다 —
- *                             SUB_WORK_TYPE와 같은 자리다(핸들러마다 인가가 갈린다)
+ *                             회차 승인 · 모집 일정 변경 · 선발 (#122 · 서버 #130·#133·#136)
+ *  - ACADEMIC_PROGRAM_READ    학술 조회 — 전체 목록 · 회차 횡단·승인 대기 목록 · 명단·이력 ·
+ *                             신청자 · 모집 일정 · 승인 이력 · 기획안 응답(서버 #694 ·
+ *                             ADR-0068). MANAGE의 자식이라 학술국장은 펼침으로 함께 갖는다 —
+ *                             WORK_READ/WORK_MANAGE와 같은 자리다
  *  - SUPER                GET·PUT /v1/notifications/types…(서버 #535 · ADR-0047) — 트리
  *                         최상위지만 서버가 그 코드를 요구하므로 화면도 그것을 본다
  *
@@ -127,12 +129,19 @@ export const CAPABILITY = {
    * 학술국장이 OPERATOR를 통해 닿는다).
    *
    * 학술 활동 유형 코드테이블 쓰기(POST·PATCH /v1/academic-program-types…), 활동 상태
-   * 전이(모집 시작·종료 승인), 회차 승인·수정요청이 이 코드로 잠긴다. 목록·상세·커리큘럼
-   * 조회는 인증만 요구한다 — ROLE_MANAGE·MEMBER_MANAGE처럼 "조회부터 막힌" 코드가 아니라
-   * SUB_WORK_TYPE_READ/_MANAGE처럼 조회와 쓰기가 갈린 자리라, 메뉴를 이 코드로 감추면
-   * 조회만 하면 되는 화면까지 함께 사라진다.
+   * 전이(모집 시작·종료 승인), 회차 승인·수정요청, 모집 일정 변경·선발이 이 코드로 잠긴다.
+   * **화면 안의 쓰기 버튼만 이 코드를 본다** — 학술 메뉴와 조회는 아래 READ다(#814).
    */
   ACADEMIC_PROGRAM_MANAGE: "ACADEMIC_PROGRAM_MANAGE",
+  /**
+   * 학술 프로그램 조회 (#814 · 서버 #694 · ADR-0068 — ACADEMIC_PROGRAM_MANAGE의 자식).
+   *
+   * 국원이 어드민 «학술» 일곱 화면을 읽기만 하게 하는 코드다. 그전에는 학술 조회가 MANAGE와 한
+   * 몸이라 국원에게 «보게만» 할 길이 없었다. 학술국장은 MANAGE를 통해 펼침으로 함께 갖는다.
+   * 그래서 학술 메뉴의 `requires`는 이 코드이고, 화면 안의 쓰기 버튼은 여전히 MANAGE로 잠근다
+   * (WORK_READ/WORK_MANAGE와 같은 자리).
+   */
+  ACADEMIC_PROGRAM_READ: "ACADEMIC_PROGRAM_READ",
   /**
    * 하위 업무 찬반 투표 자격 (서버 #123). 직위 코드(role_pstn_cd)로 갈리던 투표 자격이 권한으로
    * 통합되면서 capabilities에 실리게 됐다 — 상세 화면이 투표 버튼을 서버 판정 없이 잠글 수 있다.
@@ -196,6 +205,7 @@ const CAPABILITY_NAME: Record<Capability, string> = {
   MEMBER_MANAGE: "회원 관리",
   EVENT_MANAGE: "행사 관리",
   ACADEMIC_PROGRAM_MANAGE: "학술 프로그램 관리",
+  ACADEMIC_PROGRAM_READ: "학술 프로그램 조회",
   APPROVAL_VOTE: "찬반 투표",
   RAG_DOCUMENT_MANAGE: "규정 문서 관리",
   CONTENT_MANAGE: "콘텐츠 관리",

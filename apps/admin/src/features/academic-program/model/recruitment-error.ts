@@ -9,9 +9,9 @@ import { toProgramStateErrorMessage } from "./transition-error";
  * 모집 시작·신청자 조회·선발 실패 → 화면에 띄울 한 줄 (#127 · 서버 #133·#138).
  *
  * 401(재로그인)·403 SIGNUP_REQUIRED(가입 화면)는 apiFetch 가 이미 리다이렉트까지 끝내므로
- * 여기서 다루지 않는다. 신청자 조회는 소유권 또는 ACADEMIC_PROGRAM_MANAGE, 모집 시작·선발은
- * ACADEMIC_PROGRAM_MANAGE 를 요구하므로 권한 없는 회원이 주소로 들어오면 403 이 온다 —
- * 상태가 아니라 **코드로 분기한다**(#29).
+ * 여기서 다루지 않는다. 모집 시작·일정 변경·선발은 ACADEMIC_PROGRAM_MANAGE 를 요구하므로 권한
+ * 없이 누르면 403 이 온다 — 상태가 아니라 **코드로 분기한다**(#29). 신청자·모집 일정 **조회**는
+ * 리더 또는 ACADEMIC_PROGRAM_READ 라(서버 #694) 거절 문구가 다르다 — {@link toRecruitmentReadErrorMessage}.
  *
  * `RECRUITMENT_NOT_STARTED`(신청자 조회·선발을 모집 시작 전에 부름)는 재시도가 아니라
  * "모집을 먼저 시작하세요"를 안내한다. `FORM_HAS_NO_QUESTION`(문항 0개 폼으로 모집 시작)은
@@ -66,4 +66,25 @@ export function toRecruitmentErrorMessage(error: unknown): string {
     default:
       return error.message;
   }
+}
+
+/**
+ * 신청자·모집 일정 조회 실패 → 한 줄 (#814 · 서버 #694).
+ *
+ * 조회와 쓰기의 자격이 갈렸다 — 조회는 학술 프로그램 조회(ACADEMIC_PROGRAM_READ), 쓰기는 학술
+ * 프로그램 관리(MANAGE)다. 한 문장으로 두면 읽기만 막힌 사람에게 «모집을 관리할 권한»을 요구하게
+ * 된다(오류 문구가 두 벌인 것은 하위 업무 유형 조회·저장과 같은 자리다). 권한 거절만 여기서 받고
+ * 나머지는 쓰기와 같은 문장이다.
+ */
+export function toRecruitmentReadErrorMessage(error: unknown): string {
+  if (
+    error instanceof ApiError &&
+    (error.code === ACADEMIC_PROGRAM_ERROR.AUTHORITY_REQUIRED ||
+      error.code === ACADEMIC_PROGRAM_ERROR.FORBIDDEN ||
+      error.code === API_ERROR.FORBIDDEN ||
+      error.code === API_ERROR.ACCESS_DENIED)
+  ) {
+    return "모집 현황을 볼 권한이 없습니다 — 학술 프로그램 조회(ACADEMIC_PROGRAM_READ) 권한이 필요합니다";
+  }
+  return toRecruitmentErrorMessage(error);
 }

@@ -207,9 +207,9 @@ export interface SessionTransitionResult {
  * 승인 이력 한 줄 (AcademicProgramApprovalResponse).
  *
  * `GET /v1/academic-programs/{id}/approvals` 가 준다 — 회차 상세(#130)의 "승인 이력"
- * 블록이 이 배열을 그대로 그린다. 열람 범위가 **스터디장 본인 + 학술국장**으로 제한된다
- * (서버 #139 설계 결정 1) — `opnnCn`(수정요청 사유)이 활동 운영진 개인에게 민감할 수
- * 있어서다. 이 화면은 국장 전용이라 문제되지 않는다.
+ * 블록이 이 배열을 그대로 그린다. 열람 범위가 **스터디장 본인 + 학술 프로그램 조회 권한 보유자**로
+ * 제한된다(서버 #139 설계 결정 1 · #694에서 학술국장 → READ로 넓힘 · ADR-0068) — `opnnCn`(수정요청
+ * 사유)이 활동 운영진 개인에게 민감할 수 있어서다. 이 화면을 여는 사람은 모두 그 권한을 가진다.
  *
  * `aprvSeCd` 는 `SESSION`·`COMPLETION`·`REOPEN`(재시작 · 서버 #597)이 온다. 회차 상세는
  * `sessionId` 로 좁혀 SESSION 이력만 받는다.

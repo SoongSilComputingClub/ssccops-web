@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  PROPOSAL_FORM_MISSING,
-  PROPOSAL_FORM_READ_DENIED,
-  type ProposalFormQuery,
-} from "@/features/form";
+import { PROPOSAL_FORM_MISSING, type ProposalFormQuery } from "@/features/form";
 import { EmptyState, PageBody, PageHeader } from "@/shared/ui";
 
 /**
@@ -16,11 +12,11 @@ import { EmptyState, PageBody, PageHeader } from "@/shared/ui";
  * 마운트하면 `formId = 0`으로 조회가 나가거나 "찾을 수 없습니다"가 잠깐 스쳐 지나간다.
  * 그래서 두 화면 모두 폼이 `ready`가 되기 전에는 본문을 마운트하지 않고 이 컴포넌트를 그린다.
  *
- * ── 네 갈래를 뭉치지 않는다 ───────────────────────────────────
- * 검토자가 할 수 있는 일이 갈래마다 다르다 — 권한이 없으면 다시 눌러도 영원히 같고(운영진에게
- * 권한을 요청해야 한다), 폼이 아직 없으면 기다리는 것이 맞으며, 통신 실패만이 다시 시도할
- * 값어치가 있다. 문구는 기획안 작성 화면(#163)과 **같은 상수**를 쓴다 — 같은 상황을 두 화면이
- * 다르게 말하면 읽는 사람은 서로 다른 두 가지 일이 일어난 줄 안다.
+ * ── 갈래를 뭉치지 않는다 ─────────────────────────────────────
+ * 검토자가 할 수 있는 일이 갈래마다 다르다 — 폼이 아직 없으면 기다리는 것이 맞고, 통신 실패만이
+ * 다시 시도할 값어치가 있다. 문구는 기획안 작성 화면(#163)과 **같은 상수**를 쓴다 — 같은 상황을
+ * 두 화면이 다르게 말하면 읽는 사람은 서로 다른 두 가지 일이 일어난 줄 안다. «폼 조회 권한이
+ * 없다» 갈래는 #814에서 걷었다 — 폼을 찾는 조회가 인증만 요구하게 됐다.
  */
 export function ProposalFormGate({
   title,
@@ -39,9 +35,6 @@ export function ProposalFormGate({
       <PageBody>
         {query.status === "loading" ? (
           <EmptyState message="불러오는 중…" />
-        ) : query.status === "denied" ? (
-          /* 권한 부족에는 다시 시도를 주지 않는다 — 몇 번을 눌러도 같다 */
-          <EmptyState message={PROPOSAL_FORM_READ_DENIED} />
         ) : query.status === "not-seeded" ? (
           <EmptyState message={PROPOSAL_FORM_MISSING} />
         ) : (

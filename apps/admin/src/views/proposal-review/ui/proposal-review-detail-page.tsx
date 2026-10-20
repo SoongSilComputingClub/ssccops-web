@@ -1,14 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import type { FormDetail } from "@/entities/form";
+import type { SystemForm } from "@/entities/form";
 import { mbrGrdNm, mbrSttsNm } from "@/entities/member";
 import {
   RSPNS_STTS_BADGE,
   rspnsValueText,
   type FormResponseDetail,
 } from "@/entities/response";
-import { useFormDetail, useProposalForm } from "@/features/form";
+import { CAPABILITY } from "@/entities/session";
+import { useCan } from "@/features/auth";
+import { useProposalForm } from "@/features/form";
 import {
   ResponseReviewPanel,
   ResponseReviewTimeline,
@@ -60,9 +62,11 @@ function acceptBlockReasonOf(response: FormResponseDetail): string | undefined {
 /**
  * 기획안 한 건을 검토한다 (#164).
  *
- * ── 두 번 부르는 이유 ─────────────────────────────────────────
+ * ── 문항 라벨은 폼에서 온다 ───────────────────────────────────
  * 응답 API는 `rspnsCn`(문항 ID → 답변)만 준다. 문항 라벨은 폼 소유이고 운영진이 회차마다 고칠
- * 수 있으므로 응답에 복사해 두지 않는다 — 라벨은 폼 상세의 `qitemCpstCn`에서 온다.
+ * 수 있으므로 응답에 복사해 두지 않는다 — 라벨은 진입할 때 코드로 찾은 시스템 폼의 `qitemCpstCn`
+ * 에서 온다. 예전에는 폼 상세(`GET /v1/forms/{formId}` · 폼 조회 권한)를 한 번 더 불렀는데, 시스템
+ * 폼 조회가 문항 구성까지 실어 주므로 걷었다(#814 — 국원은 폼 조회 권한이 없다).
  *
  * ── 개별 문항을 이름으로 지목하지 않는다 ──────────────────────
  * 유형·활동명·기간을 `qitemId`로 집어 따로 배치하는 쪽이 더 예쁠 수는 있다. 그렇게 하지 않는
@@ -88,11 +92,17 @@ function ProposalReviewDetail({
   reload,
 }: Readonly<{
   formId: number;
-  form: FormDetail;
+  form: SystemForm;
   response: FormResponseDetail;
   reload: () => void;
 }>) {
   const router = useRouter();
+  /*
+   * 회원 상세는 회원 관리(MEMBER_MANAGE) 화면이다 — 없으면 경로 가드가 «없는 주소»를 그린다(#809).
+   * 학술국장(국장 → OPERATOR)도 이 권한이 없고 국원도 없으므로, 갈 수 없는 링크를 남기지 않고
+   * 감춘다(«이동은 감추고, 동작은 잠근다» · #814).
+   */
+  const canOpenMember = useCan(CAPABILITY.MEMBER_MANAGE);
 
   const { member } = response;
   const badge = RSPNS_STTS_BADGE[response.rspnsSttsCd];
@@ -166,13 +176,15 @@ function ProposalReviewDetail({
                 },
               ]}
             />
-            <Button
-              variant="link"
-              onClick={() => router.push(ROUTES.memberDetail(member.mbrId))}
-              className="mt-4"
-            >
-              회원 상세로 이동 ›
-            </Button>
+            {canOpenMember && (
+              <Button
+                variant="link"
+                onClick={() => router.push(ROUTES.memberDetail(member.mbrId))}
+                className="mt-4"
+              >
+                회원 상세로 이동 ›
+              </Button>
+            )}
           </Card>
 
           <div className="flex flex-col gap-4">
@@ -252,29 +264,23 @@ function ProposalReviewDetail({
   );
 }
 
-/** 폼 상세와 응답 상세를 함께 받아 그린다 — 둘 중 하나라도 없으면 그릴 수 없다 */
+/** 진입할 때 찾은 기획안 폼 위에 응답 상세를 받아 그린다 */
 function ProposalReviewDetailContent({
-  formId,
+  form,
   formRspnsId,
 }: Readonly<{
-  formId: number;
+  form: SystemForm;
   formRspnsId: number;
 }>) {
-  const rspns = useResponseDetail(formId, formRspnsId);
-  const formQuery = useFormDetail(formId);
+  const rspns = useResponseDetail(form.formId, formRspnsId);
 
-  const reloadAll = () => {
-    rspns.reload();
-    formQuery.reload();
-  };
-
-  if (rspns.status === "ready" && rspns.response && formQuery.form) {
+  if (rspns.status === "ready" && rspns.response) {
     return (
       <ProposalReviewDetail
-        formId={formId}
-        form={formQuery.form}
+        formId={form.formId}
+        form={form}
         response={rspns.response}
-        reload={reloadAll}
+        reload={rspns.reload}
       />
     );
   }
@@ -284,20 +290,16 @@ function ProposalReviewDetailContent({
    * (#37), 모집 신청서 응답 번호를 이 주소에 넣어도 기획안 검토 화면에 남의 응답이 뜨지 않는다.
    * 웹은 그 404를 없는 기획안과 똑같이 처리하면 된다.
    */
-  const notFound = rspns.status === "not-found" || formQuery.status === "not-found";
-  const failed = rspns.status === "error" || formQuery.status === "error";
-  const errorMessage = rspns.errorMessage || formQuery.errorMessage;
-
   return (
     <>
       <PageHeader title={TITLE} showBack />
       <PageBody>
-        {notFound ? (
+        {rspns.status === "not-found" ? (
           <EmptyState message="기획안을 찾을 수 없습니다." />
-        ) : failed ? (
+        ) : rspns.status === "error" ? (
           <EmptyState
-            message={errorMessage || "기획안을 불러오지 못했습니다."}
-            action={{ label: "다시 시도", onClick: reloadAll }}
+            message={rspns.errorMessage || "기획안을 불러오지 못했습니다."}
+            action={{ label: "다시 시도", onClick: rspns.reload }}
           />
         ) : (
           <EmptyState message="불러오는 중…" />
@@ -316,10 +318,7 @@ export function ProposalReviewDetailPage({ formRspnsId }: Readonly<{ formRspnsId
    */
   if (proposalForm.status === "ready" && proposalForm.form) {
     return (
-      <ProposalReviewDetailContent
-        formId={proposalForm.form.formId}
-        formRspnsId={formRspnsId}
-      />
+      <ProposalReviewDetailContent form={proposalForm.form} formRspnsId={formRspnsId} />
     );
   }
   return <ProposalFormGate title={TITLE} showBack query={proposalForm} />;

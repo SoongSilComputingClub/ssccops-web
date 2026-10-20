@@ -6,7 +6,7 @@ import {
   type SessionCrossListItem,
   type SessionHistoryFilter,
 } from "@/entities/academic-session";
-import { toSessionReviewErrorMessage } from "./session-review-error";
+import { toSessionReadErrorMessage } from "./session-review-error";
 
 /*
  * 회차 이력 조회 훅 (#130 · GET /v1/academic-programs/sessions).
@@ -116,7 +116,7 @@ export function useSessionHistory(
           nextCursor: null,
           hasNext: false,
           totalCount: 0,
-          errorMessage: toSessionReviewErrorMessage(error),
+          errorMessage: toSessionReadErrorMessage(error),
         });
       });
 
@@ -151,7 +151,7 @@ export function useSessionHistory(
       );
       return "";
     } catch (error: unknown) {
-      return toSessionReviewErrorMessage(error);
+      return toSessionReadErrorMessage(error);
     } finally {
       inFlightRef.current = false;
       if (aliveRef.current) setLoadingMore(false);
