@@ -5,12 +5,14 @@ import { API_ERROR, ApiError } from "@/shared/lib/api/client";
  * 회차·출석 승인 실패 → 화면에 띄울 한 줄 (#129 · 서버 #136).
  *
  * 401(재로그인)·403 SIGNUP_REQUIRED(가입 화면)는 apiFetch 가 이미 리다이렉트까지 끝내므로
- * 여기서 다루지 않는다. 목록·전이는 ACADEMIC_PROGRAM_MANAGE 를 요구하므로 권한 없는 회원이
- * 주소로 들어오면 403 이 온다 — 상태가 아니라 **코드로 분기한다**(#29).
+ * 여기서 다루지 않는다. 전이(승인·수정요청)는 ACADEMIC_PROGRAM_MANAGE 를 요구하므로 권한 없이
+ * 누르면 403 이 온다 — 상태가 아니라 **코드로 분기한다**(#29). 전이에서만 나오는 409
+ * (INVALID_SESSION_TRANSITION)는 "다른 사람이 방금 처리했다"는 뜻이라 재시도 대신 목록 새로고침을
+ * 안내한다.
  *
- * 조회 실패와 전이 실패를 한 함수로 다룬다 — 같은 도메인·같은 인가라 문장을 갈라 둘 이유가
- * 없다. 전이에서만 나오는 409(INVALID_SESSION_TRANSITION)는 "다른 사람이 방금 처리했다"는
- * 뜻이라 재시도 대신 목록 새로고침을 안내한다.
+ * 조회(대기 목록·이력·상세·출석부)는 이제 자격이 다르다 — ACADEMIC_PROGRAM_READ 또는 관계자다
+ * (서버 #694). 그래서 조회 실패는 {@link toSessionReadErrorMessage}가 받고, 권한 거절 문구만 갈린다.
+ * 그전에는 조회와 전이가 같은 인가라 한 함수였다.
  *
  * 409 `ACADEMIC_PROGRAM_COMPLETED`(ADR-0057 · 서버 #597)는 새로고침으로 풀리지 않는다 — 회차를
  * 처리하려면 프로그램을 재시작해야 해서 그것을 안내한다. 승인 대기 목록은 서버가 종료된 프로그램의
@@ -49,4 +51,23 @@ export function toSessionReviewErrorMessage(error: unknown): string {
     default:
       return error.message;
   }
+}
+
+/**
+ * 회차 조회 실패(대기 목록 · 이력 · 상세 · 출석부) → 한 줄 (#814 · 서버 #694).
+ *
+ * 조회는 학술 프로그램 조회(ACADEMIC_PROGRAM_READ)로 열린다 — 그 권한으로 거절됐는데 «회차를
+ * 승인할 권한»을 요구하면 읽기만 하려던 사람이 엉뚱한 권한을 청한다. 권한 거절만 여기서 받고
+ * 나머지(없는 회차·종료된 프로그램·통신)는 전이와 같은 문장이다.
+ */
+export function toSessionReadErrorMessage(error: unknown): string {
+  if (
+    error instanceof ApiError &&
+    (error.code === SESSION_REVIEW_ERROR.AUTHORITY_REQUIRED ||
+      error.code === API_ERROR.FORBIDDEN ||
+      error.code === API_ERROR.ACCESS_DENIED)
+  ) {
+    return "회차를 볼 권한이 없습니다 — 학술 프로그램 조회(ACADEMIC_PROGRAM_READ) 권한이 필요합니다";
+  }
+  return toSessionReviewErrorMessage(error);
 }

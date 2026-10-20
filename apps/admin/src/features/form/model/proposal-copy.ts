@@ -37,16 +37,6 @@ export const PROPOSAL_FORM_MISSING =
   "기획안 폼이 아직 준비되지 않았습니다 — 운영진이 폼을 세운 뒤 다시 열어주세요";
 
 /**
- * 폼 목록을 읽을 권한이 없다.
- *
- * 기획안 폼을 번호가 아니라 코드로 찾으려면 폼 목록을 한 번 읽어야 하고(entities/form/api/
- * proposal-form.ts), 그 목록은 폼 조회 권한을 요구한다. 요구 권한을 이름으로 밝히는 것은
- * AGENTS.md의 규칙이다 — 뭉뚱그리면 막힌 사람도, 권한을 주려는 사람도 무엇이 필요한지 모른다.
- */
-export const PROPOSAL_FORM_READ_DENIED =
-  "기획안 폼을 열 권한이 없습니다 — 폼 조회(FORM_READ) 권한이 필요합니다";
-
-/**
  * 검토 내용을 읽을 권한이 없다.
  *
  * 처리자·시각·사유가 실려 오는 경로는 응답 단건 조회 하나뿐이고, 그 경로는 응답 심사 권한을
@@ -78,15 +68,13 @@ export const PROPOSAL_RESUBMIT_NOTE =
 /**
  * 기획안 폼 조회 실패 → 화면에 띄울 한 줄.
  *
- * 권한 부족만 여기서 다시 쓰고 나머지는 폼 도메인의 매핑에 넘긴다 — 네트워크·설정 누락처럼
- * 읽는 사람과 무관한 실패까지 문구를 두 벌로 만들 이유가 없다.
+ * 나머지는 폼 도메인의 매핑에 넘긴다 — 네트워크·설정 누락처럼 읽는 사람과 무관한 실패까지
+ * 문구를 두 벌로 만들 이유가 없다. 권한 403은 따로 받지 않는다 — 이 조회(`GET /v1/forms/system/
+ * PROPOSAL`)는 인증만 요구한다(#814 · 그전의 폼 목록은 폼 조회 권한을 요구해 여기서 갈랐다).
  */
 export function toProposalFormErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
     return "기획안 폼을 불러오지 못했습니다. 잠시 후 다시 시도해주세요";
-  }
-  if (error.code === API_ERROR.FORBIDDEN || error.code === API_ERROR.ACCESS_DENIED) {
-    return PROPOSAL_FORM_READ_DENIED;
   }
   return toFormErrorMessage(error);
 }

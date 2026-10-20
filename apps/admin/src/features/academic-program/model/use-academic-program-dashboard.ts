@@ -25,8 +25,8 @@ import { toAcademicProgramErrorMessage } from "./academic-program-error";
  *  2. GET /v1/academic-programs/sessions      — 활동 횡단 회차(전 상태). "이번 주 회차".
  *  3. GET /v1/academic-programs/reviews/sessions — SUBMITTED 회차. "승인 대기" 수.
  *
- * 셋 다 `ACADEMIC_PROGRAM_MANAGE`를 요구한다 — 권한이 없으면 첫 조회부터 403이라, nav가 이
- * 화면을 감춘다(주소로 들어오면 오류 블록).
+ * 셋 다 `ACADEMIC_PROGRAM_READ`를 요구한다(서버 #694 — 학술국장은 펼침으로 갖는다) — 권한이
+ * 없으면 첫 조회부터 403이라, nav가 이 화면을 감추고 주소로 들어와도 없는 주소로 그린다(#809).
  *
  * ── "이번 주"는 웹이, "지연"은 서버가 판정한다 ─────────────────────
  * 이번 주는 서버가 그 필터를 주지 않는다. 기준일은 `todayInSeoul()`이다(프로토타입의 고정 기준일
