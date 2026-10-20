@@ -10,7 +10,7 @@ import {
   type RecruitmentTeamMember,
 } from "@/entities/academic-program";
 import { ApiError } from "@/shared/lib/api/client";
-import { toRecruitmentErrorMessage } from "./recruitment-error";
+import { toRecruitmentErrorMessage, toRecruitmentReadErrorMessage } from "./recruitment-error";
 
 /*
  * 선택한 활동의 신청자 조회·선발 훅 (#127 · 서버 #138).
@@ -136,7 +136,7 @@ export function useRecruitmentSelect(
           hasNext: false,
           totalCount: 0,
           outcome: notStarted ? "not-started" : "error",
-          errorMessage: notStarted ? "" : toRecruitmentErrorMessage(error),
+          errorMessage: notStarted ? "" : toRecruitmentReadErrorMessage(error),
         });
       });
 
@@ -178,7 +178,7 @@ export function useRecruitmentSelect(
       );
       return "";
     } catch (error: unknown) {
-      return toRecruitmentErrorMessage(error);
+      return toRecruitmentReadErrorMessage(error);
     } finally {
       inFlightRef.current = false;
       if (aliveRef.current) setLoadingMore(false);

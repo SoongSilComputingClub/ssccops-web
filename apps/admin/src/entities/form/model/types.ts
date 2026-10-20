@@ -164,6 +164,23 @@ export interface FormDetail extends FormSummary {
   academicProgramId: number | null;
 }
 
+/**
+ * GET /v1/forms/system/{sysFormCd} — 코드가 가리키는 시스템 폼 한 건 (서버 #181 · `SystemFormResponse`).
+ *
+ * 운영자용 상세(`FormDetail`)와 합치지 않는다. 이 조회는 **인증만** 요구하는 회원용 경로라 생성자·
+ * 응답 요약·폼 상태처럼 운영자에게만 주는 값이 없다 — 한 타입으로 두면 없는 값을 옵셔널로 들고
+ * 다니다가 상세처럼 그리게 된다. 어드민이 이것을 쓰는 자리는 기획안 검토 하나다(#814).
+ */
+export interface SystemForm {
+  formId: number;
+  formTtlNm: string;
+  sysFormCd: string;
+  mltplRspnsYn: boolean;
+  /** 지금 새 응답을 받는가 — 서버 `FormReceiptPolicy` 판정 그대로 */
+  acceptingYn: boolean;
+  qitemCpstCn: QitemCpstCn;
+}
+
 /** table: form_lbl — 폼_라벨 */
 export interface FormLbl {
   formLblId: number;

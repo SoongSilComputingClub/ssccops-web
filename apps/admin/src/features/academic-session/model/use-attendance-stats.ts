@@ -8,7 +8,7 @@ import {
   isLowAttendanceRate,
   type SessionCrossListItem,
 } from "@/entities/academic-session";
-import { toSessionReviewErrorMessage } from "./session-review-error";
+import { toSessionReadErrorMessage } from "./session-review-error";
 
 /*
  * 출석 통계 집계 훅 (#130).
@@ -261,7 +261,7 @@ export function useAttendanceStats(): AttendanceStats {
         overallRate: null,
         programRates: [],
         lowAttendanceMembers: [],
-        errorMessage: toSessionReviewErrorMessage(error),
+        errorMessage: toSessionReadErrorMessage(error),
       });
     });
 

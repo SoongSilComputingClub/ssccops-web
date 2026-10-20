@@ -11,7 +11,7 @@ import {
   type SessionTransition,
 } from "@/entities/academic-session";
 import { ApiError } from "@/shared/lib/api/client";
-import { toSessionReviewErrorMessage } from "./session-review-error";
+import { toSessionReadErrorMessage, toSessionReviewErrorMessage } from "./session-review-error";
 
 /*
  * 회차·출석 승인 훅 (#129 · 서버 #136).
@@ -132,7 +132,7 @@ export function useSessionReview(): SessionReviewState {
           nextCursor: null,
           hasNext: false,
           totalCount: 0,
-          errorMessage: toSessionReviewErrorMessage(error),
+          errorMessage: toSessionReadErrorMessage(error),
         });
       });
 
@@ -167,7 +167,7 @@ export function useSessionReview(): SessionReviewState {
       );
       return "";
     } catch (error: unknown) {
-      return toSessionReviewErrorMessage(error);
+      return toSessionReadErrorMessage(error);
     } finally {
       inFlightRef.current = false;
       if (aliveRef.current) setLoadingMore(false);
@@ -222,7 +222,7 @@ export function useSessionReview(): SessionReviewState {
           key: detailKey,
           detail: null,
           outcome: notFound ? "not-found" : "error",
-          errorMessage: notFound ? "" : toSessionReviewErrorMessage(error),
+          errorMessage: notFound ? "" : toSessionReadErrorMessage(error),
         });
       });
 

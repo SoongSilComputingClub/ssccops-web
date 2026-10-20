@@ -25,9 +25,9 @@ import { toTeamMember, type AcademicProgramMemberResponse } from "./members";
  * `entities/response` 쪽에 같은 모양을 한 번 더 옮겨 적지 않는 이유와 같다(엔티티 슬라이스
  * 끼리는 서로 참조하지 않으므로, 모양을 아는 파일에 호출을 둔다).
  *
- * ── 인가가 두 호출에서 갈린다 ────────────────────────────────
- *  - GET .../recruitment/applications — 소유권(isLeader) 또는 ACADEMIC_PROGRAM_MANAGE.
- *    애노테이션이 없고 서비스가 스터디장 본인/국장으로 끊는다. 이 화면은 국장 전용이다.
+ * ── 인가가 조회와 쓰기에서 갈린다 ────────────────────────────
+ *  - GET .../recruitment/applications — 소유권(isLeader) 또는 ACADEMIC_PROGRAM_READ(서버 #694).
+ *    애노테이션이 없고 서비스가 스터디장 본인/조회 권한 보유자로 끊는다. 국원은 읽기만 한다.
  *  - POST .../recruitment/select      — ACADEMIC_PROGRAM_MANAGE (학술국장 전용).
  *    스터디장은 선발에 관여하지 않는다(2026-08-23 확정 — 최초 설계 정정).
  *
@@ -238,7 +238,7 @@ function toSchedule(res: RecruitmentScheduleResponse): RecruitmentSchedule {
 /**
  * GET /v1/academic-programs/{academicProgramId}/recruitment/schedule — 모집 일정 조회.
  *
- * 자격은 신청자 조회와 같다(소유권 또는 `ACADEMIC_PROGRAM_MANAGE`). **모집 시작 전에도 200**
+ * 자격은 신청자 조회와 같다(소유권 또는 `ACADEMIC_PROGRAM_READ`). **모집 시작 전에도 200**
  * 이며 그때는 두 일시가 `null` 이다 — `RECRUITMENT_NOT_STARTED` 로 끊기지 않으므로 이 화면은
  * 모집 시작 카드 옆에서도 부를 수 있다(다만 지금은 부르지 않는다 · 아래 훅 주석).
  */

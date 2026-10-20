@@ -12,8 +12,11 @@ export interface NavItem {
    * 값은 그 화면이 **첫 조회에 부르는 API가 요구하는 권한**이다. 버튼이 아니라 화면 진입에
    * 필요한 것을 적어야 한다 — 목록은 볼 수 있고 등록만 못 하는 화면(라벨 관리)을 감추면
    * 조회조차 막게 된다.
+   *
+   * 배열이면 **그중 하나만 있어도** 연다(#814). 서버가 «A 또는 B»로 여는 화면이 있다 — 기획안
+   * 검토는 응답 심사(RESPONSE_REVIEW) 또는 학술 프로그램 조회(ACADEMIC_PROGRAM_READ)다.
    */
-  requires?: Capability;
+  requires?: Capability | readonly Capability[];
   /**
    * 묶음 안의 구분 제목 (#639 · ssccops#463). 같은 값이 이어지는 동안 한 번만 찍히고, 권한 필터로
    * 항목이 빠진 뒤 **보이는 항목 기준**으로 찍는다(빈 구분 제목 없음). «설정» 묶음이 화면 10개를
@@ -185,16 +188,17 @@ export const NAV_GROUPS: NavGroup[] = [
       /*
        * 학술 대시보드 (#126 · 서버 #131·#136).
        *
-       * 학술 그룹의 첫 화면이다 — 전체 활동 현황·이번 주 회차·승인 대기·최근 활동. 이슈가
-       * 최상단 배치와 `requires: ACADEMIC_PROGRAM_MANAGE`를 명시했다. 첫 조회 셋이 모두 그
-       * 권한을 요구하므로(활동 목록·회차 이력·승인 대기), 권한이 없으면 감춘다 — 회차 이력·
-       * 승인 화면과 같은 판단이다.
+       * 학술 그룹의 첫 화면이다 — 전체 활동 현황·이번 주 회차·승인 대기·최근 활동. 첫 조회 셋
+       * (활동 목록·회차 이력·승인 대기)이 모두 학술 프로그램 조회(ACADEMIC_PROGRAM_READ)를 요구하므로
+       * 권한이 없으면 감춘다 — 회차 이력·승인 화면과 같은 판단이다. #126은 MANAGE였고, 서버가 조회를
+       * 쓰기에서 떼어 내며(#814 · 서버 #694 · ADR-0068) READ가 됐다. 학술국장은 펼침으로 READ를
+       * 함께 갖고, 국원은 이 묶음 일곱 화면을 읽기만 한다(쓰기 버튼은 화면 안에서 MANAGE로 잠긴다).
        */
       {
         label: "학술 대시보드",
         href: ROUTES.academicProgramDashboard,
         isActive: starts("/academic-programs/dashboard"),
-        requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+        requires: CAPABILITY.ACADEMIC_PROGRAM_READ,
       },
       /*
        * 기획안 검토 (#164 · 자리 이동은 #201). 학술국장이 제출된 기획안을 승인·수정요청·반려한다.
@@ -208,16 +212,15 @@ export const NAV_GROUPS: NavGroup[] = [
        * 쓰는 화면 한 벌 중 다섯이 학술에 모여 있는데 이것만 폼에 남으면 목차가 두 군데로
        * 갈린다. 승인이 곧 학술 활동의 생성이므로(서버 #150) 소속은 학술이다.
        *
-       * ── 왜 학술 묶음인데 ACADEMIC_PROGRAM_MANAGE 가 아닌가 ────────
-       * 이 묶음의 나머지 다섯과 달리 requires 가 RESPONSE_REVIEW 다. 통일 누락이 아니다 —
-       * nav.ts의 규칙은 **화면이 첫 조회에 부르는 API가 요구하는 권한**을 적는 것이고, 이
-       * 화면의 본문은 여전히 GET /v1/forms/{formId}/responses 라 RESPONSE_REVIEW 없이는
-       * 통째로 403이다. ACADEMIC_PROGRAM_MANAGE 로 바꾸면 그 권한만 있고 RESPONSE_REVIEW 가
-       * 없는 회원에게 **메뉴는 보이는데 눌러 봐야 403인** 자리가 생긴다. 시드상 학술국장은
-       * 두 권한을 다 가지므로 실제 노출은 달라지지 않는다.
-       * (첫 요청은 폼을 코드로 찾는 GET /v1/forms(FORM_READ)지만 그것은 번호를 알아내는 준비
-       * 단계일 뿐이다. 폼 조회 권한만 없는 경우는 화면 안에서 요구 권한을 이름으로 밝힌다 —
-       * features/form 의 PROPOSAL_FORM_READ_DENIED.)
+       * ── 왜 requires 가 둘인가 (#814) ─────────────────────────────
+       * nav.ts의 규칙은 **화면이 첫 조회에 부르는 API가 요구하는 권한**을 적는 것이고, 이 화면의
+       * 본문은 GET /v1/forms/{formId}/responses 다. 서버는 그 조회를 «응답 심사(RESPONSE_REVIEW),
+       * 또는 기획안(PROPOSAL) 폼이고 학술 프로그램 조회(ACADEMIC_PROGRAM_READ)»로 연다(서버 #694 ·
+       * ADR-0068). 그래서 둘 중 하나면 연다. READ 하나로 줄이면 응답 심사만 가진 역할에게서 서버가
+       * 열어 주는 화면이 사라지고, RESPONSE_REVIEW 하나로 두면 국원의 학술 묶음에서 이것만 빠진다.
+       * 승인·수정요청·반려는 여전히 RESPONSE_REVIEW 라 화면 안에서 잠근다(`ResponseReviewPanel`).
+       * 폼은 코드로 찾는데 그 조회(GET /v1/forms/system/PROPOSAL)는 인증만 요구한다 — 폼 조회
+       * (FORM_READ) 없이도 들어온다(그전에는 GET /v1/forms 라 FORM_READ가 따로 필요했다).
        *
        * 주소는 /proposals/review 그대로다 — 화면이 실제로 다루는 것은 폼 응답이고 식별자도
        * formRspnsId 라, 목차에서의 자리가 바뀐다고 주소까지 옮길 이유는 없다.
@@ -232,15 +235,15 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "기획안 검토",
         href: ROUTES.proposalReviews,
         isActive: starts("/proposals/review"),
-        requires: CAPABILITY.RESPONSE_REVIEW,
+        requires: [CAPABILITY.ACADEMIC_PROGRAM_READ, CAPABILITY.RESPONSE_REVIEW],
       },
       /*
        * 모집 관리 (#127 · 서버 #133·#138).
        *
-       * 학술국장이 승인된 활동의 모집을 시작하고 신청자를 선발한다. 모집 시작(전이)·선발
-       * 확정 모두 ACADEMIC_PROGRAM_MANAGE 다. 신청자 목록 조회만 소유권 또는 이 권한으로
-       * 열리지만, 이 화면은 국장 전용이라(스터디장은 선발에 관여하지 않는다) 회차·출석 승인과
-       * 같은 판단으로 감춘다.
+       * 학술국장이 승인된 활동의 모집을 시작하고 신청자를 선발한다. 모집 시작(전이)·일정 변경·
+       * 선발 저장은 ACADEMIC_PROGRAM_MANAGE 이고 화면 안에서 잠근다. 메뉴는 첫 조회(프로그램
+       * 목록·신청자·모집 일정)가 요구하는 ACADEMIC_PROGRAM_READ 다(#814 · 서버 #694) — 국원은
+       * 모집 현황을 읽기만 한다.
        *
        * `isActive`에서 다른 학술 화면 경로를 뺀다 — 회차 승인·이력·출석과 같은 이유로,
        * 그 화면에서 이 메뉴까지 켜지면 목차가 지금 어디인지 알려주지 못한다.
@@ -249,7 +252,7 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "모집 관리",
         href: ROUTES.academicProgramRecruitment,
         isActive: starts("/academic-programs/recruitment"),
-        requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+        requires: CAPABILITY.ACADEMIC_PROGRAM_READ,
       },
       /*
        * 프로그램 목록 (#125 · 서버 #131·#134).
@@ -260,10 +263,9 @@ export const NAV_GROUPS: NavGroup[] = [
        * 때문이다 (#568). «활동 목록»이던 것을 «프로그램 목록»으로 — 프로그램 하나는 «프로그램»이다
        * (#592 · ssccops#439 어휘 표 · ADR-0043).
        *
-       * 조회 API(목록·상세·커리큘럼)에는 권한이 없지만(가입한 회원 누구나 본다) 이 메뉴는
-       * 학술국장이 전체 활동을 감독하는 화면이다 — nav.ts의 규칙은 "화면 진입에 필요한
-       * 권한"을 적는 것이고, 이 화면을 실제로 쓰는 사람은 ACADEMIC_PROGRAM_MANAGE 보유자다.
-       * 상세는 목록에서 들어가므로 목차에 따로 올리지 않는다.
+       * 전체 목록(`mine` 없는 GET /v1/academic-programs)은 학술 프로그램 조회(ACADEMIC_PROGRAM_READ)
+       * 보유자만 받는다(서버 #688 · #694). 상세의 전이 버튼은 화면 안에서 MANAGE로 잠근다. 상세는
+       * 목록에서 들어가므로 목차에 따로 올리지 않는다.
        *
        * `isActive`에서 `/academic-programs/reviews`를 뺀다 — 회차·출석 승인은 아래 별도
        * 항목이라, 그 화면에서 이 메뉴까지 켜지면 목차가 지금 어디인지 알려주지 못한다
@@ -279,29 +281,29 @@ export const NAV_GROUPS: NavGroup[] = [
           !p.startsWith("/academic-programs/reviews") &&
           !p.startsWith("/academic-programs/sessions") &&
           !p.startsWith("/academic-programs/attendance"),
-        requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+        requires: CAPABILITY.ACADEMIC_PROGRAM_READ,
       },
       /*
        * 회차·출석 승인 (#129 · 서버 #136).
        *
-       * 학술국장이 여러 활동의 제출된 회차 기록을 한 화면에서 승인·수정요청한다. 목록·전이
-       * 모두 서버가 ACADEMIC_PROGRAM_MANAGE 로 가드하므로(선택 항목 상세만 인증), 권한이
-       * 없으면 첫 조회부터 403이다 — 감추지 않으면 갈 수 없는 곳이 목차에 남는다.
+       * 학술국장이 여러 활동의 제출된 회차 기록을 한 화면에서 승인·수정요청한다. 대기 목록은
+       * ACADEMIC_PROGRAM_READ, 전이는 ACADEMIC_PROGRAM_MANAGE 다(서버 #694). 메뉴는 목록이 요구하는
+       * READ로 감추고(없으면 첫 조회부터 403이다) 승인·수정요청은 화면 안에서 MANAGE로 잠근다.
        */
       {
         label: "회차·출석 승인",
         href: ROUTES.academicProgramSessionReviews,
         isActive: starts("/academic-programs/reviews/sessions"),
-        requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+        requires: CAPABILITY.ACADEMIC_PROGRAM_READ,
       },
       /*
        * 회차 이력 (#130 · 서버 #136).
        *
        * 학술국장이 전체 활동의 회차 진행을 한 화면에서 훑는다(활동 횡단 조회 —
        * GET /v1/academic-programs/sessions). 승인 대기 목록과 달리 상태를 가리지 않는다.
-       * 목록·조회 모두 ACADEMIC_PROGRAM_MANAGE 를 요구한다 — 권한이 없으면 첫 조회부터
+       * 목록은 ACADEMIC_PROGRAM_READ 를 요구한다(서버 #694) — 권한이 없으면 첫 조회부터
        * 403이라 감추지 않으면 갈 수 없는 곳이 목차에 남는다. 회차 상세는 이력에서
-       * 들어가므로 목차에 따로 올리지 않는다.
+       * 들어가므로 목차에 따로 올리지 않는다(상세도 관계자 판정에 READ가 든다).
        *
        * isActive 는 `/academic-programs/reviews/sessions`(승인 대기)를 뺀다 — 주소는
        * 비슷하지만 다른 화면이다.
@@ -311,20 +313,21 @@ export const NAV_GROUPS: NavGroup[] = [
         href: ROUTES.academicProgramSessions,
         isActive: (p) =>
           p.startsWith("/academic-programs/sessions"),
-        requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+        requires: CAPABILITY.ACADEMIC_PROGRAM_READ,
       },
       /*
        * 출석 통계 (#130).
        *
        * 출석 통계 전용 엔드포인트가 없어 회차 이력·출석부 응답을 웹에서 집계한다
        * (features/academic-session/model/use-attendance-stats). 이력 조회가
-       * ACADEMIC_PROGRAM_MANAGE 를 요구하므로 이 메뉴도 같은 권한으로 잠근다.
+       * ACADEMIC_PROGRAM_READ 를 요구하므로 이 메뉴도 같은 권한으로 감춘다(출석부는 관계자
+       * 판정이라 READ가 든다 · 서버 #694).
        */
       {
         label: "출석 통계",
         href: ROUTES.academicProgramAttendance,
         isActive: starts("/academic-programs/attendance"),
-        requires: CAPABILITY.ACADEMIC_PROGRAM_MANAGE,
+        requires: CAPABILITY.ACADEMIC_PROGRAM_READ,
       },
     ],
   },
@@ -562,7 +565,10 @@ export const NAV_GROUPS: NavGroup[] = [
 
 /** 이 회원이 항목을 열 수 있는가 — 목차 감추기(`visibleGroups`)와 전체 메뉴의 잠금 표시가 같은 판정을 쓴다 */
 export function itemAllowed(member: MemberProfile | null, item: NavItem): boolean {
-  return !item.requires || hasCapability(member, item.requires);
+  if (!item.requires) return true;
+  const required: readonly Capability[] =
+    typeof item.requires === "string" ? [item.requires] : item.requires;
+  return required.some((capability) => hasCapability(member, capability));
 }
 
 /*

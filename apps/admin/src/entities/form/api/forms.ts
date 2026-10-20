@@ -195,8 +195,10 @@ function toResponseSummary(
  *
  * 두 필드를 각각 폴백해 어느 쪽이 빠져 와도 편집기가 마운트되게 한다. `toFormDraft`가
  * 페이지 0개면 페이지 1개를 채우므로 여기서는 빈 배열이면 충분하다.
+ *
+ * 시스템 폼 조회(`proposal-form.ts`)도 같은 JSONB를 받으므로 이 함수를 함께 쓴다.
  */
-function toQitemComposition(raw: Partial<QitemCpstCn> | null): QitemCpstCn {
+export function toQitemComposition(raw: Partial<QitemCpstCn> | null): QitemCpstCn {
   return {
     pages: raw?.pages ?? [],
     qitems: raw?.qitems ?? [],

@@ -7,6 +7,7 @@ export type {
   FormReceiptStatus,
   FormResponseSummary,
   FormSummary,
+  SystemForm,
 } from "./model/types";
 /*
  * 문항 구성(JSONB) 타입은 `@ssccops/form-renderer`가 정의한다(#152) — 공개 앱도 같은 구성을
