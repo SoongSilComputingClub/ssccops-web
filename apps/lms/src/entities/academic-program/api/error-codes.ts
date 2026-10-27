@@ -48,3 +48,34 @@ export const ACADEMIC_PROGRAM_MEMBER_ERROR = {
   /** 전이표에 없는 상태 변경 (400) — 대기에서 곧바로 제외하는 등 */
   INVALID_PARTICIPANT_STATUS_TRANSITION: "INVALID_PARTICIPANT_STATUS_TRANSITION",
 } as const;
+
+/**
+ * 소개 글(행사 게시물) 조회·저장이 돌려주는 오류 코드 (#819 · ADR-0069 · 서버 #699).
+ *
+ * 서버 판정 순서: 프로그램 404 → 리더 403 → 잠금 409 → 본문 검증 400 · 413.
+ */
+export const EVENT_POST_ERROR = {
+  /** 없는 프로그램 (404) */
+  ACADEMIC_PROGRAM_NOT_FOUND: "ACADEMIC_PROGRAM_NOT_FOUND",
+  /** 그 프로그램의 리더가 아니다 (403) — 학술국장도 이 경로를 쓰지 않는다(관리자 페이지 행사 편집) */
+  FORBIDDEN: "FORBIDDEN",
+  /**
+   * 접수가 끝났거나 수료·폐지된 프로그램 (409). **저장·이미지 발급에서만 나온다** — 조회는
+   * `isEditable: false`로 온다. 화면을 열어 둔 사이 잠긴 경우다.
+   */
+  ACADEMIC_PROGRAM_EVENT_POST_LOCKED: "ACADEMIC_PROGRAM_EVENT_POST_LOCKED",
+  /** 본문 10만 자 초과 (413) — 관리자 페이지 행사 저장과 같은 규칙 */
+  EVENT_CONTENT_TOO_LARGE: "EVENT_CONTENT_TOO_LARGE",
+  /** 길이·필수 위반 (400) */
+  VALIDATION_FAILED: "VALIDATION_FAILED",
+} as const;
+
+/** 소개 글 이미지 업로드 오류 코드 — 서버 두 개는 어드민 행사 이미지와 같다. PUT_FAILED는 R2 구간 */
+export const EVENT_POST_IMAGE_ERROR = {
+  /** 400 — 서버가 허용하지 않는 형식(허용 목록은 서버에만 있다) */
+  UNSUPPORTED_IMAGE_TYPE: "UNSUPPORTED_IMAGE_TYPE",
+  /** 413 — 서버 용량 상한 초과 */
+  IMAGE_TOO_LARGE: "IMAGE_TOO_LARGE",
+  /** R2 구간 실패 — 서버가 준 코드가 아니라 클라이언트가 붙인다 */
+  PUT_FAILED: "CLIENT_IMAGE_PUT_FAILED",
+} as const;
