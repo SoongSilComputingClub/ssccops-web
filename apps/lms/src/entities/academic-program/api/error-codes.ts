@@ -52,7 +52,7 @@ export const ACADEMIC_PROGRAM_MEMBER_ERROR = {
 /**
  * 소개 글(행사 게시물) 조회·저장이 돌려주는 오류 코드 (#819 · ADR-0069 · 서버 #699).
  *
- * 서버 판정 순서: 프로그램 404 → 리더 403 → 잠금 409 → 본문 검증 400 · 413.
+ * 서버 판정 순서: 프로그램 404 → 리더 403 → 수료·폐지 409 → 접수 종료 409 → 본문 검증 400 · 413.
  */
 export const EVENT_POST_ERROR = {
   /** 없는 프로그램 (404) */
@@ -60,10 +60,14 @@ export const EVENT_POST_ERROR = {
   /** 그 프로그램의 리더가 아니다 (403) — 학술국장도 이 경로를 쓰지 않는다(관리자 페이지 행사 편집) */
   FORBIDDEN: "FORBIDDEN",
   /**
-   * 접수가 끝났거나 수료·폐지된 프로그램 (409). **저장·이미지 발급에서만 나온다** — 조회는
-   * `isEditable: false`로 온다. 화면을 열어 둔 사이 잠긴 경우다.
+   * 접수가 끝난 프로그램 (409). **저장·이미지 발급에서만 나온다** — 조회는 `isEditable: false`로
+   * 온다. 화면을 열어 둔 사이 잠긴 경우다.
    */
   ACADEMIC_PROGRAM_EVENT_POST_LOCKED: "ACADEMIC_PROGRAM_EVENT_POST_LOCKED",
+  /** 수료된 프로그램 (409 · ADR-0057) — 학술 쓰기 경로 공통 코드라 소개 글도 이 코드로 온다 */
+  ACADEMIC_PROGRAM_COMPLETED: "ACADEMIC_PROGRAM_COMPLETED",
+  /** 폐지된 프로그램 (409 · ADR-0058) — 위와 같다 */
+  ACADEMIC_PROGRAM_DISCONTINUED: "ACADEMIC_PROGRAM_DISCONTINUED",
   /** 본문 10만 자 초과 (413) — 관리자 페이지 행사 저장과 같은 규칙 */
   EVENT_CONTENT_TOO_LARGE: "EVENT_CONTENT_TOO_LARGE",
   /** 길이·필수 위반 (400) */

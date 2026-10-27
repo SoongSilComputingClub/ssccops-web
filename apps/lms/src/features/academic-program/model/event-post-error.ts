@@ -47,6 +47,8 @@ export function toEventPostSaveErrorMessage(error: unknown): string {
   }
   switch (error.code) {
     case EVENT_POST_ERROR.ACADEMIC_PROGRAM_EVENT_POST_LOCKED:
+    case EVENT_POST_ERROR.ACADEMIC_PROGRAM_COMPLETED:
+    case EVENT_POST_ERROR.ACADEMIC_PROGRAM_DISCONTINUED:
       return LOCKED;
     case EVENT_POST_ERROR.EVENT_CONTENT_TOO_LARGE:
       return "본문이 100,000자를 넘어 저장할 수 없습니다 — 내용을 줄여주세요";
