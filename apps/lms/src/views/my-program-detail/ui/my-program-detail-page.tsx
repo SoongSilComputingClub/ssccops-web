@@ -15,6 +15,7 @@ import { LoginGate } from "@/features/auth";
 import { ShareButton } from "@/features/share";
 import {
   ROUTES,
+  studioProgramEventPostUrl,
   studioRecordUrl,
   studioRosterUrl,
 } from "@/shared/config/routes";
@@ -151,6 +152,19 @@ function DetailBody({ data }: Readonly<{ data: MyProgramDetailReady }>) {
           >
             팀원 관리
           </Link>
+          {/*
+           * 소개 글 편집 (#819 · ADR-0069) — 공개 웹사이트에 보이는 행사 게시물. 고칠 수 있는 사람은
+           * 리더 한 사람이라 서버가 준 `isLeader`로만 보인다(웹이 회원 번호를 대조하지 않는다).
+           * 접수가 끝나도 링크는 남는다 — 그 화면이 이유와 함께 읽기 전용으로 열린다.
+           */}
+          {program.isLeader && (
+            <Link
+              href={studioProgramEventPostUrl(program.academicProgramId)}
+              className="whitespace-nowrap rounded-[12px] border border-line px-[12px] py-[6px] text-[13.5px] text-n400 hover:border-accent hover:text-accent"
+            >
+              소개 글
+            </Link>
+          )}
           {/*
            * 공유 (ssccops#253 · ADR-0017). 출석부·팀원 관리와 같은 줄에 둔다 — 셋 다 "이 활동을
            * 가지고 무엇을 한다"이고, 공유만 따로 떼면 스터디장이 찾아야 할 자리가 하나 는다.
