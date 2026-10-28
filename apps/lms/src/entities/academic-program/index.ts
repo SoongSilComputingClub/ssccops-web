@@ -28,7 +28,23 @@ export {
 export { fetchAcademicProgramMembers } from "./api/members";
 
 // 순수 상수 모듈(전송 계층 무의존)이라 재export 해도 안전하다 — 조회 함수는 로더가 직접 임포트한다
-export { ACADEMIC_PROGRAM_LIST_ERROR, ACADEMIC_PROGRAM_MEMBER_ERROR } from "./api/error-codes";
+export {
+  ACADEMIC_PROGRAM_LIST_ERROR,
+  ACADEMIC_PROGRAM_MEMBER_ERROR,
+  EVENT_POST_ERROR,
+  EVENT_POST_IMAGE_ERROR,
+} from "./api/error-codes";
+
+// 소개 글(#819) — 순수 모듈(타입·상수·문구)만. 조회·저장은 `api/event-post-{read,write}.ts`에서 직접
+export {
+  EVENT_TTL_MAX_LENGTH,
+  PLC_NM_MAX_LENGTH,
+  THMB_URL_MAX_LENGTH,
+  eventPostLockText,
+  type EventPostLockReason,
+  type ProgramEventPost,
+  type ProgramEventPostSaveInput,
+} from "./model/event-post";
 /*
  * 팀원 추가·상태 변경·이력(`api/members-write.ts` · #742)은 재export 하지 않는다 — 브라우저 전용
  * 모듈이라 클라이언트 컴포넌트가 직접 임포트한다. 이 배럴은 위의 `fetchAcademicProgramMembers`

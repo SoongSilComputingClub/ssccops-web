@@ -199,6 +199,17 @@ export function studioProgramFormUrl(academicProgramId: number): string {
   return `${studioProgramDetailUrl(academicProgramId)}/form`;
 }
 
+/**
+ * 소개 글 편집 링크 — `/studio/programs/{programId}/event-post` (#819 · ADR-0069).
+ *
+ * 공개 웹사이트의 프로그램 상세가 보여 주는 행사 게시물(제목·본문·썸네일·장소)을 리더가 고치는
+ * 화면이다. 지원서 문항(`studioProgramFormUrl`)처럼 프로그램 하나에 딸린 부속 화면이라 상세의
+ * 하위 경로에 둔다. 들어오는 길은 내 프로그램 상세의 헤더라 상단 바는 «내 프로그램»이 켠다.
+ */
+export function studioProgramEventPostUrl(academicProgramId: number): string {
+  return `${studioProgramDetailUrl(academicProgramId)}/event-post`;
+}
+
 /*
  * 어드민 오리진(`signupUrl()`)은 #453에서 걷어냈다 — 미가입 안내가 어드민 `/signup`으로 보내던 열두
  * 자리가 이제 같은 자리에서 `SignupRequiredNotice`(www에서 가져온 `SignupStep`)를 연다. 부원에게
