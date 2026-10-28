@@ -6,7 +6,7 @@ import {
   programStopOf,
   type AcademicProgramSummary,
 } from "@/entities/academic-program";
-import { studioProgramFormUrl } from "@/shared/config/routes";
+import { studioProgramEventPostUrl, studioProgramFormUrl } from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
 import { Badge, Card } from "@/shared/ui";
 import { cardPhaseOf } from "./phase-filter";
@@ -51,6 +51,11 @@ export function RecruitmentCard({ program }: Readonly<{ program: AcademicProgram
     (stop ? acdmActvSttsBadge(program.sttsCd) : null) ??
     receiptStatusBadge(program.formReceiptStatus ?? "DRAFT");
   const editable = phase === "before";
+  /*
+   * 소개 글은 문항과 창이 다르다 — 접수 중에도 고친다(ADR-0069). 라벨은 안내일 뿐이고
+   * 잠금은 편집 화면이 서버 `isEditable`로 한다(카드 목록 응답으로 같은 판정을 다시 하지 않는다).
+   */
+  const postEditable = phase === "before" || phase === "open";
 
   return (
     <Card>
@@ -63,6 +68,20 @@ export function RecruitmentCard({ program }: Readonly<{ program: AcademicProgram
           접수가 시작된 뒤에도 링크를 없애지 않는 것은, 리더가 자기 공고에 무엇을 물었는지
           되돌아볼 자리가 여기뿐이기 때문이다(서버도 그래서 창이 닫혀도 200을 준다).
         */}
+        {/*
+          소개 글(#821)은 모집 공지에 실리는 글이라 문항과 같은 자리에서 고친다 — 그전에는
+          «내 프로그램» 상세 머리에만 링크가 있어 모집을 준비하는 리더가 찾지 못했다.
+        */}
+        <Link
+          href={studioProgramEventPostUrl(program.academicProgramId)}
+          className={
+            postEditable
+              ? "rounded-[10px] px-[14px] py-[8px] text-[14px] font-semibold text-accent shadow-[inset_0_0_0_1px_var(--color-accent)] hover:bg-accent-soft"
+              : "rounded-[10px] px-[14px] py-[8px] text-[14px] text-n300 shadow-[inset_0_0_0_1px_var(--color-line-strong)] hover:text-ink"
+          }
+        >
+          {postEditable ? "소개 글 편집" : "소개 글 보기"}
+        </Link>
         <Link
           href={studioProgramFormUrl(program.academicProgramId)}
           className={
