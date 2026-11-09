@@ -12,10 +12,15 @@
  */
 export type {
   FormReceiptStatus,
+  RecruitmentApplicant,
+  RecruitmentApplicantDetail,
+  RecruitmentApplication,
+  RecruitmentApplicationDetail,
   RecruitmentForm,
   RecruitmentFormView,
 } from "./model/types";
-export { RECRUITMENT_FORM_ERROR } from "./model/error-codes";
+// 지원자 조회(`api/recruitment-applications-read.ts` · #826)도 서버 전용이라 재export 하지 않는다
+export { RECRUITMENT_APPLICATION_ERROR, RECRUITMENT_FORM_ERROR } from "./model/error-codes";
 export {
   recruitmentPhaseOf,
   receiptStatusBadge,

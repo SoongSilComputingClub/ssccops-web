@@ -6,7 +6,7 @@ import { ProgramEventPostPage } from "@/views/program-event-post";
  *
  * 프로그램 상세의 하위 경로다 — 지원서 문항(`/form`)과 같은 자리. 숫자가 아니면 null로 넘겨 뷰가
  * «어떤 프로그램인지 알 수 없다» 안내를 그린다. 상단 바는 «내 프로그램»이 켠다(`nav-links.ts` —
- * `/form`만 «모집 관리»로 뺀다).
+ * `/form`·`/applications`만 «모집 관리»로 뺀다).
  */
 export const metadata: Metadata = {
   title: "소개 글",
