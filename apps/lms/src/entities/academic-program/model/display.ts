@@ -23,6 +23,17 @@ export function ptcpSttsBadge(code: PtcpSttsCd) {
 }
 
 /**
+ * 지원자의 선발 상태 배지 (#826 · ssccops#625) — 참가 상태가 없으면 «미선발».
+ *
+ * 서버는 아직 뽑히지 않은 지원자에게 `ptcpSttsCd: null`을 주고 대체값을 만들지 않는다(server#198).
+ * «미선발»은 이 표시 규칙이 읽은 말이다. 확정·대기·제외는 팀원 명단과 같은 어휘다 — 지원자 목록과
+ * 팀원 관리가 같은 사람을 다른 말로 부르지 않게 한다.
+ */
+export function selectionBadge(code: PtcpSttsCd | null): { label: string; tone: BadgeTone } {
+  return code === null ? { label: "미선발", tone: "outline" } : PTCP_STTS_BADGE[code];
+}
+
+/**
  * 역할 배지 — 서버가 준 `isLeader`로만 가른다(#131 결정).
  *
  * `leadrMbrId`를 웹에서 다시 계산하지 않는다. 스터디장/팀장 구분(스터디는 '스터디장',

@@ -210,6 +210,30 @@ export function studioProgramEventPostUrl(academicProgramId: number): string {
   return `${studioProgramDetailUrl(academicProgramId)}/event-post`;
 }
 
+/**
+ * 지원자 목록 링크 — `/studio/programs/{programId}/applications` (#826 · ssccops#625).
+ *
+ * 리더가 자기 프로그램에 들어온 지원서를 **읽기만** 하는 화면이다. 지원서 문항(`/form`)처럼
+ * 프로그램 하나에 딸린 부속 화면이라 상세의 하위 경로에 둔다. 들어오는 길은 모집 관리 카드라
+ * 상단 바는 «모집 관리»가 켠다(`nav-links.ts`).
+ */
+export function studioProgramApplicationsUrl(academicProgramId: number): string {
+  return `${studioProgramDetailUrl(academicProgramId)}/applications`;
+}
+
+/**
+ * 지원서 한 건 링크 — `/studio/programs/{programId}/applications/{formRspnsId}` (#826).
+ *
+ * 응답 식별자를 주소에 싣는다 — 목록을 거치지 않고 바로 열어도 같은 화면이다(이전·다음도 서버가 준다).
+ * 폼 번호는 싣지 않는다. 서버가 프로그램으로 폼을 찾고, 다른 폼의 응답 번호는 404다.
+ */
+export function studioProgramApplicationUrl(
+  academicProgramId: number,
+  formRspnsId: number,
+): string {
+  return `${studioProgramApplicationsUrl(academicProgramId)}/${formRspnsId}`;
+}
+
 /*
  * 어드민 오리진(`signupUrl()`)은 #453에서 걷어냈다 — 미가입 안내가 어드민 `/signup`으로 보내던 열두
  * 자리가 이제 같은 자리에서 `SignupRequiredNotice`(www에서 가져온 `SignupStep`)를 연다. 부원에게

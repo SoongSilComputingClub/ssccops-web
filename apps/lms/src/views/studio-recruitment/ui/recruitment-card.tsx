@@ -6,7 +6,11 @@ import {
   programStopOf,
   type AcademicProgramSummary,
 } from "@/entities/academic-program";
-import { studioProgramEventPostUrl, studioProgramFormUrl } from "@/shared/config/routes";
+import {
+  studioProgramApplicationsUrl,
+  studioProgramEventPostUrl,
+  studioProgramFormUrl,
+} from "@/shared/config/routes";
 import { formatDt, formatYmd } from "@/shared/lib/date";
 import { Badge, Card } from "@/shared/ui";
 import { cardPhaseOf } from "./phase-filter";
@@ -56,6 +60,13 @@ export function RecruitmentCard({ program }: Readonly<{ program: AcademicProgram
    * 잠금은 편집 화면이 서버 `isEditable`로 한다(카드 목록 응답으로 같은 판정을 다시 하지 않는다).
    */
   const postEditable = phase === "before" || phase === "open";
+  /*
+   * 지원자 보기(#826 · ssccops#625)는 접수가 열린 적이 있을 때만 둔다 — 그 전에는 서버가 409
+   * `RECRUITMENT_NOT_STARTED`이고(빈 목록이 «아무도 지원하지 않았다»로 읽히지 않게), 볼 것도 없다.
+   * 판정은 «지원» 칸의 «-»와 같은 접수 상태다. 수료·폐지 뒤에도 읽기는 열려 있다(ADR-0057·0058은
+   * 쓰기만 멈춘다).
+   */
+  const applicationsOpen = receiptPhase !== "before";
 
   return (
     <Card>
@@ -92,6 +103,18 @@ export function RecruitmentCard({ program }: Readonly<{ program: AcademicProgram
         >
           {editable ? "지원서 문항 편집" : "지원서 문항 보기"}
         </Link>
+        {/*
+          읽기 전용이라 라벨이 «보기» 하나다 — 선발은 학술국장이 어드민에서 한다. 건수는 «지원» 칸과
+          같은 값(제출 이상)이고, 지원서 목록이 그대로 그 줄 수다.
+        */}
+        {applicationsOpen && (
+          <Link
+            href={studioProgramApplicationsUrl(program.academicProgramId)}
+            className="rounded-[10px] px-[14px] py-[8px] text-[14px] font-semibold text-accent shadow-[inset_0_0_0_1px_var(--color-accent)] hover:bg-accent-soft"
+          >
+            지원자 보기 {program.applicationCount}
+          </Link>
+        )}
       </div>
 
       <h2 className="mt-3 text-[19px] font-medium tracking-[-.3px]">{program.title || "-"}</h2>
