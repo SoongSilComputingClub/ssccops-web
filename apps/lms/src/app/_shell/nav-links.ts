@@ -53,15 +53,18 @@ export type NavGroup = {
 const starts = (prefix: string) => (p: string) => p === prefix || p.startsWith(`${prefix}/`);
 
 /**
- * 지원서 문항 편집 화면인가 — `/studio/programs/{숫자}/form` (#528).
+ * 모집 관리에서 들어가는 프로그램 하위 화면인가 — 지원서 문항(`/studio/programs/{숫자}/form` · #528)과
+ * 지원자 목록·지원서 한 건(`…/applications`, `…/applications/{숫자}` · #826).
  *
  * 두 항목이 이 판정을 **함께 쓴다**: «내 프로그램»은 빼고 «모집 관리»는 켠다. 한쪽만 고치면
  * 그 화면에서 아무것도 켜지지 않거나 둘이 함께 켜진다 — 그래서 문자열을 각자 적지 않는다.
  *
  * `endsWith("/form")` 하나로 두지 않은 것은 뒤에 `/form`으로 끝나는 다른 주소가 생기면
- * 그것까지 «모집 관리»로 켜지기 때문이다.
+ * 그것까지 «모집 관리»로 켜지기 때문이다. 소개 글(`/event-post`)은 여기 없다 — 그 화면은
+ * 카드에서도 들어오지만 «내 프로그램» 상세 머리가 원래 입구라 그쪽이 켠다.
  */
-const isProgramFormPath = (p: string) => /^\/studio\/programs\/\d+\/form$/.test(p);
+const isProgramRecruitmentPath = (p: string) =>
+  /^\/studio\/programs\/\d+\/(form|applications(\/\d+)?)$/.test(p);
 
 /*
  * 묶음 셋 — 학술 대시보드 · 내 프로그램 · 모집·기획.
@@ -92,12 +95,12 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         /*
          * 목록(`/studio/programs`)과 상세(`/studio/programs/{id}`)에서 켜진다 (#188).
          *
-         * **지원서 문항 편집(`/studio/programs/{id}/form`)은 뺀다** (#528). 주소는 활동 상세의
-         * 하위 경로지만 그 화면으로 들어오는 길은 «모집 관리»이고, 빼지 않으면 두 항목이 동시에
-         * 켜진다 — 어드민이 «프로그램 목록»의 `isActive`에서 `/recruitment`를 뺀 것과 같은
-         * 판단이다.
+         * **지원서 문항(`/studio/programs/{id}/form`)·지원자(`…/applications` · #826)는 뺀다** (#528).
+         * 주소는 활동 상세의 하위 경로지만 그 화면으로 들어오는 길은 «모집 관리»이고, 빼지 않으면
+         * 두 항목이 동시에 켜진다 — 어드민이 «프로그램 목록»의 `isActive`에서 `/recruitment`를 뺀
+         * 것과 같은 판단이다.
          */
-        isActive: (p) => starts(ROUTES.studioPrograms)(p) && !isProgramFormPath(p),
+        isActive: (p) => starts(ROUTES.studioPrograms)(p) && !isProgramRecruitmentPath(p),
       },
       {
         href: ROUTES.studioRecord,
@@ -132,12 +135,12 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         label: "모집 관리",
         role: "STUDY_LEAD",
         /*
-         * 목록(`/studio/recruitment`)과 **지원서 문항 편집**(`/studio/programs/{id}/form`)에서
-         * 켜진다 (#528). 편집 화면의 주소는 활동 상세의 하위 경로지만 그리로 들어오는 길은
-         * 이 항목이라, 여기서 켜 주지 않으면 그 화면에서 **아무 항목도 켜지지 않는다**
-         * («내 프로그램»은 같은 이유로 `/form`을 뺐다).
+         * 목록(`/studio/recruitment`)과 **지원서 문항 편집**(`/studio/programs/{id}/form`)·
+         * **지원자**(`…/applications` · #826)에서 켜진다 (#528). 그 화면들의 주소는 활동 상세의
+         * 하위 경로지만 그리로 들어오는 길은 이 항목이라, 여기서 켜 주지 않으면 그 화면에서
+         * **아무 항목도 켜지지 않는다**(«내 프로그램»은 같은 이유로 그 경로를 뺐다).
          */
-        isActive: (p) => starts(ROUTES.studioRecruitment)(p) || isProgramFormPath(p),
+        isActive: (p) => starts(ROUTES.studioRecruitment)(p) || isProgramRecruitmentPath(p),
       },
       {
         href: ROUTES.proposalNew,

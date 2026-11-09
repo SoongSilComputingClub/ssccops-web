@@ -45,3 +45,29 @@ export const RECRUITMENT_FORM_ERROR = {
   /** 이 활동의 리더도 학술국장도 아니다 (403) */
   FORBIDDEN: "FORBIDDEN",
 } as const;
+
+/**
+ * 지원자 목록·지원서 상세가 돌려주는 서버 오류 코드 (#826 · ssccops#625 · server#704).
+ *
+ * 서버 판정 순서: 프로그램 404 → 자격 403 → 모집 시작 전 409 → 폼 미연결 409 → (상세) 응답 404.
+ * 자격은 목록이 «리더 또는 학술 조회 권한», 상세가 «리더 한 사람»이다(ADR-0068 — 국원에게는
+ * 기획안 응답만 열었다). 둘 다 403 `FORBIDDEN`으로 온다.
+ */
+export const RECRUITMENT_APPLICATION_ERROR = {
+  /** 없는 프로그램 (404) */
+  ACADEMIC_PROGRAM_NOT_FOUND: "ACADEMIC_PROGRAM_NOT_FOUND",
+  /** 이 프로그램의 리더가 아니다 (403) */
+  FORBIDDEN: "FORBIDDEN",
+  /**
+   * 모집을 시작하기 전이다 (409). 빈 배열이 아니라 오류인 것은 빈 목록이 «아무도 지원하지 않았다»로
+   * 읽히기 때문이다(서버 주석). 카드가 그 구간에 링크를 감추므로 주소를 직접 쳐야 온다.
+   */
+  RECRUITMENT_NOT_STARTED: "RECRUITMENT_NOT_STARTED",
+  /** 연결된 모집 폼이 없다 (409) — 승인 이관이 붙여 주므로 정상 흐름에서는 나오지 않는다 */
+  FORM_NOT_LINKED: "FORM_NOT_LINKED",
+  /**
+   * 그 지원서가 없다 (404 · 상세만). 다른 폼의 응답 번호와 작성 중(DRAFT) 응답도 같은 코드다 —
+   * 그 폼에 그 번호가 있는지 없는지를 알려주지 않는다.
+   */
+  FORM_RESPONSE_NOT_FOUND: "FORM_RESPONSE_NOT_FOUND",
+} as const;
