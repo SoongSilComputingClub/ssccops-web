@@ -139,14 +139,15 @@ export function OperationCreatePage({
    */
   /*
    * 업무·회의는 담당자·책임자도 국장 이상만 고를 수 있어야 한다(#71, 서버 #101) — 유형이
-   * 바뀌면 훅이 authority 인자로 다시 불러 후보를 새로 받는다. 하위 업무는 국원도 담당자가
-   * 될 수 있으므로 authority를 주지 않는다(전체 활동 회원).
+   * 바뀌면 훅이 authority 인자로 다시 불러 후보를 새로 받는다. 하위 업무는 WORK_READ 보유자다
+   * (#831 · ssccops#628) — 국원도 담당자가 되지만, 역할이 없는 회원과 리더 역할만 가진 회원은
+   * 하위 업무를 열 권한이 없어 빠진다. 서버 등록도 같은 기준으로 거절한다.
    */
   const assignable = useAssignableMembers(
     operTypeCd === "MEETING"
       ? CAPABILITY.MEETING_MANAGE
       : operTypeCd === "SUB_WORK"
-        ? undefined
+        ? CAPABILITY.WORK_READ
         : CAPABILITY.WORK_MANAGE,
   );
 

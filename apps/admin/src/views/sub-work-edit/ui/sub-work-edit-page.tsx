@@ -44,10 +44,11 @@ import {
  *
  * **담당자는 등록 화면과 같은 셀렉트로 바꾼다**(#435 · ssccops#333). 후보는 같은 훅
  * (`useAssignableMembers` · GET /v1/members/assignable)에서 받고, 하위 업무는 등록과 같이
- * authority를 주지 않는다(국원도 담당자가 될 수 있다). 기본값은 현재 담당자이고 요청 본문의
- * ownerId는 고른 값이다. 후보 조회가 실패하면 저장 버튼을 잠근다(등록 규칙). 현재 담당자가
- * 후보에서 빠졌으면 «현재: 이름»으로 남겨 두고 그대로 저장할 수 있게 한다 — 거절은 서버가
- * 한다(OWNER_NOT_ACTIVE_MEMBER → VALIDATION_FAILED, 문구는 서버 것을 그대로 띄운다).
+ * WORK_READ 보유자로 좁힌다(#831 · ssccops#628 — 국원 이상, 역할이 없거나 리더 역할만 가진
+ * 회원은 빠진다). 기본값은 현재 담당자이고 요청 본문의 ownerId는 고른 값이다. 후보 조회가
+ * 실패하면 저장 버튼을 잠근다(등록 규칙). 현재 담당자가 후보에서 빠졌으면(임기 종료·탈퇴)
+ * «현재: 이름»으로 남겨 두고 그대로 저장할 수 있게 한다 — 서버는 담당자가 그대로면 자격을 다시
+ * 보지 않는다(OperationOwnerPolicy). 다른 회원으로 바꿀 때만 판정한다.
  *
  * **상위 업무는 여기서 바꿀 수 없다** — 진행률 집계 경계를 다시 정의하는 별개의 결정이라
  * 이 화면 범위 밖이다.
@@ -113,7 +114,7 @@ function SubWorkEditForm({
 }>) {
   const router = useRouter();
   const { pending, update } = useUpdateSubWork();
-  const assignable = useAssignableMembers();
+  const assignable = useAssignableMembers(CAPABILITY.WORK_READ);
 
   const [title, setTitle] = useState(subWork.title);
   /* 담당자 — 기본값은 현재 담당자. 서버는 담당자 없는 하위 업무를 만들지 않으므로 null은 정상 경로가 아니다 */

@@ -55,7 +55,8 @@ export interface AssignableMembers {
 
 /*
  * authority가 있으면 그 권한을 오늘 행사할 수 있는 회원으로 좁혀 받는다(#71 · 서버 #101) —
- * 업무·회의 등록처럼 국장 이상만 담당자로 고를 수 있어야 하는 화면이 쓴다. authority가
+ * 업무·회의 등록처럼 국장 이상만 담당자로 고를 수 있어야 하는 화면이 쓴다. 하위 업무는
+ * `WORK_READ`다(#831 · ssccops#628 — 국원 이상, 하위 업무를 열 권한이 있는 회원). authority가
  * 바뀌면(예: 등록 유형을 업무↔회의로 전환) 새 조건으로 다시 불러야 하므로 effect 의존성에
  * 넣는다 — 훅을 유형마다 따로 부르지 않고 하나로 재사용할 수 있는 것이 이 덕분이다.
  */
@@ -118,8 +119,14 @@ export function useAssignableMembers(authority?: string): AssignableMembers {
 /**
  * 선택 목록에 그릴 한 줄 — `홍길동 · 12기 · 회장`.
  *
- * 이름만으로는 동명이인을 가를 수 없어 기수를 함께 적고, 그 뒤에는 대표 역할을(없으면 등급을)
- * 붙인다. **연락처·이메일·학번은 적지 않는다** — `/assignable`은 권한 없이 부르는 목록이라
+ * 이름만으로는 동명이인을 가를 수 없어 기수를 함께 적고, 그 뒤에는 역할을(없으면 등급을) 붙인다.
+ * 역할은 서버가 고른 `displayRoleName`이다(서버 #709 · #831) — 운영진 역할을 리더 역할보다 먼저
+ * 싣는다. 대표 역할만 보면 운영진 역할에 대표 표시가 없는 회원이 «정회원»으로, 대표 역할이 트랙장인
+ * 최고관리자가 «트랙장»으로 찍혀 «역할 없는 회원이 담당자 후보에 있다»로 읽혔다(ssccops#628).
+ * 어느 역할을 고를지는 화면이 정하지 않는다 — 응답에 역할 목록이 없고, 리더 역할의 이름은 서버
+ * 한 곳(LeaderRole)에 있다. 서버 #709 전이라 값이 없으면 대표 역할로 물러선다.
+ *
+ * **연락처·이메일·학번은 적지 않는다** — `/assignable`은 권한 없이 부르는 목록이라
  * 서버가 그 값을 아예 내리지 않는다(api/members.ts의 `AssignableMember` 주석).
  *
  * 기수 미배정을 "미배정"으로 옮기는 일은 `generationText` 한 곳에서 한다 — 화면마다 적으면
@@ -129,7 +136,7 @@ export function assignableMemberLabel(member: AssignableMember): string {
   return [
     member.name,
     generationText(member.generationNumber),
-    member.representativeRoleName ?? member.membershipGradeName,
+    member.displayRoleName ?? member.representativeRoleName ?? member.membershipGradeName,
   ].join(" · ");
 }
 
@@ -143,9 +150,10 @@ export interface AssignableCurrent {
  * 셀렉트가 보여 주고 폼이 서버로 보내도 되는 값인가 (#435).
  *
  * 후보 목록에 있으면 그대로 참이다. **수정 화면의 현재 담당자는 목록에 없어도 참으로 본다** —
- * 탈퇴·제명·등급 변경으로 후보에서 빠진 회원이 이미 담당자인 건은 있고, 그 건의 제목·기간만
+ * 탈퇴·제명·임기 종료로 후보에서 빠진 회원이 이미 담당자인 건은 있고, 그 건의 제목·기간만
  * 고치려는 사람까지 담당자를 갈아 끼우게 만들면 수정 화면이 "담당자 교체 화면"이 된다.
- * 서버가 거절하면(`OWNER_NOT_ACTIVE_MEMBER` → 400 VALIDATION_FAILED) 그 문구가 그대로 뜬다.
+ * 서버도 담당자가 그대로면 자격을 다시 보지 않는다(서버 #709 · OperationOwnerPolicy) — 다른
+ * 회원으로 바꿀 때만 판정한다.
  *
  * 목록이 아직 안 왔거나 실패했으면 현재 담당자라도 거짓이다 — 등록 화면과 같은 이유로
  * (`includes` 주석) 그 상태에서는 저장이 나가면 안 된다.
@@ -179,8 +187,9 @@ export function assignableBlockReason(assignable: AssignableMembers, pickable: b
  * 수정 화면의 담당자 셀렉트 아래 안내 — 잠금 사유가 없을 때만 보인다(등록 화면의 «본인으로
  * 등록됩니다» 자리). 업무·하위 업무 수정이 같은 문구·같은 판단을 쓴다(#435).
  *
- * 현재 담당자가 후보에서 빠진 경우를 먼저 말한다 — 그대로 저장하면 서버가 거절하므로, 그
- * 사람이 담당자였다는 사실과 다음 행동을 같은 줄에 둔다.
+ * 현재 담당자가 후보에서 빠진 경우를 먼저 말한다 — 그 사람을 다시 고를 수 없다는 사실과,
+ * 바꾸지 않으면 그대로 저장된다는 것을 함께 둔다(서버 #709 — 담당자가 그대로면 자격을 다시 보지
+ * 않는다). 안내 문단이라 대시 없이 문장으로 쓴다(화면 문구 규칙).
  */
 export function assignableEditHint(
   assignable: AssignableMembers,
@@ -190,7 +199,7 @@ export function assignableEditHint(
   if (memberId === current?.memberId) {
     return assignable.includes(current.memberId)
       ? "비우면 현재 담당자 그대로입니다"
-      : "현재 담당자는 이제 지정할 수 없는 회원입니다 — 다른 회원으로 바꿔주세요";
+      : "현재 담당자는 후보 목록에 없습니다. 바꾸지 않으면 그대로 저장됩니다.";
   }
   return "선택한 회원이 담당자로 저장됩니다";
 }

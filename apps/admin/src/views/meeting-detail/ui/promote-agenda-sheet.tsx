@@ -70,7 +70,7 @@ const TARGET_COPY: Record<
  *
  * 제목·담당자·우선순위·두 일시는 두 대상이 함께 쓴다 — 대상을 바꿔도 적어 둔 값이 남는다(등록
  * 화면이 유형을 바꿀 때와 같다). 담당자 후보만 대상마다 다르다: 업무는 WORK_MANAGE 보유자(#71),
- * 하위 업무는 활동 회원 전체(국원도 담당자가 된다 · 등록 화면과 같다).
+ * 하위 업무는 WORK_READ 보유자(국원 이상 · #831 · ssccops#628 · 등록 화면과 같다).
  *
  * 시작 일시는 등록 화면과 달리 비워 둘 수 있다(#765) — 종료된 회의의 안건을 뒤늦게 만들 때는 시작
  * 시점이 아직 정해지지 않은 경우가 많다. 비우면 `startAt`을 보내지 않는다. 종료(마감) 일시는 시작
@@ -96,7 +96,9 @@ export function PromoteAgendaSheet({
   const [target, setTarget] = useState<PromoteTarget>("업무로");
   const toSubWork = target === "하위 업무로";
   const copy = TARGET_COPY[target];
-  const assignable = useAssignableMembers(toSubWork ? undefined : CAPABILITY.WORK_MANAGE);
+  const assignable = useAssignableMembers(
+    toSubWork ? CAPABILITY.WORK_READ : CAPABILITY.WORK_MANAGE,
+  );
 
   const [title, setTitle] = useState(agenda.agendaName ?? "");
   const [pickedOwnerId, setPickedOwnerId] = useState<number | null>(null);
