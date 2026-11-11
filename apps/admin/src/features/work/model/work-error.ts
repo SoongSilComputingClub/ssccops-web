@@ -43,8 +43,9 @@ export function toWorkErrorMessage(error: unknown): string {
  *
  * 담당자 부적격은 수정 화면에서도 같은 길로 온다(#435) — 서버 `OperationErrorCode.
  * OWNER_NOT_ACTIVE_MEMBER`는 이름과 달리 **400 `VALIDATION_FAILED`**이지 409도 전용 코드도
- * 아니다. 후보에서 빠진 현재 담당자를 그대로 두고 저장하면 여기로 떨어지며, 전용 case를 두지
- * 않는 것은 코드가 같아 가를 수 없고 문구로 가르지 않기 때문이다(AGENTS.md 서버 연동 규약).
+ * 아니다. 권한 없는 회원을 담당자로 고른 경우(`WORK_OWNER_NOT_ELIGIBLE` · 서버 #709 · ssccops#628)도
+ * 같은 코드로 오며, 전용 case를 두지 않는 것은 코드가 같아 가를 수 없고 문구로 가르지 않기
+ * 때문이다(AGENTS.md 서버 연동 규약). 현재 담당자를 그대로 두는 수정은 서버가 판정하지 않는다.
  */
 export function toWorkCreateErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {

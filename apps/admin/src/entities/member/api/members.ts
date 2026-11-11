@@ -331,6 +331,15 @@ export interface AssignableMember {
   membershipGradeName: string;
   /** 현재 맡은 대표 역할 하나. 역할이 없으면 null이다 */
   representativeRoleName: string | null;
+  /**
+   * 목록 한 줄에 적을 역할명(서버 #709 · ssccops#628) — 운영진 역할을 리더 역할(스터디장·트랙장·
+   * 프로젝트장)보다 먼저 싣는다. 대표 역할이 운영진 역할이면 그것, 아니면 운영진 역할 중 표시
+   * 순번이 가장 앞선 것, 운영진 역할이 없으면 대표 역할, 그것도 없으면 null이다.
+   *
+   * 선택(`?`)인 것은 서버 #709보다 이 화면이 먼저 배포돼도 지금처럼 그리게 하려는 것이다 —
+   * 없으면 `assignableMemberLabel`이 대표 역할로 물러선다.
+   */
+  displayRoleName?: string | null;
 }
 
 /**
@@ -351,8 +360,10 @@ export interface AssignableMember {
  * `authority`를 주면 그 권한을 오늘 행사할 수 있는 회원으로 좁혀 받는다(#71 · 서버 #101) —
  * 업무 등록의 담당자·회의 등록의 책임자는 국장 이상(`WORK_MANAGE`·`MEETING_MANAGE`)만 고를
  * 수 있어야 하는데, 그 판정은 서버 한 곳(AuthorityPolicy.memberIdsWithAuthority)에서만 한다.
- * 생략하면 지금처럼 활동 회원 전량이다 — 하위 업무 담당자는 국원도 될 수 있어야 하므로
- * 그 경로는 필터를 걸지 않는다. 타입을 `Capability`가 아니라 `string`으로 둔 것은 이 계층
+ * 하위 업무 담당자는 `WORK_READ`다(#831 · ssccops#628 — 국원 이상, 역할이 없거나 리더 역할만
+ * 가진 회원은 하위 업무를 열 수 없어 빠진다). 서버 등록·수정도 같은 기준으로 거절한다. 생략하면
+ * 활동 회원 전량이다 — 행사 수동 등록처럼 운영진이 아닌 회원을 고르는 자리가 쓴다. 타입을
+ * `Capability`가 아니라 `string`으로 둔 것은 이 계층
  * (entities/member)이 다른 엔티티(entities/session)의 타입에 기대지 않기 위해서다 — 호출하는
  * 쪽(features/views)이 `CAPABILITY.WORK_MANAGE` 같은 값을 그대로 넘긴다.
  */
