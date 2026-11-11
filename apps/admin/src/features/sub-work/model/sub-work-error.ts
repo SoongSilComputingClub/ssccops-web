@@ -165,8 +165,9 @@ export function toSubWorkDeleteErrorMessage(error: unknown): string {
  *
  * 여기서 한 문장으로 뭉개면 어느 칸을 고쳐야 하는지가 사라진다 (업무 등록이 같은 판단을 했다).
  *
- * 담당자 부적격은 수정 화면에서도 같은 길로 온다(#435) — 서버 `OWNER_NOT_ACTIVE_MEMBER`는
- * 이름과 달리 **400 `VALIDATION_FAILED`**라 전용 case를 둘 수 없다(toWorkCreateErrorMessage).
+ * 담당자 부적격은 수정 화면에서도 같은 길로 온다(#435) — 서버 `OWNER_NOT_ACTIVE_MEMBER`·
+ * `SUB_WORK_OWNER_NOT_ELIGIBLE`(업무·하위 업무 조회 권한이 없는 회원 · 서버 #709)은 이름과 달리
+ * **400 `VALIDATION_FAILED`**라 전용 case를 둘 수 없다(toWorkCreateErrorMessage).
  */
 export function toSubWorkCreateErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
